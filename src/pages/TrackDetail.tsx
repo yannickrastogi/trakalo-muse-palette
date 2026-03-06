@@ -13,7 +13,7 @@ import {
   Edit3,
   Music,
   FileText,
-  Image,
+  
   Send,
   Users,
   Clock,
