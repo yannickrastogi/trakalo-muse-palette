@@ -26,6 +26,8 @@ import {
   AlertCircle,
   MoreHorizontal,
   ChevronRight,
+  Activity,
+  ChevronRight,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 
@@ -474,6 +476,79 @@ function PitchHistoryTab() {
             </span>
           </div>
         ))}
+      </div>
+    </SectionCard>
+  );
+}
+
+const statusOptions = [
+  { value: "Written", icon: FileText, color: "bg-brand-purple/15 text-brand-purple", description: "Song has been written and recorded" },
+  { value: "On Hold", icon: Clock, color: "bg-brand-orange/15 text-brand-orange", description: "Waiting on clearance, features, or label decision" },
+  { value: "To Be Released", icon: Send, color: "bg-primary/15 text-primary", description: "Scheduled for upcoming release" },
+  { value: "Released", icon: CheckCircle2, color: "bg-emerald-500/15 text-emerald-400", description: "Publicly available on all platforms" },
+];
+
+const statusTimeline = [
+  { status: "Written", date: "Jan 10, 2026", note: "Recording completed at Nightfall Studio" },
+  { status: "On Hold", date: "Jan 22, 2026", note: "Awaiting JVNE feature clearance" },
+  { status: "To Be Released", date: "Feb 15, 2026", note: "Release date set for April 12, 2026" },
+];
+
+function StatusTab() {
+  const currentStatus = "To Be Released";
+
+  return (
+    <SectionCard
+      title="Track Status"
+      icon={Activity}
+      action={<button className="text-xs text-primary hover:underline">Update Status</button>}
+    >
+      {/* Current status */}
+      <div className="px-5 py-5 border-b border-border">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-3">Current Status</p>
+        <div className="flex flex-wrap gap-2">
+          {statusOptions.map((opt) => {
+            const isActive = opt.value === currentStatus;
+            return (
+              <div
+                key={opt.value}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-colors cursor-pointer ${
+                  isActive
+                    ? `${opt.color} border-current`
+                    : "border-border bg-card text-muted-foreground hover:bg-secondary"
+                }`}
+              >
+                <opt.icon className="w-4 h-4" />
+                <span className="text-sm font-medium">{opt.value}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <div className="px-5 py-4">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-4">History</p>
+        <div className="space-y-0">
+          {statusTimeline.map((entry, i) => {
+            const opt = statusOptions.find((o) => o.value === entry.status);
+            const isLast = i === statusTimeline.length - 1;
+            return (
+              <div key={i} className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${isLast ? "bg-primary/15" : "bg-secondary"}`}>
+                    {opt && <opt.icon className={`w-3.5 h-3.5 ${isLast ? "text-primary" : "text-muted-foreground"}`} />}
+                  </div>
+                  {!isLast && <div className="w-px h-8 bg-border" />}
+                </div>
+                <div className="pb-6">
+                  <p className="text-sm font-medium text-foreground">{entry.status}</p>
+                  <p className="text-[11px] text-muted-foreground">{entry.date} · {entry.note}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </SectionCard>
   );
