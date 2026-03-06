@@ -24,11 +24,11 @@ const stats = [
 ];
 
 const recentTracks = [
-  { title: "Velvet Hour", artist: "Kira Nomura", album: "Late Bloom EP", genre: "Neo-Soul", duration: "4:12", bpm: 92, key: "Ab Maj", mood: ["emotional", "dreamy"], status: "Available", language: "English" },
-  { title: "Ghost Protocol", artist: "Dex Moraes × JVNE", album: "Singles 2026", genre: "Electronic", duration: "3:38", bpm: 128, key: "F# Min", mood: ["energetic", "dark"], status: "On Hold", language: "English" },
-  { title: "Burning Chrome", artist: "Alina Voss", album: "Neon Archive", genre: "Synthwave", duration: "5:01", bpm: 118, key: "C Min", mood: ["nostalgic", "driving"], status: "Available", language: "Portuguese" },
-  { title: "Soft Landing", artist: "Marco Silva", album: "Ambient Vol. II", genre: "Ambient", duration: "6:44", bpm: 72, key: "D Maj", mood: ["calm", "uplifting"], status: "Released", language: "Instrumental" },
-  { title: "Paper Moons", artist: "Kira Nomura × AYA", album: "Late Bloom EP", genre: "Indie Pop", duration: "3:22", bpm: 105, key: "Bb Maj", mood: ["happy", "playful"], status: "On Hold", language: "Japanese" },
+  { title: "Velvet Hour", artist: "Kira Nomura", album: "Late Bloom EP", genre: "Neo-Soul", duration: "4:12", bpm: 92, key: "Ab Maj", mood: ["emotional", "dreamy"], status: "Available", language: "English", type: "Song" },
+  { title: "Ghost Protocol", artist: "Dex Moraes × JVNE", album: "Singles 2026", genre: "Electronic", duration: "3:38", bpm: 128, key: "F# Min", mood: ["energetic", "dark"], status: "On Hold", language: "English", type: "Sample" },
+  { title: "Burning Chrome", artist: "Alina Voss", album: "Neon Archive", genre: "Synthwave", duration: "5:01", bpm: 118, key: "C Min", mood: ["nostalgic", "driving"], status: "Available", language: "Portuguese", type: "Song" },
+  { title: "Soft Landing", artist: "Marco Silva", album: "Ambient Vol. II", genre: "Ambient", duration: "6:44", bpm: 72, key: "D Maj", mood: ["calm", "uplifting"], status: "Released", language: "Instrumental", type: "Instrumental" },
+  { title: "Paper Moons", artist: "Kira Nomura × AYA", album: "Late Bloom EP", genre: "Indie Pop", duration: "3:22", bpm: 105, key: "Bb Maj", mood: ["happy", "playful"], status: "On Hold", language: "Japanese", type: "Acapella" },
 ];
 
 const activity = [
@@ -103,6 +103,7 @@ export function DashboardContent() {
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Track</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden sm:table-cell">Type</th>
                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden md:table-cell">Genre</th>
                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden lg:table-cell">Key</th>
                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden lg:table-cell">BPM</th>
@@ -126,6 +127,7 @@ export function DashboardContent() {
                           </div>
                         </div>
                       </td>
+                      <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-[12px]">{track.type}</td>
                       <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-[12px]">{track.genre}</td>
                       <td className="px-4 py-3 hidden lg:table-cell">
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary text-[11px] font-medium text-foreground/70">
