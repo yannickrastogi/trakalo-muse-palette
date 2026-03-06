@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import trakalogLogo from "@/assets/trakalog-logo.png";
-import trakalogWordmark from "@/assets/trakalog-wordmark.png";
 
 const navItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },
@@ -47,11 +46,17 @@ export function AppSidebar() {
             transition={{ duration: 0.15 }}
             className="flex flex-col"
           >
-            <img
-              src={trakalogWordmark}
-              alt="TRAKALOG"
-              className="h-9 w-auto object-contain invert"
-            />
+            {/* Wordmark: Logo T + RAKALOG text */}
+            <div className="flex items-center">
+              <img
+                src={trakalogLogo}
+                alt=""
+                className="w-8 h-8 object-contain shrink-0 -mr-0.5"
+              />
+              <span className="text-xl font-bold tracking-tight text-foreground">
+                RAKALOG
+              </span>
+            </div>
             <span className="text-[11px] text-muted-foreground mt-0.5 tracking-widest uppercase font-medium ml-0.5">
               Catalog Manager
             </span>
