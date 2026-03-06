@@ -252,6 +252,7 @@ export default function Catalog() {
                 </div>
               </div>
             </motion.div>
+          </motion.div>
     </PageShell>
   );
 }
