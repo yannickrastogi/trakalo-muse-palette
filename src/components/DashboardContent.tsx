@@ -74,8 +74,8 @@ export function DashboardContent() {
           >
             <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${stat.accent} opacity-[0.04] group-hover:opacity-[0.08] transition-opacity duration-500 blur-2xl`} />
             <div className="flex items-center justify-between mb-3 relative">
-              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary/8 transition-colors duration-300">
-                <stat.icon className="w-[18px] h-[18px] text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center group-hover:icon-brand transition-all duration-300">
+                <stat.icon className="w-[18px] h-[18px] text-muted-foreground group-hover:text-brand-orange transition-colors duration-300" />
               </div>
               <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors duration-300" />
             </div>
@@ -179,8 +179,8 @@ export function DashboardContent() {
                   key={action.label}
                   className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-[13px] group ${
                     action.primary
-                      ? "border-primary/20 bg-primary/6 text-primary hover:bg-primary/10 hover:border-primary/30"
-                      : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-primary/15 hover:bg-secondary/40"
+                      ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange hover:bg-brand-orange/12 hover:border-brand-orange/40 gradient-border"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-brand-pink/20 hover:bg-secondary/40"
                   }`}
                   style={{ boxShadow: "var(--shadow-inner-glow)" }}
                 >
