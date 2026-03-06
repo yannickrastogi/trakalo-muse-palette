@@ -123,16 +123,38 @@ export function DashboardContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentTracks.map((track) => (
+                  {recentTracks.map((track, idx) => {
+                    const isPlaying = playingTrack === track.title;
+                    return (
                     <tr key={track.title} className="border-b border-border/60 last:border-0 hover:bg-secondary/30 transition-colors group/row cursor-pointer">
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center group-hover/row:icon-brand transition-all shrink-0">
-                            <Disc3 className="w-4 h-4 text-muted-foreground group-hover/row:text-brand-orange transition-colors" />
+                          {/* Play button */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setPlayingTrack(isPlaying ? null : track.title); }}
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200 ${
+                              isPlaying
+                                ? "btn-brand shadow-none"
+                                : "bg-secondary group-hover/row:icon-brand"
+                            }`}
+                          >
+                            {isPlaying ? (
+                              <Pause className="w-3.5 h-3.5 text-primary-foreground" />
+                            ) : (
+                              <Play className="w-3.5 h-3.5 text-muted-foreground group-hover/row:text-brand-orange transition-colors" />
+                            )}
+                          </button>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2.5">
+                              <div className="min-w-0">
+                                <p className="font-semibold text-foreground truncate text-[13px] tracking-tight">{track.title}</p>
+                                <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
+                              </div>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="font-semibold text-foreground truncate text-[13px] tracking-tight">{track.title}</p>
-                            <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
+                          {/* Mini waveform */}
+                          <div className={`hidden sm:flex transition-opacity duration-300 ${isPlaying ? "opacity-100" : "opacity-30 group-hover/row:opacity-60"}`}>
+                            <MiniWaveform seed={idx * 7 + 13} bars={20} />
                           </div>
                         </div>
                       </td>
@@ -140,7 +162,7 @@ export function DashboardContent() {
                       <td className="px-5 py-3.5 text-muted-foreground hidden md:table-cell text-xs">{track.genre}</td>
                       <td className="px-5 py-3.5 hidden lg:table-cell">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary text-2xs font-semibold text-foreground/70">
-                          <Music className="w-2.5 h-2.5 text-primary/50" />
+                          <Music className="w-2.5 h-2.5 text-brand-orange/50" />
                           {track.key}
                         </span>
                       </td>
@@ -161,17 +183,13 @@ export function DashboardContent() {
                         </span>
                       </td>
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                          <button className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-                            <Play className="w-3.5 h-3.5" />
-                          </button>
-                          <button className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-                            <MoreHorizontal className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <button className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground opacity-0 group-hover/row:opacity-100">
+                          <MoreHorizontal className="w-3.5 h-3.5" />
+                        </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
