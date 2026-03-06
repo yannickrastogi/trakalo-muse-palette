@@ -3,13 +3,13 @@ import { Plus, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 
 const pitches = [
-  { track: "Velvet Hour", artist: "Kira Nomura", platform: "Spotify Editorial", playlist: "Neo Soul Lounge", date: "Mar 2, 2026", status: "Under Review" },
-  { track: "Soft Landing", artist: "Marco Silva", platform: "Apple Music", playlist: "New in R&B", date: "Feb 28, 2026", status: "Accepted" },
-  { track: "Ghost Protocol", artist: "Dex Moraes × JVNE", platform: "Tidal", playlist: "Rising Electronic", date: "Feb 25, 2026", status: "Declined" },
-  { track: "Paper Moons", artist: "Kira Nomura × AYA", platform: "Amazon Music", playlist: "Fresh Indie", date: "Feb 20, 2026", status: "Accepted" },
-  { track: "Daybreak", artist: "Kira Nomura", platform: "Deezer", playlist: "Morning Soul", date: "Feb 18, 2026", status: "Under Review" },
-  { track: "Golden Frequency", artist: "Alina Voss × Marco", platform: "Spotify Editorial", playlist: "House Essentials", date: "Feb 15, 2026", status: "Under Review" },
-  { track: "Neon Pulse", artist: "JVNE × Alina Voss", platform: "Apple Music", playlist: "Synthwave Nights", date: "Feb 10, 2026", status: "Accepted" },
+  { track: "Velvet Hour", artist: "Kira Nomura", recipient: "Interscope Records", contact: "A&R — Jamie Lin", date: "Mar 2, 2026", status: "Under Review" },
+  { track: "Soft Landing", artist: "Marco Silva", recipient: "Atlantic Records", contact: "A&R — David Park", date: "Feb 28, 2026", status: "Accepted" },
+  { track: "Ghost Protocol", artist: "Dex Moraes × JVNE", recipient: "Anjunadeep", contact: "Label Manager", date: "Feb 25, 2026", status: "Declined" },
+  { track: "Paper Moons", artist: "Kira Nomura × AYA", recipient: "Billie Eilish", contact: "Management — Darkroom", date: "Feb 20, 2026", status: "Accepted" },
+  { track: "Daybreak", artist: "Kira Nomura", recipient: "Republic Records", contact: "A&R — Sarah Cho", date: "Feb 18, 2026", status: "Under Review" },
+  { track: "Golden Frequency", artist: "Alina Voss × Marco", recipient: "Disclosure", contact: "Management — Method", date: "Feb 15, 2026", status: "Under Review" },
+  { track: "Neon Pulse", artist: "JVNE × Alina Voss", recipient: "Warner Records", contact: "A&R — Tom Ellis", date: "Feb 10, 2026", status: "Accepted" },
 ];
 
 const statusColors: Record<string, string> = {
@@ -41,7 +41,7 @@ export default function Pitch() {
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-xl font-semibold text-foreground tracking-tight">Pitch</h1>
-            <p className="text-muted-foreground text-[13px] mt-0.5">Track playlist submissions and editorial pitches</p>
+            <p className="text-muted-foreground text-[13px] mt-0.5">Track songs pitched to labels and artists</p>
           </div>
           <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium text-primary-foreground bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple hover:opacity-90 transition-opacity shrink-0 self-start">
             <Plus className="w-3.5 h-3.5" /> New Pitch
@@ -64,11 +64,11 @@ export default function Pitch() {
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Track</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden md:table-cell">Platform</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden lg:table-cell">Playlist</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden sm:table-cell">Date</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Status</th>
+                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Track</th>
+                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden md:table-cell">Pitched To</th>
+                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden lg:table-cell">Contact</th>
+                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden sm:table-cell">Date</th>
+                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -87,8 +87,8 @@ export default function Pitch() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-[12px]">{p.platform}</td>
-                        <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell text-[12px]">{p.playlist}</td>
+                         <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-[12px]">{p.recipient}</td>
+                         <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell text-[12px]">{p.contact}</td>
                         <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-[11px]">{p.date}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium ${statusColors[p.status]}`}>{p.status}</span>

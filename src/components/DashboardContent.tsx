@@ -35,7 +35,7 @@ const activity = [
   { icon: Star, text: "Kira Nomura starred \"Velvet Hour\" master", time: "12m ago" },
   { icon: MessageSquare, text: "Dex left feedback on \"Ghost Protocol\" mix", time: "1h ago" },
   { icon: Upload, text: "You uploaded 3 stems to \"Burning Chrome\"", time: "3h ago" },
-  { icon: Send, text: "Pitch sent to Spotify Editorial — \"Soft Landing\"", time: "6h ago" },
+  { icon: Send, text: "\"Soft Landing\" pitched to Atlantic Records — A&R", time: "6h ago" },
   { icon: TrendingUp, text: "\"Paper Moons\" reached 10K pre-saves", time: "1d ago" },
 ];
 

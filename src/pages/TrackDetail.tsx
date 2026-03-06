@@ -91,11 +91,11 @@ const socialAssets = [
 ];
 
 const pitchHistory = [
-  { platform: "Spotify Editorial", playlist: "Neo Soul Lounge", date: "Mar 2, 2026", status: "Under Review", response: null },
-  { platform: "Apple Music", playlist: "New in R&B", date: "Feb 28, 2026", status: "Accepted", response: "Added Mar 5" },
-  { platform: "Tidal", playlist: "Rising Neo-Soul", date: "Feb 25, 2026", status: "Declined", response: "Not a fit for current cycle" },
-  { platform: "Amazon Music", playlist: "Fresh Soul", date: "Feb 20, 2026", status: "Accepted", response: "Added Feb 27" },
-  { platform: "Deezer", playlist: "Soul Essentials", date: "Feb 18, 2026", status: "Under Review", response: null },
+  { recipient: "Interscope Records", contact: "A&R — Jamie Lin", date: "Mar 2, 2026", status: "Under Review", response: null },
+  { recipient: "Atlantic Records", contact: "A&R — David Park", date: "Feb 28, 2026", status: "Accepted", response: "Signed sync deal Mar 5" },
+  { recipient: "Anjunadeep", contact: "Label Manager", date: "Feb 25, 2026", status: "Declined", response: "Not a fit for current roster" },
+  { recipient: "Billie Eilish", contact: "Management — Darkroom", date: "Feb 20, 2026", status: "Accepted", response: "Feature confirmed Feb 27" },
+  { recipient: "Republic Records", contact: "A&R — Sarah Cho", date: "Feb 18, 2026", status: "Under Review", response: null },
 ];
 
 const pitchStatusColors: Record<string, string> = {
@@ -511,7 +511,7 @@ function PitchHistoryTab() {
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">{pitch.platform} <span className="text-muted-foreground font-normal">— {pitch.playlist}</span></p>
+                <p className="text-sm font-medium text-foreground">{pitch.recipient} <span className="text-muted-foreground font-normal">— {pitch.contact}</span></p>
                 <p className="text-[11px] text-muted-foreground">
                   {pitch.date}
                   {pitch.response && <span className="ml-2 text-foreground/60">· {pitch.response}</span>}
