@@ -50,8 +50,8 @@ export function AppSidebar() {
             <img
               src={trakalogWordmark}
               alt="TRAKALOG"
-              className="h-10 w-auto object-contain brightness-[10] contrast-[0.9]"
-              style={{ filter: "brightness(10) contrast(0.9)" }}
+              className="h-12 w-auto object-contain"
+              style={{ filter: "brightness(5)" }}
             />
             <span className="text-[11px] text-muted-foreground mt-0.5 tracking-widest uppercase font-medium ml-0.5">
               Catalog Manager
