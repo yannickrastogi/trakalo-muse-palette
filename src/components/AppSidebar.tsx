@@ -27,16 +27,16 @@ export function AppSidebar() {
 
   return (
     <motion.aside
-      animate={{ width: collapsed ? 68 : 240 }}
+      animate={{ width: collapsed ? 80 : 260 }}
       transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
       className="h-screen sticky top-0 flex flex-col border-r border-sidebar-border bg-sidebar overflow-hidden z-30"
     >
       {/* Logo */}
-      <div className="flex items-center gap-4 px-4 h-[76px] shrink-0">
+      <div className="flex items-center gap-4 px-5 h-[88px] shrink-0">
         <img
           src={trakalogLogo}
           alt="Trakalog"
-          className="w-12 h-12 rounded-xl object-contain shrink-0"
+          className="w-14 h-14 rounded-xl object-contain shrink-0"
         />
         {!collapsed && (
           <motion.div
@@ -45,10 +45,10 @@ export function AppSidebar() {
             transition={{ duration: 0.15 }}
             className="flex flex-col leading-none"
           >
-            <span className="text-lg font-bold tracking-tight gradient-text">
+            <span className="text-xl font-bold tracking-tight gradient-text">
               TRAKALOG
             </span>
-            <span className="text-2xs text-muted-foreground mt-0.5 tracking-widest uppercase font-medium">
+            <span className="text-[11px] text-muted-foreground mt-1 tracking-widest uppercase font-medium">
               Catalog Manager
             </span>
           </motion.div>
@@ -56,31 +56,31 @@ export function AppSidebar() {
       </div>
 
       {/* Gradient accent line */}
-      <div className="mx-4 h-px" style={{ background: "var(--gradient-brand-horizontal)", opacity: 0.15 }} />
+      <div className="mx-5 h-px" style={{ background: "var(--gradient-brand-horizontal)", opacity: 0.15 }} />
 
       {/* Nav */}
-      <nav className="flex-1 py-4 px-2.5 space-y-0.5">
+      <nav className="flex-1 py-5 px-3 space-y-1">
         {navItems.map((item) => (
           <NavLink
             key={item.title}
             to={item.url}
             end={item.url === "/"}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all text-[13px] font-medium group"
+            className="flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all text-sm font-medium group"
             activeClassName="bg-sidebar-accent text-primary"
           >
-            <item.icon className="w-[17px] h-[17px] shrink-0 transition-colors" />
+            <item.icon className="w-[19px] h-[19px] shrink-0 transition-colors" />
             {!collapsed && <span className="tracking-tight">{item.title}</span>}
           </NavLink>
         ))}
       </nav>
 
       {/* Bottom */}
-      <div className="mx-4 h-px" style={{ background: "var(--gradient-brand-horizontal)", opacity: 0.08 }} />
+      <div className="mx-5 h-px" style={{ background: "var(--gradient-brand-horizontal)", opacity: 0.08 }} />
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center justify-center h-11 text-muted-foreground hover:text-foreground transition-colors"
+        className="flex items-center justify-center h-12 text-muted-foreground hover:text-foreground transition-colors"
       >
-        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        {collapsed ? <ChevronRight className="w-4.5 h-4.5" /> : <ChevronLeft className="w-4.5 h-4.5" />}
       </button>
     </motion.aside>
   );
