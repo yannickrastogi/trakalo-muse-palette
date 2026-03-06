@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
@@ -6,6 +7,7 @@ import {
   Users,
   Send,
   Play,
+  Pause,
   Clock,
   Upload,
   ArrowUpRight,
@@ -15,6 +17,7 @@ import {
   TrendingUp,
   MoreHorizontal,
 } from "lucide-react";
+import { MiniWaveform } from "@/components/MiniWaveform";
 
 const stats = [
   { label: "Total Tracks", value: "2,847", icon: Music, change: "+18 this week", accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20" },
