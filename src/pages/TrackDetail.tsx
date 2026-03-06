@@ -481,20 +481,19 @@ function PitchHistoryTab() {
 }
 
 const statusOptions = [
-  { value: "Written", icon: FileText, color: "bg-brand-purple/15 text-brand-purple", description: "Song has been written and recorded" },
+  { value: "Available", icon: CheckCircle2, color: "bg-emerald-500/15 text-emerald-400", description: "Track is available for pitching and licensing" },
   { value: "On Hold", icon: Clock, color: "bg-brand-orange/15 text-brand-orange", description: "Waiting on clearance, features, or label decision" },
-  { value: "To Be Released", icon: Send, color: "bg-primary/15 text-primary", description: "Scheduled for upcoming release" },
-  { value: "Released", icon: CheckCircle2, color: "bg-emerald-500/15 text-emerald-400", description: "Publicly available on all platforms" },
+  { value: "Released", icon: Disc3, color: "bg-primary/15 text-primary", description: "Publicly available on all platforms" },
 ];
 
 const statusTimeline = [
-  { status: "Written", date: "Jan 10, 2026", note: "Recording completed at Nightfall Studio" },
+  { status: "Available", date: "Jan 10, 2026", note: "Recording completed at Nightfall Studio" },
   { status: "On Hold", date: "Jan 22, 2026", note: "Awaiting JVNE feature clearance" },
-  { status: "To Be Released", date: "Feb 15, 2026", note: "Release date set for April 12, 2026" },
+  { status: "Available", date: "Feb 15, 2026", note: "Clearance received, track open for pitching" },
 ];
 
 function StatusTab() {
-  const currentStatus = "To Be Released";
+  const currentStatus = "Available";
 
   return (
     <SectionCard
