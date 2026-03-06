@@ -498,7 +498,7 @@ function StepAudio({
                   ))}
                 </div>
               </div>
-              <audio ref={audioRef} src={audioPreviewUrl} onEnded={() => setIsPlayingPreview?.(false)} />
+              <audio ref={audioRef} src={audioPreviewUrl} />
             </div>
           )}
 
