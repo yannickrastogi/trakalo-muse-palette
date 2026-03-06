@@ -712,12 +712,15 @@ function StepSplits({
 
 function StepReview({
   title, artist, bpm, trackKey, genre, mood, language, notes,
-  audioFile, stems, splits, totalSplit,
+  audioFile, stems, splits, totalSplit, details,
 }: {
   title: string; artist: string; bpm: string; trackKey: string;
   genre: string; mood: string[]; language: string; notes: string;
   audioFile: File | null; stems: StemFile[]; splits: Split[]; totalSplit: number;
+  details: Record<string, string>;
 }) {
+  const filledDetails = DETAIL_FIELDS.filter((f) => details[f.key]?.trim());
+
   return (
     <div className="space-y-5">
       <div>
@@ -725,9 +728,9 @@ function StepReview({
         <p className="text-2xs text-muted-foreground">Review your track details before adding to catalog</p>
       </div>
 
-      {/* Basic info */}
+      {/* Info */}
       <div className="rounded-xl bg-secondary/50 border border-border p-4 space-y-2">
-        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Basic Info</p>
+        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Info</p>
         <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[13px]">
           <ReviewRow label="Title" value={title} />
           <ReviewRow label="Artist" value={artist} />
@@ -746,6 +749,18 @@ function StepReview({
         )}
         {notes && <p className="text-2xs text-muted-foreground pt-1 italic">"{notes}"</p>}
       </div>
+
+      {/* More Details */}
+      {filledDetails.length > 0 && (
+        <div className="rounded-xl bg-secondary/50 border border-border p-4 space-y-2">
+          <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Credits & Details</p>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[13px]">
+            {filledDetails.map((f) => (
+              <ReviewRow key={f.key} label={f.label} value={details[f.key]} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Audio */}
       <div className="rounded-xl bg-secondary/50 border border-border p-4">
