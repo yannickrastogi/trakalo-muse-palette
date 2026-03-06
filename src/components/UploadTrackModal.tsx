@@ -130,22 +130,25 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   const redistributeSplits = (updatedSplits: Split[], changedId?: string) => {
     if (!changedId) {
-      // Equal distribution
-      const equal = Math.floor(100 / updatedSplits.length);
-      const remainder = 100 - equal * updatedSplits.length;
-      return updatedSplits.map((s, i) => ({ ...s, percentage: equal + (i < remainder ? 1 : 0) }));
+      const equal = parseFloat((100 / updatedSplits.length).toFixed(2));
+      const total = parseFloat((equal * updatedSplits.length).toFixed(2));
+      const diff = parseFloat((100 - total).toFixed(2));
+      return updatedSplits.map((s, i) => ({
+        ...s,
+        percentage: i === 0 ? parseFloat((equal + diff).toFixed(2)) : equal,
+      }));
     }
-    // One was manually changed — distribute remainder among others
     const changed = updatedSplits.find((s) => s.id === changedId);
     const others = updatedSplits.filter((s) => s.id !== changedId);
-    const remaining = Math.max(0, 100 - (changed?.percentage || 0));
+    const remaining = parseFloat(Math.max(0, 100 - (changed?.percentage || 0)).toFixed(2));
     if (others.length === 0) return updatedSplits;
-    const each = Math.floor(remaining / others.length);
-    const rem = remaining - each * others.length;
+    const each = parseFloat((remaining / others.length).toFixed(2));
+    const total = parseFloat((each * others.length).toFixed(2));
+    const diff = parseFloat((remaining - total).toFixed(2));
     let idx = 0;
     return updatedSplits.map((s) => {
       if (s.id === changedId) return s;
-      const val = each + (idx < rem ? 1 : 0);
+      const val = idx === 0 ? parseFloat((each + diff).toFixed(2)) : each;
       idx++;
       return { ...s, percentage: val };
     });
@@ -711,7 +714,7 @@ function StepSplits({
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">Split %</label>
-                <input type="number" min={0} max={100} value={split.percentage} onChange={(e) => onUpdate(split.id, "percentage", Number(e.target.value))} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40" />
+                <input type="number" min={0} max={100} step={0.01} value={split.percentage} onChange={(e) => onUpdate(split.id, "percentage", parseFloat(e.target.value) || 0)} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">PRO</label>
