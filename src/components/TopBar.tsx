@@ -1,33 +1,31 @@
-import { Search, Bell, Plus } from "lucide-react";
+import { Search, Bell } from "lucide-react";
 import { UserMenu } from "./UserMenu";
 
 export function TopBar() {
   return (
-    <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-sm sticky top-0 z-20">
+    <header className="h-14 border-b border-border flex items-center justify-between px-5 bg-background/60 backdrop-blur-md sticky top-0 z-20">
       {/* Search */}
-      <div className="flex items-center gap-3 flex-1 max-w-xl">
-        <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2 w-full">
-          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+      <div className="flex items-center gap-3 flex-1 max-w-md">
+        <div className="flex items-center gap-2.5 bg-secondary/60 rounded-lg px-3 py-1.5 w-full border border-transparent focus-within:border-primary/20 transition-colors">
+          <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
           <input
             type="text"
-            placeholder="Search tracks, projects, collaborators…"
-            className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none w-full"
+            placeholder="Search…"
+            className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground outline-none w-full"
           />
-          <kbd className="hidden sm:inline-flex text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">
+          <kbd className="hidden sm:inline-flex text-[10px] text-muted-foreground/60 bg-muted/50 px-1.5 py-0.5 rounded font-mono leading-none">
             ⌘K
           </kbd>
         </div>
       </div>
 
       {/* Right actions */}
-      <div className="flex items-center gap-2 ml-4">
-        <button className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
-          <Bell className="w-5 h-5" />
+      <div className="flex items-center gap-1.5 ml-4">
+        <button className="relative p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
+          <Bell className="w-[18px] h-[18px]" />
+          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" />
         </button>
-        <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-primary-foreground bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple hover:opacity-90 transition-opacity">
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">New Track</span>
-        </button>
+        <div className="w-px h-6 bg-border mx-1" />
         <UserMenu />
       </div>
     </header>
