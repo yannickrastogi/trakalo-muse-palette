@@ -794,9 +794,9 @@ function StepReview({
   title: string; artist: string; bpm: string; trackKey: string;
   genre: string; mood: string[]; language: string; notes: string;
   audioFile: File | null; stems: StemFile[]; splits: Split[]; totalSplit: number;
-  details: Record<string, string>;
+  details: Record<string, string[]>;
 }) {
-  const filledDetails = DETAIL_FIELDS.filter((f) => details[f.key]?.trim());
+  const filledDetails = DETAIL_FIELDS.filter((f) => details[f.key]?.some((v) => v.trim()));
 
   return (
     <div className="space-y-5">
@@ -833,7 +833,7 @@ function StepReview({
           <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Credits & Details</p>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[13px]">
             {filledDetails.map((f) => (
-              <ReviewRow key={f.key} label={f.label} value={details[f.key]} />
+              <ReviewRow key={f.key} label={f.label} value={details[f.key].filter((v) => v.trim()).join(", ")} />
             ))}
           </div>
         </div>
