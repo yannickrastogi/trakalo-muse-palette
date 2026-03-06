@@ -32,23 +32,32 @@ export function AppSidebar() {
       className="h-screen sticky top-0 flex flex-col border-r border-sidebar-border bg-sidebar overflow-hidden z-30"
     >
       {/* Logo */}
-      <div className="flex items-center gap-4 px-5 h-[88px] shrink-0">
-        <img
-          src={trakalogLogo}
-          alt="Trakalog"
-          className="w-14 h-14 rounded-xl object-contain shrink-0"
-        />
-        {!collapsed && (
+      <div className="flex items-center px-5 h-[88px] shrink-0">
+        {collapsed ? (
+          <img
+            src={trakalogLogo}
+            alt="Trakalog"
+            className="w-10 h-10 rounded-xl object-contain shrink-0 mx-auto"
+          />
+        ) : (
           <motion.div
-            initial={{ opacity: 0, x: -4 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.15 }}
-            className="flex flex-col leading-none"
+            className="flex flex-col"
           >
-            <span className="text-xl font-bold tracking-tight gradient-text">
-              TRAKALOG
-            </span>
-            <span className="text-[11px] text-muted-foreground mt-1 tracking-widest uppercase font-medium">
+            {/* Wordmark: Logo T + RAKALOG text */}
+            <div className="flex items-center">
+              <img
+                src={trakalogLogo}
+                alt=""
+                className="w-8 h-8 object-contain shrink-0 -mr-0.5"
+              />
+              <span className="text-xl font-bold tracking-tight text-foreground">
+                RAKALOG
+              </span>
+            </div>
+            <span className="text-[11px] text-muted-foreground mt-0.5 tracking-widest uppercase font-medium ml-0.5">
               Catalog Manager
             </span>
           </motion.div>
