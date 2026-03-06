@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Music,
+  Layers,
   ListMusic,
   Send,
   Users,
@@ -16,6 +17,7 @@ import trakalogLogo from "@/assets/trakalog-logo.png";
 const navItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },
   { title: "Tracks", icon: Music, url: "/tracks" },
+  { title: "Stems", icon: Layers, url: "/stems" },
   { title: "Playlists", icon: ListMusic, url: "/playlists" },
   { title: "Pitch", icon: Send, url: "/pitch" },
   { title: "Team", icon: Users, url: "/team" },

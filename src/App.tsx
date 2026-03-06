@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import TrackDetail from "./pages/TrackDetail";
 import Playlists from "./pages/Playlists";
+import Stems from "./pages/Stems";
 import Pitch from "./pages/Pitch";
 import Team from "./pages/Team";
 import SettingsPage from "./pages/SettingsPage";
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/tracks" element={<Catalog />} />
           <Route path="/track/:id" element={<TrackDetail />} />
           <Route path="/playlists" element={<Playlists />} />
+          <Route path="/stems" element={<Stems />} />
           <Route path="/pitch" element={<Pitch />} />
           <Route path="/team" element={<Team />} />
           <Route path="/settings" element={<SettingsPage />} />
