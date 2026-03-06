@@ -27,7 +27,6 @@ import {
   MoreHorizontal,
   ChevronRight,
   Activity,
-  ChevronRight,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 
