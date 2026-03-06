@@ -341,10 +341,30 @@ function FieldSelect({ value, onChange, options, placeholder }: { value: string;
   );
 }
 
-function StepBasicInfo({
+const DETAIL_FIELDS = [
+  { key: "producers", label: "Producer(s)" },
+  { key: "songwriters", label: "Songwriter(s)" },
+  { key: "recordingEngineer", label: "Recording Engineer" },
+  { key: "mixingEngineer", label: "Mixing Engineer" },
+  { key: "masteringEngineer", label: "Mastering Engineer" },
+  { key: "drumsBy", label: "Drums By" },
+  { key: "synthsBy", label: "Synths By" },
+  { key: "keysBy", label: "Keys By" },
+  { key: "guitarsBy", label: "Guitars By" },
+  { key: "bassBy", label: "Bass By" },
+  { key: "programmingBy", label: "Programming By" },
+  { key: "vocalsBy", label: "Vocals By" },
+  { key: "backgroundVocalsBy", label: "Background Vocals By" },
+  { key: "mixingStudio", label: "Mixing Studio" },
+  { key: "recordingStudio", label: "Recording Studio" },
+  { key: "recordingDate", label: "Recording Date" },
+];
+
+function StepInfo({
   title, setTitle, artist, setArtist, bpm, setBpm,
   trackKey, setTrackKey, genre, setGenre, mood, toggleMood,
   language, setLanguage, notes, setNotes,
+  details, updateDetail,
 }: {
   title: string; setTitle: (v: string) => void;
   artist: string; setArtist: (v: string) => void;
@@ -354,7 +374,10 @@ function StepBasicInfo({
   mood: string[]; toggleMood: (v: string) => void;
   language: string; setLanguage: (v: string) => void;
   notes: string; setNotes: (v: string) => void;
+  details: Record<string, string>; updateDetail: (key: string, value: string) => void;
 }) {
+  const [showDetails, setShowDetails] = useState(false);
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -412,6 +435,40 @@ function StepBasicInfo({
           rows={3}
           className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40 resize-none"
         />
+      </div>
+
+      {/* More Details */}
+      <div className="border-t border-border pt-4">
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          className="flex items-center gap-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showDetails ? "rotate-90" : ""}`} />
+          More Details
+          <span className="text-2xs text-muted-foreground/50 font-normal">— credits, studios, dates</span>
+        </button>
+        {showDetails && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mt-4 space-y-3"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {DETAIL_FIELDS.map((f) => (
+                <div key={f.key} className="space-y-1">
+                  <label className="text-2xs text-muted-foreground font-medium">{f.label}</label>
+                  <input
+                    type={f.key === "recordingDate" ? "date" : "text"}
+                    value={details[f.key] || ""}
+                    onChange={(e) => updateDetail(f.key, e.target.value)}
+                    placeholder={f.key === "recordingDate" ? "" : `Enter ${f.label.toLowerCase()}`}
+                    className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
+                  />
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
