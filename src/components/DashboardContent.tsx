@@ -139,7 +139,7 @@ export function DashboardContent() {
                     <th className="text-left px-5 py-3 font-medium hidden lg:table-cell">Key</th>
                     <th className="text-left px-5 py-3 font-medium hidden lg:table-cell">BPM</th>
                     <th className="text-left px-5 py-3 font-medium hidden sm:table-cell">Duration</th>
-                    <th className="text-left px-5 py-3 font-medium hidden md:table-cell">Feel</th>
+                    <th className="text-left px-5 py-3 font-medium hidden md:table-cell">Mood</th>
                     <th className="text-left px-5 py-3 font-medium">Status</th>
                     <th className="px-5 py-3 w-20"></th>
                   </tr>
