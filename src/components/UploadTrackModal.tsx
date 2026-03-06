@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 
-const STEPS = ["Basic Info", "Audio", "Stems", "Splits", "Review"];
+const STEPS = ["Audio", "Info", "Stems", "Splits", "Review"];
 
 const GENRES = ["Ambient", "Electronic", "Glitch Hop", "House", "Indie Pop", "Neo-Soul", "R&B", "Synthwave", "Techno"];
 const KEYS = ["Ab Maj", "A Min", "Bb Maj", "B Min", "C Min", "C# Min", "D Maj", "Eb Maj", "E Min", "F Maj", "F# Min", "G Maj"];
@@ -54,7 +54,7 @@ interface UploadTrackModalProps {
 export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) {
   const [step, setStep] = useState(0);
 
-  // Step 1: Basic Info
+  // Step 1 (Info)
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
   const [bpm, setBpm] = useState("");
@@ -63,6 +63,9 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const [mood, setMood] = useState<string[]>([]);
   const [language, setLanguage] = useState("");
   const [notes, setNotes] = useState("");
+
+  // More Details
+  const [details, setDetails] = useState<Record<string, string>>({});
 
   // Step 2: Audio
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -149,7 +152,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   const handleReset = () => {
     setStep(0);
-    setTitle(""); setArtist(""); setBpm(""); setTrackKey(""); setGenre(""); setMood([]); setLanguage(""); setNotes("");
+    setTitle(""); setArtist(""); setBpm(""); setTrackKey(""); setGenre(""); setMood([]); setLanguage(""); setNotes(""); setDetails({});
     setAudioFile(null); setAudioUploading(false); setAudioProgress(0); setAudioPreviewUrl(null); setIsPlayingPreview(false);
     setStems([]);
     setSplits([{ id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }]);
@@ -161,8 +164,12 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     handleReset();
   };
 
+  const updateDetail = (key: string, value: string) => {
+    setDetails((prev) => ({ ...prev, [key]: value }));
+  };
+
   const canProceed = () => {
-    if (step === 0) return title.trim() && artist.trim();
+    if (step === 1) return title.trim() && artist.trim();
     return true;
   };
 
@@ -218,18 +225,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               transition={{ duration: 0.2 }}
             >
               {step === 0 && (
-                <StepBasicInfo
-                  title={title} setTitle={setTitle}
-                  artist={artist} setArtist={setArtist}
-                  bpm={bpm} setBpm={setBpm}
-                  trackKey={trackKey} setTrackKey={setTrackKey}
-                  genre={genre} setGenre={setGenre}
-                  mood={mood} toggleMood={toggleMood}
-                  language={language} setLanguage={setLanguage}
-                  notes={notes} setNotes={setNotes}
-                />
-              )}
-              {step === 1 && (
                 <StepAudio
                   audioFile={audioFile}
                   audioUploading={audioUploading}
@@ -241,6 +236,19 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   audioInputRef={audioInputRef}
                   onUpload={handleAudioUpload}
                   onRemove={() => { setAudioFile(null); setAudioPreviewUrl(null); setAudioProgress(0); }}
+                />
+              )}
+              {step === 1 && (
+                <StepInfo
+                  title={title} setTitle={setTitle}
+                  artist={artist} setArtist={setArtist}
+                  bpm={bpm} setBpm={setBpm}
+                  trackKey={trackKey} setTrackKey={setTrackKey}
+                  genre={genre} setGenre={setGenre}
+                  mood={mood} toggleMood={toggleMood}
+                  language={language} setLanguage={setLanguage}
+                  notes={notes} setNotes={setNotes}
+                  details={details} updateDetail={updateDetail}
                 />
               )}
               {step === 2 && (
