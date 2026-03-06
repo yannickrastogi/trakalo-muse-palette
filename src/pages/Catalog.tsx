@@ -40,6 +40,7 @@ const allTracks = [
   { id: 12, title: "Afterglow", artist: "Kira Nomura × Dex", album: "Late Bloom EP", genre: "R&B", duration: "3:47", bpm: 96, key: "C# Min", mood: ["romantic", "emotional"], status: "On Hold", language: "English", type: "Acapella", coverIdx: 0 },
 ];
 
+const types = [...new Set(allTracks.map((t) => t.type))].sort();
 const genres = [...new Set(allTracks.map((t) => t.genre))].sort();
 const keys = [...new Set(allTracks.map((t) => t.key))].sort();
 const moods = [...new Set(allTracks.flatMap((t) => t.mood))].sort();
@@ -63,6 +64,7 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 
 export default function Catalog() {
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [keyFilter, setKeyFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -73,11 +75,12 @@ export default function Catalog() {
   const [playingTrack, setPlayingTrack] = useState<number | null>(null);
   const navigate = useNavigate();
 
-  const activeFilterCount = [genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter].filter(Boolean).length;
+  const activeFilterCount = [typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter].filter(Boolean).length;
 
   const filteredTracks = useMemo(() => {
     return allTracks.filter((track) => {
       if (search && !track.title.toLowerCase().includes(search.toLowerCase()) && !track.artist.toLowerCase().includes(search.toLowerCase())) return false;
+      if (typeFilter && track.type !== typeFilter) return false;
       if (genreFilter && track.genre !== genreFilter) return false;
       if (keyFilter && track.key !== keyFilter) return false;
       if (statusFilter && track.status !== statusFilter) return false;
@@ -86,9 +89,10 @@ export default function Catalog() {
       if (languageFilter && track.language !== languageFilter) return false;
       return true;
     });
-  }, [search, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter]);
+  }, [search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter]);
 
   const clearFilters = () => {
+    setTypeFilter(null);
     setGenreFilter(null);
     setKeyFilter(null);
     setStatusFilter(null);
@@ -157,6 +161,7 @@ export default function Catalog() {
             className="card-premium p-5"
           >
             <div className="flex flex-wrap gap-4 items-end">
+              <FilterSelect label="Type" value={typeFilter} options={types} onChange={setTypeFilter} />
               <FilterSelect label="Genre" value={genreFilter} options={genres} onChange={setGenreFilter} />
               <FilterSelect label="Key" value={keyFilter} options={keys} onChange={setKeyFilter} />
               <div className="flex flex-col gap-1.5">
@@ -197,6 +202,7 @@ export default function Catalog() {
         {activeFilterCount > 0 && !showFilters && (
           <motion.div variants={item} className="flex flex-wrap gap-1.5 items-center">
             <span className="text-xs text-muted-foreground mr-1 font-medium">Active filters:</span>
+            {typeFilter && <FilterTag label={`Type: ${typeFilter}`} onRemove={() => setTypeFilter(null)} />}
             {genreFilter && <FilterTag label={`Genre: ${genreFilter}`} onRemove={() => setGenreFilter(null)} />}
             {keyFilter && <FilterTag label={`Key: ${keyFilter}`} onRemove={() => setKeyFilter(null)} />}
             {bpmFilter && <FilterTag label={`BPM: ${bpmFilter.label}`} onRemove={() => setBpmFilter(null)} />}
