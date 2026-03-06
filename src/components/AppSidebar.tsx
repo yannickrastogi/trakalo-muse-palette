@@ -32,16 +32,26 @@ export function AppSidebar() {
       className="h-screen sticky top-0 flex flex-col border-r border-border bg-sidebar overflow-hidden z-30"
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-16 border-b border-border shrink-0">
-        <img src={trakalogLogo} alt="Trakalog" className="w-10 h-10 rounded-lg object-cover" />
+      <div className="flex items-center gap-3 px-4 h-[4.5rem] border-b border-border shrink-0">
+        <img
+          src={trakalogLogo}
+          alt="Trakalog"
+          className="w-9 h-9 rounded-lg object-contain shrink-0"
+        />
         {!collapsed && (
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-lg font-bold gradient-text tracking-tight"
+          <motion.div
+            initial={{ opacity: 0, x: -4 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.15 }}
+            className="flex flex-col leading-none"
           >
-            TRAKALOG
-          </motion.span>
+            <span className="text-[15px] font-bold tracking-tight gradient-text">
+              TRAKALOG
+            </span>
+            <span className="text-[10px] text-muted-foreground mt-0.5 tracking-wide">
+              Catalog Manager
+            </span>
+          </motion.div>
         )}
       </div>
 
