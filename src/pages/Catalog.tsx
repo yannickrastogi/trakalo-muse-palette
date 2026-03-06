@@ -142,6 +142,7 @@ export default function Catalog() {
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Track</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden sm:table-cell">Type</th>
                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden md:table-cell">Genre</th>
                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden lg:table-cell">Key</th>
                     <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden lg:table-cell">BPM</th>
@@ -153,7 +154,7 @@ export default function Catalog() {
                 </thead>
                 <tbody>
                   {filteredTracks.length === 0 ? (
-                    <tr><td colSpan={8} className="px-4 py-14 text-center text-muted-foreground">
+                    <tr><td colSpan={9} className="px-4 py-14 text-center text-muted-foreground">
                       <Music className="w-7 h-7 mx-auto mb-2 opacity-30" />
                       <p className="text-[13px] font-medium">No tracks found</p>
                       <p className="text-[11px] mt-0.5">Try adjusting your search or filters</p>
@@ -171,6 +172,7 @@ export default function Catalog() {
                           </div>
                         </div>
                       </td>
+                      <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-[12px]">{track.type}</td>
                       <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-[12px]">{track.genre}</td>
                       <td className="px-4 py-3 hidden lg:table-cell">
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary text-[11px] font-medium text-foreground/70">
