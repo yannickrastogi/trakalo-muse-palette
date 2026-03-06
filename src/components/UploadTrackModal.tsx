@@ -128,20 +128,50 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     setStems((prev) => prev.filter((s) => s.id !== id));
   };
 
+  const redistributeSplits = (updatedSplits: Split[], changedId?: string) => {
+    if (!changedId) {
+      // Equal distribution
+      const equal = Math.floor(100 / updatedSplits.length);
+      const remainder = 100 - equal * updatedSplits.length;
+      return updatedSplits.map((s, i) => ({ ...s, percentage: equal + (i < remainder ? 1 : 0) }));
+    }
+    // One was manually changed — distribute remainder among others
+    const changed = updatedSplits.find((s) => s.id === changedId);
+    const others = updatedSplits.filter((s) => s.id !== changedId);
+    const remaining = Math.max(0, 100 - (changed?.percentage || 0));
+    if (others.length === 0) return updatedSplits;
+    const each = Math.floor(remaining / others.length);
+    const rem = remaining - each * others.length;
+    let idx = 0;
+    return updatedSplits.map((s) => {
+      if (s.id === changedId) return s;
+      const val = each + (idx < rem ? 1 : 0);
+      idx++;
+      return { ...s, percentage: val };
+    });
+  };
+
   const addSplit = () => {
-    setSplits((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), name: "", role: "", percentage: 0, pro: "", ipi: "", publisher: "" },
-    ]);
+    setSplits((prev) => {
+      const newSplits = [
+        ...prev,
+        { id: crypto.randomUUID(), name: "", role: "", percentage: 0, pro: "", ipi: "", publisher: "" },
+      ];
+      return redistributeSplits(newSplits);
+    });
   };
 
   const updateSplit = (id: string, field: keyof Split, value: string | number) => {
-    setSplits((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
+    setSplits((prev) => {
+      const updated = prev.map((s) => (s.id === id ? { ...s, [field]: value } : s));
+      if (field === "percentage") return redistributeSplits(updated, id);
+      return updated;
+    });
   };
 
   const removeSplit = (id: string) => {
     if (splits.length <= 1) return;
-    setSplits((prev) => prev.filter((s) => s.id !== id));
+    setSplits((prev) => redistributeSplits(prev.filter((s) => s.id !== id)));
   };
 
   const totalSplit = splits.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0);
