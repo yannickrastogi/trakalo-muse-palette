@@ -33,7 +33,7 @@ export function AppSidebar() {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-border shrink-0">
-        <img src={trakalogLogo} alt="Trakalog" className="w-8 h-8 rounded-lg object-cover" />
+        <img src={trakalogLogo} alt="Trakalog" className="w-10 h-10 rounded-lg object-cover" />
         {!collapsed && (
           <motion.span
             initial={{ opacity: 0 }}
