@@ -218,6 +218,7 @@ export default function Catalog() {
                   <tr className="border-b border-border">
                     <th className="text-left pl-5 pr-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-8">#</th>
                     <th className="text-left px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Track</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Type</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Genre</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">BPM</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
@@ -230,7 +231,7 @@ export default function Catalog() {
                 <tbody>
                   {filteredTracks.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-5 py-20 text-center text-muted-foreground">
+                      <td colSpan={10} className="px-5 py-20 text-center text-muted-foreground">
                         <Music className="w-10 h-10 mx-auto mb-4 opacity-15" />
                         <p className="text-sm font-semibold">No tracks found</p>
                         <p className="text-xs mt-1.5 text-muted-foreground/70">Try adjusting your search or filters</p>
@@ -298,6 +299,9 @@ export default function Catalog() {
                               </div>
                             </div>
                           </td>
+
+                          {/* Type */}
+                          <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-xs">{track.type}</td>
 
                           {/* Genre */}
                           <td className="px-4 py-3 hidden md:table-cell">
