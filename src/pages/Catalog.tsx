@@ -75,6 +75,7 @@ export default function Catalog() {
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [playingTrack, setPlayingTrack] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const navigate = useNavigate();
 
   const activeFilterCount = [typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter].filter(Boolean).length;
