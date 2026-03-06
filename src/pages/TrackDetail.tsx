@@ -117,6 +117,7 @@ export default function TrackDetail() {
     { id: "splits", label: "Splits" },
     { id: "paperwork", label: "Paperwork" },
     { id: "pitches", label: "Pitch History" },
+    { id: "status", label: "Status" },
   ];
 
   return (
@@ -251,8 +252,8 @@ export default function TrackDetail() {
               {activeTab === "stems" && <StemsTab />}
               {activeTab === "splits" && <SplitsTab />}
               {activeTab === "paperwork" && <PaperworkTab />}
-              
               {activeTab === "pitches" && <PitchHistoryTab />}
+              {activeTab === "status" && <StatusTab />}
             </motion.div>
           </motion.div>
     </PageShell>
