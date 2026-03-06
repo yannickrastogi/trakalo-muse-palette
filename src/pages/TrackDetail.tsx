@@ -133,7 +133,7 @@ export default function TrackDetail() {
           <motion.div variants={container} initial="hidden" animate="show" className="p-6 lg:p-8 space-y-6 max-w-[1400px]">
             {/* Breadcrumb */}
             <motion.div variants={item} className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Link to="/catalog" className="hover:text-foreground transition-colors">Catalog</Link>
+              <Link to="/tracks" className="hover:text-foreground transition-colors">Tracks</Link>
               <ChevronRight className="w-3.5 h-3.5" />
               <span className="text-foreground font-medium">{trackData.title}</span>
             </motion.div>
