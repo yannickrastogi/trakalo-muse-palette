@@ -49,7 +49,7 @@ const statusColors: Record<string, string> = {
 };
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
-const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] } } };
+const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
 
 export default function Catalog() {
   const [search, setSearch] = useState("");
