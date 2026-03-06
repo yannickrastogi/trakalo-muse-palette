@@ -23,7 +23,7 @@ export function TopBar() {
       <div className="flex items-center gap-2 ml-4">
         <button className="relative p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground">
           <Bell className="w-[17px] h-[17px]" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-2 ring-background" style={{ background: 'var(--gradient-brand-horizontal)' }} />
         </button>
         <div className="w-px h-6 bg-border/60 mx-1" />
         <UserMenu />
