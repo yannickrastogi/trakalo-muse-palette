@@ -322,7 +322,7 @@ export default function Catalog() {
                           </td>
 
                           {/* Mood */}
-                          <td className="px-4 py-3 hidden xl:table-cell">
+                          <td className="px-4 py-3 hidden md:table-cell">
                             <div className="flex flex-wrap gap-1 max-w-[140px]">
                               {track.mood.map((tag) => (
                                 <span
@@ -336,7 +336,7 @@ export default function Catalog() {
                           </td>
 
                           {/* Language */}
-                          <td className="px-4 py-3 hidden xl:table-cell">
+                          <td className="px-4 py-3 hidden md:table-cell">
                             <span className="text-xs text-muted-foreground">{track.language}</span>
                           </td>
 
