@@ -412,12 +412,12 @@ export default function Catalog() {
                       <div className="p-3 space-y-1.5">
                         <p className="font-semibold text-foreground text-[13px] tracking-tight truncate leading-tight">{track.title}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
-                        <div className="flex items-center gap-2 pt-1">
-                          <span className="text-2xs text-muted-foreground truncate">{track.genre}</span>
-                          <span className="w-px h-3 bg-border" />
-                          <span className="text-2xs font-mono text-foreground/50 tabular-nums">{track.bpm} BPM</span>
-                          <span className="w-px h-3 bg-border" />
-                          <span className="text-2xs font-semibold text-foreground/50">{track.key}</span>
+                        <div className="flex items-center gap-2 pt-1 flex-wrap">
+                          <span className="text-2xs text-muted-foreground shrink-0">{track.genre}</span>
+                          <span className="w-px h-3 bg-border shrink-0" />
+                          <span className="text-2xs font-mono text-foreground/50 tabular-nums shrink-0">{track.bpm} BPM</span>
+                          <span className="w-px h-3 bg-border shrink-0" />
+                          <span className="text-2xs font-semibold text-foreground/50 shrink-0">{track.key}</span>
                         </div>
                       </div>
                     </motion.div>
