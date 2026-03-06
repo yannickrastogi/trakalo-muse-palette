@@ -509,7 +509,8 @@ function StepInfo({
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {DETAIL_FIELDS.map((f) => {
-                const entries = details[f.key] || [""];
+                const raw = details[f.key];
+                const entries = Array.isArray(raw) ? raw : raw ? [raw] : [""];
                 const isDate = f.key === "recordingDate";
                 return (
                   <div key={f.key} className="space-y-1">
