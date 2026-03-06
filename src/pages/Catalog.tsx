@@ -137,22 +137,47 @@ export default function Catalog() {
               </button>
             )}
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border transition-all shrink-0 ${
-              showFilters || activeFilterCount > 0
-                ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange"
-                : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-brand-pink/20"
-            }`}
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            Filters
-            {activeFilterCount > 0 && (
-              <span className="ml-1 w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold btn-brand" style={{ boxShadow: "none" }}>
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* View toggle */}
+            <div className="flex items-center rounded-xl border border-border bg-card overflow-hidden">
+              <button
+                onClick={() => setViewMode("table")}
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                  viewMode === "table"
+                    ? "bg-brand-orange/10 text-brand-orange"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                  viewMode === "grid"
+                    ? "bg-brand-orange/10 text-brand-orange"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border transition-all ${
+                showFilters || activeFilterCount > 0
+                  ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-brand-pink/20"
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="ml-1 w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold btn-brand" style={{ boxShadow: "none" }}>
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
         </motion.div>
 
         {/* Expanded filters */}
