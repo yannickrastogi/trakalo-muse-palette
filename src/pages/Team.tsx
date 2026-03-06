@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Users, Plus, Mail, MoreHorizontal } from "lucide-react";
+import { Plus, MoreHorizontal } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 
 const members = [
@@ -13,59 +13,59 @@ const members = [
   { name: "Sterling Sound NYC", role: "Mastering Studio", email: "bookings@sterling.com", tracks: 8, status: "Active" },
 ];
 
-const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
-const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
+const container = { hidden: {}, show: { transition: { staggerChildren: 0.03 } } };
+const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
 
 export default function Team() {
   return (
     <PageShell>
-      <motion.div variants={container} initial="hidden" animate="show" className="p-6 lg:p-8 space-y-6 max-w-[1400px]">
+      <motion.div variants={container} initial="hidden" animate="show" className="p-5 lg:p-7 space-y-5 max-w-[1360px]">
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Team</h1>
-            <p className="text-muted-foreground text-sm mt-1">{members.length} collaborators in your network</p>
+            <h1 className="text-xl font-semibold text-foreground tracking-tight">Team</h1>
+            <p className="text-muted-foreground text-[13px] mt-0.5">{members.length} collaborators in your network</p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-primary-foreground bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple hover:opacity-90 transition-opacity shrink-0 self-start">
-            <Plus className="w-4 h-4" /> Invite Member
+          <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium text-primary-foreground bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple hover:opacity-90 transition-opacity shrink-0 self-start">
+            <Plus className="w-3.5 h-3.5" /> Invite Member
           </button>
         </motion.div>
 
         <motion.div variants={item}>
           <div className="bg-card border border-border rounded-xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="border-b border-border text-muted-foreground">
-                    <th className="text-left px-5 py-3.5 font-medium">Name</th>
-                    <th className="text-left px-5 py-3.5 font-medium hidden md:table-cell">Role</th>
-                    <th className="text-left px-5 py-3.5 font-medium hidden lg:table-cell">Email</th>
-                    <th className="text-left px-5 py-3.5 font-medium hidden sm:table-cell">Tracks</th>
-                    <th className="text-left px-5 py-3.5 font-medium">Status</th>
-                    <th className="px-5 py-3.5 w-12"></th>
+                  <tr className="border-b border-border">
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Name</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden md:table-cell">Role</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden lg:table-cell">Email</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden sm:table-cell">Tracks</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-2.5 w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {members.map((m) => (
-                    <tr key={m.name} className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-purple/30 to-brand-pink/30 flex items-center justify-center text-xs font-bold text-foreground/70 shrink-0">
+                    <tr key={m.name} className="border-b border-border last:border-0 hover:bg-secondary/40 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand-purple/25 to-brand-pink/25 flex items-center justify-center text-[10px] font-bold text-foreground/60 shrink-0">
                             {m.name.split(" ").map((n) => n[0]).join("")}
                           </div>
-                          <span className="font-medium text-foreground">{m.name}</span>
+                          <span className="font-medium text-foreground text-[13px]">{m.name}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-muted-foreground hidden md:table-cell">{m.role}</td>
-                      <td className="px-5 py-3.5 text-muted-foreground hidden lg:table-cell text-xs">{m.email}</td>
-                      <td className="px-5 py-3.5 text-muted-foreground hidden sm:table-cell">{m.tracks}</td>
-                      <td className="px-5 py-3.5">
-                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${m.status === "Active" ? "bg-emerald-500/15 text-emerald-400" : "bg-brand-orange/15 text-brand-orange"}`}>
+                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-[12px]">{m.role}</td>
+                      <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell text-[11px]">{m.email}</td>
+                      <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-[12px]">{m.tracks}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium ${m.status === "Active" ? "bg-emerald-500/12 text-emerald-400" : "bg-brand-orange/12 text-brand-orange"}`}>
                           {m.status}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5">
-                        <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                          <MoreHorizontal className="w-4 h-4" />
+                      <td className="px-4 py-3">
+                        <button className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                          <MoreHorizontal className="w-3.5 h-3.5" />
                         </button>
                       </td>
                     </tr>
