@@ -12,8 +12,7 @@ import {
   ChevronDown,
   X,
 } from "lucide-react";
-import { AppSidebar } from "@/components/AppSidebar";
-import { TopBar } from "@/components/TopBar";
+import { PageShell } from "@/components/PageShell";
 
 const allTracks = [
   { id: 1, title: "Velvet Hour", artist: "Kira Nomura", album: "Late Bloom EP", genre: "Neo-Soul", duration: "4:12", bpm: 92, key: "Ab Major", mood: ["emotional", "dreamy"], status: "Master" },
@@ -79,11 +78,7 @@ export default function Catalog() {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
-      <AppSidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <TopBar />
-        <main className="flex-1 overflow-auto">
+    <PageShell>
           <motion.div variants={container} initial="hidden" animate="show" className="p-6 lg:p-8 space-y-6 max-w-[1400px]">
             {/* Header */}
             <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -258,9 +253,7 @@ export default function Catalog() {
               </div>
             </motion.div>
           </motion.div>
-        </main>
-      </div>
-    </div>
+    </PageShell>
   );
 }
 

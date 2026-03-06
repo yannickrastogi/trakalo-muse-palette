@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Music,
+  ListMusic,
+  Send,
   Users,
-  FolderOpen,
-  BarChart3,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -15,10 +15,10 @@ import trakalogLogo from "@/assets/trakalog-logo.png";
 
 const navItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },
-  { title: "Catalog", icon: Music, url: "/catalog" },
-  { title: "Projects", icon: FolderOpen, url: "/projects" },
-  { title: "Collaborators", icon: Users, url: "/collaborators" },
-  { title: "Analytics", icon: BarChart3, url: "/analytics" },
+  { title: "Tracks", icon: Music, url: "/tracks" },
+  { title: "Playlists", icon: ListMusic, url: "/playlists" },
+  { title: "Pitch", icon: Send, url: "/pitch" },
+  { title: "Team", icon: Users, url: "/team" },
   { title: "Settings", icon: Settings, url: "/settings" },
 ];
 

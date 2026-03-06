@@ -27,8 +27,7 @@ import {
   MoreHorizontal,
   ChevronRight,
 } from "lucide-react";
-import { AppSidebar } from "@/components/AppSidebar";
-import { TopBar } from "@/components/TopBar";
+import { PageShell } from "@/components/PageShell";
 
 // Sample track data
 const trackData = {
@@ -130,15 +129,11 @@ export default function TrackDetail() {
   ];
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
-      <AppSidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <TopBar />
-        <main className="flex-1 overflow-auto">
+    <PageShell>
           <motion.div variants={container} initial="hidden" animate="show" className="p-6 lg:p-8 space-y-6 max-w-[1400px]">
             {/* Breadcrumb */}
             <motion.div variants={item} className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Link to="/catalog" className="hover:text-foreground transition-colors">Catalog</Link>
+              <Link to="/tracks" className="hover:text-foreground transition-colors">Tracks</Link>
               <ChevronRight className="w-3.5 h-3.5" />
               <span className="text-foreground font-medium">{trackData.title}</span>
             </motion.div>
@@ -269,9 +264,7 @@ export default function TrackDetail() {
               {activeTab === "pitches" && <PitchHistoryTab />}
             </motion.div>
           </motion.div>
-        </main>
-      </div>
-    </div>
+    </PageShell>
   );
 }
 
