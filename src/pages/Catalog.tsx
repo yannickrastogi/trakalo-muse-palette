@@ -12,6 +12,8 @@ import {
   ChevronDown,
   X,
   SlidersHorizontal,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { MiniWaveform } from "@/components/MiniWaveform";
