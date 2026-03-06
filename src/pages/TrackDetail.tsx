@@ -81,14 +81,6 @@ const paperwork = [
   { name: "Mechanical License", type: "PDF", date: "Mar 01, 2026", status: "Draft" },
 ];
 
-const socialAssets = [
-  { name: "Cover Art (3000×3000)", type: "PNG", size: "4.2 MB", preview: true },
-  { name: "Spotify Canvas (9:16)", type: "MP4", size: "8.1 MB", preview: false },
-  { name: "Promo Video (16:9)", type: "MP4", size: "24 MB", preview: false },
-  { name: "Instagram Story Template", type: "PSD", size: "12 MB", preview: false },
-  { name: "Press Photo — Kira", type: "JPG", size: "3.8 MB", preview: true },
-  { name: "Lyrics Card", type: "PNG", size: "1.2 MB", preview: true },
-];
 
 const pitchHistory = [
   { recipient: "Interscope Records", contact: "A&R — Jamie Lin", date: "Mar 2, 2026", status: "Under Review", response: null },
@@ -124,7 +116,6 @@ export default function TrackDetail() {
     { id: "stems", label: "Stems" },
     { id: "splits", label: "Splits" },
     { id: "paperwork", label: "Paperwork" },
-    { id: "social", label: "Social Assets" },
     { id: "pitches", label: "Pitch History" },
   ];
 
@@ -260,7 +251,7 @@ export default function TrackDetail() {
               {activeTab === "stems" && <StemsTab />}
               {activeTab === "splits" && <SplitsTab />}
               {activeTab === "paperwork" && <PaperworkTab />}
-              {activeTab === "social" && <SocialAssetsTab />}
+              
               {activeTab === "pitches" && <PitchHistoryTab />}
             </motion.div>
           </motion.div>
@@ -437,47 +428,6 @@ function PaperworkTab() {
               <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
                 <ExternalLink className="w-3.5 h-3.5" />
               </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </SectionCard>
-  );
-}
-
-function SocialAssetsTab() {
-  return (
-    <SectionCard
-      title="Social & Marketing Assets"
-      icon={Image}
-      action={
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">
-          <Image className="w-3.5 h-3.5" /> Upload
-        </button>
-      }
-    >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-5">
-        {socialAssets.map((asset) => (
-          <div key={asset.name} className="border border-border rounded-xl overflow-hidden hover:border-primary/25 transition-colors group">
-            {/* Preview area */}
-            <div className="aspect-video bg-secondary flex items-center justify-center relative">
-              {asset.preview ? (
-                <Image className="w-8 h-8 text-muted-foreground/30" />
-              ) : (
-                <Play className="w-8 h-8 text-muted-foreground/30" />
-              )}
-              <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-card/80 backdrop-blur-sm text-muted-foreground border border-border">
-                {asset.type}
-              </div>
-            </div>
-            <div className="px-4 py-3 bg-card">
-              <p className="text-sm font-medium text-foreground truncate">{asset.name}</p>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-[11px] text-muted-foreground">{asset.size}</span>
-                <button className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                  <Download className="w-3.5 h-3.5" />
-                </button>
-              </div>
             </div>
           </div>
         ))}
