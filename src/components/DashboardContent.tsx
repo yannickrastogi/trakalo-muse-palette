@@ -180,6 +180,7 @@ export function DashboardContent() {
                             </span>
                           ))}
                         </div>
+                      </td>
                       <td className="px-5 py-3.5">
                         <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[track.status]}`}>
                           {track.status}
