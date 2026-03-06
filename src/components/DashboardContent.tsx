@@ -124,8 +124,8 @@ export function DashboardContent() {
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Genre</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">BPM</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden xl:table-cell">Mood</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden xl:table-cell">Language</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Mood</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
                     <th className="px-4 py-3 w-10"></th>
                   </tr>
@@ -191,7 +191,7 @@ export function DashboardContent() {
                         </span>
                       </td>
                       {/* Mood */}
-                      <td className="px-4 py-3 hidden xl:table-cell">
+                      <td className="px-4 py-3 hidden md:table-cell">
                         <div className="flex flex-wrap gap-1 max-w-[140px]">
                           {track.mood.map((tag) => (
                             <span key={tag} className="inline-flex px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70">
@@ -201,7 +201,7 @@ export function DashboardContent() {
                         </div>
                       </td>
                       {/* Language */}
-                      <td className="px-4 py-3 hidden xl:table-cell">
+                      <td className="px-4 py-3 hidden md:table-cell">
                         <span className="text-xs text-muted-foreground">{track.language}</span>
                       </td>
                       {/* Status */}

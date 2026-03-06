@@ -222,8 +222,8 @@ export default function Catalog() {
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Genre</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">BPM</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden xl:table-cell">Mood</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden xl:table-cell">Language</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Mood</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
                     <th className="px-4 py-3 w-10"></th>
                   </tr>
@@ -322,7 +322,7 @@ export default function Catalog() {
                           </td>
 
                           {/* Mood */}
-                          <td className="px-4 py-3 hidden xl:table-cell">
+                          <td className="px-4 py-3 hidden md:table-cell">
                             <div className="flex flex-wrap gap-1 max-w-[140px]">
                               {track.mood.map((tag) => (
                                 <span
@@ -336,7 +336,7 @@ export default function Catalog() {
                           </td>
 
                           {/* Language */}
-                          <td className="px-4 py-3 hidden xl:table-cell">
+                          <td className="px-4 py-3 hidden md:table-cell">
                             <span className="text-xs text-muted-foreground">{track.language}</span>
                           </td>
 
