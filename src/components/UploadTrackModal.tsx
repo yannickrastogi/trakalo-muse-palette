@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 
-const STEPS = ["Basic Info", "Audio", "Stems", "Splits", "Review"];
+const STEPS = ["Audio", "Info", "Stems", "Splits", "Review"];
 
 const GENRES = ["Ambient", "Electronic", "Glitch Hop", "House", "Indie Pop", "Neo-Soul", "R&B", "Synthwave", "Techno"];
 const KEYS = ["Ab Maj", "A Min", "Bb Maj", "B Min", "C Min", "C# Min", "D Maj", "Eb Maj", "E Min", "F Maj", "F# Min", "G Maj"];
@@ -54,7 +54,7 @@ interface UploadTrackModalProps {
 export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) {
   const [step, setStep] = useState(0);
 
-  // Step 1: Basic Info
+  // Step 1 (Info)
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
   const [bpm, setBpm] = useState("");
@@ -63,6 +63,9 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const [mood, setMood] = useState<string[]>([]);
   const [language, setLanguage] = useState("");
   const [notes, setNotes] = useState("");
+
+  // More Details
+  const [details, setDetails] = useState<Record<string, string>>({});
 
   // Step 2: Audio
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -149,7 +152,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   const handleReset = () => {
     setStep(0);
-    setTitle(""); setArtist(""); setBpm(""); setTrackKey(""); setGenre(""); setMood([]); setLanguage(""); setNotes("");
+    setTitle(""); setArtist(""); setBpm(""); setTrackKey(""); setGenre(""); setMood([]); setLanguage(""); setNotes(""); setDetails({});
     setAudioFile(null); setAudioUploading(false); setAudioProgress(0); setAudioPreviewUrl(null); setIsPlayingPreview(false);
     setStems([]);
     setSplits([{ id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }]);
@@ -161,8 +164,12 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     handleReset();
   };
 
+  const updateDetail = (key: string, value: string) => {
+    setDetails((prev) => ({ ...prev, [key]: value }));
+  };
+
   const canProceed = () => {
-    if (step === 0) return title.trim() && artist.trim();
+    if (step === 1) return title.trim() && artist.trim();
     return true;
   };
 
@@ -218,18 +225,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               transition={{ duration: 0.2 }}
             >
               {step === 0 && (
-                <StepBasicInfo
-                  title={title} setTitle={setTitle}
-                  artist={artist} setArtist={setArtist}
-                  bpm={bpm} setBpm={setBpm}
-                  trackKey={trackKey} setTrackKey={setTrackKey}
-                  genre={genre} setGenre={setGenre}
-                  mood={mood} toggleMood={toggleMood}
-                  language={language} setLanguage={setLanguage}
-                  notes={notes} setNotes={setNotes}
-                />
-              )}
-              {step === 1 && (
                 <StepAudio
                   audioFile={audioFile}
                   audioUploading={audioUploading}
@@ -241,6 +236,19 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   audioInputRef={audioInputRef}
                   onUpload={handleAudioUpload}
                   onRemove={() => { setAudioFile(null); setAudioPreviewUrl(null); setAudioProgress(0); }}
+                />
+              )}
+              {step === 1 && (
+                <StepInfo
+                  title={title} setTitle={setTitle}
+                  artist={artist} setArtist={setArtist}
+                  bpm={bpm} setBpm={setBpm}
+                  trackKey={trackKey} setTrackKey={setTrackKey}
+                  genre={genre} setGenre={setGenre}
+                  mood={mood} toggleMood={toggleMood}
+                  language={language} setLanguage={setLanguage}
+                  notes={notes} setNotes={setNotes}
+                  details={details} updateDetail={updateDetail}
                 />
               )}
               {step === 2 && (
@@ -265,6 +273,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   title={title} artist={artist} bpm={bpm} trackKey={trackKey}
                   genre={genre} mood={mood} language={language} notes={notes}
                   audioFile={audioFile} stems={stems} splits={splits} totalSplit={totalSplit}
+                  details={details}
                 />
               )}
             </motion.div>
@@ -333,10 +342,30 @@ function FieldSelect({ value, onChange, options, placeholder }: { value: string;
   );
 }
 
-function StepBasicInfo({
+const DETAIL_FIELDS = [
+  { key: "producers", label: "Producer(s)" },
+  { key: "songwriters", label: "Songwriter(s)" },
+  { key: "recordingEngineer", label: "Recording Engineer" },
+  { key: "mixingEngineer", label: "Mixing Engineer" },
+  { key: "masteringEngineer", label: "Mastering Engineer" },
+  { key: "drumsBy", label: "Drums By" },
+  { key: "synthsBy", label: "Synths By" },
+  { key: "keysBy", label: "Keys By" },
+  { key: "guitarsBy", label: "Guitars By" },
+  { key: "bassBy", label: "Bass By" },
+  { key: "programmingBy", label: "Programming By" },
+  { key: "vocalsBy", label: "Vocals By" },
+  { key: "backgroundVocalsBy", label: "Background Vocals By" },
+  { key: "mixingStudio", label: "Mixing Studio" },
+  { key: "recordingStudio", label: "Recording Studio" },
+  { key: "recordingDate", label: "Recording Date" },
+];
+
+function StepInfo({
   title, setTitle, artist, setArtist, bpm, setBpm,
   trackKey, setTrackKey, genre, setGenre, mood, toggleMood,
   language, setLanguage, notes, setNotes,
+  details, updateDetail,
 }: {
   title: string; setTitle: (v: string) => void;
   artist: string; setArtist: (v: string) => void;
@@ -346,7 +375,10 @@ function StepBasicInfo({
   mood: string[]; toggleMood: (v: string) => void;
   language: string; setLanguage: (v: string) => void;
   notes: string; setNotes: (v: string) => void;
+  details: Record<string, string>; updateDetail: (key: string, value: string) => void;
 }) {
+  const [showDetails, setShowDetails] = useState(false);
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -404,6 +436,40 @@ function StepBasicInfo({
           rows={3}
           className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40 resize-none"
         />
+      </div>
+
+      {/* More Details */}
+      <div className="border-t border-border pt-4">
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          className="flex items-center gap-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showDetails ? "rotate-90" : ""}`} />
+          More Details
+          <span className="text-2xs text-muted-foreground/50 font-normal">— credits, studios, dates</span>
+        </button>
+        {showDetails && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mt-4 space-y-3"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {DETAIL_FIELDS.map((f) => (
+                <div key={f.key} className="space-y-1">
+                  <label className="text-2xs text-muted-foreground font-medium">{f.label}</label>
+                  <input
+                    type={f.key === "recordingDate" ? "date" : "text"}
+                    value={details[f.key] || ""}
+                    onChange={(e) => updateDetail(f.key, e.target.value)}
+                    placeholder={f.key === "recordingDate" ? "" : `Enter ${f.label.toLowerCase()}`}
+                    className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
+                  />
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
@@ -646,12 +712,15 @@ function StepSplits({
 
 function StepReview({
   title, artist, bpm, trackKey, genre, mood, language, notes,
-  audioFile, stems, splits, totalSplit,
+  audioFile, stems, splits, totalSplit, details,
 }: {
   title: string; artist: string; bpm: string; trackKey: string;
   genre: string; mood: string[]; language: string; notes: string;
   audioFile: File | null; stems: StemFile[]; splits: Split[]; totalSplit: number;
+  details: Record<string, string>;
 }) {
+  const filledDetails = DETAIL_FIELDS.filter((f) => details[f.key]?.trim());
+
   return (
     <div className="space-y-5">
       <div>
@@ -659,9 +728,9 @@ function StepReview({
         <p className="text-2xs text-muted-foreground">Review your track details before adding to catalog</p>
       </div>
 
-      {/* Basic info */}
+      {/* Info */}
       <div className="rounded-xl bg-secondary/50 border border-border p-4 space-y-2">
-        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Basic Info</p>
+        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Info</p>
         <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[13px]">
           <ReviewRow label="Title" value={title} />
           <ReviewRow label="Artist" value={artist} />
@@ -680,6 +749,18 @@ function StepReview({
         )}
         {notes && <p className="text-2xs text-muted-foreground pt-1 italic">"{notes}"</p>}
       </div>
+
+      {/* More Details */}
+      {filledDetails.length > 0 && (
+        <div className="rounded-xl bg-secondary/50 border border-border p-4 space-y-2">
+          <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Credits & Details</p>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[13px]">
+            {filledDetails.map((f) => (
+              <ReviewRow key={f.key} label={f.label} value={details[f.key]} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Audio */}
       <div className="rounded-xl bg-secondary/50 border border-border p-4">
