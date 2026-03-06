@@ -231,7 +231,7 @@ export default function Catalog() {
                 <tbody>
                   {filteredTracks.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-5 py-20 text-center text-muted-foreground">
+                      <td colSpan={10} className="px-5 py-20 text-center text-muted-foreground">
                         <Music className="w-10 h-10 mx-auto mb-4 opacity-15" />
                         <p className="text-sm font-semibold">No tracks found</p>
                         <p className="text-xs mt-1.5 text-muted-foreground/70">Try adjusting your search or filters</p>
