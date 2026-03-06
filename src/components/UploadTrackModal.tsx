@@ -417,7 +417,7 @@ function StepInfo({
   title, setTitle, artist, setArtist, bpm, setBpm,
   trackKey, setTrackKey, genre, setGenre, mood, toggleMood,
   language, setLanguage, notes, setNotes,
-  details, updateDetail,
+  details, updateDetail, addDetailEntry, removeDetailEntry,
 }: {
   title: string; setTitle: (v: string) => void;
   artist: string; setArtist: (v: string) => void;
@@ -427,7 +427,8 @@ function StepInfo({
   mood: string[]; toggleMood: (v: string) => void;
   language: string; setLanguage: (v: string) => void;
   notes: string; setNotes: (v: string) => void;
-  details: Record<string, string>; updateDetail: (key: string, value: string) => void;
+  details: Record<string, string[]>; updateDetail: (key: string, index: number, value: string) => void;
+  addDetailEntry: (key: string) => void; removeDetailEntry: (key: string, index: number) => void;
 }) {
   const [showDetails, setShowDetails] = useState(false);
 
@@ -507,18 +508,42 @@ function StepInfo({
             className="mt-4 space-y-3"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {DETAIL_FIELDS.map((f) => (
-                <div key={f.key} className="space-y-1">
-                  <label className="text-2xs text-muted-foreground font-medium">{f.label}</label>
-                  <input
-                    type={f.key === "recordingDate" ? "date" : "text"}
-                    value={details[f.key] || ""}
-                    onChange={(e) => updateDetail(f.key, e.target.value)}
-                    placeholder={f.key === "recordingDate" ? "" : `Enter ${f.label.toLowerCase()}`}
-                    className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
-                  />
-                </div>
-              ))}
+              {DETAIL_FIELDS.map((f) => {
+                const entries = details[f.key] || [""];
+                const isDate = f.key === "recordingDate";
+                return (
+                  <div key={f.key} className="space-y-1">
+                    <label className="text-2xs text-muted-foreground font-medium">{f.label}</label>
+                    {entries.map((entry, idx) => (
+                      <div key={idx} className="flex items-center gap-1">
+                        <input
+                          type={isDate ? "date" : "text"}
+                          value={entry}
+                          onChange={(e) => updateDetail(f.key, idx, e.target.value)}
+                          placeholder={isDate ? "" : `Enter ${f.label.toLowerCase()}`}
+                          className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
+                        />
+                        {entries.length > 1 && (
+                          <button
+                            onClick={() => removeDetailEntry(f.key, idx)}
+                            className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {!isDate && entries[0]?.trim() && (
+                      <button
+                        onClick={() => addDetailEntry(f.key)}
+                        className="flex items-center gap-1 text-2xs text-brand-orange hover:text-brand-orange/80 font-semibold transition-colors mt-0.5"
+                      >
+                        <Plus className="w-3 h-3" /> Add another
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </motion.div>
         )}
