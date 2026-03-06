@@ -36,7 +36,7 @@ export function AppSidebar() {
         <img
           src={trakalogLogo}
           alt="Trakalog"
-          className="w-9 h-9 rounded-lg object-contain shrink-0"
+          className="w-11 h-11 rounded-lg object-contain shrink-0"
         />
         {!collapsed && (
           <motion.div
