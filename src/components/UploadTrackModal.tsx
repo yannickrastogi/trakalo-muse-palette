@@ -197,8 +197,26 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     handleReset();
   };
 
-  const updateDetail = (key: string, value: string) => {
-    setDetails((prev) => ({ ...prev, [key]: value }));
+  const updateDetail = (key: string, index: number, value: string) => {
+    setDetails((prev) => {
+      const arr = [...(prev[key] || [])];
+      arr[index] = value;
+      return { ...prev, [key]: arr };
+    });
+  };
+
+  const addDetailEntry = (key: string) => {
+    setDetails((prev) => ({
+      ...prev,
+      [key]: [...(prev[key] || [""]), ""],
+    }));
+  };
+
+  const removeDetailEntry = (key: string, index: number) => {
+    setDetails((prev) => {
+      const arr = (prev[key] || []).filter((_, i) => i !== index);
+      return { ...prev, [key]: arr };
+    });
   };
 
   const canProceed = () => {
