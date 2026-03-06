@@ -24,12 +24,12 @@ const stats = [
 ];
 
 const recentTracks = [
-  { title: "Velvet Hour", artist: "Kira Nomura", album: "Late Bloom EP", genre: "Neo-Soul", duration: "4:12", bpm: 92, key: "Ab Major", status: "Master", added: "2h ago" },
-  { title: "Ghost Protocol", artist: "Dex Moraes × JVNE", album: "Singles 2026", genre: "Electronic", duration: "3:38", bpm: 128, key: "F# Minor", status: "Review", added: "5h ago" },
-  { title: "Burning Chrome", artist: "Alina Voss", album: "Neon Archive", genre: "Synthwave", duration: "5:01", bpm: 118, key: "C Minor", status: "Draft", added: "8h ago" },
-  { title: "Soft Landing", artist: "Marco Silva", album: "Ambient Vol. II", genre: "Ambient", duration: "6:44", bpm: 72, key: "D Major", status: "Master", added: "1d ago" },
-  { title: "Paper Moons", artist: "Kira Nomura × AYA", album: "Late Bloom EP", genre: "Indie Pop", duration: "3:22", bpm: 105, key: "Bb Major", status: "Review", added: "1d ago" },
-  { title: "Static Bloom", artist: "JVNE", album: "Singles 2026", genre: "Glitch Hop", duration: "2:59", bpm: 140, key: "E Minor", status: "Draft", added: "2d ago" },
+  { title: "Velvet Hour", artist: "Kira Nomura", album: "Late Bloom EP", genre: "Neo-Soul", duration: "4:12", bpm: 92, key: "Ab Major", feel: ["emotional", "dreamy"], status: "Master", added: "2h ago" },
+  { title: "Ghost Protocol", artist: "Dex Moraes × JVNE", album: "Singles 2026", genre: "Electronic", duration: "3:38", bpm: 128, key: "F# Minor", feel: ["energetic", "dark"], status: "Review", added: "5h ago" },
+  { title: "Burning Chrome", artist: "Alina Voss", album: "Neon Archive", genre: "Synthwave", duration: "5:01", bpm: 118, key: "C Minor", feel: ["nostalgic", "driving"], status: "Draft", added: "8h ago" },
+  { title: "Soft Landing", artist: "Marco Silva", album: "Ambient Vol. II", genre: "Ambient", duration: "6:44", bpm: 72, key: "D Major", feel: ["calm", "uplifting"], status: "Master", added: "1d ago" },
+  { title: "Paper Moons", artist: "Kira Nomura × AYA", album: "Late Bloom EP", genre: "Indie Pop", duration: "3:22", bpm: 105, key: "Bb Major", feel: ["happy", "playful"], status: "Review", added: "1d ago" },
+  { title: "Static Bloom", artist: "JVNE", album: "Singles 2026", genre: "Glitch Hop", duration: "2:59", bpm: 140, key: "E Minor", feel: ["aggressive", "experimental"], status: "Draft", added: "2d ago" },
 ];
 
 const activity = [
@@ -139,6 +139,7 @@ export function DashboardContent() {
                     <th className="text-left px-5 py-3 font-medium hidden lg:table-cell">Key</th>
                     <th className="text-left px-5 py-3 font-medium hidden lg:table-cell">BPM</th>
                     <th className="text-left px-5 py-3 font-medium hidden sm:table-cell">Duration</th>
+                    <th className="text-left px-5 py-3 font-medium hidden md:table-cell">Feel</th>
                     <th className="text-left px-5 py-3 font-medium">Status</th>
                     <th className="px-5 py-3 w-20"></th>
                   </tr>
@@ -171,6 +172,14 @@ export function DashboardContent() {
                           {track.duration}
                         </span>
                       </td>
+                      <td className="px-5 py-3.5 hidden md:table-cell">
+                        <div className="flex flex-wrap gap-1 max-w-[180px]">
+                          {track.feel.map((tag) => (
+                            <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-accent/15 text-accent">
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
                       <td className="px-5 py-3.5">
                         <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[track.status]}`}>
                           {track.status}
