@@ -32,11 +32,11 @@ export function AppSidebar() {
       className="h-screen sticky top-0 flex flex-col border-r border-sidebar-border bg-sidebar overflow-hidden z-30"
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-[60px] shrink-0">
+      <div className="flex items-center gap-3.5 px-4 h-[68px] shrink-0">
         <img
           src={trakalogLogo}
           alt="Trakalog"
-          className="w-8 h-8 rounded-lg object-contain shrink-0"
+          className="w-10 h-10 rounded-xl object-contain shrink-0"
         />
         {!collapsed && (
           <motion.div
@@ -45,7 +45,7 @@ export function AppSidebar() {
             transition={{ duration: 0.15 }}
             className="flex flex-col leading-none"
           >
-            <span className="text-[13px] font-bold tracking-tight gradient-text">
+            <span className="text-[15px] font-bold tracking-tight gradient-text">
               TRAKALOG
             </span>
             <span className="text-2xs text-muted-foreground mt-0.5 tracking-widest uppercase font-medium">
