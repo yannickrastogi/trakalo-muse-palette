@@ -273,6 +273,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   title={title} artist={artist} bpm={bpm} trackKey={trackKey}
                   genre={genre} mood={mood} language={language} notes={notes}
                   audioFile={audioFile} stems={stems} splits={splits} totalSplit={totalSplit}
+                  details={details}
                 />
               )}
             </motion.div>
