@@ -65,7 +65,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const [notes, setNotes] = useState("");
 
   // More Details
-  const [details, setDetails] = useState<Record<string, string>>({});
+  const [details, setDetails] = useState<Record<string, string[]>>({});
 
   // Step 2: Audio
   const [audioFile, setAudioFile] = useState<File | null>(null);
