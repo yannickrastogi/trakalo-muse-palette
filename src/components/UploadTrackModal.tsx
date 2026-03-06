@@ -300,6 +300,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   language={language} setLanguage={setLanguage}
                   notes={notes} setNotes={setNotes}
                   details={details} updateDetail={updateDetail}
+                  addDetailEntry={addDetailEntry} removeDetailEntry={removeDetailEntry}
                 />
               )}
               {step === 2 && (
