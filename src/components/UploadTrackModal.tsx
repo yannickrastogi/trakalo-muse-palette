@@ -714,7 +714,7 @@ function StepSplits({
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">Split %</label>
-                <input type="number" min={0} max={100} value={split.percentage} onChange={(e) => onUpdate(split.id, "percentage", Number(e.target.value))} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40" />
+                <input type="number" min={0} max={100} step={0.01} value={split.percentage} onChange={(e) => onUpdate(split.id, "percentage", parseFloat(e.target.value) || 0)} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">PRO</label>
