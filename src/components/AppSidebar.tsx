@@ -27,16 +27,16 @@ export function AppSidebar() {
 
   return (
     <motion.aside
-      animate={{ width: collapsed ? 68 : 232 }}
+      animate={{ width: collapsed ? 68 : 240 }}
       transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-      className="h-screen sticky top-0 flex flex-col border-r border-border bg-sidebar overflow-hidden z-30"
+      className="h-screen sticky top-0 flex flex-col border-r border-sidebar-border bg-sidebar overflow-hidden z-30"
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-16 shrink-0">
+      <div className="flex items-center gap-3 px-4 h-[60px] shrink-0">
         <img
           src={trakalogLogo}
           alt="Trakalog"
-          className="w-9 h-9 rounded-lg object-contain shrink-0"
+          className="w-8 h-8 rounded-lg object-contain shrink-0"
         />
         {!collapsed && (
           <motion.div
@@ -45,37 +45,37 @@ export function AppSidebar() {
             transition={{ duration: 0.15 }}
             className="flex flex-col leading-none"
           >
-            <span className="text-sm font-bold tracking-tight gradient-text">
+            <span className="text-[13px] font-bold tracking-tight gradient-text">
               TRAKALOG
             </span>
-            <span className="text-[10px] text-muted-foreground mt-0.5 tracking-wide uppercase">
+            <span className="text-2xs text-muted-foreground mt-0.5 tracking-widest uppercase font-medium">
               Catalog Manager
             </span>
           </motion.div>
         )}
       </div>
 
-      {/* Divider */}
-      <div className="mx-3 h-px bg-border" />
+      {/* Gradient accent line */}
+      <div className="mx-4 h-px" style={{ background: "var(--gradient-brand-horizontal)", opacity: 0.15 }} />
 
       {/* Nav */}
-      <nav className="flex-1 py-3 px-2 space-y-0.5">
+      <nav className="flex-1 py-4 px-2.5 space-y-0.5">
         {navItems.map((item) => (
           <NavLink
             key={item.title}
             to={item.url}
             end={item.url === "/"}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all text-[13px] font-medium"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all text-[13px] font-medium group"
             activeClassName="bg-sidebar-accent text-primary"
           >
-            <item.icon className="w-[18px] h-[18px] shrink-0" />
-            {!collapsed && <span>{item.title}</span>}
+            <item.icon className="w-[17px] h-[17px] shrink-0 transition-colors" />
+            {!collapsed && <span className="tracking-tight">{item.title}</span>}
           </NavLink>
         ))}
       </nav>
 
-      {/* Collapse toggle */}
-      <div className="mx-3 h-px bg-border" />
+      {/* Bottom */}
+      <div className="mx-4 h-px" style={{ background: "var(--gradient-brand-horizontal)", opacity: 0.08 }} />
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="flex items-center justify-center h-11 text-muted-foreground hover:text-foreground transition-colors"
