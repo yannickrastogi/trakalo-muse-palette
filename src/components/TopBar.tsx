@@ -24,7 +24,7 @@ export function TopBar() {
         <button className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
           <Bell className="w-5 h-5" />
         </button>
-        <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 transition-opacity">
+        <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-primary-foreground bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple hover:opacity-90 transition-opacity">
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">New Track</span>
         </button>
