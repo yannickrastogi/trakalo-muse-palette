@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { UploadTrackModal } from "@/components/UploadTrackModal";
 import { motion } from "framer-motion";
 import {
   Music,
@@ -76,6 +77,7 @@ export default function Catalog() {
   const [showFilters, setShowFilters] = useState(false);
   const [playingTrack, setPlayingTrack] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [uploadOpen, setUploadOpen] = useState(false);
   const navigate = useNavigate();
 
   const activeFilterCount = [typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter].filter(Boolean).length;
@@ -115,7 +117,7 @@ export default function Catalog() {
               {allTracks.length} tracks in your catalog · {filteredTracks.length} shown
             </p>
           </div>
-          <button className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start">
+          <button onClick={() => setUploadOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start">
             <Upload className="w-4 h-4" /> Upload Track
           </button>
         </motion.div>
@@ -435,6 +437,7 @@ export default function Catalog() {
           )}
         </motion.div>
       </motion.div>
+      <UploadTrackModal open={uploadOpen} onOpenChange={setUploadOpen} />
     </PageShell>
   );
 }
