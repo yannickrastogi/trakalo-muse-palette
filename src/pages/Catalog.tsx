@@ -12,6 +12,8 @@ import {
   ChevronDown,
   X,
   SlidersHorizontal,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { MiniWaveform } from "@/components/MiniWaveform";
@@ -73,6 +75,7 @@ export default function Catalog() {
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [playingTrack, setPlayingTrack] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const navigate = useNavigate();
 
   const activeFilterCount = [typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter].filter(Boolean).length;
@@ -134,22 +137,47 @@ export default function Catalog() {
               </button>
             )}
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border transition-all shrink-0 ${
-              showFilters || activeFilterCount > 0
-                ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange"
-                : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-brand-pink/20"
-            }`}
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            Filters
-            {activeFilterCount > 0 && (
-              <span className="ml-1 w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold btn-brand" style={{ boxShadow: "none" }}>
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* View toggle */}
+            <div className="flex items-center rounded-xl border border-border bg-card overflow-hidden">
+              <button
+                onClick={() => setViewMode("table")}
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                  viewMode === "table"
+                    ? "bg-brand-orange/10 text-brand-orange"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                  viewMode === "grid"
+                    ? "bg-brand-orange/10 text-brand-orange"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border transition-all ${
+                showFilters || activeFilterCount > 0
+                  ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-brand-pink/20"
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="ml-1 w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold btn-brand" style={{ boxShadow: "none" }}>
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
         </motion.div>
 
         {/* Expanded filters */}
@@ -215,8 +243,9 @@ export default function Catalog() {
           </motion.div>
         )}
 
-        {/* Track Table */}
+        {/* Track Table / Grid */}
         <motion.div variants={item}>
+          {viewMode === "table" ? (
           <div className="card-premium overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">
@@ -252,7 +281,6 @@ export default function Catalog() {
                           className="border-b border-border/40 last:border-0 hover:bg-secondary/25 transition-all duration-200 group/row cursor-pointer"
                           onClick={() => navigate(`/track/${track.id}`)}
                         >
-                          {/* Row number / play */}
                           <td className="pl-5 pr-2 py-3">
                             <button
                               onClick={(e) => {
@@ -275,90 +303,40 @@ export default function Catalog() {
                               )}
                             </button>
                           </td>
-
-                          {/* Track info with cover + waveform */}
                           <td className="px-2 py-3">
                             <div className="flex items-center gap-3">
-                              {/* Cover art */}
-                              <img
-                                src={covers[track.coverIdx]}
-                                alt={track.title}
-                                className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50"
-                              />
-                              {/* Title + Artist */}
+                              <img src={covers[track.coverIdx]} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                               <div className="min-w-0 flex-1">
-                                <p className="font-semibold text-foreground truncate text-[13px] tracking-tight leading-tight">
-                                  {track.title}
-                                </p>
+                                <p className="font-semibold text-foreground truncate text-[13px] tracking-tight leading-tight">{track.title}</p>
                                 <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>
                               </div>
-                              {/* Mini waveform */}
-                              <div
-                                className={`hidden md:flex items-center gap-2 transition-opacity duration-300 ${
-                                  isPlaying ? "opacity-100" : "opacity-20 group-hover/row:opacity-50"
-                                }`}
-                              >
+                              <div className={`hidden md:flex items-center gap-2 transition-opacity duration-300 ${isPlaying ? "opacity-100" : "opacity-20 group-hover/row:opacity-50"}`}>
                                 <MiniWaveform seed={track.id * 13 + 7} bars={22} />
-                                <span className="text-2xs text-muted-foreground font-mono tabular-nums w-8 text-right">
-                                  {track.duration}
-                                </span>
+                                <span className="text-2xs text-muted-foreground font-mono tabular-nums w-8 text-right">{track.duration}</span>
                               </div>
                             </div>
                           </td>
-
-                          {/* Type */}
                           <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-xs">{track.type}</td>
-
-                          {/* Genre */}
-                          <td className="px-4 py-3 hidden md:table-cell">
-                            <span className="text-xs text-muted-foreground">{track.genre}</span>
-                          </td>
-
-                          {/* BPM */}
-                          <td className="px-4 py-3 hidden lg:table-cell">
-                            <span className="font-mono text-2xs text-foreground/60 tabular-nums">{track.bpm}</span>
-                          </td>
-
-                          {/* Key */}
+                          <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.genre}</span></td>
+                          <td className="px-4 py-3 hidden lg:table-cell"><span className="font-mono text-2xs text-foreground/60 tabular-nums">{track.bpm}</span></td>
                           <td className="px-4 py-3 hidden lg:table-cell">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary text-2xs font-semibold text-foreground/70">
-                              <Music className="w-2.5 h-2.5 text-brand-orange/50" />
-                              {track.key}
+                              <Music className="w-2.5 h-2.5 text-brand-orange/50" />{track.key}
                             </span>
                           </td>
-
-                          {/* Mood */}
                           <td className="px-4 py-3 hidden md:table-cell">
                             <div className="flex flex-wrap gap-1 max-w-[140px]">
                               {track.mood.map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="inline-flex px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70"
-                                >
-                                  #{tag}
-                                </span>
+                                <span key={tag} className="inline-flex px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70">#{tag}</span>
                               ))}
                             </div>
                           </td>
-
-                          {/* Language */}
-                          <td className="px-4 py-3 hidden md:table-cell">
-                            <span className="text-xs text-muted-foreground">{track.language}</span>
-                          </td>
-
-                          {/* Status */}
+                          <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.language}</span></td>
                           <td className="px-4 py-3">
-                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>
-                              {track.status}
-                            </span>
+                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
                           </td>
-
-                          {/* Actions */}
                           <td className="px-4 py-3">
-                            <button
-                              className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground opacity-0 group-hover/row:opacity-100"
-                              onClick={(e) => e.stopPropagation()}
-                            >
+                            <button className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground opacity-0 group-hover/row:opacity-100" onClick={(e) => e.stopPropagation()}>
                               <MoreHorizontal className="w-3.5 h-3.5" />
                             </button>
                           </td>
@@ -369,18 +347,92 @@ export default function Catalog() {
                 </tbody>
               </table>
             </div>
-
-            {/* Footer */}
             <div
               className="flex items-center justify-between px-5 py-3 text-xs text-muted-foreground font-medium"
               style={{ borderTop: "1px solid transparent", borderImage: "linear-gradient(90deg, hsl(24 100% 55% / 0.1), hsl(330 80% 60% / 0.06), transparent) 1" }}
             >
-              <span>
-                Showing {filteredTracks.length} of {allTracks.length} tracks
-              </span>
+              <span>Showing {filteredTracks.length} of {allTracks.length} tracks</span>
               <span className="text-2xs text-muted-foreground/50">TRAKALOG Catalog</span>
             </div>
           </div>
+          ) : (
+          /* Grid View */
+          <div>
+            {filteredTracks.length === 0 ? (
+              <div className="card-premium px-5 py-20 text-center text-muted-foreground">
+                <Music className="w-10 h-10 mx-auto mb-4 opacity-15" />
+                <p className="text-sm font-semibold">No tracks found</p>
+                <p className="text-xs mt-1.5 text-muted-foreground/70">Try adjusting your search or filters</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {filteredTracks.map((track) => {
+                  const isPlaying = playingTrack === track.id;
+                  return (
+                    <motion.div
+                      key={track.id}
+                      whileHover={{ y: -4 }}
+                      transition={{ duration: 0.2 }}
+                      className="card-premium overflow-hidden cursor-pointer group/card"
+                      onClick={() => navigate(`/track/${track.id}`)}
+                    >
+                      {/* Cover art */}
+                      <div className="relative aspect-square overflow-hidden">
+                        <img
+                          src={covers[track.coverIdx]}
+                          alt={track.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
+                        />
+                        {/* Play overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover/card:bg-black/30 transition-all duration-300 flex items-center justify-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPlayingTrack(isPlaying ? null : track.id);
+                            }}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                              isPlaying
+                                ? "btn-brand scale-100 opacity-100"
+                                : "bg-foreground/80 backdrop-blur-sm scale-90 opacity-0 group-hover/card:scale-100 group-hover/card:opacity-100"
+                            }`}
+                          >
+                            {isPlaying ? (
+                              <Pause className="w-4 h-4 text-primary-foreground" />
+                            ) : (
+                              <Play className="w-4 h-4 text-background ml-0.5" />
+                            )}
+                          </button>
+                        </div>
+                        {/* Status badge */}
+                        <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-2xs font-semibold backdrop-blur-sm ${statusColors[track.status]}`}>
+                          {track.status}
+                        </span>
+                      </div>
+                      {/* Info */}
+                      <div className="p-3 space-y-1.5">
+                        <p className="font-semibold text-foreground text-[13px] tracking-tight truncate leading-tight">{track.title}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-2xs font-mono text-foreground/50 tabular-nums">{track.bpm} BPM</span>
+                          <span className="w-px h-3 bg-border" />
+                          <span className="text-2xs font-semibold text-foreground/50">{track.key}</span>
+                          <span className="w-px h-3 bg-border" />
+                          <span className="text-2xs text-muted-foreground truncate">{track.genre}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+            <div
+              className="flex items-center justify-between mt-4 px-1 text-xs text-muted-foreground font-medium"
+            >
+              <span>Showing {filteredTracks.length} of {allTracks.length} tracks</span>
+              <span className="text-2xs text-muted-foreground/50">TRAKALOG Catalog</span>
+            </div>
+          </div>
+          )}
         </motion.div>
       </motion.div>
     </PageShell>
