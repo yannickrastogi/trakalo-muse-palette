@@ -218,6 +218,7 @@ export default function Catalog() {
                   <tr className="border-b border-border">
                     <th className="text-left pl-5 pr-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-8">#</th>
                     <th className="text-left px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Track</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Type</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Genre</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">BPM</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
@@ -298,6 +299,9 @@ export default function Catalog() {
                               </div>
                             </div>
                           </td>
+
+                          {/* Type */}
+                          <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-xs">{track.type}</td>
 
                           {/* Genre */}
                           <td className="px-4 py-3 hidden md:table-cell">
