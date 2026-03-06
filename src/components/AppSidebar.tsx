@@ -66,9 +66,9 @@ export function AppSidebar() {
             to={item.url}
             end={item.url === "/"}
             className="flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all text-sm font-medium group"
-            activeClassName="bg-sidebar-accent text-primary"
+            activeClassName="nav-active text-foreground"
           >
-            <item.icon className="w-[19px] h-[19px] shrink-0 transition-colors" />
+            <item.icon className="w-[19px] h-[19px] shrink-0 transition-colors group-[.nav-active]:text-brand-orange" />
             {!collapsed && <span className="tracking-tight">{item.title}</span>}
           </NavLink>
         ))}

@@ -74,8 +74,8 @@ export function DashboardContent() {
           >
             <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${stat.accent} opacity-[0.04] group-hover:opacity-[0.08] transition-opacity duration-500 blur-2xl`} />
             <div className="flex items-center justify-between mb-3 relative">
-              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary/8 transition-colors duration-300">
-                <stat.icon className="w-[18px] h-[18px] text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center group-hover:icon-brand transition-all duration-300">
+                <stat.icon className="w-[18px] h-[18px] text-muted-foreground group-hover:text-brand-orange transition-colors duration-300" />
               </div>
               <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors duration-300" />
             </div>
@@ -94,7 +94,7 @@ export function DashboardContent() {
         <motion.div variants={item} className="xl:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold text-foreground tracking-tight">Recent Tracks</h2>
-            <Link to="/tracks" className="text-xs text-primary/80 hover:text-primary transition-colors font-semibold tracking-tight">View all →</Link>
+            <Link to="/tracks" className="text-xs gradient-text hover:opacity-80 transition-opacity font-semibold tracking-tight">View all →</Link>
           </div>
           <div className="card-premium overflow-hidden">
             <div className="overflow-x-auto">
@@ -117,8 +117,8 @@ export function DashboardContent() {
                     <tr key={track.title} className="border-b border-border/60 last:border-0 hover:bg-secondary/30 transition-colors group/row cursor-pointer">
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center group-hover/row:bg-primary/8 transition-colors shrink-0">
-                            <Disc3 className="w-4 h-4 text-muted-foreground group-hover/row:text-primary transition-colors" />
+                          <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center group-hover/row:icon-brand transition-all shrink-0">
+                            <Disc3 className="w-4 h-4 text-muted-foreground group-hover/row:text-brand-orange transition-colors" />
                           </div>
                           <div className="min-w-0">
                             <p className="font-semibold text-foreground truncate text-[13px] tracking-tight">{track.title}</p>
@@ -179,8 +179,8 @@ export function DashboardContent() {
                   key={action.label}
                   className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-[13px] group ${
                     action.primary
-                      ? "border-primary/20 bg-primary/6 text-primary hover:bg-primary/10 hover:border-primary/30"
-                      : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-primary/15 hover:bg-secondary/40"
+                      ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange hover:bg-brand-orange/12 hover:border-brand-orange/40 gradient-border"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-brand-pink/20 hover:bg-secondary/40"
                   }`}
                   style={{ boxShadow: "var(--shadow-inner-glow)" }}
                 >
@@ -195,7 +195,7 @@ export function DashboardContent() {
           <motion.div variants={item} className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-foreground tracking-tight">Activity</h2>
-              <button className="text-xs text-primary/80 hover:text-primary transition-colors font-semibold">See all</button>
+              <button className="text-xs gradient-text hover:opacity-80 transition-opacity font-semibold">See all</button>
             </div>
             <div className="card-premium divide-y divide-border/60 overflow-hidden">
               {activity.map((a, i) => (
