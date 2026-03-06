@@ -17,10 +17,10 @@ import {
 } from "lucide-react";
 
 const stats = [
-  { label: "Total Tracks", value: "2,847", icon: Music, change: "+18 this week", accent: "from-primary to-brand-pink" },
+  { label: "Total Tracks", value: "2,847", icon: Music, change: "+18 this week", accent: "from-brand-orange to-brand-pink" },
   { label: "Playlists", value: "64", icon: ListMusic, change: "+3 new", accent: "from-brand-pink to-brand-purple" },
-  { label: "Collaborators", value: "126", icon: Users, change: "+12 active", accent: "from-brand-purple to-primary" },
-  { label: "Pending Pitches", value: "9", icon: Send, change: "4 due today", accent: "from-primary to-brand-orange" },
+  { label: "Collaborators", value: "126", icon: Users, change: "+12 active", accent: "from-brand-purple to-brand-orange" },
+  { label: "Pending Pitches", value: "9", icon: Send, change: "4 due today", accent: "from-brand-orange to-brand-purple" },
 ];
 
 const recentTracks = [
@@ -52,111 +52,110 @@ const statusColors: Record<string, string> = {
   Released: "bg-primary/12 text-primary",
 };
 
-const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
-const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
+const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
+const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] } } };
 
 export function DashboardContent() {
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="p-5 lg:p-7 space-y-6 max-w-[1360px]">
+    <motion.div variants={container} initial="hidden" animate="show" className="p-6 lg:p-8 space-y-7 max-w-[1400px]">
       {/* Header */}
       <motion.div variants={item}>
-        <h1 className="text-xl font-semibold text-foreground tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-[13px] mt-0.5">Your catalog at a glance — March 6, 2026</p>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground text-sm mt-1">Your catalog at a glance — March 6, 2026</p>
       </motion.div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <motion.div
             key={stat.label}
             variants={item}
-            className="bg-card border border-border rounded-xl p-4 hover:border-primary/20 transition-all group relative overflow-hidden cursor-default"
-            style={{ boxShadow: "var(--shadow-card)" }}
+            className="card-premium p-5 group relative overflow-hidden cursor-default"
           >
-            <div className={`absolute -top-6 -right-6 w-20 h-20 rounded-full bg-gradient-to-br ${stat.accent} opacity-[0.04] group-hover:opacity-[0.08] transition-opacity blur-2xl`} />
-            <div className="flex items-center justify-between mb-2.5 relative">
-              <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center group-hover:bg-primary/8 transition-colors">
-                <stat.icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${stat.accent} opacity-[0.04] group-hover:opacity-[0.08] transition-opacity duration-500 blur-2xl`} />
+            <div className="flex items-center justify-between mb-3 relative">
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary/8 transition-colors duration-300">
+                <stat.icon className="w-[18px] h-[18px] text-muted-foreground group-hover:text-primary transition-colors duration-300" />
               </div>
-              <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-primary/50 transition-colors" />
+              <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/20 group-hover:text-primary/40 transition-colors duration-300" />
             </div>
-            <p className="text-2xl font-bold text-foreground tracking-tight leading-none">{stat.value}</p>
-            <div className="flex items-center justify-between mt-1.5">
-              <p className="text-[11px] text-muted-foreground font-medium">{stat.label}</p>
-              <p className="text-[11px] text-emerald-400/80 font-medium">{stat.change}</p>
+            <p className="text-[28px] font-bold text-foreground tracking-tight leading-none">{stat.value}</p>
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
+              <p className="text-xs text-emerald-400/80 font-medium">{stat.change}</p>
             </div>
           </motion.div>
         ))}
       </div>
 
       {/* Main grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Recent tracks */}
-        <motion.div variants={item} className="xl:col-span-2 space-y-3">
+        <motion.div variants={item} className="xl:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-[15px] font-semibold text-foreground">Recent Tracks</h2>
-            <Link to="/tracks" className="text-[12px] text-primary/80 hover:text-primary transition-colors font-medium">View all →</Link>
+            <h2 className="text-base font-semibold text-foreground tracking-tight">Recent Tracks</h2>
+            <Link to="/tracks" className="text-xs text-primary/80 hover:text-primary transition-colors font-semibold tracking-tight">View all →</Link>
           </div>
-          <div className="bg-card border border-border rounded-xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+          <div className="card-premium overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Track</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden sm:table-cell">Type</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden md:table-cell">Genre</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden lg:table-cell">Key</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden lg:table-cell">BPM</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden md:table-cell">Mood</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden md:table-cell">Language</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-2.5 w-16"></th>
+                    <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Track</th>
+                    <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Type</th>
+                    <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Genre</th>
+                    <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
+                    <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">BPM</th>
+                    <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Mood</th>
+                    <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
+                    <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
+                    <th className="px-5 py-3 w-16"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentTracks.map((track) => (
-                    <tr key={track.title} className="border-b border-border last:border-0 hover:bg-secondary/40 transition-colors group/row cursor-pointer">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center group-hover/row:bg-primary/8 transition-colors shrink-0">
-                            <Disc3 className="w-3.5 h-3.5 text-muted-foreground group-hover/row:text-primary transition-colors" />
+                    <tr key={track.title} className="border-b border-border/60 last:border-0 hover:bg-secondary/30 transition-colors group/row cursor-pointer">
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center group-hover/row:bg-primary/8 transition-colors shrink-0">
+                            <Disc3 className="w-4 h-4 text-muted-foreground group-hover/row:text-primary transition-colors" />
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-foreground truncate text-[13px]">{track.title}</p>
+                            <p className="font-semibold text-foreground truncate text-[13px] tracking-tight">{track.title}</p>
                             <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-[12px]">{track.type}</td>
-                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-[12px]">{track.genre}</td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary text-[11px] font-medium text-foreground/70">
-                          <Music className="w-2.5 h-2.5 text-primary/60" />
+                      <td className="px-5 py-3.5 text-muted-foreground hidden sm:table-cell text-xs">{track.type}</td>
+                      <td className="px-5 py-3.5 text-muted-foreground hidden md:table-cell text-xs">{track.genre}</td>
+                      <td className="px-5 py-3.5 hidden lg:table-cell">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary text-2xs font-semibold text-foreground/70">
+                          <Music className="w-2.5 h-2.5 text-primary/50" />
                           {track.key}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell font-mono text-[11px]">{track.bpm}</td>
-                      <td className="px-4 py-3 hidden md:table-cell">
+                      <td className="px-5 py-3.5 text-muted-foreground hidden lg:table-cell font-mono text-2xs">{track.bpm}</td>
+                      <td className="px-5 py-3.5 hidden md:table-cell">
                         <div className="flex flex-wrap gap-1 max-w-[140px]">
                           {track.mood.map((tag) => (
-                            <span key={tag} className="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-accent/10 text-accent/80">
+                            <span key={tag} className="inline-flex px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70">
                               #{tag}
                             </span>
                           ))}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-[12px]">{track.language}</td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium ${statusColors[track.status]}`}>
+                      <td className="px-5 py-3.5 text-muted-foreground hidden md:table-cell text-xs">{track.language}</td>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>
                           {track.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-3.5">
                         <div className="flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                          <button className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                          <button className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
                             <Play className="w-3.5 h-3.5" />
                           </button>
-                          <button className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                          <button className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
                             <MoreHorizontal className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -170,42 +169,43 @@ export function DashboardContent() {
         </motion.div>
 
         {/* Right column */}
-        <div className="space-y-5">
+        <div className="space-y-6">
           {/* Quick actions */}
-          <motion.div variants={item} className="space-y-3">
-            <h2 className="text-[15px] font-semibold text-foreground">Quick Actions</h2>
-            <div className="grid grid-cols-2 gap-2">
+          <motion.div variants={item} className="space-y-4">
+            <h2 className="text-base font-semibold text-foreground tracking-tight">Quick Actions</h2>
+            <div className="grid grid-cols-2 gap-2.5">
               {quickActions.map((action) => (
                 <button
                   key={action.label}
-                  className={`flex flex-col items-center gap-1.5 p-3.5 rounded-xl border transition-all text-[13px] ${
+                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-[13px] group ${
                     action.primary
-                      ? "border-primary/15 bg-primary/6 text-primary hover:bg-primary/10 hover:border-primary/25"
-                      : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-primary/15 hover:bg-secondary/50"
+                      ? "border-primary/20 bg-primary/6 text-primary hover:bg-primary/10 hover:border-primary/30"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-primary/15 hover:bg-secondary/40"
                   }`}
+                  style={{ boxShadow: "var(--shadow-inner-glow)" }}
                 >
-                  <action.icon className="w-4 h-4" />
-                  <span className="text-[11px] font-medium">{action.label}</span>
+                  <action.icon className="w-[18px] h-[18px] transition-colors" />
+                  <span className="text-[11px] font-semibold tracking-tight">{action.label}</span>
                 </button>
               ))}
             </div>
           </motion.div>
 
           {/* Activity */}
-          <motion.div variants={item} className="space-y-3">
+          <motion.div variants={item} className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-[15px] font-semibold text-foreground">Activity</h2>
-              <button className="text-[11px] text-primary/80 hover:text-primary transition-colors font-medium">See all</button>
+              <h2 className="text-base font-semibold text-foreground tracking-tight">Activity</h2>
+              <button className="text-xs text-primary/80 hover:text-primary transition-colors font-semibold">See all</button>
             </div>
-            <div className="bg-card border border-border rounded-xl divide-y divide-border overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+            <div className="card-premium divide-y divide-border/60 overflow-hidden">
               {activity.map((a, i) => (
-                <div key={i} className="flex items-start gap-2.5 px-3.5 py-3 hover:bg-secondary/30 transition-colors">
-                  <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center shrink-0 mt-0.5">
-                    <a.icon className="w-3 h-3 text-muted-foreground" />
+                <div key={i} className="flex items-start gap-3 px-4 py-3.5 hover:bg-secondary/20 transition-colors">
+                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 mt-0.5">
+                    <a.icon className="w-3.5 h-3.5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[12px] text-foreground/85 leading-relaxed">{a.text}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{a.time}</p>
+                    <p className="text-xs text-foreground/85 leading-relaxed">{a.text}</p>
+                    <p className="text-2xs text-muted-foreground mt-1 font-medium">{a.time}</p>
                   </div>
                 </div>
               ))}
