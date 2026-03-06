@@ -3,29 +3,29 @@ import { UserMenu } from "./UserMenu";
 
 export function TopBar() {
   return (
-    <header className="h-14 border-b border-border flex items-center justify-between px-5 bg-background/60 backdrop-blur-md sticky top-0 z-20">
+    <header className="h-14 border-b border-border flex items-center justify-between px-6 glass sticky top-0 z-20">
       {/* Search */}
       <div className="flex items-center gap-3 flex-1 max-w-md">
-        <div className="flex items-center gap-2.5 bg-secondary/60 rounded-lg px-3 py-1.5 w-full border border-transparent focus-within:border-primary/20 transition-colors">
+        <div className="flex items-center gap-2.5 bg-secondary/50 rounded-lg px-3.5 py-2 w-full border border-border/50 focus-within:border-primary/25 transition-all">
           <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
           <input
             type="text"
-            placeholder="Search…"
-            className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground outline-none w-full"
+            placeholder="Search tracks, artists, playlists…"
+            className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
           />
-          <kbd className="hidden sm:inline-flex text-[10px] text-muted-foreground/60 bg-muted/50 px-1.5 py-0.5 rounded font-mono leading-none">
+          <kbd className="hidden sm:inline-flex text-2xs text-muted-foreground/40 bg-muted/40 px-1.5 py-0.5 rounded font-mono leading-none border border-border/50">
             ⌘K
           </kbd>
         </div>
       </div>
 
       {/* Right actions */}
-      <div className="flex items-center gap-1.5 ml-4">
-        <button className="relative p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
-          <Bell className="w-[18px] h-[18px]" />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" />
+      <div className="flex items-center gap-2 ml-4">
+        <button className="relative p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground">
+          <Bell className="w-[17px] h-[17px]" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background" />
         </button>
-        <div className="w-px h-6 bg-border mx-1" />
+        <div className="w-px h-6 bg-border/60 mx-1" />
         <UserMenu />
       </div>
     </header>
