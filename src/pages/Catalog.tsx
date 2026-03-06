@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Music,
@@ -199,7 +200,7 @@ export default function Catalog() {
                         </tr>
                       ) : (
                         filteredTracks.map((track) => (
-                          <tr key={track.id} className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors group/row">
+                          <tr key={track.id} className="border-b border-border last:border-0 hover:bg-secondary/50 transition-colors group/row cursor-pointer" onClick={() => window.location.href = `/track/${track.id}`}>
                             <td className="px-5 py-3.5">
                               <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center group-hover/row:bg-primary/10 transition-colors shrink-0">
