@@ -1,5 +1,6 @@
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { ListMusic, Plus, Play, MoreHorizontal } from "lucide-react";
+import { ListMusic, Plus, Play, MoreHorizontal, Search, X } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 
 const playlists = [
@@ -15,6 +16,14 @@ const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } 
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
 
 export default function Playlists() {
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    if (!search) return playlists;
+    const q = search.toLowerCase();
+    return playlists.filter((pl) => pl.name.toLowerCase().includes(q) || pl.mood.toLowerCase().includes(q));
+  }, [search]);
+
   return (
     <PageShell>
       <motion.div variants={container} initial="hidden" animate="show" className="p-6 lg:p-8 space-y-6 max-w-[1400px]">
@@ -28,8 +37,24 @@ export default function Playlists() {
           </button>
         </motion.div>
 
+        {/* Search */}
+        <motion.div variants={item}>
+          <div className="flex items-center gap-2.5 bg-secondary/50 rounded-lg px-3.5 py-2.5 max-w-md border border-border/50 focus-within:border-primary/25 transition-all">
+            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+            <input type="text" placeholder="Search playlists…" value={search} onChange={(e) => setSearch(e.target.value)}
+              className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium" />
+            {search && <button onClick={() => setSearch("")} className="text-muted-foreground hover:text-foreground transition-colors"><X className="w-3.5 h-3.5" /></button>}
+          </div>
+        </motion.div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {playlists.map((pl) => (
+          {filtered.length === 0 ? (
+            <motion.div variants={item} className="col-span-full py-16 text-center text-muted-foreground">
+              <ListMusic className="w-8 h-8 mx-auto mb-3 opacity-20" />
+              <p className="text-sm font-semibold">No playlists found</p>
+              <p className="text-xs mt-1 text-muted-foreground/70">Try a different search term</p>
+            </motion.div>
+          ) : filtered.map((pl) => (
             <motion.div key={pl.name} variants={item}
               className="card-premium p-5 group cursor-pointer">
               <div className="flex items-start justify-between mb-4">
