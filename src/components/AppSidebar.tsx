@@ -9,9 +9,9 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Disc3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import trakalogLogo from "@/assets/trakalog-logo.png";
 
 const navItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },
@@ -33,9 +33,7 @@ export function AppSidebar() {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-border shrink-0">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10">
-          <Disc3 className="w-5 h-5 text-primary" />
-        </div>
+        <img src={trakalogLogo} alt="Trakalog" className="w-8 h-8 rounded-lg object-cover" />
         {!collapsed && (
           <motion.span
             initial={{ opacity: 0 }}
