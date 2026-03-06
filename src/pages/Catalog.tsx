@@ -29,8 +29,11 @@ const allTracks = [
   { id: 12, title: "Afterglow", artist: "Kira Nomura × Dex", album: "Late Bloom EP", genre: "R&B", duration: "3:47", bpm: 96, key: "C# Min", mood: ["romantic", "emotional"], status: "On Hold", language: "English", type: "Acapella" },
 ];
 
+const types = [...new Set(allTracks.map((t) => t.type))].sort();
 const genres = [...new Set(allTracks.map((t) => t.genre))].sort();
 const keys = [...new Set(allTracks.map((t) => t.key))].sort();
+const moods = [...new Set(allTracks.flatMap((t) => t.mood))].sort();
+const languages = [...new Set(allTracks.map((t) => t.language))].sort();
 const statuses = ["Available", "On Hold", "Released"];
 const bpmRanges = [
   { label: "Slow (< 90)", min: 0, max: 89 },
@@ -50,27 +53,33 @@ const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transiti
 
 export default function Catalog() {
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [keyFilter, setKeyFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [bpmFilter, setBpmFilter] = useState<{ label: string; min: number; max: number } | null>(null);
+  const [moodFilter, setMoodFilter] = useState<string | null>(null);
+  const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
 
-  const activeFilterCount = [genreFilter, keyFilter, statusFilter, bpmFilter].filter(Boolean).length;
+  const activeFilterCount = [typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter].filter(Boolean).length;
 
   const filteredTracks = useMemo(() => {
     return allTracks.filter((track) => {
       if (search && !track.title.toLowerCase().includes(search.toLowerCase()) && !track.artist.toLowerCase().includes(search.toLowerCase())) return false;
+      if (typeFilter && track.type !== typeFilter) return false;
       if (genreFilter && track.genre !== genreFilter) return false;
       if (keyFilter && track.key !== keyFilter) return false;
       if (statusFilter && track.status !== statusFilter) return false;
       if (bpmFilter && (track.bpm < bpmFilter.min || track.bpm > bpmFilter.max)) return false;
+      if (moodFilter && !track.mood.includes(moodFilter)) return false;
+      if (languageFilter && track.language !== languageFilter) return false;
       return true;
     });
-  }, [search, genreFilter, keyFilter, statusFilter, bpmFilter]);
+  }, [search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter]);
 
-  const clearFilters = () => { setGenreFilter(null); setKeyFilter(null); setStatusFilter(null); setBpmFilter(null); };
+  const clearFilters = () => { setTypeFilter(null); setGenreFilter(null); setKeyFilter(null); setStatusFilter(null); setBpmFilter(null); setMoodFilter(null); setLanguageFilter(null); };
 
   return (
     <PageShell>
@@ -107,9 +116,9 @@ export default function Catalog() {
         {/* Filter row */}
         {showFilters && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex flex-wrap gap-2.5 items-end">
+            <FilterSelect label="Type" value={typeFilter} options={types} onChange={setTypeFilter} />
             <FilterSelect label="Genre" value={genreFilter} options={genres} onChange={setGenreFilter} />
             <FilterSelect label="Key" value={keyFilter} options={keys} onChange={setKeyFilter} />
-            <FilterSelect label="Status" value={statusFilter} options={statuses} onChange={setStatusFilter} />
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">BPM</label>
               <select value={bpmFilter?.label ?? ""} onChange={(e) => { const f = bpmRanges.find((r) => r.label === e.target.value); setBpmFilter(f ?? null); }}
@@ -118,6 +127,9 @@ export default function Catalog() {
                 {bpmRanges.map((r) => <option key={r.label} value={r.label}>{r.label}</option>)}
               </select>
             </div>
+            <FilterSelect label="Mood" value={moodFilter} options={moods} onChange={setMoodFilter} />
+            <FilterSelect label="Language" value={languageFilter} options={languages} onChange={setLanguageFilter} />
+            <FilterSelect label="Status" value={statusFilter} options={statuses} onChange={setStatusFilter} />
             {activeFilterCount > 0 && <button onClick={clearFilters} className="h-8 px-2.5 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">Clear all</button>}
           </motion.div>
         )}
@@ -126,10 +138,13 @@ export default function Catalog() {
         {activeFilterCount > 0 && !showFilters && (
           <motion.div variants={item} className="flex flex-wrap gap-1.5 items-center">
             <span className="text-[11px] text-muted-foreground mr-1">Filters:</span>
+            {typeFilter && <FilterTag label={typeFilter} onRemove={() => setTypeFilter(null)} />}
             {genreFilter && <FilterTag label={genreFilter} onRemove={() => setGenreFilter(null)} />}
             {keyFilter && <FilterTag label={keyFilter} onRemove={() => setKeyFilter(null)} />}
-            {statusFilter && <FilterTag label={statusFilter} onRemove={() => setStatusFilter(null)} />}
             {bpmFilter && <FilterTag label={bpmFilter.label} onRemove={() => setBpmFilter(null)} />}
+            {moodFilter && <FilterTag label={moodFilter} onRemove={() => setMoodFilter(null)} />}
+            {languageFilter && <FilterTag label={languageFilter} onRemove={() => setLanguageFilter(null)} />}
+            {statusFilter && <FilterTag label={statusFilter} onRemove={() => setStatusFilter(null)} />}
             <button onClick={clearFilters} className="text-[11px] text-primary/80 hover:text-primary ml-1 font-medium">Clear</button>
           </motion.div>
         )}
