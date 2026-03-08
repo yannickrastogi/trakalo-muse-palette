@@ -19,6 +19,7 @@ import {
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
+import { useRole } from "@/contexts/RoleContext";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
@@ -57,6 +58,7 @@ export function DashboardContent() {
   const [playingTrack, setPlayingTrack] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const { t } = useTranslation();
+  const { permissions } = useRole();
 
   const stats = [
     { label: t("dashboard.totalTracks"), value: "2,847", icon: Music, change: t("dashboard.thisWeek"), accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20" },
@@ -66,11 +68,11 @@ export function DashboardContent() {
   ];
 
   const quickActions = [
-    { label: t("dashboard.uploadTrack"), icon: Upload, primary: true },
-    { label: t("dashboard.newPlaylist"), icon: ListMusic },
-    { label: t("dashboard.inviteMember"), icon: Users },
-    { label: t("dashboard.newPitch"), icon: Send },
-  ];
+    { label: t("dashboard.uploadTrack"), icon: Upload, primary: true, visible: permissions.canUploadTracks },
+    { label: t("dashboard.newPlaylist"), icon: ListMusic, visible: permissions.canCreatePlaylists },
+    { label: t("dashboard.inviteMember"), icon: Users, visible: permissions.canInviteMembers },
+    { label: t("dashboard.newPitch"), icon: Send, visible: permissions.canSendPitches },
+  ].filter((a) => a.visible);
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-7 max-w-[1400px]">
