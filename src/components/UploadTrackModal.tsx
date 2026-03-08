@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
+import { analyzeAudio, type AudioAnalysisResult } from "@/lib/audio-analysis";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
