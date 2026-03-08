@@ -52,6 +52,7 @@ import {
   Mic,
   Guitar as GuitarIcon,
   Package,
+  Plus,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
