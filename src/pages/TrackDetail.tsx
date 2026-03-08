@@ -87,6 +87,23 @@ export default function TrackDetail() {
   const [progress, setProgress] = useState(35);
   const [activeTab, setActiveTab] = useState<string>("overview");
   const { permissions } = useRole();
+  const { getTrack } = useTrack();
+
+  const trackData = getTrack(Number(id));
+
+  if (!trackData) {
+    return (
+      <PageShell>
+        <div className="p-8 text-center text-muted-foreground">Track not found.</div>
+      </PageShell>
+    );
+  }
+
+  const statusColorMap: Record<string, string> = {
+    Available: "bg-emerald-500/15 text-emerald-400",
+    "On Hold": "bg-brand-orange/15 text-brand-orange",
+    Released: "bg-brand-purple/15 text-brand-purple",
+  };
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -124,10 +141,10 @@ export default function TrackDetail() {
               <div className="flex-1 min-w-0 space-y-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400`}>
+                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColorMap[trackData.status] || "bg-emerald-500/15 text-emerald-400"}`}>
                       {trackData.status}
                     </span>
-                    <span className="text-xs text-muted-foreground">{trackData.isrc}</span>
+                    {trackData.isrc && <span className="text-xs text-muted-foreground">{trackData.isrc}</span>}
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{trackData.title}</h1>
                   <p className="text-lg text-muted-foreground mt-1">
@@ -140,10 +157,10 @@ export default function TrackDetail() {
 
                 {/* Quick metadata chips */}
                 <div className="flex flex-wrap gap-2">
-                  <MetaChip icon={Music} label={trackData.key} />
-                  <MetaChip icon={Clock} label={`${trackData.bpm} BPM`} />
-                  <MetaChip icon={Disc3} label={trackData.genre} />
-                  <MetaChip icon={Clock} label={trackData.duration} />
+                  {trackData.key && <MetaChip icon={Music} label={trackData.key} />}
+                  {trackData.bpm > 0 && <MetaChip icon={Clock} label={`${trackData.bpm} BPM`} />}
+                  {trackData.genre && <MetaChip icon={Disc3} label={trackData.genre} />}
+                  {trackData.duration && <MetaChip icon={Clock} label={trackData.duration} />}
                   {trackData.mood.map((m) => (
                     <span key={m} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-accent/15 text-accent">
                       #{m}
@@ -227,12 +244,12 @@ export default function TrackDetail() {
 
             {/* Tab content */}
             <motion.div variants={item}>
-              {activeTab === "overview" && <OverviewTab />}
-              {activeTab === "stems" && <StemsTab />}
-              {activeTab === "splits" && <SplitsTab />}
+              {activeTab === "overview" && <OverviewTab trackId={Number(id)} />}
+              {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
+              {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
               {activeTab === "paperwork" && <PaperworkTab />}
-              {activeTab === "pitches" && <PitchHistoryTab />}
-              {activeTab === "status" && <StatusTab />}
+              {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
+              {activeTab === "status" && <StatusTab trackId={Number(id)} />}
             </motion.div>
           </motion.div>
     </PageShell>
