@@ -347,7 +347,10 @@ function StemsTab() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<{ file: File; type: StemType; customName: string }[]>([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [modalDragOver, setModalDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const modalFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = (id: string) => {
     setStems((prev) => prev.filter((s) => s.id !== id));
@@ -462,19 +465,11 @@ function StemsTab() {
             <Download className="w-3.5 h-3.5" /> Download All
           </button>
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setShowUploadModal(true)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold btn-brand"
           >
             <Upload className="w-3.5 h-3.5" /> Upload Stems
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".wav,.mp3,.aiff,.flac,.ogg,.m4a"
-            className="hidden"
-            onChange={handleFileSelect}
-          />
         </div>
       </div>
 
@@ -509,7 +504,7 @@ function StemsTab() {
         {stems.length === 0 ? (
           /* Empty state */
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setShowUploadModal(true)}
             className="w-full py-16 flex flex-col items-center justify-center gap-3 text-center"
           >
             <div className="w-12 h-12 rounded-2xl icon-brand flex items-center justify-center">
@@ -643,7 +638,7 @@ function StemsTab() {
 
             {/* Drop hint footer */}
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => setShowUploadModal(true)}
               className="w-full py-3 flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground border-t border-border hover:bg-secondary/30 transition-colors"
             >
               <Upload className="w-3.5 h-3.5" />
@@ -653,9 +648,9 @@ function StemsTab() {
         )}
       </div>
 
-      {/* Staging modal — assign types before upload */}
+      {/* Upload modal — drag & drop + assign types */}
       <AnimatePresence>
-        {pendingFiles.length > 0 && (
+        {showUploadModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -663,7 +658,7 @@ function StemsTab() {
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setPendingFiles([])} />
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => { setShowUploadModal(false); setPendingFiles([]); }} />
 
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -675,78 +670,121 @@ function StemsTab() {
               {/* Header */}
               <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground">Assign Stem Types</h3>
+                  <h3 className="text-sm font-semibold text-foreground">Upload Stems</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Choose the correct type for each file before uploading
+                    You can upload multiple stems at once
                   </p>
                 </div>
-                <button onClick={() => setPendingFiles([])} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                  <MoreHorizontal className="w-4 h-4" />
+                <button onClick={() => { setShowUploadModal(false); setPendingFiles([]); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* File list */}
-              <div className="max-h-80 overflow-y-auto divide-y divide-border">
-                {pendingFiles.map((pf, index) => (
-                  <div key={index} className="px-6 py-3.5 flex items-center gap-4">
-                    {/* File info */}
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                        <Music className="w-3.5 h-3.5 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <input
-                          type="text"
-                          value={pf.customName}
-                          onChange={(e) => updatePendingName(index, e.target.value)}
-                          placeholder={pf.file.name.replace(/\.[^.]+$/, "")}
-                          className="text-sm font-medium text-foreground bg-transparent border-0 outline-none w-full rounded px-1 -ml-1 hover:bg-secondary focus:bg-secondary focus:ring-1 focus:ring-ring transition-colors"
-                        />
-                        <p className="text-[11px] text-muted-foreground px-1">{formatFileSize(pf.file.size)}</p>
-                      </div>
-                    </div>
-
-                    {/* Type selector */}
-                    <select
-                      value={pf.type}
-                      onChange={(e) => updatePendingType(index, e.target.value as StemType)}
-                      className="h-8 px-2.5 rounded-lg bg-secondary border border-border text-xs font-medium text-foreground capitalize appearance-none cursor-pointer hover:bg-muted transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
-                      style={{ minWidth: "130px" }}
-                    >
-                      {stemTypes.map((t) => (
-                        <option key={t} value={t} className="capitalize">{t}</option>
-                      ))}
-                    </select>
-
-                    {/* Remove */}
-                    <button
-                      onClick={() => removePending(index)}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+              {/* Drag & drop zone */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setModalDragOver(true); }}
+                onDragLeave={() => setModalDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setModalDragOver(false);
+                  const files = Array.from(e.dataTransfer.files).filter((f) =>
+                    f.name.match(/\.(wav|mp3|aiff|flac|ogg|m4a)$/i)
+                  );
+                  if (files.length) stageFiles(files);
+                }}
+                onClick={() => modalFileInputRef.current?.click()}
+                className={`mx-6 mt-4 mb-2 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200 ${
+                  modalDragOver
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted-foreground/40 hover:bg-secondary/30"
+                }`}
+              >
+                <div className="flex flex-col items-center justify-center py-8 gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                    <Upload className={`w-5 h-5 ${modalDragOver ? "text-primary" : "text-muted-foreground"}`} />
                   </div>
-                ))}
+                  <p className="text-sm font-medium text-foreground">
+                    {modalDragOver ? "Drop files here" : "Drag & drop stems here"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">or click to browse · WAV, MP3, AIFF, FLAC, OGG, M4A</p>
+                </div>
+                <input
+                  ref={modalFileInputRef}
+                  type="file"
+                  multiple
+                  accept=".wav,.mp3,.aiff,.flac,.ogg,.m4a"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files) {
+                      stageFiles(Array.from(e.target.files));
+                      e.target.value = "";
+                    }
+                  }}
+                />
               </div>
 
+              {/* Staged files list */}
+              {pendingFiles.length > 0 && (
+                <>
+                  <div className="px-6 pt-2 pb-1">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+                      {pendingFiles.length} file{pendingFiles.length !== 1 ? "s" : ""} ready — assign type & rename
+                    </p>
+                  </div>
+                  <div className="max-h-56 overflow-y-auto divide-y divide-border mx-2">
+                    {pendingFiles.map((pf, index) => (
+                      <div key={index} className="px-4 py-3 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                          <Music className="w-3.5 h-3.5 text-muted-foreground" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <input
+                            type="text"
+                            value={pf.customName}
+                            onChange={(e) => updatePendingName(index, e.target.value)}
+                            placeholder={pf.file.name.replace(/\.[^.]+$/, "")}
+                            className="text-sm font-medium text-foreground bg-transparent border-0 outline-none w-full rounded px-1 -ml-1 hover:bg-secondary focus:bg-secondary focus:ring-1 focus:ring-ring transition-colors"
+                          />
+                          <p className="text-[11px] text-muted-foreground px-1">{formatFileSize(pf.file.size)}</p>
+                        </div>
+                        <select
+                          value={pf.type}
+                          onChange={(e) => updatePendingType(index, e.target.value as StemType)}
+                          className="h-8 px-2.5 rounded-lg bg-secondary border border-border text-xs font-medium text-foreground capitalize appearance-none cursor-pointer hover:bg-muted transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
+                          style={{ minWidth: "120px" }}
+                        >
+                          {stemTypes.map((t) => (
+                            <option key={t} value={t} className="capitalize">{t}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removePending(index); }}
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
               {/* Footer */}
-              <div className="px-6 py-4 border-t border-border flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">{pendingFiles.length} file{pendingFiles.length !== 1 ? "s" : ""} ready</p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setPendingFiles([])}
-                    className="px-4 py-2 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={confirmUpload}
-                    className="px-4 py-2 rounded-lg text-xs font-semibold btn-brand"
-                  >
-                    <Upload className="w-3.5 h-3.5 inline mr-1.5" />
-                    Upload {pendingFiles.length} Stem{pendingFiles.length !== 1 ? "s" : ""}
-                  </button>
-                </div>
+              <div className="px-6 py-4 border-t border-border flex items-center justify-between mt-2">
+                <button
+                  onClick={() => { setShowUploadModal(false); setPendingFiles([]); }}
+                  className="px-4 py-2 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => { confirmUpload(); setShowUploadModal(false); }}
+                  disabled={pendingFiles.length === 0}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold btn-brand disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  <Upload className="w-3.5 h-3.5 inline mr-1.5" />
+                  Upload {pendingFiles.length > 0 ? `${pendingFiles.length} Stem${pendingFiles.length !== 1 ? "s" : ""}` : "Stems"}
+                </button>
               </div>
             </motion.div>
           </motion.div>
