@@ -18,6 +18,9 @@ import cover6 from "@/assets/covers/cover-6.jpg";
 
 const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 
+// Consistent stem types used across the platform (TrackDetail, UploadTrackModal, etc.)
+const stemTypes = ["kick", "snare", "bass", "guitar", "vocal", "synth", "drums", "background vocal", "fx", "other"] as const;
+
 interface FlatStem extends TrackStem {
   trackId: number;
   trackTitle: string;
@@ -27,6 +30,8 @@ interface FlatStem extends TrackStem {
   trackKey: string;
   trackCoverIdx: number;
   trackCover?: string;
+  isPack?: boolean;
+  stemCount?: number;
 }
 
 const stemTypeColors: Record<string, string> = {
@@ -39,6 +44,8 @@ const stemTypeColors: Record<string, string> = {
   synth: "bg-brand-orange/15 text-brand-orange",
   guitar: "bg-chart-5/15 text-chart-5",
   fx: "bg-accent/15 text-accent",
+  other: "bg-muted text-muted-foreground",
+  pack: "bg-brand-orange/15 text-brand-orange",
 };
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
