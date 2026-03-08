@@ -966,8 +966,8 @@ function StepInfo({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <FieldLabel>Voice</FieldLabel>
-          <FieldSelect value={voice} onChange={setVoice} options={["Male", "Female", "Duet", "N/A"]} placeholder="Select voice" />
+          <FieldLabel>Gender</FieldLabel>
+          <FieldSelect value={voice} onChange={setVoice} options={["Male", "Female", "Duet", "N/A"]} placeholder="Select gender" />
         </div>
         <div className="space-y-1.5">
           <FieldLabel>Language</FieldLabel>
@@ -1274,7 +1274,7 @@ function StepReview({
           <ReviewRow label="BPM" value={bpm || "—"} />
           <ReviewRow label="Key" value={trackKey || "—"} />
           <ReviewRow label="Genre" value={genre || "—"} />
-          <ReviewRow label="Voice" value={voice || "—"} />
+          <ReviewRow label="Gender" value={voice || "—"} />
           <ReviewRow label="Language" value={language || "—"} />
         </div>
         {mood.length > 0 && (
