@@ -694,9 +694,15 @@ function StemsTab() {
                       <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
                         <Music className="w-3.5 h-3.5 text-muted-foreground" />
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{pf.file.name}</p>
-                        <p className="text-[11px] text-muted-foreground">{formatFileSize(pf.file.size)}</p>
+                      <div className="min-w-0 flex-1">
+                        <input
+                          type="text"
+                          value={pf.customName}
+                          onChange={(e) => updatePendingName(index, e.target.value)}
+                          placeholder={pf.file.name.replace(/\.[^.]+$/, "")}
+                          className="text-sm font-medium text-foreground bg-transparent border-0 outline-none w-full rounded px-1 -ml-1 hover:bg-secondary focus:bg-secondary focus:ring-1 focus:ring-ring transition-colors"
+                        />
+                        <p className="text-[11px] text-muted-foreground px-1">{formatFileSize(pf.file.size)}</p>
                       </div>
                     </div>
 
