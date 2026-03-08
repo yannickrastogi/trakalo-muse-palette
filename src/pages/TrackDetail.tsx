@@ -345,6 +345,7 @@ function StemsTab() {
   const [stems, setStems] = useState<StemFile[]>(stemsData);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = (id: string) => {
