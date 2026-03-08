@@ -546,12 +546,23 @@ function StemsTab() {
                     exit={{ opacity: 0, height: 0, transition: { duration: 0.2 } }}
                     className="grid grid-cols-[1fr_120px_80px_100px_110px] gap-3 px-5 py-3 items-center hover:bg-secondary/30 transition-colors group"
                   >
-                    {/* File name */}
+                    {/* File name — click to edit inline */}
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 ${stem.color}`}>
                         {stemTypeIcon(stem.type)}
                       </div>
-                      <span className="text-sm font-medium text-foreground truncate">{stem.fileName}</span>
+                      <input
+                        type="text"
+                        defaultValue={stem.fileName}
+                        onBlur={(e) => {
+                          const v = e.target.value.trim();
+                          if (v && v !== stem.fileName) handleRename(stem.id, v);
+                          else e.target.value = stem.fileName;
+                        }}
+                        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                        className="text-sm font-medium text-foreground truncate bg-transparent border-0 outline-none w-full rounded px-1 -ml-1 hover:bg-secondary focus:bg-secondary focus:ring-1 focus:ring-ring transition-colors cursor-text"
+                        title="Click to rename"
+                      />
                     </div>
 
                     {/* Type badge — clickable to change */}
