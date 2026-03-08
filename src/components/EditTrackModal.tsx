@@ -118,7 +118,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       setExplicit(trackData.explicit);
       setDetails(JSON.parse(JSON.stringify(trackData.details || {})));
     }
-  }, [open, trackData]);
+  }, [open, trackId]);
 
   const toggleMood = (m: string) => {
     setMood((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]);
