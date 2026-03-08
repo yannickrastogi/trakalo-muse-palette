@@ -152,11 +152,15 @@ export default function PlaylistDetail() {
               className={`relative aspect-square rounded-xl overflow-hidden bg-gradient-to-br ${playlist.color}`}
               style={{ boxShadow: "var(--shadow-elevated)" }}
             >
-              <div className="grid grid-cols-2 gap-0.5 w-full h-full">
-                {playlist.coverIdxs.slice(0, 4).map((ci, i) => (
-                  <img key={i} src={covers[ci]} alt="" className="w-full h-full object-cover" />
-                ))}
-              </div>
+              {playlist.coverImage ? (
+                <img src={playlist.coverImage} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="grid grid-cols-2 gap-0.5 w-full h-full">
+                  {playlist.coverIdxs.slice(0, 4).map((ci, i) => (
+                    <img key={i} src={covers[ci]} alt="" className="w-full h-full object-cover" />
+                  ))}
+                </div>
+              )}
               <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background/80 to-transparent pointer-events-none" />
             </div>
           </div>
