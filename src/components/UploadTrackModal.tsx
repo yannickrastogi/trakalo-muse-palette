@@ -964,9 +964,15 @@ function StepInfo({
           ))}
         </div>
       </div>
-      <div className="space-y-1.5">
-        <FieldLabel>Language</FieldLabel>
-        <FieldSelect value={language} onChange={setLanguage} options={LANGUAGES} placeholder="Select language" />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <FieldLabel>Voice</FieldLabel>
+          <FieldSelect value={voice} onChange={setVoice} options={["Male", "Female", "Duet", "N/A"]} placeholder="Select voice" />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel>Language</FieldLabel>
+          <FieldSelect value={language} onChange={setLanguage} options={LANGUAGES} placeholder="Select language" />
+        </div>
       </div>
       <div className="space-y-1.5">
         <FieldLabel>Notes</FieldLabel>
