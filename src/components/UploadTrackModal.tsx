@@ -32,7 +32,7 @@ const MAX_TRACKS = 20;
 const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
 const GENRES = [
-  "Afrobeats", "Ambient", "Blues", "Bouyon", "Caribbean", "Classical",
+  "Afrobeats", "Afrohouse", "Ambient", "Blues", "Bouyon", "Caribbean", "Classical",
   "Country", "Dance", "Disco-Funk", "DnB", "Dubstep", "Electronic",
   "Film", "Folk", "Hip-Hop", "House", "I-Pop", "Indie", "Jazz",
   "K-Pop", "Kompa", "Latin", "Lo-fi", "Lounge", "Pop", "Progressive",
