@@ -156,13 +156,22 @@
     "title": "Équipe",
     "subtitle": "{{count}} collaborateurs dans votre réseau",
     "inviteMember": "Inviter un membre",
+    "member": "Membre",
     "name": "Nom",
     "role": "Rôle",
     "email": "E-mail",
     "tracks": "Morceaux",
     "status": "Statut",
+    "dateJoined": "Date d'ajout",
+    "joined": "Ajouté le",
     "active": "Actif",
-    "invited": "Invité"
+    "invited": "Invité",
+    "searchPlaceholder": "Rechercher par nom, e-mail ou rôle…",
+    "noResults": "Aucun membre trouvé",
+    "role_admin": "Administrateur",
+    "role_manager": "Gestionnaire",
+    "role_producer": "Producteur",
+    "role_viewer": "Lecteur"
   },
   "trackDetail": {
     "editTrack": "Modifier le morceau",
