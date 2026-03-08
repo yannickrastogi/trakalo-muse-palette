@@ -545,6 +545,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                 />
               )}
               {phase === "edit" && currentTrack && editStep === 2 && (
+                <StepLyrics
+                  lyrics={currentTrack.lyrics}
+                  onUpdate={(v: string) => updateCurrent({ lyrics: v })}
+                  fileInputRef={lyricsFileInputRef}
+                />
+              )}
+              {phase === "edit" && currentTrack && editStep === 3 && (
                 <StepSplits
                   splits={currentTrack.splits}
                   totalSplit={totalSplit}
@@ -553,7 +560,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   onRemove={removeSplit}
                 />
               )}
-              {phase === "edit" && currentTrack && editStep === 3 && (
+              {phase === "edit" && currentTrack && editStep === 4 && (
                 <StepReview
                   title={currentTrack.title} artist={currentTrack.artist}
                   bpm={currentTrack.bpm} trackKey={currentTrack.trackKey}
@@ -561,7 +568,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   language={currentTrack.language} notes={currentTrack.notes}
                   audioFile={currentTrack.file} stems={currentTrack.stems}
                   splits={currentTrack.splits} totalSplit={totalSplit}
-                  details={currentTrack.details}
+                  details={currentTrack.details} lyrics={currentTrack.lyrics}
                 />
               )}
             </motion.div>
