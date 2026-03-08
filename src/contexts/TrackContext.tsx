@@ -218,10 +218,20 @@ const TrackContext = createContext<TrackContextValue | null>(null);
 export function TrackProvider({ children }: { children: ReactNode }) {
   const [tracks, setTracks] = useState<TrackData[]>(defaultTracks);
 
-  const getTrack = useCallback((id: number) => tracks.find((t) => t.id === id), [tracks]);
+  const getTrack = useCallback((id: number) => {
+    const track = tracks.find((t) => t.id === id);
+    if (track && !track.chapters) {
+      return { ...track, chapters: detectChapters(track.type, track.bpm, track.id) };
+    }
+    return track;
+  }, [tracks]);
 
   const addTrack = useCallback((track: TrackData) => {
-    setTracks((prev) => [...prev, track]);
+    const withChapters = {
+      ...track,
+      chapters: track.chapters || detectChapters(track.type, track.bpm, track.id),
+    };
+    setTracks((prev) => [...prev, withChapters]);
   }, []);
 
   const updateTrack = useCallback((id: number, updates: Partial<TrackData>) => {
