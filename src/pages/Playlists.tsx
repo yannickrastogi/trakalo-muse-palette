@@ -294,6 +294,7 @@ export default function Playlists() {
           </div>
         )}
       </motion.div>
+      <CreatePlaylistModal open={createOpen} onOpenChange={setCreateOpen} />
     </PageShell>
   );
 }
