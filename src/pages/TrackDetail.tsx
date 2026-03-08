@@ -352,6 +352,11 @@ function StemsTab() {
     setStems((prev) => prev.filter((s) => s.id !== id));
   };
 
+  const handleChangeType = (id: string, newType: StemType) => {
+    setStems((prev) => prev.map((s) => s.id === id ? { ...s, type: newType } : s));
+    setEditingTypeId(null);
+  };
+
   const handlePlay = (id: string) => {
     setPlayingId((prev) => (prev === id ? null : id));
   };
