@@ -382,8 +382,23 @@ function OverviewTab({ trackId }: { trackId: number }) {
     }
   });
 
+  const handleDownloadPdf = () => {
+    generateMetadataPdf(trackData.title, trackData.artist, meta);
+  };
+
   return (
-    <SectionCard title="Metadata" icon={FileText} action={<button className="text-xs text-primary hover:underline">Edit</button>}>
+    <SectionCard
+      title="Metadata"
+      icon={FileText}
+      action={
+        <div className="flex items-center gap-2">
+          <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:underline">
+            <Download className="w-3.5 h-3.5" /> Download PDF
+          </button>
+          <button className="text-xs text-primary hover:underline">Edit</button>
+        </div>
+      }
+    >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border">
         {meta.map((m) => (
           <div key={m.label} className="bg-card px-5 py-3.5">
@@ -961,6 +976,124 @@ function generateSplitsPdf(title: string, artist: string, splits: TrackSplit[], 
   }
 
   doc.save(`${title} - Splits.pdf`);
+}
+
+/** Generate a premium branded metadata PDF using jsPDF */
+function generateMetadataPdf(title: string, artist: string, meta: { label: string; value: string }[]) {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 56;
+  const contentW = pageW - marginX * 2;
+  const brandOrange: [number, number, number] = [255, 140, 26];
+  const brandPink: [number, number, number] = [224, 82, 153];
+  const brandPurple: [number, number, number] = [140, 70, 209];
+  const bgDark: [number, number, number] = [16, 16, 18];
+  const cardBg: [number, number, number] = [22, 22, 25];
+  const textLight: [number, number, number] = [245, 245, 245];
+  const textMuted: [number, number, number] = [120, 120, 128];
+  const barSegments = 60;
+  const drawGradientBar = (yPos: number, h: number) => {
+    for (let i = 0; i < barSegments; i++) {
+      const t = i / barSegments;
+      const r = Math.round(brandOrange[0] + (brandPink[0] - brandOrange[0]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[0] - brandPurple[0]));
+      const g = Math.round(brandOrange[1] + (brandPink[1] - brandOrange[1]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[1] - brandPurple[1]));
+      const b = Math.round(brandOrange[2] + (brandPink[2] - brandOrange[2]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[2] - brandPurple[2]));
+      doc.setFillColor(Math.min(255, Math.max(0, r)), Math.min(255, Math.max(0, g)), Math.min(255, Math.max(0, b)));
+      doc.rect((pageW / barSegments) * i, yPos, pageW / barSegments + 1, h, "F");
+    }
+  };
+  const drawPageBg = () => {
+    doc.setFillColor(...bgDark);
+    doc.rect(0, 0, pageW, pageH, "F");
+    drawGradientBar(0, 5);
+  };
+  drawPageBg();
+  let y = 44;
+  const iconSize = 28;
+  try {
+    doc.addImage(trakalogLogo, "PNG", marginX, y - 2, iconSize, iconSize);
+  } catch {
+    doc.setFillColor(...brandOrange);
+    doc.roundedRect(marginX, y - 2, iconSize, iconSize, 6, 6, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text("T", marginX + iconSize / 2, y + iconSize / 2 + 1, { align: "center", baseline: "middle" });
+  }
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...brandOrange);
+  doc.text("TRAKALOG", marginX + iconSize + 10, y + iconSize / 2 + 1, { baseline: "middle" });
+  y = 92;
+  doc.setFillColor(...cardBg);
+  doc.roundedRect(marginX, y, contentW, 80, 8, 8, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(...textLight);
+  doc.text(title, marginX + 20, y + 32);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(13);
+  doc.setTextColor(...textMuted);
+  doc.text(artist, marginX + 20, y + 54);
+  const badgeText = "METADATA";
+  doc.setFillColor(...brandOrange);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  const badgeW = doc.getTextWidth(badgeText) + 16;
+  doc.roundedRect(pageW - marginX - badgeW - 20, y + 16, badgeW, 18, 4, 4, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.text(badgeText, pageW - marginX - badgeW / 2 - 20, y + 28, { align: "center" });
+  y = 188;
+  [brandOrange, brandPink, brandPurple].forEach((c, i) => {
+    doc.setFillColor(...c);
+    doc.circle(pageW / 2 - 12 + i * 12, y, 2, "F");
+  });
+  y = 210;
+  const colW = (contentW - 12) / 2;
+  const rowH = 44;
+  meta.forEach((m, i) => {
+    if (y + rowH > pageH - 60) {
+      doc.addPage();
+      drawPageBg();
+      y = 48;
+    }
+    const col = i % 2;
+    const x = marginX + col * (colW + 12);
+    doc.setFillColor(...cardBg);
+    doc.roundedRect(x, y, colW, rowH - 4, 4, 4, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...brandOrange);
+    doc.text(m.label.toUpperCase(), x + 12, y + 15);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...textLight);
+    const maxTextW = colW - 24;
+    const wrappedLines = doc.splitTextToSize(m.value, maxTextW);
+    doc.text(wrappedLines[0] || "—", x + 12, y + 30);
+    if (col === 1) y += rowH;
+  });
+  if (meta.length % 2 !== 0) y += rowH;
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    drawGradientBar(pageH - 3, 3);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...textMuted);
+    doc.text("Powered by", pageW / 2 - 20, pageH - 18, { align: "right" });
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...brandOrange);
+    doc.text(" trakalog.com", pageW / 2 - 18, pageH - 18);
+    if (totalPages > 1) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(...textMuted);
+      doc.text(`${p} / ${totalPages}`, pageW - marginX, pageH - 18, { align: "right" });
+    }
+  }
+  doc.save(`${title} - Metadata.pdf`);
 }
 
 function StemsTab({ trackId }: { trackId: number }) {
