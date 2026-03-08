@@ -150,7 +150,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     // Run analysis + compression in parallel for each file
     for (const entry of entries) {
       // Analysis
-      setQueue((prev) => prev.map((e) => e.id === entry.id ? { ...e, analyzing: true, compressing: true } : e));
+      setQueue((prev) => prev.map((e) => e.id === entry.id ? { ...e, analyzing: true } : e));
 
       // Analysis
       analyzeAudio(entry.file)
@@ -352,6 +352,9 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       type: "Song",
       coverIdx: newId % 6,
       previewUrl: currentTrack.compressed?.url || undefined,
+      originalFileName: currentTrack.fileName,
+      originalFileSize: currentTrack.file.size,
+      originalFileUrl: URL.createObjectURL(currentTrack.file),
       notes: currentTrack.notes,
       details: currentTrack.details,
       stems: currentTrack.stems.map((s, i) => ({
@@ -529,8 +532,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   addDetailEntry={addDetailEntry} removeDetailEntry={removeDetailEntry}
                   analysisResult={currentTrack.analysisResult}
                   analyzing={currentTrack.analyzing}
-                  compressed={currentTrack.compressed}
-                  compressing={currentTrack.compressing}
                 />
               )}
               {phase === "edit" && currentTrack && editStep === 1 && (
@@ -559,7 +560,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   audioFile={currentTrack.file} stems={currentTrack.stems}
                   splits={currentTrack.splits} totalSplit={totalSplit}
                   details={currentTrack.details}
-                  compressed={currentTrack.compressed}
                 />
               )}
             </motion.div>
@@ -684,7 +684,7 @@ function StepBulkUpload({
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-1">Upload Audio Files</h3>
         <p className="text-2xs text-muted-foreground">
-          Drag & drop up to {MAX_TRACKS} tracks, or click to browse. Each track will be analyzed and compressed automatically.
+          Drag & drop up to {MAX_TRACKS} tracks, or click to browse. Each track will be analyzed automatically.
         </p>
       </div>
 
@@ -758,11 +758,6 @@ function StepBulkUpload({
                         <Loader2 className="w-2.5 h-2.5 animate-spin" /> Analyzing…
                       </span>
                     )}
-                    {entry.compressing && !entry.analyzing && (
-                      <span className="flex items-center gap-1 text-brand-pink">
-                        <Loader2 className="w-2.5 h-2.5 animate-spin" /> Compressing…
-                      </span>
-                    )}
                     {entry.analysisResult && !entry.analyzing && (
                       <span className="flex items-center gap-1 text-emerald-400">
                         <Check className="w-2.5 h-2.5" /> {entry.analysisResult.bpm} BPM · {entry.analysisResult.key}
@@ -771,11 +766,6 @@ function StepBulkUpload({
                     {entry.analysisError && (
                       <span className="flex items-center gap-1 text-destructive">
                         <AlertCircle className="w-2.5 h-2.5" /> Analysis failed
-                      </span>
-                    )}
-                    {entry.compressed && (
-                      <span className="text-muted-foreground/60">
-                        Preview: {formatFileSize(entry.compressed.sizeBytes)} ({entry.compressed.compressionRatio})
                       </span>
                     )}
                   </div>
@@ -856,16 +846,6 @@ function StepInfo({
             <span className="text-2xs font-semibold text-foreground">
               {analyzing ? "Analyzing audio…" : "Smart Analysis Complete"}
             </span>
-            {compressing && (
-              <span className="text-2xs text-brand-pink flex items-center gap-1 ml-auto">
-                <Loader2 className="w-2.5 h-2.5 animate-spin" /> Compressing…
-              </span>
-            )}
-            {compressed && !compressing && (
-              <span className="text-2xs text-muted-foreground ml-auto">
-                Preview: {formatFileSize(compressed.sizeBytes)} ({compressed.compressionRatio})
-              </span>
-            )}
           </div>
           {analysisResult && (
             <div className="grid grid-cols-3 gap-2">
@@ -1202,12 +1182,6 @@ function StepReview({
           </div>
         ) : (
           <p className="text-2xs text-muted-foreground italic">No audio file uploaded</p>
-        )}
-        {compressed && (
-          <div className="flex items-center gap-2 mt-1.5 text-2xs text-muted-foreground">
-            <Check className="w-3 h-3 text-emerald-400" />
-            <span>Compressed preview: {formatFileSize(compressed.sizeBytes)} ({compressed.compressionRatio} ratio)</span>
-          </div>
         )}
       </div>
 
