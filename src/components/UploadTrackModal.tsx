@@ -79,6 +79,7 @@ interface TrackEntry {
   details: Record<string, string[]>;
   stems: StemFile[];
   splits: Split[];
+  lyrics: string;
   // Status
   metadataComplete: boolean;
 }
@@ -112,6 +113,7 @@ function createTrackEntry(file: File): TrackEntry {
     details: {},
     stems: [],
     splits: [{ id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
+    lyrics: "",
     metadataComplete: false,
   };
 }
@@ -123,14 +125,15 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const [phase, setPhase] = useState<"upload" | "edit">("upload");
   const [queue, setQueue] = useState<TrackEntry[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [editStep, setEditStep] = useState(0); // 0=Info, 1=Stems, 2=Splits, 3=Review
+  const [editStep, setEditStep] = useState(0); // 0=Info, 1=Stems, 2=Lyrics, 3=Splits, 4=Review
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const stemsInputRef = useRef<HTMLInputElement>(null);
+  const lyricsFileInputRef = useRef<HTMLInputElement>(null);
 
-  const EDIT_STEPS = ["Info", "Stems", "Splits", "Review"];
+  const EDIT_STEPS = ["Info", "Stems", "Lyrics", "Splits", "Review"];
 
   const currentTrack = queue[currentIdx] || null;
 
