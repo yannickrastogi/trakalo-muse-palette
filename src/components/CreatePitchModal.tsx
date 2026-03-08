@@ -7,7 +7,12 @@ import {
   ListMusic,
   Send,
   Check,
-  ChevronDown,
+  FileText,
+  ArrowRight,
+  User,
+  Building2,
+  Mail,
+  MessageSquare,
 } from "lucide-react";
 import {
   Dialog,
@@ -34,6 +39,7 @@ export interface PitchEntry {
   itemName: string;
   artist: string;
   coverIdx: number;
+  trackCount?: number;
   recipientName: string;
   recipientCompany: string;
   recipientEmail: string;
@@ -42,37 +48,40 @@ export interface PitchEntry {
   notes: string;
 }
 
+interface SelectedItem {
+  name: string;
+  artist: string;
+  coverIdx: number;
+  trackCount?: number;
+}
+
 interface CreatePitchModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreate: (pitch: PitchEntry) => void;
 }
 
-type Step = "item" | "recipient" | "review";
-
 export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchModalProps) {
-  const [step, setStep] = useState<Step>("item");
+  const [step, setStep] = useState<"select" | "compose">("select");
   const [pitchType, setPitchType] = useState<"track" | "playlist">("track");
-  const [selectedItem, setSelectedItem] = useState<{ name: string; artist: string; coverIdx: number } | null>(null);
+  const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
   const [itemSearch, setItemSearch] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [recipientCompany, setRecipientCompany] = useState("");
   const [recipientEmail, setRecipientEmail] = useState("");
-  const [notes, setNotes] = useState("");
-  const [sendNow, setSendNow] = useState(false);
+  const [message, setMessage] = useState("");
 
   const { playlists } = usePlaylists();
 
   const resetForm = () => {
-    setStep("item");
+    setStep("select");
     setPitchType("track");
     setSelectedItem(null);
     setItemSearch("");
     setRecipientName("");
     setRecipientCompany("");
     setRecipientEmail("");
-    setNotes("");
-    setSendNow(false);
+    setMessage("");
   };
 
   const handleOpenChange = (v: boolean) => {
@@ -94,85 +103,92 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
     return playlists.filter((p) => p.name.toLowerCase().includes(q));
   }, [itemSearch, playlists]);
 
-  const canProceedToRecipient = !!selectedItem;
-  const canProceedToReview = recipientName.trim() && recipientCompany.trim() && recipientEmail.trim();
+  const canCompose = !!selectedItem;
+  const canSubmit = recipientName.trim().length > 0 && recipientCompany.trim().length > 0 && recipientEmail.trim().length > 0;
 
-  const handleCreate = () => {
-    if (!selectedItem) return;
+  const buildPitch = (status: "Draft" | "Sent"): PitchEntry => {
     const now = new Date();
-    const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    const pitch: PitchEntry = {
+    return {
       id: `pitch-${Date.now()}`,
       type: pitchType,
-      itemName: selectedItem.name,
-      artist: selectedItem.artist,
-      coverIdx: selectedItem.coverIdx,
+      itemName: selectedItem!.name,
+      artist: selectedItem!.artist,
+      coverIdx: selectedItem!.coverIdx,
+      trackCount: selectedItem!.trackCount,
       recipientName: recipientName.trim(),
       recipientCompany: recipientCompany.trim(),
       recipientEmail: recipientEmail.trim(),
-      date: dateStr,
-      status: sendNow ? "Sent" : "Draft",
-      notes: notes.trim(),
+      date: now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      status,
+      notes: message.trim(),
     };
-    onCreate(pitch);
+  };
+
+  const handleSaveDraft = () => {
+    if (!selectedItem || !canSubmit) return;
+    onCreate(buildPitch("Draft"));
+    handleOpenChange(false);
+  };
+
+  const handleSend = () => {
+    if (!selectedItem || !canSubmit) return;
+    onCreate(buildPitch("Sent"));
     handleOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-xl bg-card border-border p-0 gap-0 max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden">
+      <DialogContent className="sm:max-w-2xl bg-card border-border p-0 gap-0 max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
           <DialogHeader>
             <DialogTitle className="text-foreground text-lg tracking-tight">Create Pitch</DialogTitle>
             <DialogDescription className="text-muted-foreground/70 text-xs mt-1">
-              {step === "item" && "Select a track or playlist to pitch."}
-              {step === "recipient" && "Enter the recipient's details."}
-              {step === "review" && "Review and submit your pitch."}
+              {step === "select"
+                ? "Choose a track or playlist to pitch."
+                : "Fill in recipient details and your message."}
             </DialogDescription>
           </DialogHeader>
 
           {/* Step indicator */}
           <div className="flex items-center gap-2 mt-4">
-            {(["item", "recipient", "review"] as Step[]).map((s, i) => {
-              const labels = ["Select Item", "Recipient", "Review"];
-              const stepNum = i + 1;
-              const isActive = step === s;
-              const isPast =
-                (s === "item" && (step === "recipient" || step === "review")) ||
-                (s === "recipient" && step === "review");
-              return (
-                <div key={s} className="flex items-center gap-2">
-                  {i > 0 && <div className="w-5 h-px bg-border" />}
-                  <button
-                    onClick={() => {
-                      if (s === "item") setStep("item");
-                      if (s === "recipient" && canProceedToRecipient) setStep("recipient");
-                      if (s === "review" && canProceedToRecipient && canProceedToReview) setStep("review");
-                    }}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <span className={`w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold ${
-                      isActive ? "btn-brand" : isPast ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"
-                    }`}>
-                      {isPast ? <Check className="w-3 h-3" /> : stepNum}
-                    </span>
-                    <span className="hidden sm:inline">{labels[i]}</span>
-                  </button>
-                </div>
-              );
-            })}
+            <button
+              onClick={() => setStep("select")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                step === "select" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <span className={`w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold ${
+                step === "select" ? "btn-brand" : "bg-primary/20 text-primary"
+              }`}>
+                {step === "compose" ? <Check className="w-3 h-3" /> : "1"}
+              </span>
+              Select
+            </button>
+            <div className="w-6 h-px bg-border" />
+            <button
+              onClick={() => canCompose && setStep("compose")}
+              disabled={!canCompose}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                step === "compose"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground"
+              }`}
+            >
+              <span className={`w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold ${
+                step === "compose" ? "btn-brand" : "bg-secondary text-muted-foreground"
+              }`}>2</span>
+              Compose
+            </button>
           </div>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto min-h-0">
           <AnimatePresence mode="wait">
-            {step === "item" && (
+            {step === "select" ? (
               <motion.div
-                key="item"
+                key="select"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
@@ -182,7 +198,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                 {/* Type toggle */}
                 <div className="px-6 pt-4 pb-2 flex gap-2">
                   <button
-                    onClick={() => { setPitchType("track"); setSelectedItem(null); }}
+                    onClick={() => { setPitchType("track"); setSelectedItem(null); setItemSearch(""); }}
                     className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all min-h-[36px] ${
                       pitchType === "track" ? "bg-primary/12 text-primary" : "text-muted-foreground hover:bg-secondary"
                     }`}
@@ -190,7 +206,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                     <Music className="w-3.5 h-3.5" /> Tracks
                   </button>
                   <button
-                    onClick={() => { setPitchType("playlist"); setSelectedItem(null); }}
+                    onClick={() => { setPitchType("playlist"); setSelectedItem(null); setItemSearch(""); }}
                     className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all min-h-[36px] ${
                       pitchType === "playlist" ? "bg-primary/12 text-primary" : "text-muted-foreground hover:bg-secondary"
                     }`}
@@ -202,11 +218,14 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                 {/* Selected indicator */}
                 {selectedItem && (
                   <div className="px-6 pb-2">
-                    <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-primary/8 border border-primary/15">
-                      <img src={covers[selectedItem.coverIdx]} alt="" className="w-9 h-9 rounded-lg object-cover" />
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/6 border border-primary/15">
+                      <img src={covers[selectedItem.coverIdx]} alt="" className="w-10 h-10 rounded-lg object-cover ring-1 ring-primary/20" />
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-semibold text-foreground truncate">{selectedItem.name}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{selectedItem.artist}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {selectedItem.artist}
+                          {selectedItem.trackCount != null && ` · ${selectedItem.trackCount} tracks`}
+                        </p>
                       </div>
                       <Check className="w-4 h-4 text-primary shrink-0" />
                     </div>
@@ -243,6 +262,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                           key={track.id}
                           name={track.title}
                           sub={track.artist}
+                          extra={track.genre}
                           coverIdx={track.coverIdx}
                           icon={<Music className="w-3 h-3 text-primary/40" />}
                           selected={selectedItem?.name === track.title}
@@ -250,139 +270,146 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                         />
                       ))
                     )
+                  ) : filteredPlaylists.length === 0 ? (
+                    <EmptyState text="No matching playlists" />
                   ) : (
-                    filteredPlaylists.length === 0 ? (
-                      <EmptyState text="No matching playlists" />
-                    ) : (
-                      filteredPlaylists.map((pl) => (
-                        <ItemRow
-                          key={pl.id}
-                          name={pl.name}
-                          sub={`${pl.tracks} tracks`}
-                          coverIdx={pl.coverIdxs[0]}
-                          icon={<ListMusic className="w-3 h-3 text-accent/40" />}
-                          selected={selectedItem?.name === pl.name}
-                          onClick={() => setSelectedItem({ name: pl.name, artist: "Various", coverIdx: pl.coverIdxs[0] })}
-                        />
-                      ))
-                    )
+                    filteredPlaylists.map((pl) => (
+                      <ItemRow
+                        key={pl.id}
+                        name={pl.name}
+                        sub={`${pl.tracks} tracks · ${pl.duration}`}
+                        coverIdx={pl.coverIdxs[0]}
+                        icon={<ListMusic className="w-3 h-3 text-accent/40" />}
+                        selected={selectedItem?.name === pl.name}
+                        onClick={() =>
+                          setSelectedItem({
+                            name: pl.name,
+                            artist: "Various",
+                            coverIdx: pl.coverIdxs[0],
+                            trackCount: pl.tracks,
+                          })
+                        }
+                      />
+                    ))
                   )}
                 </div>
               </motion.div>
-            )}
-
-            {step === "recipient" && (
+            ) : (
               <motion.div
-                key="recipient"
+                key="compose"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.2 }}
                 className="p-6 space-y-5"
               >
-                <FormField label="Recipient Name" required>
-                  <input
-                    type="text"
-                    value={recipientName}
-                    onChange={(e) => setRecipientName(e.target.value)}
-                    placeholder="e.g. Jamie Lin"
-                    className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
-                    autoFocus
-                  />
-                </FormField>
-                <FormField label="Company / Label" required>
-                  <input
-                    type="text"
-                    value={recipientCompany}
-                    onChange={(e) => setRecipientCompany(e.target.value)}
-                    placeholder="e.g. Interscope Records"
-                    className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
-                  />
-                </FormField>
-                <FormField label="Email" required>
-                  <input
-                    type="email"
-                    value={recipientEmail}
-                    onChange={(e) => setRecipientEmail(e.target.value)}
-                    placeholder="e.g. jamie@interscope.com"
-                    className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
-                  />
-                </FormField>
-                <FormField label="Notes (optional)">
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Any additional context for this pitch…"
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40 resize-none leading-relaxed"
-                  />
-                </FormField>
-              </motion.div>
-            )}
-
-            {step === "review" && (
-              <motion.div
-                key="review"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.2 }}
-                className="p-6 space-y-5"
-              >
-                {/* Pitch summary */}
-                <div className="p-4 rounded-xl border border-border/50 bg-secondary/30 space-y-4">
-                  <div className="flex items-center gap-3">
-                    {selectedItem && (
-                      <img src={covers[selectedItem.coverIdx]} alt="" className="w-14 h-14 rounded-xl object-cover ring-1 ring-border/50" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        {pitchType === "playlist" ? <ListMusic className="w-3.5 h-3.5 text-accent/60" /> : <Music className="w-3.5 h-3.5 text-primary/50" />}
-                        <p className="font-semibold text-foreground text-sm truncate">{selectedItem?.name}</p>
+                {/* Pitched item card — always visible */}
+                {selectedItem && (
+                  <div className="relative p-4 rounded-xl overflow-hidden">
+                    {/* Gradient background */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/8 via-accent/6 to-brand-purple/8 rounded-xl" />
+                    <div className="absolute inset-0 border border-primary/10 rounded-xl" />
+                    <div className="relative flex items-center gap-4">
+                      <img
+                        src={covers[selectedItem.coverIdx]}
+                        alt=""
+                        className="w-16 h-16 rounded-xl object-cover ring-2 ring-primary/15 shadow-lg shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-2xs text-muted-foreground/50 uppercase tracking-widest font-semibold mb-1">
+                          Pitching {pitchType === "playlist" ? "Playlist" : "Track"}
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                          {pitchType === "playlist" ? (
+                            <ListMusic className="w-4 h-4 text-accent/60 shrink-0" />
+                          ) : (
+                            <Music className="w-4 h-4 text-primary/60 shrink-0" />
+                          )}
+                          <p className="font-bold text-foreground text-[15px] tracking-tight truncate">
+                            {selectedItem.name}
+                          </p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {selectedItem.artist}
+                          {selectedItem.trackCount != null && (
+                            <span className="text-primary/60 font-semibold"> · {selectedItem.trackCount} tracks</span>
+                          )}
+                        </p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{selectedItem?.artist}</p>
+                      <button
+                        onClick={() => setStep("select")}
+                        className="text-2xs text-muted-foreground/50 hover:text-primary font-semibold transition-colors shrink-0"
+                      >
+                        Change
+                      </button>
                     </div>
                   </div>
+                )}
 
-                  <div className="h-px bg-border/50" />
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <ReviewField label="Recipient" value={recipientName} />
-                    <ReviewField label="Company" value={recipientCompany} />
-                    <ReviewField label="Email" value={recipientEmail} />
-                    <ReviewField label="Type" value={pitchType === "track" ? "Track" : "Playlist"} />
+                {/* Recipient fields */}
+                <div className="space-y-4">
+                  <p className="text-2xs text-muted-foreground/50 uppercase tracking-widest font-semibold">
+                    Recipient
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                        <User className="w-3 h-3" /> Name <span className="text-destructive">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={recipientName}
+                        onChange={(e) => setRecipientName(e.target.value)}
+                        placeholder="e.g. Jamie Lin"
+                        maxLength={100}
+                        className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                        <Building2 className="w-3 h-3" /> Company / Label <span className="text-destructive">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={recipientCompany}
+                        onChange={(e) => setRecipientCompany(e.target.value)}
+                        placeholder="e.g. Interscope Records"
+                        maxLength={100}
+                        className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+                      />
+                    </div>
                   </div>
-
-                  {notes && (
-                    <>
-                      <div className="h-px bg-border/50" />
-                      <div>
-                        <p className="text-2xs text-muted-foreground/50 uppercase tracking-widest font-semibold mb-1">Notes</p>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{notes}</p>
-                      </div>
-                    </>
-                  )}
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                      <Mail className="w-3 h-3" /> Email <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={recipientEmail}
+                      onChange={(e) => setRecipientEmail(e.target.value)}
+                      placeholder="e.g. jamie@interscope.com"
+                      maxLength={255}
+                      className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+                    />
+                  </div>
                 </div>
 
-                {/* Send now toggle */}
-                <button
-                  type="button"
-                  onClick={() => setSendNow(!sendNow)}
-                  className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all ${
-                    sendNow ? "border-primary/30 bg-primary/5" : "border-border/50 bg-secondary/30 hover:border-border"
-                  }`}
-                >
-                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                    sendNow ? "border-primary bg-primary" : "border-muted-foreground/30"
-                  }`}>
-                    {sendNow && <Check className="w-3 h-3 text-primary-foreground" />}
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-foreground">Send immediately</p>
-                    <p className="text-2xs text-muted-foreground/60 mt-0.5">Otherwise it will be saved as a draft</p>
-                  </div>
-                  <Send className={`w-4 h-4 ml-auto transition-colors ${sendNow ? "text-primary" : "text-muted-foreground/30"}`} />
-                </button>
+                {/* Message */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                    <MessageSquare className="w-3 h-3" /> Message
+                  </label>
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Write a personal note to go with your pitch…"
+                    rows={4}
+                    maxLength={2000}
+                    className="w-full px-4 py-3 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40 resize-none leading-relaxed"
+                  />
+                  <p className="text-2xs text-muted-foreground/40 text-right">{message.length}/2000</p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -391,45 +418,49 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
         {/* Footer */}
         <div className="px-6 py-4 border-t border-border/50 flex items-center justify-between gap-3 shrink-0 bg-card">
           <div className="text-xs text-muted-foreground/50">
-            {step === "review" && (
-              <span>Status: {sendNow ? "Will be sent" : "Saved as draft"}</span>
+            {step === "compose" && selectedItem && (
+              <span className="flex items-center gap-1.5">
+                {pitchType === "playlist" ? <ListMusic className="w-3 h-3" /> : <Music className="w-3 h-3" />}
+                {selectedItem.name}
+              </span>
             )}
           </div>
           <div className="flex items-center gap-2">
-            {step !== "item" && (
+            {step === "compose" && (
               <button
-                onClick={() => setStep(step === "review" ? "recipient" : "item")}
+                onClick={() => setStep("select")}
                 className="px-4 py-2.5 rounded-xl text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
               >
                 Back
               </button>
             )}
-            {step === "item" && (
+            {step === "select" ? (
               <button
-                onClick={() => setStep("recipient")}
-                disabled={!canProceedToRecipient}
-                className="btn-brand px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
+                onClick={() => setStep("compose")}
+                disabled={!canCompose}
+                className="btn-brand px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] flex items-center gap-2"
               >
-                Next: Recipient
+                Next <ArrowRight className="w-3.5 h-3.5" />
               </button>
-            )}
-            {step === "recipient" && (
-              <button
-                onClick={() => setStep("review")}
-                disabled={!canProceedToReview}
-                className="btn-brand px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
-              >
-                Next: Review
-              </button>
-            )}
-            {step === "review" && (
-              <button
-                onClick={handleCreate}
-                className="btn-brand px-6 py-2.5 rounded-xl text-[13px] font-semibold min-h-[44px] flex items-center gap-2"
-              >
-                {sendNow ? <Send className="w-3.5 h-3.5" /> : null}
-                {sendNow ? "Send Pitch" : "Save Draft"}
-              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handleSaveDraft}
+                  disabled={!canSubmit}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-border bg-card text-foreground hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  Save Draft
+                </button>
+                <button
+                  onClick={handleSend}
+                  disabled={!canSubmit}
+                  className="btn-brand px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] flex items-center gap-2"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  Send Pitch
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -438,11 +469,12 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
   );
 }
 
-/* ─── Small Components ─── */
+/* ─── Reusable Components ─── */
 
 function ItemRow({
   name,
   sub,
+  extra,
   coverIdx,
   icon,
   selected,
@@ -450,6 +482,7 @@ function ItemRow({
 }: {
   name: string;
   sub: string;
+  extra?: string;
   coverIdx: number;
   icon: React.ReactNode;
   selected: boolean;
@@ -470,6 +503,7 @@ function ItemRow({
         </div>
         <p className="text-[11px] text-muted-foreground truncate mt-0.5">{sub}</p>
       </div>
+      {extra && <span className="text-2xs text-muted-foreground/50 hidden sm:inline shrink-0">{extra}</span>}
       {selected && <Check className="w-4 h-4 text-primary shrink-0" />}
     </div>
   );
@@ -480,26 +514,6 @@ function EmptyState({ text }: { text: string }) {
     <div className="py-12 text-center">
       <Music className="w-8 h-8 mx-auto mb-3 text-muted-foreground/15" />
       <p className="text-sm font-medium text-muted-foreground">{text}</p>
-    </div>
-  );
-}
-
-function FormField({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
-  return (
-    <div className="space-y-2">
-      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-        {label} {required && <span className="text-destructive">*</span>}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-function ReviewField({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-2xs text-muted-foreground/50 uppercase tracking-widest font-semibold">{label}</p>
-      <p className="text-sm text-foreground font-medium mt-0.5 truncate">{value}</p>
     </div>
   );
 }
