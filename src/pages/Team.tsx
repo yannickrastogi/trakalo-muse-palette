@@ -1,23 +1,33 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal, Calendar } from "lucide-react";
+import { Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal, Calendar, PenTool, BookOpen, Briefcase, UserCheck } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
+const ROLES = ["Admin", "Producer", "Songwriter", "Manager", "Publisher", "A&R", "Assistant", "Viewer"] as const;
+
 const roleIcons: Record<string, React.ElementType> = {
   Admin: Shield,
-  Manager: UserCog,
   Producer: Headphones,
+  Songwriter: PenTool,
+  Manager: UserCog,
+  Publisher: BookOpen,
+  "A&R": Briefcase,
+  Assistant: UserCheck,
   Viewer: Eye,
 };
 
 const roleColors: Record<string, string> = {
   Admin: "from-brand-orange to-brand-pink",
-  Manager: "from-brand-pink to-brand-purple",
   Producer: "from-brand-purple to-[hsl(200,70%,50%)]",
+  Songwriter: "from-brand-pink to-brand-orange",
+  Manager: "from-brand-pink to-brand-purple",
+  Publisher: "from-[hsl(200,70%,50%)] to-brand-purple",
+  "A&R": "from-brand-orange to-brand-purple",
+  Assistant: "from-brand-pink to-[hsl(200,70%,50%)]",
   Viewer: "from-muted-foreground/40 to-muted-foreground/20",
 };
 
@@ -25,11 +35,12 @@ const members = [
   { name: "Kira Nomura", email: "kira@nightfallrecords.com", role: "Admin", joined: "2024-09-12", status: "active" },
   { name: "Dex Moraes", email: "dex@dexmoraes.com", role: "Producer", joined: "2024-11-03", status: "active" },
   { name: "Alina Voss", email: "alina@alinav.co", role: "Manager", joined: "2025-01-18", status: "active" },
-  { name: "Marco Silva", email: "marco@studiosilva.io", role: "Producer", joined: "2025-02-22", status: "active" },
+  { name: "Marco Silva", email: "marco@studiosilva.io", role: "Songwriter", joined: "2025-02-22", status: "active" },
   { name: "JVNE", email: "mgmt@jvne.music", role: "Producer", joined: "2025-04-10", status: "active" },
-  { name: "AYA", email: "aya@songbird.pub", role: "Viewer", joined: "2025-08-05", status: "invited" },
-  { name: "Jun Tanaka", email: "jun@tanaka.jp", role: "Viewer", joined: "2025-09-14", status: "active" },
-  { name: "Sterling Sound NYC", email: "bookings@sterling.com", role: "Producer", joined: "2025-06-01", status: "active" },
+  { name: "AYA", email: "aya@songbird.pub", role: "Publisher", joined: "2025-08-05", status: "invited" },
+  { name: "Jun Tanaka", email: "jun@tanaka.jp", role: "A&R", joined: "2025-09-14", status: "active" },
+  { name: "Sterling Sound NYC", email: "bookings@sterling.com", role: "Assistant", joined: "2025-06-01", status: "active" },
+  { name: "Lena Park", email: "lena@lenapark.kr", role: "Viewer", joined: "2025-10-01", status: "active" },
 ];
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
