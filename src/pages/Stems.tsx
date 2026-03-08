@@ -90,8 +90,6 @@ export default function Stems() {
   const [keyFilter, setKeyFilter] = useState("all");
   const [bpmMin, setBpmMin] = useState("");
   const [bpmMax, setBpmMax] = useState("");
-  const [dateFrom, setDateFrom] = useState<Date | undefined>();
-  const [dateTo, setDateTo] = useState<Date | undefined>();
 
   // Flatten all stems + add pack entries for tracks that have stems
   const allStems = useMemo<FlatStem[]>(() => {
@@ -145,11 +143,6 @@ export default function Stems() {
   const uniqueGenres = [...GENRES];
   const uniqueKeys = useMemo(() => [...new Set(tracks.map((t) => t.key).filter(Boolean))].sort(), [tracks]);
 
-  // Parse upload date helper
-  const parseUploadDate = useCallback((dateStr: string) => {
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? null : d;
-  }, []);
 
   // Count active filters
   const activeFilterCount = useMemo(() => {
@@ -160,9 +153,8 @@ export default function Stems() {
     if (genreFilter !== "all") count++;
     if (keyFilter !== "all") count++;
     if (bpmMin || bpmMax) count++;
-    if (dateFrom || dateTo) count++;
     return count;
-  }, [trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax, dateFrom, dateTo]);
+  }, [trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax]);
 
   const clearAllFilters = useCallback(() => {
     setTrackFilter("all");
@@ -170,10 +162,7 @@ export default function Stems() {
     setTypeFilter("all");
     setGenreFilter("all");
     setKeyFilter("all");
-    setBpmMin("");
     setBpmMax("");
-    setDateFrom(undefined);
-    setDateTo(undefined);
   }, []);
 
   const filtered = useMemo(() => {
@@ -196,22 +185,10 @@ export default function Stems() {
       if (genreFilter !== "all" && s.trackGenre !== genreFilter) return false;
       if (keyFilter !== "all" && (s.key || s.trackKey) !== keyFilter) return false;
       if (bpmMinVal && s.trackBpm < bpmMinVal) return false;
-      if (bpmMaxVal && s.trackBpm > bpmMaxVal) return false;
-
-      if (dateFrom || dateTo) {
-        const d = parseUploadDate(s.uploadDate);
-        if (!d) return false;
-        if (dateFrom && d < dateFrom) return false;
-        if (dateTo) {
-          const end = new Date(dateTo);
-          end.setHours(23, 59, 59, 999);
-          if (d > end) return false;
-        }
-      }
 
       return true;
     });
-  }, [allStems, search, trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax, dateFrom, dateTo, parseUploadDate]);
+  }, [allStems, search, trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax]);
 
   return (
     <PageShell>
@@ -424,12 +401,6 @@ export default function Stems() {
                       )}
                       {(bpmMin || bpmMax) && (
                         <FilterPill label={`BPM: ${bpmMin || "–"}–${bpmMax || "–"}`} onClear={() => { setBpmMin(""); setBpmMax(""); }} />
-                      )}
-                      {(dateFrom || dateTo) && (
-                        <FilterPill
-                          label={`Date: ${dateFrom ? format(dateFrom, "MMM d") : "–"} → ${dateTo ? format(dateTo, "MMM d") : "–"}`}
-                          onClear={() => { setDateFrom(undefined); setDateTo(undefined); }}
-                        />
                       )}
                     </div>
                   )}
