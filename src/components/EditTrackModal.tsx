@@ -70,7 +70,7 @@ function FieldSelect({ value, onChange, options, placeholder }: { value: string;
 }
 
 export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) {
-  const { getTrack, updateTrack } = useTrack();
+  const { getTrack, updateTrack, updateTrackSplits } = useTrack();
   const trackData = getTrack(trackId);
 
   const [title, setTitle] = useState("");
