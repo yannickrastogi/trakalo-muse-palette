@@ -32,7 +32,7 @@ const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 type Track = TrackData;
 
 const GENRES = [
-  "Afrobeats", "Ambient", "Blues", "Bouyon", "Caribbean", "Classical",
+  "Afrobeats", "Afrohouse", "Ambient", "Blues", "Bouyon", "Caribbean", "Classical",
   "Country", "Dance", "Disco-Funk", "DnB", "Dubstep", "Electronic",
   "Film", "Folk", "Hip-Hop", "House", "I-Pop", "Indie", "Jazz",
   "K-Pop", "Kompa", "Latin", "Lo-fi", "Lounge", "Pop", "Progressive",
