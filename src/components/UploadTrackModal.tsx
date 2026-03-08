@@ -269,6 +269,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         ipi: s.ipi,
         publisher: s.publisher,
       })),
+      chapters: analysisResult?.chapters,
       statusHistory: [{ status: "Available", date: dateStr, note: "Track uploaded" }],
     };
 
