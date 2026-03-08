@@ -465,19 +465,11 @@ function StemsTab() {
             <Download className="w-3.5 h-3.5" /> Download All
           </button>
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setShowUploadModal(true)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold btn-brand"
           >
             <Upload className="w-3.5 h-3.5" /> Upload Stems
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".wav,.mp3,.aiff,.flac,.ogg,.m4a"
-            className="hidden"
-            onChange={handleFileSelect}
-          />
         </div>
       </div>
 
