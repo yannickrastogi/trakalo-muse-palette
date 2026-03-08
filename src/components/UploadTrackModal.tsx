@@ -1118,13 +1118,12 @@ function StepSplits({
 
 function StepReview({
   title, artist, bpm, trackKey, genre, mood, language, notes,
-  audioFile, stems, splits, totalSplit, details, compressed,
+  audioFile, stems, splits, totalSplit, details,
 }: {
   title: string; artist: string; bpm: string; trackKey: string;
   genre: string; mood: string[]; language: string; notes: string;
   audioFile: File | null; stems: StemFile[]; splits: Split[]; totalSplit: number;
   details: Record<string, string[]>;
-  compressed: CompressedAudio | null;
 }) {
   const filledDetails = DETAIL_FIELDS.filter((f) => details[f.key]?.some((v) => v.trim()));
 
