@@ -147,6 +147,51 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
     });
   };
 
+  // ─── Splits logic ───
+  const redistributeSplits = (updated: TrackSplit[], changedId?: string): TrackSplit[] => {
+    if (!changedId) {
+      const equal = parseFloat((100 / updated.length).toFixed(2));
+      const total = parseFloat((equal * updated.length).toFixed(2));
+      const diff = parseFloat((100 - total).toFixed(2));
+      return updated.map((s, i) => ({ ...s, share: i === 0 ? parseFloat((equal + diff).toFixed(2)) : equal }));
+    }
+    const changed = updated.find((s) => s.id === changedId);
+    const others = updated.filter((s) => s.id !== changedId);
+    const remaining = parseFloat(Math.max(0, 100 - (changed?.share || 0)).toFixed(2));
+    if (others.length === 0) return updated;
+    const each = parseFloat((remaining / others.length).toFixed(2));
+    const total = parseFloat((each * others.length).toFixed(2));
+    const diff = parseFloat((remaining - total).toFixed(2));
+    let idx = 0;
+    return updated.map((s) => {
+      if (s.id === changedId) return s;
+      const val = idx === 0 ? parseFloat((each + diff).toFixed(2)) : each;
+      idx++;
+      return { ...s, share: val };
+    });
+  };
+
+  const addSplit = useCallback(() => {
+    const newSplits = [...splits, { id: crypto.randomUUID(), name: "", role: "", share: 0, pro: "", ipi: "", publisher: "" }];
+    setSplits(redistributeSplits(newSplits));
+  }, [splits]);
+
+  const updateSplit = useCallback((id: string, field: keyof TrackSplit, value: string | number) => {
+    const updated = splits.map((s) => (s.id === id ? { ...s, [field]: value } : s));
+    if (field === "share") {
+      setSplits(redistributeSplits(updated, id));
+    } else {
+      setSplits(updated);
+    }
+  }, [splits]);
+
+  const removeSplit = useCallback((id: string) => {
+    if (splits.length <= 1) return;
+    setSplits(redistributeSplits(splits.filter((s) => s.id !== id)));
+  }, [splits]);
+
+  const totalSplit = splits.reduce((sum, s) => sum + (Number(s.share) || 0), 0);
+
   const handleSave = () => {
     if (!title.trim() || !artist.trim()) {
       toast.error("Title and Artist are required");
