@@ -70,6 +70,7 @@ export interface TrackData {
   details: Record<string, string[]>;
   stems: TrackStem[];
   splits: TrackSplit[];
+  lyrics?: string;
   chapters?: TrackChapter[];
   statusHistory: TrackStatusEntry[];
 }
@@ -101,6 +102,7 @@ const defaultTracks: TrackData[] = [
       { id: "s3", name: "JVNE", role: "Producer", share: 20, pro: "SESAC", ipi: "00112233445", publisher: "" },
       { id: "s4", name: "Nightfall Records", role: "Publisher", share: 15, pro: "—", ipi: "—", publisher: "" },
     ],
+    lyrics: `[Verse 1]\nUnderneath the velvet hour\nWe find a place that's ours\nSilhouettes in amber light\nDancing through the night\n\n[Chorus]\nHold me close, don't let me go\nIn this glow, we're moving slow\nVelvet hour, velvet dreams\nNothing's ever what it seems\n\n[Verse 2]\nWhispers float on midnight air\nFingers running through your hair\nTime dissolves like sugar rain\nWe'll never feel this way again\n\n[Chorus]\nHold me close, don't let me go\nIn this glow, we're moving slow\nVelvet hour, velvet dreams\nNothing's ever what it seems\n\n[Bridge]\nAnd if the morning comes too soon\nWe'll chase the shadows of the moon\n\n[Outro]\nVelvet hour… velvet hour…`,
     statusHistory: [
       { status: "Available", date: "Jan 10, 2026", note: "Recording completed at Nightfall Studio" },
       { status: "On Hold", date: "Jan 22, 2026", note: "Awaiting JVNE feature clearance" },
@@ -214,6 +216,7 @@ interface TrackContextValue {
   addTrack: (track: TrackData) => void;
   updateTrack: (id: number, updates: Partial<TrackData>) => void;
   updateTrackStatus: (id: number, newStatus: string, note: string) => void;
+  updateTrackLyrics: (id: number, lyrics: string) => void;
   updateTrackStems: (id: number, stems: TrackStem[]) => void;
   updateTrackSplits: (id: number, splits: TrackSplit[]) => void;
 }
@@ -259,6 +262,10 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const updateTrackLyrics = useCallback((id: number, lyrics: string) => {
+    setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, lyrics } : t)));
+  }, []);
+
   const updateTrackStems = useCallback((id: number, stems: TrackStem[]) => {
     setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, stems } : t)));
   }, []);
@@ -272,7 +279,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <TrackContext.Provider value={{ tracks, getTrack, addTrack, updateTrack, updateTrackStatus, updateTrackStems, updateTrackSplits }}>
+    <TrackContext.Provider value={{ tracks, getTrack, addTrack, updateTrack, updateTrackStatus, updateTrackLyrics, updateTrackStems, updateTrackSplits }}>
       {children}
     </TrackContext.Provider>
   );
