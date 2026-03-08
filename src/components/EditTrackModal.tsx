@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -6,8 +6,10 @@ import {
   ChevronRight,
   Plus,
   Save,
+  User,
+  Trash2,
 } from "lucide-react";
-import { useTrack, type TrackData } from "@/contexts/TrackContext";
+import { useTrack, type TrackData, type TrackSplit } from "@/contexts/TrackContext";
 import { toast } from "sonner";
 
 import { GENRES, KEYS, MOODS, LANGUAGES } from "@/lib/constants";
