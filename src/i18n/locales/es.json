@@ -295,7 +295,29 @@
     "fr": "Français",
     "es": "Español"
   },
+  "inviteMember": {
+    "title": "Invitar miembro",
+    "description": "Envía una invitación para unirse a tu equipo.",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "ej. colega@sello.com",
+    "roleLabel": "Rol",
+    "invalidEmail": "Ingresa una dirección de e-mail válida",
+    "cancel": "Cancelar",
+    "sendInvite": "Enviar invitación",
+    "inviteSent": "Invitación enviada a {{email}}"
+  },
+  "invites": {
+    "title": "Invitaciones pendientes",
+    "pending": "Pendiente",
+    "accepted": "Aceptada",
+    "expired": "Expirada",
+    "noInvites": "Sin invitaciones pendientes",
+    "sentOn": "Enviada el"
+  },
   "common": {
+    "pitch": "pitch",
+    "pitches": "pitches"
+  }
     "pitch": "pitch",
     "pitches": "pitchs"
   }
