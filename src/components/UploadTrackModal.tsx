@@ -367,7 +367,10 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   audioRef={audioRef}
                   audioInputRef={audioInputRef}
                   onUpload={handleAudioUpload}
-                  onRemove={() => { setAudioFile(null); setAudioPreviewUrl(null); setAudioProgress(0); }}
+                  onRemove={() => { setAudioFile(null); setAudioPreviewUrl(null); setAudioProgress(0); setAnalysisResult(null); }}
+                  analyzing={analyzing}
+                  analysisResult={analysisResult}
+                  analysisDuration={analysisDuration}
                 />
               )}
               {step === 1 && (
