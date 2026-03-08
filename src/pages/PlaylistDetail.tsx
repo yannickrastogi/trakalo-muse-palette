@@ -37,7 +37,8 @@ import { PageShell } from "@/components/PageShell";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePlaylists, covers } from "@/contexts/PlaylistContext";
-import { allTracks, statusColors } from "./Catalog";
+import { statusColors } from "./Catalog";
+import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useRole } from "@/contexts/RoleContext";
 import {
   Dialog,
@@ -50,28 +51,26 @@ import {
 
 // covers imported from PlaylistContext
 
-type Track = (typeof allTracks)[number];
+type Track = TrackData;
 
 const containerVariants = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const itemVariant = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } } };
-
-function getInitialTracks(playlist: { trackIds?: number[]; tracks: number }) {
-  if (playlist.trackIds && playlist.trackIds.length > 0) {
-    return allTracks.filter((t) => playlist.trackIds!.includes(t.id));
-  }
-  return allTracks.slice(0, Math.min(playlist.tracks, allTracks.length));
-}
 
 export default function PlaylistDetail() {
   const { id } = useParams();
   const isMobile = useIsMobile();
   const { getPlaylist, updatePlaylist } = usePlaylists();
   const { permissions } = useRole();
+  const { tracks: allTracks } = useTrack();
   const playlist = getPlaylist(id || "");
 
-  const [tracks, setTracks] = useState<Track[]>(() =>
-    playlist ? getInitialTracks(playlist) : []
-  );
+  const [tracks, setTracks] = useState<Track[]>(() => {
+    if (!playlist) return [];
+    if (playlist.trackIds && playlist.trackIds.length > 0) {
+      return allTracks.filter((t) => playlist.trackIds!.includes(t.id));
+    }
+    return allTracks.slice(0, Math.min(playlist.tracks, allTracks.length));
+  });
   const [playingTrackId, setPlayingTrackId] = useState<number | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState(playlist?.name || "");

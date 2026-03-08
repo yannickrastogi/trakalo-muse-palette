@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { allTracks } from "@/pages/Catalog";
+import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { getSavedContacts, saveContact, type SavedContact } from "@/hooks/use-saved-contacts";
 
@@ -121,13 +121,15 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
     onOpenChange(v);
   };
 
+  const { tracks: allTracks } = useTrack();
+
   const filteredTracks = useMemo(() => {
     if (!itemSearch) return allTracks;
     const q = itemSearch.toLowerCase();
     return allTracks.filter(
       (t) => t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q)
     );
-  }, [itemSearch]);
+  }, [itemSearch, allTracks]);
 
   const filteredPlaylists = useMemo(() => {
     if (!itemSearch) return playlists;
