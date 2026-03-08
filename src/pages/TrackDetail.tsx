@@ -123,7 +123,7 @@ export default function TrackDetail() {
 
   return (
     <PageShell>
-          <motion.div variants={container} initial="hidden" animate="show" className="p-6 lg:p-8 space-y-6 max-w-[1400px]">
+          <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
             {/* Breadcrumb */}
             <motion.div variants={item} className="flex items-center gap-2 text-sm text-muted-foreground">
               <Link to="/tracks" className="hover:text-foreground transition-colors">Tracks</Link>

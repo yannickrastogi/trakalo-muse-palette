@@ -226,7 +226,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   return (
     <Dialog open={open} onOpenChange={(val) => { if (!val) handleReset(); onOpenChange(val); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0 bg-card border-border">
+      <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[90vh] h-[100dvh] sm:h-auto overflow-hidden flex flex-col p-0 gap-0 bg-card border-border w-full sm:w-auto">
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border space-y-3">
           <DialogTitle className="text-lg font-bold text-foreground tracking-tight">Upload Track</DialogTitle>
