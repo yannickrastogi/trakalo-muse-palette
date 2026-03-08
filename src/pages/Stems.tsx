@@ -302,7 +302,7 @@ export default function Stems() {
                         <option value="all">All Types</option>
                         <option value="pack">🎛️ Stems Pack</option>
                         <option disabled>──────────</option>
-                        {stemTypes.map((t) => (
+                        {STEM_TYPES.map((t) => (
                           <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
                         ))}
                       </select>

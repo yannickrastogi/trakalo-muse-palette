@@ -865,7 +865,7 @@ function StemsTab({ trackId }: { trackId: number }) {
                             className="absolute z-30 top-full left-0 mt-1 w-44 bg-popover border border-border rounded-lg shadow-lg overflow-hidden py-1"
                             style={{ boxShadow: "var(--shadow-elevated)" }}
                           >
-                            {stemTypes.map((t) => (
+                            {STEM_TYPES.map((t) => (
                               <button
                                 key={t}
                                 onClick={() => handleChangeType(stem.id, t)}
@@ -1038,7 +1038,7 @@ function StemsTab({ trackId }: { trackId: number }) {
                           className="h-8 px-2.5 rounded-lg bg-secondary border border-border text-xs font-medium text-foreground capitalize appearance-none cursor-pointer hover:bg-muted transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
                           style={{ minWidth: "120px" }}
                         >
-                          {stemTypes.map((t) => (
+                          {STEM_TYPES.map((t) => (
                             <option key={t} value={t} className="capitalize">{t}</option>
                           ))}
                         </select>
