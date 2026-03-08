@@ -94,6 +94,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
   const [explicit, setExplicit] = useState(false);
   const [details, setDetails] = useState<Record<string, string[]>>({});
   const [showDetails, setShowDetails] = useState(false);
+  const [splits, setSplits] = useState<TrackSplit[]>([]);
 
   // Populate form when modal opens
   useEffect(() => {
