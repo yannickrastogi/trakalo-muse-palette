@@ -111,6 +111,7 @@ function buildMeta(trackData: TrackData) {
     { label: "Mastered By", value: trackData.masteredBy || "—" },
     { label: "Copyright", value: trackData.copyright || "—" },
     { label: "Language", value: trackData.language || "—" },
+    { label: "Gender", value: trackData.voice || "—" },
     { label: "Explicit", value: trackData.explicit ? "Yes" : "No" },
     { label: "Notes", value: trackData.notes || "—" },
   ];
