@@ -209,6 +209,12 @@ export default function TrackDetail() {
                     <Download className="w-4 h-4" /> Download
                   </button>
                   <button
+                    onClick={() => setShareTrackModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+                  >
+                    <Share2 className="w-4 h-4" /> Share Track
+                  </button>
+                  <button
                     onClick={() => setShareModalOpen(true)}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
                   >
