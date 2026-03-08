@@ -222,6 +222,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
     };
 
     updateTrack(trackId, updates);
+    updateTrackSplits(trackId, splits.filter(s => s.name.trim()));
     toast.success("Track updated successfully");
     onClose();
   };
