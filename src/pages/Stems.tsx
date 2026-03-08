@@ -140,8 +140,15 @@ export default function Stems() {
   // Derive unique options from data
   const uniqueTracks = useMemo(() => [...new Set(allStems.map((s) => s.trackTitle))].sort(), [allStems]);
   const uniqueArtists = useMemo(() => [...new Set(allStems.map((s) => s.trackArtist))].sort(), [allStems]);
-  // Genre: use all tracks for consistency across the platform
-  const uniqueGenres = useMemo(() => [...new Set(tracks.map((t) => t.genre))].filter(Boolean).sort(), [tracks]);
+  // Genre: use the predefined list consistent across the platform
+  const uniqueGenres = useMemo(() => [
+    "Afrobeats", "Afrohouse", "Ambient", "Blues", "Bouyon", "Caribbean", "Classical",
+    "Country", "Dance", "Disco-Funk", "DnB", "Dubstep", "Electronic",
+    "Film", "Folk", "Hip-Hop", "House", "I-Pop", "Indie", "Jazz",
+    "K-Pop", "Kompa", "Latin", "Lo-fi", "Lounge", "Pop", "Progressive",
+    "R&B", "Reggae-Dancehall", "Rock", "Shatta", "Soca", "Soul",
+    "World", "Zouk",
+  ], []);
   const uniqueKeys = useMemo(() => [...new Set(tracks.map((t) => t.key).filter(Boolean))].sort(), [tracks]);
 
   // Parse upload date helper
