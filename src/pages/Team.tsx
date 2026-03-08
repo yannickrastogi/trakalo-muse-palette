@@ -107,10 +107,14 @@ export default function Team() {
   const handleInvite = (payload: InvitePayload) => {
     const newInvite: Invite = {
       email: payload.email,
+      name: `${payload.firstName} ${payload.lastName}`,
       role: payload.role,
       sentAt: new Date().toISOString().split("T")[0],
       status: "pending",
     };
+    setInvites((prev) => [newInvite, ...prev]);
+    toast.success(t("inviteMember.inviteSent", { email: payload.email }));
+  };
     setInvites((prev) => [newInvite, ...prev]);
     toast.success(t("inviteMember.inviteSent", { email: payload.email }));
   };
