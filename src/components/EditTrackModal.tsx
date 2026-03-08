@@ -288,15 +288,15 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 </div>
               </div>
 
-              {/* Type, Voice & Language */}
+              {/* Type, Gender & Language */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <FieldLabel>Type</FieldLabel>
                   <FieldSelect value={trackType} onChange={setTrackType} options={TYPES} placeholder="Select type" />
                 </div>
                 <div className="space-y-1.5">
-                  <FieldLabel>Voice</FieldLabel>
-                  <FieldSelect value={voice} onChange={setVoice} options={["Male", "Female", "Duet", "N/A"]} placeholder="Select voice" />
+                  <FieldLabel>Gender</FieldLabel>
+                  <FieldSelect value={voice} onChange={setVoice} options={["Male", "Female", "Duet", "N/A"]} placeholder="Select gender" />
                 </div>
                 <div className="space-y-1.5">
                   <FieldLabel>Language</FieldLabel>
