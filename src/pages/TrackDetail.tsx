@@ -1,5 +1,7 @@
-import { useState, useRef, useCallback } from "react"; // force refresh
+import { useState, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useTrack, type TrackStem } from "@/contexts/TrackContext";
+import { usePitches } from "@/contexts/PitchContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertDialog,
@@ -45,34 +47,9 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
+import { type PitchEntry } from "@/components/CreatePitchModal";
 
-// Sample track data
-const trackData = {
-  id: 1,
-  title: "Velvet Hour",
-  artist: "Kira Nomura",
-  featuredArtists: ["JVNE"],
-  album: "Late Bloom EP",
-  genre: "Neo-Soul",
-  bpm: 92,
-  key: "Ab Major",
-  duration: "4:12",
-  mood: ["emotional", "dreamy", "smooth"],
-  status: "Master",
-  isrc: "USRC12600001",
-  upc: "0850123456789",
-  releaseDate: "2026-04-12",
-  label: "Nightfall Records",
-  publisher: "Nomura Publishing",
-  writtenBy: ["Kira Nomura", "Jun Tanaka"],
-  producedBy: ["JVNE", "Kira Nomura"],
-  mixedBy: "Marco Silva",
-  masteredBy: "Sterling Sound NYC",
-  copyright: "© 2026 Nightfall Records",
-  language: "English",
-  explicit: false,
-};
-
+// Stem types kept for the stems tab
 const stemTypes = ["kick", "snare", "bass", "guitar", "vocal", "synth", "drums", "background vocal", "fx", "other"] as const;
 type StemType = typeof stemTypes[number];
 
@@ -85,43 +62,11 @@ interface StemFile {
   color: string;
 }
 
-const stemsData: StemFile[] = [
-  { id: "1", fileName: "VelvetHour_Vocal_Lead.wav", type: "vocal", fileSize: "42.3 MB", uploadDate: "Mar 2, 2026", color: "text-brand-pink" },
-  { id: "2", fileName: "VelvetHour_BG_Vocals.wav", type: "background vocal", fileSize: "38.1 MB", uploadDate: "Mar 2, 2026", color: "text-brand-purple" },
-  { id: "3", fileName: "VelvetHour_Drums_Full.wav", type: "drums", fileSize: "56.7 MB", uploadDate: "Mar 1, 2026", color: "text-primary" },
-  { id: "4", fileName: "VelvetHour_Kick.wav", type: "kick", fileSize: "12.4 MB", uploadDate: "Mar 1, 2026", color: "text-primary" },
-  { id: "5", fileName: "VelvetHour_Snare.wav", type: "snare", fileSize: "8.9 MB", uploadDate: "Mar 1, 2026", color: "text-primary" },
-  { id: "6", fileName: "VelvetHour_Bass.wav", type: "bass", fileSize: "28.5 MB", uploadDate: "Feb 28, 2026", color: "text-chart-4" },
-  { id: "7", fileName: "VelvetHour_Synth_Pad.wav", type: "synth", fileSize: "34.2 MB", uploadDate: "Feb 28, 2026", color: "text-brand-orange" },
-  { id: "8", fileName: "VelvetHour_Guitar_Clean.wav", type: "guitar", fileSize: "31.0 MB", uploadDate: "Feb 27, 2026", color: "text-chart-5" },
-  { id: "9", fileName: "VelvetHour_FX_Risers.wav", type: "fx", fileSize: "15.8 MB", uploadDate: "Feb 27, 2026", color: "text-accent" },
-];
-
-const splits = [
-  { name: "Kira Nomura", role: "Writer / Artist", share: 40, pro: "ASCAP", ipi: "00123456789" },
-  { name: "Jun Tanaka", role: "Writer", share: 25, pro: "BMI", ipi: "00987654321" },
-  { name: "JVNE", role: "Producer", share: 20, pro: "SESAC", ipi: "00112233445" },
-  { name: "Nightfall Records", role: "Publisher", share: 15, pro: "—", ipi: "—" },
-];
-
-const paperwork = [
-  { name: "Master License Agreement", type: "PDF", date: "Jan 15, 2026", status: "Signed" },
-  { name: "Publishing Split Sheet", type: "PDF", date: "Jan 18, 2026", status: "Signed" },
-  { name: "Sync License — Nike Campaign", type: "PDF", date: "Feb 22, 2026", status: "Pending" },
-  { name: "Distribution Agreement", type: "PDF", date: "Jan 10, 2026", status: "Signed" },
-  { name: "Mechanical License", type: "PDF", date: "Mar 01, 2026", status: "Draft" },
-];
-
-
-const pitchHistory = [
-  { recipient: "Interscope Records", contact: "A&R — Jamie Lin", date: "Mar 2, 2026", status: "Under Review", response: null },
-  { recipient: "Atlantic Records", contact: "A&R — David Park", date: "Feb 28, 2026", status: "Accepted", response: "Signed sync deal Mar 5" },
-  { recipient: "Anjunadeep", contact: "Label Manager", date: "Feb 25, 2026", status: "Declined", response: "Not a fit for current roster" },
-  { recipient: "Billie Eilish", contact: "Management — Darkroom", date: "Feb 20, 2026", status: "Accepted", response: "Feature confirmed Feb 27" },
-  { recipient: "Republic Records", contact: "A&R — Sarah Cho", date: "Feb 18, 2026", status: "Under Review", response: null },
-];
-
 const pitchStatusColors: Record<string, string> = {
+  Draft: "bg-muted/60 text-muted-foreground",
+  Sent: "bg-primary/15 text-primary",
+  Opened: "bg-brand-purple/15 text-brand-purple",
+  Responded: "bg-emerald-500/15 text-emerald-400",
   "Under Review": "bg-brand-orange/15 text-brand-orange",
   Accepted: "bg-emerald-500/15 text-emerald-400",
   Declined: "bg-destructive/15 text-destructive",
