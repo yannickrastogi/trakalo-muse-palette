@@ -169,8 +169,12 @@
     "searchPlaceholder": "Search by name, email, or role…",
     "noResults": "No team members found",
     "role_admin": "Admin",
-    "role_manager": "Manager",
     "role_producer": "Producer",
+    "role_songwriter": "Songwriter",
+    "role_manager": "Manager",
+    "role_publisher": "Publisher",
+    "role_a&r": "A&R",
+    "role_assistant": "Assistant",
     "role_viewer": "Viewer"
   },
   "trackDetail": {

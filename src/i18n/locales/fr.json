@@ -169,8 +169,12 @@
     "searchPlaceholder": "Rechercher par nom, e-mail ou rôle…",
     "noResults": "Aucun membre trouvé",
     "role_admin": "Administrateur",
-    "role_manager": "Gestionnaire",
     "role_producer": "Producteur",
+    "role_songwriter": "Auteur-compositeur",
+    "role_manager": "Gestionnaire",
+    "role_publisher": "Éditeur",
+    "role_a&r": "A&R",
+    "role_assistant": "Assistant",
     "role_viewer": "Lecteur"
   },
   "trackDetail": {
