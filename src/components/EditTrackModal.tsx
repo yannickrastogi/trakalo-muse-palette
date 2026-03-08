@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -6,8 +6,10 @@ import {
   ChevronRight,
   Plus,
   Save,
+  User,
+  Trash2,
 } from "lucide-react";
-import { useTrack, type TrackData } from "@/contexts/TrackContext";
+import { useTrack, type TrackData, type TrackSplit } from "@/contexts/TrackContext";
 import { toast } from "sonner";
 
 import { GENRES, KEYS, MOODS, LANGUAGES } from "@/lib/constants";
@@ -68,7 +70,7 @@ function FieldSelect({ value, onChange, options, placeholder }: { value: string;
 }
 
 export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) {
-  const { getTrack, updateTrack } = useTrack();
+  const { getTrack, updateTrack, updateTrackSplits } = useTrack();
   const trackData = getTrack(trackId);
 
   const [title, setTitle] = useState("");
@@ -92,6 +94,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
   const [explicit, setExplicit] = useState(false);
   const [details, setDetails] = useState<Record<string, string[]>>({});
   const [showDetails, setShowDetails] = useState(false);
+  const [splits, setSplits] = useState<TrackSplit[]>([]);
 
   // Populate form when modal opens
   useEffect(() => {
@@ -116,6 +119,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       setCopyright(trackData.copyright);
       setExplicit(trackData.explicit);
       setDetails(JSON.parse(JSON.stringify(trackData.details || {})));
+      setSplits(trackData.splits?.length ? trackData.splits.map(s => ({ ...s })) : [{ id: "1", name: "", role: "", share: 100, pro: "", ipi: "", publisher: "" }]);
     }
   }, [open, trackId]);
 
@@ -142,6 +146,51 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       return { ...prev, [key]: arr.length ? arr : [""] };
     });
   };
+
+  // ─── Splits logic ───
+  const redistributeSplits = (updated: TrackSplit[], changedId?: string): TrackSplit[] => {
+    if (!changedId) {
+      const equal = parseFloat((100 / updated.length).toFixed(2));
+      const total = parseFloat((equal * updated.length).toFixed(2));
+      const diff = parseFloat((100 - total).toFixed(2));
+      return updated.map((s, i) => ({ ...s, share: i === 0 ? parseFloat((equal + diff).toFixed(2)) : equal }));
+    }
+    const changed = updated.find((s) => s.id === changedId);
+    const others = updated.filter((s) => s.id !== changedId);
+    const remaining = parseFloat(Math.max(0, 100 - (changed?.share || 0)).toFixed(2));
+    if (others.length === 0) return updated;
+    const each = parseFloat((remaining / others.length).toFixed(2));
+    const total = parseFloat((each * others.length).toFixed(2));
+    const diff = parseFloat((remaining - total).toFixed(2));
+    let idx = 0;
+    return updated.map((s) => {
+      if (s.id === changedId) return s;
+      const val = idx === 0 ? parseFloat((each + diff).toFixed(2)) : each;
+      idx++;
+      return { ...s, share: val };
+    });
+  };
+
+  const addSplit = useCallback(() => {
+    const newSplits = [...splits, { id: crypto.randomUUID(), name: "", role: "", share: 0, pro: "", ipi: "", publisher: "" }];
+    setSplits(redistributeSplits(newSplits));
+  }, [splits]);
+
+  const updateSplit = useCallback((id: string, field: keyof TrackSplit, value: string | number) => {
+    const updated = splits.map((s) => (s.id === id ? { ...s, [field]: value } : s));
+    if (field === "share") {
+      setSplits(redistributeSplits(updated, id));
+    } else {
+      setSplits(updated);
+    }
+  }, [splits]);
+
+  const removeSplit = useCallback((id: string) => {
+    if (splits.length <= 1) return;
+    setSplits(redistributeSplits(splits.filter((s) => s.id !== id)));
+  }, [splits]);
+
+  const totalSplit = splits.reduce((sum, s) => sum + (Number(s.share) || 0), 0);
 
   const handleSave = () => {
     if (!title.trim() || !artist.trim()) {
@@ -173,6 +222,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
     };
 
     updateTrack(trackId, updates);
+    updateTrackSplits(trackId, splits.filter(s => s.name.trim()));
     toast.success("Track updated successfully");
     onClose();
   };
@@ -378,6 +428,70 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                   rows={3}
                   className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40 resize-none"
                 />
+              </div>
+
+              {/* Splits */}
+              <div className="border-t border-border pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-semibold text-foreground">Splits & Credits</h4>
+                    <p className="text-2xs text-muted-foreground">Add collaborators and assign ownership splits</p>
+                  </div>
+                  <div className={`text-xs font-bold tabular-nums ${totalSplit === 100 ? "text-emerald-400" : totalSplit > 100 ? "text-destructive" : "text-brand-orange"}`}>
+                    {totalSplit}%
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {splits.map((split, idx) => (
+                    <div key={split.id} className="rounded-xl bg-secondary/50 border border-border p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-brand-orange/10 flex items-center justify-center">
+                            <User className="w-3 h-3 text-brand-orange" />
+                          </div>
+                          <span className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">Contributor {idx + 1}</span>
+                        </div>
+                        {splits.length > 1 && (
+                          <button onClick={() => removeSplit(split.id)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-2xs text-muted-foreground font-medium">Name</label>
+                          <input value={split.name} onChange={(e) => updateSplit(split.id, "name", e.target.value)} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-2xs text-muted-foreground font-medium">Role</label>
+                          <input value={split.role} onChange={(e) => updateSplit(split.id, "role", e.target.value)} placeholder="e.g. Producer" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-2xs text-muted-foreground font-medium">Split %</label>
+                          <input type="number" min={0} max={100} step={0.01} value={split.share} onChange={(e) => updateSplit(split.id, "share", parseFloat(e.target.value) || 0)} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-2xs text-muted-foreground font-medium">PRO</label>
+                          <input value={split.pro} onChange={(e) => updateSplit(split.id, "pro", e.target.value)} placeholder="e.g. ASCAP" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-2xs text-muted-foreground font-medium">IPI</label>
+                          <input value={split.ipi} onChange={(e) => updateSplit(split.id, "ipi", e.target.value)} placeholder="IPI number" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-2xs text-muted-foreground font-medium">Publisher</label>
+                          <input value={split.publisher} onChange={(e) => updateSplit(split.id, "publisher", e.target.value)} placeholder="Publisher name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={addSplit}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-border hover:border-brand-orange/30 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-all w-full justify-center"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Contributor
+                </button>
               </div>
 
               {/* More Details */}
