@@ -581,6 +581,8 @@ function StemsTab() {
     </div>
   );
 }
+
+function SplitsTab() {
   const totalShares = splits.reduce((sum, s) => sum + s.share, 0);
 
   return (
