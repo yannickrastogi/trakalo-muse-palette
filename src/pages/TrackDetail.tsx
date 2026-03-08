@@ -379,7 +379,10 @@ function StemsTab() {
   };
 
   const stageFiles = (files: File[]) => {
-    setPendingFiles(files.map((f) => ({ file: f, type: guessType(f.name) })));
+    setPendingFiles((prev) => [
+      ...prev,
+      ...files.map((f) => ({ file: f, type: guessType(f.name), customName: f.name.replace(/\.[^.]+$/, "") })),
+    ]);
   };
 
   const updatePendingType = (index: number, type: StemType) => {
