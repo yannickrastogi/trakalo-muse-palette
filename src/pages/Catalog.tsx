@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { UploadTrackModal } from "@/components/UploadTrackModal";
 import { useRole } from "@/contexts/RoleContext";
 import { useTrack } from "@/contexts/TrackContext";
+import { GENRES, KEYS, MOODS, LANGUAGES, GENDERS } from "@/lib/constants";
 import { motion } from "framer-motion";
 import {
   Music,
@@ -68,11 +69,11 @@ export default function Catalog() {
   const { permissions } = useRole();
 
   const types = useMemo(() => [...new Set(allTracks.map((t) => t.type))].sort(), [allTracks]);
-  const genres = useMemo(() => [...new Set(allTracks.map((t) => t.genre))].filter(Boolean).sort(), [allTracks]);
-  const keys = useMemo(() => [...new Set(allTracks.map((t) => t.key))].filter(Boolean).sort(), [allTracks]);
-  const moods = useMemo(() => [...new Set(allTracks.flatMap((t) => t.mood))].sort(), [allTracks]);
-  const languages = useMemo(() => [...new Set(allTracks.map((t) => t.language))].filter(Boolean).sort(), [allTracks]);
-  const voices = useMemo(() => [...new Set(allTracks.map((t) => t.voice))].filter(Boolean).sort(), [allTracks]);
+  const genres = [...GENRES];
+  const keys = [...KEYS];
+  const moods = [...MOODS];
+  const languages = [...LANGUAGES];
+  const voices = [...GENDERS];
 
   const activeFilterCount = [typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter, voiceFilter].filter(Boolean).length;
 

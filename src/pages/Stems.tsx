@@ -18,8 +18,9 @@ import cover6 from "@/assets/covers/cover-6.jpg";
 
 const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 
-// Consistent stem types used across the platform (TrackDetail, UploadTrackModal, etc.)
-const stemTypes = ["kick", "snare", "bass", "guitar", "vocal", "synth", "drums", "background vocal", "fx", "other"] as const;
+// Use centralized constants
+import { STEM_TYPES, GENRES } from "@/lib/constants";
+import type { StemType } from "@/lib/constants";
 
 interface FlatStem extends TrackStem {
   trackId: number;
@@ -137,18 +138,11 @@ export default function Stems() {
     return result;
   }, [tracks]);
 
-  // Derive unique options from data
-  const uniqueTracks = useMemo(() => [...new Set(allStems.map((s) => s.trackTitle))].sort(), [allStems]);
-  const uniqueArtists = useMemo(() => [...new Set(allStems.map((s) => s.trackArtist))].sort(), [allStems]);
-  // Genre: use the predefined list consistent across the platform
-  const uniqueGenres = useMemo(() => [
-    "Afrobeats", "Afrohouse", "Ambient", "Blues", "Bouyon", "Caribbean", "Classical",
-    "Country", "Dance", "Disco-Funk", "DnB", "Dubstep", "Electronic",
-    "Film", "Folk", "Hip-Hop", "House", "I-Pop", "Indie", "Jazz",
-    "K-Pop", "Kompa", "Latin", "Lo-fi", "Lounge", "Pop", "Progressive",
-    "R&B", "Reggae-Dancehall", "Rock", "Shatta", "Soca", "Soul",
-    "World", "Zouk",
-  ], []);
+  // Derive unique options — tracks & artists from ALL tracks so new additions auto-appear
+  const uniqueTracks = useMemo(() => [...new Set(tracks.map((t) => t.title))].sort(), [tracks]);
+  const uniqueArtists = useMemo(() => [...new Set(tracks.map((t) => t.artist))].sort(), [tracks]);
+  // Genre & Keys: use centralized predefined lists from constants
+  const uniqueGenres = [...GENRES];
   const uniqueKeys = useMemo(() => [...new Set(tracks.map((t) => t.key).filter(Boolean))].sort(), [tracks]);
 
   // Parse upload date helper
@@ -301,7 +295,7 @@ export default function Stems() {
                         <option value="all">All Types</option>
                         <option value="pack">🎛️ Stems Pack</option>
                         <option disabled>──────────</option>
-                        {stemTypes.map((t) => (
+                        {STEM_TYPES.map((t) => (
                           <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
                         ))}
                       </select>

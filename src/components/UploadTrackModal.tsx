@@ -31,17 +31,7 @@ const MAX_TRACKS = 20;
 
 const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
-const GENRES = [
-  "Afrobeats", "Afrohouse", "Ambient", "Blues", "Bouyon", "Caribbean", "Classical",
-  "Country", "Dance", "Disco-Funk", "DnB", "Dubstep", "Electronic",
-  "Film", "Folk", "Hip-Hop", "House", "I-Pop", "Indie", "Jazz",
-  "K-Pop", "Kompa", "Latin", "Lo-fi", "Lounge", "Pop", "Progressive",
-  "R&B", "Reggae-Dancehall", "Rock", "Shatta", "Soca", "Soul",
-  "World", "Zouk",
-];
-const KEYS = ["Ab Maj", "A Min", "Bb Maj", "B Min", "C Min", "C# Min", "D Maj", "Eb Maj", "E Min", "F Maj", "F# Min", "G Maj"];
-const MOODS = ["aggressive", "calm", "dark", "dreamy", "emotional", "energetic", "euphoric", "experimental", "happy", "hopeful", "hypnotic", "meditative", "nostalgic", "playful", "romantic", "smooth", "uplifting", "warm"];
-const LANGUAGES = ["English", "French", "Instrumental", "Japanese", "Portuguese", "Spanish"];
+import { GENRES, KEYS, MOODS, LANGUAGES } from "@/lib/constants";
 
 interface Split {
   id: string;
@@ -680,7 +670,7 @@ function FieldInput({ value, onChange, placeholder, type = "text" }: { value: st
   );
 }
 
-function FieldSelect({ value, onChange, options, placeholder }: { value: string; onChange: (v: string) => void; options: string[]; placeholder: string }) {
+function FieldSelect({ value, onChange, options, placeholder }: { value: string; onChange: (v: string) => void; options: readonly string[]; placeholder: string }) {
   return (
     <select
       value={value}
@@ -916,7 +906,7 @@ function StepInfo({
         </div>
         <div className="space-y-1.5">
           <FieldLabel>Genre</FieldLabel>
-          {genre === "__other__" || (!GENRES.includes(genre) && genre !== "") ? (
+          {genre === "__other__" || (!(GENRES as readonly string[]).includes(genre) && genre !== "") ? (
             <div className="flex gap-1.5">
               <input
                 type="text"
