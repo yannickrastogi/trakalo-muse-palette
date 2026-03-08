@@ -56,18 +56,24 @@ export function ShareModal({
   const title = shareType === "playlist" ? playlistName || "Playlist" : trackTitle || "Track";
   const subtitle = shareType === "playlist"
     ? `${playlistTracks?.length || 0} tracks`
+    : shareType === "pack"
+    ? `${packItems?.length || 0} items in pack`
     : `${trackArtist || ""}`;
 
   const itemCount = shareType === "stems"
     ? stems?.length || 0
     : shareType === "track"
     ? 1
+    : shareType === "pack"
+    ? packItems?.length || 0
     : playlistTracks?.length || 0;
 
   const defaultLinkName = shareType === "playlist"
     ? `${playlistName}`
     : shareType === "stems"
     ? `${trackTitle} — Stems`
+    : shareType === "pack"
+    ? `${trackTitle} — Trakalog Pack`
     : `${trackTitle}`;
 
   const handleCreate = () => {
