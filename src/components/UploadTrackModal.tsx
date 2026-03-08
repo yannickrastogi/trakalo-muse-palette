@@ -1131,16 +1131,83 @@ function StepSplits({
   );
 }
 
+/* ─── Lyrics Step ─── */
+
+function StepLyrics({
+  lyrics, onUpdate, fileInputRef,
+}: {
+  lyrics: string;
+  onUpdate: (v: string) => void;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+}) {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.name.toLowerCase().endsWith(".txt")) {
+      const text = await file.text();
+      onUpdate(text);
+    } else if (file.name.toLowerCase().endsWith(".pdf")) {
+      // Attempt text extraction from PDF
+      try {
+        const text = await file.text();
+        const cleaned = text
+          .replace(/[^\x20-\x7E\n\r]/g, " ")
+          .replace(/\s{3,}/g, "\n")
+          .trim();
+        const extracted = cleaned.length > 20 ? cleaned : `[Lyrics imported from ${file.name}]\n\nPaste your lyrics here to replace this placeholder.`;
+        onUpdate(extracted);
+      } catch {
+        onUpdate(`[Lyrics imported from ${file.name}]\n\nPaste your lyrics here.`);
+      }
+    }
+    e.target.value = "";
+  };
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h3 className="text-sm font-semibold text-foreground mb-1">Lyrics</h3>
+        <p className="text-2xs text-muted-foreground">Type your lyrics directly or import from a .pdf / .txt file</p>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.txt"
+          className="hidden"
+          onChange={handleFileUpload}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-dashed border-border hover:border-brand-orange/30 text-muted-foreground hover:text-foreground transition-all"
+        >
+          <Upload className="w-3.5 h-3.5" /> Import .pdf or .txt
+        </button>
+      </div>
+
+      <textarea
+        value={lyrics}
+        onChange={(e) => onUpdate(e.target.value)}
+        placeholder={"[Verse 1]\nYour lyrics here...\n\n[Chorus]\nYour chorus here..."}
+        className="w-full min-h-[300px] px-4 py-3 rounded-xl bg-secondary border border-border text-sm text-foreground font-mono leading-relaxed outline-none focus:border-brand-orange/30 transition-all resize-y placeholder:text-muted-foreground/40"
+      />
+    </div>
+  );
+}
+
 /* ─── Review Step ─── */
 
 function StepReview({
   title, artist, bpm, trackKey, genre, mood, language, notes,
-  audioFile, stems, splits, totalSplit, details,
+  audioFile, stems, splits, totalSplit, details, lyrics,
 }: {
   title: string; artist: string; bpm: string; trackKey: string;
   genre: string; mood: string[]; language: string; notes: string;
   audioFile: File | null; stems: StemFile[]; splits: Split[]; totalSplit: number;
   details: Record<string, string[]>;
+  lyrics?: string;
 }) {
   const filledDetails = DETAIL_FIELDS.filter((f) => details[f.key]?.some((v) => v.trim()));
 
