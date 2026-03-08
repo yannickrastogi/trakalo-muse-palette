@@ -398,9 +398,10 @@ function StemsTab() {
   };
 
   const confirmUpload = () => {
+    const ext = (name: string) => { const m = name.match(/\.[^.]+$/); return m ? m[0] : ""; };
     const newStems: StemFile[] = pendingFiles.map((p, i) => ({
       id: `new-${Date.now()}-${i}`,
-      fileName: p.file.name,
+      fileName: p.customName.trim() ? p.customName.trim() + ext(p.file.name) : p.file.name,
       type: p.type,
       fileSize: formatFileSize(p.file.size),
       uploadDate: "Just now",
@@ -408,6 +409,10 @@ function StemsTab() {
     }));
     setStems((prev) => [...prev, ...newStems]);
     setPendingFiles([]);
+  };
+
+  const handleRename = (id: string, newName: string) => {
+    setStems((prev) => prev.map((s) => s.id === id ? { ...s, fileName: newName } : s));
   };
 
   const guessType = (name: string): StemType => {
