@@ -85,7 +85,8 @@ export default function SharedLinks() {
                   <tr className="border-b border-border">
                     <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Link Name</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden sm:table-cell">Track</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden md:table-cell">Type</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden sm:table-cell">Share Type</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden md:table-cell">Link Type</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden md:table-cell">Downloads</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Created</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Expires</th>
@@ -103,7 +104,16 @@ export default function SharedLinks() {
                         </td>
                         <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell text-xs">
                           {link.shareType === "playlist" ? link.playlistName : link.trackTitle}
-                          <span className="ml-1.5 inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-secondary text-secondary-foreground capitalize">{link.shareType || "stems"}</span>
+                        </td>
+                        <td className="px-4 py-3.5 hidden sm:table-cell">
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${
+                            link.shareType === "track" ? "bg-brand-orange/12 text-brand-orange"
+                            : link.shareType === "stems" ? "bg-brand-purple/12 text-brand-purple"
+                            : link.shareType === "pack" ? "bg-brand-pink/12 text-brand-pink"
+                            : "bg-primary/12 text-primary"
+                          }`}>
+                            {link.shareType === "pack" ? "Trakalog Pack" : link.shareType || "stems"}
+                          </span>
                         </td>
                         <td className="px-4 py-3.5 hidden md:table-cell">
                           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
