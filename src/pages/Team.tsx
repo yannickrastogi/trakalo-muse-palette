@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { InviteMemberModal, type InvitePayload } from "@/components/InviteMemberModal";
 import { toast } from "sonner";
 
-const ROLES = ["Admin", "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer", "Manager", "Publisher", "A&R", "Assistant", "Viewer"] as const;
+// Role definitions
 
 const roleIcons: Record<string, React.ElementType> = {
   Admin: Shield,
