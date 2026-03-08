@@ -386,7 +386,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                   };
                   onCreate(pl);
                   handleOpenChange(false);
-                }
+                }}
                 disabled={!canCreate}
                 className="btn-brand px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
               >
