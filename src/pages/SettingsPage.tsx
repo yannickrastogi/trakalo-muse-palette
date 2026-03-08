@@ -243,18 +243,50 @@ function ProfileSection() {
   const [phone, setPhone] = useState("+1 (555) 012-3456");
   const [profileVisible, setProfileVisible] = useState(true);
   const [showEmail, setShowEmail] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [initials] = useState("JD");
 
   const handleSave = () => toast.success("Profile saved successfully");
+
+  const handleAvatarUpload = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png, image/jpeg, image/webp";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File too large — max 5 MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setAvatarUrl(reader.result as string);
+        toast.success("Profile photo updated");
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
+  const handleAvatarRemove = () => {
+    setAvatarUrl(null);
+    toast.success("Profile photo removed");
+  };
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
       <SectionBlock title="Personal Information" subtitle="Your identity across TRAKALOG" icon={User} onSave={handleSave}>
         {/* Avatar row */}
         <div className="flex items-center gap-5 pb-6 mb-6 border-b border-border/30">
-          <div className="relative group cursor-pointer">
+          <div className="relative group cursor-pointer" onClick={handleAvatarUpload}>
             <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-xl font-bold text-primary-foreground overflow-hidden"
-              style={{ background: "var(--gradient-brand)", boxShadow: "0 4px 20px hsl(24 95% 53% / 0.2)" }}>
-              JD
+              style={{ background: avatarUrl ? undefined : "var(--gradient-brand)", boxShadow: "0 4px 20px hsl(24 95% 53% / 0.2)" }}>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                initials
+              )}
             </div>
             <div className="absolute inset-0 rounded-2xl bg-background/70 backdrop-blur-sm opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all duration-200">
               <Camera className="w-5 h-5 text-foreground mb-0.5" />
@@ -265,9 +297,9 @@ function ProfileSection() {
             <p className="text-sm font-bold text-foreground tracking-tight">Profile Photo</p>
             <p className="text-[11px] text-muted-foreground/50">Recommended: 256×256px, JPG or PNG</p>
             <div className="flex items-center gap-3 mt-1.5">
-              <button className="text-[11px] gradient-text font-bold hover:opacity-80 transition-opacity">Upload new</button>
+              <button onClick={handleAvatarUpload} className="text-[11px] gradient-text font-bold hover:opacity-80 transition-opacity">Upload new</button>
               <span className="text-muted-foreground/20">·</span>
-              <button className="text-[11px] text-muted-foreground/40 font-medium hover:text-destructive transition-colors">Remove</button>
+              <button onClick={handleAvatarRemove} className="text-[11px] text-muted-foreground/40 font-medium hover:text-destructive transition-colors">Remove</button>
             </div>
           </div>
         </div>
