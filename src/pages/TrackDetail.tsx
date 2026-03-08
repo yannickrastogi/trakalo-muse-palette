@@ -63,14 +63,28 @@ const trackData = {
   explicit: false,
 };
 
-const stems = [
-  { name: "Vocals (Lead)", format: "WAV 48kHz/24bit", size: "42 MB", color: "text-brand-pink" },
-  { name: "Vocals (Backing)", format: "WAV 48kHz/24bit", size: "38 MB", color: "text-brand-purple" },
-  { name: "Drums", format: "WAV 48kHz/24bit", size: "56 MB", color: "text-primary" },
-  { name: "Bass", format: "WAV 48kHz/24bit", size: "28 MB", color: "text-emerald-400" },
-  { name: "Keys / Synths", format: "WAV 48kHz/24bit", size: "34 MB", color: "text-brand-orange" },
-  { name: "Guitar", format: "WAV 48kHz/24bit", size: "31 MB", color: "text-sky-400" },
-  { name: "Full Mix (Instrumental)", format: "WAV 48kHz/24bit", size: "62 MB", color: "text-muted-foreground" },
+const stemTypes = ["kick", "snare", "bass", "guitar", "vocal", "synth", "drums", "background vocal", "fx", "other"] as const;
+type StemType = typeof stemTypes[number];
+
+interface StemFile {
+  id: string;
+  fileName: string;
+  type: StemType;
+  fileSize: string;
+  uploadDate: string;
+  color: string;
+}
+
+const stemsData: StemFile[] = [
+  { id: "1", fileName: "VelvetHour_Vocal_Lead.wav", type: "vocal", fileSize: "42.3 MB", uploadDate: "Mar 2, 2026", color: "text-brand-pink" },
+  { id: "2", fileName: "VelvetHour_BG_Vocals.wav", type: "background vocal", fileSize: "38.1 MB", uploadDate: "Mar 2, 2026", color: "text-brand-purple" },
+  { id: "3", fileName: "VelvetHour_Drums_Full.wav", type: "drums", fileSize: "56.7 MB", uploadDate: "Mar 1, 2026", color: "text-primary" },
+  { id: "4", fileName: "VelvetHour_Kick.wav", type: "kick", fileSize: "12.4 MB", uploadDate: "Mar 1, 2026", color: "text-primary" },
+  { id: "5", fileName: "VelvetHour_Snare.wav", type: "snare", fileSize: "8.9 MB", uploadDate: "Mar 1, 2026", color: "text-primary" },
+  { id: "6", fileName: "VelvetHour_Bass.wav", type: "bass", fileSize: "28.5 MB", uploadDate: "Feb 28, 2026", color: "text-chart-4" },
+  { id: "7", fileName: "VelvetHour_Synth_Pad.wav", type: "synth", fileSize: "34.2 MB", uploadDate: "Feb 28, 2026", color: "text-brand-orange" },
+  { id: "8", fileName: "VelvetHour_Guitar_Clean.wav", type: "guitar", fileSize: "31.0 MB", uploadDate: "Feb 27, 2026", color: "text-chart-5" },
+  { id: "9", fileName: "VelvetHour_FX_Risers.wav", type: "fx", fileSize: "15.8 MB", uploadDate: "Feb 27, 2026", color: "text-accent" },
 ];
 
 const splits = [
