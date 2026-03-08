@@ -1,13 +1,9 @@
 import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Filter, Upload, Play, Download, ExternalLink, Layers, ChevronDown, X, CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { Search, Filter, Upload, Play, Download, ExternalLink, Layers, ChevronDown, X } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
 import { useNavigate } from "react-router-dom";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
