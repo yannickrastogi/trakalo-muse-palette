@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   Play,
@@ -27,6 +27,11 @@ import {
   MoreHorizontal,
   ChevronRight,
   Activity,
+  Trash2,
+  Upload,
+  Pause as PauseIcon,
+  Mic,
+  Guitar as GuitarIcon,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
@@ -58,14 +63,28 @@ const trackData = {
   explicit: false,
 };
 
-const stems = [
-  { name: "Vocals (Lead)", format: "WAV 48kHz/24bit", size: "42 MB", color: "text-brand-pink" },
-  { name: "Vocals (Backing)", format: "WAV 48kHz/24bit", size: "38 MB", color: "text-brand-purple" },
-  { name: "Drums", format: "WAV 48kHz/24bit", size: "56 MB", color: "text-primary" },
-  { name: "Bass", format: "WAV 48kHz/24bit", size: "28 MB", color: "text-emerald-400" },
-  { name: "Keys / Synths", format: "WAV 48kHz/24bit", size: "34 MB", color: "text-brand-orange" },
-  { name: "Guitar", format: "WAV 48kHz/24bit", size: "31 MB", color: "text-sky-400" },
-  { name: "Full Mix (Instrumental)", format: "WAV 48kHz/24bit", size: "62 MB", color: "text-muted-foreground" },
+const stemTypes = ["kick", "snare", "bass", "guitar", "vocal", "synth", "drums", "background vocal", "fx", "other"] as const;
+type StemType = typeof stemTypes[number];
+
+interface StemFile {
+  id: string;
+  fileName: string;
+  type: StemType;
+  fileSize: string;
+  uploadDate: string;
+  color: string;
+}
+
+const stemsData: StemFile[] = [
+  { id: "1", fileName: "VelvetHour_Vocal_Lead.wav", type: "vocal", fileSize: "42.3 MB", uploadDate: "Mar 2, 2026", color: "text-brand-pink" },
+  { id: "2", fileName: "VelvetHour_BG_Vocals.wav", type: "background vocal", fileSize: "38.1 MB", uploadDate: "Mar 2, 2026", color: "text-brand-purple" },
+  { id: "3", fileName: "VelvetHour_Drums_Full.wav", type: "drums", fileSize: "56.7 MB", uploadDate: "Mar 1, 2026", color: "text-primary" },
+  { id: "4", fileName: "VelvetHour_Kick.wav", type: "kick", fileSize: "12.4 MB", uploadDate: "Mar 1, 2026", color: "text-primary" },
+  { id: "5", fileName: "VelvetHour_Snare.wav", type: "snare", fileSize: "8.9 MB", uploadDate: "Mar 1, 2026", color: "text-primary" },
+  { id: "6", fileName: "VelvetHour_Bass.wav", type: "bass", fileSize: "28.5 MB", uploadDate: "Feb 28, 2026", color: "text-chart-4" },
+  { id: "7", fileName: "VelvetHour_Synth_Pad.wav", type: "synth", fileSize: "34.2 MB", uploadDate: "Feb 28, 2026", color: "text-brand-orange" },
+  { id: "8", fileName: "VelvetHour_Guitar_Clean.wav", type: "guitar", fileSize: "31.0 MB", uploadDate: "Feb 27, 2026", color: "text-chart-5" },
+  { id: "9", fileName: "VelvetHour_FX_Risers.wav", type: "fx", fileSize: "15.8 MB", uploadDate: "Feb 27, 2026", color: "text-accent" },
 ];
 
 const splits = [
@@ -323,41 +342,243 @@ function OverviewTab() {
 }
 
 function StemsTab() {
+  const [stems, setStems] = useState<StemFile[]>(stemsData);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDelete = (id: string) => {
+    setStems((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const handlePlay = (id: string) => {
+    setPlayingId((prev) => (prev === id ? null : id));
+  };
+
+  const handleFileDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files).filter((f) =>
+      f.name.match(/\.(wav|mp3|aiff|flac|ogg|m4a)$/i)
+    );
+    addFiles(files);
+  }, []);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      addFiles(Array.from(e.target.files));
+      e.target.value = "";
+    }
+  };
+
+  const addFiles = (files: File[]) => {
+    const newStems: StemFile[] = files.map((f, i) => ({
+      id: `new-${Date.now()}-${i}`,
+      fileName: f.name,
+      type: guessType(f.name),
+      fileSize: formatFileSize(f.size),
+      uploadDate: "Just now",
+      color: "text-muted-foreground",
+    }));
+    setStems((prev) => [...prev, ...newStems]);
+  };
+
+  const guessType = (name: string): StemType => {
+    const n = name.toLowerCase();
+    if (n.includes("kick")) return "kick";
+    if (n.includes("snare")) return "snare";
+    if (n.includes("bass")) return "bass";
+    if (n.includes("guitar")) return "guitar";
+    if (n.includes("vocal") && n.includes("bg") || n.includes("backing")) return "background vocal";
+    if (n.includes("vocal") || n.includes("vox")) return "vocal";
+    if (n.includes("synth") || n.includes("pad") || n.includes("keys")) return "synth";
+    if (n.includes("drum") || n.includes("perc")) return "drums";
+    if (n.includes("fx") || n.includes("riser") || n.includes("effect")) return "fx";
+    return "other";
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes >= 1e9) return (bytes / 1e9).toFixed(1) + " GB";
+    if (bytes >= 1e6) return (bytes / 1e6).toFixed(1) + " MB";
+    return (bytes / 1e3).toFixed(0) + " KB";
+  };
+
+  const stemTypeIcon = (type: StemType) => {
+    switch (type) {
+      case "vocal":
+      case "background vocal":
+        return <Mic className="w-3.5 h-3.5" />;
+      case "guitar":
+        return <GuitarIcon className="w-3.5 h-3.5" />;
+      default:
+        return <Music className="w-3.5 h-3.5" />;
+    }
+  };
+
+  const totalSize = stems.length;
+
   return (
-    <SectionCard
-      title="Stems & Files"
-      icon={Layers}
-      action={
-        <button className="flex items-center gap-1.5 text-xs text-primary hover:underline">
-          <Download className="w-3.5 h-3.5" /> Download All
-        </button>
-      }
-    >
-      <div className="divide-y divide-border">
-        {stems.map((stem) => (
-          <div key={stem.name} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                <Music className={`w-3.5 h-3.5 ${stem.color}`} />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">{stem.name}</p>
-                <p className="text-[11px] text-muted-foreground">{stem.format}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground">{stem.size}</span>
-              <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                <Play className="w-3.5 h-3.5" />
-              </button>
-              <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                <Download className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        ))}
+    <div className="space-y-4">
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">{totalSize} Stems</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Manage audio stems for this track</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">
+            <Download className="w-3.5 h-3.5" /> Download All
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold btn-brand"
+          >
+            <Upload className="w-3.5 h-3.5" /> Upload Stems
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".wav,.mp3,.aiff,.flac,.ogg,.m4a"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+        </div>
       </div>
-    </SectionCard>
+
+      {/* Drop zone */}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={handleFileDrop}
+        className={`relative rounded-xl border-2 border-dashed transition-all duration-200 ${
+          isDragOver
+            ? "border-primary bg-primary/5 scale-[1.005]"
+            : "border-border hover:border-muted-foreground/30"
+        }`}
+      >
+        {/* Drop overlay */}
+        <AnimatePresence>
+          {isDragOver && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-10 rounded-xl flex flex-col items-center justify-center"
+              style={{ background: "var(--gradient-brand-soft)" }}
+            >
+              <Upload className="w-8 h-8 text-primary mb-2" />
+              <p className="text-sm font-semibold text-foreground">Drop audio files here</p>
+              <p className="text-xs text-muted-foreground mt-0.5">WAV, MP3, AIFF, FLAC, OGG, M4A</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {stems.length === 0 ? (
+          /* Empty state */
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full py-16 flex flex-col items-center justify-center gap-3 text-center"
+          >
+            <div className="w-12 h-12 rounded-2xl icon-brand flex items-center justify-center">
+              <Layers className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">No stems uploaded yet</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Drag & drop audio files or click to browse
+              </p>
+            </div>
+          </button>
+        ) : (
+          /* Stems table */
+          <div className="bg-card rounded-xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+            {/* Table header */}
+            <div className="grid grid-cols-[1fr_120px_80px_100px_110px] gap-3 px-5 py-3 border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+              <span>File</span>
+              <span>Type</span>
+              <span>Size</span>
+              <span>Uploaded</span>
+              <span className="text-right">Actions</span>
+            </div>
+
+            {/* Stem rows */}
+            <div className="divide-y divide-border">
+              <AnimatePresence initial={false}>
+                {stems.map((stem) => (
+                  <motion.div
+                    key={stem.id}
+                    layout
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0, transition: { duration: 0.2 } }}
+                    className="grid grid-cols-[1fr_120px_80px_100px_110px] gap-3 px-5 py-3 items-center hover:bg-secondary/30 transition-colors group"
+                  >
+                    {/* File name */}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 ${stem.color}`}>
+                        {stemTypeIcon(stem.type)}
+                      </div>
+                      <span className="text-sm font-medium text-foreground truncate">{stem.fileName}</span>
+                    </div>
+
+                    {/* Type badge */}
+                    <div>
+                      <span className="inline-flex px-2 py-0.5 rounded-md bg-secondary text-[11px] font-medium text-secondary-foreground capitalize">
+                        {stem.type}
+                      </span>
+                    </div>
+
+                    {/* Size */}
+                    <span className="text-xs text-muted-foreground font-mono">{stem.fileSize}</span>
+
+                    {/* Date */}
+                    <span className="text-xs text-muted-foreground">{stem.uploadDate}</span>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => handlePlay(stem.id)}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          playingId === stem.id
+                            ? "bg-primary/15 text-primary"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        }`}
+                        title="Play preview"
+                      >
+                        {playingId === stem.id ? <PauseIcon className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                      </button>
+                      <button
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        title="Download"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(stem.id)}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+
+            {/* Drop hint footer */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full py-3 flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground border-t border-border hover:bg-secondary/30 transition-colors"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Drag & drop files here or click to upload more
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
