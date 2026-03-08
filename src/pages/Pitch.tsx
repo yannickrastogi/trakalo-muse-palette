@@ -22,6 +22,7 @@ import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePitchModal, type PitchEntry } from "@/components/CreatePitchModal";
 import { useRole } from "@/contexts/RoleContext";
+import { usePitches } from "@/contexts/PitchContext";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
