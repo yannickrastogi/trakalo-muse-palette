@@ -27,6 +27,11 @@ import {
   MoreHorizontal,
   ChevronRight,
   Activity,
+  Trash2,
+  Upload,
+  Pause as PauseIcon,
+  Mic,
+  Guitar as GuitarIcon,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
