@@ -87,7 +87,8 @@ export default function TrackDetail() {
   const [progress, setProgress] = useState(35);
   const [activeTab, setActiveTab] = useState<string>("overview");
   const { permissions } = useRole();
-  const { getTrack } = useTrack();
+  const { getTrack, updateTrack } = useTrack();
+  const coverInputRef = React.useRef<HTMLInputElement>(null);
 
   const trackData = getTrack(Number(id));
 
@@ -129,9 +130,34 @@ export default function TrackDetail() {
               {/* Cover artwork */}
               <div className="w-full lg:w-64 shrink-0">
                 <div className="aspect-square rounded-xl bg-gradient-to-br from-brand-purple/30 via-brand-pink/20 to-brand-orange/30 border border-border flex items-center justify-center relative overflow-hidden group" style={{ boxShadow: "var(--shadow-card)" }}>
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/10 via-transparent to-brand-orange/10 group-hover:opacity-70 transition-opacity" />
-                  <Disc3 className="w-20 h-20 text-foreground/20" />
-                  <button className="absolute bottom-3 right-3 p-2 rounded-lg bg-card/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100">
+                  {trackData.coverImage ? (
+                    <img src={trackData.coverImage} alt={trackData.title} className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/10 via-transparent to-brand-orange/10 group-hover:opacity-70 transition-opacity" />
+                      <Disc3 className="w-20 h-20 text-foreground/20" />
+                    </>
+                  )}
+                  <input
+                    ref={coverInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        updateTrack(trackData.id, { coverImage: reader.result as string });
+                      };
+                      reader.readAsDataURL(file);
+                      e.target.value = "";
+                    }}
+                  />
+                  <button
+                    onClick={() => coverInputRef.current?.click()}
+                    className="absolute bottom-3 right-3 p-2 rounded-lg bg-card/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+                  >
                     <Edit3 className="w-4 h-4" />
                   </button>
                 </div>
