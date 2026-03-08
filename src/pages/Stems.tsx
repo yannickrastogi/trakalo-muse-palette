@@ -1,9 +1,13 @@
-import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
-import { Search, Filter, Upload, Play, Download, ExternalLink, Layers, Music, ChevronDown } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, Filter, Upload, Play, Download, ExternalLink, Layers, ChevronDown, X, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import { PageShell } from "@/components/PageShell";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
 import { useNavigate } from "react-router-dom";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
@@ -37,21 +41,51 @@ const stemTypeColors: Record<string, string> = {
   fx: "bg-accent/15 text-accent",
 };
 
-const allStemTypes = ["vocal", "background vocal", "drums", "kick", "snare", "bass", "synth", "guitar", "fx"];
-
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } } };
+
+// Reusable filter select
+function FilterSelect({ label, value, onChange, options }: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <div className="flex flex-col gap-1.5 min-w-[140px]">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-8 px-3 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary/30 transition-colors cursor-pointer"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 export default function Stems() {
   const { tracks } = useTrack();
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [genreFilter, setGenreFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Flatten all stems across tracks
+  // Filter states
+  const [trackFilter, setTrackFilter] = useState("all");
+  const [artistFilter, setArtistFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [genreFilter, setGenreFilter] = useState("all");
+  const [keyFilter, setKeyFilter] = useState("all");
+  const [bpmMin, setBpmMin] = useState("");
+  const [bpmMax, setBpmMax] = useState("");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
+
+  // Flatten all stems
   const allStems = useMemo<FlatStem[]>(() => {
     const result: FlatStem[] = [];
     tracks.forEach((track) => {
@@ -72,25 +106,80 @@ export default function Stems() {
     return result;
   }, [tracks]);
 
-  const genres = useMemo(() => [...new Set(allStems.map((s) => s.trackGenre))].sort(), [allStems]);
+  // Derive unique options from data
+  const uniqueTracks = useMemo(() => [...new Set(allStems.map((s) => s.trackTitle))].sort(), [allStems]);
+  const uniqueArtists = useMemo(() => [...new Set(allStems.map((s) => s.trackArtist))].sort(), [allStems]);
+  const uniqueTypes = useMemo(() => [...new Set(allStems.map((s) => s.type))].sort(), [allStems]);
+  const uniqueGenres = useMemo(() => [...new Set(allStems.map((s) => s.trackGenre))].sort(), [allStems]);
+  const uniqueKeys = useMemo(() => [...new Set(allStems.map((s) => s.trackKey))].sort(), [allStems]);
+
+  // Parse upload date helper
+  const parseUploadDate = useCallback((dateStr: string) => {
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+  }, []);
+
+  // Count active filters
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (trackFilter !== "all") count++;
+    if (artistFilter !== "all") count++;
+    if (typeFilter !== "all") count++;
+    if (genreFilter !== "all") count++;
+    if (keyFilter !== "all") count++;
+    if (bpmMin || bpmMax) count++;
+    if (dateFrom || dateTo) count++;
+    return count;
+  }, [trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax, dateFrom, dateTo]);
+
+  const clearAllFilters = useCallback(() => {
+    setTrackFilter("all");
+    setArtistFilter("all");
+    setTypeFilter("all");
+    setGenreFilter("all");
+    setKeyFilter("all");
+    setBpmMin("");
+    setBpmMax("");
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
+    const bpmMinVal = bpmMin ? parseInt(bpmMin) : null;
+    const bpmMaxVal = bpmMax ? parseInt(bpmMax) : null;
+
     return allStems.filter((s) => {
-      const matchSearch =
-        !q ||
+      if (q && !(
         s.fileName.toLowerCase().includes(q) ||
         s.trackTitle.toLowerCase().includes(q) ||
         s.trackArtist.toLowerCase().includes(q) ||
         s.trackGenre.toLowerCase().includes(q) ||
-        s.type.toLowerCase().includes(q);
-      const matchType = typeFilter === "all" || s.type === typeFilter;
-      const matchGenre = genreFilter === "all" || s.trackGenre === genreFilter;
-      return matchSearch && matchType && matchGenre;
-    });
-  }, [allStems, search, typeFilter, genreFilter]);
+        s.type.toLowerCase().includes(q)
+      )) return false;
 
-  const stemTypesInUse = useMemo(() => [...new Set(allStems.map((s) => s.type))].sort(), [allStems]);
+      if (trackFilter !== "all" && s.trackTitle !== trackFilter) return false;
+      if (artistFilter !== "all" && s.trackArtist !== artistFilter) return false;
+      if (typeFilter !== "all" && s.type !== typeFilter) return false;
+      if (genreFilter !== "all" && s.trackGenre !== genreFilter) return false;
+      if (keyFilter !== "all" && s.trackKey !== keyFilter) return false;
+      if (bpmMinVal && s.trackBpm < bpmMinVal) return false;
+      if (bpmMaxVal && s.trackBpm > bpmMaxVal) return false;
+
+      if (dateFrom || dateTo) {
+        const d = parseUploadDate(s.uploadDate);
+        if (!d) return false;
+        if (dateFrom && d < dateFrom) return false;
+        if (dateTo) {
+          const end = new Date(dateTo);
+          end.setHours(23, 59, 59, 999);
+          if (d > end) return false;
+        }
+      }
+
+      return true;
+    });
+  }, [allStems, search, trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax, dateFrom, dateTo, parseUploadDate]);
 
   return (
     <PageShell>
@@ -107,7 +196,7 @@ export default function Stems() {
           </button>
         </motion.div>
 
-        {/* Search & Filters */}
+        {/* Search & Filter Toggle */}
         <motion.div variants={item} className="space-y-3">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
@@ -123,55 +212,190 @@ export default function Stems() {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`h-10 px-4 rounded-xl border text-xs font-medium flex items-center gap-2 transition-colors ${
-                showFilters || typeFilter !== "all" || genreFilter !== "all"
+                showFilters || activeFilterCount > 0
                   ? "border-primary/40 bg-primary/5 text-primary"
                   : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary"
               }`}
             >
               <Filter className="w-3.5 h-3.5" />
               Filters
+              {activeFilterCount > 0 && (
+                <span className="ml-0.5 w-4.5 h-4.5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
               <ChevronDown className={`w-3 h-3 transition-transform ${showFilters ? "rotate-180" : ""}`} />
             </button>
           </div>
 
-          {showFilters && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="flex flex-wrap gap-3 pt-1">
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Stem Type</span>
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="h-8 px-3 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary/30"
-                >
-                  <option value="all">All Types</option>
-                  {stemTypesInUse.map((t) => (
-                    <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Genre</span>
-                <select
-                  value={genreFilter}
-                  onChange={(e) => setGenreFilter(e.target.value)}
-                  className="h-8 px-3 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary/30"
-                >
-                  <option value="all">All Genres</option>
-                  {genres.map((g) => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
-              </div>
-              {(typeFilter !== "all" || genreFilter !== "all") && (
-                <button
-                  onClick={() => { setTypeFilter("all"); setGenreFilter("all"); }}
-                  className="self-end h-8 px-3 rounded-lg text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border hover:bg-secondary transition-colors"
-                >
-                  Clear Filters
-                </button>
-              )}
-            </motion.div>
-          )}
+          {/* Advanced Filters Panel */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="p-4 rounded-xl bg-card border border-border space-y-4" style={{ boxShadow: "var(--shadow-card)" }}>
+                  {/* Row 1: Dropdowns */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <FilterSelect
+                      label="Track"
+                      value={trackFilter}
+                      onChange={setTrackFilter}
+                      options={[{ value: "all", label: "All Tracks" }, ...uniqueTracks.map((t) => ({ value: t, label: t }))]}
+                    />
+                    <FilterSelect
+                      label="Artist"
+                      value={artistFilter}
+                      onChange={setArtistFilter}
+                      options={[{ value: "all", label: "All Artists" }, ...uniqueArtists.map((a) => ({ value: a, label: a }))]}
+                    />
+                    <FilterSelect
+                      label="Stem Type"
+                      value={typeFilter}
+                      onChange={setTypeFilter}
+                      options={[{ value: "all", label: "All Types" }, ...uniqueTypes.map((t) => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))]}
+                    />
+                    <FilterSelect
+                      label="Genre"
+                      value={genreFilter}
+                      onChange={setGenreFilter}
+                      options={[{ value: "all", label: "All Genres" }, ...uniqueGenres.map((g) => ({ value: g, label: g }))]}
+                    />
+                    <FilterSelect
+                      label="Key"
+                      value={keyFilter}
+                      onChange={setKeyFilter}
+                      options={[{ value: "all", label: "All Keys" }, ...uniqueKeys.map((k) => ({ value: k, label: k }))]}
+                    />
+                  </div>
+
+                  {/* Row 2: BPM range + Date range */}
+                  <div className="flex flex-wrap items-end gap-3">
+                    {/* BPM Range */}
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">BPM Range</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          value={bpmMin}
+                          onChange={(e) => setBpmMin(e.target.value)}
+                          placeholder="Min"
+                          className="w-[72px] h-8 px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary/30 transition-colors font-mono placeholder:text-muted-foreground"
+                        />
+                        <span className="text-muted-foreground text-xs">–</span>
+                        <input
+                          type="number"
+                          value={bpmMax}
+                          onChange={(e) => setBpmMax(e.target.value)}
+                          placeholder="Max"
+                          className="w-[72px] h-8 px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary/30 transition-colors font-mono placeholder:text-muted-foreground"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Upload Date From */}
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Uploaded From</span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className={cn(
+                            "h-8 px-3 rounded-lg border text-xs flex items-center gap-2 transition-colors",
+                            dateFrom
+                              ? "bg-secondary border-primary/30 text-foreground"
+                              : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+                          )}>
+                            <CalendarIcon className="w-3 h-3" />
+                            {dateFrom ? format(dateFrom, "MMM d, yyyy") : "Start date"}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={dateFrom}
+                            onSelect={setDateFrom}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {/* Upload Date To */}
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Uploaded To</span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className={cn(
+                            "h-8 px-3 rounded-lg border text-xs flex items-center gap-2 transition-colors",
+                            dateTo
+                              ? "bg-secondary border-primary/30 text-foreground"
+                              : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+                          )}>
+                            <CalendarIcon className="w-3 h-3" />
+                            {dateTo ? format(dateTo, "MMM d, yyyy") : "End date"}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={dateTo}
+                            onSelect={setDateTo}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {/* Clear */}
+                    {activeFilterCount > 0 && (
+                      <button
+                        onClick={clearAllFilters}
+                        className="h-8 px-3 rounded-lg text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border hover:bg-secondary transition-colors flex items-center gap-1.5"
+                      >
+                        <X className="w-3 h-3" />
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Active filter pills */}
+                  {activeFilterCount > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {trackFilter !== "all" && (
+                        <FilterPill label={`Track: ${trackFilter}`} onClear={() => setTrackFilter("all")} />
+                      )}
+                      {artistFilter !== "all" && (
+                        <FilterPill label={`Artist: ${artistFilter}`} onClear={() => setArtistFilter("all")} />
+                      )}
+                      {typeFilter !== "all" && (
+                        <FilterPill label={`Type: ${typeFilter}`} onClear={() => setTypeFilter("all")} />
+                      )}
+                      {genreFilter !== "all" && (
+                        <FilterPill label={`Genre: ${genreFilter}`} onClear={() => setGenreFilter("all")} />
+                      )}
+                      {keyFilter !== "all" && (
+                        <FilterPill label={`Key: ${keyFilter}`} onClear={() => setKeyFilter("all")} />
+                      )}
+                      {(bpmMin || bpmMax) && (
+                        <FilterPill label={`BPM: ${bpmMin || "–"}–${bpmMax || "–"}`} onClear={() => { setBpmMin(""); setBpmMax(""); }} />
+                      )}
+                      {(dateFrom || dateTo) && (
+                        <FilterPill
+                          label={`Date: ${dateFrom ? format(dateFrom, "MMM d") : "–"} → ${dateTo ? format(dateTo, "MMM d") : "–"}`}
+                          onClear={() => { setDateFrom(undefined); setDateTo(undefined); }}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Stats */}
@@ -216,7 +440,6 @@ export default function Stems() {
                         transition={{ delay: idx * 0.02 }}
                         className="border-b border-border/50 last:border-0 hover:bg-secondary/40 transition-colors group"
                       >
-                        {/* Stem Name */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-border/50">
@@ -225,15 +448,11 @@ export default function Stems() {
                             <span className="text-xs font-medium text-foreground truncate max-w-[200px]">{stem.fileName}</span>
                           </div>
                         </td>
-
-                        {/* Type */}
                         <td className="px-4 py-3">
                           <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide ${typeClass}`}>
                             {stem.type}
                           </span>
                         </td>
-
-                        {/* Track */}
                         <td className="px-4 py-3">
                           <button
                             onClick={() => navigate(`/track/${stem.trackId}`)}
@@ -242,38 +461,24 @@ export default function Stems() {
                             {stem.trackTitle}
                           </button>
                         </td>
-
-                        {/* Artist */}
                         <td className="px-4 py-3 hidden md:table-cell">
                           <span className="text-xs text-muted-foreground truncate max-w-[120px] block">{stem.trackArtist}</span>
                         </td>
-
-                        {/* Genre */}
                         <td className="px-4 py-3 hidden lg:table-cell">
                           <span className="text-xs text-muted-foreground">{stem.trackGenre}</span>
                         </td>
-
-                        {/* BPM */}
                         <td className="px-4 py-3 hidden lg:table-cell">
                           <span className="text-xs text-muted-foreground font-mono">{stem.trackBpm}</span>
                         </td>
-
-                        {/* Key */}
                         <td className="px-4 py-3 hidden xl:table-cell">
                           <span className="text-xs text-muted-foreground">{stem.trackKey}</span>
                         </td>
-
-                        {/* Size */}
                         <td className="px-4 py-3 hidden md:table-cell">
                           <span className="text-xs text-muted-foreground font-mono">{stem.fileSize}</span>
                         </td>
-
-                        {/* Upload Date */}
                         <td className="px-4 py-3 hidden lg:table-cell">
                           <span className="text-xs text-muted-foreground">{stem.uploadDate}</span>
                         </td>
-
-                        {/* Actions */}
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1">
                             <button className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title="Play">
@@ -315,5 +520,16 @@ export default function Stems() {
         )}
       </motion.div>
     </PageShell>
+  );
+}
+
+function FilterPill({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-medium text-primary">
+      {label}
+      <button onClick={onClear} className="hover:text-primary-foreground transition-colors">
+        <X className="w-2.5 h-2.5" />
+      </button>
+    </span>
   );
 }
