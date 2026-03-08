@@ -1,6 +1,8 @@
 import { Search, Bell, Menu } from "lucide-react";
 import { UserMenu } from "./UserMenu";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
 
 interface TopBarProps {
   onMenuClick?: () => void;
@@ -8,6 +10,7 @@ interface TopBarProps {
 
 export function TopBar({ onMenuClick }: TopBarProps) {
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   return (
     <header className="h-14 flex items-center justify-between px-3 sm:px-6 glass sticky top-0 z-20" style={{ borderBottom: '1px solid transparent', borderImage: 'linear-gradient(90deg, hsl(24 100% 55% / 0.15), hsl(330 80% 60% / 0.1), hsl(270 70% 55% / 0.05), transparent) 1' }}>
@@ -26,7 +29,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
           <input
             type="text"
-            placeholder={isMobile ? "Search…" : "Search tracks, artists, playlists…"}
+            placeholder={isMobile ? t("topbar.searchShort") : t("topbar.search")}
             className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
           />
           {!isMobile && (
@@ -38,7 +41,8 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       </div>
 
       {/* Right actions */}
-      <div className="flex items-center gap-2 ml-2 sm:ml-4">
+      <div className="flex items-center gap-1.5 ml-2 sm:ml-4">
+        <LanguageSwitcher />
         <button className="relative p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center">
           <Bell className="w-[17px] h-[17px]" />
           <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full ring-2 ring-background" style={{ background: 'var(--gradient-brand-horizontal)' }} />

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
@@ -26,13 +27,6 @@ import cover4 from "@/assets/covers/cover-4.jpg";
 import cover5 from "@/assets/covers/cover-5.jpg";
 
 const covers = [cover1, cover2, cover3, cover4, cover5];
-
-const stats = [
-  { label: "Total Tracks", value: "2,847", icon: Music, change: "+18 this week", accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20" },
-  { label: "Playlists", value: "64", icon: ListMusic, change: "+3 new", accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20" },
-  { label: "Collaborators", value: "126", icon: Users, change: "+12 active", accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20" },
-  { label: "Pending Pitches", value: "9", icon: Send, change: "4 due today", accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20" },
-];
 
 const recentTracks = [
   { title: "Velvet Hour", artist: "Kira Nomura", album: "Late Bloom EP", genre: "Neo-Soul", duration: "4:12", bpm: 92, key: "Ab Maj", mood: ["emotional", "dreamy"], status: "Available", language: "English", type: "Song", coverIdx: 0 },
@@ -43,18 +37,11 @@ const recentTracks = [
 ];
 
 const activity = [
-  { icon: Star, text: "Kira Nomura starred \"Velvet Hour\" master", time: "12m ago" },
-  { icon: MessageSquare, text: "Dex left feedback on \"Ghost Protocol\" mix", time: "1h ago" },
-  { icon: Upload, text: "You uploaded 3 stems to \"Burning Chrome\"", time: "3h ago" },
-  { icon: Send, text: "\"Soft Landing\" pitched to Atlantic Records — A&R", time: "6h ago" },
-  { icon: TrendingUp, text: "\"Paper Moons\" reached 10K pre-saves", time: "1d ago" },
-];
-
-const quickActions = [
-  { label: "Upload Track", icon: Upload, primary: true },
-  { label: "New Playlist", icon: ListMusic },
-  { label: "Invite Member", icon: Users },
-  { label: "New Pitch", icon: Send },
+  { icon: Star, textKey: "Kira Nomura starred \"Velvet Hour\" master", time: "12m ago" },
+  { icon: MessageSquare, textKey: "Dex left feedback on \"Ghost Protocol\" mix", time: "1h ago" },
+  { icon: Upload, textKey: "You uploaded 3 stems to \"Burning Chrome\"", time: "3h ago" },
+  { icon: Send, textKey: "\"Soft Landing\" pitched to Atlantic Records — A&R", time: "6h ago" },
+  { icon: TrendingUp, textKey: "\"Paper Moons\" reached 10K pre-saves", time: "1d ago" },
 ];
 
 const statusColors: Record<string, string> = {
@@ -69,13 +56,28 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 export function DashboardContent() {
   const [playingTrack, setPlayingTrack] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
+
+  const stats = [
+    { label: t("dashboard.totalTracks"), value: "2,847", icon: Music, change: t("dashboard.thisWeek"), accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20" },
+    { label: t("dashboard.playlists"), value: "64", icon: ListMusic, change: t("dashboard.new"), accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20" },
+    { label: t("dashboard.collaborators"), value: "126", icon: Users, change: t("dashboard.active"), accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20" },
+    { label: t("dashboard.pendingPitches"), value: "9", icon: Send, change: t("dashboard.dueToday"), accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20" },
+  ];
+
+  const quickActions = [
+    { label: t("dashboard.uploadTrack"), icon: Upload, primary: true },
+    { label: t("dashboard.newPlaylist"), icon: ListMusic },
+    { label: t("dashboard.inviteMember"), icon: Users },
+    { label: t("dashboard.newPitch"), icon: Send },
+  ];
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-7 max-w-[1400px]">
       {/* Header */}
       <motion.div variants={item}>
-        <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-xs sm:text-sm mt-1">Your catalog at a glance — March 6, 2026</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("dashboard.title")}</h1>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("dashboard.subtitle")}</p>
       </motion.div>
 
       {/* Stats */}
@@ -112,11 +114,10 @@ export function DashboardContent() {
         {/* Recent tracks */}
         <motion.div variants={item} className="xl:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">Recent Tracks</h2>
-            <Link to="/tracks" className="text-xs gradient-text hover:opacity-80 transition-opacity font-semibold tracking-tight">View all →</Link>
+            <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">{t("dashboard.recentTracks")}</h2>
+            <Link to="/tracks" className="text-xs gradient-text hover:opacity-80 transition-opacity font-semibold tracking-tight">{t("dashboard.viewAll")}</Link>
           </div>
 
-          {/* Mobile: Card layout */}
           {isMobile ? (
             <div className="space-y-2.5">
               {recentTracks.map((track, idx) => {
@@ -146,21 +147,20 @@ export function DashboardContent() {
               })}
             </div>
           ) : (
-            /* Desktop: Table layout */
             <div className="card-premium overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-[13px]">
                   <thead>
                     <tr className="border-b border-border">
                       <th className="text-left pl-5 pr-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-8">#</th>
-                      <th className="text-left px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Track</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Type</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Genre</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">BPM</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Mood</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
+                      <th className="text-left px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("catalog.track")}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">{t("catalog.type")}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("catalog.genre")}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">{t("catalog.bpm")}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">{t("catalog.key")}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("catalog.mood")}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("catalog.language")}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("catalog.status")}</th>
                       <th className="px-4 py-3 w-10"></th>
                     </tr>
                   </thead>
@@ -248,7 +248,7 @@ export function DashboardContent() {
         <div className="space-y-5 sm:space-y-6">
           {/* Quick actions */}
           <motion.div variants={item} className="space-y-3 sm:space-y-4">
-            <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">Quick Actions</h2>
+            <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">{t("dashboard.quickActions")}</h2>
             <div className="grid grid-cols-2 gap-2.5">
               {quickActions.map((action) => (
                 <button
@@ -270,8 +270,8 @@ export function DashboardContent() {
           {/* Activity */}
           <motion.div variants={item} className="space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">Activity</h2>
-              <button className="text-xs gradient-text hover:opacity-80 transition-opacity font-semibold">See all</button>
+              <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">{t("dashboard.activity")}</h2>
+              <button className="text-xs gradient-text hover:opacity-80 transition-opacity font-semibold">{t("dashboard.seeAll")}</button>
             </div>
             <div className="card-premium divide-y divide-border/60 overflow-hidden">
               {activity.map((a, i) => (
@@ -280,7 +280,7 @@ export function DashboardContent() {
                     <a.icon className="w-3.5 h-3.5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-foreground/85 leading-relaxed">{a.text}</p>
+                    <p className="text-xs text-foreground/85 leading-relaxed">{a.textKey}</p>
                     <p className="text-2xs text-muted-foreground mt-1 font-medium">{a.time}</p>
                   </div>
                 </div>
