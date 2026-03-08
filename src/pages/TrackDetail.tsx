@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback /* refresh */ } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
+import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { usePitches } from "@/contexts/PitchContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -213,7 +214,7 @@ export default function TrackDetail() {
 
             {/* Audio Player */}
             <motion.div variants={item} className="bg-card border border-border rounded-xl p-4 sm:p-5" style={{ boxShadow: "var(--shadow-card)" }}>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 mb-3">
                 <div className="flex items-center gap-2">
                   <button className="p-1.5 text-muted-foreground hover:text-foreground transition-colors">
                     <SkipBack className="w-4 h-4" />
@@ -228,17 +229,9 @@ export default function TrackDetail() {
                     <SkipForward className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="flex-1 space-y-1">
-                  <div className="relative h-1.5 bg-secondary rounded-full overflow-hidden cursor-pointer" onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setProgress(Math.round(((e.clientX - rect.left) / rect.width) * 100));
-                  }}>
-                    <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary to-brand-pink rounded-full transition-all" style={{ width: `${progress}%` }} />
-                  </div>
-                  <div className="flex justify-between text-[11px] text-muted-foreground font-mono">
-                    <span>1:28</span>
-                    <span>{trackData.duration}</span>
-                  </div>
+                <div className="flex-1 flex items-center justify-between text-[11px] text-muted-foreground font-mono">
+                  <span>1:28</span>
+                  <span>{trackData.duration}</span>
                 </div>
                 <div className="hidden sm:flex items-center gap-2">
                   <Volume2 className="w-4 h-4 text-muted-foreground" />
@@ -247,6 +240,13 @@ export default function TrackDetail() {
                   </div>
                 </div>
               </div>
+              <TrackWaveformPlayer
+                seed={trackData.id}
+                progress={progress}
+                onSeek={setProgress}
+                chapters={trackData.chapters || []}
+                isPlaying={isPlaying}
+              />
             </motion.div>
 
             {/* Tabs */}
