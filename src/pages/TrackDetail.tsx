@@ -345,10 +345,16 @@ function StemsTab() {
   const [stems, setStems] = useState<StemFile[]>(stemsData);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = (id: string) => {
     setStems((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const handleChangeType = (id: string, newType: StemType) => {
+    setStems((prev) => prev.map((s) => s.id === id ? { ...s, type: newType } : s));
+    setEditingTypeId(null);
   };
 
   const handlePlay = (id: string) => {
@@ -522,11 +528,42 @@ function StemsTab() {
                       <span className="text-sm font-medium text-foreground truncate">{stem.fileName}</span>
                     </div>
 
-                    {/* Type badge */}
-                    <div>
-                      <span className="inline-flex px-2 py-0.5 rounded-md bg-secondary text-[11px] font-medium text-secondary-foreground capitalize">
+                    {/* Type badge — clickable to change */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setEditingTypeId(editingTypeId === stem.id ? null : stem.id)}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary text-[11px] font-medium text-secondary-foreground capitalize hover:bg-muted transition-colors cursor-pointer"
+                        title="Click to change type"
+                      >
                         {stem.type}
-                      </span>
+                        <ChevronRight className={`w-3 h-3 transition-transform ${editingTypeId === stem.id ? "rotate-90" : ""}`} />
+                      </button>
+                      <AnimatePresence>
+                        {editingTypeId === stem.id && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute z-30 top-full left-0 mt-1 w-44 bg-popover border border-border rounded-lg shadow-lg overflow-hidden py-1"
+                            style={{ boxShadow: "var(--shadow-elevated)" }}
+                          >
+                            {stemTypes.map((t) => (
+                              <button
+                                key={t}
+                                onClick={() => handleChangeType(stem.id, t)}
+                                className={`w-full text-left px-3 py-1.5 text-xs capitalize transition-colors ${
+                                  stem.type === t
+                                    ? "bg-primary/10 text-primary font-semibold"
+                                    : "text-popover-foreground hover:bg-secondary"
+                                }`}
+                              >
+                                {t}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
 
                     {/* Size */}
