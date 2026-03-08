@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
 import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf } from "@/lib/pdf-generators";
 import { DownloadTrackModal } from "@/components/DownloadTrackModal";
+import { SharePackModal } from "@/components/SharePackModal";
 import { Textarea } from "@/components/ui/textarea";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { ShareModal } from "@/components/ShareModal";
