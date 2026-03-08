@@ -214,6 +214,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     setStep(0);
     setTitle(""); setArtist(""); setBpm(""); setTrackKey(""); setGenre(""); setMood([]); setLanguage(""); setNotes(""); setDetails({});
     setAudioFile(null); setAudioUploading(false); setAudioProgress(0); setAudioPreviewUrl(null); setIsPlayingPreview(false);
+    setAnalysisResult(null); setAnalyzing(false); setAnalysisDuration("");
     setStems([]);
     setSplits([{ id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }]);
   };
