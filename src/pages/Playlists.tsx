@@ -108,7 +108,14 @@ const item = {
   },
 };
 
-function MiniCoverGrid({ idxs }: { idxs: number[] }) {
+function MiniCoverGrid({ idxs, coverImage }: { idxs: number[]; coverImage?: string }) {
+  if (coverImage) {
+    return (
+      <div className="w-full aspect-square rounded-xl overflow-hidden">
+        <img src={coverImage} alt="" className="w-full h-full object-cover" />
+      </div>
+    );
+  }
   return (
     <div className="grid grid-cols-2 gap-0.5 w-full aspect-square rounded-xl overflow-hidden">
       {idxs.slice(0, 4).map((ci, i) => (
@@ -224,7 +231,7 @@ export default function Playlists() {
                       className={`absolute inset-0 bg-gradient-to-br ${pl.color} opacity-60 group-hover:opacity-90 transition-opacity duration-500 rounded-t-[var(--radius)]`}
                     />
                     <div className="relative w-full max-w-[200px] mx-auto">
-                      <MiniCoverGrid idxs={pl.coverIdxs} />
+                      <MiniCoverGrid idxs={pl.coverIdxs} coverImage={(pl as any).coverImage} />
                       {/* Play overlay */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                         <button

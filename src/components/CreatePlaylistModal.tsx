@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -6,9 +6,10 @@ import {
   Plus,
   Music,
   Check,
-  Trash2,
-  GripVertical,
   ListMusic,
+  ImagePlus,
+  ChevronDown,
+  Hash,
 } from "lucide-react";
 import { allTracks } from "@/pages/Catalog";
 import {
@@ -30,6 +31,15 @@ const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 
 type Track = (typeof allTracks)[number];
 
+const GENRES = [
+  "Afrobeats", "Ambient", "Blues", "Bouyon", "Caribbean", "Classical",
+  "Country", "Dance", "Disco-Funk", "DnB", "Dubstep", "Electronic",
+  "Film", "Folk", "Hip-Hop", "House", "I-Pop", "Indie", "Jazz",
+  "K-Pop", "Kompa", "Latin", "Lo-fi", "Lounge", "Pop", "Progressive",
+  "R&B", "Reggae-Dancehall", "Rock", "Shatta", "Soca", "Soul",
+  "World", "Zouk",
+];
+
 export interface NewPlaylistData {
   id: string;
   name: string;
@@ -41,6 +51,9 @@ export interface NewPlaylistData {
   coverIdxs: number[];
   color: string;
   trackIds: number[];
+  genre?: string;
+  moods?: string[];
+  coverImage?: string;
 }
 
 interface CreatePlaylistModalProps {
@@ -64,6 +77,12 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
   const [description, setDescription] = useState("");
   const [selectedTracks, setSelectedTracks] = useState<Track[]>([]);
   const [trackSearch, setTrackSearch] = useState("");
+  const [genre, setGenre] = useState("");
+  const [genreOpen, setGenreOpen] = useState(false);
+  const [moodInput, setMoodInput] = useState("");
+  const [moods, setMoods] = useState<string[]>([]);
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
     setStep("details");
@@ -71,11 +90,48 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
     setDescription("");
     setSelectedTracks([]);
     setTrackSearch("");
+    setGenre("");
+    setGenreOpen(false);
+    setMoodInput("");
+    setMoods([]);
+    setCoverImage(null);
   };
 
   const handleOpenChange = (v: boolean) => {
     if (!v) resetForm();
     onOpenChange(v);
+  };
+
+  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setCoverImage(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const addMood = (tag: string) => {
+    const cleaned = tag.replace(/^#+/, "").trim().toLowerCase();
+    if (cleaned && !moods.includes(cleaned)) {
+      setMoods((prev) => [...prev, cleaned]);
+    }
+    setMoodInput("");
+  };
+
+  const handleMoodKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((e.key === "Enter" || e.key === "," || e.key === " ") && moodInput.trim()) {
+      e.preventDefault();
+      addMood(moodInput);
+    }
+    if (e.key === "Backspace" && !moodInput && moods.length > 0) {
+      setMoods((prev) => prev.slice(0, -1));
+    }
+  };
+
+  const removeMood = (tag: string) => {
+    setMoods((prev) => prev.filter((m) => m !== tag));
   };
 
   const availableTracks = useMemo(() => {
@@ -93,13 +149,8 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
     return filtered;
   }, [trackSearch, selectedTracks]);
 
-  const addTrack = (track: Track) => {
-    setSelectedTracks((prev) => [...prev, track]);
-  };
-
-  const removeTrack = (trackId: number) => {
-    setSelectedTracks((prev) => prev.filter((t) => t.id !== trackId));
-  };
+  const addTrack = (track: Track) => setSelectedTracks((prev) => [...prev, track]);
+  const removeTrack = (trackId: number) => setSelectedTracks((prev) => prev.filter((t) => t.id !== trackId));
 
   const canProceed = name.trim().length > 0;
   const canCreate = name.trim().length > 0;
@@ -110,24 +161,19 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
           <DialogHeader>
-            <DialogTitle className="text-foreground text-lg tracking-tight">
-              Create Playlist
-            </DialogTitle>
+            <DialogTitle className="text-foreground text-lg tracking-tight">Create Playlist</DialogTitle>
             <DialogDescription className="text-muted-foreground/70 text-xs mt-1">
               {step === "details"
-                ? "Give your playlist a name and description."
+                ? "Set up your playlist details, cover, genre and mood."
                 : `Add tracks from your catalog. ${selectedTracks.length} selected.`}
             </DialogDescription>
           </DialogHeader>
-
           {/* Step indicator */}
           <div className="flex items-center gap-2 mt-4">
             <button
               onClick={() => setStep("details")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                step === "details"
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                step === "details" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <span className={`w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold ${
@@ -149,9 +195,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
             >
               <span className={`w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold ${
                 step === "tracks" ? "btn-brand" : "bg-secondary text-muted-foreground"
-              }`}>
-                2
-              </span>
+              }`}>2</span>
               Tracks
             </button>
           </div>
@@ -169,33 +213,159 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                 transition={{ duration: 0.2 }}
                 className="p-6 space-y-5"
               >
-                {/* Name */}
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-                    Playlist Name <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Summer Vibes 2026"
-                    className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
-                    autoFocus
-                  />
+                {/* Cover Upload + Name row */}
+                <div className="flex gap-5">
+                  {/* Cover Upload */}
+                  <div className="shrink-0">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
+                      Cover
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-28 h-28 rounded-xl border-2 border-dashed border-border hover:border-primary/40 bg-secondary/50 flex flex-col items-center justify-center gap-1.5 transition-all group overflow-hidden relative"
+                    >
+                      {coverImage ? (
+                        <>
+                          <img
+                            src={coverImage}
+                            alt="Cover"
+                            className="absolute inset-0 w-full h-full object-cover rounded-xl"
+                          />
+                          <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                            <ImagePlus className="w-5 h-5 text-primary" />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <ImagePlus className="w-6 h-6 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
+                          <span className="text-2xs text-muted-foreground/40 group-hover:text-primary/60 font-medium transition-colors">
+                            Upload
+                          </span>
+                        </>
+                      )}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCoverUpload}
+                      className="hidden"
+                    />
+                    <p className="text-2xs text-muted-foreground/40 mt-1.5 text-center">Square</p>
+                  </div>
+
+                  {/* Name + Description */}
+                  <div className="flex-1 space-y-4 min-w-0">
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                        Playlist Name <span className="text-destructive">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g. Summer Vibes 2026"
+                        className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                        Description
+                      </label>
+                      <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="What's this playlist about?"
+                        rows={2}
+                        className="w-full px-4 py-3 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40 resize-none leading-relaxed"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Description */}
+                {/* Genre */}
+                <div className="space-y-2 relative">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                    Genre
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setGenreOpen((v) => !v)}
+                    className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none hover:border-primary/40 transition-colors font-medium flex items-center justify-between"
+                  >
+                    <span className={genre ? "text-foreground" : "text-muted-foreground/40"}>
+                      {genre || "Select a genre…"}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground/50 transition-transform ${genreOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  <AnimatePresence>
+                    {genreOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute z-50 left-0 right-0 top-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto"
+                      >
+                        {GENRES.map((g) => (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() => {
+                              setGenre(g);
+                              setGenreOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2.5 text-[13px] font-medium transition-colors flex items-center justify-between ${
+                              genre === g
+                                ? "bg-primary/10 text-primary"
+                                : "text-foreground hover:bg-secondary"
+                            }`}
+                          >
+                            {g}
+                            {genre === g && <Check className="w-3.5 h-3.5 text-primary" />}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Mood hashtags */}
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-                    Description
+                    Mood
                   </label>
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="What's this playlist about?"
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40 resize-none leading-relaxed"
-                  />
+                  <div className="flex flex-wrap items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-secondary border border-border focus-within:border-primary/40 transition-colors">
+                    {moods.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 pl-2 pr-1.5 py-1 rounded-lg bg-primary/10 border border-primary/15 text-xs font-medium text-primary"
+                      >
+                        <Hash className="w-3 h-3" />
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeMood(tag)}
+                          className="p-0.5 rounded hover:bg-destructive/15 text-primary/60 hover:text-destructive transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                    <input
+                      type="text"
+                      value={moodInput}
+                      onChange={(e) => setMoodInput(e.target.value)}
+                      onKeyDown={handleMoodKeyDown}
+                      placeholder={moods.length === 0 ? "Type a mood and press Enter… e.g. chill, dark, uplifting" : "Add more…"}
+                      className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 outline-none flex-1 min-w-[120px] font-medium py-0.5"
+                    />
+                  </div>
+                  <p className="text-2xs text-muted-foreground/40">
+                    Press Enter, Space or Comma to add a mood tag
+                  </p>
                 </div>
 
                 {/* Preview */}
@@ -205,19 +375,35 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                     animate={{ opacity: 1, y: 0 }}
                     className="p-4 rounded-xl border border-border/50 bg-secondary/30"
                   >
-                    <p className="text-2xs text-muted-foreground/60 uppercase tracking-widest font-semibold mb-2">
-                      Preview
-                    </p>
+                    <p className="text-2xs text-muted-foreground/60 uppercase tracking-widest font-semibold mb-2">Preview</p>
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shrink-0">
-                        <ListMusic className="w-5 h-5 text-primary/60" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground text-sm truncate">{name}</p>
-                        {description && (
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">{description}</p>
+                      <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
+                        {coverImage ? (
+                          <img src={coverImage} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                            <ListMusic className="w-5 h-5 text-primary/60" />
+                          </div>
                         )}
-                        <p className="text-2xs text-muted-foreground/50 mt-0.5">0 tracks · Just now</p>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground text-sm truncate">{name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {genre && (
+                            <span className="text-2xs text-accent font-medium">{genre}</span>
+                          )}
+                          {description && (
+                            <span className="text-xs text-muted-foreground truncate">{description}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-2xs text-muted-foreground/50">0 tracks · Just now</span>
+                          {moods.length > 0 && (
+                            <span className="text-2xs text-primary/60">
+                              {moods.map((m) => `#${m}`).join(" ")}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -247,11 +433,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                           exit={{ opacity: 0, scale: 0.9 }}
                           className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg bg-primary/8 border border-primary/15 text-xs font-medium text-foreground"
                         >
-                          <img
-                            src={covers[track.coverIdx]}
-                            alt=""
-                            className="w-5 h-5 rounded object-cover"
-                          />
+                          <img src={covers[track.coverIdx]} alt="" className="w-5 h-5 rounded object-cover" />
                           <span className="truncate max-w-[120px]">{track.title}</span>
                           <button
                             onClick={() => removeTrack(track.id)}
@@ -277,10 +459,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                       className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none w-full font-medium"
                     />
                     {trackSearch && (
-                      <button
-                        onClick={() => setTrackSearch("")}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      >
+                      <button onClick={() => setTrackSearch("")} className="text-muted-foreground hover:text-foreground transition-colors">
                         <X className="w-3 h-3" />
                       </button>
                     )}
@@ -296,9 +475,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                         {trackSearch ? "No matching tracks" : "All tracks added"}
                       </p>
                       <p className="text-xs text-muted-foreground/50 mt-1">
-                        {trackSearch
-                          ? "Try a different search term"
-                          : "Your entire catalog is in this playlist"}
+                        {trackSearch ? "Try a different search term" : "Your entire catalog is in this playlist"}
                       </p>
                     </div>
                   ) : (
@@ -309,26 +486,14 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                         className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/50 transition-all cursor-pointer group/track"
                         onClick={() => addTrack(track)}
                       >
-                        <img
-                          src={covers[track.coverIdx]}
-                          alt={track.title}
-                          className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50"
-                        />
+                        <img src={covers[track.coverIdx]} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                         <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-semibold text-foreground truncate tracking-tight">
-                            {track.title}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                            {track.artist}
-                          </p>
+                          <p className="text-[13px] font-semibold text-foreground truncate tracking-tight">{track.title}</p>
+                          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-2xs text-muted-foreground/50 hidden sm:inline">
-                            {track.genre}
-                          </span>
-                          <span className="text-2xs text-muted-foreground/40 font-mono tabular-nums hidden sm:inline">
-                            {track.bpm} BPM
-                          </span>
+                          <span className="text-2xs text-muted-foreground/50 hidden sm:inline">{track.genre}</span>
+                          <span className="text-2xs text-muted-foreground/40 font-mono tabular-nums hidden sm:inline">{track.bpm} BPM</span>
                           <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center group-hover/track:bg-primary/15 transition-colors">
                             <Plus className="w-3.5 h-3.5 text-muted-foreground/50 group-hover/track:text-primary transition-colors" />
                           </div>
@@ -379,10 +544,13 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                     tracks: selectedTracks.length,
                     duration: `${selectedTracks.length * 4} min`,
                     updated: "Just now",
-                    mood: "Custom",
+                    mood: moods.length > 0 ? moods[0].charAt(0).toUpperCase() + moods[0].slice(1) : "Custom",
                     coverIdxs,
                     color: gradientColors[Math.floor(Math.random() * gradientColors.length)],
                     trackIds: selectedTracks.map((t) => t.id),
+                    genre: genre || undefined,
+                    moods: moods.length > 0 ? moods : undefined,
+                    coverImage: coverImage || undefined,
                   };
                   onCreate(pl);
                   handleOpenChange(false);
