@@ -811,7 +811,7 @@ function StepInfo({
   trackKey, setTrackKey, genre, setGenre, mood, toggleMood,
   language, setLanguage, notes, setNotes,
   details, updateDetail, addDetailEntry, removeDetailEntry,
-  analysisResult, analyzing, compressed, compressing,
+  analysisResult, analyzing,
 }: {
   title: string; setTitle: (v: string) => void;
   artist: string; setArtist: (v: string) => void;
@@ -825,8 +825,6 @@ function StepInfo({
   addDetailEntry: (key: string) => void; removeDetailEntry: (key: string, index: number) => void;
   analysisResult: AudioAnalysisResult | null;
   analyzing: boolean;
-  compressed: CompressedAudio | null;
-  compressing: boolean;
 }) {
   const [showDetails, setShowDetails] = useState(false);
 
