@@ -638,7 +638,7 @@ function StemsTab() {
 
             {/* Drop hint footer */}
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => setShowUploadModal(true)}
               className="w-full py-3 flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground border-t border-border hover:bg-secondary/30 transition-colors"
             >
               <Upload className="w-3.5 h-3.5" />
