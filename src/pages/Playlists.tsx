@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
@@ -125,6 +126,7 @@ function MiniCoverGrid({ idxs }: { idxs: number[] }) {
 export default function Playlists() {
   const [search, setSearch] = useState("");
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
