@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback /* refresh */ } from "react";
+import { jsPDF } from "jspdf";
 import { useParams, Link } from "react-router-dom";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
+import trakalogLogo from "@/assets/trakalog-logo.png";
 import { Textarea } from "@/components/ui/textarea";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { ShareModal } from "@/components/ShareModal";
@@ -439,22 +441,7 @@ function LyricsTab({ trackId }: { trackId: number }) {
 
   const handleDownloadPdf = () => {
     if (!trackData.lyrics) return;
-    // Generate a simple PDF using a text-based approach
-    const title = trackData.title;
-    const artist = trackData.artist;
-    const lyrics = trackData.lyrics;
-
-    // Build a minimal PDF manually
-    const pdfContent = buildSimplePdf(title, artist, lyrics);
-    const blob = new Blob([pdfContent.buffer as ArrayBuffer], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${title} - Lyrics.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    generateLyricsPdf(trackData.title, trackData.artist, trackData.lyrics);
   };
 
   return (
@@ -564,86 +551,186 @@ function LyricsTab({ trackId }: { trackId: number }) {
   );
 }
 
-/** Build a minimal valid PDF from text content */
-function buildSimplePdf(title: string, artist: string, lyrics: string): Uint8Array {
+/** Generate a premium branded lyrics PDF using jsPDF */
+function generateLyricsPdf(title: string, artist: string, lyrics: string) {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 56;
+  const contentW = pageW - marginX * 2;
+
+  // Brand colors (from CSS tokens)
+  const brandOrange: [number, number, number] = [255, 140, 26];   // hsl(24 100% 55%)
+  const brandPink: [number, number, number] = [224, 82, 153];     // hsl(330 80% 60%)
+  const brandPurple: [number, number, number] = [140, 70, 209];   // hsl(270 70% 55%)
+  const bgDark: [number, number, number] = [16, 16, 18];          // hsl(240 6% 6%)
+  const cardBg: [number, number, number] = [22, 22, 25];          // hsl(240 5% 9%)
+  const textLight: [number, number, number] = [245, 245, 245];    // hsl(0 0% 96%)
+  const textMuted: [number, number, number] = [120, 120, 128];    // muted
+
+  // ─── Full-page dark background ───
+  doc.setFillColor(...bgDark);
+  doc.rect(0, 0, pageW, pageH, "F");
+
+  // ─── Top gradient bar ───
+  const barH = 5;
+  const barSegments = 60;
+  for (let i = 0; i < barSegments; i++) {
+    const t = i / barSegments;
+    const r = Math.round(brandOrange[0] + (brandPink[0] - brandOrange[0]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[0] - brandPurple[0]));
+    const g = Math.round(brandOrange[1] + (brandPink[1] - brandOrange[1]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[1] - brandPurple[1]));
+    const b = Math.round(brandOrange[2] + (brandPink[2] - brandOrange[2]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[2] - brandPurple[2]));
+    doc.setFillColor(Math.min(255, Math.max(0, r)), Math.min(255, Math.max(0, g)), Math.min(255, Math.max(0, b)));
+    doc.rect((pageW / barSegments) * i, 0, pageW / barSegments + 1, barH, "F");
+  }
+
+  // ─── Logo area ───
+  let y = 44;
+  const iconSize = 28;
+  // Add the actual logo image
+  try {
+    doc.addImage(trakalogLogo, "PNG", marginX, y - 2, iconSize, iconSize);
+  } catch {
+    // Fallback: draw a branded square with "T"
+    doc.setFillColor(...brandOrange);
+    doc.roundedRect(marginX, y - 2, iconSize, iconSize, 6, 6, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text("T", marginX + iconSize / 2, y + iconSize / 2 + 1, { align: "center", baseline: "middle" });
+  }
+
+  // Brand name
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...brandOrange);
+  doc.text("TRAKALOG", marginX + iconSize + 10, y + iconSize / 2 + 1, { baseline: "middle" });
+
+  // ─── Header card area ───
+  y = 92;
+  doc.setFillColor(...cardBg);
+  doc.roundedRect(marginX, y, contentW, 80, 8, 8, "F");
+
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(...textLight);
+  doc.text(title, marginX + 20, y + 32);
+
+  // Artist
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(13);
+  doc.setTextColor(...textMuted);
+  doc.text(artist, marginX + 20, y + 54);
+
+  // "LYRICS" label badge
+  doc.setFillColor(brandOrange[0], brandOrange[1], brandOrange[2]);
+  const badgeText = "LYRICS";
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  const badgeW = doc.getTextWidth(badgeText) + 16;
+  doc.roundedRect(pageW - marginX - badgeW - 20, y + 16, badgeW, 18, 4, 4, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.text(badgeText, pageW - marginX - badgeW / 2 - 20, y + 28, { align: "center" });
+
+  // ─── Divider line with gradient dots ───
+  y = 188;
+  for (let i = 0; i < 3; i++) {
+    const colors = [brandOrange, brandPink, brandPurple];
+    doc.setFillColor(...colors[i]);
+    doc.circle(pageW / 2 - 12 + i * 12, y, 2, "F");
+  }
+
+  // ─── Lyrics body ───
+  y = 210;
   const lines = lyrics.split("\n");
-  const enc = new TextEncoder();
+  const lineHeight = 16;
+  const sectionLineHeight = 22;
 
-  // PDF structure
-  let pdf = "%PDF-1.4\n";
-  const offsets: number[] = [];
-
-  // Object 1: Catalog
-  offsets.push(pdf.length);
-  pdf += "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
-
-  // Object 2: Pages
-  offsets.push(pdf.length);
-  pdf += "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
-
-  // Build content stream
-  let content = "BT\n/F1 16 Tf\n50 780 Td\n";
-  content += `(${pdfEscape(title)}) Tj\n`;
-  content += "0 -20 Td\n/F1 12 Tf\n";
-  content += `(${pdfEscape(artist)}) Tj\n`;
-  content += "0 -30 Td\n/F1 10 Tf\n";
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10.5);
 
   for (const line of lines) {
-    content += `0 -14 Td\n(${pdfEscape(line)}) Tj\n`;
+    const trimmed = line.trim();
+    const isSection = /^\[.*\]$/.test(trimmed);
+
+    // Check if we need a new page
+    if (y > pageH - 80) {
+      doc.addPage();
+      // New page background
+      doc.setFillColor(...bgDark);
+      doc.rect(0, 0, pageW, pageH, "F");
+      y = 48;
+    }
+
+    if (isSection) {
+      // Section header styling
+      y += 6;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...brandOrange);
+      doc.text(trimmed.replace(/[\[\]]/g, "").toUpperCase(), marginX, y);
+      // Small underline accent
+      const tw = doc.getTextWidth(trimmed.replace(/[\[\]]/g, "").toUpperCase());
+      doc.setDrawColor(...brandOrange);
+      doc.setLineWidth(0.5);
+      doc.line(marginX, y + 4, marginX + tw, y + 4);
+      y += sectionLineHeight;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10.5);
+    } else if (trimmed === "") {
+      y += 8;
+    } else {
+      doc.setTextColor(...textLight);
+      // Word-wrap long lines
+      const splitLines = doc.splitTextToSize(trimmed, contentW);
+      for (const sl of splitLines) {
+        if (y > pageH - 80) {
+          doc.addPage();
+          doc.setFillColor(...bgDark);
+          doc.rect(0, 0, pageW, pageH, "F");
+          y = 48;
+        }
+        doc.text(sl, marginX, y);
+        y += lineHeight;
+      }
+    }
   }
-  // Footer signature
-  content += "0 -40 Td\n/F1 8 Tf\n0.5 0.5 0.5 rg\n";
-  content += `(Powered by trakalog.com) Tj\n`;
-  content += "0 0 0 rg\n";
-  content += "ET\n";
 
-  // Object 4: Content stream
-  offsets.push(-1); // placeholder for obj 3 (page)
+  // ─── Footer on every page ───
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
 
-  const streamBytes = enc.encode(content);
+    // Bottom gradient bar
+    for (let i = 0; i < barSegments; i++) {
+      const t = i / barSegments;
+      const r = Math.round(brandOrange[0] + (brandPink[0] - brandOrange[0]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[0] - brandPurple[0]));
+      const g = Math.round(brandOrange[1] + (brandPink[1] - brandOrange[1]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[1] - brandPurple[1]));
+      const b = Math.round(brandOrange[2] + (brandPink[2] - brandOrange[2]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[2] - brandPurple[2]));
+      doc.setFillColor(Math.min(255, Math.max(0, r)), Math.min(255, Math.max(0, g)), Math.min(255, Math.max(0, b)));
+      doc.rect((pageW / barSegments) * i, pageH - 3, pageW / barSegments + 1, 3, "F");
+    }
 
-  // Object 4: Stream
-  const obj4Offset = pdf.length; // we'll set obj3 after
-  offsets.push(obj4Offset);
-  pdf += `4 0 obj\n<< /Length ${streamBytes.length} >>\nstream\n`;
-  const beforeStream = enc.encode(pdf);
+    // "Powered by trakalog.com" footer
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...textMuted);
+    doc.text("Powered by", pageW / 2 - 20, pageH - 18, { align: "right" });
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...brandOrange);
+    doc.text(" trakalog.com", pageW / 2 - 18, pageH - 18);
 
-  const afterStream = enc.encode(`\nendstream\nendobj\n`);
+    // Page number
+    if (totalPages > 1) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(...textMuted);
+      doc.text(`${p} / ${totalPages}`, pageW - marginX, pageH - 18, { align: "right" });
+    }
+  }
 
-  // Object 5: Font
-  const obj5Start = beforeStream.length + streamBytes.length + afterStream.length;
-
-  let rest = "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
-
-  // Object 3: Page
-  const obj3Start = obj5Start + rest.length;
-  rest += "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n";
-
-  // Cross-reference table
-  const xrefStart = obj3Start + rest.length - obj5Start + obj5Start;
-
-  rest += `xref\n0 6\n0000000000 65535 f \n`;
-  rest += `${String(offsets[0]).padStart(10, "0")} 00000 n \n`;
-  rest += `${String(offsets[1]).padStart(10, "0")} 00000 n \n`;
-  rest += `${String(obj3Start).padStart(10, "0")} 00000 n \n`;
-  rest += `${String(obj4Offset).padStart(10, "0")} 00000 n \n`;
-  rest += `${String(obj5Start).padStart(10, "0")} 00000 n \n`;
-  rest += `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
-
-  const restBytes = enc.encode(rest);
-
-  // Combine all parts
-  const result = new Uint8Array(beforeStream.length + streamBytes.length + afterStream.length + restBytes.length);
-  result.set(beforeStream, 0);
-  result.set(streamBytes, beforeStream.length);
-  result.set(afterStream, beforeStream.length + streamBytes.length);
-  result.set(restBytes, beforeStream.length + streamBytes.length + afterStream.length);
-
-  return result;
-}
-
-function pdfEscape(str: string): string {
-  return str.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+  doc.save(`${title} - Lyrics.pdf`);
 }
 
 function StemsTab({ trackId }: { trackId: number }) {
