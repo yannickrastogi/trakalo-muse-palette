@@ -389,6 +389,10 @@ function StemsTab() {
     setPendingFiles((prev) => prev.map((p, i) => i === index ? { ...p, type } : p));
   };
 
+  const updatePendingName = (index: number, customName: string) => {
+    setPendingFiles((prev) => prev.map((p, i) => i === index ? { ...p, customName } : p));
+  };
+
   const removePending = (index: number) => {
     setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
