@@ -37,7 +37,8 @@ import { PageShell } from "@/components/PageShell";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePlaylists, covers } from "@/contexts/PlaylistContext";
-import { allTracks, statusColors } from "./Catalog";
+import { statusColors } from "./Catalog";
+import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useRole } from "@/contexts/RoleContext";
 import {
   Dialog,

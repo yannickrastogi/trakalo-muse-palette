@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { allTracks } from "@/pages/Catalog";
+import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { getSavedContacts, saveContact, type SavedContact } from "@/hooks/use-saved-contacts";
 

@@ -11,7 +11,7 @@ import {
   ChevronDown,
   Hash,
 } from "lucide-react";
-import { allTracks } from "@/pages/Catalog";
+import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import {
   Dialog,
   DialogContent,
