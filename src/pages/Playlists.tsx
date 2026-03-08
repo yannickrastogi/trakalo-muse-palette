@@ -108,7 +108,14 @@ const item = {
   },
 };
 
-function MiniCoverGrid({ idxs }: { idxs: number[] }) {
+function MiniCoverGrid({ idxs, coverImage }: { idxs: number[]; coverImage?: string }) {
+  if (coverImage) {
+    return (
+      <div className="w-full aspect-square rounded-xl overflow-hidden">
+        <img src={coverImage} alt="" className="w-full h-full object-cover" />
+      </div>
+    );
+  }
   return (
     <div className="grid grid-cols-2 gap-0.5 w-full aspect-square rounded-xl overflow-hidden">
       {idxs.slice(0, 4).map((ci, i) => (
