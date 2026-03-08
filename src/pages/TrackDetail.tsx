@@ -86,7 +86,41 @@ const docStatusColors: Record<string, string> = {
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
 
-export default function TrackDetail() {
+const detailLabels: Record<string, string> = {
+  producers: "Producer(s)", songwriters: "Songwriter(s)", recordingEngineer: "Recording Engineer",
+  mixingEngineer: "Mixing Engineer", masteringEngineer: "Mastering Engineer", drumsBy: "Drums By",
+  synthsBy: "Synths By", keysBy: "Keys By", guitarsBy: "Guitars By", bassBy: "Bass By",
+  programmingBy: "Programming By", vocalsBy: "Vocals By", backgroundVocalsBy: "Background Vocals By",
+  mixingStudio: "Mixing Studio", recordingStudio: "Recording Studio", recordingDate: "Recording Date",
+};
+
+function buildMeta(trackData: NonNullable<ReturnType<ReturnType<typeof useTrack>["getTrack"]>>) {
+  const meta = [
+    { label: "Album / EP", value: trackData.album || "—" },
+    { label: "Label", value: trackData.label || "—" },
+    { label: "Publisher", value: trackData.publisher || "—" },
+    { label: "Release Date", value: trackData.releaseDate || "—" },
+    { label: "ISRC", value: trackData.isrc || "—" },
+    { label: "UPC", value: trackData.upc || "—" },
+    { label: "Written By", value: trackData.writtenBy.length ? trackData.writtenBy.join(", ") : "—" },
+    { label: "Produced By", value: trackData.producedBy.length ? trackData.producedBy.join(", ") : "—" },
+    { label: "Mixed By", value: trackData.mixedBy || "—" },
+    { label: "Mastered By", value: trackData.masteredBy || "—" },
+    { label: "Copyright", value: trackData.copyright || "—" },
+    { label: "Language", value: trackData.language || "—" },
+    { label: "Explicit", value: trackData.explicit ? "Yes" : "No" },
+    { label: "Notes", value: trackData.notes || "—" },
+  ];
+  Object.entries(trackData.details || {}).forEach(([key, values]) => {
+    const filtered = values.filter(Boolean);
+    if (filtered.length > 0) {
+      meta.push({ label: detailLabels[key] || key, value: filtered.join(", ") });
+    }
+  });
+  return meta;
+}
+
+
   const { id } = useParams();
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(35);
