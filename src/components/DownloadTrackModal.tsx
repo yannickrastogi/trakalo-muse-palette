@@ -484,3 +484,66 @@ function generateWatermarkedDocumentPdf(docName: string, status: string, date: s
 
   return doc.output("blob");
 }
+
+/** Get cover art as ArrayBuffer for ID3 embedding */
+async function getCoverArtArrayBuffer(trackData: TrackData): Promise<ArrayBuffer> {
+  // Generate a cover art image (smaller size for embedding — 500x500)
+  const size = 500;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+
+  if (trackData.coverImage) {
+    return new Promise<ArrayBuffer>((resolve) => {
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, size, size);
+        canvas.toBlob(async (blob) => {
+          resolve(await blob!.arrayBuffer());
+        }, "image/jpeg", 0.9);
+      };
+      img.onerror = () => {
+        drawFallbackCover(ctx, size, trackData);
+        canvas.toBlob(async (blob) => {
+          resolve(await blob!.arrayBuffer());
+        }, "image/jpeg", 0.9);
+      };
+      img.src = trackData.coverImage!;
+    });
+  } else {
+    drawFallbackCover(ctx, size, trackData);
+    return new Promise<ArrayBuffer>((resolve) => {
+      canvas.toBlob(async (blob) => {
+        resolve(await blob!.arrayBuffer());
+      }, "image/jpeg", 0.9);
+    });
+  }
+}
+
+/** Create an audio blob with ID3 tags and embedded cover art */
+function createTaggedAudioBlob(
+  title: string,
+  artist: string,
+  album: string,
+  coverArtBuffer: ArrayBuffer
+): Blob {
+  // Create a minimal MP3-compatible buffer for demo
+  // In production, this would be the real audio ArrayBuffer
+  const emptyBuffer = new ArrayBuffer(128);
+
+  const writer = new ID3Writer(emptyBuffer);
+  writer
+    .setFrame("TIT2", title)
+    .setFrame("TPE1", [artist])
+    .setFrame("TALB", album)
+    .setFrame("APIC", {
+      type: 3, // Cover (front)
+      data: coverArtBuffer,
+      description: "Cover Art",
+    });
+  writer.addTag();
+
+  return writer.getBlob();
+}
