@@ -282,22 +282,43 @@ function SectionCard({ title, icon: Icon, children, action }: { title: string; i
   );
 }
 
-function OverviewTab() {
+function OverviewTab({ trackId }: { trackId: number }) {
+  const { getTrack } = useTrack();
+  const trackData = getTrack(trackId);
+  if (!trackData) return null;
+
   const meta = [
-    { label: "Album / EP", value: trackData.album },
-    { label: "Label", value: trackData.label },
-    { label: "Publisher", value: trackData.publisher },
-    { label: "Release Date", value: trackData.releaseDate },
-    { label: "ISRC", value: trackData.isrc },
-    { label: "UPC", value: trackData.upc },
-    { label: "Written By", value: trackData.writtenBy.join(", ") },
-    { label: "Produced By", value: trackData.producedBy.join(", ") },
-    { label: "Mixed By", value: trackData.mixedBy },
-    { label: "Mastered By", value: trackData.masteredBy },
-    { label: "Copyright", value: trackData.copyright },
-    { label: "Language", value: trackData.language },
+    { label: "Album / EP", value: trackData.album || "—" },
+    { label: "Label", value: trackData.label || "—" },
+    { label: "Publisher", value: trackData.publisher || "—" },
+    { label: "Release Date", value: trackData.releaseDate || "—" },
+    { label: "ISRC", value: trackData.isrc || "—" },
+    { label: "UPC", value: trackData.upc || "—" },
+    { label: "Written By", value: trackData.writtenBy.length ? trackData.writtenBy.join(", ") : "—" },
+    { label: "Produced By", value: trackData.producedBy.length ? trackData.producedBy.join(", ") : "—" },
+    { label: "Mixed By", value: trackData.mixedBy || "—" },
+    { label: "Mastered By", value: trackData.masteredBy || "—" },
+    { label: "Copyright", value: trackData.copyright || "—" },
+    { label: "Language", value: trackData.language || "—" },
     { label: "Explicit", value: trackData.explicit ? "Yes" : "No" },
+    { label: "Notes", value: trackData.notes || "—" },
   ];
+
+  // Add detail fields from upload
+  const detailLabels: Record<string, string> = {
+    producers: "Producer(s)", songwriters: "Songwriter(s)", recordingEngineer: "Recording Engineer",
+    mixingEngineer: "Mixing Engineer", masteringEngineer: "Mastering Engineer", drumsBy: "Drums By",
+    synthsBy: "Synths By", keysBy: "Keys By", guitarsBy: "Guitars By", bassBy: "Bass By",
+    programmingBy: "Programming By", vocalsBy: "Vocals By", backgroundVocalsBy: "Background Vocals By",
+    mixingStudio: "Mixing Studio", recordingStudio: "Recording Studio", recordingDate: "Recording Date",
+  };
+
+  Object.entries(trackData.details || {}).forEach(([key, values]) => {
+    const filtered = values.filter(Boolean);
+    if (filtered.length > 0) {
+      meta.push({ label: detailLabels[key] || key, value: filtered.join(", ") });
+    }
+  });
 
   return (
     <SectionCard title="Metadata" icon={FileText} action={<button className="text-xs text-primary hover:underline">Edit</button>}>
@@ -313,8 +334,14 @@ function OverviewTab() {
   );
 }
 
-function StemsTab() {
-  const [stems, setStems] = useState<StemFile[]>(stemsData);
+function StemsTab({ trackId }: { trackId: number }) {
+  const { getTrack, updateTrackStems } = useTrack();
+  const trackData = getTrack(trackId);
+  const initialStems: StemFile[] = (trackData?.stems || []).map((s) => ({
+    ...s,
+    type: s.type as StemType,
+  }));
+  const [stems, setStems] = useState<StemFile[]>(initialStems);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
