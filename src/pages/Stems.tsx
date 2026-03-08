@@ -1,13 +1,9 @@
 import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Filter, Upload, Play, Download, ExternalLink, Layers, ChevronDown, X, CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { Search, Filter, Upload, Play, Download, ExternalLink, Layers, ChevronDown, X } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
 import { useNavigate } from "react-router-dom";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
@@ -90,8 +86,6 @@ export default function Stems() {
   const [keyFilter, setKeyFilter] = useState("all");
   const [bpmMin, setBpmMin] = useState("");
   const [bpmMax, setBpmMax] = useState("");
-  const [dateFrom, setDateFrom] = useState<Date | undefined>();
-  const [dateTo, setDateTo] = useState<Date | undefined>();
 
   // Flatten all stems + add pack entries for tracks that have stems
   const allStems = useMemo<FlatStem[]>(() => {
@@ -145,11 +139,6 @@ export default function Stems() {
   const uniqueGenres = [...GENRES];
   const uniqueKeys = useMemo(() => [...new Set(tracks.map((t) => t.key).filter(Boolean))].sort(), [tracks]);
 
-  // Parse upload date helper
-  const parseUploadDate = useCallback((dateStr: string) => {
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? null : d;
-  }, []);
 
   // Count active filters
   const activeFilterCount = useMemo(() => {
@@ -160,9 +149,8 @@ export default function Stems() {
     if (genreFilter !== "all") count++;
     if (keyFilter !== "all") count++;
     if (bpmMin || bpmMax) count++;
-    if (dateFrom || dateTo) count++;
     return count;
-  }, [trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax, dateFrom, dateTo]);
+  }, [trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax]);
 
   const clearAllFilters = useCallback(() => {
     setTrackFilter("all");
@@ -170,10 +158,7 @@ export default function Stems() {
     setTypeFilter("all");
     setGenreFilter("all");
     setKeyFilter("all");
-    setBpmMin("");
     setBpmMax("");
-    setDateFrom(undefined);
-    setDateTo(undefined);
   }, []);
 
   const filtered = useMemo(() => {
@@ -196,22 +181,10 @@ export default function Stems() {
       if (genreFilter !== "all" && s.trackGenre !== genreFilter) return false;
       if (keyFilter !== "all" && (s.key || s.trackKey) !== keyFilter) return false;
       if (bpmMinVal && s.trackBpm < bpmMinVal) return false;
-      if (bpmMaxVal && s.trackBpm > bpmMaxVal) return false;
-
-      if (dateFrom || dateTo) {
-        const d = parseUploadDate(s.uploadDate);
-        if (!d) return false;
-        if (dateFrom && d < dateFrom) return false;
-        if (dateTo) {
-          const end = new Date(dateTo);
-          end.setHours(23, 59, 59, 999);
-          if (d > end) return false;
-        }
-      }
 
       return true;
     });
-  }, [allStems, search, trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax, dateFrom, dateTo, parseUploadDate]);
+  }, [allStems, search, trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax]);
 
   return (
     <PageShell>
@@ -338,59 +311,7 @@ export default function Stems() {
                       </div>
                     </div>
 
-                    {/* Upload Date From */}
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Uploaded From</span>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button className={cn(
-                            "h-8 px-3 rounded-lg border text-xs flex items-center gap-2 transition-colors",
-                            dateFrom
-                              ? "bg-secondary border-primary/30 text-foreground"
-                              : "bg-secondary border-border text-muted-foreground hover:text-foreground"
-                          )}>
-                            <CalendarIcon className="w-3 h-3" />
-                            {dateFrom ? format(dateFrom, "MMM d, yyyy") : "Start date"}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={dateFrom}
-                            onSelect={setDateFrom}
-                            initialFocus
-                            className={cn("p-3 pointer-events-auto")}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
 
-                    {/* Upload Date To */}
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Uploaded To</span>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button className={cn(
-                            "h-8 px-3 rounded-lg border text-xs flex items-center gap-2 transition-colors",
-                            dateTo
-                              ? "bg-secondary border-primary/30 text-foreground"
-                              : "bg-secondary border-border text-muted-foreground hover:text-foreground"
-                          )}>
-                            <CalendarIcon className="w-3 h-3" />
-                            {dateTo ? format(dateTo, "MMM d, yyyy") : "End date"}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={dateTo}
-                            onSelect={setDateTo}
-                            initialFocus
-                            className={cn("p-3 pointer-events-auto")}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
 
                     {/* Clear */}
                     {activeFilterCount > 0 && (
@@ -424,12 +345,6 @@ export default function Stems() {
                       )}
                       {(bpmMin || bpmMax) && (
                         <FilterPill label={`BPM: ${bpmMin || "–"}–${bpmMax || "–"}`} onClear={() => { setBpmMin(""); setBpmMax(""); }} />
-                      )}
-                      {(dateFrom || dateTo) && (
-                        <FilterPill
-                          label={`Date: ${dateFrom ? format(dateFrom, "MMM d") : "–"} → ${dateTo ? format(dateTo, "MMM d") : "–"}`}
-                          onClear={() => { setDateFrom(undefined); setDateTo(undefined); }}
-                        />
                       )}
                     </div>
                   )}
