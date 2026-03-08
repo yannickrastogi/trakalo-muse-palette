@@ -132,6 +132,7 @@ export default function TrackDetail() {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTrackModalOpen, setShareTrackModalOpen] = useState(false);
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
+  const [sharePackModalOpen, setSharePackModalOpen] = useState(false);
 
   const trackData = getTrack(Number(id));
 
