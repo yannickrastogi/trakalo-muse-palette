@@ -119,6 +119,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       setCopyright(trackData.copyright);
       setExplicit(trackData.explicit);
       setDetails(JSON.parse(JSON.stringify(trackData.details || {})));
+      setSplits(trackData.splits?.length ? trackData.splits.map(s => ({ ...s })) : [{ id: "1", name: "", role: "", share: 100, pro: "", ipi: "", publisher: "" }]);
     }
   }, [open, trackId]);
 
