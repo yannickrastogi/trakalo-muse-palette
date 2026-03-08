@@ -670,7 +670,7 @@ function FieldInput({ value, onChange, placeholder, type = "text" }: { value: st
   );
 }
 
-function FieldSelect({ value, onChange, options, placeholder }: { value: string; onChange: (v: string) => void; options: string[]; placeholder: string }) {
+function FieldSelect({ value, onChange, options, placeholder }: { value: string; onChange: (v: string) => void; options: readonly string[]; placeholder: string }) {
   return (
     <select
       value={value}
@@ -906,7 +906,7 @@ function StepInfo({
         </div>
         <div className="space-y-1.5">
           <FieldLabel>Genre</FieldLabel>
-          {genre === "__other__" || (!GENRES.includes(genre) && genre !== "") ? (
+          {genre === "__other__" || (!(GENRES as readonly string[]).includes(genre) && genre !== "") ? (
             <div className="flex gap-1.5">
               <input
                 type="text"
