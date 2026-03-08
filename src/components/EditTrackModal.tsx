@@ -10,14 +10,7 @@ import {
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { toast } from "sonner";
 
-const GENRES = [
-  "Afrobeats", "Afrohouse", "Ambient", "Blues", "Bouyon", "Caribbean", "Classical",
-  "Country", "Dance", "Disco-Funk", "DnB", "Dubstep", "Electronic",
-  "Film", "Folk", "Hip-Hop", "House", "I-Pop", "Indie", "Jazz",
-  "K-Pop", "Kompa", "Latin", "Lo-fi", "Lounge", "Pop", "Progressive",
-  "R&B", "Reggae-Dancehall", "Rock", "Shatta", "Soca", "Soul",
-  "World", "Zouk",
-];
+import { GENRES } from "@/lib/constants";
 const KEYS = ["Ab Maj", "A Min", "Bb Maj", "B Min", "C Min", "C# Min", "D Maj", "Eb Maj", "E Min", "F Maj", "F# Min", "G Maj"];
 const MOODS = ["aggressive", "calm", "dark", "dreamy", "emotional", "energetic", "euphoric", "experimental", "happy", "hopeful", "hypnotic", "meditative", "nostalgic", "playful", "romantic", "smooth", "uplifting", "warm"];
 const LANGUAGES = ["English", "French", "Instrumental", "Japanese", "Portuguese", "Spanish"];

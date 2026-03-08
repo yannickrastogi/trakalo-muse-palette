@@ -18,8 +18,9 @@ import cover6 from "@/assets/covers/cover-6.jpg";
 
 const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 
-// Consistent stem types used across the platform (TrackDetail, UploadTrackModal, etc.)
-const stemTypes = ["kick", "snare", "bass", "guitar", "vocal", "synth", "drums", "background vocal", "fx", "other"] as const;
+// Use centralized constants
+import { STEM_TYPES, GENRES } from "@/lib/constants";
+import type { StemType } from "@/lib/constants";
 
 interface FlatStem extends TrackStem {
   trackId: number;

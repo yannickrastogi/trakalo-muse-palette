@@ -57,9 +57,8 @@ import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
 
-// Stem types kept for the stems tab
-const stemTypes = ["kick", "snare", "bass", "guitar", "vocal", "synth", "drums", "background vocal", "fx", "other"] as const;
-type StemType = typeof stemTypes[number];
+import { STEM_TYPES } from "@/lib/constants";
+import type { StemType } from "@/lib/constants";
 
 interface StemFile {
   id: string;
