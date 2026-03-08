@@ -446,7 +446,7 @@ function LyricsTab({ trackId }: { trackId: number }) {
 
     // Build a minimal PDF manually
     const pdfContent = buildSimplePdf(title, artist, lyrics);
-    const blob = new Blob([pdfContent], { type: "application/pdf" });
+    const blob = new Blob([pdfContent.buffer as ArrayBuffer], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
