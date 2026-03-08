@@ -156,13 +156,22 @@
     "title": "Equipo",
     "subtitle": "{{count}} colaboradores en tu red",
     "inviteMember": "Invitar miembro",
+    "member": "Miembro",
     "name": "Nombre",
     "role": "Rol",
     "email": "E-mail",
     "tracks": "Pistas",
     "status": "Estado",
+    "dateJoined": "Fecha de ingreso",
+    "joined": "Ingresó el",
     "active": "Activo",
-    "invited": "Invitado"
+    "invited": "Invitado",
+    "searchPlaceholder": "Buscar por nombre, e-mail o rol…",
+    "noResults": "No se encontraron miembros",
+    "role_admin": "Administrador",
+    "role_manager": "Gestor",
+    "role_producer": "Productor",
+    "role_viewer": "Lector"
   },
   "trackDetail": {
     "editTrack": "Editar pista",

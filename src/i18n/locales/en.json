@@ -156,13 +156,22 @@
     "title": "Team",
     "subtitle": "{{count}} collaborators in your network",
     "inviteMember": "Invite Member",
+    "member": "Member",
     "name": "Name",
     "role": "Role",
     "email": "Email",
     "tracks": "Tracks",
     "status": "Status",
+    "dateJoined": "Date Joined",
+    "joined": "Joined",
     "active": "Active",
-    "invited": "Invited"
+    "invited": "Invited",
+    "searchPlaceholder": "Search by name, email, or role…",
+    "noResults": "No team members found",
+    "role_admin": "Admin",
+    "role_manager": "Manager",
+    "role_producer": "Producer",
+    "role_viewer": "Viewer"
   },
   "trackDetail": {
     "editTrack": "Edit Track",
