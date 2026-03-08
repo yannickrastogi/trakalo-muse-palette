@@ -7,6 +7,8 @@ import { PlaylistProvider } from "@/contexts/PlaylistContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { TrackProvider } from "@/contexts/TrackContext";
 import { PitchProvider } from "@/contexts/PitchContext";
+import { SharedLinksProvider } from "@/contexts/SharedLinksContext";
+import { ContactsProvider } from "@/contexts/ContactsContext";
 import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import TrackDetail from "./pages/TrackDetail";
@@ -16,6 +18,9 @@ import Stems from "./pages/Stems";
 import Pitch from "./pages/Pitch";
 import Team from "./pages/Team";
 import SettingsPage from "./pages/SettingsPage";
+import Contacts from "./pages/Contacts";
+import SharedLinks from "./pages/SharedLinks";
+import SharedStemAccess from "./pages/SharedStemAccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +34,8 @@ const App = () => (
       <TrackProvider>
       <PitchProvider>
       <PlaylistProvider>
+      <SharedLinksProvider>
+      <ContactsProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -39,10 +46,15 @@ const App = () => (
             <Route path="/stems" element={<Stems />} />
             <Route path="/pitch" element={<Pitch />} />
             <Route path="/team" element={<Team />} />
+            <Route path="/contacts" element={<Contacts />} />
+            <Route path="/shared-links" element={<SharedLinks />} />
+            <Route path="/shared/:linkId" element={<SharedStemAccess />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+      </ContactsProvider>
+      </SharedLinksProvider>
       </PlaylistProvider>
       </PitchProvider>
       </TrackProvider>

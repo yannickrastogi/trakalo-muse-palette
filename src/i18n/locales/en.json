@@ -6,7 +6,9 @@
     "playlists": "Playlists",
     "pitch": "Pitch",
     "team": "Team",
-    "settings": "Settings"
+    "settings": "Settings",
+    "contacts": "Contacts",
+    "sharedLinks": "Shared Links"
   },
   "topbar": {
     "search": "Search tracks, artists, playlists…",
