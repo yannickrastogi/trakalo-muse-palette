@@ -111,7 +111,7 @@ export default function Stems() {
   const uniqueArtists = useMemo(() => [...new Set(allStems.map((s) => s.trackArtist))].sort(), [allStems]);
   const uniqueTypes = useMemo(() => [...new Set(allStems.map((s) => s.type))].sort(), [allStems]);
   const uniqueGenres = useMemo(() => [...new Set(allStems.map((s) => s.trackGenre))].sort(), [allStems]);
-  const uniqueKeys = useMemo(() => [...new Set(allStems.map((s) => s.trackKey))].sort(), [allStems]);
+  const uniqueKeys = useMemo(() => [...new Set(allStems.map((s) => s.key || s.trackKey).filter(Boolean))].sort(), [allStems]);
 
   // Parse upload date helper
   const parseUploadDate = useCallback((dateStr: string) => {
@@ -162,7 +162,7 @@ export default function Stems() {
       if (artistFilter !== "all" && s.trackArtist !== artistFilter) return false;
       if (typeFilter !== "all" && s.type !== typeFilter) return false;
       if (genreFilter !== "all" && s.trackGenre !== genreFilter) return false;
-      if (keyFilter !== "all" && s.trackKey !== keyFilter) return false;
+      if (keyFilter !== "all" && (s.key || s.trackKey) !== keyFilter) return false;
       if (bpmMinVal && s.trackBpm < bpmMinVal) return false;
       if (bpmMaxVal && s.trackBpm > bpmMaxVal) return false;
 
@@ -471,7 +471,7 @@ export default function Stems() {
                           <span className="text-xs text-muted-foreground font-mono">{stem.trackBpm}</span>
                         </td>
                         <td className="px-4 py-3 hidden xl:table-cell">
-                          <span className="text-xs text-muted-foreground">{stem.trackKey}</span>
+                          <span className="text-xs text-muted-foreground">{stem.key || stem.trackKey || "—"}</span>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
                           <span className="text-xs text-muted-foreground font-mono">{stem.fileSize}</span>
