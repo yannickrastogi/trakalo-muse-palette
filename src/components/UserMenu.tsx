@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { User, LogOut, Settings, CreditCard, ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function UserMenu() {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <div className="relative">
@@ -25,9 +27,9 @@ export function UserMenu() {
               <p className="text-[11px] text-muted-foreground mt-0.5">john@trakalog.com</p>
             </div>
             {[
-              { icon: User, label: "Profile" },
-              { icon: Settings, label: "Settings" },
-              { icon: CreditCard, label: "Billing" },
+              { icon: User, label: t("userMenu.profile") },
+              { icon: Settings, label: t("userMenu.settings") },
+              { icon: CreditCard, label: t("userMenu.billing") },
             ].map((item) => (
               <button
                 key={item.label}
@@ -40,7 +42,7 @@ export function UserMenu() {
             <div className="border-t border-border mt-1.5 pt-1.5">
               <button className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] text-destructive hover:bg-destructive/8 rounded-lg transition-colors font-medium">
                 <LogOut className="w-3.5 h-3.5" />
-                Sign out
+                {t("userMenu.signOut")}
               </button>
             </div>
           </div>

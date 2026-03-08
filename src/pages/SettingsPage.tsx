@@ -1,25 +1,28 @@
 import { motion } from "framer-motion";
 import { User, Bell, Shield, Palette, Globe, ChevronRight } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
-
-const sections = [
-  { title: "Profile", description: "Manage your account details and public profile", icon: User },
-  { title: "Notifications", description: "Configure email and in-app notification preferences", icon: Bell },
-  { title: "Privacy & Security", description: "Two-factor authentication, sessions, and data export", icon: Shield },
-  { title: "Appearance", description: "Theme, display density, and sidebar preferences", icon: Palette },
-  { title: "Integrations", description: "Connect Spotify, Apple Music, DistroKid, and more", icon: Globe },
-];
+import { useTranslation } from "react-i18next";
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
+
+  const sections = [
+    { title: t("settings.profile"), description: t("settings.profileDesc"), icon: User },
+    { title: t("settings.notifications"), description: t("settings.notificationsDesc"), icon: Bell },
+    { title: t("settings.privacySecurity"), description: t("settings.privacySecurityDesc"), icon: Shield },
+    { title: t("settings.appearance"), description: t("settings.appearanceDesc"), icon: Palette },
+    { title: t("settings.integrations"), description: t("settings.integrationsDesc"), icon: Globe },
+  ];
+
   return (
     <PageShell>
       <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[800px]">
         <motion.div variants={item}>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Settings</h1>
-          <p className="text-muted-foreground text-xs sm:text-sm mt-1">Manage your workspace and account preferences</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("settings.title")}</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("settings.subtitle")}</p>
         </motion.div>
 
         <div className="space-y-2.5">

@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Plus, MoreHorizontal } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
 
 const members = [
   { name: "Kira Nomura", role: "Artist / Writer", email: "kira@nightfallrecords.com", tracks: 24, status: "Active" },
@@ -19,17 +20,18 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 
 export default function Team() {
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   return (
     <PageShell>
       <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Team</h1>
-            <p className="text-muted-foreground text-xs sm:text-sm mt-1">{members.length} collaborators in your network</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("team.title")}</h1>
+            <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("team.subtitle", { count: members.length })}</p>
           </div>
           <button className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
-            <Plus className="w-3.5 h-3.5" /> Invite Member
+            <Plus className="w-3.5 h-3.5" /> {t("team.inviteMember")}
           </button>
         </motion.div>
 
@@ -45,9 +47,9 @@ export default function Team() {
                     <p className="font-semibold text-foreground text-[13px] tracking-tight truncate">{m.name}</p>
                     <p className="text-[11px] text-muted-foreground truncate">{m.role}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-2xs text-muted-foreground">{m.tracks} tracks</span>
+                      <span className="text-2xs text-muted-foreground">{m.tracks} {t("team.tracks").toLowerCase()}</span>
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold ${m.status === "Active" ? "bg-emerald-500/12 text-emerald-400" : "bg-brand-orange/12 text-brand-orange"}`}>
-                        {m.status}
+                        {m.status === "Active" ? t("team.active") : t("team.invited")}
                       </span>
                     </div>
                   </div>
@@ -63,11 +65,11 @@ export default function Team() {
                 <table className="w-full text-[13px]">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Name</th>
-                      <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Role</th>
-                      <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Email</th>
-                      <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Tracks</th>
-                      <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
+                      <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("team.name")}</th>
+                      <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("team.role")}</th>
+                      <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">{t("team.email")}</th>
+                      <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">{t("team.tracks")}</th>
+                      <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("team.status")}</th>
                       <th className="px-5 py-3 w-10"></th>
                     </tr>
                   </thead>
@@ -87,7 +89,7 @@ export default function Team() {
                         <td className="px-5 py-3.5 text-muted-foreground hidden sm:table-cell text-xs">{m.tracks}</td>
                         <td className="px-5 py-3.5">
                           <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${m.status === "Active" ? "bg-emerald-500/12 text-emerald-400" : "bg-brand-orange/12 text-brand-orange"}`}>
-                            {m.status}
+                            {m.status === "Active" ? t("team.active") : t("team.invited")}
                           </span>
                         </td>
                         <td className="px-5 py-3.5">
