@@ -295,6 +295,25 @@
     "fr": "Français",
     "es": "Español"
   },
+  "inviteMember": {
+    "title": "Invite Member",
+    "description": "Send an invitation to join your team.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "e.g. colleague@label.com",
+    "roleLabel": "Role",
+    "invalidEmail": "Please enter a valid email address",
+    "cancel": "Cancel",
+    "sendInvite": "Send Invite",
+    "inviteSent": "Invitation sent to {{email}}"
+  },
+  "invites": {
+    "title": "Pending Invites",
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "expired": "Expired",
+    "noInvites": "No pending invites",
+    "sentOn": "Sent"
+  },
   "common": {
     "pitch": "pitch",
     "pitches": "pitches"

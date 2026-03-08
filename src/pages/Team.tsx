@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal, Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3, Music } from "lucide-react";
+import { Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal, Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3, Music, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { InviteMemberModal, type InvitePayload } from "@/components/InviteMemberModal";
+import { toast } from "sonner";
 
 const ROLES = ["Admin", "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer", "Manager", "Publisher", "A&R", "Assistant", "Viewer"] as const;
 
@@ -52,6 +54,19 @@ const members = [
   { name: "Lena Park", email: "lena@lenapark.kr", role: "Viewer", joined: "2025-10-01", status: "active" },
 ];
 
+interface Invite {
+  email: string;
+  role: string;
+  sentAt: string;
+  status: "pending" | "accepted" | "expired";
+}
+
+const initialInvites: Invite[] = [
+  { email: "alex@studioflow.com", role: "Producer", sentAt: "2026-03-05", status: "pending" },
+  { email: "sam@musicpub.co", role: "Manager", sentAt: "2026-02-20", status: "accepted" },
+  { email: "riley@oldlabel.net", role: "Viewer", sentAt: "2026-01-10", status: "expired" },
+];
+
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
 
@@ -64,10 +79,18 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+const statusConfig = {
+  pending: { icon: Clock, color: "bg-brand-orange/12 text-brand-orange" },
+  accepted: { icon: CheckCircle2, color: "bg-emerald-500/12 text-emerald-400" },
+  expired: { icon: XCircle, color: "bg-destructive/12 text-destructive" },
+};
+
 export default function Team() {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [invites, setInvites] = useState<Invite[]>(initialInvites);
 
   const filtered = members.filter(
     (m) =>
@@ -81,6 +104,17 @@ export default function Team() {
     return acc;
   }, {} as Record<string, number>);
 
+  const handleInvite = (payload: InvitePayload) => {
+    const newInvite: Invite = {
+      email: payload.email,
+      role: payload.role,
+      sentAt: new Date().toISOString().split("T")[0],
+      status: "pending",
+    };
+    setInvites((prev) => [newInvite, ...prev]);
+    toast.success(t("inviteMember.inviteSent", { email: payload.email }));
+  };
+
   return (
     <PageShell>
       <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
@@ -90,7 +124,10 @@ export default function Team() {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("team.title")}</h1>
             <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("team.subtitle", { count: members.length })}</p>
           </div>
-          <button className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
+          <button
+            onClick={() => setInviteOpen(true)}
+            className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold shrink-0 self-start min-h-[44px]"
+          >
             <Plus className="w-3.5 h-3.5" /> {t("team.inviteMember")}
           </button>
         </motion.div>
@@ -100,10 +137,7 @@ export default function Team() {
           {ROLES.map((role) => {
             const Icon = roleIcons[role];
             return (
-              <div
-                key={role}
-                className="card-premium flex items-center gap-2.5 px-4 py-2.5 rounded-xl"
-              >
+              <div key={role} className="card-premium flex items-center gap-2.5 px-4 py-2.5 rounded-xl">
                 <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${roleColors[role]} flex items-center justify-center`}>
                   <Icon className="w-3.5 h-3.5 text-primary-foreground" />
                 </div>
@@ -128,6 +162,43 @@ export default function Team() {
             />
           </div>
         </motion.div>
+
+        {/* Pending Invites */}
+        {invites.length > 0 && (
+          <motion.div variants={item} className="space-y-3">
+            <h2 className="text-sm font-semibold text-foreground">{t("invites.title")}</h2>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {invites.map((inv) => {
+                const cfg = statusConfig[inv.status];
+                const StatusIcon = cfg.icon;
+                return (
+                  <div key={inv.email + inv.sentAt} className="card-premium p-4 flex items-center gap-3">
+                    <Avatar className="w-9 h-9 shrink-0">
+                      <AvatarFallback className="bg-secondary text-muted-foreground text-2xs font-bold">
+                        <Mail className="w-3.5 h-3.5" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="text-[13px] font-medium text-foreground truncate">{inv.email}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className="text-2xs border-border bg-secondary/50 text-secondary-foreground">
+                          {t(`team.role_${inv.role.toLowerCase()}`)}
+                        </Badge>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold ${cfg.color}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {t(`invites.${inv.status}`)}
+                        </span>
+                      </div>
+                      <p className="text-2xs text-muted-foreground">
+                        {t("invites.sentOn")} {formatDate(inv.sentAt)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
 
         {/* Members list */}
         <motion.div variants={item}>
@@ -231,6 +302,8 @@ export default function Team() {
           )}
         </motion.div>
       </motion.div>
+
+      <InviteMemberModal open={inviteOpen} onOpenChange={setInviteOpen} onInvite={handleInvite} />
     </PageShell>
   );
 }
