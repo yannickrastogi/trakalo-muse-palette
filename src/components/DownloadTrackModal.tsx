@@ -62,13 +62,20 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
     });
   };
 
-  const handleDownloadTrack = () => {
-    // Simulate download — in a real app this would fetch the actual file
+  const handleDownloadTrack = async () => {
+    // In a real app, this would fetch the actual audio file ArrayBuffer
+    // For demo, we create a tagged file with embedded cover art
+    const coverArrayBuffer = await getCoverArtArrayBuffer(trackData);
+    const taggedBlob = createTaggedAudioBlob(
+      trackData.title,
+      trackData.artist,
+      trackData.album,
+      coverArrayBuffer
+    );
+
     const link = document.createElement("a");
-    link.download = `${trackData.title} - ${trackData.artist}${quality === "hires" ? " (Hi-Res)" : " (Low-Res)"}.wav`;
-    // Create a small placeholder blob for demo
-    const blob = new Blob(["[Audio file placeholder]"], { type: "audio/wav" });
-    link.href = URL.createObjectURL(blob);
+    link.download = `${trackData.title} - ${trackData.artist}${quality === "hires" ? " (Hi-Res)" : " (Low-Res)"}.mp3`;
+    link.href = URL.createObjectURL(taggedBlob);
     link.click();
     URL.revokeObjectURL(link.href);
     handleClose();
