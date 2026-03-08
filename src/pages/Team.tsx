@@ -56,15 +56,16 @@ const members = [
 
 interface Invite {
   email: string;
+  name?: string;
   role: string;
   sentAt: string;
   status: "pending" | "accepted" | "expired";
 }
 
 const initialInvites: Invite[] = [
-  { email: "alex@studioflow.com", role: "Producer", sentAt: "2026-03-05", status: "pending" },
-  { email: "sam@musicpub.co", role: "Manager", sentAt: "2026-02-20", status: "accepted" },
-  { email: "riley@oldlabel.net", role: "Viewer", sentAt: "2026-01-10", status: "expired" },
+  { email: "alex@studioflow.com", name: "Alex Rivera", role: "Producer", sentAt: "2026-03-05", status: "pending" },
+  { email: "sam@musicpub.co", name: "Sam Chen", role: "Manager", sentAt: "2026-02-20", status: "accepted" },
+  { email: "riley@oldlabel.net", name: "Riley James", role: "Viewer", sentAt: "2026-01-10", status: "expired" },
 ];
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
