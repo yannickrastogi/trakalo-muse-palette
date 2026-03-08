@@ -733,7 +733,237 @@ function generateLyricsPdf(title: string, artist: string, lyrics: string) {
   doc.save(`${title} - Lyrics.pdf`);
 }
 
-function StemsTab({ trackId }: { trackId: number }) {
+/** Generate a premium branded splits PDF using jsPDF — matching lyrics PDF branding */
+function generateSplitsPdf(title: string, artist: string, splits: TrackSplit[], totalShares: number) {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 56;
+  const contentW = pageW - marginX * 2;
+
+  const brandOrange: [number, number, number] = [255, 140, 26];
+  const brandPink: [number, number, number] = [224, 82, 153];
+  const brandPurple: [number, number, number] = [140, 70, 209];
+  const bgDark: [number, number, number] = [16, 16, 18];
+  const cardBg: [number, number, number] = [22, 22, 25];
+  const textLight: [number, number, number] = [245, 245, 245];
+  const textMuted: [number, number, number] = [120, 120, 128];
+  const splitColors: [number, number, number][] = [brandOrange, brandPink, brandPurple, [80, 180, 220]];
+
+  // ─── Background ───
+  doc.setFillColor(...bgDark);
+  doc.rect(0, 0, pageW, pageH, "F");
+
+  // ─── Top gradient bar ───
+  const barSegments = 60;
+  for (let i = 0; i < barSegments; i++) {
+    const t = i / barSegments;
+    const r = Math.round(brandOrange[0] + (brandPink[0] - brandOrange[0]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[0] - brandPurple[0]));
+    const g = Math.round(brandOrange[1] + (brandPink[1] - brandOrange[1]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[1] - brandPurple[1]));
+    const b = Math.round(brandOrange[2] + (brandPink[2] - brandOrange[2]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[2] - brandPurple[2]));
+    doc.setFillColor(Math.min(255, Math.max(0, r)), Math.min(255, Math.max(0, g)), Math.min(255, Math.max(0, b)));
+    doc.rect((pageW / barSegments) * i, 0, pageW / barSegments + 1, 5, "F");
+  }
+
+  // ─── Logo ───
+  let y = 44;
+  const iconSize = 28;
+  try {
+    doc.addImage(trakalogLogo, "PNG", marginX, y - 2, iconSize, iconSize);
+  } catch {
+    doc.setFillColor(...brandOrange);
+    doc.roundedRect(marginX, y - 2, iconSize, iconSize, 6, 6, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text("T", marginX + iconSize / 2, y + iconSize / 2 + 1, { align: "center", baseline: "middle" });
+  }
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...brandOrange);
+  doc.text("TRAKALOG", marginX + iconSize + 10, y + iconSize / 2 + 1, { baseline: "middle" });
+
+  // ─── Header card ───
+  y = 92;
+  doc.setFillColor(...cardBg);
+  doc.roundedRect(marginX, y, contentW, 80, 8, 8, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(...textLight);
+  doc.text(title, marginX + 20, y + 32);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(13);
+  doc.setTextColor(...textMuted);
+  doc.text(artist, marginX + 20, y + 54);
+
+  // Badge
+  const badgeText = "SPLITS";
+  doc.setFillColor(...brandOrange);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  const badgeW = doc.getTextWidth(badgeText) + 16;
+  doc.roundedRect(pageW - marginX - badgeW - 20, y + 16, badgeW, 18, 4, 4, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.text(badgeText, pageW - marginX - badgeW / 2 - 20, y + 28, { align: "center" });
+
+  // ─── Divider dots ───
+  y = 188;
+  [brandOrange, brandPink, brandPurple].forEach((c, i) => {
+    doc.setFillColor(...c);
+    doc.circle(pageW / 2 - 12 + i * 12, y, 2, "F");
+  });
+
+  // ─── Visual split bar ───
+  y = 210;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...textMuted);
+  doc.text("OWNERSHIP BREAKDOWN", marginX, y);
+  y += 20;
+
+  const barY = y;
+  const barHeight = 14;
+  let barX = marginX;
+  splits.forEach((s, i) => {
+    const color = splitColors[i % splitColors.length];
+    const w = (s.share / 100) * contentW;
+    doc.setFillColor(...color);
+    doc.roundedRect(barX, barY, Math.max(w, 2), barHeight, i === 0 ? 4 : 0, i === splits.length - 1 ? 4 : 0, "F");
+    barX += w;
+  });
+  y += barHeight + 24;
+
+  // ─── Table header ───
+  const colName = marginX;
+  const colRole = marginX + 180;
+  const colPro = marginX + 310;
+  const colIpi = marginX + 370;
+  const colShare = pageW - marginX - 40;
+
+  doc.setFillColor(...cardBg);
+  doc.roundedRect(marginX, y, contentW, 28, 6, 6, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(...textMuted);
+  doc.text("NAME", colName + 14, y + 18);
+  doc.text("ROLE", colRole, y + 18);
+  doc.text("PRO", colPro, y + 18);
+  doc.text("IPI", colIpi, y + 18);
+  doc.text("SHARE", colShare, y + 18, { align: "right" });
+  y += 36;
+
+  // ─── Split rows ───
+  splits.forEach((s, i) => {
+    const color = splitColors[i % splitColors.length];
+
+    // Alternating subtle row bg
+    if (i % 2 === 0) {
+      doc.setFillColor(cardBg[0] - 2, cardBg[1] - 2, cardBg[2] - 2);
+      doc.rect(marginX, y - 4, contentW, 32, "F");
+    }
+
+    // Color dot
+    doc.setFillColor(...color);
+    doc.circle(colName + 6, y + 10, 4, "F");
+
+    // Name
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.setTextColor(...textLight);
+    doc.text(s.name, colName + 18, y + 12);
+
+    // Publisher subtitle
+    if (s.publisher) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...textMuted);
+      doc.text(s.publisher, colName + 18, y + 23);
+    }
+
+    // Role
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...textLight);
+    doc.text(s.role, colRole, y + 12);
+
+    // PRO
+    doc.setFontSize(9);
+    doc.setTextColor(...textMuted);
+    doc.text(s.pro || "—", colPro, y + 12);
+
+    // IPI
+    doc.text(s.ipi || "—", colIpi, y + 12);
+
+    // Share %
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...color);
+    doc.text(`${s.share}%`, colShare, y + 12, { align: "right" });
+
+    y += 36;
+  });
+
+  // ─── Total row ───
+  y += 4;
+  doc.setDrawColor(...brandOrange);
+  doc.setLineWidth(0.5);
+  doc.line(marginX, y, marginX + contentW, y);
+  y += 18;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...textMuted);
+  doc.text("TOTAL", colName + 18, y);
+
+  const isComplete = totalShares === 100;
+  doc.setFontSize(14);
+  doc.setTextColor(isComplete ? 74 : 239, isComplete ? 222 : 68, isComplete ? 128 : 68);
+  doc.text(`${totalShares}%`, colShare, y, { align: "right" });
+
+  if (isComplete) {
+    doc.setFontSize(8);
+    doc.setTextColor(74, 222, 128);
+    doc.text("✓ Fully allocated", colShare - 40, y + 14, { align: "right" });
+  }
+
+  // ─── Footer on every page ───
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+
+    // Bottom gradient bar
+    for (let i = 0; i < barSegments; i++) {
+      const t = i / barSegments;
+      const r = Math.round(brandOrange[0] + (brandPink[0] - brandOrange[0]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[0] - brandPurple[0]));
+      const g = Math.round(brandOrange[1] + (brandPink[1] - brandOrange[1]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[1] - brandPurple[1]));
+      const b = Math.round(brandOrange[2] + (brandPink[2] - brandOrange[2]) * t * 2 - Math.max(0, (t * 2 - 1)) * (brandPink[2] - brandPurple[2]));
+      doc.setFillColor(Math.min(255, Math.max(0, r)), Math.min(255, Math.max(0, g)), Math.min(255, Math.max(0, b)));
+      doc.rect((pageW / barSegments) * i, pageH - 3, pageW / barSegments + 1, 3, "F");
+    }
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...textMuted);
+    doc.text("Powered by", pageW / 2 - 20, pageH - 18, { align: "right" });
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...brandOrange);
+    doc.text(" trakalog.com", pageW / 2 - 18, pageH - 18);
+
+    if (totalPages > 1) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(...textMuted);
+      doc.text(`${p} / ${totalPages}`, pageW - marginX, pageH - 18, { align: "right" });
+    }
+  }
+
+  doc.save(`${title} - Splits.pdf`);
+}
+
+
   const { getTrack, updateTrackStems } = useTrack();
   const trackData = getTrack(trackId);
   const initialStems: StemFile[] = (trackData?.stems || []).map((s) => ({
