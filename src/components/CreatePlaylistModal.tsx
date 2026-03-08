@@ -30,12 +30,35 @@ const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 
 type Track = (typeof allTracks)[number];
 
+export interface NewPlaylistData {
+  id: string;
+  name: string;
+  description: string;
+  tracks: number;
+  duration: string;
+  updated: string;
+  mood: string;
+  coverIdxs: number[];
+  color: string;
+  trackIds: number[];
+}
+
 interface CreatePlaylistModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCreate: (data: NewPlaylistData) => void;
 }
 
-export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalProps) {
+const gradientColors = [
+  "from-brand-orange/20 to-brand-pink/10",
+  "from-brand-purple/20 to-brand-pink/10",
+  "from-brand-pink/15 to-brand-purple/15",
+  "from-brand-orange/25 to-brand-purple/10",
+  "from-brand-pink/20 to-brand-orange/10",
+  "from-brand-purple/15 to-brand-orange/15",
+];
+
+export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlaylistModalProps) {
   const [step, setStep] = useState<"details" | "tracks">("details");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
