@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -52,6 +53,7 @@ interface UploadTrackModalProps {
 }
 
 export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) {
+  const { tracks, addTrack } = useTrack();
   const [step, setStep] = useState(0);
 
   // Step 1 (Info)
@@ -192,7 +194,59 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   };
 
   const handleSave = () => {
-    // In a real app this would persist data
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const newId = Math.max(...tracks.map((t) => t.id), 0) + 1;
+
+    const newTrack: TrackData = {
+      id: newId,
+      title: title.trim() || "Untitled",
+      artist: artist.trim() || "Unknown Artist",
+      featuredArtists: [],
+      album: "",
+      genre: genre || "",
+      bpm: parseInt(bpm) || 0,
+      key: trackKey || "",
+      duration: "0:00",
+      mood,
+      status: "Available",
+      isrc: "",
+      upc: "",
+      releaseDate: "",
+      label: "",
+      publisher: "",
+      writtenBy: (details.songwriters || []).filter(Boolean),
+      producedBy: (details.producers || []).filter(Boolean),
+      mixedBy: (details.mixingEngineer || []).filter(Boolean).join(", "),
+      masteredBy: (details.masteringEngineer || []).filter(Boolean).join(", "),
+      copyright: "",
+      language: language || "",
+      explicit: false,
+      type: "Song",
+      coverIdx: newId % 6,
+      notes,
+      details,
+      stems: stems.map((s, i) => ({
+        id: `stem-${newId}-${i}`,
+        fileName: s.name,
+        type: "other",
+        fileSize: s.size,
+        uploadDate: dateStr,
+        color: "text-muted-foreground",
+      })),
+      splits: splits.filter((s) => s.name.trim()).map((s) => ({
+        id: s.id,
+        name: s.name,
+        role: s.role,
+        share: Number(s.percentage) || 0,
+        pro: s.pro,
+        ipi: s.ipi,
+        publisher: s.publisher,
+      })),
+      statusHistory: [{ status: "Available", date: dateStr, note: "Track uploaded" }],
+    };
+
+    addTrack(newTrack);
     onOpenChange(false);
     handleReset();
   };

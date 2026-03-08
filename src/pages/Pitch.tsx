@@ -22,6 +22,7 @@ import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePitchModal, type PitchEntry } from "@/components/CreatePitchModal";
 import { useRole } from "@/contexts/RoleContext";
+import { usePitches } from "@/contexts/PitchContext";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
@@ -43,125 +44,7 @@ const statusConfig: Record<PitchStatus, { color: string; icon: React.ElementType
 
 const allStatuses: PitchStatus[] = ["Draft", "Sent", "Opened", "Responded"];
 
-const demoPitches: PitchEntry[] = [
-  {
-    id: "p1",
-    type: "track",
-    itemName: "Velvet Hour",
-    artist: "Kira Nomura",
-    coverIdx: 0,
-    recipientName: "Jamie Lin",
-    recipientCompany: "Interscope Records",
-    recipientEmail: "jamie.lin@interscope.com",
-    date: "Mar 5, 2026",
-    status: "Sent",
-    notes: "Follow up next week if no response.",
-  },
-  {
-    id: "p2",
-    type: "track",
-    itemName: "Soft Landing",
-    artist: "Marco Silva",
-    coverIdx: 3,
-    recipientName: "David Park",
-    recipientCompany: "Atlantic Records",
-    recipientEmail: "d.park@atlantic.com",
-    date: "Mar 3, 2026",
-    status: "Responded",
-    notes: "Positive response — requesting stems.",
-  },
-  {
-    id: "p3",
-    type: "playlist",
-    itemName: "Summer EP — Final Selects",
-    artist: "Various",
-    coverIdx: 0,
-    recipientName: "Sarah Cho",
-    recipientCompany: "Republic Records",
-    recipientEmail: "sarah.cho@republic.com",
-    date: "Mar 1, 2026",
-    status: "Opened",
-    notes: "",
-  },
-  {
-    id: "p4",
-    type: "track",
-    itemName: "Ghost Protocol",
-    artist: "Dex Moraes × JVNE",
-    coverIdx: 1,
-    recipientName: "Marcus Webb",
-    recipientCompany: "Anjunadeep",
-    recipientEmail: "marcus@anjunadeep.com",
-    date: "Feb 28, 2026",
-    status: "Sent",
-    notes: "",
-  },
-  {
-    id: "p5",
-    type: "track",
-    itemName: "Paper Moons",
-    artist: "Kira Nomura × AYA",
-    coverIdx: 4,
-    recipientName: "Lena Torres",
-    recipientCompany: "Darkroom Management",
-    recipientEmail: "lena@darkroom.mgmt",
-    date: "Feb 25, 2026",
-    status: "Responded",
-    notes: "Placement confirmed for sync licensing.",
-  },
-  {
-    id: "p6",
-    type: "track",
-    itemName: "Golden Frequency",
-    artist: "Alina Voss × Marco",
-    coverIdx: 2,
-    recipientName: "Tom Ellis",
-    recipientCompany: "Method Management",
-    recipientEmail: "tom@method.co",
-    date: "Feb 22, 2026",
-    status: "Opened",
-    notes: "",
-  },
-  {
-    id: "p7",
-    type: "track",
-    itemName: "Neon Pulse",
-    artist: "JVNE × Alina Voss",
-    coverIdx: 2,
-    recipientName: "Rachel Kim",
-    recipientCompany: "Warner Records",
-    recipientEmail: "r.kim@warnerrecords.com",
-    date: "Feb 18, 2026",
-    status: "Responded",
-    notes: "Interested — scheduling follow-up call.",
-  },
-  {
-    id: "p8",
-    type: "playlist",
-    itemName: "Late Night Sessions",
-    artist: "Various",
-    coverIdx: 3,
-    recipientName: "André Moreau",
-    recipientCompany: "Maison Records",
-    recipientEmail: "andre@maisonrecords.fr",
-    date: "Feb 15, 2026",
-    status: "Draft",
-    notes: "Need to finalize tracklist before sending.",
-  },
-  {
-    id: "p9",
-    type: "track",
-    itemName: "Daybreak",
-    artist: "Kira Nomura",
-    coverIdx: 0,
-    recipientName: "Chris Patel",
-    recipientCompany: "Columbia Records",
-    recipientEmail: "c.patel@columbia.com",
-    date: "Feb 12, 2026",
-    status: "Draft",
-    notes: "",
-  },
-];
+// Demo pitches removed — now managed via PitchContext
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
@@ -170,7 +53,7 @@ export default function Pitch() {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const { permissions } = useRole();
-  const [pitches, setPitches] = useState<PitchEntry[]>(demoPitches);
+  const { pitches, addPitch } = usePitches();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PitchStatus | "active" | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -212,7 +95,7 @@ export default function Pitch() {
   }, [pitches, search, statusFilter]);
 
   const handleCreate = (pitch: PitchEntry) => {
-    setPitches((prev) => [pitch, ...prev]);
+    addPitch(pitch);
   };
 
   return (
