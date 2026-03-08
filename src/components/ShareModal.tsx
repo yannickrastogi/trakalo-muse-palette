@@ -25,12 +25,14 @@ const shareTypeLabels: Record<ShareType, string> = {
   stems: "Share Stems",
   track: "Share Track",
   playlist: "Share Playlist",
+  pack: "Share Trakalog Pack",
 };
 
 const shareTypeItemLabel: Record<ShareType, string> = {
   stems: "stems",
   track: "track",
   playlist: "tracks",
+  pack: "items",
 };
 
 export function ShareModal({
