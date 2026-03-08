@@ -160,8 +160,8 @@ export default function Playlists() {
               Playlists
             </h1>
             <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-              {playlistsData.length} curated collections ·{" "}
-              {playlistsData.reduce((s, p) => s + p.tracks, 0)} total tracks
+              {playlists.length} curated collections ·{" "}
+              {playlists.reduce((s, p) => s + p.tracks, 0)} total tracks
             </p>
           </div>
           <button onClick={() => setCreateOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
