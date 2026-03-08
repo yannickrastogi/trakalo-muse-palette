@@ -89,6 +89,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
   const [trackKey, setTrackKey] = useState("");
   const [genre, setGenre] = useState("");
   const [mood, setMood] = useState<string[]>([]);
+  const [voice, setVoice] = useState("");
   const [language, setLanguage] = useState("");
   const [trackType, setTrackType] = useState("");
   const [notes, setNotes] = useState("");
@@ -113,6 +114,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       setTrackKey(trackData.key);
       setGenre(trackData.genre);
       setMood([...trackData.mood]);
+      setVoice(trackData.voice || "");
       setLanguage(trackData.language);
       setTrackType(trackData.type);
       setNotes(trackData.notes);
@@ -166,6 +168,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       key: trackKey,
       genre,
       mood,
+      voice,
       language,
       type: trackType,
       notes: notes.trim(),
@@ -285,11 +288,15 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 </div>
               </div>
 
-              {/* Type & Language */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Type, Voice & Language */}
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <FieldLabel>Type</FieldLabel>
                   <FieldSelect value={trackType} onChange={setTrackType} options={TYPES} placeholder="Select type" />
+                </div>
+                <div className="space-y-1.5">
+                  <FieldLabel>Voice</FieldLabel>
+                  <FieldSelect value={voice} onChange={setVoice} options={["Male", "Female", "Duet", "N/A"]} placeholder="Select voice" />
                 </div>
                 <div className="space-y-1.5">
                   <FieldLabel>Language</FieldLabel>

@@ -30,11 +30,11 @@ import cover5 from "@/assets/covers/cover-5.jpg";
 const covers = [cover1, cover2, cover3, cover4, cover5];
 
 const recentTracks = [
-  { title: "Velvet Hour", artist: "Kira Nomura", album: "Late Bloom EP", genre: "Neo-Soul", duration: "4:12", bpm: 92, key: "Ab Maj", mood: ["emotional", "dreamy"], status: "Available", language: "English", type: "Song", coverIdx: 0 },
-  { title: "Ghost Protocol", artist: "Dex Moraes × JVNE", album: "Singles 2026", genre: "Electronic", duration: "3:38", bpm: 128, key: "F# Min", mood: ["energetic", "dark"], status: "On Hold", language: "English", type: "Sample", coverIdx: 1 },
-  { title: "Burning Chrome", artist: "Alina Voss", album: "Neon Archive", genre: "Synthwave", duration: "5:01", bpm: 118, key: "C Min", mood: ["nostalgic", "driving"], status: "Available", language: "Portuguese", type: "Song", coverIdx: 2 },
-  { title: "Soft Landing", artist: "Marco Silva", album: "Ambient Vol. II", genre: "Ambient", duration: "6:44", bpm: 72, key: "D Maj", mood: ["calm", "uplifting"], status: "Released", language: "Instrumental", type: "Instrumental", coverIdx: 3 },
-  { title: "Paper Moons", artist: "Kira Nomura × AYA", album: "Late Bloom EP", genre: "Indie Pop", duration: "3:22", bpm: 105, key: "Bb Maj", mood: ["happy", "playful"], status: "On Hold", language: "Japanese", type: "Acapella", coverIdx: 4 },
+  { title: "Velvet Hour", artist: "Kira Nomura", album: "Late Bloom EP", genre: "Neo-Soul", duration: "4:12", bpm: 92, key: "Ab Maj", mood: ["emotional", "dreamy"], status: "Available", language: "English", type: "Song", voice: "Female", coverIdx: 0 },
+  { title: "Ghost Protocol", artist: "Dex Moraes × JVNE", album: "Singles 2026", genre: "Electronic", duration: "3:38", bpm: 128, key: "F# Min", mood: ["energetic", "dark"], status: "On Hold", language: "English", type: "Sample", voice: "Male", coverIdx: 1 },
+  { title: "Burning Chrome", artist: "Alina Voss", album: "Neon Archive", genre: "Synthwave", duration: "5:01", bpm: 118, key: "C Min", mood: ["nostalgic", "driving"], status: "Available", language: "Portuguese", type: "Song", voice: "Female", coverIdx: 2 },
+  { title: "Soft Landing", artist: "Marco Silva", album: "Ambient Vol. II", genre: "Ambient", duration: "6:44", bpm: 72, key: "D Maj", mood: ["calm", "uplifting"], status: "Released", language: "Instrumental", type: "Instrumental", voice: "N/A", coverIdx: 3 },
+  { title: "Paper Moons", artist: "Kira Nomura × AYA", album: "Late Bloom EP", genre: "Indie Pop", duration: "3:22", bpm: 105, key: "Bb Maj", mood: ["happy", "playful"], status: "On Hold", language: "Japanese", type: "Acapella", voice: "Duet", coverIdx: 4 },
 ];
 
 const activity = [
@@ -162,6 +162,7 @@ export function DashboardContent() {
                       <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">{t("catalog.key")}</th>
                       <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("catalog.mood")}</th>
                       <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("catalog.language")}</th>
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Voice</th>
                       <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("catalog.status")}</th>
                       <th className="px-4 py-3 w-10"></th>
                     </tr>
@@ -226,6 +227,7 @@ export function DashboardContent() {
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.language}</span></td>
+                        <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.voice}</span></td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>
                             {track.status}
