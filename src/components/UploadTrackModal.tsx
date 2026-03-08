@@ -1241,11 +1241,11 @@ function StepLyrics({
 /* ─── Review Step ─── */
 
 function StepReview({
-  title, artist, bpm, trackKey, genre, mood, language, notes,
+  title, artist, bpm, trackKey, genre, mood, voice, language, notes,
   audioFile, stems, splits, totalSplit, details, lyrics,
 }: {
   title: string; artist: string; bpm: string; trackKey: string;
-  genre: string; mood: string[]; language: string; notes: string;
+  genre: string; mood: string[]; voice: string; language: string; notes: string;
   audioFile: File | null; stems: StemFile[]; splits: Split[]; totalSplit: number;
   details: Record<string, string[]>;
   lyrics?: string;
