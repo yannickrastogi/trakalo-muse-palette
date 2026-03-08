@@ -591,6 +591,10 @@ function buildSimplePdf(title: string, artist: string, lyrics: string): Uint8Arr
   for (const line of lines) {
     content += `0 -14 Td\n(${pdfEscape(line)}) Tj\n`;
   }
+  // Footer signature
+  content += "0 -40 Td\n/F1 8 Tf\n0.5 0.5 0.5 rg\n";
+  content += `(Powered by trakalog.com) Tj\n`;
+  content += "0 0 0 rg\n";
   content += "ET\n";
 
   // Object 4: Content stream
