@@ -153,7 +153,7 @@ export default function TrackDetail() {
                     </span>
                     <span className="text-xs text-muted-foreground">{trackData.isrc}</span>
                   </div>
-                  <h1 className="text-3xl font-bold text-foreground tracking-tight">{trackData.title}</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{trackData.title}</h1>
                   <p className="text-lg text-muted-foreground mt-1">
                     {trackData.artist}
                     {trackData.featuredArtists.length > 0 && (
@@ -177,13 +177,13 @@ export default function TrackDetail() {
 
                 {/* Action buttons */}
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+                  <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px]">
                     <Edit3 className="w-4 h-4" /> Edit Track
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">
+                  <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]">
                     <Download className="w-4 h-4" /> Download
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">
+                  <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]">
                     <Share2 className="w-4 h-4" /> Share
                   </button>
                 </div>
