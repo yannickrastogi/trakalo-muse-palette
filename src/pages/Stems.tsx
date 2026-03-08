@@ -142,7 +142,7 @@ export default function Stems() {
   const uniqueArtists = useMemo(() => [...new Set(allStems.map((s) => s.trackArtist))].sort(), [allStems]);
   // Genre: use all tracks for consistency across the platform
   const uniqueGenres = useMemo(() => [...new Set(tracks.map((t) => t.genre))].filter(Boolean).sort(), [tracks]);
-  const uniqueKeys = useMemo(() => [...new Set(allStems.map((s) => s.key || s.trackKey).filter(Boolean))].sort(), [allStems]);
+  const uniqueKeys = useMemo(() => [...new Set(tracks.map((t) => t.key).filter(Boolean))].sort(), [tracks]);
 
   // Parse upload date helper
   const parseUploadDate = useCallback((dateStr: string) => {
