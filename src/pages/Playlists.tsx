@@ -231,7 +231,7 @@ export default function Playlists() {
                       className={`absolute inset-0 bg-gradient-to-br ${pl.color} opacity-60 group-hover:opacity-90 transition-opacity duration-500 rounded-t-[var(--radius)]`}
                     />
                     <div className="relative w-full max-w-[200px] mx-auto">
-                      <MiniCoverGrid idxs={pl.coverIdxs} />
+                      <MiniCoverGrid idxs={pl.coverIdxs} coverImage={(pl as any).coverImage} />
                       {/* Play overlay */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                         <button
