@@ -17,6 +17,7 @@ import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
 import { usePlaylists, covers } from "@/contexts/PlaylistContext";
+import { useRole } from "@/contexts/RoleContext";
 
 const container = {
   hidden: {},
@@ -56,6 +57,7 @@ export default function Playlists() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { playlists, addPlaylist } = usePlaylists();
+  const { permissions } = useRole();
 
   const filtered = useMemo(() => {
     if (!search) return playlists;
@@ -89,9 +91,11 @@ export default function Playlists() {
               {t("playlists.subtitle", { count: playlists.length, tracks: playlists.reduce((s, p) => s + p.tracks, 0) })}
             </p>
           </div>
-          <button onClick={() => setCreateOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
-            <Plus className="w-4 h-4" /> {t("playlists.createPlaylist")}
-          </button>
+          {permissions.canCreatePlaylists && (
+            <button onClick={() => setCreateOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
+              <Plus className="w-4 h-4" /> {t("playlists.createPlaylist")}
+            </button>
+          )}
         </motion.div>
 
         {/* Search */}
