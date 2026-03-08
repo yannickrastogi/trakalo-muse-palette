@@ -120,7 +120,7 @@ function buildMeta(trackData: TrackData) {
   return meta;
 }
 
-
+export default function TrackDetail() {
   const { id } = useParams();
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(35);
