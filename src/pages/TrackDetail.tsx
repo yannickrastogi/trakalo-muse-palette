@@ -50,6 +50,7 @@ import {
   Pause as PauseIcon,
   Mic,
   Guitar as GuitarIcon,
+  Package,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
