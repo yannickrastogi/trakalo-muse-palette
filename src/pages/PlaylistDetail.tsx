@@ -285,7 +285,7 @@ export default function PlaylistDetail() {
           <DialogFooter>
             <button onClick={() => setRenameOpen(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
             <button
-              onClick={() => { if (renameValue.trim()) { setPlaylistName(renameValue.trim()); setRenameOpen(false); } }}
+              onClick={() => { if (renameValue.trim()) { setPlaylistName(renameValue.trim()); syncToContext(tracks, renameValue.trim()); setRenameOpen(false); } }}
               className="btn-brand px-5 py-2 rounded-lg text-sm font-semibold"
             >
               Save
@@ -322,7 +322,7 @@ export default function PlaylistDetail() {
                 <div
                   key={track.id}
                   className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer group/add"
-                  onClick={() => setTracks((prev) => [...prev, track])}
+                  onClick={() => { const updated = [...tracks, track]; setTracks(updated); syncToContext(updated); }}
                 >
                   <img src={covers[track.coverIdx]} alt={track.title} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                   <div className="min-w-0 flex-1">
