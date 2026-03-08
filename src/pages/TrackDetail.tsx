@@ -283,6 +283,7 @@ export default function TrackDetail() {
               {activeTab === "status" && <StatusTab trackId={Number(id)} />}
             </motion.div>
           </motion.div>
+      <ShareStemsModal open={shareModalOpen} onClose={() => setShareModalOpen(false)} trackId={Number(id)} />
     </PageShell>
   );
 }
