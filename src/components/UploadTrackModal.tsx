@@ -81,6 +81,7 @@ interface TrackEntry {
   trackKey: string;
   genre: string;
   mood: string[];
+  voice: string;
   language: string;
   notes: string;
   details: Record<string, string[]>;
@@ -115,6 +116,7 @@ function createTrackEntry(file: File): TrackEntry {
     trackKey: "",
     genre: "",
     mood: [],
+    voice: "",
     language: "",
     notes: "",
     details: {},
@@ -358,6 +360,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       masteredBy: (currentTrack.details.masteringEngineer || []).filter(Boolean).join(", "),
       copyright: "",
       language: currentTrack.language || "",
+      voice: currentTrack.voice || "N/A",
       explicit: false,
       type: "Song",
       coverIdx: newId % 6,
@@ -536,6 +539,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   trackKey={currentTrack.trackKey} setTrackKey={(v) => updateCurrent({ trackKey: v })}
                   genre={currentTrack.genre} setGenre={(v) => updateCurrent({ genre: v })}
                   mood={currentTrack.mood} toggleMood={toggleMood}
+                  voice={currentTrack.voice} setVoice={(v) => updateCurrent({ voice: v })}
                   language={currentTrack.language} setLanguage={(v) => updateCurrent({ language: v })}
                   notes={currentTrack.notes} setNotes={(v) => updateCurrent({ notes: v })}
                   details={currentTrack.details} updateDetail={updateDetail}
@@ -573,6 +577,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   title={currentTrack.title} artist={currentTrack.artist}
                   bpm={currentTrack.bpm} trackKey={currentTrack.trackKey}
                   genre={currentTrack.genre} mood={currentTrack.mood}
+                  voice={currentTrack.voice}
                   language={currentTrack.language} notes={currentTrack.notes}
                   audioFile={currentTrack.file} stems={currentTrack.stems}
                   splits={currentTrack.splits} totalSplit={totalSplit}
@@ -833,6 +838,7 @@ const DETAIL_FIELDS = [
 function StepInfo({
   title, setTitle, artist, setArtist, bpm, setBpm,
   trackKey, setTrackKey, genre, setGenre, mood, toggleMood,
+  voice, setVoice,
   language, setLanguage, notes, setNotes,
   details, updateDetail, addDetailEntry, removeDetailEntry,
   analysisResult, analyzing,
@@ -843,6 +849,7 @@ function StepInfo({
   trackKey: string; setTrackKey: (v: string) => void;
   genre: string; setGenre: (v: string) => void;
   mood: string[]; toggleMood: (v: string) => void;
+  voice: string; setVoice: (v: string) => void;
   language: string; setLanguage: (v: string) => void;
   notes: string; setNotes: (v: string) => void;
   details: Record<string, string[]>; updateDetail: (key: string, index: number, value: string) => void;
