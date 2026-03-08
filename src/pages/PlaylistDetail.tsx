@@ -36,7 +36,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { PageShell } from "@/components/PageShell";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { playlistsData } from "./Playlists";
+import { usePlaylists, covers } from "@/contexts/PlaylistContext";
 import { allTracks, statusColors } from "./Catalog";
 import {
   Dialog,

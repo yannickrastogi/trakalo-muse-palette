@@ -11,89 +11,11 @@ import {
   X,
   Clock,
   Music,
-  Disc3,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
-
-import cover1 from "@/assets/covers/cover-1.jpg";
-import cover2 from "@/assets/covers/cover-2.jpg";
-import cover3 from "@/assets/covers/cover-3.jpg";
-import cover4 from "@/assets/covers/cover-4.jpg";
-import cover5 from "@/assets/covers/cover-5.jpg";
-import cover6 from "@/assets/covers/cover-6.jpg";
-
-const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
-
-export const playlistsData = [
-  {
-    id: "summer-ep",
-    name: "Summer EP — Final Selects",
-    description: "Curated finals for the summer release. Warm, uplifting vibes across neo-soul and indie.",
-    tracks: 8,
-    duration: "32 min",
-    updated: "2h ago",
-    mood: "Uplifting",
-    coverIdxs: [0, 2, 4, 3],
-    color: "from-brand-orange/20 to-brand-pink/10",
-  },
-  {
-    id: "sync-pitches-q2",
-    name: "Sync Pitches — Q2 2026",
-    description: "Tracks shortlisted for film, TV, and ad sync placements this quarter.",
-    tracks: 14,
-    duration: "52 min",
-    updated: "1d ago",
-    mood: "Cinematic",
-    coverIdxs: [1, 3, 5, 0],
-    color: "from-brand-purple/20 to-brand-pink/10",
-  },
-  {
-    id: "late-night",
-    name: "Late Night Sessions",
-    description: "Downtempo, ambient, and lo-fi selections for after-hours listening.",
-    tracks: 22,
-    duration: "1h 18m",
-    updated: "3d ago",
-    mood: "Chill",
-    coverIdxs: [3, 4, 0, 2],
-    color: "from-brand-pink/15 to-brand-purple/15",
-  },
-  {
-    id: "high-energy",
-    name: "High Energy — Ads",
-    description: "Punchy, high-tempo tracks perfect for advertising and brand campaigns.",
-    tracks: 11,
-    duration: "38 min",
-    updated: "5d ago",
-    mood: "Energetic",
-    coverIdxs: [5, 1, 2, 4],
-    color: "from-brand-orange/25 to-brand-purple/10",
-  },
-  {
-    id: "neo-soul",
-    name: "Neo-Soul Collection",
-    description: "A definitive collection of our best neo-soul productions and collaborations.",
-    tracks: 19,
-    duration: "1h 04m",
-    updated: "1w ago",
-    mood: "Smooth",
-    coverIdxs: [0, 3, 1, 5],
-    color: "from-brand-pink/20 to-brand-orange/10",
-  },
-  {
-    id: "unreleased-vault",
-    name: "Unreleased Vault",
-    description: "Demos, unreleased masters, and works-in-progress awaiting final clearance.",
-    tracks: 31,
-    duration: "1h 52m",
-    updated: "2w ago",
-    mood: "Mixed",
-    coverIdxs: [2, 5, 3, 1],
-    color: "from-brand-purple/15 to-brand-orange/15",
-  },
-];
+import { usePlaylists, covers } from "@/contexts/PlaylistContext";
 
 const container = {
   hidden: {},
@@ -119,12 +41,7 @@ function MiniCoverGrid({ idxs, coverImage }: { idxs: number[]; coverImage?: stri
   return (
     <div className="grid grid-cols-2 gap-0.5 w-full aspect-square rounded-xl overflow-hidden">
       {idxs.slice(0, 4).map((ci, i) => (
-        <img
-          key={i}
-          src={covers[ci]}
-          alt=""
-          className="w-full h-full object-cover"
-        />
+        <img key={i} src={covers[ci]} alt="" className="w-full h-full object-cover" />
       ))}
     </div>
   );
@@ -134,9 +51,9 @@ export default function Playlists() {
   const [search, setSearch] = useState("");
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [playlists, setPlaylists] = useState(playlistsData);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { playlists, addPlaylist } = usePlaylists();
 
   const filtered = useMemo(() => {
     if (!search) return playlists;
@@ -200,17 +117,10 @@ export default function Playlists() {
 
         {/* Playlist Grid */}
         {filtered.length === 0 ? (
-          <motion.div
-            variants={item}
-            className="card-premium py-20 text-center"
-          >
+          <motion.div variants={item} className="card-premium py-20 text-center">
             <ListMusic className="w-10 h-10 mx-auto mb-4 text-muted-foreground/15" />
-            <p className="text-sm font-semibold text-foreground">
-              No playlists found
-            </p>
-            <p className="text-xs mt-1.5 text-muted-foreground/70">
-              Try a different search term
-            </p>
+            <p className="text-sm font-semibold text-foreground">No playlists found</p>
+            <p className="text-xs mt-1.5 text-muted-foreground/70">Try a different search term</p>
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
@@ -225,31 +135,19 @@ export default function Playlists() {
                   className="card-premium group cursor-pointer flex flex-col"
                   onClick={() => navigate(`/playlist/${pl.id}`)}
                 >
-                  {/* Cover art mosaic */}
+                  {/* Cover art */}
                   <div className="relative p-4 pb-0">
-                    <div
-                      className={`absolute inset-0 bg-gradient-to-br ${pl.color} opacity-60 group-hover:opacity-90 transition-opacity duration-500 rounded-t-[var(--radius)]`}
-                    />
+                    <div className={`absolute inset-0 bg-gradient-to-br ${pl.color} opacity-60 group-hover:opacity-90 transition-opacity duration-500 rounded-t-[var(--radius)]`} />
                     <div className="relative w-full max-w-[200px] mx-auto">
-                      <MiniCoverGrid idxs={pl.coverIdxs} coverImage={(pl as any).coverImage} />
-                      {/* Play overlay */}
+                      <MiniCoverGrid idxs={pl.coverIdxs} coverImage={pl.coverImage} />
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPlayingId(isPlaying ? null : pl.id);
-                          }}
+                          onClick={(e) => { e.stopPropagation(); setPlayingId(isPlaying ? null : pl.id); }}
                           className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg min-h-[48px] min-w-[48px] ${
-                            isPlaying
-                              ? "btn-brand scale-100"
-                              : "bg-foreground/80 backdrop-blur-sm scale-90 hover:scale-100"
+                            isPlaying ? "btn-brand scale-100" : "bg-foreground/80 backdrop-blur-sm scale-90 hover:scale-100"
                           }`}
                         >
-                          {isPlaying ? (
-                            <Pause className="w-5 h-5 text-primary-foreground" />
-                          ) : (
-                            <Play className="w-5 h-5 text-background ml-0.5" />
-                          )}
+                          {isPlaying ? <Pause className="w-5 h-5 text-primary-foreground" /> : <Play className="w-5 h-5 text-background ml-0.5" />}
                         </button>
                       </div>
                     </div>
@@ -258,9 +156,7 @@ export default function Playlists() {
                   {/* Info */}
                   <div className="p-4 pt-4 flex-1 flex flex-col">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-foreground text-sm tracking-tight leading-snug line-clamp-2">
-                        {pl.name}
-                      </h3>
+                      <h3 className="font-semibold text-foreground text-sm tracking-tight leading-snug line-clamp-2">{pl.name}</h3>
                       <button
                         onClick={(e) => e.stopPropagation()}
                         className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center -mt-1 -mr-1"
@@ -268,32 +164,15 @@ export default function Playlists() {
                         <MoreHorizontal className="w-4 h-4" />
                       </button>
                     </div>
-
-                    <p className="text-xs text-muted-foreground/70 mt-1.5 leading-relaxed line-clamp-2">
-                      {pl.description}
-                    </p>
-
-                    {/* Meta row */}
+                    <p className="text-xs text-muted-foreground/70 mt-1.5 leading-relaxed line-clamp-2">{pl.description}</p>
                     <div className="flex items-center gap-3 mt-3 text-muted-foreground">
-                      <span className="flex items-center gap-1 text-2xs font-medium">
-                        <Music className="w-3 h-3" />
-                        {pl.tracks} tracks
-                      </span>
+                      <span className="flex items-center gap-1 text-2xs font-medium"><Music className="w-3 h-3" />{pl.tracks} tracks</span>
                       <span className="w-px h-3 bg-border" />
-                      <span className="flex items-center gap-1 text-2xs font-medium">
-                        <Clock className="w-3 h-3" />
-                        {pl.duration}
-                      </span>
+                      <span className="flex items-center gap-1 text-2xs font-medium"><Clock className="w-3 h-3" />{pl.duration}</span>
                     </div>
-
-                    {/* Footer */}
                     <div className="flex items-center justify-between mt-auto pt-3.5 border-t border-border/50 mt-3.5">
-                      <span className="text-2xs text-muted-foreground/60 font-medium">
-                        Updated {pl.updated}
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/12 text-accent/80">
-                        #{pl.mood}
-                      </span>
+                      <span className="text-2xs text-muted-foreground/60 font-medium">Updated {pl.updated}</span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/12 text-accent/80">#{pl.mood}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -302,7 +181,7 @@ export default function Playlists() {
           </div>
         )}
       </motion.div>
-      <CreatePlaylistModal open={createOpen} onOpenChange={setCreateOpen} onCreate={(pl) => setPlaylists((prev) => [pl, ...prev])} />
+      <CreatePlaylistModal open={createOpen} onOpenChange={setCreateOpen} onCreate={addPlaylist} />
     </PageShell>
   );
 }
