@@ -2,7 +2,7 @@ import { useState, useRef, useCallback /* refresh */ } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
-import { ShareStemsModal } from "@/components/ShareStemsModal";
+import { ShareModal } from "@/components/ShareModal";
 import { usePitches } from "@/contexts/PitchContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -92,6 +92,7 @@ export default function TrackDetail() {
   const { getTrack, updateTrack } = useTrack();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareTrackModalOpen, setShareTrackModalOpen] = useState(false);
 
   const trackData = getTrack(Number(id));
 
@@ -208,6 +209,12 @@ export default function TrackDetail() {
                     <Download className="w-4 h-4" /> Download
                   </button>
                   <button
+                    onClick={() => setShareTrackModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+                  >
+                    <Share2 className="w-4 h-4" /> Share Track
+                  </button>
+                  <button
                     onClick={() => setShareModalOpen(true)}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
                   >
@@ -283,7 +290,25 @@ export default function TrackDetail() {
               {activeTab === "status" && <StatusTab trackId={Number(id)} />}
             </motion.div>
           </motion.div>
-      <ShareStemsModal open={shareModalOpen} onClose={() => setShareModalOpen(false)} trackId={Number(id)} />
+      <ShareModal
+        open={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        shareType="stems"
+        trackId={Number(id)}
+        trackTitle={trackData?.title}
+        trackArtist={trackData?.artist}
+        trackCover={trackData?.coverImage}
+        stems={(trackData?.stems || []).map((s) => ({ id: s.id, fileName: s.fileName, type: s.type, fileSize: s.fileSize }))}
+      />
+      <ShareModal
+        open={shareTrackModalOpen}
+        onClose={() => setShareTrackModalOpen(false)}
+        shareType="track"
+        trackId={Number(id)}
+        trackTitle={trackData?.title}
+        trackArtist={trackData?.artist}
+        trackCover={trackData?.coverImage}
+      />
     </PageShell>
   );
 }

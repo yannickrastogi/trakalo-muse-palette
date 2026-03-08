@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
+import { ShareModal } from "@/components/ShareModal";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -78,6 +79,8 @@ export default function PlaylistDetail() {
   const [addTrackOpen, setAddTrackOpen] = useState(false);
   const [addSearch, setAddSearch] = useState("");
   const [duplicateToast, setDuplicateToast] = useState(false);
+
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Sync changes back to context
   const syncToContext = useCallback((updatedTracks: Track[], updatedName?: string) => {
@@ -243,8 +246,11 @@ export default function PlaylistDetail() {
                   <Copy className="w-4 h-4" /> Duplicate
                 </button>
               )}
-              <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors min-h-[44px]">
-                <Share2 className="w-4 h-4" />
+              <button
+                onClick={() => setShareOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+              >
+                <Share2 className="w-4 h-4" /> Share
               </button>
             </div>
           </div>
@@ -354,8 +360,24 @@ export default function PlaylistDetail() {
         >
           <Check className="w-4 h-4 text-emerald-400" />
           Playlist duplicated successfully
-        </motion.div>
+      </motion.div>
       )}
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        shareType="playlist"
+        playlistId={id}
+        playlistName={playlistName}
+        playlistCover={playlist.coverImage}
+        playlistTracks={tracks.map((t) => ({
+          id: t.id,
+          title: t.title,
+          artist: t.artist,
+          duration: t.duration,
+          genre: t.genre,
+          coverImage: t.coverImage,
+        }))}
+      />
     </PageShell>
   );
 }

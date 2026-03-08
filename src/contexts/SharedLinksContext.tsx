@@ -12,8 +12,20 @@ export interface DownloadEvent {
   downloadedAt: string;
 }
 
+export type ShareType = "stems" | "track" | "playlist";
+
+export interface SharedLinkTrack {
+  id: number;
+  title: string;
+  artist: string;
+  duration: string;
+  genre: string;
+  coverImage?: string;
+}
+
 export interface SharedLink {
   id: string;
+  shareType: ShareType;
   trackId: number;
   trackTitle: string;
   trackArtist: string;
@@ -27,6 +39,11 @@ export interface SharedLink {
   status: "active" | "expired" | "disabled";
   downloads: DownloadEvent[];
   stems: { id: string; fileName: string; type: string; fileSize: string }[];
+  // For playlist sharing
+  playlistId?: string;
+  playlistName?: string;
+  playlistCover?: string;
+  playlistTracks?: SharedLinkTrack[];
 }
 
 interface SharedLinksContextValue {

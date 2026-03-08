@@ -101,7 +101,10 @@ export default function SharedLinks() {
                         <td className="px-5 py-3.5">
                           <span className="font-medium text-foreground text-xs">{link.linkName}</span>
                         </td>
-                        <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell text-xs">{link.trackTitle}</td>
+                        <td className="px-4 py-3.5 text-muted-foreground hidden sm:table-cell text-xs">
+                          {link.shareType === "playlist" ? link.playlistName : link.trackTitle}
+                          <span className="ml-1.5 inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-secondary text-secondary-foreground capitalize">{link.shareType || "stems"}</span>
+                        </td>
                         <td className="px-4 py-3.5 hidden md:table-cell">
                           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                             {link.linkType === "public" ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
