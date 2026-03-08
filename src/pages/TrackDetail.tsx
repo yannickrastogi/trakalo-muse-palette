@@ -586,15 +586,19 @@ function generateLyricsPdf(title: string, artist: string, lyrics: string) {
 
   // ─── Logo area ───
   let y = 44;
-  // Draw a small rounded square icon placeholder with gradient
   const iconSize = 28;
-  doc.setFillColor(...brandOrange);
-  doc.roundedRect(marginX, y - 2, iconSize, iconSize, 6, 6, "F");
-  // "T" letter in white on the icon
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.setTextColor(255, 255, 255);
-  doc.text("T", marginX + iconSize / 2, y + iconSize / 2 + 1, { align: "center", baseline: "middle" });
+  // Add the actual logo image
+  try {
+    doc.addImage(trakalogLogo, "PNG", marginX, y - 2, iconSize, iconSize);
+  } catch {
+    // Fallback: draw a branded square with "T"
+    doc.setFillColor(...brandOrange);
+    doc.roundedRect(marginX, y - 2, iconSize, iconSize, 6, 6, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text("T", marginX + iconSize / 2, y + iconSize / 2 + 1, { align: "center", baseline: "middle" });
+  }
 
   // Brand name
   doc.setFontSize(13);
