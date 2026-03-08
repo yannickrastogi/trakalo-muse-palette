@@ -92,10 +92,34 @@ export default function Stems() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
 
-  // Flatten all stems
+  // Flatten all stems + add pack entries for tracks that have stems
   const allStems = useMemo<FlatStem[]>(() => {
     const result: FlatStem[] = [];
     tracks.forEach((track) => {
+      if (track.stems.length === 0) return;
+      // Add a "Stems Pack" entry for this track
+      result.push({
+        id: `pack-${track.id}`,
+        fileName: `${track.title} — Full Stems Pack`,
+        type: "pack",
+        fileSize: track.stems.reduce((acc, s) => {
+          const num = parseFloat(s.fileSize);
+          return acc + (isNaN(num) ? 0 : num);
+        }, 0).toFixed(1) + " MB",
+        uploadDate: track.stems[0]?.uploadDate || "",
+        color: "text-brand-orange",
+        trackId: track.id,
+        trackTitle: track.title,
+        trackArtist: track.artist,
+        trackGenre: track.genre,
+        trackBpm: track.bpm,
+        trackKey: track.key,
+        trackCoverIdx: track.coverIdx,
+        trackCover: track.coverImage,
+        isPack: true,
+        stemCount: track.stems.length,
+      });
+      // Add individual stems
       track.stems.forEach((stem) => {
         result.push({
           ...stem,
@@ -116,8 +140,8 @@ export default function Stems() {
   // Derive unique options from data
   const uniqueTracks = useMemo(() => [...new Set(allStems.map((s) => s.trackTitle))].sort(), [allStems]);
   const uniqueArtists = useMemo(() => [...new Set(allStems.map((s) => s.trackArtist))].sort(), [allStems]);
-  const uniqueTypes = useMemo(() => [...new Set(allStems.map((s) => s.type))].sort(), [allStems]);
-  const uniqueGenres = useMemo(() => [...new Set(allStems.map((s) => s.trackGenre))].sort(), [allStems]);
+  // Genre: use all tracks for consistency across the platform
+  const uniqueGenres = useMemo(() => [...new Set(tracks.map((t) => t.genre))].filter(Boolean).sort(), [tracks]);
   const uniqueKeys = useMemo(() => [...new Set(allStems.map((s) => s.key || s.trackKey).filter(Boolean))].sort(), [allStems]);
 
   // Parse upload date helper
