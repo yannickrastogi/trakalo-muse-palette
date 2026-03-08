@@ -19,6 +19,14 @@ export interface TrackSplit {
   publisher: string;
 }
 
+export interface TrackChapter {
+  id: string;
+  label: string;
+  startPercent: number;
+  endPercent: number;
+  color: string;
+}
+
 export interface TrackStatusEntry {
   status: string;
   date: string;
@@ -56,6 +64,7 @@ export interface TrackData {
   details: Record<string, string[]>;
   stems: TrackStem[];
   splits: TrackSplit[];
+  chapters: TrackChapter[];
   statusHistory: TrackStatusEntry[];
 }
 
