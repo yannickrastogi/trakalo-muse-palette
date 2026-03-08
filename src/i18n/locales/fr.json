@@ -171,6 +171,7 @@
     "role_admin": "Administrateur",
     "role_producer": "Producteur",
     "role_songwriter": "Auteur-compositeur",
+    "role_musician": "Musicien",
     "role_mix engineer": "Ingé son mix",
     "role_mastering engineer": "Ingé son mastering",
     "role_manager": "Gestionnaire",

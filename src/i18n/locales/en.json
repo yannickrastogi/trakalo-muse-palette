@@ -171,6 +171,7 @@
     "role_admin": "Admin",
     "role_producer": "Producer",
     "role_songwriter": "Songwriter",
+    "role_musician": "Musician",
     "role_mix engineer": "Mix Engineer",
     "role_mastering engineer": "Mastering Engineer",
     "role_manager": "Manager",
