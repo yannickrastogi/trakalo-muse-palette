@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback /* refresh */ } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
+import { Textarea } from "@/components/ui/textarea";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { ShareModal } from "@/components/ShareModal";
 import { usePitches } from "@/contexts/PitchContext";
@@ -113,6 +114,7 @@ export default function TrackDetail() {
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "stems", label: "Stems" },
+    { id: "lyrics", label: "Lyrics" },
     { id: "splits", label: "Splits" },
     { id: "paperwork", label: "Paperwork" },
     { id: "pitches", label: "Pitch History" },
@@ -284,6 +286,7 @@ export default function TrackDetail() {
             <motion.div variants={item}>
               {activeTab === "overview" && <OverviewTab trackId={Number(id)} />}
               {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
+              {activeTab === "lyrics" && <LyricsTab trackId={Number(id)} />}
               {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
               {activeTab === "paperwork" && <PaperworkTab />}
               {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
