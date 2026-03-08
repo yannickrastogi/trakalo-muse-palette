@@ -168,7 +168,7 @@ export default function Pitch() {
   const isMobile = useIsMobile();
   const [pitches, setPitches] = useState<PitchEntry[]>(demoPitches);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<PitchStatus | null>(null);
+  const [statusFilter, setStatusFilter] = useState<PitchStatus | "active" | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -178,17 +178,22 @@ export default function Pitch() {
     const sent = pitches.filter((p) => p.status === "Sent").length;
     const opened = pitches.filter((p) => p.status === "Opened").length;
     const responded = pitches.filter((p) => p.status === "Responded").length;
-    return [
-      { label: "Total Pitches", value: total, sub: `${sent + opened} active`, accent: false },
-      { label: "Drafts", value: draft, sub: "Ready to send", accent: false },
-      { label: "Sent & Opened", value: sent + opened, sub: "Awaiting response", accent: true },
-      { label: "Responded", value: responded, sub: `${Math.round((responded / Math.max(total, 1)) * 100)}% response rate`, accent: true },
+    const statCards: { label: string; value: number; sub: string; accent: boolean; filterKey: PitchStatus | "active" | null }[] = [
+      { label: "Total Pitches", value: total, sub: `${sent + opened} active`, accent: false, filterKey: null },
+      { label: "Drafts", value: draft, sub: "Ready to send", accent: false, filterKey: "Draft" },
+      { label: "Sent & Opened", value: sent + opened, sub: "Awaiting response", accent: true, filterKey: "active" },
+      { label: "Responded", value: responded, sub: `${Math.round((responded / Math.max(total, 1)) * 100)}% response rate`, accent: true, filterKey: "Responded" },
     ];
+    return { statCards, counts: { total, draft, sent, opened, responded } };
   }, [pitches]);
 
   const filtered = useMemo(() => {
     let list = pitches;
-    if (statusFilter) list = list.filter((p) => p.status === statusFilter);
+    if (statusFilter === "active") {
+      list = list.filter((p) => p.status === "Sent" || p.status === "Opened");
+    } else if (statusFilter) {
+      list = list.filter((p) => p.status === statusFilter);
+    }
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -237,22 +242,37 @@ export default function Pitch() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {stats.map((s, i) => (
-            <motion.div key={s.label} variants={item} className="card-premium p-4 sm:p-5 relative overflow-hidden group">
-              {i === 0 && (
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-[40px] pointer-events-none" />
-              )}
-              <p className="text-xl sm:text-[28px] font-bold text-foreground tracking-tight leading-none">
-                {s.value}
-              </p>
-              <p className="text-2xs sm:text-xs text-muted-foreground mt-1.5 sm:mt-2 font-medium">
-                {s.label}
-              </p>
-              <p className={`text-2xs mt-0.5 sm:mt-1 font-semibold ${s.accent ? "text-emerald-400/80" : "text-muted-foreground/50"}`}>
-                {s.sub}
-              </p>
-            </motion.div>
-          ))}
+          {stats.statCards.map((s, i) => {
+            const isActive = statusFilter === s.filterKey;
+            return (
+              <motion.div
+                key={s.label}
+                variants={item}
+                onClick={() => setStatusFilter(isActive ? null : s.filterKey)}
+                className={`card-premium p-4 sm:p-5 relative overflow-hidden cursor-pointer transition-all duration-200 ${
+                  isActive
+                    ? "ring-2 ring-primary/40 bg-primary/5"
+                    : "hover:ring-1 hover:ring-border/60"
+                }`}
+              >
+                {i === 0 && (
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-[40px] pointer-events-none" />
+                )}
+                <p className="text-xl sm:text-[28px] font-bold text-foreground tracking-tight leading-none">
+                  {s.value}
+                </p>
+                <p className="text-2xs sm:text-xs text-muted-foreground mt-1.5 sm:mt-2 font-medium">
+                  {s.label}
+                </p>
+                <p className={`text-2xs mt-0.5 sm:mt-1 font-semibold ${s.accent ? "text-emerald-400/80" : "text-muted-foreground/50"}`}>
+                  {s.sub}
+                </p>
+                {isActive && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary via-accent to-brand-purple" />
+                )}
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* Filters & Search */}
@@ -286,12 +306,13 @@ export default function Pitch() {
             </button>
             {allStatuses.map((s) => {
               const cfg = statusConfig[s];
+              const isActive = statusFilter === s || (statusFilter === "active" && (s === "Sent" || s === "Opened"));
               return (
                 <button
                   key={s}
                   onClick={() => setStatusFilter(statusFilter === s ? null : s)}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all min-h-[36px] ${
-                    statusFilter === s ? cfg.color : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    isActive ? cfg.color : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   }`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
