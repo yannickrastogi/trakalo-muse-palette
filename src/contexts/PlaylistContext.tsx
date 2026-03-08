@@ -99,6 +99,7 @@ interface PlaylistContextType {
   playlists: PlaylistItem[];
   addPlaylist: (pl: NewPlaylistData) => void;
   getPlaylist: (id: string) => PlaylistItem | undefined;
+  updatePlaylist: (id: string, updates: Partial<PlaylistItem>) => void;
 }
 
 const PlaylistContext = createContext<PlaylistContextType | null>(null);
@@ -115,8 +116,14 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     [playlists]
   );
 
+  const updatePlaylist = useCallback((id: string, updates: Partial<PlaylistItem>) => {
+    setPlaylists((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
+    );
+  }, []);
+
   return (
-    <PlaylistContext.Provider value={{ playlists, addPlaylist, getPlaylist }}>
+    <PlaylistContext.Provider value={{ playlists, addPlaylist, getPlaylist, updatePlaylist }}>
       {children}
     </PlaylistContext.Provider>
   );
