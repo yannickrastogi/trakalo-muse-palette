@@ -51,17 +51,10 @@ import {
 
 // covers imported from PlaylistContext
 
-type Track = (typeof allTracks)[number];
+type Track = TrackData;
 
 const containerVariants = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const itemVariant = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } } };
-
-function getInitialTracks(playlist: { trackIds?: number[]; tracks: number }) {
-  if (playlist.trackIds && playlist.trackIds.length > 0) {
-    return allTracks.filter((t) => playlist.trackIds!.includes(t.id));
-  }
-  return allTracks.slice(0, Math.min(playlist.tracks, allTracks.length));
-}
 
 export default function PlaylistDetail() {
   const { id } = useParams();

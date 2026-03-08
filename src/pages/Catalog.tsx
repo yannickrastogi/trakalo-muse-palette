@@ -50,6 +50,7 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 
 export default function Catalog() {
   const { t } = useTranslation();
+  const { tracks: allTracks } = useTrack();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
@@ -65,6 +66,12 @@ export default function Catalog() {
   const navigate = useNavigate();
   const { permissions } = useRole();
 
+  const types = useMemo(() => [...new Set(allTracks.map((t) => t.type))].sort(), [allTracks]);
+  const genres = useMemo(() => [...new Set(allTracks.map((t) => t.genre))].filter(Boolean).sort(), [allTracks]);
+  const keys = useMemo(() => [...new Set(allTracks.map((t) => t.key))].filter(Boolean).sort(), [allTracks]);
+  const moods = useMemo(() => [...new Set(allTracks.flatMap((t) => t.mood))].sort(), [allTracks]);
+  const languages = useMemo(() => [...new Set(allTracks.map((t) => t.language))].filter(Boolean).sort(), [allTracks]);
+
   const activeFilterCount = [typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter].filter(Boolean).length;
 
   const filteredTracks = useMemo(() => {
@@ -79,7 +86,7 @@ export default function Catalog() {
       if (languageFilter && track.language !== languageFilter) return false;
       return true;
     });
-  }, [search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter]);
+  }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter]);
 
   const clearFilters = () => {
     setTypeFilter(null);

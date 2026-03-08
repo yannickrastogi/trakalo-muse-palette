@@ -121,13 +121,15 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
     onOpenChange(v);
   };
 
+  const { tracks: allTracks } = useTrack();
+
   const filteredTracks = useMemo(() => {
     if (!itemSearch) return allTracks;
     const q = itemSearch.toLowerCase();
     return allTracks.filter(
       (t) => t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q)
     );
-  }, [itemSearch]);
+  }, [itemSearch, allTracks]);
 
   const filteredPlaylists = useMemo(() => {
     if (!itemSearch) return playlists;

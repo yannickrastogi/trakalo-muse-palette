@@ -29,7 +29,7 @@ import cover6 from "@/assets/covers/cover-6.jpg";
 
 const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 
-type Track = (typeof allTracks)[number];
+type Track = TrackData;
 
 const GENRES = [
   "Afrobeats", "Ambient", "Blues", "Bouyon", "Caribbean", "Classical",
@@ -133,6 +133,8 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
   const removeMood = (tag: string) => {
     setMoods((prev) => prev.filter((m) => m !== tag));
   };
+
+  const { tracks: allTracks } = useTrack();
 
   const availableTracks = useMemo(() => {
     const selectedIds = new Set(selectedTracks.map((t) => t.id));
