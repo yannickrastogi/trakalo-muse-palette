@@ -1,6 +1,7 @@
 import { useState } from "react";
 import JSZip from "jszip";
 import { jsPDF } from "jspdf";
+import { ID3Writer } from "browser-id3-writer";
 import {
   Dialog,
   DialogContent,
@@ -61,13 +62,20 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
     });
   };
 
-  const handleDownloadTrack = () => {
-    // Simulate download — in a real app this would fetch the actual file
+  const handleDownloadTrack = async () => {
+    // In a real app, this would fetch the actual audio file ArrayBuffer
+    // For demo, we create a tagged file with embedded cover art
+    const coverArrayBuffer = await getCoverArtArrayBuffer(trackData);
+    const taggedBlob = createTaggedAudioBlob(
+      trackData.title,
+      trackData.artist,
+      trackData.album,
+      coverArrayBuffer
+    );
+
     const link = document.createElement("a");
-    link.download = `${trackData.title} - ${trackData.artist}${quality === "hires" ? " (Hi-Res)" : " (Low-Res)"}.wav`;
-    // Create a small placeholder blob for demo
-    const blob = new Blob(["[Audio file placeholder]"], { type: "audio/wav" });
-    link.href = URL.createObjectURL(blob);
+    link.download = `${trackData.title} - ${trackData.artist}${quality === "hires" ? " (Hi-Res)" : " (Low-Res)"}.mp3`;
+    link.href = URL.createObjectURL(taggedBlob);
     link.click();
     URL.revokeObjectURL(link.href);
     handleClose();
@@ -82,12 +90,15 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
       const folderName = `${trackData.title} - ${trackData.artist} - Trakalog Pack`;
       const root = zip.folder(folderName)!;
 
-      // Track
+      // Get cover art for embedding in audio files
+      const coverArrayBuffer = await getCoverArtArrayBuffer(trackData);
+
+      // Track — with embedded cover art
       if (selectedItems.has("track")) {
         const trackFolder = root.folder("Track")!;
-        const fileName = trackData.originalFileName || `${trackData.title}.wav`;
-        // In a real app, this would be the actual audio blob
-        trackFolder.file(fileName, new Blob(["[Original audio file]"], { type: "audio/wav" }));
+        const fileName = trackData.originalFileName?.replace(/\.\w+$/, '.mp3') || `${trackData.title}.mp3`;
+        const taggedBlob = createTaggedAudioBlob(trackData.title, trackData.artist, trackData.album, coverArrayBuffer);
+        trackFolder.file(fileName, taggedBlob);
       }
 
       // Cover Art — generate a 3000x3000 JPEG from the cover image
@@ -104,12 +115,18 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
         lyricsFolder.file(`${trackData.title} - Lyrics.pdf`, blob);
       }
 
-      // Stems
+      // Stems — each with embedded cover art
       if (selectedItems.has("stems") && trackData.stems.length > 0) {
         const stemsFolder = root.folder("Stems")!;
         trackData.stems.forEach(stem => {
-          // In a real app, these would be actual audio blobs
-          stemsFolder.file(stem.fileName, new Blob([`[Stem: ${stem.fileName}]`], { type: "audio/wav" }));
+          const stemName = stem.fileName.replace(/\.\w+$/, '.mp3');
+          const taggedBlob = createTaggedAudioBlob(
+            `${trackData.title} - ${stem.type}`,
+            trackData.artist,
+            trackData.album,
+            coverArrayBuffer
+          );
+          stemsFolder.file(stemName, taggedBlob);
         });
       }
 
@@ -466,4 +483,67 @@ function generateWatermarkedDocumentPdf(docName: string, status: string, date: s
   addWatermark(doc);
 
   return doc.output("blob");
+}
+
+/** Get cover art as ArrayBuffer for ID3 embedding */
+async function getCoverArtArrayBuffer(trackData: TrackData): Promise<ArrayBuffer> {
+  // Generate a cover art image (smaller size for embedding — 500x500)
+  const size = 500;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+
+  if (trackData.coverImage) {
+    return new Promise<ArrayBuffer>((resolve) => {
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, size, size);
+        canvas.toBlob(async (blob) => {
+          resolve(await blob!.arrayBuffer());
+        }, "image/jpeg", 0.9);
+      };
+      img.onerror = () => {
+        drawFallbackCover(ctx, size, trackData);
+        canvas.toBlob(async (blob) => {
+          resolve(await blob!.arrayBuffer());
+        }, "image/jpeg", 0.9);
+      };
+      img.src = trackData.coverImage!;
+    });
+  } else {
+    drawFallbackCover(ctx, size, trackData);
+    return new Promise<ArrayBuffer>((resolve) => {
+      canvas.toBlob(async (blob) => {
+        resolve(await blob!.arrayBuffer());
+      }, "image/jpeg", 0.9);
+    });
+  }
+}
+
+/** Create an audio blob with ID3 tags and embedded cover art */
+function createTaggedAudioBlob(
+  title: string,
+  artist: string,
+  album: string,
+  coverArtBuffer: ArrayBuffer
+): Blob {
+  // Create a minimal MP3-compatible buffer for demo
+  // In production, this would be the real audio ArrayBuffer
+  const emptyBuffer = new ArrayBuffer(128);
+
+  const writer = new ID3Writer(emptyBuffer);
+  writer
+    .setFrame("TIT2", title)
+    .setFrame("TPE1", [artist])
+    .setFrame("TALB", album)
+    .setFrame("APIC", {
+      type: 3, // Cover (front)
+      data: coverArtBuffer,
+      description: "Cover Art",
+    });
+  writer.addTag();
+
+  return writer.getBlob();
 }
