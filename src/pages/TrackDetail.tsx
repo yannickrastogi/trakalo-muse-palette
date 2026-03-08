@@ -817,8 +817,19 @@ function StemsTab({ trackId }: { trackId: number }) {
   );
 }
 
-function SplitsTab() {
+function SplitsTab({ trackId }: { trackId: number }) {
+  const { getTrack } = useTrack();
+  const trackData = getTrack(trackId);
+  const splits = trackData?.splits || [];
   const totalShares = splits.reduce((sum, s) => sum + s.share, 0);
+
+  if (splits.length === 0) {
+    return (
+      <SectionCard title="Publishing & Ownership Splits" icon={PieChart}>
+        <div className="px-5 py-12 text-center text-muted-foreground text-sm">No splits configured for this track.</div>
+      </SectionCard>
+    );
+  }
 
   return (
     <SectionCard
@@ -831,7 +842,7 @@ function SplitsTab() {
         <div className="flex h-3 rounded-full overflow-hidden gap-0.5">
           {splits.map((s, i) => {
             const colors = ["bg-primary", "bg-brand-pink", "bg-brand-purple", "bg-brand-orange"];
-            return <div key={s.name} className={`${colors[i % colors.length]} rounded-full`} style={{ width: `${s.share}%` }} />;
+            return <div key={s.name + i} className={`${colors[i % colors.length]} rounded-full`} style={{ width: `${s.share}%` }} />;
           })}
         </div>
       </div>
@@ -839,12 +850,12 @@ function SplitsTab() {
         {splits.map((s, i) => {
           const dotColors = ["bg-primary", "bg-brand-pink", "bg-brand-purple", "bg-brand-orange"];
           return (
-            <div key={s.name} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
+            <div key={s.name + i} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
               <div className="flex items-center gap-3">
                 <div className={`w-2.5 h-2.5 rounded-full ${dotColors[i % dotColors.length]}`} />
                 <div>
                   <p className="text-sm font-medium text-foreground">{s.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{s.role} · {s.pro} · IPI: {s.ipi}</p>
+                  <p className="text-[11px] text-muted-foreground">{s.role} · {s.pro || "—"} · IPI: {s.ipi || "—"}</p>
                 </div>
               </div>
               <span className="text-sm font-bold text-foreground">{s.share}%</span>
