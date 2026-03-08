@@ -213,7 +213,7 @@ export default function Catalog() {
               </div>
               <FilterSelect label={t("catalog.mood")} value={moodFilter} options={moods} onChange={setMoodFilter} />
               <FilterSelect label={t("catalog.language")} value={languageFilter} options={languages} onChange={setLanguageFilter} />
-              <FilterSelect label="Voice" value={voiceFilter} options={voices} onChange={setVoiceFilter} />
+              <FilterSelect label="Gender" value={voiceFilter} options={voices} onChange={setVoiceFilter} />
               <FilterSelect label={t("catalog.status")} value={statusFilter} options={statuses} onChange={setStatusFilter} />
               {activeFilterCount > 0 && (
                 <button
@@ -237,7 +237,7 @@ export default function Catalog() {
             {bpmFilter && <FilterTag label={`BPM: ${bpmFilter.label}`} onRemove={() => setBpmFilter(null)} />}
             {moodFilter && <FilterTag label={`Mood: ${moodFilter}`} onRemove={() => setMoodFilter(null)} />}
             {languageFilter && <FilterTag label={`Lang: ${languageFilter}`} onRemove={() => setLanguageFilter(null)} />}
-            {voiceFilter && <FilterTag label={`Voice: ${voiceFilter}`} onRemove={() => setVoiceFilter(null)} />}
+            {voiceFilter && <FilterTag label={`Gender: ${voiceFilter}`} onRemove={() => setVoiceFilter(null)} />}
             {statusFilter && <FilterTag label={`Status: ${statusFilter}`} onRemove={() => setStatusFilter(null)} />}
             <button onClick={clearFilters} className="text-xs gradient-text hover:opacity-80 ml-1.5 font-semibold transition-opacity">
               {t("catalog.clear")}
@@ -261,7 +261,7 @@ export default function Catalog() {
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Mood</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Voice</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Gender</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
                     <th className="px-4 py-3 w-10"></th>
                   </tr>

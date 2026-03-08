@@ -162,7 +162,7 @@ export function DashboardContent() {
                       <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">{t("catalog.key")}</th>
                       <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("catalog.mood")}</th>
                       <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("catalog.language")}</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Voice</th>
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Gender</th>
                       <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("catalog.status")}</th>
                       <th className="px-4 py-3 w-10"></th>
                     </tr>
