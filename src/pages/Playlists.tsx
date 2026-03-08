@@ -163,7 +163,7 @@ export default function Playlists() {
               {playlistsData.reduce((s, p) => s + p.tracks, 0)} total tracks
             </p>
           </div>
-          <button className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
+          <button onClick={() => setCreateOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
             <Plus className="w-4 h-4" /> Create Playlist
           </button>
         </motion.div>
