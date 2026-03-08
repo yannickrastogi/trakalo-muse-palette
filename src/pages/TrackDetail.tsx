@@ -963,7 +963,7 @@ function generateSplitsPdf(title: string, artist: string, splits: TrackSplit[], 
   doc.save(`${title} - Splits.pdf`);
 }
 
-
+function StemsTab({ trackId }: { trackId: number }) {
   const { getTrack, updateTrackStems } = useTrack();
   const trackData = getTrack(trackId);
   const initialStems: StemFile[] = (trackData?.stems || []).map((s) => ({
