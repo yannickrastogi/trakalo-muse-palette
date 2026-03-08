@@ -1284,6 +1284,18 @@ function StepReview({
         )}
       </div>
 
+      {/* Lyrics */}
+      <div className="rounded-xl bg-secondary/50 border border-border p-4">
+        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Lyrics</p>
+        {lyrics?.trim() ? (
+          <pre className="whitespace-pre-wrap text-xs text-foreground/80 font-mono leading-relaxed max-h-32 overflow-y-auto">
+            {lyrics}
+          </pre>
+        ) : (
+          <p className="text-2xs text-muted-foreground italic">No lyrics added</p>
+        )}
+      </div>
+
       {/* Splits */}
       <div className="rounded-xl bg-secondary/50 border border-border p-4">
         <div className="flex items-center justify-between mb-2">
