@@ -510,7 +510,7 @@ export default function Stems() {
                         {/* Type */}
                         <td className="px-4 py-3">
                           <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide ${typeClass}`}>
-                            {stem.type}
+                            {stem.isPack ? "Stems Pack" : stem.type}
                           </span>
                         </td>
                         {/* BPM */}
