@@ -64,7 +64,7 @@ function getInitialTracks(playlist: { trackIds?: number[]; tracks: number }) {
 export default function PlaylistDetail() {
   const { id } = useParams();
   const isMobile = useIsMobile();
-  const { getPlaylist } = usePlaylists();
+  const { getPlaylist, updatePlaylist } = usePlaylists();
   const playlist = getPlaylist(id || "");
 
   const [tracks, setTracks] = useState<Track[]>(() =>
@@ -78,6 +78,18 @@ export default function PlaylistDetail() {
   const [addSearch, setAddSearch] = useState("");
   const [duplicateToast, setDuplicateToast] = useState(false);
 
+  // Sync changes back to context
+  const syncToContext = useCallback((updatedTracks: Track[], updatedName?: string) => {
+    if (!id) return;
+    updatePlaylist(id, {
+      tracks: updatedTracks.length,
+      duration: `${updatedTracks.length * 4} min`,
+      trackIds: updatedTracks.map((t) => t.id),
+      updated: "Just now",
+      ...(updatedName ? { name: updatedName } : {}),
+    });
+  }, [id, updatePlaylist]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
@@ -89,14 +101,20 @@ export default function PlaylistDetail() {
       setTracks((prev) => {
         const oldIdx = prev.findIndex((t) => t.id === active.id);
         const newIdx = prev.findIndex((t) => t.id === over.id);
-        return arrayMove(prev, oldIdx, newIdx);
+        const reordered = arrayMove(prev, oldIdx, newIdx);
+        syncToContext(reordered);
+        return reordered;
       });
     }
-  }, []);
+  }, [syncToContext]);
 
   const removeTrack = useCallback((trackId: number) => {
-    setTracks((prev) => prev.filter((t) => t.id !== trackId));
-  }, []);
+    setTracks((prev) => {
+      const updated = prev.filter((t) => t.id !== trackId);
+      syncToContext(updated);
+      return updated;
+    });
+  }, [syncToContext]);
 
   const availableToAdd = allTracks.filter((t) => !tracks.some((pt) => pt.id === t.id));
   const filteredAvailable = addSearch
