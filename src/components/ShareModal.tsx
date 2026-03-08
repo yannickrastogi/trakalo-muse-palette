@@ -104,6 +104,7 @@ export function ShareModal({
       playlistName: playlistName || undefined,
       playlistCover: playlistCover || undefined,
       playlistTracks: playlistTracks || undefined,
+      packItems: packItems || undefined,
     };
 
     createSharedLink(newLink);
