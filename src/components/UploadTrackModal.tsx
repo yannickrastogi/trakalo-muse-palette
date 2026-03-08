@@ -79,6 +79,11 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
+  // Audio analysis
+  const [analysisResult, setAnalysisResult] = useState<AudioAnalysisResult | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisDuration, setAnalysisDuration] = useState("");
+
   // Step 3: Stems
   const [stems, setStems] = useState<StemFile[]>([]);
   const stemsInputRef = useRef<HTMLInputElement>(null);
@@ -88,7 +93,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     { id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" },
   ]);
 
-  const handleAudioUpload = (file: File) => {
+  const handleAudioUpload = async (file: File) => {
     setAudioFile(file);
     setAudioUploading(true);
     setAudioProgress(0);
@@ -105,6 +110,25 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       }
       setAudioProgress(Math.min(progress, 100));
     }, 300);
+
+    // Run audio analysis in parallel
+    setAnalyzing(true);
+    try {
+      const startTime = performance.now();
+      const result = await analyzeAudio(file);
+      const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+      setAnalysisDuration(`${elapsed}s`);
+      setAnalysisResult(result);
+
+      // Auto-fill BPM and Key if not already set
+      if (!bpm) setBpm(String(result.bpm));
+      if (!trackKey) setTrackKey(result.key);
+      if (!analysisDuration) setAnalysisDuration(result.duration);
+    } catch (err) {
+      console.error("Audio analysis failed:", err);
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const togglePreview = () => {
