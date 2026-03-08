@@ -26,13 +26,13 @@ export default function Playlists() {
 
   return (
     <PageShell>
-      <motion.div variants={container} initial="hidden" animate="show" className="p-6 lg:p-8 space-y-6 max-w-[1400px]">
+      <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Playlists</h1>
-            <p className="text-muted-foreground text-sm mt-1">Organize and curate your track collections</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Playlists</h1>
+            <p className="text-muted-foreground text-xs sm:text-sm mt-1">Organize and curate your track collections</p>
           </div>
-          <button className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold shrink-0 self-start">
+          <button className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
             <Plus className="w-3.5 h-3.5" /> New Playlist
           </button>
         </motion.div>
@@ -43,11 +43,11 @@ export default function Playlists() {
             <Search className="w-4 h-4 text-muted-foreground shrink-0" />
             <input type="text" placeholder="Search playlists…" value={search} onChange={(e) => setSearch(e.target.value)}
               className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium" />
-            {search && <button onClick={() => setSearch("")} className="text-muted-foreground hover:text-foreground transition-colors"><X className="w-3.5 h-3.5" /></button>}
+            {search && <button onClick={() => setSearch("")} className="text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"><X className="w-3.5 h-3.5" /></button>}
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filtered.length === 0 ? (
             <motion.div variants={item} className="col-span-full py-16 text-center text-muted-foreground">
               <ListMusic className="w-8 h-8 mx-auto mb-3 opacity-20" />
@@ -56,22 +56,22 @@ export default function Playlists() {
             </motion.div>
           ) : filtered.map((pl) => (
             <motion.div key={pl.name} variants={item}
-              className="card-premium p-5 group cursor-pointer">
-              <div className="flex items-start justify-between mb-4">
+              className="card-premium p-4 sm:p-5 group cursor-pointer">
+              <div className="flex items-start justify-between mb-3 sm:mb-4">
                 <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-purple/15 via-brand-pink/10 to-brand-orange/15 flex items-center justify-center group-hover:from-brand-purple/25 group-hover:to-brand-orange/25 transition-all duration-300">
                   <ListMusic className="w-[18px] h-[18px] text-foreground/35" />
                 </div>
-                <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100">
+                <button className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-100 sm:opacity-0 group-hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center">
                   <MoreHorizontal className="w-3.5 h-3.5" />
                 </button>
               </div>
               <h3 className="font-semibold text-foreground text-sm mb-1 truncate tracking-tight">{pl.name}</h3>
               <p className="text-xs text-muted-foreground">{pl.tracks} tracks · {pl.duration}</p>
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/60">
+              <div className="flex items-center justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border/60">
                 <span className="text-2xs text-muted-foreground font-medium">Updated {pl.updated}</span>
                 <div className="flex items-center gap-1.5">
                   <span className="inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70">#{pl.mood}</span>
-                  <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100">
+                  <button className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-100 sm:opacity-0 group-hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center">
                     <Play className="w-3 h-3" />
                   </button>
                 </div>

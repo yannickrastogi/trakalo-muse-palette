@@ -123,7 +123,7 @@ export default function TrackDetail() {
 
   return (
     <PageShell>
-          <motion.div variants={container} initial="hidden" animate="show" className="p-6 lg:p-8 space-y-6 max-w-[1400px]">
+          <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
             {/* Breadcrumb */}
             <motion.div variants={item} className="flex items-center gap-2 text-sm text-muted-foreground">
               <Link to="/tracks" className="hover:text-foreground transition-colors">Tracks</Link>
@@ -153,7 +153,7 @@ export default function TrackDetail() {
                     </span>
                     <span className="text-xs text-muted-foreground">{trackData.isrc}</span>
                   </div>
-                  <h1 className="text-3xl font-bold text-foreground tracking-tight">{trackData.title}</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{trackData.title}</h1>
                   <p className="text-lg text-muted-foreground mt-1">
                     {trackData.artist}
                     {trackData.featuredArtists.length > 0 && (
@@ -177,13 +177,13 @@ export default function TrackDetail() {
 
                 {/* Action buttons */}
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+                  <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px]">
                     <Edit3 className="w-4 h-4" /> Edit Track
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">
+                  <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]">
                     <Download className="w-4 h-4" /> Download
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">
+                  <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]">
                     <Share2 className="w-4 h-4" /> Share
                   </button>
                 </div>
@@ -230,12 +230,12 @@ export default function TrackDetail() {
 
             {/* Tabs */}
             <motion.div variants={item} className="border-b border-border">
-              <div className="flex gap-1 overflow-x-auto">
+              <div className="flex gap-1 overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                    className={`px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap border-b-2 transition-colors min-h-[44px] ${
                       activeTab === tab.id
                         ? "border-primary text-primary"
                         : "border-transparent text-muted-foreground hover:text-foreground"
