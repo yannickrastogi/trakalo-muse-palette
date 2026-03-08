@@ -5,6 +5,7 @@ export interface TrackStem {
   id: string;
   fileName: string;
   type: string;
+  key?: string;
   fileSize: string;
   uploadDate: string;
   color: string;
