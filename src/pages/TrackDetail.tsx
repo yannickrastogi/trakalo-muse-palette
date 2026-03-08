@@ -1096,24 +1096,160 @@ function StemsTab({ trackId }: { trackId: number }) {
 }
 
 function SplitsTab({ trackId }: { trackId: number }) {
-  const { getTrack } = useTrack();
+  const { getTrack, updateTrackSplits } = useTrack();
   const trackData = getTrack(trackId);
   const splits = trackData?.splits || [];
   const totalShares = splits.reduce((sum, s) => sum + s.share, 0);
+  const [editing, setEditing] = useState(false);
+  const [editSplits, setEditSplits] = useState<TrackSplit[]>([]);
 
-  if (splits.length === 0) {
-    return (
-      <SectionCard title="Publishing & Ownership Splits" icon={PieChart}>
-        <div className="px-5 py-12 text-center text-muted-foreground text-sm">No splits configured for this track.</div>
-      </SectionCard>
-    );
-  }
+  const startEditing = () => {
+    setEditSplits(splits.length ? splits.map(s => ({ ...s })) : [{ id: "1", name: "", role: "", share: 100, pro: "", ipi: "", publisher: "" }]);
+    setEditing(true);
+  };
+
+  const redistributeSplits = (updated: TrackSplit[], changedId?: string): TrackSplit[] => {
+    if (!changedId) {
+      const equal = parseFloat((100 / updated.length).toFixed(2));
+      const total = parseFloat((equal * updated.length).toFixed(2));
+      const diff = parseFloat((100 - total).toFixed(2));
+      return updated.map((s, i) => ({ ...s, share: i === 0 ? parseFloat((equal + diff).toFixed(2)) : equal }));
+    }
+    const changed = updated.find((s) => s.id === changedId);
+    const others = updated.filter((s) => s.id !== changedId);
+    const remaining = parseFloat(Math.max(0, 100 - (changed?.share || 0)).toFixed(2));
+    if (others.length === 0) return updated;
+    const each = parseFloat((remaining / others.length).toFixed(2));
+    const total = parseFloat((each * others.length).toFixed(2));
+    const diff = parseFloat((remaining - total).toFixed(2));
+    let idx = 0;
+    return updated.map((s) => {
+      if (s.id === changedId) return s;
+      const val = idx === 0 ? parseFloat((each + diff).toFixed(2)) : each;
+      idx++;
+      return { ...s, share: val };
+    });
+  };
+
+  const addSplit = () => {
+    const newSplits = [...editSplits, { id: crypto.randomUUID(), name: "", role: "", share: 0, pro: "", ipi: "", publisher: "" }];
+    setEditSplits(redistributeSplits(newSplits));
+  };
+
+  const updateSplit = (id: string, field: keyof TrackSplit, value: string | number) => {
+    const updated = editSplits.map((s) => (s.id === id ? { ...s, [field]: value } : s));
+    if (field === "share") {
+      setEditSplits(redistributeSplits(updated, id));
+    } else {
+      setEditSplits(updated);
+    }
+  };
+
+  const removeSplit = (id: string) => {
+    if (editSplits.length <= 1) return;
+    setEditSplits(redistributeSplits(editSplits.filter((s) => s.id !== id)));
+  };
+
+  const saveSplits = () => {
+    updateTrackSplits(trackId, editSplits.filter(s => s.name.trim()));
+    setEditing(false);
+  };
+
+  const editTotalShares = editSplits.reduce((sum, s) => sum + (Number(s.share) || 0), 0);
 
   const handleDownloadPdf = () => {
     if (!trackData) return;
     generateSplitsPdf(trackData.title, trackData.artist, splits, totalShares);
   };
 
+  // Inline editing mode
+  if (editing) {
+    return (
+      <SectionCard title="Publishing & Ownership Splits" icon={PieChart}
+        action={
+          <div className="flex items-center gap-2">
+            <button onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">Cancel</button>
+            <button onClick={saveSplits} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3" /> Save</button>
+          </div>
+        }
+      >
+        <div className="p-5 space-y-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-2xs text-muted-foreground">Add collaborators and assign ownership splits</p>
+            <span className={`text-xs font-bold tabular-nums ${editTotalShares === 100 ? "text-emerald-400" : editTotalShares > 100 ? "text-destructive" : "text-brand-orange"}`}>{editTotalShares}%</span>
+          </div>
+          {editSplits.map((split, idx) => (
+            <div key={split.id} className="rounded-xl bg-secondary/50 border border-border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-brand-orange/10 flex items-center justify-center">
+                    <Users className="w-3 h-3 text-brand-orange" />
+                  </div>
+                  <span className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">Contributor {idx + 1}</span>
+                </div>
+                {editSplits.length > 1 && (
+                  <button onClick={() => removeSplit(split.id)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-2xs text-muted-foreground font-medium">Name</label>
+                  <input value={split.name} onChange={(e) => updateSplit(split.id, "name", e.target.value)} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-muted-foreground font-medium">Role</label>
+                  <input value={split.role} onChange={(e) => updateSplit(split.id, "role", e.target.value)} placeholder="e.g. Producer" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-muted-foreground font-medium">Split %</label>
+                  <input type="number" min={0} max={100} step={0.01} value={split.share} onChange={(e) => updateSplit(split.id, "share", parseFloat(e.target.value) || 0)} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-muted-foreground font-medium">PRO</label>
+                  <input value={split.pro} onChange={(e) => updateSplit(split.id, "pro", e.target.value)} placeholder="e.g. ASCAP" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-muted-foreground font-medium">IPI</label>
+                  <input value={split.ipi} onChange={(e) => updateSplit(split.id, "ipi", e.target.value)} placeholder="IPI number" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-muted-foreground font-medium">Publisher</label>
+                  <input value={split.publisher} onChange={(e) => updateSplit(split.id, "publisher", e.target.value)} placeholder="Publisher name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                </div>
+              </div>
+            </div>
+          ))}
+          <button onClick={addSplit} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-border hover:border-brand-orange/30 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-all w-full justify-center">
+            <Plus className="w-3.5 h-3.5" /> Add Contributor
+          </button>
+        </div>
+      </SectionCard>
+    );
+  }
+
+  // Empty state with add button
+  if (splits.length === 0) {
+    return (
+      <SectionCard title="Publishing & Ownership Splits" icon={PieChart}>
+        <div className="px-5 py-12 text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-secondary/80 flex items-center justify-center mx-auto">
+            <PieChart className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground mb-1">No splits configured yet</p>
+            <p className="text-xs text-muted-foreground">Add collaborators and assign ownership percentages</p>
+          </div>
+          <button onClick={startEditing} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold btn-brand">
+            <Plus className="w-3.5 h-3.5" /> Add Splits
+          </button>
+        </div>
+      </SectionCard>
+    );
+  }
+
+  // Display mode
   return (
     <SectionCard
       title="Publishing & Ownership Splits"
@@ -1123,7 +1259,7 @@ function SplitsTab({ trackId }: { trackId: number }) {
           <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:underline">
             <Download className="w-3.5 h-3.5" /> Download PDF
           </button>
-          <button className="text-xs text-primary hover:underline">Edit Splits</button>
+          <button onClick={startEditing} className="text-xs text-primary hover:underline">Edit Splits</button>
         </div>
       }
     >
