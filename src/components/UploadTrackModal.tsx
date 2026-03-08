@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
+import { analyzeAudio, type AudioAnalysisResult } from "@/lib/audio-analysis";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -78,6 +79,11 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
+  // Audio analysis
+  const [analysisResult, setAnalysisResult] = useState<AudioAnalysisResult | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisDuration, setAnalysisDuration] = useState("");
+
   // Step 3: Stems
   const [stems, setStems] = useState<StemFile[]>([]);
   const stemsInputRef = useRef<HTMLInputElement>(null);
@@ -87,7 +93,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     { id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" },
   ]);
 
-  const handleAudioUpload = (file: File) => {
+  const handleAudioUpload = async (file: File) => {
     setAudioFile(file);
     setAudioUploading(true);
     setAudioProgress(0);
@@ -104,6 +110,25 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       }
       setAudioProgress(Math.min(progress, 100));
     }, 300);
+
+    // Run audio analysis in parallel
+    setAnalyzing(true);
+    try {
+      const startTime = performance.now();
+      const result = await analyzeAudio(file);
+      const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+      setAnalysisDuration(`${elapsed}s`);
+      setAnalysisResult(result);
+
+      // Auto-fill BPM and Key if not already set
+      if (!bpm) setBpm(String(result.bpm));
+      if (!trackKey) setTrackKey(result.key);
+      if (!analysisDuration) setAnalysisDuration(result.duration);
+    } catch (err) {
+      console.error("Audio analysis failed:", err);
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const togglePreview = () => {
@@ -189,6 +214,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     setStep(0);
     setTitle(""); setArtist(""); setBpm(""); setTrackKey(""); setGenre(""); setMood([]); setLanguage(""); setNotes(""); setDetails({});
     setAudioFile(null); setAudioUploading(false); setAudioProgress(0); setAudioPreviewUrl(null); setIsPlayingPreview(false);
+    setAnalysisResult(null); setAnalyzing(false); setAnalysisDuration("");
     setStems([]);
     setSplits([{ id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }]);
   };
@@ -207,7 +233,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       genre: genre || "",
       bpm: parseInt(bpm) || 0,
       key: trackKey || "",
-      duration: "0:00",
+      duration: analysisResult?.duration || "0:00",
       mood,
       status: "Available",
       isrc: "",
@@ -243,6 +269,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         ipi: s.ipi,
         publisher: s.publisher,
       })),
+      chapters: analysisResult?.chapters,
       statusHistory: [{ status: "Available", date: dateStr, note: "Track uploaded" }],
     };
 
@@ -340,7 +367,10 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   audioRef={audioRef}
                   audioInputRef={audioInputRef}
                   onUpload={handleAudioUpload}
-                  onRemove={() => { setAudioFile(null); setAudioPreviewUrl(null); setAudioProgress(0); }}
+                  onRemove={() => { setAudioFile(null); setAudioPreviewUrl(null); setAudioProgress(0); setAnalysisResult(null); }}
+                  analyzing={analyzing}
+                  analysisResult={analysisResult}
+                  analysisDuration={analysisDuration}
                 />
               )}
               {step === 1 && (
@@ -610,7 +640,7 @@ function StepInfo({
 function StepAudio({
   audioFile, audioUploading, audioProgress, audioPreviewUrl,
   isPlayingPreview, togglePreview, audioRef, audioInputRef,
-  onUpload, onRemove,
+  onUpload, onRemove, analyzing, analysisResult, analysisDuration,
 }: {
   audioFile: File | null;
   audioUploading: boolean;
@@ -622,6 +652,9 @@ function StepAudio({
   audioInputRef: React.RefObject<HTMLInputElement>;
   onUpload: (file: File) => void;
   onRemove: () => void;
+  analyzing: boolean;
+  analysisResult: AudioAnalysisResult | null;
+  analysisDuration: string;
 }) {
   return (
     <div className="space-y-5">
@@ -703,6 +736,68 @@ function StepAudio({
           {!audioUploading && (
             <div className="flex items-center gap-1.5 text-2xs text-emerald-400 font-semibold">
               <Check className="w-3 h-3" /> Upload complete
+            </div>
+          )}
+
+          {/* Audio Analysis Results */}
+          {(analyzing || analysisResult) && (
+            <div className="mt-2 rounded-lg border border-border bg-card p-3 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-brand-purple/15 flex items-center justify-center">
+                  {analyzing ? (
+                    <div className="w-2.5 h-2.5 rounded-full border-2 border-brand-purple border-t-transparent animate-spin" />
+                  ) : (
+                    <Check className="w-3 h-3 text-brand-purple" />
+                  )}
+                </div>
+                <span className="text-2xs font-semibold text-foreground">
+                  {analyzing ? "Analyzing audio…" : `Smart Analysis Complete`}
+                </span>
+                {analysisDuration && !analyzing && (
+                  <span className="text-2xs text-muted-foreground ml-auto">{analysisDuration}</span>
+                )}
+              </div>
+
+              {analysisResult && (
+                <>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-lg bg-secondary p-2.5 text-center">
+                      <p className="text-2xs text-muted-foreground font-medium">BPM</p>
+                      <p className="text-sm font-bold text-brand-orange">{analysisResult.bpm}</p>
+                    </div>
+                    <div className="rounded-lg bg-secondary p-2.5 text-center">
+                      <p className="text-2xs text-muted-foreground font-medium">Key</p>
+                      <p className="text-sm font-bold text-brand-pink">{analysisResult.key}</p>
+                    </div>
+                    <div className="rounded-lg bg-secondary p-2.5 text-center">
+                      <p className="text-2xs text-muted-foreground font-medium">Duration</p>
+                      <p className="text-sm font-bold text-brand-purple">{analysisResult.duration}</p>
+                    </div>
+                  </div>
+
+                  {/* Chapters preview */}
+                  <div className="space-y-1.5">
+                    <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">Detected Chapters</p>
+                    <div className="flex rounded-md overflow-hidden h-5 border border-border/50">
+                      {analysisResult.chapters.map((ch) => (
+                        <div
+                          key={ch.id}
+                          className="flex items-center justify-center text-[8px] font-semibold uppercase tracking-wide border-r border-border/30 last:border-r-0"
+                          style={{
+                            width: `${ch.endPercent - ch.startPercent}%`,
+                            backgroundColor: `color-mix(in srgb, ${ch.color} 20%, transparent)`,
+                            color: ch.color,
+                          }}
+                          title={ch.label}
+                        >
+                          <span className="truncate px-0.5">{ch.endPercent - ch.startPercent > 6 ? ch.label : ""}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-2xs text-muted-foreground">{analysisResult.chapters.length} sections detected</p>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
