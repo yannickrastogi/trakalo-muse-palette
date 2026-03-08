@@ -54,17 +54,21 @@ type Track = (typeof allTracks)[number];
 const containerVariants = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const itemVariant = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } } };
 
-function getInitialTracks(count: number) {
-  return allTracks.slice(0, Math.min(count, allTracks.length));
+function getInitialTracks(playlist: { trackIds?: number[]; tracks: number }) {
+  if (playlist.trackIds && playlist.trackIds.length > 0) {
+    return allTracks.filter((t) => playlist.trackIds!.includes(t.id));
+  }
+  return allTracks.slice(0, Math.min(playlist.tracks, allTracks.length));
 }
 
 export default function PlaylistDetail() {
   const { id } = useParams();
   const isMobile = useIsMobile();
-  const playlist = playlistsData.find((p) => p.id === id);
+  const { getPlaylist } = usePlaylists();
+  const playlist = getPlaylist(id || "");
 
   const [tracks, setTracks] = useState<Track[]>(() =>
-    playlist ? getInitialTracks(playlist.tracks) : []
+    playlist ? getInitialTracks(playlist) : []
   );
   const [playingTrackId, setPlayingTrackId] = useState<number | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
