@@ -300,6 +300,15 @@ export default function TrackDetail() {
         trackCover={trackData?.coverImage}
         stems={(trackData?.stems || []).map((s) => ({ id: s.id, fileName: s.fileName, type: s.type, fileSize: s.fileSize }))}
       />
+      <ShareModal
+        open={shareTrackModalOpen}
+        onClose={() => setShareTrackModalOpen(false)}
+        shareType="track"
+        trackId={Number(id)}
+        trackTitle={trackData?.title}
+        trackArtist={trackData?.artist}
+        trackCover={trackData?.coverImage}
+      />
     </PageShell>
   );
 }
