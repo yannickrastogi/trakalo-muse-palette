@@ -315,59 +315,7 @@ export default function Stems() {
                       </div>
                     </div>
 
-                    {/* Upload Date From */}
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Uploaded From</span>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button className={cn(
-                            "h-8 px-3 rounded-lg border text-xs flex items-center gap-2 transition-colors",
-                            dateFrom
-                              ? "bg-secondary border-primary/30 text-foreground"
-                              : "bg-secondary border-border text-muted-foreground hover:text-foreground"
-                          )}>
-                            <CalendarIcon className="w-3 h-3" />
-                            {dateFrom ? format(dateFrom, "MMM d, yyyy") : "Start date"}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={dateFrom}
-                            onSelect={setDateFrom}
-                            initialFocus
-                            className={cn("p-3 pointer-events-auto")}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
 
-                    {/* Upload Date To */}
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Uploaded To</span>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button className={cn(
-                            "h-8 px-3 rounded-lg border text-xs flex items-center gap-2 transition-colors",
-                            dateTo
-                              ? "bg-secondary border-primary/30 text-foreground"
-                              : "bg-secondary border-border text-muted-foreground hover:text-foreground"
-                          )}>
-                            <CalendarIcon className="w-3 h-3" />
-                            {dateTo ? format(dateTo, "MMM d, yyyy") : "End date"}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={dateTo}
-                            onSelect={setDateTo}
-                            initialFocus
-                            className={cn("p-3 pointer-events-auto")}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
 
                     {/* Clear */}
                     {activeFilterCount > 0 && (
