@@ -51,6 +51,7 @@ export interface TrackData {
   explicit: boolean;
   type: string;
   coverIdx: number;
+  coverImage?: string;
   notes: string;
   details: Record<string, string[]>;
   stems: TrackStem[];
