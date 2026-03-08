@@ -316,9 +316,6 @@
   },
   "common": {
     "pitch": "pitch",
-    "pitches": "pitches"
-  }
-    "pitch": "pitch",
     "pitches": "pitchs"
   }
 }
