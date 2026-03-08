@@ -10,10 +10,7 @@ import {
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { toast } from "sonner";
 
-import { GENRES } from "@/lib/constants";
-const KEYS = ["Ab Maj", "A Min", "Bb Maj", "B Min", "C Min", "C# Min", "D Maj", "Eb Maj", "E Min", "F Maj", "F# Min", "G Maj"];
-const MOODS = ["aggressive", "calm", "dark", "dreamy", "emotional", "energetic", "euphoric", "experimental", "happy", "hopeful", "hypnotic", "meditative", "nostalgic", "playful", "romantic", "smooth", "uplifting", "warm"];
-const LANGUAGES = ["English", "French", "Instrumental", "Japanese", "Portuguese", "Spanish"];
+import { GENRES, KEYS, MOODS, LANGUAGES } from "@/lib/constants";
 const TYPES = ["Song", "Instrumental", "Sample", "Acapella"];
 
 const DETAIL_FIELDS = [
