@@ -298,6 +298,12 @@
   "inviteMember": {
     "title": "Invite Member",
     "description": "Send an invitation to join your team.",
+    "firstName": "First Name",
+    "firstNamePlaceholder": "e.g. Jamie",
+    "firstNameRequired": "First name is required",
+    "lastName": "Last Name",
+    "lastNamePlaceholder": "e.g. Lin",
+    "lastNameRequired": "Last name is required",
     "emailLabel": "Email",
     "emailPlaceholder": "e.g. colleague@label.com",
     "roleLabel": "Role",
