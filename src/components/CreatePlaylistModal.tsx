@@ -369,9 +369,24 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
             ) : (
               <button
                 onClick={() => {
-                  // In a real app, this would save to DB
+                  const coverIdxs = selectedTracks.length >= 4
+                    ? selectedTracks.slice(0, 4).map((t) => t.coverIdx)
+                    : [0, 1, 2, 3];
+                  const pl: NewPlaylistData = {
+                    id: name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+                    name: name.trim(),
+                    description: description.trim() || "No description",
+                    tracks: selectedTracks.length,
+                    duration: `${selectedTracks.length * 4} min`,
+                    updated: "Just now",
+                    mood: "Custom",
+                    coverIdxs,
+                    color: gradientColors[Math.floor(Math.random() * gradientColors.length)],
+                    trackIds: selectedTracks.map((t) => t.id),
+                  };
+                  onCreate(pl);
                   handleOpenChange(false);
-                }}
+                }
                 disabled={!canCreate}
                 className="btn-brand px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
               >
