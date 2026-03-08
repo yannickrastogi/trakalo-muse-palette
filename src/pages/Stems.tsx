@@ -416,14 +416,14 @@ export default function Stems() {
                 <thead>
                   <tr className="border-b border-border">
                     <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Stem Name</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Type</th>
+                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Artist</th>
                     <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Track</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden md:table-cell">Artist</th>
+                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Type</th>
+                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden md:table-cell">BPM</th>
+                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden md:table-cell">Key</th>
                     <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Genre</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">BPM</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden xl:table-cell">Key</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden md:table-cell">Size</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Uploaded</th>
+                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Size</th>
+                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden xl:table-cell">Uploaded</th>
                     <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium text-right">Actions</th>
                   </tr>
                 </thead>
@@ -440,6 +440,7 @@ export default function Stems() {
                         transition={{ delay: idx * 0.02 }}
                         className="border-b border-border/50 last:border-0 hover:bg-secondary/40 transition-colors group"
                       >
+                        {/* Stem Name */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-border/50">
@@ -448,11 +449,11 @@ export default function Stems() {
                             <span className="text-xs font-medium text-foreground truncate max-w-[200px]">{stem.fileName}</span>
                           </div>
                         </td>
+                        {/* Artist */}
                         <td className="px-4 py-3">
-                          <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide ${typeClass}`}>
-                            {stem.type}
-                          </span>
+                          <span className="text-xs text-muted-foreground truncate max-w-[120px] block">{stem.trackArtist}</span>
                         </td>
+                        {/* Track */}
                         <td className="px-4 py-3">
                           <button
                             onClick={() => navigate(`/track/${stem.trackId}`)}
@@ -461,24 +462,33 @@ export default function Stems() {
                             {stem.trackTitle}
                           </button>
                         </td>
-                        <td className="px-4 py-3 hidden md:table-cell">
-                          <span className="text-xs text-muted-foreground truncate max-w-[120px] block">{stem.trackArtist}</span>
+                        {/* Type */}
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide ${typeClass}`}>
+                            {stem.type}
+                          </span>
                         </td>
+                        {/* BPM */}
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          <span className="text-xs text-muted-foreground font-mono">{stem.trackBpm}</span>
+                        </td>
+                        {/* Key */}
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          <span className="text-xs text-muted-foreground">{stem.key || stem.trackKey || "—"}</span>
+                        </td>
+                        {/* Genre */}
                         <td className="px-4 py-3 hidden lg:table-cell">
                           <span className="text-xs text-muted-foreground">{stem.trackGenre}</span>
                         </td>
+                        {/* Size */}
                         <td className="px-4 py-3 hidden lg:table-cell">
-                          <span className="text-xs text-muted-foreground font-mono">{stem.trackBpm}</span>
-                        </td>
-                        <td className="px-4 py-3 hidden xl:table-cell">
-                          <span className="text-xs text-muted-foreground">{stem.key || stem.trackKey || "—"}</span>
-                        </td>
-                        <td className="px-4 py-3 hidden md:table-cell">
                           <span className="text-xs text-muted-foreground font-mono">{stem.fileSize}</span>
                         </td>
-                        <td className="px-4 py-3 hidden lg:table-cell">
+                        {/* Uploaded */}
+                        <td className="px-4 py-3 hidden xl:table-cell">
                           <span className="text-xs text-muted-foreground">{stem.uploadDate}</span>
                         </td>
+                        {/* Actions */}
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1">
                             <button className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title="Play">
