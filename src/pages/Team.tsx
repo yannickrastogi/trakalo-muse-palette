@@ -116,9 +116,6 @@ export default function Team() {
     setInvites((prev) => [newInvite, ...prev]);
     toast.success(t("inviteMember.inviteSent", { email: payload.email }));
   };
-    setInvites((prev) => [newInvite, ...prev]);
-    toast.success(t("inviteMember.inviteSent", { email: payload.email }));
-  };
 
   return (
     <PageShell>
