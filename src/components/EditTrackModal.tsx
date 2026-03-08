@@ -430,6 +430,70 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 />
               </div>
 
+              {/* Splits */}
+              <div className="border-t border-border pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-semibold text-foreground">Splits & Credits</h4>
+                    <p className="text-2xs text-muted-foreground">Add collaborators and assign ownership splits</p>
+                  </div>
+                  <div className={`text-xs font-bold tabular-nums ${totalSplit === 100 ? "text-emerald-400" : totalSplit > 100 ? "text-destructive" : "text-brand-orange"}`}>
+                    {totalSplit}%
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {splits.map((split, idx) => (
+                    <div key={split.id} className="rounded-xl bg-secondary/50 border border-border p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-brand-orange/10 flex items-center justify-center">
+                            <User className="w-3 h-3 text-brand-orange" />
+                          </div>
+                          <span className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">Contributor {idx + 1}</span>
+                        </div>
+                        {splits.length > 1 && (
+                          <button onClick={() => removeSplit(split.id)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-2xs text-muted-foreground font-medium">Name</label>
+                          <input value={split.name} onChange={(e) => updateSplit(split.id, "name", e.target.value)} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-2xs text-muted-foreground font-medium">Role</label>
+                          <input value={split.role} onChange={(e) => updateSplit(split.id, "role", e.target.value)} placeholder="e.g. Producer" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-2xs text-muted-foreground font-medium">Split %</label>
+                          <input type="number" min={0} max={100} step={0.01} value={split.share} onChange={(e) => updateSplit(split.id, "share", parseFloat(e.target.value) || 0)} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-2xs text-muted-foreground font-medium">PRO</label>
+                          <input value={split.pro} onChange={(e) => updateSplit(split.id, "pro", e.target.value)} placeholder="e.g. ASCAP" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-2xs text-muted-foreground font-medium">IPI</label>
+                          <input value={split.ipi} onChange={(e) => updateSplit(split.id, "ipi", e.target.value)} placeholder="IPI number" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-2xs text-muted-foreground font-medium">Publisher</label>
+                          <input value={split.publisher} onChange={(e) => updateSplit(split.id, "publisher", e.target.value)} placeholder="Publisher name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={addSplit}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-border hover:border-brand-orange/30 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-all w-full justify-center"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Contributor
+                </button>
+              </div>
+
               {/* More Details */}
               <div className="border-t border-border pt-4">
                 <button
