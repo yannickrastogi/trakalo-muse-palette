@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -48,6 +49,7 @@ function MiniCoverGrid({ idxs, coverImage }: { idxs: number[]; coverImage?: stri
 }
 
 export default function Playlists() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -81,15 +83,14 @@ export default function Playlists() {
         >
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
-              Playlists
+              {t("playlists.title")}
             </h1>
             <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-              {playlists.length} curated collections ·{" "}
-              {playlists.reduce((s, p) => s + p.tracks, 0)} total tracks
+              {t("playlists.subtitle", { count: playlists.length, tracks: playlists.reduce((s, p) => s + p.tracks, 0) })}
             </p>
           </div>
           <button onClick={() => setCreateOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
-            <Plus className="w-4 h-4" /> Create Playlist
+            <Plus className="w-4 h-4" /> {t("playlists.createPlaylist")}
           </button>
         </motion.div>
 
@@ -99,7 +100,7 @@ export default function Playlists() {
             <Search className="w-4 h-4 text-muted-foreground shrink-0" />
             <input
               type="text"
-              placeholder="Search playlists by name, mood, or description…"
+              placeholder={t("playlists.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
@@ -119,8 +120,8 @@ export default function Playlists() {
         {filtered.length === 0 ? (
           <motion.div variants={item} className="card-premium py-20 text-center">
             <ListMusic className="w-10 h-10 mx-auto mb-4 text-muted-foreground/15" />
-            <p className="text-sm font-semibold text-foreground">No playlists found</p>
-            <p className="text-xs mt-1.5 text-muted-foreground/70">Try a different search term</p>
+            <p className="text-sm font-semibold text-foreground">{t("playlists.noPlaylists")}</p>
+            <p className="text-xs mt-1.5 text-muted-foreground/70">{t("playlists.tryDifferent")}</p>
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
