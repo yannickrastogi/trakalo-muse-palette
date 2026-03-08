@@ -77,7 +77,7 @@ export default function Team() {
 
         {/* Role stat pills */}
         <motion.div variants={item} className="flex flex-wrap gap-2">
-          {(["Admin", "Manager", "Producer", "Viewer"] as const).map((role) => {
+          {ROLES.map((role) => {
             const Icon = roleIcons[role];
             return (
               <div
