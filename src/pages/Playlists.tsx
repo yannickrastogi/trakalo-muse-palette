@@ -127,19 +127,20 @@ export default function Playlists() {
   const [search, setSearch] = useState("");
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [playlists, setPlaylists] = useState(playlistsData);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
   const filtered = useMemo(() => {
-    if (!search) return playlistsData;
+    if (!search) return playlists;
     const q = search.toLowerCase();
-    return playlistsData.filter(
+    return playlists.filter(
       (pl) =>
         pl.name.toLowerCase().includes(q) ||
         pl.mood.toLowerCase().includes(q) ||
         pl.description.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, playlists]);
 
   return (
     <PageShell>
@@ -159,8 +160,8 @@ export default function Playlists() {
               Playlists
             </h1>
             <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-              {playlistsData.length} curated collections ·{" "}
-              {playlistsData.reduce((s, p) => s + p.tracks, 0)} total tracks
+              {playlists.length} curated collections ·{" "}
+              {playlists.reduce((s, p) => s + p.tracks, 0)} total tracks
             </p>
           </div>
           <button onClick={() => setCreateOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
@@ -294,7 +295,7 @@ export default function Playlists() {
           </div>
         )}
       </motion.div>
-      <CreatePlaylistModal open={createOpen} onOpenChange={setCreateOpen} />
+      <CreatePlaylistModal open={createOpen} onOpenChange={setCreateOpen} onCreate={(pl) => setPlaylists((prev) => [pl, ...prev])} />
     </PageShell>
   );
 }

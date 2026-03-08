@@ -30,12 +30,35 @@ const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 
 type Track = (typeof allTracks)[number];
 
+export interface NewPlaylistData {
+  id: string;
+  name: string;
+  description: string;
+  tracks: number;
+  duration: string;
+  updated: string;
+  mood: string;
+  coverIdxs: number[];
+  color: string;
+  trackIds: number[];
+}
+
 interface CreatePlaylistModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCreate: (data: NewPlaylistData) => void;
 }
 
-export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalProps) {
+const gradientColors = [
+  "from-brand-orange/20 to-brand-pink/10",
+  "from-brand-purple/20 to-brand-pink/10",
+  "from-brand-pink/15 to-brand-purple/15",
+  "from-brand-orange/25 to-brand-purple/10",
+  "from-brand-pink/20 to-brand-orange/10",
+  "from-brand-purple/15 to-brand-orange/15",
+];
+
+export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlaylistModalProps) {
   const [step, setStep] = useState<"details" | "tracks">("details");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -346,7 +369,22 @@ export function CreatePlaylistModal({ open, onOpenChange }: CreatePlaylistModalP
             ) : (
               <button
                 onClick={() => {
-                  // In a real app, this would save to DB
+                  const coverIdxs = selectedTracks.length >= 4
+                    ? selectedTracks.slice(0, 4).map((t) => t.coverIdx)
+                    : [0, 1, 2, 3];
+                  const pl: NewPlaylistData = {
+                    id: name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+                    name: name.trim(),
+                    description: description.trim() || "No description",
+                    tracks: selectedTracks.length,
+                    duration: `${selectedTracks.length * 4} min`,
+                    updated: "Just now",
+                    mood: "Custom",
+                    coverIdxs,
+                    color: gradientColors[Math.floor(Math.random() * gradientColors.length)],
+                    trackIds: selectedTracks.map((t) => t.id),
+                  };
+                  onCreate(pl);
                   handleOpenChange(false);
                 }}
                 disabled={!canCreate}
