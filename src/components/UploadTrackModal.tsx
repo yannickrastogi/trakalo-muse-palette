@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { analyzeAudio, type AudioAnalysisResult } from "@/lib/audio-analysis";
+import { compressAudio, type CompressedAudio } from "@/lib/audio-compression";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -15,6 +16,8 @@ import {
   Play,
   Pause,
   User,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import {
   Dialog,
@@ -24,7 +27,9 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 
-const STEPS = ["Audio", "Info", "Stems", "Splits", "Review"];
+const MAX_TRACKS = 20;
+
+const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
 const GENRES = ["Ambient", "Electronic", "Glitch Hop", "House", "Indie Pop", "Neo-Soul", "R&B", "Synthwave", "Techno"];
 const KEYS = ["Ab Maj", "A Min", "Bb Maj", "B Min", "C Min", "C# Min", "D Maj", "Eb Maj", "E Min", "F Maj", "F# Min", "G Maj"];
@@ -48,114 +53,207 @@ interface StemFile {
   size: string;
 }
 
+/** Per-track entry in the bulk queue */
+interface TrackEntry {
+  id: string;
+  file: File;
+  fileName: string;
+  fileSize: string;
+  // Analysis
+  analyzing: boolean;
+  analysisResult: AudioAnalysisResult | null;
+  analysisDuration: string;
+  analysisError: boolean;
+  // Compression
+  compressing: boolean;
+  compressed: CompressedAudio | null;
+  // Metadata
+  title: string;
+  artist: string;
+  bpm: string;
+  trackKey: string;
+  genre: string;
+  mood: string[];
+  language: string;
+  notes: string;
+  details: Record<string, string[]>;
+  stems: StemFile[];
+  splits: Split[];
+  // Status
+  metadataComplete: boolean;
+}
+
 interface UploadTrackModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+function createTrackEntry(file: File): TrackEntry {
+  const nameWithoutExt = file.name.replace(/\.[^.]+$/, "");
+  return {
+    id: crypto.randomUUID(),
+    file,
+    fileName: file.name,
+    fileSize: formatFileSize(file.size),
+    analyzing: false,
+    analysisResult: null,
+    analysisDuration: "",
+    analysisError: false,
+    compressing: false,
+    compressed: null,
+    title: nameWithoutExt,
+    artist: "",
+    bpm: "",
+    trackKey: "",
+    genre: "",
+    mood: [],
+    language: "",
+    notes: "",
+    details: {},
+    stems: [],
+    splits: [{ id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
+    metadataComplete: false,
+  };
+}
+
 export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) {
   const { tracks, addTrack } = useTrack();
-  const [step, setStep] = useState(0);
 
-  // Step 1 (Info)
-  const [title, setTitle] = useState("");
-  const [artist, setArtist] = useState("");
-  const [bpm, setBpm] = useState("");
-  const [trackKey, setTrackKey] = useState("");
-  const [genre, setGenre] = useState("");
-  const [mood, setMood] = useState<string[]>([]);
-  const [language, setLanguage] = useState("");
-  const [notes, setNotes] = useState("");
-
-  // More Details
-  const [details, setDetails] = useState<Record<string, string[]>>({});
-
-  // Step 2: Audio
-  const [audioFile, setAudioFile] = useState<File | null>(null);
-  const [audioUploading, setAudioUploading] = useState(false);
-  const [audioProgress, setAudioProgress] = useState(0);
-  const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
-  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+  // Phase: "upload" (drag & drop files) → "edit" (per-track metadata) → done
+  const [phase, setPhase] = useState<"upload" | "edit">("upload");
+  const [queue, setQueue] = useState<TrackEntry[]>([]);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [editStep, setEditStep] = useState(0); // 0=Info, 1=Stems, 2=Splits, 3=Review
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const audioInputRef = useRef<HTMLInputElement>(null);
-
-  // Audio analysis
-  const [analysisResult, setAnalysisResult] = useState<AudioAnalysisResult | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analysisDuration, setAnalysisDuration] = useState("");
-
-  // Step 3: Stems
-  const [stems, setStems] = useState<StemFile[]>([]);
+  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const stemsInputRef = useRef<HTMLInputElement>(null);
 
-  // Step 4: Splits
-  const [splits, setSplits] = useState<Split[]>([
-    { id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" },
-  ]);
+  const EDIT_STEPS = ["Info", "Stems", "Splits", "Review"];
 
-  const handleAudioUpload = async (file: File) => {
-    setAudioFile(file);
-    setAudioUploading(true);
-    setAudioProgress(0);
+  const currentTrack = queue[currentIdx] || null;
 
-    // Simulate upload progress
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 25 + 10;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        setAudioUploading(false);
-        setAudioPreviewUrl(URL.createObjectURL(file));
-      }
-      setAudioProgress(Math.min(progress, 100));
-    }, 300);
+  // ─── File handling ──────────────────────────────────────────
 
-    // Run audio analysis in parallel
-    setAnalyzing(true);
-    try {
-      const startTime = performance.now();
-      const result = await analyzeAudio(file);
-      const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
-      setAnalysisDuration(`${elapsed}s`);
-      setAnalysisResult(result);
+  const addFiles = useCallback(async (files: File[]) => {
+    const audioFiles = files.filter((f) => f.type.startsWith("audio/") || /\.(wav|mp3|flac|aiff|aif|ogg|m4a|wma)$/i.test(f.name));
+    if (audioFiles.length === 0) return;
 
-      // Auto-fill BPM and Key if not already set
-      if (!bpm) setBpm(String(result.bpm));
-      if (!trackKey) setTrackKey(result.key);
-      if (!analysisDuration) setAnalysisDuration(result.duration);
-    } catch (err) {
-      console.error("Audio analysis failed:", err);
-    } finally {
-      setAnalyzing(false);
+    const remaining = MAX_TRACKS - queue.length;
+    const toAdd = audioFiles.slice(0, remaining);
+    if (toAdd.length === 0) return;
+
+    const entries = toAdd.map(createTrackEntry);
+    setQueue((prev) => [...prev, ...entries]);
+
+    // Run analysis + compression in parallel for each file
+    for (const entry of entries) {
+      // Analysis
+      setQueue((prev) => prev.map((e) => e.id === entry.id ? { ...e, analyzing: true, compressing: true } : e));
+
+      // Analysis
+      analyzeAudio(entry.file)
+        .then((result) => {
+          setQueue((prev) => prev.map((e) => e.id === entry.id ? {
+            ...e,
+            analyzing: false,
+            analysisResult: result,
+            analysisDuration: result.duration,
+            bpm: String(result.bpm),
+            trackKey: result.key,
+          } : e));
+        })
+        .catch(() => {
+          setQueue((prev) => prev.map((e) => e.id === entry.id ? { ...e, analyzing: false, analysisError: true } : e));
+        });
+
+      // Compression
+      compressAudio(entry.file)
+        .then((compressed) => {
+          setQueue((prev) => prev.map((e) => e.id === entry.id ? { ...e, compressing: false, compressed } : e));
+        })
+        .catch(() => {
+          setQueue((prev) => prev.map((e) => e.id === entry.id ? { ...e, compressing: false } : e));
+        });
     }
-  };
+  }, [queue.length]);
 
-  const togglePreview = () => {
-    if (!audioRef.current) return;
-    if (isPlayingPreview) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
-    setIsPlayingPreview(!isPlayingPreview);
-  };
+  const removeFromQueue = useCallback((id: string) => {
+    setQueue((prev) => prev.filter((e) => e.id !== id));
+  }, []);
 
-  const handleStemsUpload = (files: FileList) => {
+  // ─── Drag & Drop ──────────────────────────────────────────
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    addFiles(files);
+  }, [addFiles]);
+
+  // ─── Metadata updates ──────────────────────────────────────
+
+  const updateCurrent = useCallback((updates: Partial<TrackEntry>) => {
+    setQueue((prev) => prev.map((e, i) => i === currentIdx ? { ...e, ...updates } : e));
+  }, [currentIdx]);
+
+  const toggleMood = useCallback((m: string) => {
+    if (!currentTrack) return;
+    const mood = currentTrack.mood.includes(m) ? currentTrack.mood.filter((x) => x !== m) : [...currentTrack.mood, m];
+    updateCurrent({ mood });
+  }, [currentTrack, updateCurrent]);
+
+  const updateDetail = useCallback((key: string, index: number, value: string) => {
+    if (!currentTrack) return;
+    const arr = [...(currentTrack.details[key] || [])];
+    arr[index] = value;
+    updateCurrent({ details: { ...currentTrack.details, [key]: arr } });
+  }, [currentTrack, updateCurrent]);
+
+  const addDetailEntry = useCallback((key: string) => {
+    if (!currentTrack) return;
+    updateCurrent({ details: { ...currentTrack.details, [key]: [...(currentTrack.details[key] || [""]), ""] } });
+  }, [currentTrack, updateCurrent]);
+
+  const removeDetailEntry = useCallback((key: string, index: number) => {
+    if (!currentTrack) return;
+    const arr = (currentTrack.details[key] || []).filter((_, i) => i !== index);
+    updateCurrent({ details: { ...currentTrack.details, [key]: arr } });
+  }, [currentTrack, updateCurrent]);
+
+  // Stems
+  const handleStemsUpload = useCallback((files: FileList) => {
+    if (!currentTrack) return;
     const newStems: StemFile[] = Array.from(files).map((f) => ({
       id: crypto.randomUUID(),
       name: f.name,
       file: f,
       size: formatFileSize(f.size),
     }));
-    setStems((prev) => [...prev, ...newStems]);
-  };
+    updateCurrent({ stems: [...currentTrack.stems, ...newStems] });
+  }, [currentTrack, updateCurrent]);
 
-  const removeStem = (id: string) => {
-    setStems((prev) => prev.filter((s) => s.id !== id));
-  };
+  const removeStem = useCallback((id: string) => {
+    if (!currentTrack) return;
+    updateCurrent({ stems: currentTrack.stems.filter((s) => s.id !== id) });
+  }, [currentTrack, updateCurrent]);
 
-  const redistributeSplits = (updatedSplits: Split[], changedId?: string) => {
+  // Splits
+  const redistributeSplits = (updatedSplits: Split[], changedId?: string): Split[] => {
     if (!changedId) {
       const equal = parseFloat((100 / updatedSplits.length).toFixed(2));
       const total = parseFloat((equal * updatedSplits.length).toFixed(2));
@@ -181,78 +279,82 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     });
   };
 
-  const addSplit = () => {
-    setSplits((prev) => {
-      const newSplits = [
-        ...prev,
-        { id: crypto.randomUUID(), name: "", role: "", percentage: 0, pro: "", ipi: "", publisher: "" },
-      ];
-      return redistributeSplits(newSplits);
-    });
-  };
+  const addSplit = useCallback(() => {
+    if (!currentTrack) return;
+    const newSplits = [
+      ...currentTrack.splits,
+      { id: crypto.randomUUID(), name: "", role: "", percentage: 0, pro: "", ipi: "", publisher: "" },
+    ];
+    updateCurrent({ splits: redistributeSplits(newSplits) });
+  }, [currentTrack, updateCurrent]);
 
-  const updateSplit = (id: string, field: keyof Split, value: string | number) => {
-    setSplits((prev) => {
-      const updated = prev.map((s) => (s.id === id ? { ...s, [field]: value } : s));
-      if (field === "percentage") return redistributeSplits(updated, id);
-      return updated;
-    });
-  };
+  const updateSplit = useCallback((id: string, field: keyof Split, value: string | number) => {
+    if (!currentTrack) return;
+    const updated = currentTrack.splits.map((s) => (s.id === id ? { ...s, [field]: value } : s));
+    if (field === "percentage") {
+      updateCurrent({ splits: redistributeSplits(updated, id) });
+    } else {
+      updateCurrent({ splits: updated });
+    }
+  }, [currentTrack, updateCurrent]);
 
-  const removeSplit = (id: string) => {
-    if (splits.length <= 1) return;
-    setSplits((prev) => redistributeSplits(prev.filter((s) => s.id !== id)));
-  };
+  const removeSplit = useCallback((id: string) => {
+    if (!currentTrack || currentTrack.splits.length <= 1) return;
+    updateCurrent({ splits: redistributeSplits(currentTrack.splits.filter((s) => s.id !== id)) });
+  }, [currentTrack, updateCurrent]);
 
-  const totalSplit = splits.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0);
+  const totalSplit = currentTrack ? currentTrack.splits.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0) : 0;
 
-  const toggleMood = (m: string) => {
-    setMood((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
-  };
+  // ─── Preview playback ──────────────────────────────────────
 
-  const handleReset = () => {
-    setStep(0);
-    setTitle(""); setArtist(""); setBpm(""); setTrackKey(""); setGenre(""); setMood([]); setLanguage(""); setNotes(""); setDetails({});
-    setAudioFile(null); setAudioUploading(false); setAudioProgress(0); setAudioPreviewUrl(null); setIsPlayingPreview(false);
-    setAnalysisResult(null); setAnalyzing(false); setAnalysisDuration("");
-    setStems([]);
-    setSplits([{ id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }]);
-  };
+  const togglePreview = useCallback(() => {
+    if (!audioRef.current) return;
+    if (isPlayingPreview) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlayingPreview(!isPlayingPreview);
+  }, [isPlayingPreview]);
 
-  const handleSave = () => {
+  // ─── Save ──────────────────────────────────────────────────
+
+  const saveCurrentTrack = useCallback(() => {
+    if (!currentTrack) return;
     const now = new Date();
     const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    const newId = Math.max(...tracks.map((t) => t.id), 0) + 1;
+    const newId = Math.max(...tracks.map((t) => t.id), ...queue.map((_, i) => tracks.length + i), 0) + 1 + currentIdx;
 
     const newTrack: TrackData = {
       id: newId,
-      title: title.trim() || "Untitled",
-      artist: artist.trim() || "Unknown Artist",
+      title: currentTrack.title.trim() || "Untitled",
+      artist: currentTrack.artist.trim() || "Unknown Artist",
       featuredArtists: [],
       album: "",
-      genre: genre || "",
-      bpm: parseInt(bpm) || 0,
-      key: trackKey || "",
-      duration: analysisResult?.duration || "0:00",
-      mood,
+      genre: currentTrack.genre || "",
+      bpm: parseInt(currentTrack.bpm) || 0,
+      key: currentTrack.trackKey || "",
+      duration: currentTrack.analysisResult?.duration || "0:00",
+      mood: currentTrack.mood,
       status: "Available",
       isrc: "",
       upc: "",
       releaseDate: "",
       label: "",
       publisher: "",
-      writtenBy: (details.songwriters || []).filter(Boolean),
-      producedBy: (details.producers || []).filter(Boolean),
-      mixedBy: (details.mixingEngineer || []).filter(Boolean).join(", "),
-      masteredBy: (details.masteringEngineer || []).filter(Boolean).join(", "),
+      writtenBy: (currentTrack.details.songwriters || []).filter(Boolean),
+      producedBy: (currentTrack.details.producers || []).filter(Boolean),
+      mixedBy: (currentTrack.details.mixingEngineer || []).filter(Boolean).join(", "),
+      masteredBy: (currentTrack.details.masteringEngineer || []).filter(Boolean).join(", "),
       copyright: "",
-      language: language || "",
+      language: currentTrack.language || "",
       explicit: false,
       type: "Song",
       coverIdx: newId % 6,
-      notes,
-      details,
-      stems: stems.map((s, i) => ({
+      previewUrl: currentTrack.compressed?.url || undefined,
+      notes: currentTrack.notes,
+      details: currentTrack.details,
+      stems: currentTrack.stems.map((s, i) => ({
         id: `stem-${newId}-${i}`,
         fileName: s.name,
         type: "other",
@@ -260,7 +362,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         uploadDate: dateStr,
         color: "text-muted-foreground",
       })),
-      splits: splits.filter((s) => s.name.trim()).map((s) => ({
+      splits: currentTrack.splits.filter((s) => s.name.trim()).map((s) => ({
         id: s.id,
         name: s.name,
         role: s.role,
@@ -269,147 +371,195 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         ipi: s.ipi,
         publisher: s.publisher,
       })),
-      chapters: analysisResult?.chapters,
+      chapters: currentTrack.analysisResult?.chapters,
       statusHistory: [{ status: "Available", date: dateStr, note: "Track uploaded" }],
     };
 
     addTrack(newTrack);
-    onOpenChange(false);
-    handleReset();
+
+    // Move to next track or close
+    if (currentIdx < queue.length - 1) {
+      setCurrentIdx(currentIdx + 1);
+      setEditStep(0);
+      setIsPlayingPreview(false);
+    } else {
+      // All done
+      onOpenChange(false);
+      handleReset();
+    }
+  }, [currentTrack, currentIdx, queue, tracks, addTrack, onOpenChange]);
+
+  // ─── Navigation ────────────────────────────────────────────
+
+  const handleReset = () => {
+    setPhase("upload");
+    setQueue([]);
+    setCurrentIdx(0);
+    setEditStep(0);
+    setIsDragOver(false);
+    setIsPlayingPreview(false);
   };
 
-  const updateDetail = (key: string, index: number, value: string) => {
-    setDetails((prev) => {
-      const arr = [...(prev[key] || [])];
-      arr[index] = value;
-      return { ...prev, [key]: arr };
-    });
-  };
-
-  const addDetailEntry = (key: string) => {
-    setDetails((prev) => ({
-      ...prev,
-      [key]: [...(prev[key] || [""]), ""],
-    }));
-  };
-
-  const removeDetailEntry = (key: string, index: number) => {
-    setDetails((prev) => {
-      const arr = (prev[key] || []).filter((_, i) => i !== index);
-      return { ...prev, [key]: arr };
-    });
-  };
-
-  const canProceed = () => {
-    if (step === 1) return title.trim() && artist.trim();
+  const canProceedEdit = () => {
+    if (editStep === 0) return currentTrack?.title.trim() && currentTrack?.artist.trim();
     return true;
   };
+
+  const startEditing = () => {
+    if (queue.length === 0) return;
+    setPhase("edit");
+    setCurrentIdx(0);
+    setEditStep(0);
+  };
+
+  const allProcessing = queue.some((e) => e.analyzing || e.compressing);
+
+  // ─── Render ────────────────────────────────────────────────
 
   return (
     <Dialog open={open} onOpenChange={(val) => { if (!val) handleReset(); onOpenChange(val); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[90vh] h-[100dvh] sm:h-auto overflow-hidden flex flex-col p-0 gap-0 bg-card border-border w-full sm:w-auto">
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border space-y-3">
-          <DialogTitle className="text-lg font-bold text-foreground tracking-tight">Upload Track</DialogTitle>
-          {/* Step indicator */}
-          <div className="flex items-center gap-1">
-            {STEPS.map((s, i) => (
-              <div key={s} className="flex items-center gap-1 flex-1">
-                <button
-                  onClick={() => i < step && setStep(i)}
-                  className={`flex items-center gap-1.5 text-2xs font-semibold transition-colors ${
-                    i === step
-                      ? "text-foreground"
-                      : i < step
-                      ? "text-brand-orange cursor-pointer hover:text-foreground"
-                      : "text-muted-foreground/40"
-                  }`}
-                >
-                  <span
-                    className={`w-5 h-5 rounded-full flex items-center justify-center text-2xs font-bold transition-all ${
-                      i < step
-                        ? "btn-brand shadow-none text-primary-foreground"
-                        : i === step
-                        ? "bg-brand-orange/15 text-brand-orange border border-brand-orange/30"
-                        : "bg-secondary text-muted-foreground/40"
-                    }`}
-                  >
-                    {i < step ? <Check className="w-2.5 h-2.5" /> : i + 1}
-                  </span>
-                  <span className="hidden sm:inline">{s}</span>
-                </button>
-                {i < STEPS.length - 1 && (
-                  <div className={`flex-1 h-px mx-1 transition-colors ${i < step ? "bg-brand-orange/40" : "bg-border"}`} />
-                )}
+          <DialogTitle className="text-lg font-bold text-foreground tracking-tight">
+            {phase === "upload"
+              ? "Upload Tracks"
+              : `Track ${currentIdx + 1} of ${queue.length}`
+            }
+          </DialogTitle>
+
+          {phase === "edit" && (
+            <>
+              {/* Track navigator for bulk */}
+              {queue.length > 1 && (
+                <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                  {queue.map((entry, i) => (
+                    <button
+                      key={entry.id}
+                      onClick={() => {
+                        if (i <= currentIdx) {
+                          setCurrentIdx(i);
+                          setEditStep(0);
+                        }
+                      }}
+                      className={`px-2.5 py-1 rounded-full text-2xs font-semibold whitespace-nowrap transition-all ${
+                        i === currentIdx
+                          ? "bg-primary/15 text-primary border border-primary/30"
+                          : i < currentIdx
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          : "bg-secondary text-muted-foreground/40 border border-transparent"
+                      }`}
+                    >
+                      {i < currentIdx && <Check className="w-2.5 h-2.5 inline mr-1" />}
+                      {entry.title || entry.fileName}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Step indicator */}
+              <div className="flex items-center gap-1">
+                {EDIT_STEPS.map((s, i) => (
+                  <div key={s} className="flex items-center gap-1 flex-1">
+                    <button
+                      onClick={() => i < editStep && setEditStep(i)}
+                      className={`flex items-center gap-1.5 text-2xs font-semibold transition-colors ${
+                        i === editStep
+                          ? "text-foreground"
+                          : i < editStep
+                          ? "text-brand-orange cursor-pointer hover:text-foreground"
+                          : "text-muted-foreground/40"
+                      }`}
+                    >
+                      <span
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-2xs font-bold transition-all ${
+                          i < editStep
+                            ? "btn-brand shadow-none text-primary-foreground"
+                            : i === editStep
+                            ? "bg-brand-orange/15 text-brand-orange border border-brand-orange/30"
+                            : "bg-secondary text-muted-foreground/40"
+                        }`}
+                      >
+                        {i < editStep ? <Check className="w-2.5 h-2.5" /> : i + 1}
+                      </span>
+                      <span className="hidden sm:inline">{s}</span>
+                    </button>
+                    {i < EDIT_STEPS.length - 1 && (
+                      <div className={`flex-1 h-px mx-1 transition-colors ${i < editStep ? "bg-brand-orange/40" : "bg-border"}`} />
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </DialogHeader>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           <AnimatePresence mode="wait">
             <motion.div
-              key={step}
+              key={phase === "upload" ? "upload" : `edit-${currentIdx}-${editStep}`}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
             >
-              {step === 0 && (
-                <StepAudio
-                  audioFile={audioFile}
-                  audioUploading={audioUploading}
-                  audioProgress={audioProgress}
-                  audioPreviewUrl={audioPreviewUrl}
-                  isPlayingPreview={isPlayingPreview}
-                  togglePreview={togglePreview}
-                  audioRef={audioRef}
-                  audioInputRef={audioInputRef}
-                  onUpload={handleAudioUpload}
-                  onRemove={() => { setAudioFile(null); setAudioPreviewUrl(null); setAudioProgress(0); setAnalysisResult(null); }}
-                  analyzing={analyzing}
-                  analysisResult={analysisResult}
-                  analysisDuration={analysisDuration}
+              {phase === "upload" && (
+                <StepBulkUpload
+                  queue={queue}
+                  isDragOver={isDragOver}
+                  fileInputRef={fileInputRef}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onAddFiles={addFiles}
+                  onRemove={removeFromQueue}
                 />
               )}
-              {step === 1 && (
+              {phase === "edit" && currentTrack && editStep === 0 && (
                 <StepInfo
-                  title={title} setTitle={setTitle}
-                  artist={artist} setArtist={setArtist}
-                  bpm={bpm} setBpm={setBpm}
-                  trackKey={trackKey} setTrackKey={setTrackKey}
-                  genre={genre} setGenre={setGenre}
-                  mood={mood} toggleMood={toggleMood}
-                  language={language} setLanguage={setLanguage}
-                  notes={notes} setNotes={setNotes}
-                  details={details} updateDetail={updateDetail}
+                  title={currentTrack.title} setTitle={(v) => updateCurrent({ title: v })}
+                  artist={currentTrack.artist} setArtist={(v) => updateCurrent({ artist: v })}
+                  bpm={currentTrack.bpm} setBpm={(v) => updateCurrent({ bpm: v })}
+                  trackKey={currentTrack.trackKey} setTrackKey={(v) => updateCurrent({ trackKey: v })}
+                  genre={currentTrack.genre} setGenre={(v) => updateCurrent({ genre: v })}
+                  mood={currentTrack.mood} toggleMood={toggleMood}
+                  language={currentTrack.language} setLanguage={(v) => updateCurrent({ language: v })}
+                  notes={currentTrack.notes} setNotes={(v) => updateCurrent({ notes: v })}
+                  details={currentTrack.details} updateDetail={updateDetail}
                   addDetailEntry={addDetailEntry} removeDetailEntry={removeDetailEntry}
+                  analysisResult={currentTrack.analysisResult}
+                  analyzing={currentTrack.analyzing}
+                  compressed={currentTrack.compressed}
+                  compressing={currentTrack.compressing}
                 />
               )}
-              {step === 2 && (
+              {phase === "edit" && currentTrack && editStep === 1 && (
                 <StepStems
-                  stems={stems}
+                  stems={currentTrack.stems}
                   stemsInputRef={stemsInputRef}
                   onUpload={handleStemsUpload}
                   onRemove={removeStem}
                 />
               )}
-              {step === 3 && (
+              {phase === "edit" && currentTrack && editStep === 2 && (
                 <StepSplits
-                  splits={splits}
+                  splits={currentTrack.splits}
                   totalSplit={totalSplit}
                   onAdd={addSplit}
                   onUpdate={updateSplit}
                   onRemove={removeSplit}
                 />
               )}
-              {step === 4 && (
+              {phase === "edit" && currentTrack && editStep === 3 && (
                 <StepReview
-                  title={title} artist={artist} bpm={bpm} trackKey={trackKey}
-                  genre={genre} mood={mood} language={language} notes={notes}
-                  audioFile={audioFile} stems={stems} splits={splits} totalSplit={totalSplit}
-                  details={details}
+                  title={currentTrack.title} artist={currentTrack.artist}
+                  bpm={currentTrack.bpm} trackKey={currentTrack.trackKey}
+                  genre={currentTrack.genre} mood={currentTrack.mood}
+                  language={currentTrack.language} notes={currentTrack.notes}
+                  audioFile={currentTrack.file} stems={currentTrack.stems}
+                  splits={currentTrack.splits} totalSplit={totalSplit}
+                  details={currentTrack.details}
+                  compressed={currentTrack.compressed}
                 />
               )}
             </motion.div>
@@ -418,28 +568,62 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-border flex items-center justify-between">
-          <button
-            onClick={() => step > 0 && setStep(step - 1)}
-            disabled={step === 0}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronLeft className="w-3.5 h-3.5" /> Back
-          </button>
-          {step < STEPS.length - 1 ? (
-            <button
-              onClick={() => canProceed() && setStep(step + 1)}
-              disabled={!canProceed()}
-              className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Next <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+          {phase === "upload" ? (
+            <>
+              <span className="text-2xs text-muted-foreground">
+                {queue.length} / {MAX_TRACKS} tracks
+              </span>
+              <button
+                onClick={startEditing}
+                disabled={queue.length === 0 || allProcessing}
+                className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {allProcessing ? (
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing…</>
+                ) : (
+                  <>Continue <ChevronRight className="w-3.5 h-3.5" /></>
+                )}
+              </button>
+            </>
           ) : (
-            <button
-              onClick={handleSave}
-              className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold"
-            >
-              <Check className="w-3.5 h-3.5" /> Save Track to Catalog
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  if (editStep > 0) setEditStep(editStep - 1);
+                  else if (currentIdx > 0) {
+                    setCurrentIdx(currentIdx - 1);
+                    setEditStep(EDIT_STEPS.length - 1);
+                  } else {
+                    setPhase("upload");
+                  }
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" /> Back
+              </button>
+              {editStep < EDIT_STEPS.length - 1 ? (
+                <button
+                  onClick={() => canProceedEdit() && setEditStep(editStep + 1)}
+                  disabled={!canProceedEdit()}
+                  className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <button
+                  onClick={saveCurrentTrack}
+                  className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  {currentIdx < queue.length - 1
+                    ? `Save & Next (${currentIdx + 2}/${queue.length})`
+                    : queue.length > 1
+                    ? "Save All to Catalog"
+                    : "Save Track to Catalog"
+                  }
+                </button>
+              )}
+            </>
           )}
         </div>
       </DialogContent>
@@ -447,7 +631,9 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   );
 }
 
-/* ─── Step Components ─── */
+/* ═════════════════════════════════════════════════════════════════════════════
+   Step Components
+   ═════════════════════════════════════════════════════════════════════════════ */
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return <label className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">{children}</label>;
@@ -478,6 +664,139 @@ function FieldSelect({ value, onChange, options, placeholder }: { value: string;
   );
 }
 
+/* ─── Bulk Upload Step ─── */
+
+function StepBulkUpload({
+  queue, isDragOver, fileInputRef,
+  onDragOver, onDragLeave, onDrop, onAddFiles, onRemove,
+}: {
+  queue: TrackEntry[];
+  isDragOver: boolean;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  onDragOver: (e: React.DragEvent) => void;
+  onDragLeave: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+  onAddFiles: (files: File[]) => void;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <div className="space-y-5">
+      <div>
+        <h3 className="text-sm font-semibold text-foreground mb-1">Upload Audio Files</h3>
+        <p className="text-2xs text-muted-foreground">
+          Drag & drop up to {MAX_TRACKS} tracks, or click to browse. Each track will be analyzed and compressed automatically.
+        </p>
+      </div>
+
+      {/* Drop zone */}
+      <div
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={`border-2 border-dashed rounded-xl p-10 flex flex-col items-center gap-3 cursor-pointer transition-all group ${
+          isDragOver
+            ? "border-brand-orange bg-brand-orange/5 scale-[1.02]"
+            : queue.length >= MAX_TRACKS
+            ? "border-border/50 opacity-50 cursor-not-allowed"
+            : "border-border hover:border-brand-orange/30"
+        }`}
+      >
+        <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-colors ${
+          isDragOver ? "bg-brand-orange/15" : "bg-secondary group-hover:bg-brand-orange/10"
+        }`}>
+          <Upload className={`w-6 h-6 transition-colors ${
+            isDragOver ? "text-brand-orange" : "text-muted-foreground group-hover:text-brand-orange"
+          }`} />
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-semibold text-foreground">
+            {isDragOver ? "Drop files here" : "Drag & drop audio files"}
+          </p>
+          <p className="text-2xs text-muted-foreground mt-1">
+            or click to browse · WAV, MP3, FLAC, AIFF · up to {MAX_TRACKS} tracks
+          </p>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="audio/*"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files?.length) {
+              onAddFiles(Array.from(e.target.files));
+            }
+            e.target.value = "";
+          }}
+        />
+      </div>
+
+      {/* Queue */}
+      {queue.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">
+              Upload Queue ({queue.length})
+            </p>
+            {queue.length >= MAX_TRACKS && (
+              <span className="text-2xs text-brand-orange font-semibold">Maximum reached</span>
+            )}
+          </div>
+          <div className="space-y-1 max-h-[280px] overflow-y-auto pr-1">
+            {queue.map((entry) => (
+              <div key={entry.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-secondary/50 border border-border group">
+                <div className="w-8 h-8 rounded-lg bg-brand-orange/10 flex items-center justify-center shrink-0">
+                  <FileAudio className="w-3.5 h-3.5 text-brand-orange" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-foreground truncate">{entry.fileName}</p>
+                  <div className="flex items-center gap-2 text-2xs text-muted-foreground">
+                    <span>{entry.fileSize}</span>
+                    {entry.analyzing && (
+                      <span className="flex items-center gap-1 text-brand-purple">
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" /> Analyzing…
+                      </span>
+                    )}
+                    {entry.compressing && !entry.analyzing && (
+                      <span className="flex items-center gap-1 text-brand-pink">
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" /> Compressing…
+                      </span>
+                    )}
+                    {entry.analysisResult && !entry.analyzing && (
+                      <span className="flex items-center gap-1 text-emerald-400">
+                        <Check className="w-2.5 h-2.5" /> {entry.analysisResult.bpm} BPM · {entry.analysisResult.key}
+                      </span>
+                    )}
+                    {entry.analysisError && (
+                      <span className="flex items-center gap-1 text-destructive">
+                        <AlertCircle className="w-2.5 h-2.5" /> Analysis failed
+                      </span>
+                    )}
+                    {entry.compressed && (
+                      <span className="text-muted-foreground/60">
+                        Preview: {formatFileSize(entry.compressed.sizeBytes)} ({entry.compressed.compressionRatio})
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onRemove(entry.id); }}
+                  className="p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Info Step ─── */
+
 const DETAIL_FIELDS = [
   { key: "producers", label: "Producer(s)" },
   { key: "songwriters", label: "Songwriter(s)" },
@@ -502,6 +821,7 @@ function StepInfo({
   trackKey, setTrackKey, genre, setGenre, mood, toggleMood,
   language, setLanguage, notes, setNotes,
   details, updateDetail, addDetailEntry, removeDetailEntry,
+  analysisResult, analyzing, compressed, compressing,
 }: {
   title: string; setTitle: (v: string) => void;
   artist: string; setArtist: (v: string) => void;
@@ -513,11 +833,59 @@ function StepInfo({
   notes: string; setNotes: (v: string) => void;
   details: Record<string, string[]>; updateDetail: (key: string, index: number, value: string) => void;
   addDetailEntry: (key: string) => void; removeDetailEntry: (key: string, index: number) => void;
+  analysisResult: AudioAnalysisResult | null;
+  analyzing: boolean;
+  compressed: CompressedAudio | null;
+  compressing: boolean;
 }) {
   const [showDetails, setShowDetails] = useState(false);
 
   return (
     <div className="space-y-4">
+      {/* Smart analysis banner */}
+      {(analyzing || analysisResult) && (
+        <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded-full bg-brand-purple/15 flex items-center justify-center">
+              {analyzing ? (
+                <div className="w-2.5 h-2.5 rounded-full border-2 border-brand-purple border-t-transparent animate-spin" />
+              ) : (
+                <Check className="w-3 h-3 text-brand-purple" />
+              )}
+            </div>
+            <span className="text-2xs font-semibold text-foreground">
+              {analyzing ? "Analyzing audio…" : "Smart Analysis Complete"}
+            </span>
+            {compressing && (
+              <span className="text-2xs text-brand-pink flex items-center gap-1 ml-auto">
+                <Loader2 className="w-2.5 h-2.5 animate-spin" /> Compressing…
+              </span>
+            )}
+            {compressed && !compressing && (
+              <span className="text-2xs text-muted-foreground ml-auto">
+                Preview: {formatFileSize(compressed.sizeBytes)} ({compressed.compressionRatio})
+              </span>
+            )}
+          </div>
+          {analysisResult && (
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg bg-secondary p-2 text-center">
+                <p className="text-2xs text-muted-foreground font-medium">BPM</p>
+                <p className="text-sm font-bold text-brand-orange">{analysisResult.bpm}</p>
+              </div>
+              <div className="rounded-lg bg-secondary p-2 text-center">
+                <p className="text-2xs text-muted-foreground font-medium">Key</p>
+                <p className="text-sm font-bold text-brand-pink">{analysisResult.key}</p>
+              </div>
+              <div className="rounded-lg bg-secondary p-2 text-center">
+                <p className="text-2xs text-muted-foreground font-medium">Duration</p>
+                <p className="text-sm font-bold text-brand-purple">{analysisResult.duration}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <FieldLabel>Track Title *</FieldLabel>
@@ -530,11 +898,11 @@ function StepInfo({
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="space-y-1.5">
-          <FieldLabel>BPM</FieldLabel>
+          <FieldLabel>BPM {analysisResult && <span className="text-brand-orange text-[9px] ml-1">AUTO</span>}</FieldLabel>
           <FieldInput value={bpm} onChange={setBpm} placeholder="120" type="number" />
         </div>
         <div className="space-y-1.5">
-          <FieldLabel>Key</FieldLabel>
+          <FieldLabel>Key {analysisResult && <span className="text-brand-orange text-[9px] ml-1">AUTO</span>}</FieldLabel>
           <FieldSelect value={trackKey} onChange={setTrackKey} options={KEYS} placeholder="Select key" />
         </div>
         <div className="space-y-1.5">
@@ -637,174 +1005,7 @@ function StepInfo({
   );
 }
 
-function StepAudio({
-  audioFile, audioUploading, audioProgress, audioPreviewUrl,
-  isPlayingPreview, togglePreview, audioRef, audioInputRef,
-  onUpload, onRemove, analyzing, analysisResult, analysisDuration,
-}: {
-  audioFile: File | null;
-  audioUploading: boolean;
-  audioProgress: number;
-  audioPreviewUrl: string | null;
-  isPlayingPreview: boolean;
-  togglePreview: () => void;
-  audioRef: React.RefObject<HTMLAudioElement>;
-  audioInputRef: React.RefObject<HTMLInputElement>;
-  onUpload: (file: File) => void;
-  onRemove: () => void;
-  analyzing: boolean;
-  analysisResult: AudioAnalysisResult | null;
-  analysisDuration: string;
-}) {
-  return (
-    <div className="space-y-5">
-      <div>
-        <h3 className="text-sm font-semibold text-foreground mb-1">Main Track File</h3>
-        <p className="text-2xs text-muted-foreground">Upload the master audio file (WAV, MP3, FLAC, AIFF)</p>
-      </div>
-
-      {!audioFile ? (
-        <div
-          onClick={() => audioInputRef.current?.click()}
-          className="border-2 border-dashed border-border hover:border-brand-orange/30 rounded-xl p-10 flex flex-col items-center gap-3 cursor-pointer transition-all group"
-        >
-          <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-brand-orange/10 transition-colors">
-            <Upload className="w-5 h-5 text-muted-foreground group-hover:text-brand-orange transition-colors" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-semibold text-foreground">Click to upload</p>
-            <p className="text-2xs text-muted-foreground mt-1">WAV, MP3, FLAC, or AIFF up to 100 MB</p>
-          </div>
-          <input
-            ref={audioInputRef}
-            type="file"
-            accept="audio/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onUpload(f);
-            }}
-          />
-        </div>
-      ) : (
-        <div className="rounded-xl bg-secondary/50 border border-border p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-brand-orange/10 flex items-center justify-center shrink-0">
-              <FileAudio className="w-4 h-4 text-brand-orange" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-foreground truncate">{audioFile.name}</p>
-              <p className="text-2xs text-muted-foreground">{formatFileSize(audioFile.size)}</p>
-            </div>
-            {!audioUploading && (
-              <button onClick={onRemove} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {audioUploading && (
-            <div className="space-y-1.5">
-              <Progress value={audioProgress} className="h-1.5 bg-secondary [&>div]:bg-gradient-to-r [&>div]:from-brand-orange [&>div]:to-brand-pink" />
-              <p className="text-2xs text-muted-foreground text-right">{Math.round(audioProgress)}%</p>
-            </div>
-          )}
-
-          {audioPreviewUrl && !audioUploading && (
-            <div className="flex items-center gap-3 pt-1">
-              <button
-                onClick={togglePreview}
-                className="w-8 h-8 rounded-full btn-brand shadow-none flex items-center justify-center shrink-0"
-              >
-                {isPlayingPreview ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
-              </button>
-              <div className="flex-1 h-8 rounded-lg bg-secondary flex items-center px-3">
-                <div className="flex items-center gap-[2px] h-4">
-                  {Array.from({ length: 32 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="w-[3px] rounded-full bg-brand-orange/40"
-                      style={{ height: `${Math.random() * 100}%`, minHeight: 3 }}
-                    />
-                  ))}
-                </div>
-              </div>
-              <audio ref={audioRef} src={audioPreviewUrl} />
-            </div>
-          )}
-
-          {!audioUploading && (
-            <div className="flex items-center gap-1.5 text-2xs text-emerald-400 font-semibold">
-              <Check className="w-3 h-3" /> Upload complete
-            </div>
-          )}
-
-          {/* Audio Analysis Results */}
-          {(analyzing || analysisResult) && (
-            <div className="mt-2 rounded-lg border border-border bg-card p-3 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-brand-purple/15 flex items-center justify-center">
-                  {analyzing ? (
-                    <div className="w-2.5 h-2.5 rounded-full border-2 border-brand-purple border-t-transparent animate-spin" />
-                  ) : (
-                    <Check className="w-3 h-3 text-brand-purple" />
-                  )}
-                </div>
-                <span className="text-2xs font-semibold text-foreground">
-                  {analyzing ? "Analyzing audio…" : `Smart Analysis Complete`}
-                </span>
-                {analysisDuration && !analyzing && (
-                  <span className="text-2xs text-muted-foreground ml-auto">{analysisDuration}</span>
-                )}
-              </div>
-
-              {analysisResult && (
-                <>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-lg bg-secondary p-2.5 text-center">
-                      <p className="text-2xs text-muted-foreground font-medium">BPM</p>
-                      <p className="text-sm font-bold text-brand-orange">{analysisResult.bpm}</p>
-                    </div>
-                    <div className="rounded-lg bg-secondary p-2.5 text-center">
-                      <p className="text-2xs text-muted-foreground font-medium">Key</p>
-                      <p className="text-sm font-bold text-brand-pink">{analysisResult.key}</p>
-                    </div>
-                    <div className="rounded-lg bg-secondary p-2.5 text-center">
-                      <p className="text-2xs text-muted-foreground font-medium">Duration</p>
-                      <p className="text-sm font-bold text-brand-purple">{analysisResult.duration}</p>
-                    </div>
-                  </div>
-
-                  {/* Chapters preview */}
-                  <div className="space-y-1.5">
-                    <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">Detected Chapters</p>
-                    <div className="flex rounded-md overflow-hidden h-5 border border-border/50">
-                      {analysisResult.chapters.map((ch) => (
-                        <div
-                          key={ch.id}
-                          className="flex items-center justify-center text-[8px] font-semibold uppercase tracking-wide border-r border-border/30 last:border-r-0"
-                          style={{
-                            width: `${ch.endPercent - ch.startPercent}%`,
-                            backgroundColor: `color-mix(in srgb, ${ch.color} 20%, transparent)`,
-                            color: ch.color,
-                          }}
-                          title={ch.label}
-                        >
-                          <span className="truncate px-0.5">{ch.endPercent - ch.startPercent > 6 ? ch.label : ""}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-2xs text-muted-foreground">{analysisResult.chapters.length} sections detected</p>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+/* ─── Stems Step ─── */
 
 function StepStems({
   stems, stemsInputRef, onUpload, onRemove,
@@ -820,7 +1021,6 @@ function StepStems({
         <h3 className="text-sm font-semibold text-foreground mb-1">Stem Files</h3>
         <p className="text-2xs text-muted-foreground">Upload individual stems (Kick, Snare, Bass, Guitar, Vocals, etc.)</p>
       </div>
-
       <div
         onClick={() => stemsInputRef.current?.click()}
         className="border-2 border-dashed border-border hover:border-brand-orange/30 rounded-xl p-6 flex flex-col items-center gap-2 cursor-pointer transition-all group"
@@ -840,7 +1040,6 @@ function StepStems({
           }}
         />
       </div>
-
       {stems.length > 0 && (
         <div className="space-y-1.5">
           {stems.map((stem) => (
@@ -859,6 +1058,8 @@ function StepStems({
     </div>
   );
 }
+
+/* ─── Splits Step ─── */
 
 function StepSplits({
   splits, totalSplit, onAdd, onUpdate, onRemove,
@@ -880,7 +1081,6 @@ function StepSplits({
           {totalSplit}%
         </div>
       </div>
-
       <div className="space-y-3">
         {splits.map((split, idx) => (
           <div key={split.id} className="rounded-xl bg-secondary/50 border border-border p-4 space-y-3">
@@ -926,7 +1126,6 @@ function StepSplits({
           </div>
         ))}
       </div>
-
       <button
         onClick={onAdd}
         className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-border hover:border-brand-orange/30 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-all w-full justify-center"
@@ -937,14 +1136,17 @@ function StepSplits({
   );
 }
 
+/* ─── Review Step ─── */
+
 function StepReview({
   title, artist, bpm, trackKey, genre, mood, language, notes,
-  audioFile, stems, splits, totalSplit, details,
+  audioFile, stems, splits, totalSplit, details, compressed,
 }: {
   title: string; artist: string; bpm: string; trackKey: string;
   genre: string; mood: string[]; language: string; notes: string;
   audioFile: File | null; stems: StemFile[]; splits: Split[]; totalSplit: number;
   details: Record<string, string[]>;
+  compressed: CompressedAudio | null;
 }) {
   const filledDetails = DETAIL_FIELDS.filter((f) => details[f.key]?.some((v) => v.trim()));
 
@@ -977,7 +1179,7 @@ function StepReview({
         {notes && <p className="text-2xs text-muted-foreground pt-1 italic">"{notes}"</p>}
       </div>
 
-      {/* More Details */}
+      {/* Credits */}
       {filledDetails.length > 0 && (
         <div className="rounded-xl bg-secondary/50 border border-border p-4 space-y-2">
           <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Credits & Details</p>
@@ -1000,6 +1202,12 @@ function StepReview({
           </div>
         ) : (
           <p className="text-2xs text-muted-foreground italic">No audio file uploaded</p>
+        )}
+        {compressed && (
+          <div className="flex items-center gap-2 mt-1.5 text-2xs text-muted-foreground">
+            <Check className="w-3 h-3 text-emerald-400" />
+            <span>Compressed preview: {formatFileSize(compressed.sizeBytes)} ({compressed.compressionRatio} ratio)</span>
+          </div>
         )}
       </div>
 
@@ -1047,6 +1255,8 @@ function StepReview({
     </div>
   );
 }
+
+/* ─── Helpers ─── */
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
