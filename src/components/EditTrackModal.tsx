@@ -254,7 +254,34 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 </div>
                 <div className="space-y-1.5">
                   <FieldLabel>Genre</FieldLabel>
-                  <FieldSelect value={genre} onChange={setGenre} options={GENRES} placeholder="Select genre" />
+                  {genre === "__other__" || (!GENRES.includes(genre) && genre !== "") ? (
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        value={genre === "__other__" ? "" : genre}
+                        onChange={(e) => setGenre(e.target.value)}
+                        placeholder="Enter custom genre"
+                        autoFocus
+                        className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
+                      />
+                      <button
+                        onClick={() => setGenre("")}
+                        className="shrink-0 h-9 px-2 rounded-lg bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <select
+                      value={genre}
+                      onChange={(e) => setGenre(e.target.value)}
+                      className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none font-medium"
+                    >
+                      <option value="">Select genre</option>
+                      {GENRES.map((o) => <option key={o} value={o}>{o}</option>)}
+                      <option value="__other__">Other…</option>
+                    </select>
+                  )}
                 </div>
               </div>
 

@@ -79,6 +79,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
   const [trackSearch, setTrackSearch] = useState("");
   const [genre, setGenre] = useState("");
   const [genreOpen, setGenreOpen] = useState(false);
+  const [customGenreMode, setCustomGenreMode] = useState(false);
   const [moodInput, setMoodInput] = useState("");
   const [moods, setMoods] = useState<string[]>([]);
   const [coverImage, setCoverImage] = useState<string | null>(null);
@@ -292,46 +293,78 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
                     Genre
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setGenreOpen((v) => !v)}
-                    className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none hover:border-primary/40 transition-colors font-medium flex items-center justify-between"
-                  >
-                    <span className={genre ? "text-foreground" : "text-muted-foreground/40"}>
-                      {genre || "Select a genre…"}
-                    </span>
-                    <ChevronDown className={`w-4 h-4 text-muted-foreground/50 transition-transform ${genreOpen ? "rotate-180" : ""}`} />
-                  </button>
-                  <AnimatePresence>
-                    {genreOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute z-50 left-0 right-0 top-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto"
+                  {customGenreMode || (!GENRES.includes(genre) && genre !== "") ? (
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        value={genre}
+                        onChange={(e) => setGenre(e.target.value)}
+                        placeholder="Enter custom genre"
+                        autoFocus
+                        className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none hover:border-primary/40 focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+                      />
+                      <button
+                        onClick={() => { setGenre(""); setCustomGenreMode(false); }}
+                        className="shrink-0 h-11 px-3 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors"
                       >
-                        {GENRES.map((g) => (
-                          <button
-                            key={g}
-                            type="button"
-                            onClick={() => {
-                              setGenre(g);
-                              setGenreOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-2.5 text-[13px] font-medium transition-colors flex items-center justify-between ${
-                              genre === g
-                                ? "bg-primary/10 text-primary"
-                                : "text-foreground hover:bg-secondary"
-                            }`}
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setGenreOpen((v) => !v)}
+                        className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none hover:border-primary/40 transition-colors font-medium flex items-center justify-between"
+                      >
+                        <span className={genre ? "text-foreground" : "text-muted-foreground/40"}>
+                          {genre || "Select a genre…"}
+                        </span>
+                        <ChevronDown className={`w-4 h-4 text-muted-foreground/50 transition-transform ${genreOpen ? "rotate-180" : ""}`} />
+                      </button>
+                      <AnimatePresence>
+                        {genreOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -4 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute z-50 left-0 right-0 top-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto"
                           >
-                            {g}
-                            {genre === g && <Check className="w-3.5 h-3.5 text-primary" />}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                            {GENRES.map((g) => (
+                              <button
+                                key={g}
+                                type="button"
+                                onClick={() => {
+                                  setGenre(g);
+                                  setGenreOpen(false);
+                                }}
+                                className={`w-full text-left px-4 py-2.5 text-[13px] font-medium transition-colors flex items-center justify-between ${
+                                  genre === g
+                                    ? "bg-primary/10 text-primary"
+                                    : "text-foreground hover:bg-secondary"
+                                }`}
+                              >
+                                {g}
+                                {genre === g && <Check className="w-3.5 h-3.5 text-primary" />}
+                              </button>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setGenre("");
+                                setCustomGenreMode(true);
+                                setGenreOpen(false);
+                              }}
+                              className="w-full text-left px-4 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-secondary transition-colors border-t border-border"
+                            >
+                              Other…
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </>
+                  )}
                 </div>
 
                 {/* Mood hashtags */}
