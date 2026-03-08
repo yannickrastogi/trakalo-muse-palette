@@ -283,7 +283,16 @@ export default function TrackDetail() {
               {activeTab === "status" && <StatusTab trackId={Number(id)} />}
             </motion.div>
           </motion.div>
-      <ShareStemsModal open={shareModalOpen} onClose={() => setShareModalOpen(false)} trackId={Number(id)} />
+      <ShareModal
+        open={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        shareType="stems"
+        trackId={Number(id)}
+        trackTitle={trackData?.title}
+        trackArtist={trackData?.artist}
+        trackCover={trackData?.coverImage}
+        stems={(trackData?.stems || []).map((s) => ({ id: s.id, fileName: s.fileName, type: s.type, fileSize: s.fileSize }))}
+      />
     </PageShell>
   );
 }
