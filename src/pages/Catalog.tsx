@@ -301,7 +301,7 @@ export default function Catalog() {
                           </td>
                           <td className="px-2 py-3">
                             <div className="flex items-center gap-3">
-                              <img src={covers[track.coverIdx]} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                              <img src={track.coverImage || covers[track.coverIdx % covers.length]} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                               <div className="min-w-0 flex-1">
                                 <p className="font-semibold text-foreground truncate text-[13px] tracking-tight leading-tight">{track.title}</p>
                                 <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>
@@ -312,22 +312,30 @@ export default function Catalog() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-xs">{track.type}</td>
-                          <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.genre}</span></td>
-                          <td className="px-4 py-3 hidden lg:table-cell"><span className="font-mono text-2xs text-foreground/60 tabular-nums">{track.bpm}</span></td>
+                          <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-xs">{track.type || "—"}</td>
+                          <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.genre || "—"}</span></td>
+                          <td className="px-4 py-3 hidden lg:table-cell"><span className="font-mono text-2xs text-foreground/60 tabular-nums">{track.bpm || "—"}</span></td>
                           <td className="px-4 py-3 hidden lg:table-cell">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary text-2xs font-semibold text-foreground/70">
-                              <Music className="w-2.5 h-2.5 text-brand-orange/50" />{track.key}
-                            </span>
+                            {track.key ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary text-2xs font-semibold text-foreground/70">
+                                <Music className="w-2.5 h-2.5 text-brand-orange/50" />{track.key}
+                              </span>
+                            ) : (
+                              <span className="text-2xs text-muted-foreground">—</span>
+                            )}
                           </td>
                           <td className="px-4 py-3 hidden md:table-cell">
-                            <div className="flex flex-wrap gap-1 max-w-[140px]">
-                              {track.mood.map((tag) => (
-                                <span key={tag} className="inline-flex px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70">#{tag}</span>
-                              ))}
-                            </div>
+                            {track.mood.length > 0 ? (
+                              <div className="flex flex-wrap gap-1 max-w-[140px]">
+                                {track.mood.map((tag) => (
+                                  <span key={tag} className="inline-flex px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70">#{tag}</span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-2xs text-muted-foreground">—</span>
+                            )}
                           </td>
-                          <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.language}</span></td>
+                          <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.language || "—"}</span></td>
                           <td className="px-4 py-3">
                             <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
                           </td>
@@ -375,7 +383,7 @@ export default function Catalog() {
                       {/* Cover art */}
                       <div className="relative aspect-square overflow-hidden">
                         <img
-                          src={covers[track.coverIdx]}
+                          src={track.coverImage || covers[track.coverIdx % covers.length]}
                           alt={track.title}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
                         />
@@ -409,11 +417,11 @@ export default function Catalog() {
                         <p className="font-semibold text-foreground text-[13px] tracking-tight truncate leading-tight">{track.title}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
                         <div className="flex items-center gap-2 pt-1 flex-wrap">
-                          <span className="text-2xs text-muted-foreground shrink-0">{track.genre}</span>
+                          <span className="text-2xs text-muted-foreground shrink-0">{track.genre || "—"}</span>
                           <span className="w-px h-3 bg-border shrink-0" />
-                          <span className="text-2xs font-mono text-foreground/50 tabular-nums shrink-0">{track.bpm} BPM</span>
+                          <span className="text-2xs font-mono text-foreground/50 tabular-nums shrink-0">{track.bpm ? `${track.bpm} BPM` : "—"}</span>
                           <span className="w-px h-3 bg-border shrink-0" />
-                          <span className="text-2xs font-semibold text-foreground/50 shrink-0">{track.key}</span>
+                          <span className="text-2xs font-semibold text-foreground/50 shrink-0">{track.key || "—"}</span>
                         </div>
                       </div>
                     </motion.div>

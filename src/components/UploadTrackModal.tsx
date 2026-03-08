@@ -404,8 +404,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   };
 
   const canProceedEdit = () => {
-    if (editStep === 0) return currentTrack?.title.trim() && currentTrack?.artist.trim();
-    return true;
+    return true; // All steps are optional — users can skip
   };
 
   const startEditing = () => {
@@ -602,13 +601,20 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                 <ChevronLeft className="w-3.5 h-3.5" /> Back
               </button>
               {editStep < EDIT_STEPS.length - 1 ? (
-                <button
-                  onClick={() => canProceedEdit() && setEditStep(editStep + 1)}
-                  disabled={!canProceedEdit()}
-                  className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Next <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setEditStep(editStep + 1)}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors border border-border hover:border-border/80"
+                  >
+                    Skip
+                  </button>
+                  <button
+                    onClick={() => setEditStep(editStep + 1)}
+                    className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold"
+                  >
+                    Next <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               ) : (
                 <button
                   onClick={saveCurrentTrack}
