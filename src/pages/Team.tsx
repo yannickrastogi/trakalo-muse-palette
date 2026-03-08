@@ -1,18 +1,20 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal, Calendar, PenTool, BookOpen, Briefcase, UserCheck } from "lucide-react";
+import { Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal, Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
-const ROLES = ["Admin", "Producer", "Songwriter", "Manager", "Publisher", "A&R", "Assistant", "Viewer"] as const;
+const ROLES = ["Admin", "Producer", "Songwriter", "Mix Engineer", "Mastering Engineer", "Manager", "Publisher", "A&R", "Assistant", "Viewer"] as const;
 
 const roleIcons: Record<string, React.ElementType> = {
   Admin: Shield,
   Producer: Headphones,
   Songwriter: PenTool,
+  "Mix Engineer": Sliders,
+  "Mastering Engineer": Disc3,
   Manager: UserCog,
   Publisher: BookOpen,
   "A&R": Briefcase,
@@ -24,6 +26,8 @@ const roleColors: Record<string, string> = {
   Admin: "from-brand-orange to-brand-pink",
   Producer: "from-brand-purple to-[hsl(200,70%,50%)]",
   Songwriter: "from-brand-pink to-brand-orange",
+  "Mix Engineer": "from-[hsl(180,60%,45%)] to-brand-purple",
+  "Mastering Engineer": "from-brand-orange to-[hsl(180,60%,45%)]",
   Manager: "from-brand-pink to-brand-purple",
   Publisher: "from-[hsl(200,70%,50%)] to-brand-purple",
   "A&R": "from-brand-orange to-brand-purple",
@@ -34,8 +38,10 @@ const roleColors: Record<string, string> = {
 const members = [
   { name: "Kira Nomura", email: "kira@nightfallrecords.com", role: "Admin", joined: "2024-09-12", status: "active" },
   { name: "Dex Moraes", email: "dex@dexmoraes.com", role: "Producer", joined: "2024-11-03", status: "active" },
-  { name: "Alina Voss", email: "alina@alinav.co", role: "Manager", joined: "2025-01-18", status: "active" },
   { name: "Marco Silva", email: "marco@studiosilva.io", role: "Songwriter", joined: "2025-02-22", status: "active" },
+  { name: "Tony Maserati", email: "tony@maseratimix.com", role: "Mix Engineer", joined: "2025-03-15", status: "active" },
+  { name: "Emily Lazar", email: "emily@thelodge.nyc", role: "Mastering Engineer", joined: "2025-04-02", status: "active" },
+  { name: "Alina Voss", email: "alina@alinav.co", role: "Manager", joined: "2025-01-18", status: "active" },
   { name: "JVNE", email: "mgmt@jvne.music", role: "Producer", joined: "2025-04-10", status: "active" },
   { name: "AYA", email: "aya@songbird.pub", role: "Publisher", joined: "2025-08-05", status: "invited" },
   { name: "Jun Tanaka", email: "jun@tanaka.jp", role: "A&R", joined: "2025-09-14", status: "active" },
