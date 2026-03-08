@@ -1268,6 +1268,7 @@ function StepReview({
           <ReviewRow label="BPM" value={bpm || "—"} />
           <ReviewRow label="Key" value={trackKey || "—"} />
           <ReviewRow label="Genre" value={genre || "—"} />
+          <ReviewRow label="Voice" value={voice || "—"} />
           <ReviewRow label="Language" value={language || "—"} />
         </div>
         {mood.length > 0 && (
