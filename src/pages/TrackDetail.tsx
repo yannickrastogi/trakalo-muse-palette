@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback /* refresh */ } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
+import { Textarea } from "@/components/ui/textarea";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { ShareModal } from "@/components/ShareModal";
 import { usePitches } from "@/contexts/PitchContext";
@@ -113,6 +114,7 @@ export default function TrackDetail() {
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "stems", label: "Stems" },
+    { id: "lyrics", label: "Lyrics" },
     { id: "splits", label: "Splits" },
     { id: "paperwork", label: "Paperwork" },
     { id: "pitches", label: "Pitch History" },
@@ -284,6 +286,7 @@ export default function TrackDetail() {
             <motion.div variants={item}>
               {activeTab === "overview" && <OverviewTab trackId={Number(id)} />}
               {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
+              {activeTab === "lyrics" && <LyricsTab trackId={Number(id)} />}
               {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
               {activeTab === "paperwork" && <PaperworkTab />}
               {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
@@ -389,6 +392,254 @@ function OverviewTab({ trackId }: { trackId: number }) {
       </div>
     </SectionCard>
   );
+}
+
+function LyricsTab({ trackId }: { trackId: number }) {
+  const { getTrack, updateTrackLyrics } = useTrack();
+  const trackData = getTrack(trackId);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(trackData?.lyrics || "");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  if (!trackData) return null;
+
+  const hasLyrics = !!trackData.lyrics?.trim();
+
+  const handleSave = () => {
+    updateTrackLyrics(trackId, editValue);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditValue(trackData.lyrics || "");
+    setIsEditing(false);
+  };
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.name.toLowerCase().endsWith(".pdf")) return;
+    // Read PDF as text — since we can't parse real PDFs in browser without a lib,
+    // we simulate by reading as text. For real PDFs, a backend service would be needed.
+    try {
+      const text = await file.text();
+      // Try to extract readable text from PDF content
+      const cleaned = text
+        .replace(/[^\x20-\x7E\n\r]/g, " ")
+        .replace(/\s{3,}/g, "\n")
+        .trim();
+      const extracted = cleaned.length > 20 ? cleaned : `[Lyrics imported from ${file.name}]\n\nPaste your lyrics here to replace this placeholder.`;
+      setEditValue(extracted);
+      setIsEditing(true);
+    } catch {
+      setEditValue(`[Lyrics imported from ${file.name}]\n\nPaste your lyrics here.`);
+      setIsEditing(true);
+    }
+    e.target.value = "";
+  };
+
+  const handleDownloadPdf = () => {
+    if (!trackData.lyrics) return;
+    // Generate a simple PDF using a text-based approach
+    const title = trackData.title;
+    const artist = trackData.artist;
+    const lyrics = trackData.lyrics;
+
+    // Build a minimal PDF manually
+    const pdfContent = buildSimplePdf(title, artist, lyrics);
+    const blob = new Blob([pdfContent.buffer as ArrayBuffer], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${title} - Lyrics.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <SectionCard
+      title="Lyrics"
+      icon={FileText}
+      action={
+        <div className="flex items-center gap-2">
+          {hasLyrics && !isEditing && (
+            <>
+              <button
+                onClick={handleDownloadPdf}
+                className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+              >
+                <Download className="w-3.5 h-3.5" /> Download PDF
+              </button>
+              <button
+                onClick={() => { setEditValue(trackData.lyrics || ""); setIsEditing(true); }}
+                className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+              >
+                <Edit3 className="w-3.5 h-3.5" /> Edit
+              </button>
+            </>
+          )}
+          {!isEditing && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.txt"
+                className="hidden"
+                onChange={handlePdfUpload}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+              >
+                <Upload className="w-3.5 h-3.5" /> Import File
+              </button>
+            </>
+          )}
+        </div>
+      }
+    >
+      <div className="p-5">
+        {isEditing ? (
+          <div className="space-y-4">
+            <Textarea
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              placeholder="Type or paste your lyrics here…\n\n[Verse 1]\nYour lyrics...\n\n[Chorus]\n..."
+              className="min-h-[400px] bg-secondary border-border font-mono text-sm leading-relaxed resize-y"
+            />
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={handleCancel}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border border-border"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                Save Lyrics
+              </button>
+            </div>
+          </div>
+        ) : hasLyrics ? (
+          <pre className="whitespace-pre-wrap font-mono text-sm text-foreground/90 leading-relaxed">
+            {trackData.lyrics}
+          </pre>
+        ) : (
+          <div className="text-center py-12 space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center mx-auto">
+              <FileText className="w-7 h-7 text-muted-foreground/50" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">No lyrics yet</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Write lyrics or import from a file</p>
+            </div>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <Edit3 className="w-3.5 h-3.5" /> Write Lyrics
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-secondary transition-colors"
+              >
+                <Upload className="w-3.5 h-3.5" /> Import File
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.txt"
+                className="hidden"
+                onChange={handlePdfUpload}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </SectionCard>
+  );
+}
+
+/** Build a minimal valid PDF from text content */
+function buildSimplePdf(title: string, artist: string, lyrics: string): Uint8Array {
+  const lines = lyrics.split("\n");
+  const enc = new TextEncoder();
+
+  // PDF structure
+  let pdf = "%PDF-1.4\n";
+  const offsets: number[] = [];
+
+  // Object 1: Catalog
+  offsets.push(pdf.length);
+  pdf += "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
+
+  // Object 2: Pages
+  offsets.push(pdf.length);
+  pdf += "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
+
+  // Build content stream
+  let content = "BT\n/F1 16 Tf\n50 780 Td\n";
+  content += `(${pdfEscape(title)}) Tj\n`;
+  content += "0 -20 Td\n/F1 12 Tf\n";
+  content += `(${pdfEscape(artist)}) Tj\n`;
+  content += "0 -30 Td\n/F1 10 Tf\n";
+
+  for (const line of lines) {
+    content += `0 -14 Td\n(${pdfEscape(line)}) Tj\n`;
+  }
+  content += "ET\n";
+
+  // Object 4: Content stream
+  offsets.push(-1); // placeholder for obj 3 (page)
+
+  const streamBytes = enc.encode(content);
+
+  // Object 4: Stream
+  const obj4Offset = pdf.length; // we'll set obj3 after
+  offsets.push(obj4Offset);
+  pdf += `4 0 obj\n<< /Length ${streamBytes.length} >>\nstream\n`;
+  const beforeStream = enc.encode(pdf);
+
+  const afterStream = enc.encode(`\nendstream\nendobj\n`);
+
+  // Object 5: Font
+  const obj5Start = beforeStream.length + streamBytes.length + afterStream.length;
+
+  let rest = "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
+
+  // Object 3: Page
+  const obj3Start = obj5Start + rest.length;
+  rest += "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n";
+
+  // Cross-reference table
+  const xrefStart = obj3Start + rest.length - obj5Start + obj5Start;
+
+  rest += `xref\n0 6\n0000000000 65535 f \n`;
+  rest += `${String(offsets[0]).padStart(10, "0")} 00000 n \n`;
+  rest += `${String(offsets[1]).padStart(10, "0")} 00000 n \n`;
+  rest += `${String(obj3Start).padStart(10, "0")} 00000 n \n`;
+  rest += `${String(obj4Offset).padStart(10, "0")} 00000 n \n`;
+  rest += `${String(obj5Start).padStart(10, "0")} 00000 n \n`;
+  rest += `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
+
+  const restBytes = enc.encode(rest);
+
+  // Combine all parts
+  const result = new Uint8Array(beforeStream.length + streamBytes.length + afterStream.length + restBytes.length);
+  result.set(beforeStream, 0);
+  result.set(streamBytes, beforeStream.length);
+  result.set(afterStream, beforeStream.length + streamBytes.length);
+  result.set(restBytes, beforeStream.length + streamBytes.length + afterStream.length);
+
+  return result;
+}
+
+function pdfEscape(str: string): string {
+  return str.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 }
 
 function StemsTab({ trackId }: { trackId: number }) {
