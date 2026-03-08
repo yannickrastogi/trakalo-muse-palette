@@ -424,7 +424,7 @@ export function addWatermark(doc: jsPDF) {
     // Draw multiple diagonal watermark lines
     const text = "TRAKALOG";
     const angle = -35;
-    const radians = (angle * Math.PI) / 180;
+    // angle in degrees for text rotation
 
     // Multiple positions to cover the page
     const positions = [
