@@ -16,24 +16,30 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
+import { useRole } from "@/contexts/RoleContext";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 const navItems = [
-  { titleKey: "nav.dashboard", icon: LayoutDashboard, url: "/" },
-  { titleKey: "nav.tracks", icon: Music, url: "/tracks" },
-  { titleKey: "nav.stems", icon: Layers, url: "/stems" },
-  { titleKey: "nav.playlists", icon: ListMusic, url: "/playlists" },
-  { titleKey: "nav.pitch", icon: Send, url: "/pitch" },
-  { titleKey: "nav.team", icon: Users, url: "/team" },
-  { titleKey: "nav.settings", icon: Settings, url: "/settings" },
+  { titleKey: "nav.dashboard", icon: LayoutDashboard, url: "/", permKey: null },
+  { titleKey: "nav.tracks", icon: Music, url: "/tracks", permKey: null },
+  { titleKey: "nav.stems", icon: Layers, url: "/stems", permKey: null },
+  { titleKey: "nav.playlists", icon: ListMusic, url: "/playlists", permKey: null },
+  { titleKey: "nav.pitch", icon: Send, url: "/pitch", permKey: "canSendPitches" as const },
+  { titleKey: "nav.team", icon: Users, url: "/team", permKey: null },
+  { titleKey: "nav.settings", icon: Settings, url: "/settings", permKey: "canAccessSettings" as const },
 ];
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation();
+  const { permissions } = useRole();
+  const visibleItems = navItems.filter((item) => {
+    if (!item.permKey) return true;
+    return permissions[item.permKey];
+  });
   return (
     <nav className="flex-1 py-5 px-3 space-y-1">
-      {navItems.map((item) => (
+      {visibleItems.map((item) => (
         <NavLink
           key={item.titleKey}
           to={item.url}
@@ -99,7 +105,12 @@ export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const isMobile = useIsMobile();
   const { t } = useTranslation();
+  const { permissions } = useRole();
 
+  const visibleItems = navItems.filter((item) => {
+    if (!item.permKey) return true;
+    return permissions[item.permKey];
+  });
   if (isMobile) return null;
 
   return (
@@ -134,7 +145,7 @@ export function AppSidebar() {
       <div className="mx-5 h-px" style={{ background: "var(--gradient-brand-horizontal)", opacity: 0.15 }} />
 
       <nav className="flex-1 py-5 px-3 space-y-1">
-        {navItems.map((item) => (
+        {visibleItems.map((item) => (
           <NavLink
             key={item.titleKey}
             to={item.url}
