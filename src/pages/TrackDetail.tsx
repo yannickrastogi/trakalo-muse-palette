@@ -231,11 +231,11 @@ export default function TrackDetail() {
 
                 {/* Quick metadata chips */}
                 <div className="flex flex-wrap gap-2">
-                  {trackData.type && <MetaChip icon={Layers} label={trackData.type} />}
+                  {trackData.type && <MetaChip icon={Music} label={trackData.type} />}
                   {trackData.genre && <MetaChip icon={Disc3} label={trackData.genre} />}
-                  {trackData.bpm > 0 && <MetaChip icon={Clock} label={`${trackData.bpm} BPM`} />}
-                  {trackData.key && <MetaChip icon={Music} label={trackData.key} />}
-                  {trackData.language && <MetaChip icon={Activity} label={trackData.language} />}
+                  {trackData.bpm > 0 && <MetaChip icon={Activity} label={`${trackData.bpm} BPM`} />}
+                  {trackData.key && <MetaChip icon={({ className }: { className?: string }) => <span className={className}>#</span>} label={trackData.key} />}
+                  {trackData.language && <MetaChip icon={Mic} label={trackData.language} />}
                   {trackData.duration && <MetaChip icon={Clock} label={trackData.duration} />}
                   {trackData.mood.map((m) => (
                     <span key={m} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-accent/15 text-accent">
