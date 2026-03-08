@@ -233,7 +233,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       genre: genre || "",
       bpm: parseInt(bpm) || 0,
       key: trackKey || "",
-      duration: "0:00",
+      duration: analysisResult?.duration || "0:00",
       mood,
       status: "Available",
       isrc: "",
