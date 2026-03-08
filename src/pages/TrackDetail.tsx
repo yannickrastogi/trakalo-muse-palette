@@ -346,6 +346,7 @@ function StemsTab() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<{ file: File; type: StemType }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = (id: string) => {
@@ -367,26 +368,39 @@ function StemsTab() {
     const files = Array.from(e.dataTransfer.files).filter((f) =>
       f.name.match(/\.(wav|mp3|aiff|flac|ogg|m4a)$/i)
     );
-    addFiles(files);
+    if (files.length) stageFiles(files);
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      addFiles(Array.from(e.target.files));
+      stageFiles(Array.from(e.target.files));
       e.target.value = "";
     }
   };
 
-  const addFiles = (files: File[]) => {
-    const newStems: StemFile[] = files.map((f, i) => ({
+  const stageFiles = (files: File[]) => {
+    setPendingFiles(files.map((f) => ({ file: f, type: guessType(f.name) })));
+  };
+
+  const updatePendingType = (index: number, type: StemType) => {
+    setPendingFiles((prev) => prev.map((p, i) => i === index ? { ...p, type } : p));
+  };
+
+  const removePending = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const confirmUpload = () => {
+    const newStems: StemFile[] = pendingFiles.map((p, i) => ({
       id: `new-${Date.now()}-${i}`,
-      fileName: f.name,
-      type: guessType(f.name),
-      fileSize: formatFileSize(f.size),
+      fileName: p.file.name,
+      type: p.type,
+      fileSize: formatFileSize(p.file.size),
       uploadDate: "Just now",
       color: "text-muted-foreground",
     }));
     setStems((prev) => [...prev, ...newStems]);
+    setPendingFiles([]);
   };
 
   const guessType = (name: string): StemType => {
