@@ -96,6 +96,7 @@ export default function TrackDetail() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTrackModalOpen, setShareTrackModalOpen] = useState(false);
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
 
   const trackData = getTrack(Number(id));
 
