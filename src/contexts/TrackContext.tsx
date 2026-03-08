@@ -65,7 +65,7 @@ export interface TrackData {
   details: Record<string, string[]>;
   stems: TrackStem[];
   splits: TrackSplit[];
-  chapters: TrackChapter[];
+  chapters?: TrackChapter[];
   statusHistory: TrackStatusEntry[];
 }
 
