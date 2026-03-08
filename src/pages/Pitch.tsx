@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -165,6 +166,7 @@ const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } 
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
 
 export default function Pitch() {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [pitches, setPitches] = useState<PitchEntry[]>(demoPitches);
   const [search, setSearch] = useState("");
@@ -179,10 +181,10 @@ export default function Pitch() {
     const opened = pitches.filter((p) => p.status === "Opened").length;
     const responded = pitches.filter((p) => p.status === "Responded").length;
     const statCards: { label: string; value: number; sub: string; accent: boolean; filterKey: PitchStatus | "active" | null }[] = [
-      { label: "Total Pitches", value: total, sub: `${sent + opened} active`, accent: false, filterKey: null },
-      { label: "Drafts", value: draft, sub: "Ready to send", accent: false, filterKey: "Draft" },
-      { label: "Sent & Opened", value: sent + opened, sub: "Awaiting response", accent: true, filterKey: "active" },
-      { label: "Responded", value: responded, sub: `${Math.round((responded / Math.max(total, 1)) * 100)}% response rate`, accent: true, filterKey: "Responded" },
+      { label: t("pitch.totalPitches"), value: total, sub: t("pitch.active", { count: sent + opened }), accent: false, filterKey: null },
+      { label: t("pitch.drafts"), value: draft, sub: t("pitch.readyToSend"), accent: false, filterKey: "Draft" },
+      { label: t("pitch.sentOpened"), value: sent + opened, sub: t("pitch.awaitingResponse"), accent: true, filterKey: "active" },
+      { label: t("pitch.responded"), value: responded, sub: t("pitch.responseRate", { rate: Math.round((responded / Math.max(total, 1)) * 100) }), accent: true, filterKey: "Responded" },
     ];
     return { statCards, counts: { total, draft, sent, opened, responded } };
   }, [pitches]);
@@ -226,17 +228,17 @@ export default function Pitch() {
         >
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
-              Pitch
+              {t("pitch.title")}
             </h1>
             <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-              Manage submissions to labels, artists & industry contacts
+              {t("pitch.subtitle")}
             </p>
           </div>
           <button
             onClick={() => setCreateOpen(true)}
             className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]"
           >
-            <Plus className="w-4 h-4" /> Create Pitch
+            <Plus className="w-4 h-4" /> {t("pitch.createPitch")}
           </button>
         </motion.div>
 
@@ -282,7 +284,7 @@ export default function Pitch() {
             <Search className="w-4 h-4 text-muted-foreground shrink-0" />
             <input
               type="text"
-              placeholder="Search pitches…"
+              placeholder={t("pitch.searchPitches")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
@@ -302,7 +304,7 @@ export default function Pitch() {
                 !statusFilter ? "bg-primary/12 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               }`}
             >
-              All
+              {t("pitch.all")}
             </button>
             {allStatuses.map((s) => {
               const cfg = statusConfig[s];
@@ -328,9 +330,9 @@ export default function Pitch() {
           {filtered.length === 0 ? (
             <div className="card-premium py-20 text-center">
               <Send className="w-10 h-10 mx-auto mb-4 text-muted-foreground/15" />
-              <p className="text-sm font-semibold text-foreground">No pitches found</p>
+              <p className="text-sm font-semibold text-foreground">{t("pitch.noPitches")}</p>
               <p className="text-xs mt-1.5 text-muted-foreground/70">
-                {search || statusFilter ? "Try adjusting your filters" : "Create your first pitch to get started"}
+                {search || statusFilter ? t("pitch.adjustFilters") : t("pitch.createFirst")}
               </p>
             </div>
           ) : isMobile ? (
