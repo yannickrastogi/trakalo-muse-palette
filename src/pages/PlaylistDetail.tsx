@@ -61,11 +61,16 @@ export default function PlaylistDetail() {
   const isMobile = useIsMobile();
   const { getPlaylist, updatePlaylist } = usePlaylists();
   const { permissions } = useRole();
+  const { tracks: allTracks } = useTrack();
   const playlist = getPlaylist(id || "");
 
-  const [tracks, setTracks] = useState<Track[]>(() =>
-    playlist ? getInitialTracks(playlist) : []
-  );
+  const [tracks, setTracks] = useState<Track[]>(() => {
+    if (!playlist) return [];
+    if (playlist.trackIds && playlist.trackIds.length > 0) {
+      return allTracks.filter((t) => playlist.trackIds!.includes(t.id));
+    }
+    return allTracks.slice(0, Math.min(playlist.tracks, allTracks.length));
+  });
   const [playingTrackId, setPlayingTrackId] = useState<number | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState(playlist?.name || "");
