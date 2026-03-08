@@ -346,7 +346,7 @@ function StemsTab() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
-  const [pendingFiles, setPendingFiles] = useState<{ file: File; type: StemType }[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<{ file: File; type: StemType; customName: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = (id: string) => {
@@ -379,11 +379,18 @@ function StemsTab() {
   };
 
   const stageFiles = (files: File[]) => {
-    setPendingFiles(files.map((f) => ({ file: f, type: guessType(f.name) })));
+    setPendingFiles((prev) => [
+      ...prev,
+      ...files.map((f) => ({ file: f, type: guessType(f.name), customName: f.name.replace(/\.[^.]+$/, "") })),
+    ]);
   };
 
   const updatePendingType = (index: number, type: StemType) => {
     setPendingFiles((prev) => prev.map((p, i) => i === index ? { ...p, type } : p));
+  };
+
+  const updatePendingName = (index: number, customName: string) => {
+    setPendingFiles((prev) => prev.map((p, i) => i === index ? { ...p, customName } : p));
   };
 
   const removePending = (index: number) => {
@@ -391,9 +398,10 @@ function StemsTab() {
   };
 
   const confirmUpload = () => {
+    const ext = (name: string) => { const m = name.match(/\.[^.]+$/); return m ? m[0] : ""; };
     const newStems: StemFile[] = pendingFiles.map((p, i) => ({
       id: `new-${Date.now()}-${i}`,
-      fileName: p.file.name,
+      fileName: p.customName.trim() ? p.customName.trim() + ext(p.file.name) : p.file.name,
       type: p.type,
       fileSize: formatFileSize(p.file.size),
       uploadDate: "Just now",
@@ -401,6 +409,10 @@ function StemsTab() {
     }));
     setStems((prev) => [...prev, ...newStems]);
     setPendingFiles([]);
+  };
+
+  const handleRename = (id: string, newName: string) => {
+    setStems((prev) => prev.map((s) => s.id === id ? { ...s, fileName: newName } : s));
   };
 
   const guessType = (name: string): StemType => {
@@ -534,12 +546,23 @@ function StemsTab() {
                     exit={{ opacity: 0, height: 0, transition: { duration: 0.2 } }}
                     className="grid grid-cols-[1fr_120px_80px_100px_110px] gap-3 px-5 py-3 items-center hover:bg-secondary/30 transition-colors group"
                   >
-                    {/* File name */}
+                    {/* File name — click to edit inline */}
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 ${stem.color}`}>
                         {stemTypeIcon(stem.type)}
                       </div>
-                      <span className="text-sm font-medium text-foreground truncate">{stem.fileName}</span>
+                      <input
+                        type="text"
+                        defaultValue={stem.fileName}
+                        onBlur={(e) => {
+                          const v = e.target.value.trim();
+                          if (v && v !== stem.fileName) handleRename(stem.id, v);
+                          else e.target.value = stem.fileName;
+                        }}
+                        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                        className="text-sm font-medium text-foreground truncate bg-transparent border-0 outline-none w-full rounded px-1 -ml-1 hover:bg-secondary focus:bg-secondary focus:ring-1 focus:ring-ring transition-colors cursor-text"
+                        title="Click to rename"
+                      />
                     </div>
 
                     {/* Type badge — clickable to change */}
@@ -671,9 +694,15 @@ function StemsTab() {
                       <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
                         <Music className="w-3.5 h-3.5 text-muted-foreground" />
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{pf.file.name}</p>
-                        <p className="text-[11px] text-muted-foreground">{formatFileSize(pf.file.size)}</p>
+                      <div className="min-w-0 flex-1">
+                        <input
+                          type="text"
+                          value={pf.customName}
+                          onChange={(e) => updatePendingName(index, e.target.value)}
+                          placeholder={pf.file.name.replace(/\.[^.]+$/, "")}
+                          className="text-sm font-medium text-foreground bg-transparent border-0 outline-none w-full rounded px-1 -ml-1 hover:bg-secondary focus:bg-secondary focus:ring-1 focus:ring-ring transition-colors"
+                        />
+                        <p className="text-[11px] text-muted-foreground px-1">{formatFileSize(pf.file.size)}</p>
                       </div>
                     </div>
 
