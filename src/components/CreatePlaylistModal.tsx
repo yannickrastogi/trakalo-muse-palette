@@ -79,6 +79,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
   const [trackSearch, setTrackSearch] = useState("");
   const [genre, setGenre] = useState("");
   const [genreOpen, setGenreOpen] = useState(false);
+  const [customGenreMode, setCustomGenreMode] = useState(false);
   const [moodInput, setMoodInput] = useState("");
   const [moods, setMoods] = useState<string[]>([]);
   const [coverImage, setCoverImage] = useState<string | null>(null);
