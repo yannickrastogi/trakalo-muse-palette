@@ -41,6 +41,7 @@ export function ShareModal({
   open, onClose, shareType,
   trackId, trackTitle, trackArtist, trackCover, stems,
   playlistId, playlistName, playlistCover, playlistTracks,
+  packItems,
 }: ShareModalProps) {
   const { createSharedLink } = useSharedLinks();
 
