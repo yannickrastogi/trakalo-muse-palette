@@ -347,7 +347,10 @@ function StemsTab() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<{ file: File; type: StemType; customName: string }[]>([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [modalDragOver, setModalDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const modalFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = (id: string) => {
     setStems((prev) => prev.filter((s) => s.id !== id));
