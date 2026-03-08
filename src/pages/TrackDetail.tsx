@@ -382,8 +382,23 @@ function OverviewTab({ trackId }: { trackId: number }) {
     }
   });
 
+  const handleDownloadPdf = () => {
+    generateMetadataPdf(trackData.title, trackData.artist, meta);
+  };
+
   return (
-    <SectionCard title="Metadata" icon={FileText} action={<button className="text-xs text-primary hover:underline">Edit</button>}>
+    <SectionCard
+      title="Metadata"
+      icon={FileText}
+      action={
+        <div className="flex items-center gap-2">
+          <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:underline">
+            <Download className="w-3.5 h-3.5" /> Download PDF
+          </button>
+          <button className="text-xs text-primary hover:underline">Edit</button>
+        </div>
+      }
+    >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border">
         {meta.map((m) => (
           <div key={m.label} className="bg-card px-5 py-3.5">
