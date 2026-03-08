@@ -18,6 +18,9 @@ import cover6 from "@/assets/covers/cover-6.jpg";
 
 const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 
+// Consistent stem types used across the platform (TrackDetail, UploadTrackModal, etc.)
+const stemTypes = ["kick", "snare", "bass", "guitar", "vocal", "synth", "drums", "background vocal", "fx", "other"] as const;
+
 interface FlatStem extends TrackStem {
   trackId: number;
   trackTitle: string;
@@ -27,6 +30,8 @@ interface FlatStem extends TrackStem {
   trackKey: string;
   trackCoverIdx: number;
   trackCover?: string;
+  isPack?: boolean;
+  stemCount?: number;
 }
 
 const stemTypeColors: Record<string, string> = {
@@ -39,6 +44,8 @@ const stemTypeColors: Record<string, string> = {
   synth: "bg-brand-orange/15 text-brand-orange",
   guitar: "bg-chart-5/15 text-chart-5",
   fx: "bg-accent/15 text-accent",
+  other: "bg-muted text-muted-foreground",
+  pack: "bg-brand-orange/15 text-brand-orange",
 };
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
@@ -85,10 +92,34 @@ export default function Stems() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
 
-  // Flatten all stems
+  // Flatten all stems + add pack entries for tracks that have stems
   const allStems = useMemo<FlatStem[]>(() => {
     const result: FlatStem[] = [];
     tracks.forEach((track) => {
+      if (track.stems.length === 0) return;
+      // Add a "Stems Pack" entry for this track
+      result.push({
+        id: `pack-${track.id}`,
+        fileName: `${track.title} — Full Stems Pack`,
+        type: "pack",
+        fileSize: track.stems.reduce((acc, s) => {
+          const num = parseFloat(s.fileSize);
+          return acc + (isNaN(num) ? 0 : num);
+        }, 0).toFixed(1) + " MB",
+        uploadDate: track.stems[0]?.uploadDate || "",
+        color: "text-brand-orange",
+        trackId: track.id,
+        trackTitle: track.title,
+        trackArtist: track.artist,
+        trackGenre: track.genre,
+        trackBpm: track.bpm,
+        trackKey: track.key,
+        trackCoverIdx: track.coverIdx,
+        trackCover: track.coverImage,
+        isPack: true,
+        stemCount: track.stems.length,
+      });
+      // Add individual stems
       track.stems.forEach((stem) => {
         result.push({
           ...stem,
@@ -109,8 +140,8 @@ export default function Stems() {
   // Derive unique options from data
   const uniqueTracks = useMemo(() => [...new Set(allStems.map((s) => s.trackTitle))].sort(), [allStems]);
   const uniqueArtists = useMemo(() => [...new Set(allStems.map((s) => s.trackArtist))].sort(), [allStems]);
-  const uniqueTypes = useMemo(() => [...new Set(allStems.map((s) => s.type))].sort(), [allStems]);
-  const uniqueGenres = useMemo(() => [...new Set(allStems.map((s) => s.trackGenre))].sort(), [allStems]);
+  // Genre: use all tracks for consistency across the platform
+  const uniqueGenres = useMemo(() => [...new Set(tracks.map((t) => t.genre))].filter(Boolean).sort(), [tracks]);
   const uniqueKeys = useMemo(() => [...new Set(allStems.map((s) => s.key || s.trackKey).filter(Boolean))].sort(), [allStems]);
 
   // Parse upload date helper
@@ -253,12 +284,21 @@ export default function Stems() {
                       onChange={setArtistFilter}
                       options={[{ value: "all", label: "All Artists" }, ...uniqueArtists.map((a) => ({ value: a, label: a }))]}
                     />
-                    <FilterSelect
-                      label="Stem Type"
-                      value={typeFilter}
-                      onChange={setTypeFilter}
-                      options={[{ value: "all", label: "All Types" }, ...uniqueTypes.map((t) => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))]}
-                    />
+                    <div className="flex flex-col gap-1.5 min-w-[140px]">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Stem Type</span>
+                      <select
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value)}
+                        className="h-8 px-3 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary/30 transition-colors cursor-pointer"
+                      >
+                        <option value="all">All Types</option>
+                        <option value="pack">🎛️ Stems Pack</option>
+                        <option disabled>──────────</option>
+                        {stemTypes.map((t) => (
+                          <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                        ))}
+                      </select>
+                    </div>
                     <FilterSelect
                       label="Genre"
                       value={genreFilter}
@@ -443,10 +483,15 @@ export default function Stems() {
                         {/* Stem Name */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-border/50">
+                            <div className={`w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-border/50 ${stem.isPack ? "ring-1 ring-brand-orange/40" : ""}`}>
                               <img src={coverSrc} alt="" className="w-full h-full object-cover" />
                             </div>
-                            <span className="text-xs font-medium text-foreground truncate max-w-[200px]">{stem.fileName}</span>
+                            <div className="flex flex-col min-w-0">
+                              <span className={`text-xs font-medium truncate max-w-[200px] ${stem.isPack ? "text-brand-orange" : "text-foreground"}`}>{stem.fileName}</span>
+                              {stem.isPack && stem.stemCount && (
+                                <span className="text-[10px] text-muted-foreground">{stem.stemCount} stems included</span>
+                              )}
+                            </div>
                           </div>
                         </td>
                         {/* Artist */}
@@ -465,7 +510,7 @@ export default function Stems() {
                         {/* Type */}
                         <td className="px-4 py-3">
                           <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide ${typeClass}`}>
-                            {stem.type}
+                            {stem.isPack ? "Stems Pack" : stem.type}
                           </span>
                         </td>
                         {/* BPM */}
