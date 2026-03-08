@@ -346,6 +346,7 @@ function StemsTab() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<{ file: File; type: StemType }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = (id: string) => {
@@ -367,26 +368,39 @@ function StemsTab() {
     const files = Array.from(e.dataTransfer.files).filter((f) =>
       f.name.match(/\.(wav|mp3|aiff|flac|ogg|m4a)$/i)
     );
-    addFiles(files);
+    if (files.length) stageFiles(files);
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      addFiles(Array.from(e.target.files));
+      stageFiles(Array.from(e.target.files));
       e.target.value = "";
     }
   };
 
-  const addFiles = (files: File[]) => {
-    const newStems: StemFile[] = files.map((f, i) => ({
+  const stageFiles = (files: File[]) => {
+    setPendingFiles(files.map((f) => ({ file: f, type: guessType(f.name) })));
+  };
+
+  const updatePendingType = (index: number, type: StemType) => {
+    setPendingFiles((prev) => prev.map((p, i) => i === index ? { ...p, type } : p));
+  };
+
+  const removePending = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const confirmUpload = () => {
+    const newStems: StemFile[] = pendingFiles.map((p, i) => ({
       id: `new-${Date.now()}-${i}`,
-      fileName: f.name,
-      type: guessType(f.name),
-      fileSize: formatFileSize(f.size),
+      fileName: p.file.name,
+      type: p.type,
+      fileSize: formatFileSize(p.file.size),
       uploadDate: "Just now",
       color: "text-muted-foreground",
     }));
     setStems((prev) => [...prev, ...newStems]);
+    setPendingFiles([]);
   };
 
   const guessType = (name: string): StemType => {
@@ -615,6 +629,100 @@ function StemsTab() {
           </div>
         )}
       </div>
+
+      {/* Staging modal — assign types before upload */}
+      <AnimatePresence>
+        {pendingFiles.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          >
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setPendingFiles([])} />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative z-10 w-full max-w-lg bg-card border border-border rounded-2xl overflow-hidden"
+              style={{ boxShadow: "var(--shadow-elevated)" }}
+            >
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">Assign Stem Types</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Choose the correct type for each file before uploading
+                  </p>
+                </div>
+                <button onClick={() => setPendingFiles([])} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* File list */}
+              <div className="max-h-80 overflow-y-auto divide-y divide-border">
+                {pendingFiles.map((pf, index) => (
+                  <div key={index} className="px-6 py-3.5 flex items-center gap-4">
+                    {/* File info */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                        <Music className="w-3.5 h-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{pf.file.name}</p>
+                        <p className="text-[11px] text-muted-foreground">{formatFileSize(pf.file.size)}</p>
+                      </div>
+                    </div>
+
+                    {/* Type selector */}
+                    <select
+                      value={pf.type}
+                      onChange={(e) => updatePendingType(index, e.target.value as StemType)}
+                      className="h-8 px-2.5 rounded-lg bg-secondary border border-border text-xs font-medium text-foreground capitalize appearance-none cursor-pointer hover:bg-muted transition-colors focus:outline-none focus:ring-1 focus:ring-ring"
+                      style={{ minWidth: "130px" }}
+                    >
+                      {stemTypes.map((t) => (
+                        <option key={t} value={t} className="capitalize">{t}</option>
+                      ))}
+                    </select>
+
+                    {/* Remove */}
+                    <button
+                      onClick={() => removePending(index)}
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-border flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">{pendingFiles.length} file{pendingFiles.length !== 1 ? "s" : ""} ready</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPendingFiles([])}
+                    className="px-4 py-2 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmUpload}
+                    className="px-4 py-2 rounded-lg text-xs font-semibold btn-brand"
+                  >
+                    <Upload className="w-3.5 h-3.5 inline mr-1.5" />
+                    Upload {pendingFiles.length} Stem{pendingFiles.length !== 1 ? "s" : ""}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
