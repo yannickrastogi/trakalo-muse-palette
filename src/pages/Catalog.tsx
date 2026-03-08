@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { UploadTrackModal } from "@/components/UploadTrackModal";
 import { motion } from "framer-motion";
 import {
@@ -66,6 +67,7 @@ const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } 
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
 
 export default function Catalog() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
@@ -111,14 +113,14 @@ export default function Catalog() {
       <motion.div variants={container} initial="hidden" animate="show" className="p-6 lg:p-8 space-y-6 max-w-[1400px]">
         {/* Header */}
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Tracks</h1>
+           <div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("catalog.title")}</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              {allTracks.length} tracks in your catalog · {filteredTracks.length} shown
+              {t("catalog.tracksInCatalog", { total: allTracks.length, shown: filteredTracks.length })}
             </p>
           </div>
           <button onClick={() => setUploadOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start">
-            <Upload className="w-4 h-4" /> Upload Track
+            <Upload className="w-4 h-4" /> {t("catalog.uploadTrack")}
           </button>
         </motion.div>
 
@@ -128,7 +130,7 @@ export default function Catalog() {
             <Search className="w-4 h-4 text-muted-foreground shrink-0" />
             <input
               type="text"
-              placeholder="Search by title, artist, or album…"
+              placeholder={t("catalog.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
@@ -172,7 +174,7 @@ export default function Catalog() {
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              Filters
+              {t("catalog.filters")}
               {activeFilterCount > 0 && (
                 <span className="ml-1 w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold btn-brand" style={{ boxShadow: "none" }}>
                   {activeFilterCount}
@@ -191,11 +193,11 @@ export default function Catalog() {
             className="card-premium p-5"
           >
             <div className="flex flex-wrap gap-4 items-end">
-              <FilterSelect label="Type" value={typeFilter} options={types} onChange={setTypeFilter} />
-              <FilterSelect label="Genre" value={genreFilter} options={genres} onChange={setGenreFilter} />
-              <FilterSelect label="Key" value={keyFilter} options={keys} onChange={setKeyFilter} />
+              <FilterSelect label={t("catalog.type")} value={typeFilter} options={types} onChange={setTypeFilter} />
+              <FilterSelect label={t("catalog.genre")} value={genreFilter} options={genres} onChange={setGenreFilter} />
+              <FilterSelect label={t("catalog.key")} value={keyFilter} options={keys} onChange={setKeyFilter} />
               <div className="flex flex-col gap-1.5">
-                <label className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">BPM Range</label>
+                <label className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">{t("catalog.bpmRange")}</label>
                 <div className="relative">
                   <select
                     value={bpmFilter?.label ?? ""}
@@ -205,7 +207,7 @@ export default function Catalog() {
                     }}
                     className="h-9 px-3 pr-7 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none min-w-[150px] font-medium"
                   >
-                    <option value="">All BPMs</option>
+                    <option value="">{t("catalog.allBPMs")}</option>
                     {bpmRanges.map((r) => (
                       <option key={r.label} value={r.label}>{r.label}</option>
                     ))}
@@ -213,15 +215,15 @@ export default function Catalog() {
                   <ChevronDown className="w-3 h-3 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
-              <FilterSelect label="Mood" value={moodFilter} options={moods} onChange={setMoodFilter} />
-              <FilterSelect label="Language" value={languageFilter} options={languages} onChange={setLanguageFilter} />
-              <FilterSelect label="Status" value={statusFilter} options={statuses} onChange={setStatusFilter} />
+              <FilterSelect label={t("catalog.mood")} value={moodFilter} options={moods} onChange={setMoodFilter} />
+              <FilterSelect label={t("catalog.language")} value={languageFilter} options={languages} onChange={setLanguageFilter} />
+              <FilterSelect label={t("catalog.status")} value={statusFilter} options={statuses} onChange={setStatusFilter} />
               {activeFilterCount > 0 && (
                 <button
                   onClick={clearFilters}
                   className="h-9 px-4 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                 >
-                  Clear all
+                  {t("catalog.clearAll")}
                 </button>
               )}
             </div>
@@ -231,7 +233,7 @@ export default function Catalog() {
         {/* Active filter tags */}
         {activeFilterCount > 0 && !showFilters && (
           <motion.div variants={item} className="flex flex-wrap gap-1.5 items-center">
-            <span className="text-xs text-muted-foreground mr-1 font-medium">Active filters:</span>
+            <span className="text-xs text-muted-foreground mr-1 font-medium">{t("catalog.activeFilters")}</span>
             {typeFilter && <FilterTag label={`Type: ${typeFilter}`} onRemove={() => setTypeFilter(null)} />}
             {genreFilter && <FilterTag label={`Genre: ${genreFilter}`} onRemove={() => setGenreFilter(null)} />}
             {keyFilter && <FilterTag label={`Key: ${keyFilter}`} onRemove={() => setKeyFilter(null)} />}
@@ -240,7 +242,7 @@ export default function Catalog() {
             {languageFilter && <FilterTag label={`Lang: ${languageFilter}`} onRemove={() => setLanguageFilter(null)} />}
             {statusFilter && <FilterTag label={`Status: ${statusFilter}`} onRemove={() => setStatusFilter(null)} />}
             <button onClick={clearFilters} className="text-xs gradient-text hover:opacity-80 ml-1.5 font-semibold transition-opacity">
-              Clear
+              {t("catalog.clear")}
             </button>
           </motion.div>
         )}
@@ -270,8 +272,8 @@ export default function Catalog() {
                     <tr>
                       <td colSpan={10} className="px-5 py-20 text-center text-muted-foreground">
                         <Music className="w-10 h-10 mx-auto mb-4 opacity-15" />
-                        <p className="text-sm font-semibold">No tracks found</p>
-                        <p className="text-xs mt-1.5 text-muted-foreground/70">Try adjusting your search or filters</p>
+                        <p className="text-sm font-semibold">{t("catalog.noTracks")}</p>
+                        <p className="text-xs mt-1.5 text-muted-foreground/70">{t("catalog.adjustFilters")}</p>
                       </td>
                     </tr>
                   ) : (
