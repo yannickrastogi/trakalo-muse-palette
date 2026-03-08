@@ -1,6 +1,7 @@
 import { useState } from "react";
 import JSZip from "jszip";
 import { jsPDF } from "jspdf";
+import { ID3Writer } from "browser-id3-writer";
 import {
   Dialog,
   DialogContent,
