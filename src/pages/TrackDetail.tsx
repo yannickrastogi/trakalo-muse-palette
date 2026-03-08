@@ -88,7 +88,7 @@ export default function TrackDetail() {
   const [activeTab, setActiveTab] = useState<string>("overview");
   const { permissions } = useRole();
   const { getTrack, updateTrack } = useTrack();
-  const coverInputRef = React.useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   const trackData = getTrack(Number(id));
 
