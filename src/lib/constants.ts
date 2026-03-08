@@ -23,8 +23,17 @@ export const STATUSES = ["Available", "On Hold", "Released"] as const;
 
 export const GENDERS = ["Male", "Female", "Duet", "N/A"] as const;
 
+export const KEYS = [
+  "Ab Maj", "A Min", "Bb Maj", "B Min", "C Min", "C# Min",
+  "D Maj", "Eb Maj", "E Min", "F Maj", "F# Min", "G Maj",
+] as const;
+
 export const MOODS = [
   "aggressive", "calm", "dark", "dreamy", "driving", "emotional", "energetic",
   "euphoric", "experimental", "happy", "hopeful", "hypnotic", "meditative",
   "nostalgic", "playful", "romantic", "smooth", "uplifting", "warm",
+] as const;
+
+export const LANGUAGES = [
+  "English", "French", "Instrumental", "Japanese", "Portuguese", "Spanish",
 ] as const;
