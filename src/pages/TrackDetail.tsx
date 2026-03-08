@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback /* refresh */ } from "react";
 import { jsPDF } from "jspdf";
 import { useParams, Link } from "react-router-dom";
-import { useTrack, type TrackStem } from "@/contexts/TrackContext";
+import { useTrack, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import { Textarea } from "@/components/ui/textarea";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
