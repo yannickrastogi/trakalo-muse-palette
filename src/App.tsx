@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { PlaylistProvider } from "@/contexts/PlaylistContext";
 import { RoleProvider } from "@/contexts/RoleContext";
+import { TrackProvider } from "@/contexts/TrackContext";
+import { PitchProvider } from "@/contexts/PitchContext";
 import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import TrackDetail from "./pages/TrackDetail";
@@ -24,6 +26,8 @@ const App = () => (
       <Toaster />
       <Sonner />
       <RoleProvider>
+      <TrackProvider>
+      <PitchProvider>
       <PlaylistProvider>
         <BrowserRouter>
           <Routes>
@@ -40,6 +44,8 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </PlaylistProvider>
+      </PitchProvider>
+      </TrackProvider>
       </RoleProvider>
     </TooltipProvider>
   </QueryClientProvider>
