@@ -872,6 +872,14 @@ function SplitsTab({ trackId }: { trackId: number }) {
 }
 
 function PaperworkTab() {
+  const paperwork = [
+    { name: "Master License Agreement", type: "PDF", date: "Jan 15, 2026", status: "Signed" },
+    { name: "Publishing Split Sheet", type: "PDF", date: "Jan 18, 2026", status: "Signed" },
+    { name: "Sync License — Nike Campaign", type: "PDF", date: "Feb 22, 2026", status: "Pending" },
+    { name: "Distribution Agreement", type: "PDF", date: "Jan 10, 2026", status: "Signed" },
+    { name: "Mechanical License", type: "PDF", date: "Mar 01, 2026", status: "Draft" },
+  ];
+
   return (
     <SectionCard
       title="Documents & Contracts"
@@ -909,7 +917,12 @@ function PaperworkTab() {
   );
 }
 
-function PitchHistoryTab() {
+function PitchHistoryTab({ trackId }: { trackId: number }) {
+  const { getTrack } = useTrack();
+  const { getPitchesForTrack } = usePitches();
+  const trackData = getTrack(trackId);
+  const trackPitches = trackData ? getPitchesForTrack(trackData.title) : [];
+
   return (
     <SectionCard
       title="Pitch History"
@@ -920,33 +933,37 @@ function PitchHistoryTab() {
         </button>
       }
     >
-      <div className="divide-y divide-border">
-        {pitchHistory.map((pitch, i) => (
-          <div key={i} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                {pitch.status === "Accepted" ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                ) : pitch.status === "Declined" ? (
-                  <AlertCircle className="w-3.5 h-3.5 text-destructive" />
-                ) : (
-                  <Clock className="w-3.5 h-3.5 text-brand-orange" />
-                )}
+      {trackPitches.length === 0 ? (
+        <div className="px-5 py-12 text-center text-muted-foreground text-sm">No pitches made for this track yet.</div>
+      ) : (
+        <div className="divide-y divide-border">
+          {trackPitches.map((pitch) => (
+            <div key={pitch.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                  {pitch.status === "Responded" ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  ) : pitch.status === "Draft" ? (
+                    <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                  ) : (
+                    <Clock className="w-3.5 h-3.5 text-brand-orange" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">{pitch.recipientCompany} <span className="text-muted-foreground font-normal">— {pitch.recipientName}</span></p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {pitch.date}
+                    {pitch.notes && <span className="ml-2 text-foreground/60">· {pitch.notes}</span>}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">{pitch.recipient} <span className="text-muted-foreground font-normal">— {pitch.contact}</span></p>
-                <p className="text-[11px] text-muted-foreground">
-                  {pitch.date}
-                  {pitch.response && <span className="ml-2 text-foreground/60">· {pitch.response}</span>}
-                </p>
-              </div>
+              <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-medium shrink-0 ${pitchStatusColors[pitch.status] || "bg-muted text-muted-foreground"}`}>
+                {pitch.status}
+              </span>
             </div>
-            <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-medium shrink-0 ${pitchStatusColors[pitch.status]}`}>
-              {pitch.status}
-            </span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </SectionCard>
   );
 }
@@ -957,20 +974,31 @@ const statusOptions = [
   { value: "Released", icon: Disc3, color: "bg-primary/15 text-primary", description: "Publicly available on all platforms" },
 ];
 
-const statusTimeline = [
-  { status: "Available", date: "Jan 10, 2026", note: "Recording completed at Nightfall Studio" },
-  { status: "On Hold", date: "Jan 22, 2026", note: "Awaiting JVNE feature clearance" },
-  { status: "Available", date: "Feb 15, 2026", note: "Clearance received, track open for pitching" },
-];
+function StatusTab({ trackId }: { trackId: number }) {
+  const { getTrack, updateTrackStatus } = useTrack();
+  const trackData = getTrack(trackId);
+  const currentStatus = trackData?.status || "Available";
+  const statusHistory = trackData?.statusHistory || [];
+  const [statusNote, setStatusNote] = useState("");
+  const [showNoteInput, setShowNoteInput] = useState<string | null>(null);
 
-function StatusTab() {
-  const currentStatus = "Available";
+  const handleStatusChange = (newStatus: string) => {
+    if (newStatus === currentStatus) return;
+    setShowNoteInput(newStatus);
+  };
+
+  const confirmStatusChange = () => {
+    if (showNoteInput) {
+      updateTrackStatus(trackId, showNoteInput, statusNote.trim() || "Status updated");
+      setShowNoteInput(null);
+      setStatusNote("");
+    }
+  };
 
   return (
     <SectionCard
       title="Track Status"
       icon={Activity}
-      action={<button className="text-xs text-primary hover:underline">Update Status</button>}
     >
       {/* Current status */}
       <div className="px-5 py-5 border-b border-border">
@@ -979,8 +1007,9 @@ function StatusTab() {
           {statusOptions.map((opt) => {
             const isActive = opt.value === currentStatus;
             return (
-              <div
+              <button
                 key={opt.value}
+                onClick={() => handleStatusChange(opt.value)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-colors cursor-pointer ${
                   isActive
                     ? `${opt.color} border-current`
@@ -989,19 +1018,49 @@ function StatusTab() {
               >
                 <opt.icon className="w-4 h-4" />
                 <span className="text-sm font-medium">{opt.value}</span>
-              </div>
+              </button>
             );
           })}
         </div>
+
+        {/* Note input when changing status */}
+        {showNoteInput && (
+          <div className="mt-4 space-y-2">
+            <p className="text-xs text-muted-foreground">Add a note for this status change:</p>
+            <input
+              type="text"
+              value={statusNote}
+              onChange={(e) => setStatusNote(e.target.value)}
+              placeholder="e.g. Clearance received"
+              className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-all"
+              onKeyDown={(e) => e.key === "Enter" && confirmStatusChange()}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={confirmStatusChange}
+                className="px-4 py-2 rounded-lg text-xs font-semibold btn-brand"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => { setShowNoteInput(null); setStatusNote(""); }}
+                className="px-4 py-2 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Timeline */}
       <div className="px-5 py-4">
         <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-4">History</p>
         <div className="space-y-0">
-          {statusTimeline.map((entry, i) => {
+          {statusHistory.map((entry, i) => {
             const opt = statusOptions.find((o) => o.value === entry.status);
-            const isLast = i === statusTimeline.length - 1;
+            const isLast = i === statusHistory.length - 1;
             return (
               <div key={i} className="flex gap-3">
                 <div className="flex flex-col items-center">
