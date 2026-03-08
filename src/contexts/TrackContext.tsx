@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { detectChapters } from "@/lib/chapter-detection";
 
 export interface TrackStem {
   id: string;
