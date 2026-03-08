@@ -284,12 +284,21 @@ export default function Stems() {
                       onChange={setArtistFilter}
                       options={[{ value: "all", label: "All Artists" }, ...uniqueArtists.map((a) => ({ value: a, label: a }))]}
                     />
-                    <FilterSelect
-                      label="Stem Type"
-                      value={typeFilter}
-                      onChange={setTypeFilter}
-                      options={[{ value: "all", label: "All Types" }, ...uniqueTypes.map((t) => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))]}
-                    />
+                    <div className="flex flex-col gap-1.5 min-w-[140px]">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Stem Type</span>
+                      <select
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value)}
+                        className="h-8 px-3 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary/30 transition-colors cursor-pointer"
+                      >
+                        <option value="all">All Types</option>
+                        <option value="pack">🎛️ Stems Pack</option>
+                        <option disabled>──────────</option>
+                        {stemTypes.map((t) => (
+                          <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                        ))}
+                      </select>
+                    </div>
                     <FilterSelect
                       label="Genre"
                       value={genreFilter}
