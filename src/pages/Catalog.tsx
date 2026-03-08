@@ -59,6 +59,7 @@ export default function Catalog() {
   const [bpmFilter, setBpmFilter] = useState<{ label: string; min: number; max: number } | null>(null);
   const [moodFilter, setMoodFilter] = useState<string | null>(null);
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
+  const [voiceFilter, setVoiceFilter] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [playingTrack, setPlayingTrack] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
@@ -71,8 +72,9 @@ export default function Catalog() {
   const keys = useMemo(() => [...new Set(allTracks.map((t) => t.key))].filter(Boolean).sort(), [allTracks]);
   const moods = useMemo(() => [...new Set(allTracks.flatMap((t) => t.mood))].sort(), [allTracks]);
   const languages = useMemo(() => [...new Set(allTracks.map((t) => t.language))].filter(Boolean).sort(), [allTracks]);
+  const voices = useMemo(() => [...new Set(allTracks.map((t) => t.voice))].filter(Boolean).sort(), [allTracks]);
 
-  const activeFilterCount = [typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter].filter(Boolean).length;
+  const activeFilterCount = [typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter, voiceFilter].filter(Boolean).length;
 
   const filteredTracks = useMemo(() => {
     return allTracks.filter((track) => {
@@ -84,9 +86,10 @@ export default function Catalog() {
       if (bpmFilter && (track.bpm < bpmFilter.min || track.bpm > bpmFilter.max)) return false;
       if (moodFilter && !track.mood.includes(moodFilter)) return false;
       if (languageFilter && track.language !== languageFilter) return false;
+      if (voiceFilter && track.voice !== voiceFilter) return false;
       return true;
     });
-  }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter]);
+  }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter, voiceFilter]);
 
   const clearFilters = () => {
     setTypeFilter(null);
@@ -96,6 +99,7 @@ export default function Catalog() {
     setBpmFilter(null);
     setMoodFilter(null);
     setLanguageFilter(null);
+    setVoiceFilter(null);
   };
 
   return (
@@ -209,6 +213,7 @@ export default function Catalog() {
               </div>
               <FilterSelect label={t("catalog.mood")} value={moodFilter} options={moods} onChange={setMoodFilter} />
               <FilterSelect label={t("catalog.language")} value={languageFilter} options={languages} onChange={setLanguageFilter} />
+              <FilterSelect label="Voice" value={voiceFilter} options={voices} onChange={setVoiceFilter} />
               <FilterSelect label={t("catalog.status")} value={statusFilter} options={statuses} onChange={setStatusFilter} />
               {activeFilterCount > 0 && (
                 <button
@@ -232,6 +237,7 @@ export default function Catalog() {
             {bpmFilter && <FilterTag label={`BPM: ${bpmFilter.label}`} onRemove={() => setBpmFilter(null)} />}
             {moodFilter && <FilterTag label={`Mood: ${moodFilter}`} onRemove={() => setMoodFilter(null)} />}
             {languageFilter && <FilterTag label={`Lang: ${languageFilter}`} onRemove={() => setLanguageFilter(null)} />}
+            {voiceFilter && <FilterTag label={`Voice: ${voiceFilter}`} onRemove={() => setVoiceFilter(null)} />}
             {statusFilter && <FilterTag label={`Status: ${statusFilter}`} onRemove={() => setStatusFilter(null)} />}
             <button onClick={clearFilters} className="text-xs gradient-text hover:opacity-80 ml-1.5 font-semibold transition-opacity">
               {t("catalog.clear")}
@@ -255,6 +261,7 @@ export default function Catalog() {
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Mood</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Voice</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
                     <th className="px-4 py-3 w-10"></th>
                   </tr>
@@ -336,6 +343,7 @@ export default function Catalog() {
                             )}
                           </td>
                           <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.language || "—"}</span></td>
+                          <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.voice || "—"}</span></td>
                           <td className="px-4 py-3">
                             <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
                           </td>
