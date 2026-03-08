@@ -127,19 +127,20 @@ export default function Playlists() {
   const [search, setSearch] = useState("");
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [playlists, setPlaylists] = useState(playlistsData);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
   const filtered = useMemo(() => {
-    if (!search) return playlistsData;
+    if (!search) return playlists;
     const q = search.toLowerCase();
-    return playlistsData.filter(
+    return playlists.filter(
       (pl) =>
         pl.name.toLowerCase().includes(q) ||
         pl.mood.toLowerCase().includes(q) ||
         pl.description.toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [search, playlists]);
 
   return (
     <PageShell>
