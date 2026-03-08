@@ -90,12 +90,15 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
       const folderName = `${trackData.title} - ${trackData.artist} - Trakalog Pack`;
       const root = zip.folder(folderName)!;
 
-      // Track
+      // Get cover art for embedding in audio files
+      const coverArrayBuffer = await getCoverArtArrayBuffer(trackData);
+
+      // Track — with embedded cover art
       if (selectedItems.has("track")) {
         const trackFolder = root.folder("Track")!;
-        const fileName = trackData.originalFileName || `${trackData.title}.wav`;
-        // In a real app, this would be the actual audio blob
-        trackFolder.file(fileName, new Blob(["[Original audio file]"], { type: "audio/wav" }));
+        const fileName = trackData.originalFileName?.replace(/\.\w+$/, '.mp3') || `${trackData.title}.mp3`;
+        const taggedBlob = createTaggedAudioBlob(trackData.title, trackData.artist, trackData.album, coverArrayBuffer);
+        trackFolder.file(fileName, taggedBlob);
       }
 
       // Cover Art — generate a 3000x3000 JPEG from the cover image
@@ -112,12 +115,18 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
         lyricsFolder.file(`${trackData.title} - Lyrics.pdf`, blob);
       }
 
-      // Stems
+      // Stems — each with embedded cover art
       if (selectedItems.has("stems") && trackData.stems.length > 0) {
         const stemsFolder = root.folder("Stems")!;
         trackData.stems.forEach(stem => {
-          // In a real app, these would be actual audio blobs
-          stemsFolder.file(stem.fileName, new Blob([`[Stem: ${stem.fileName}]`], { type: "audio/wav" }));
+          const stemName = stem.fileName.replace(/\.\w+$/, '.mp3');
+          const taggedBlob = createTaggedAudioBlob(
+            `${trackData.title} - ${stem.type}`,
+            trackData.artist,
+            trackData.album,
+            coverArrayBuffer
+          );
+          stemsFolder.file(stemName, taggedBlob);
         });
       }
 
