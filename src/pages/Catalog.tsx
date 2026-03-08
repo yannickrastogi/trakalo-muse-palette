@@ -28,7 +28,7 @@ import cover6 from "@/assets/covers/cover-6.jpg";
 
 const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 
-const allTracks = [
+export const allTracks = [
   { id: 1, title: "Velvet Hour", artist: "Kira Nomura", album: "Late Bloom EP", genre: "Neo-Soul", duration: "4:12", bpm: 92, key: "Ab Maj", mood: ["emotional", "dreamy"], status: "Available", language: "English", type: "Song", coverIdx: 0 },
   { id: 2, title: "Ghost Protocol", artist: "Dex Moraes × JVNE", album: "Singles 2026", genre: "Electronic", duration: "3:38", bpm: 128, key: "F# Min", mood: ["energetic", "dark"], status: "On Hold", language: "English", type: "Sample", coverIdx: 1 },
   { id: 3, title: "Burning Chrome", artist: "Alina Voss", album: "Neon Archive", genre: "Synthwave", duration: "5:01", bpm: 118, key: "C Min", mood: ["nostalgic", "driving"], status: "Available", language: "Portuguese", type: "Song", coverIdx: 2 },
@@ -56,7 +56,7 @@ const bpmRanges = [
   { label: "Very Fast (> 140)", min: 141, max: 999 },
 ];
 
-const statusColors: Record<string, string> = {
+export const statusColors: Record<string, string> = {
   Available: "bg-emerald-500/12 text-emerald-400",
   "On Hold": "bg-brand-orange/12 text-brand-orange",
   Released: "bg-brand-purple/12 text-brand-purple",
