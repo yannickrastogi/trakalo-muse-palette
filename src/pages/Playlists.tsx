@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
@@ -125,6 +126,7 @@ function MiniCoverGrid({ idxs }: { idxs: number[] }) {
 export default function Playlists() {
   const [search, setSearch] = useState("");
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
@@ -161,7 +163,7 @@ export default function Playlists() {
               {playlistsData.reduce((s, p) => s + p.tracks, 0)} total tracks
             </p>
           </div>
-          <button className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
+          <button onClick={() => setCreateOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
             <Plus className="w-4 h-4" /> Create Playlist
           </button>
         </motion.div>
@@ -292,6 +294,7 @@ export default function Playlists() {
           </div>
         )}
       </motion.div>
+      <CreatePlaylistModal open={createOpen} onOpenChange={setCreateOpen} />
     </PageShell>
   );
 }
