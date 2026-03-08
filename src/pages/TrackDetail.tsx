@@ -257,13 +257,13 @@ export default function TrackDetail() {
                     onClick={() => setShareTrackModalOpen(true)}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
                   >
-                    <Share2 className="w-4 h-4" /> Share Track
+                    <Music className="w-4 h-4" /> Share Track
                   </button>
                   <button
                     onClick={() => setShareModalOpen(true)}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
                   >
-                    <Share2 className="w-4 h-4" /> Share Stems
+                    <Layers className="w-4 h-4" /> Share Stems
                   </button>
                   <button
                     onClick={() => setSharePackModalOpen(true)}
