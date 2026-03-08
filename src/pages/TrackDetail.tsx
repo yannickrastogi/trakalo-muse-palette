@@ -4,6 +4,7 @@ import { useTrack, type TrackData, type TrackStem, type TrackSplit } from "@/con
 import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf } from "@/lib/pdf-generators";
 import { DownloadTrackModal } from "@/components/DownloadTrackModal";
 import { SharePackModal } from "@/components/SharePackModal";
+import { EditTrackModal } from "@/components/EditTrackModal";
 import { Textarea } from "@/components/ui/textarea";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { ShareModal } from "@/components/ShareModal";
@@ -134,6 +135,7 @@ export default function TrackDetail() {
   const [shareTrackModalOpen, setShareTrackModalOpen] = useState(false);
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
   const [sharePackModalOpen, setSharePackModalOpen] = useState(false);
+  const [editTrackModalOpen, setEditTrackModalOpen] = useState(false);
 
   const trackData = getTrack(Number(id));
 
@@ -243,7 +245,10 @@ export default function TrackDetail() {
                 {/* Action buttons */}
                 <div className="flex flex-wrap gap-2 pt-1">
                   {permissions.canEditOwnTracks && (
-                    <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px]">
+                    <button
+                      onClick={() => setEditTrackModalOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px]"
+                    >
                       <Edit3 className="w-4 h-4" /> Edit Track
                     </button>
                   )}
