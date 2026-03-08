@@ -360,6 +360,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       originalFileUrl: URL.createObjectURL(currentTrack.file),
       notes: currentTrack.notes,
       details: currentTrack.details,
+      lyrics: currentTrack.lyrics || undefined,
       stems: currentTrack.stems.map((s, i) => ({
         id: `stem-${newId}-${i}`,
         fileName: s.name,
