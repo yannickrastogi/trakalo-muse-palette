@@ -111,6 +111,7 @@ function buildMeta(trackData: TrackData) {
     { label: "Mastered By", value: trackData.masteredBy || "—" },
     { label: "Copyright", value: trackData.copyright || "—" },
     { label: "Language", value: trackData.language || "—" },
+    { label: "Gender", value: trackData.voice || "—" },
     { label: "Explicit", value: trackData.explicit ? "Yes" : "No" },
     { label: "Notes", value: trackData.notes || "—" },
   ];
@@ -236,7 +237,7 @@ export default function TrackDetail() {
                   {trackData.bpm > 0 && <MetaChip icon={Activity} label={`${trackData.bpm} BPM`} />}
                   {trackData.key && <MetaChip icon={({ className }: { className?: string }) => <span className={className}>#</span>} label={trackData.key} />}
                   {trackData.language && <MetaChip icon={Mic} label={trackData.language} />}
-                  {trackData.voice && trackData.voice !== "N/A" && <MetaChip icon={Mic} label={trackData.voice} />}
+                  {trackData.voice && <MetaChip icon={Mic} label={trackData.voice} />}
                   {trackData.duration && <MetaChip icon={Clock} label={trackData.duration} />}
                   {trackData.mood.map((m) => (
                     <span key={m} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-accent/15 text-accent">

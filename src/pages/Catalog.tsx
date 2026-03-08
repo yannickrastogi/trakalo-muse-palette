@@ -430,6 +430,12 @@ export default function Catalog() {
                           <span className="text-2xs font-mono text-foreground/50 tabular-nums shrink-0">{track.bpm ? `${track.bpm} BPM` : "—"}</span>
                           <span className="w-px h-3 bg-border shrink-0" />
                           <span className="text-2xs font-semibold text-foreground/50 shrink-0">{track.key || "—"}</span>
+                          {track.voice && (
+                            <>
+                              <span className="w-px h-3 bg-border shrink-0" />
+                              <span className="text-2xs text-muted-foreground shrink-0">{track.voice}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </motion.div>
