@@ -306,12 +306,13 @@ export default function Pitch() {
             </button>
             {allStatuses.map((s) => {
               const cfg = statusConfig[s];
+              const isActive = statusFilter === s || (statusFilter === "active" && (s === "Sent" || s === "Opened"));
               return (
                 <button
                   key={s}
                   onClick={() => setStatusFilter(statusFilter === s ? null : s)}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all min-h-[36px] ${
-                    statusFilter === s ? cfg.color : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    isActive ? cfg.color : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   }`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
