@@ -504,7 +504,7 @@ function StemsTab() {
         {stems.length === 0 ? (
           /* Empty state */
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setShowUploadModal(true)}
             className="w-full py-16 flex flex-col items-center justify-center gap-3 text-center"
           >
             <div className="w-12 h-12 rounded-2xl icon-brand flex items-center justify-center">
