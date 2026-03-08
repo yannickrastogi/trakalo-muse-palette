@@ -640,7 +640,7 @@ function StepInfo({
 function StepAudio({
   audioFile, audioUploading, audioProgress, audioPreviewUrl,
   isPlayingPreview, togglePreview, audioRef, audioInputRef,
-  onUpload, onRemove,
+  onUpload, onRemove, analyzing, analysisResult, analysisDuration,
 }: {
   audioFile: File | null;
   audioUploading: boolean;
@@ -652,6 +652,9 @@ function StepAudio({
   audioInputRef: React.RefObject<HTMLInputElement>;
   onUpload: (file: File) => void;
   onRemove: () => void;
+  analyzing: boolean;
+  analysisResult: AudioAnalysisResult | null;
+  analysisDuration: string;
 }) {
   return (
     <div className="space-y-5">
@@ -733,6 +736,68 @@ function StepAudio({
           {!audioUploading && (
             <div className="flex items-center gap-1.5 text-2xs text-emerald-400 font-semibold">
               <Check className="w-3 h-3" /> Upload complete
+            </div>
+          )}
+
+          {/* Audio Analysis Results */}
+          {(analyzing || analysisResult) && (
+            <div className="mt-2 rounded-lg border border-border bg-card p-3 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-brand-purple/15 flex items-center justify-center">
+                  {analyzing ? (
+                    <div className="w-2.5 h-2.5 rounded-full border-2 border-brand-purple border-t-transparent animate-spin" />
+                  ) : (
+                    <Check className="w-3 h-3 text-brand-purple" />
+                  )}
+                </div>
+                <span className="text-2xs font-semibold text-foreground">
+                  {analyzing ? "Analyzing audio…" : `Smart Analysis Complete`}
+                </span>
+                {analysisDuration && !analyzing && (
+                  <span className="text-2xs text-muted-foreground ml-auto">{analysisDuration}</span>
+                )}
+              </div>
+
+              {analysisResult && (
+                <>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-lg bg-secondary p-2.5 text-center">
+                      <p className="text-2xs text-muted-foreground font-medium">BPM</p>
+                      <p className="text-sm font-bold text-brand-orange">{analysisResult.bpm}</p>
+                    </div>
+                    <div className="rounded-lg bg-secondary p-2.5 text-center">
+                      <p className="text-2xs text-muted-foreground font-medium">Key</p>
+                      <p className="text-sm font-bold text-brand-pink">{analysisResult.key}</p>
+                    </div>
+                    <div className="rounded-lg bg-secondary p-2.5 text-center">
+                      <p className="text-2xs text-muted-foreground font-medium">Duration</p>
+                      <p className="text-sm font-bold text-brand-purple">{analysisResult.duration}</p>
+                    </div>
+                  </div>
+
+                  {/* Chapters preview */}
+                  <div className="space-y-1.5">
+                    <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">Detected Chapters</p>
+                    <div className="flex rounded-md overflow-hidden h-5 border border-border/50">
+                      {analysisResult.chapters.map((ch) => (
+                        <div
+                          key={ch.id}
+                          className="flex items-center justify-center text-[8px] font-semibold uppercase tracking-wide border-r border-border/30 last:border-r-0"
+                          style={{
+                            width: `${ch.endPercent - ch.startPercent}%`,
+                            backgroundColor: `color-mix(in srgb, ${ch.color} 20%, transparent)`,
+                            color: ch.color,
+                          }}
+                          title={ch.label}
+                        >
+                          <span className="truncate px-0.5">{ch.endPercent - ch.startPercent > 6 ? ch.label : ""}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-2xs text-muted-foreground">{analysisResult.chapters.length} sections detected</p>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
