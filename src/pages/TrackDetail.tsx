@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback /* refresh */ } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useTrack, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
+import { useTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
 import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf } from "@/lib/pdf-generators";
 import { DownloadTrackModal } from "@/components/DownloadTrackModal";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,7 +94,7 @@ const detailLabels: Record<string, string> = {
   mixingStudio: "Mixing Studio", recordingStudio: "Recording Studio", recordingDate: "Recording Date",
 };
 
-function buildMeta(trackData: import("@/contexts/TrackContext").TrackData) {
+function buildMeta(trackData: TrackData) {
   const meta = [
     { label: "Album / EP", value: trackData.album || "—" },
     { label: "Label", value: trackData.label || "—" },
