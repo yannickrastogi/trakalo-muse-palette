@@ -483,10 +483,15 @@ export default function Stems() {
                         {/* Stem Name */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-border/50">
+                            <div className={`w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-border/50 ${stem.isPack ? "ring-1 ring-brand-orange/40" : ""}`}>
                               <img src={coverSrc} alt="" className="w-full h-full object-cover" />
                             </div>
-                            <span className="text-xs font-medium text-foreground truncate max-w-[200px]">{stem.fileName}</span>
+                            <div className="flex flex-col min-w-0">
+                              <span className={`text-xs font-medium truncate max-w-[200px] ${stem.isPack ? "text-brand-orange" : "text-foreground"}`}>{stem.fileName}</span>
+                              {stem.isPack && stem.stemCount && (
+                                <span className="text-[10px] text-muted-foreground">{stem.stemCount} stems included</span>
+                              )}
+                            </div>
                           </div>
                         </td>
                         {/* Artist */}
