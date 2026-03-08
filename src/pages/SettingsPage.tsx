@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, type ReactNode } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
   Bell,
@@ -17,214 +17,382 @@ import {
   Key,
   Download,
   Trash2,
-  ChevronRight,
   Check,
   Eye,
   EyeOff,
+  Sparkles,
+  Laptop,
+  ChevronDown,
+  Save,
+  AlertTriangle,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRole } from "@/contexts/RoleContext";
+import { toast } from "sonner";
 
-const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
-const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } } };
+/* ─── Animations ─── */
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
+const fadeUp = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] } },
+};
 
 type SettingsSection = "profile" | "workspace" | "notifications" | "appearance" | "security";
 
 const sections: { id: SettingsSection; label: string; icon: React.ElementType; description: string }[] = [
-  { id: "profile", label: "Profile", icon: User, description: "Your personal information" },
-  { id: "workspace", label: "Workspace", icon: Building2, description: "Team & workspace settings" },
+  { id: "profile", label: "Profile", icon: User, description: "Account details & public identity" },
+  { id: "workspace", label: "Workspace", icon: Building2, description: "Team settings & defaults" },
   { id: "notifications", label: "Notifications", icon: Bell, description: "Email & push preferences" },
-  { id: "appearance", label: "Appearance", icon: Palette, description: "Theme & display options" },
+  { id: "appearance", label: "Appearance", icon: Palette, description: "Theme, layout & display" },
   { id: "security", label: "Security", icon: Shield, description: "Password & authentication" },
 ];
 
-/* ────────────── Shared Components ────────────── */
+/* ═══════════════════════════════════════════════════════
+   SHARED PRIMITIVES
+   ═══════════════════════════════════════════════════════ */
 
-function SettingRow({ label, description, children }: { label: string; description?: string; children: React.ReactNode }) {
+function FieldGroup({ label, hint, children, htmlFor }: { label: string; hint?: string; children: ReactNode; htmlFor?: string }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-border/50 last:border-0">
-      <div className="min-w-0">
-        <p className="text-[13px] font-semibold text-foreground tracking-tight">{label}</p>
-        {description && <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{description}</p>}
-      </div>
-      <div className="shrink-0">{children}</div>
+    <div className="space-y-1.5">
+      <label htmlFor={htmlFor} className="block text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">
+        {label}
+      </label>
+      {children}
+      {hint && <p className="text-[11px] text-muted-foreground/50 leading-relaxed">{hint}</p>}
     </div>
   );
 }
 
-function SettingInput({ value, placeholder, type = "text", onChange }: { value: string; placeholder: string; type?: string; onChange: (v: string) => void }) {
+function PremiumInput({
+  value,
+  placeholder,
+  type = "text",
+  onChange,
+  id,
+  prefix,
+  suffix,
+  readOnly,
+}: {
+  value: string;
+  placeholder: string;
+  type?: string;
+  onChange: (v: string) => void;
+  id?: string;
+  prefix?: ReactNode;
+  suffix?: ReactNode;
+  readOnly?: boolean;
+}) {
   return (
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full sm:w-64 bg-secondary/50 border border-border/50 rounded-lg px-3.5 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none focus-brand transition-all font-medium"
-    />
+    <div className="relative group">
+      {prefix && (
+        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 text-[13px] font-medium pointer-events-none">
+          {prefix}
+        </span>
+      )}
+      <input
+        id={id}
+        type={type}
+        value={value}
+        readOnly={readOnly}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground/35 outline-none transition-all duration-200 font-medium
+          focus:border-primary/40 focus:ring-2 focus:ring-primary/8 focus:bg-card
+          group-hover:border-border
+          ${prefix ? "pl-10" : ""}
+          ${suffix ? "pr-10" : ""}
+          ${readOnly ? "cursor-default opacity-70" : ""}
+        `}
+      />
+      {suffix && (
+        <span className="absolute right-3 top-1/2 -translate-y-1/2">
+          {suffix}
+        </span>
+      )}
+      {/* Subtle bottom gradient accent on focus */}
+      <div className="absolute bottom-0 left-3 right-3 h-px bg-gradient-to-r from-transparent via-primary/0 to-transparent group-focus-within:via-primary/30 transition-all duration-300" />
+    </div>
   );
 }
 
-function ToggleSwitch({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
+function PremiumTextarea({ value, placeholder, onChange, rows = 3 }: { value: string; placeholder: string; onChange: (v: string) => void; rows?: number }) {
   return (
-    <button
-      onClick={onToggle}
-      className={`relative w-11 h-6 rounded-full transition-all duration-200 ${
-        enabled ? "bg-primary" : "bg-secondary border border-border"
-      }`}
+    <div className="relative group">
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows}
+        className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground/35 outline-none transition-all duration-200 font-medium resize-none
+          focus:border-primary/40 focus:ring-2 focus:ring-primary/8 focus:bg-card
+          group-hover:border-border"
+      />
+      <div className="absolute bottom-0 left-3 right-3 h-px bg-gradient-to-r from-transparent via-primary/0 to-transparent group-focus-within:via-primary/30 transition-all duration-300" />
+    </div>
+  );
+}
+
+function PremiumSelect({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+  return (
+    <div className="relative group">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-[13px] text-foreground outline-none transition-all duration-200 font-medium appearance-none cursor-pointer
+          focus:border-primary/40 focus:ring-2 focus:ring-primary/8 focus:bg-card
+          group-hover:border-border"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+      <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 pointer-events-none" />
+    </div>
+  );
+}
+
+function ToggleSwitch({ enabled, onToggle, size = "md" }: { enabled: boolean; onToggle: () => void; size?: "sm" | "md" }) {
+  const w = size === "sm" ? "w-9 h-5" : "w-12 h-[26px]";
+  const dot = size === "sm" ? "w-3.5 h-3.5" : "w-5 h-5";
+  const translate = size === "sm" ? "translate-x-4" : "translate-x-[22px]";
+
+  return (
+    <button onClick={onToggle} className={`relative ${w} rounded-full transition-all duration-300 ${enabled ? "" : "bg-secondary border border-border/60"}`}
+      style={enabled ? { background: "var(--gradient-brand-horizontal)" } : undefined}
     >
       <span
-        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-foreground transition-transform duration-200 ${
-          enabled ? "translate-x-5" : "translate-x-0"
+        className={`absolute top-[3px] left-[3px] ${dot} rounded-full transition-all duration-300 ${
+          enabled ? "bg-primary-foreground " + translate : "bg-muted-foreground/60 translate-x-0"
         }`}
-        style={{ boxShadow: "0 1px 3px hsl(0 0% 0% / 0.3)" }}
+        style={{ boxShadow: "0 1px 4px hsl(0 0% 0% / 0.25)" }}
       />
     </button>
   );
 }
 
-function SectionCard({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
+function SettingToggleRow({ label, description, enabled, onToggle, icon: Icon }: {
+  label: string; description: string; enabled: boolean; onToggle: () => void; icon?: React.ElementType;
+}) {
   return (
-    <motion.div variants={item} className="card-premium p-5 sm:p-6">
-      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border/50">
-        <div className="w-8 h-8 rounded-lg icon-brand flex items-center justify-center">
-          <Icon className="w-4 h-4 text-brand-orange" />
+    <div className="flex items-center justify-between gap-4 py-4 group">
+      <div className="flex items-start gap-3 min-w-0">
+        {Icon && (
+          <div className="w-8 h-8 rounded-lg bg-secondary/60 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-secondary transition-colors">
+            <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-foreground tracking-tight">{label}</p>
+          <p className="text-[11px] text-muted-foreground/60 mt-0.5 leading-relaxed">{description}</p>
         </div>
-        <h3 className="text-sm font-bold text-foreground tracking-tight">{title}</h3>
       </div>
-      {children}
+      <ToggleSwitch enabled={enabled} onToggle={onToggle} />
+    </div>
+  );
+}
+
+function Divider() {
+  return <div className="h-px bg-border/40" />;
+}
+
+function SectionBlock({ title, subtitle, icon: Icon, children, onSave, saveLabel = "Save Changes" }: {
+  title: string; subtitle?: string; icon: React.ElementType; children: ReactNode; onSave?: () => void; saveLabel?: string;
+}) {
+  return (
+    <motion.div variants={fadeUp} className="rounded-2xl border border-border/50 bg-card overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+      {/* Header */}
+      <div className="px-6 py-5 flex items-center gap-3.5" style={{ background: "var(--gradient-brand-soft)" }}>
+        <div className="w-9 h-9 rounded-xl icon-brand flex items-center justify-center shrink-0">
+          <Icon className="w-[17px] h-[17px] text-brand-orange" />
+        </div>
+        <div className="min-w-0">
+          <h3 className="text-[14px] font-bold text-foreground tracking-tight leading-tight">{title}</h3>
+          {subtitle && <p className="text-[11px] text-muted-foreground/60 mt-0.5">{subtitle}</p>}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="px-6 py-5">
+        {children}
+      </div>
+
+      {/* Footer with save */}
+      {onSave && (
+        <div className="px-6 py-4 border-t border-border/40 flex items-center justify-between" style={{ background: "hsl(240 5% 8% / 0.5)" }}>
+          <p className="text-[11px] text-muted-foreground/40 font-medium">Changes are saved to your account</p>
+          <button onClick={onSave} className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold min-h-[40px]">
+            <Save className="w-3.5 h-3.5" />
+            {saveLabel}
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 }
 
-/* ────────────── Profile Section ────────────── */
+/* ═══════════════════════════════════════════════════════
+   SECTION: PROFILE
+   ═══════════════════════════════════════════════════════ */
 
 function ProfileSection() {
   const [firstName, setFirstName] = useState("John");
   const [lastName, setLastName] = useState("Doe");
   const [email, setEmail] = useState("john@trakalog.com");
-  const [bio, setBio] = useState("Music producer & songwriter based in Los Angeles.");
+  const [bio, setBio] = useState("Music producer & songwriter based in Los Angeles. Focused on neo-soul, R&B, and electronic music.");
   const [phone, setPhone] = useState("+1 (555) 012-3456");
+  const [profileVisible, setProfileVisible] = useState(true);
+  const [showEmail, setShowEmail] = useState(false);
+
+  const handleSave = () => toast.success("Profile saved successfully");
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
-      <SectionCard title="Personal Information" icon={User}>
-        {/* Avatar */}
-        <div className="flex items-center gap-4 pb-4 border-b border-border/50">
-          <div className="relative group">
-            <div className="w-16 h-16 rounded-xl flex items-center justify-center text-lg font-bold text-primary-foreground btn-brand" style={{ boxShadow: "none" }}>
+    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+      <SectionBlock title="Personal Information" subtitle="Your identity across TRAKALOG" icon={User} onSave={handleSave}>
+        {/* Avatar row */}
+        <div className="flex items-center gap-5 pb-6 mb-6 border-b border-border/30">
+          <div className="relative group cursor-pointer">
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-xl font-bold text-primary-foreground overflow-hidden"
+              style={{ background: "var(--gradient-brand)", boxShadow: "0 4px 20px hsl(24 95% 53% / 0.2)" }}>
               JD
             </div>
-            <button className="absolute inset-0 rounded-xl bg-background/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-              <Camera className="w-4 h-4 text-foreground" />
-            </button>
+            <div className="absolute inset-0 rounded-2xl bg-background/70 backdrop-blur-sm opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all duration-200">
+              <Camera className="w-5 h-5 text-foreground mb-0.5" />
+              <span className="text-[9px] font-semibold text-foreground/80 uppercase tracking-wider">Change</span>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-foreground">Profile Photo</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">JPG, PNG, or GIF. Max 2MB.</p>
-            <button className="text-[11px] gradient-text font-semibold mt-1 hover:opacity-80 transition-opacity">Change photo</button>
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-foreground tracking-tight">Profile Photo</p>
+            <p className="text-[11px] text-muted-foreground/50">Recommended: 256×256px, JPG or PNG</p>
+            <div className="flex items-center gap-3 mt-1.5">
+              <button className="text-[11px] gradient-text font-bold hover:opacity-80 transition-opacity">Upload new</button>
+              <span className="text-muted-foreground/20">·</span>
+              <button className="text-[11px] text-muted-foreground/40 font-medium hover:text-destructive transition-colors">Remove</button>
+            </div>
           </div>
         </div>
 
-        <SettingRow label="First Name">
-          <SettingInput value={firstName} placeholder="First name" onChange={setFirstName} />
-        </SettingRow>
-        <SettingRow label="Last Name">
-          <SettingInput value={lastName} placeholder="Last name" onChange={setLastName} />
-        </SettingRow>
-        <SettingRow label="Email" description="Used for login and notifications">
-          <SettingInput value={email} placeholder="Email address" type="email" onChange={setEmail} />
-        </SettingRow>
-        <SettingRow label="Phone" description="Optional — for SMS alerts">
-          <SettingInput value={phone} placeholder="+1 (555) 000-0000" onChange={setPhone} />
-        </SettingRow>
-        <SettingRow label="Bio" description="Visible to team members">
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="A short bio…"
-            rows={2}
-            className="w-full sm:w-64 bg-secondary/50 border border-border/50 rounded-lg px-3.5 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none focus-brand transition-all font-medium resize-none"
-          />
-        </SettingRow>
-      </SectionCard>
+        {/* Form grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <FieldGroup label="First Name" htmlFor="firstName">
+            <PremiumInput id="firstName" value={firstName} placeholder="Your first name" onChange={setFirstName} />
+          </FieldGroup>
+          <FieldGroup label="Last Name" htmlFor="lastName">
+            <PremiumInput id="lastName" value={lastName} placeholder="Your last name" onChange={setLastName} />
+          </FieldGroup>
+        </div>
 
-      <SectionCard title="Public Profile" icon={Globe}>
-        <SettingRow label="Profile Visibility" description="Allow team members to see your profile">
-          <ToggleSwitch enabled={true} onToggle={() => {}} />
-        </SettingRow>
-        <SettingRow label="Show Email" description="Display email on your public profile">
-          <ToggleSwitch enabled={false} onToggle={() => {}} />
-        </SettingRow>
-      </SectionCard>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
+          <FieldGroup label="Email Address" hint="Used for login and notifications" htmlFor="email">
+            <PremiumInput id="email" value={email} placeholder="you@example.com" type="email" onChange={setEmail}
+              prefix={<Mail className="w-3.5 h-3.5" />} />
+          </FieldGroup>
+          <FieldGroup label="Phone Number" hint="Optional — used for SMS alerts" htmlFor="phone">
+            <PremiumInput id="phone" value={phone} placeholder="+1 (555) 000-0000" onChange={setPhone}
+              prefix={<Smartphone className="w-3.5 h-3.5" />} />
+          </FieldGroup>
+        </div>
 
-      <div className="flex justify-end pt-2">
-        <button className="btn-brand px-6 py-2.5 rounded-xl text-[13px] font-semibold min-h-[44px]">
-          Save Changes
-        </button>
-      </div>
+        <div className="mt-5">
+          <FieldGroup label="Bio" hint="Visible on your team profile">
+            <PremiumTextarea value={bio} placeholder="Tell your team a bit about yourself…" onChange={setBio} rows={3} />
+          </FieldGroup>
+        </div>
+      </SectionBlock>
+
+      <SectionBlock title="Privacy" subtitle="Control what others can see" icon={Eye} onSave={handleSave} saveLabel="Update Privacy">
+        <SettingToggleRow icon={Globe} label="Profile Visibility" description="Allow team members to find and view your profile" enabled={profileVisible} onToggle={() => setProfileVisible(!profileVisible)} />
+        <Divider />
+        <SettingToggleRow icon={Mail} label="Show Email Address" description="Display your email on your public team profile" enabled={showEmail} onToggle={() => setShowEmail(!showEmail)} />
+      </SectionBlock>
     </motion.div>
   );
 }
 
-/* ────────────── Workspace Section ────────────── */
+/* ═══════════════════════════════════════════════════════
+   SECTION: WORKSPACE
+   ═══════════════════════════════════════════════════════ */
 
 function WorkspaceSection() {
-  const [workspaceName, setWorkspaceName] = useState("Nightfall Records");
+  const [name, setName] = useState("Nightfall Records");
   const [slug, setSlug] = useState("nightfall-records");
+  const [language, setLanguage] = useState("en");
+  const [genre, setGenre] = useState("");
+  const [copyright, setCopyright] = useState("© 2026 Nightfall Records");
+
+  const handleSave = () => toast.success("Workspace settings saved");
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
-      <SectionCard title="Workspace Details" icon={Building2}>
-        <SettingRow label="Workspace Name" description="This is your team's visible name">
-          <SettingInput value={workspaceName} placeholder="Workspace name" onChange={setWorkspaceName} />
-        </SettingRow>
-        <SettingRow label="Workspace URL" description="trakalog.app/">
-          <SettingInput value={slug} placeholder="workspace-slug" onChange={setSlug} />
-        </SettingRow>
-        <SettingRow label="Default Language" description="Sets the default UI language for new members">
-          <select className="bg-secondary/50 border border-border/50 rounded-lg px-3.5 py-2 text-[13px] text-foreground outline-none focus-brand transition-all font-medium w-full sm:w-64 appearance-none cursor-pointer">
-            <option value="en">English</option>
-            <option value="fr">Français</option>
-            <option value="es">Español</option>
-          </select>
-        </SettingRow>
-      </SectionCard>
+    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+      <SectionBlock title="General" subtitle="Your team's identity" icon={Building2} onSave={handleSave}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <FieldGroup label="Workspace Name" hint="Visible to all team members">
+            <PremiumInput value={name} placeholder="Your workspace" onChange={setName} />
+          </FieldGroup>
+          <FieldGroup label="Workspace URL" hint="trakalog.app/w/">
+            <PremiumInput value={slug} placeholder="your-workspace" onChange={setSlug} prefix={<span className="text-[11px]">/w/</span>} />
+          </FieldGroup>
+        </div>
+        <div className="mt-5">
+          <FieldGroup label="Default Language" hint="Sets the UI language for new members">
+            <PremiumSelect value={language} onChange={setLanguage} options={[
+              { value: "en", label: "English" },
+              { value: "fr", label: "Français" },
+              { value: "es", label: "Español" },
+            ]} />
+          </FieldGroup>
+        </div>
+      </SectionBlock>
 
-      <SectionCard title="Metadata Defaults" icon={Globe}>
-        <SettingRow label="Default Genre" description="Pre-selected when uploading new tracks">
-          <select className="bg-secondary/50 border border-border/50 rounded-lg px-3.5 py-2 text-[13px] text-foreground outline-none focus-brand transition-all font-medium w-full sm:w-64 appearance-none cursor-pointer">
-            <option value="">None</option>
-            <option value="hiphop">Hip-Hop</option>
-            <option value="rnb">R&B</option>
-            <option value="pop">Pop</option>
-            <option value="electronic">Electronic</option>
-            <option value="soul">Neo-Soul</option>
-          </select>
-        </SettingRow>
-        <SettingRow label="Default Copyright" description="Applied to all new uploads">
-          <SettingInput value="© 2026 Nightfall Records" placeholder="© Year Label" onChange={() => {}} />
-        </SettingRow>
-      </SectionCard>
+      <SectionBlock title="Upload Defaults" subtitle="Pre-fill metadata for new tracks" icon={Sparkles} onSave={handleSave} saveLabel="Save Defaults">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <FieldGroup label="Default Genre" hint="Applied when uploading new tracks">
+            <PremiumSelect value={genre} onChange={setGenre} options={[
+              { value: "", label: "None" },
+              { value: "hiphop", label: "Hip-Hop" },
+              { value: "rnb", label: "R&B" },
+              { value: "pop", label: "Pop" },
+              { value: "electronic", label: "Electronic" },
+              { value: "soul", label: "Neo-Soul" },
+              { value: "rock", label: "Rock" },
+              { value: "jazz", label: "Jazz" },
+            ]} />
+          </FieldGroup>
+          <FieldGroup label="Default Copyright" hint="Embedded in track metadata">
+            <PremiumInput value={copyright} placeholder="© Year Label Name" onChange={setCopyright} />
+          </FieldGroup>
+        </div>
+      </SectionBlock>
 
-      <SectionCard title="Danger Zone" icon={Trash2}>
-        <SettingRow label="Delete Workspace" description="Permanently delete this workspace and all data. This action cannot be undone.">
-          <button className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors min-h-[40px]">
-            Delete Workspace
-          </button>
-        </SettingRow>
-      </SectionCard>
-
-      <div className="flex justify-end pt-2">
-        <button className="btn-brand px-6 py-2.5 rounded-xl text-[13px] font-semibold min-h-[44px]">
-          Save Changes
-        </button>
-      </div>
+      <motion.div variants={fadeUp} className="rounded-2xl border border-destructive/15 bg-destructive/[0.02] overflow-hidden">
+        <div className="px-6 py-5 flex items-center gap-3.5">
+          <div className="w-9 h-9 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-[17px] h-[17px] text-destructive" />
+          </div>
+          <div>
+            <h3 className="text-[14px] font-bold text-destructive tracking-tight">Danger Zone</h3>
+            <p className="text-[11px] text-destructive/50 mt-0.5">Irreversible actions</p>
+          </div>
+        </div>
+        <div className="px-6 py-5 border-t border-destructive/10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="text-[13px] font-semibold text-foreground">Delete this workspace</p>
+              <p className="text-[11px] text-muted-foreground/50 mt-0.5">All tracks, playlists, and team data will be permanently removed.</p>
+            </div>
+            <button className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-destructive/30 text-destructive hover:bg-destructive/10 transition-all min-h-[40px] shrink-0">
+              Delete Workspace
+            </button>
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
 
-/* ────────────── Notifications Section ────────────── */
+/* ═══════════════════════════════════════════════════════
+   SECTION: NOTIFICATIONS
+   ═══════════════════════════════════════════════════════ */
 
 function NotificationsSection() {
   const [emailPitch, setEmailPitch] = useState(true);
@@ -234,229 +402,301 @@ function NotificationsSection() {
   const [pushPitch, setPushPitch] = useState(true);
   const [pushUpload, setPushUpload] = useState(false);
   const [pushComment, setPushComment] = useState(true);
+  const [pushMention, setPushMention] = useState(true);
+
+  const handleSave = () => toast.success("Notification preferences saved");
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
-      <SectionCard title="Email Notifications" icon={Mail}>
-        <SettingRow label="Pitch Responses" description="When a recipient responds to your pitch">
-          <ToggleSwitch enabled={emailPitch} onToggle={() => setEmailPitch(!emailPitch)} />
-        </SettingRow>
-        <SettingRow label="Track Uploads" description="When a team member uploads a new track">
-          <ToggleSwitch enabled={emailUpload} onToggle={() => setEmailUpload(!emailUpload)} />
-        </SettingRow>
-        <SettingRow label="Team Activity" description="When members join, leave, or change roles">
-          <ToggleSwitch enabled={emailTeam} onToggle={() => setEmailTeam(!emailTeam)} />
-        </SettingRow>
-        <SettingRow label="Weekly Digest" description="Summary of activity every Monday">
-          <ToggleSwitch enabled={emailDigest} onToggle={() => setEmailDigest(!emailDigest)} />
-        </SettingRow>
-      </SectionCard>
+    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+      <SectionBlock title="Email Notifications" subtitle="Delivered to john@trakalog.com" icon={Mail} onSave={handleSave} saveLabel="Save Email Preferences">
+        <SettingToggleRow label="Pitch Responses" description="When a recipient opens or responds to your pitch" enabled={emailPitch} onToggle={() => setEmailPitch(!emailPitch)} />
+        <Divider />
+        <SettingToggleRow label="Track Uploads" description="When a collaborator uploads a new track to the catalog" enabled={emailUpload} onToggle={() => setEmailUpload(!emailUpload)} />
+        <Divider />
+        <SettingToggleRow label="Team Changes" description="When members join, leave, or have their roles updated" enabled={emailTeam} onToggle={() => setEmailTeam(!emailTeam)} />
+        <Divider />
+        <SettingToggleRow label="Weekly Digest" description="A curated summary of your workspace activity every Monday" enabled={emailDigest} onToggle={() => setEmailDigest(!emailDigest)} />
+      </SectionBlock>
 
-      <SectionCard title="Push Notifications" icon={Bell}>
-        <SettingRow label="Pitch Updates" description="Real-time alerts for pitch status changes">
-          <ToggleSwitch enabled={pushPitch} onToggle={() => setPushPitch(!pushPitch)} />
-        </SettingRow>
-        <SettingRow label="New Uploads" description="When new tracks are added to the catalog">
-          <ToggleSwitch enabled={pushUpload} onToggle={() => setPushUpload(!pushUpload)} />
-        </SettingRow>
-        <SettingRow label="Comments & Feedback" description="When someone leaves feedback on a track">
-          <ToggleSwitch enabled={pushComment} onToggle={() => setPushComment(!pushComment)} />
-        </SettingRow>
-      </SectionCard>
-
-      <div className="flex justify-end pt-2">
-        <button className="btn-brand px-6 py-2.5 rounded-xl text-[13px] font-semibold min-h-[44px]">
-          Save Preferences
-        </button>
-      </div>
+      <SectionBlock title="Push Notifications" subtitle="In-app and browser alerts" icon={Bell} onSave={handleSave} saveLabel="Save Push Preferences">
+        <SettingToggleRow label="Pitch Status Updates" description="Real-time alerts when pitches are opened, read, or replied to" enabled={pushPitch} onToggle={() => setPushPitch(!pushPitch)} />
+        <Divider />
+        <SettingToggleRow label="New Catalog Uploads" description="When tracks or stems are added to the catalog" enabled={pushUpload} onToggle={() => setPushUpload(!pushUpload)} />
+        <Divider />
+        <SettingToggleRow label="Comments & Feedback" description="When someone leaves feedback or a note on your track" enabled={pushComment} onToggle={() => setPushComment(!pushComment)} />
+        <Divider />
+        <SettingToggleRow label="Mentions" description="When you're @mentioned in a comment or note" enabled={pushMention} onToggle={() => setPushMention(!pushMention)} />
+      </SectionBlock>
     </motion.div>
   );
 }
 
-/* ────────────── Appearance Section ────────────── */
+/* ═══════════════════════════════════════════════════════
+   SECTION: APPEARANCE
+   ═══════════════════════════════════════════════════════ */
 
 function AppearanceSection() {
   const [theme, setTheme] = useState<"dark" | "light" | "system">("dark");
+  const [accentIdx, setAccentIdx] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
-  const [animationsEnabled, setAnimationsEnabled] = useState(true);
+  const [animations, setAnimations] = useState(true);
 
-  const themes: { id: "dark" | "light" | "system"; label: string; icon: React.ElementType; preview: string }[] = [
-    { id: "dark", label: "Dark", icon: Moon, preview: "bg-[hsl(240,6%,6%)]" },
-    { id: "light", label: "Light", icon: Sun, preview: "bg-[hsl(0,0%,98%)]" },
-    { id: "system", label: "System", icon: Monitor, preview: "bg-gradient-to-r from-[hsl(240,6%,6%)] to-[hsl(0,0%,98%)]" },
+  const themes: { id: "dark" | "light" | "system"; label: string; icon: React.ElementType; bar1: string; bar2: string; bar3: string; bg: string }[] = [
+    { id: "dark", label: "Dark", icon: Moon, bg: "bg-[hsl(240,6%,8%)]", bar1: "bg-[hsl(240,4%,14%)]", bar2: "bg-[hsl(240,4%,18%)]", bar3: "bg-[hsl(24,100%,55%)]" },
+    { id: "light", label: "Light", icon: Sun, bg: "bg-[hsl(0,0%,97%)]", bar1: "bg-[hsl(0,0%,90%)]", bar2: "bg-[hsl(0,0%,85%)]", bar3: "bg-[hsl(24,100%,55%)]" },
+    { id: "system", label: "System", icon: Monitor, bg: "bg-gradient-to-br from-[hsl(240,6%,8%)] to-[hsl(0,0%,95%)]", bar1: "bg-[hsl(240,4%,20%)]", bar2: "bg-[hsl(0,0%,80%)]", bar3: "bg-[hsl(24,100%,55%)]" },
   ];
 
+  const accents = [
+    { colors: "from-[hsl(24,100%,55%)] to-[hsl(330,80%,60%)]", name: "Sunset" },
+    { colors: "from-[hsl(200,80%,50%)] to-[hsl(240,70%,60%)]", name: "Ocean" },
+    { colors: "from-[hsl(160,70%,45%)] to-[hsl(200,80%,50%)]", name: "Mint" },
+    { colors: "from-[hsl(270,70%,55%)] to-[hsl(330,80%,60%)]", name: "Violet" },
+    { colors: "from-[hsl(0,0%,75%)] to-[hsl(0,0%,50%)]", name: "Mono" },
+  ];
+
+  const handleSave = () => toast.success("Appearance preferences saved");
+
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
-      <SectionCard title="Theme" icon={Palette}>
-        <div className="grid grid-cols-3 gap-3 pb-4 border-b border-border/50">
-          {themes.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTheme(t.id)}
-              className={`relative rounded-xl border-2 transition-all duration-200 p-3 flex flex-col items-center gap-2 ${
-                theme === t.id
-                  ? "border-primary bg-primary/5"
-                  : "border-border/50 hover:border-border"
-              }`}
-            >
-              <div className={`w-full h-14 rounded-lg ${t.preview} border border-border/30 flex items-center justify-center`}>
-                <t.icon className={`w-5 h-5 ${theme === t.id ? "text-primary" : "text-muted-foreground"}`} />
-              </div>
-              <span className={`text-[11px] font-semibold ${theme === t.id ? "text-primary" : "text-muted-foreground"}`}>
-                {t.label}
-              </span>
-              {theme === t.id && (
-                <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                  <Check className="w-2.5 h-2.5 text-primary-foreground" />
+    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+      <SectionBlock title="Theme" subtitle="Choose your visual mode" icon={Palette} onSave={handleSave} saveLabel="Save Appearance">
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          {themes.map((t) => {
+            const active = theme === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTheme(t.id)}
+                className={`relative rounded-2xl border-2 transition-all duration-300 p-3.5 flex flex-col items-center gap-3 group ${
+                  active
+                    ? "border-primary/60 shadow-[0_0_20px_hsl(24_95%_53%/0.1)]"
+                    : "border-border/30 hover:border-border/60"
+                }`}
+              >
+                {/* Mini window preview */}
+                <div className={`w-full aspect-[4/3] rounded-xl ${t.bg} border border-border/20 p-2.5 flex gap-1.5 overflow-hidden`}>
+                  <div className="w-1/4 flex flex-col gap-1">
+                    <div className={`h-1.5 rounded-full ${t.bar1} w-full`} />
+                    <div className={`h-1.5 rounded-full ${t.bar1} w-3/4`} />
+                    <div className={`h-1.5 rounded-full ${t.bar3} w-2/3`} />
+                    <div className={`h-1.5 rounded-full ${t.bar1} w-full`} />
+                  </div>
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    <div className={`h-2 rounded ${t.bar2} w-2/3`} />
+                    <div className={`flex-1 rounded-lg ${t.bar1}`} />
+                  </div>
                 </div>
-              )}
-            </button>
-          ))}
+                <div className="flex items-center gap-2">
+                  <t.icon className={`w-3.5 h-3.5 ${active ? "text-primary" : "text-muted-foreground/50"}`} />
+                  <span className={`text-[12px] font-bold tracking-tight ${active ? "text-primary" : "text-muted-foreground/60"}`}>
+                    {t.label}
+                  </span>
+                </div>
+                {active && (
+                  <motion.div layoutId="theme-check" className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
+                    style={{ background: "var(--gradient-brand)" }}>
+                    <Check className="w-3 h-3 text-primary-foreground" />
+                  </motion.div>
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        <SettingRow label="Accent Color" description="Customize your brand accent">
-          <div className="flex items-center gap-2">
-            {[
-              "bg-gradient-to-r from-[hsl(24,100%,55%)] to-[hsl(330,80%,60%)]",
-              "bg-gradient-to-r from-[hsl(200,80%,50%)] to-[hsl(240,70%,60%)]",
-              "bg-gradient-to-r from-[hsl(160,70%,45%)] to-[hsl(200,80%,50%)]",
-              "bg-gradient-to-r from-[hsl(270,70%,55%)] to-[hsl(330,80%,60%)]",
-            ].map((c, i) => (
+        <Divider />
+
+        <div className="pt-5">
+          <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Accent Palette</p>
+          <div className="flex items-center gap-3">
+            {accents.map((a, i) => (
               <button
                 key={i}
-                className={`w-7 h-7 rounded-full ${c} ring-2 ring-offset-2 ring-offset-background transition-all ${
-                  i === 0 ? "ring-primary scale-110" : "ring-transparent hover:ring-border"
-                }`}
-              />
+                onClick={() => setAccentIdx(i)}
+                className="group flex flex-col items-center gap-1.5"
+              >
+                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${a.colors} transition-all duration-200 ${
+                  accentIdx === i
+                    ? "ring-2 ring-primary ring-offset-2 ring-offset-card scale-110"
+                    : "ring-1 ring-border/30 group-hover:ring-border/60 group-hover:scale-105"
+                }`} />
+                <span className={`text-[10px] font-semibold ${accentIdx === i ? "text-primary" : "text-muted-foreground/40"}`}>{a.name}</span>
+              </button>
             ))}
           </div>
-        </SettingRow>
-      </SectionCard>
+        </div>
+      </SectionBlock>
 
-      <SectionCard title="Display" icon={Monitor}>
-        <SettingRow label="Compact Mode" description="Reduce spacing for denser layouts">
-          <ToggleSwitch enabled={compactMode} onToggle={() => setCompactMode(!compactMode)} />
-        </SettingRow>
-        <SettingRow label="Sidebar Default" description="Start with sidebar collapsed">
-          <ToggleSwitch enabled={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
-        </SettingRow>
-        <SettingRow label="Animations" description="Enable motion and transition effects">
-          <ToggleSwitch enabled={animationsEnabled} onToggle={() => setAnimationsEnabled(!animationsEnabled)} />
-        </SettingRow>
-      </SectionCard>
-
-      <div className="flex justify-end pt-2">
-        <button className="btn-brand px-6 py-2.5 rounded-xl text-[13px] font-semibold min-h-[44px]">
-          Save Preferences
-        </button>
-      </div>
+      <SectionBlock title="Layout & Display" subtitle="Fine-tune your workspace layout" icon={Monitor} onSave={handleSave} saveLabel="Save Layout">
+        <SettingToggleRow icon={Laptop} label="Compact Mode" description="Reduce padding and spacing for information-dense views" enabled={compactMode} onToggle={() => setCompactMode(!compactMode)} />
+        <Divider />
+        <SettingToggleRow icon={ChevronDown} label="Collapsed Sidebar" description="Start with the sidebar collapsed by default" enabled={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+        <Divider />
+        <SettingToggleRow icon={Sparkles} label="Motion & Animations" description="Enable entrance animations and micro-interactions" enabled={animations} onToggle={() => setAnimations(!animations)} />
+      </SectionBlock>
     </motion.div>
   );
 }
 
-/* ────────────── Security Section ────────────── */
+/* ═══════════════════════════════════════════════════════
+   SECTION: SECURITY
+   ═══════════════════════════════════════════════════════ */
 
 function SecuritySection() {
   const [twoFa, setTwoFa] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
 
   const sessions = [
-    { device: "MacBook Pro — Chrome", location: "Los Angeles, CA", time: "Active now", current: true },
-    { device: "iPhone 15 — Safari", location: "Los Angeles, CA", time: "2h ago", current: false },
-    { device: "Windows PC — Firefox", location: "New York, NY", time: "3 days ago", current: false },
+    { device: "MacBook Pro", browser: "Chrome 122", location: "Los Angeles, CA", time: "Active now", current: true, icon: Laptop },
+    { device: "iPhone 15 Pro", browser: "Safari", location: "Los Angeles, CA", time: "2h ago", current: false, icon: Smartphone },
+    { device: "Windows Desktop", browser: "Firefox 124", location: "New York, NY", time: "3 days ago", current: false, icon: Monitor },
   ];
 
-  return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
-      <SectionCard title="Password" icon={Lock}>
-        <SettingRow label="Current Password">
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              value="••••••••••••"
-              readOnly
-              className="w-full sm:w-64 bg-secondary/50 border border-border/50 rounded-lg px-3.5 py-2 pr-10 text-[13px] text-foreground outline-none focus-brand transition-all font-medium"
-            />
-            <button
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </SettingRow>
-        <div className="pt-3">
-          <button className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-border text-foreground hover:bg-secondary transition-colors min-h-[40px]">
-            Change Password
-          </button>
-        </div>
-      </SectionCard>
+  const handleSave = () => toast.success("Password updated successfully");
 
-      <SectionCard title="Two-Factor Authentication" icon={Smartphone}>
-        <SettingRow label="Enable 2FA" description="Add an extra layer of security with an authenticator app">
-          <ToggleSwitch enabled={twoFa} onToggle={() => setTwoFa(!twoFa)} />
-        </SettingRow>
-        {twoFa && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="pt-3">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/8 border border-emerald-500/20">
-              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-              <p className="text-[12px] text-emerald-400 font-medium">Two-factor authentication is enabled</p>
+  return (
+    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+      <SectionBlock title="Change Password" subtitle="Use a strong, unique password" icon={Lock} onSave={handleSave} saveLabel="Update Password">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <FieldGroup label="Current Password">
+            <PremiumInput
+              value={currentPw}
+              placeholder="Enter current password"
+              type={showPw ? "text" : "password"}
+              onChange={setCurrentPw}
+              suffix={
+                <button onClick={() => setShowPw(!showPw)} className="text-muted-foreground/40 hover:text-foreground transition-colors">
+                  {showPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              }
+            />
+          </FieldGroup>
+          <FieldGroup label="New Password">
+            <PremiumInput
+              value={newPw}
+              placeholder="Enter new password"
+              type={showPw ? "text" : "password"}
+              onChange={setNewPw}
+              suffix={
+                <button onClick={() => setShowPw(!showPw)} className="text-muted-foreground/40 hover:text-foreground transition-colors">
+                  {showPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              }
+            />
+          </FieldGroup>
+        </div>
+        {newPw.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="mt-4">
+            <div className="flex gap-1.5">
+              {[1, 2, 3, 4].map((level) => (
+                <div key={level} className={`h-1 flex-1 rounded-full transition-colors ${
+                  newPw.length >= level * 3
+                    ? level >= 4 ? "bg-emerald-400" : level >= 3 ? "bg-brand-orange" : "bg-destructive"
+                    : "bg-secondary"
+                }`} />
+              ))}
             </div>
+            <p className="text-[10px] text-muted-foreground/40 mt-1.5 font-medium">
+              {newPw.length < 6 ? "Too short" : newPw.length < 9 ? "Fair" : newPw.length < 12 ? "Good" : "Strong"}
+            </p>
           </motion.div>
         )}
-      </SectionCard>
+      </SectionBlock>
 
-      <SectionCard title="Active Sessions" icon={Key}>
-        <div className="space-y-0">
-          {sessions.map((s, i) => (
-            <div key={i} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                  s.current ? "bg-emerald-500/12" : "bg-secondary"
+      <SectionBlock title="Two-Factor Authentication" subtitle="Extra security for your account" icon={Shield}>
+        <div className="flex items-center justify-between gap-4 py-1">
+          <div className="flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${twoFa ? "bg-emerald-500/12" : "bg-secondary/60"}`}>
+              <Smartphone className={`w-[18px] h-[18px] ${twoFa ? "text-emerald-400" : "text-muted-foreground"}`} />
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-foreground tracking-tight">Authenticator App</p>
+              <p className="text-[11px] text-muted-foreground/50 mt-0.5">Use an app like Google Authenticator or Authy</p>
+            </div>
+          </div>
+          <ToggleSwitch enabled={twoFa} onToggle={() => setTwoFa(!twoFa)} />
+        </div>
+        <AnimatePresence>
+          {twoFa && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-4 overflow-hidden">
+              <div className="flex items-center gap-3 p-4 rounded-xl border border-emerald-500/20" style={{ background: "hsl(160 60% 45% / 0.04)" }}>
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-[13px] text-emerald-400 font-semibold">2FA is active</p>
+                  <p className="text-[11px] text-emerald-400/50 mt-0.5">Your account has an extra layer of protection</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </SectionBlock>
+
+      <SectionBlock title="Active Sessions" subtitle="Manage where you're signed in" icon={Key}>
+        {sessions.map((s, i) => (
+          <div key={i}>
+            <div className="flex items-center justify-between gap-3 py-4">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  s.current ? "bg-emerald-500/10" : "bg-secondary/60"
                 }`}>
-                  <Monitor className={`w-4 h-4 ${s.current ? "text-emerald-400" : "text-muted-foreground"}`} />
+                  <s.icon className={`w-[18px] h-[18px] ${s.current ? "text-emerald-400" : "text-muted-foreground/60"}`} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-foreground tracking-tight truncate">
-                    {s.device}
+                  <div className="flex items-center gap-2">
+                    <p className="text-[13px] font-semibold text-foreground tracking-tight">{s.device}</p>
+                    <span className="text-[11px] text-muted-foreground/40">· {s.browser}</span>
                     {s.current && (
-                      <span className="ml-2 text-[10px] font-semibold text-emerald-400 bg-emerald-500/12 px-1.5 py-0.5 rounded-full">
-                        This device
+                      <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        Current
                       </span>
                     )}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">{s.location} · {s.time}</p>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground/40 mt-0.5">{s.location} · {s.time}</p>
                 </div>
               </div>
               {!s.current && (
-                <button className="text-[11px] font-semibold text-destructive hover:bg-destructive/10 px-2.5 py-1 rounded-lg transition-colors shrink-0">
+                <button className="text-[12px] font-semibold text-destructive/70 hover:text-destructive hover:bg-destructive/8 px-3 py-1.5 rounded-lg transition-all shrink-0">
                   Revoke
                 </button>
               )}
             </div>
-          ))}
-        </div>
-      </SectionCard>
+            {i < sessions.length - 1 && <Divider />}
+          </div>
+        ))}
+      </SectionBlock>
 
-      <SectionCard title="Data & Privacy" icon={Download}>
-        <SettingRow label="Export Data" description="Download all your tracks, playlists, and account data">
-          <button className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-border text-foreground hover:bg-secondary transition-colors min-h-[40px] flex items-center gap-2">
-            <Download className="w-3.5 h-3.5" /> Export
+      <SectionBlock title="Data & Privacy" subtitle="Export or delete your data" icon={Download}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2">
+          <div>
+            <p className="text-[13px] font-semibold text-foreground">Export all data</p>
+            <p className="text-[11px] text-muted-foreground/50 mt-0.5">Download tracks, playlists, contacts, and metadata as a ZIP archive</p>
+          </div>
+          <button className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-border/60 text-foreground hover:bg-secondary transition-all min-h-[40px] flex items-center gap-2 shrink-0">
+            <Download className="w-3.5 h-3.5" /> Export ZIP
           </button>
-        </SettingRow>
-        <SettingRow label="Delete Account" description="Permanently delete your account and all associated data">
-          <button className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors min-h-[40px]">
+        </div>
+        <Divider />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
+          <div>
+            <p className="text-[13px] font-semibold text-foreground">Delete your account</p>
+            <p className="text-[11px] text-muted-foreground/50 mt-0.5">This will permanently remove your account and all associated data</p>
+          </div>
+          <button className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-destructive/25 text-destructive hover:bg-destructive/8 transition-all min-h-[40px] shrink-0">
             Delete Account
           </button>
-        </SettingRow>
-      </SectionCard>
+        </div>
+      </SectionBlock>
     </motion.div>
   );
 }
 
-/* ────────────── Main Settings Page ────────────── */
+/* ═══════════════════════════════════════════════════════
+   MAIN SETTINGS PAGE
+   ═══════════════════════════════════════════════════════ */
 
 const sectionComponents: Record<SettingsSection, React.FC> = {
   profile: ProfileSection,
@@ -474,68 +714,84 @@ export default function SettingsPage() {
 
   return (
     <PageShell>
-      <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 max-w-[1200px]">
-        {/* Header */}
-        <motion.div variants={item} className="mb-6">
+      <motion.div variants={stagger} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 max-w-[1200px]">
+        {/* Page header */}
+        <motion.div variants={fadeUp} className="mb-8">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Settings</h1>
           <p className="text-muted-foreground text-xs sm:text-sm mt-1">Manage your workspace and account preferences</p>
         </motion.div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sub-navigation */}
-          <motion.nav variants={item} className={`shrink-0 ${isMobile ? "" : "w-56"}`}>
-            <div className={`${isMobile ? "flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide" : "space-y-1 sticky top-20"}`}>
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Left navigation */}
+          <motion.nav variants={fadeUp} className={`shrink-0 ${isMobile ? "" : "w-60"}`}>
+            <div className={isMobile
+              ? "flex gap-1.5 overflow-x-auto pb-3 -mx-1 px-1"
+              : "space-y-0.5 sticky top-20"
+            }>
               {sections.map((s) => {
                 const isActive = activeSection === s.id;
                 return (
                   <button
                     key={s.id}
                     onClick={() => setActiveSection(s.id)}
-                    className={`${
+                    className={`relative ${
                       isMobile
                         ? "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium whitespace-nowrap shrink-0 min-h-[44px] transition-all"
-                        : "w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-[13px] font-medium transition-all text-left"
+                        : "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all duration-200"
                     } ${
                       isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                        ? "text-foreground"
+                        : "text-muted-foreground/60 hover:text-foreground hover:bg-secondary/30"
                     }`}
                   >
-                    <s.icon className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
-                    <span className="tracking-tight">{s.label}</span>
+                    {/* Active gradient bar (desktop) */}
                     {!isMobile && isActive && (
-                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
+                      <motion.div
+                        layoutId="settings-active"
+                        className="absolute left-0 top-[20%] bottom-[20%] w-[3px] rounded-r-full"
+                        style={{ background: "var(--gradient-brand)" }}
+                        transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                      />
                     )}
+                    {/* Mobile active pill bg */}
+                    {isMobile && isActive && (
+                      <motion.div layoutId="settings-pill" className="absolute inset-0 rounded-xl bg-primary/10" transition={{ duration: 0.2 }} />
+                    )}
+
+                    <s.icon className={`w-[17px] h-[17px] shrink-0 relative z-10 ${isActive ? "text-primary" : ""}`} />
+                    <div className="relative z-10 min-w-0">
+                      <span className={`text-[13px] font-semibold tracking-tight block ${isActive ? "" : ""}`}>{s.label}</span>
+                      {!isMobile && (
+                        <span className={`text-[10px] mt-0.5 block ${isActive ? "text-muted-foreground/50" : "text-muted-foreground/30"}`}>
+                          {s.description}
+                        </span>
+                      )}
+                    </div>
                   </button>
                 );
               })}
             </div>
 
-            {/* Desktop: visual separator under nav */}
             {!isMobile && (
-              <div className="mt-6 pt-4 border-t border-border/50">
-                <div className="px-3.5">
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-semibold">v2.4.0</p>
-                  <p className="text-[11px] text-muted-foreground/40 mt-0.5">TRAKALOG © 2026</p>
-                </div>
+              <div className="mt-8 pt-5 border-t border-border/30 px-4">
+                <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/25 font-bold">TRAKALOG v2.4.0</p>
               </div>
             )}
           </motion.nav>
 
-          {/* Content area */}
-          <motion.div variants={item} className="flex-1 min-w-0">
-            {/* Section title bar */}
-            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-border/50">
-              <div className="w-9 h-9 rounded-xl icon-brand flex items-center justify-center">
-                <activeInfo.icon className="w-[18px] h-[18px] text-brand-orange" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-foreground tracking-tight">{activeInfo.label}</h2>
-                <p className="text-[11px] text-muted-foreground">{activeInfo.description}</p>
-              </div>
-            </div>
-
-            <ActiveComponent />
+          {/* Right content */}
+          <motion.div variants={fadeUp} className="flex-1 min-w-0">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeSection}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+              >
+                <ActiveComponent />
+              </motion.div>
+            </AnimatePresence>
           </motion.div>
         </div>
       </motion.div>
