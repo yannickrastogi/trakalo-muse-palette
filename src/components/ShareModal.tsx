@@ -19,6 +19,8 @@ interface ShareModalProps {
   playlistName?: string;
   playlistCover?: string;
   playlistTracks?: { id: number; title: string; artist: string; duration: string; genre: string; coverImage?: string }[];
+  // For pack
+  packItems?: string[];
 }
 
 const shareTypeLabels: Record<ShareType, string> = {
