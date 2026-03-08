@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { InviteMemberModal, type InvitePayload } from "@/components/InviteMemberModal";
 import { toast } from "sonner";
+import { useRole } from "@/contexts/RoleContext";
 
 const ROLES = ["Admin", "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer", "Manager", "Publisher", "A&R", "Assistant", "Viewer"] as const;
 
@@ -89,6 +90,7 @@ const statusConfig = {
 export default function Team() {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
+  const { permissions } = useRole();
   const [search, setSearch] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [invites, setInvites] = useState<Invite[]>(initialInvites);
@@ -126,12 +128,14 @@ export default function Team() {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("team.title")}</h1>
             <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("team.subtitle", { count: members.length })}</p>
           </div>
-          <button
-            onClick={() => setInviteOpen(true)}
-            className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold shrink-0 self-start min-h-[44px]"
-          >
-            <Plus className="w-3.5 h-3.5" /> {t("team.inviteMember")}
-          </button>
+          {permissions.canInviteMembers && (
+            <button
+              onClick={() => setInviteOpen(true)}
+              className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold shrink-0 self-start min-h-[44px]"
+            >
+              <Plus className="w-3.5 h-3.5" /> {t("team.inviteMember")}
+            </button>
+          )}
         </motion.div>
 
         {/* Role stat pills */}

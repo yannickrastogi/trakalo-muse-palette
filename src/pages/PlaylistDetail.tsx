@@ -38,6 +38,7 @@ import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePlaylists, covers } from "@/contexts/PlaylistContext";
 import { allTracks, statusColors } from "./Catalog";
+import { useRole } from "@/contexts/RoleContext";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +66,7 @@ export default function PlaylistDetail() {
   const { id } = useParams();
   const isMobile = useIsMobile();
   const { getPlaylist, updatePlaylist } = usePlaylists();
+  const { permissions } = useRole();
   const playlist = getPlaylist(id || "");
 
   const [tracks, setTracks] = useState<Track[]>(() =>
@@ -218,24 +220,30 @@ export default function PlaylistDetail() {
                 {playingTrackId ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
                 {playingTrackId ? "Pause" : "Play All"}
               </button>
-              <button
-                onClick={() => setAddTrackOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
-              >
-                <Plus className="w-4 h-4" /> Add Track
-              </button>
-              <button
-                onClick={() => { setRenameValue(playlistName); setRenameOpen(true); }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors min-h-[44px]"
-              >
-                <Edit3 className="w-4 h-4" /> Rename
-              </button>
-              <button
-                onClick={handleDuplicate}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors min-h-[44px]"
-              >
-                <Copy className="w-4 h-4" /> Duplicate
-              </button>
+              {permissions.canEditPlaylists && (
+                <button
+                  onClick={() => setAddTrackOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+                >
+                  <Plus className="w-4 h-4" /> Add Track
+                </button>
+              )}
+              {permissions.canEditPlaylists && (
+                <button
+                  onClick={() => { setRenameValue(playlistName); setRenameOpen(true); }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+                >
+                  <Edit3 className="w-4 h-4" /> Rename
+                </button>
+              )}
+              {permissions.canCreatePlaylists && (
+                <button
+                  onClick={handleDuplicate}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+                >
+                  <Copy className="w-4 h-4" /> Duplicate
+                </button>
+              )}
               <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors min-h-[44px]">
                 <Share2 className="w-4 h-4" />
               </button>

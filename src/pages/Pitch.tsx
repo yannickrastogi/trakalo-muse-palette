@@ -21,6 +21,7 @@ import {
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePitchModal, type PitchEntry } from "@/components/CreatePitchModal";
+import { useRole } from "@/contexts/RoleContext";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
@@ -168,6 +169,7 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 export default function Pitch() {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
+  const { permissions } = useRole();
   const [pitches, setPitches] = useState<PitchEntry[]>(demoPitches);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PitchStatus | "active" | null>(null);
@@ -234,12 +236,14 @@ export default function Pitch() {
               {t("pitch.subtitle")}
             </p>
           </div>
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]"
-          >
-            <Plus className="w-4 h-4" /> {t("pitch.createPitch")}
-          </button>
+          {permissions.canSendPitches && (
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]"
+            >
+              <Plus className="w-4 h-4" /> {t("pitch.createPitch")}
+            </button>
+          )}
         </motion.div>
 
         {/* Stats */}

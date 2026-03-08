@@ -29,6 +29,7 @@ import {
   Activity,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
+import { useRole } from "@/contexts/RoleContext";
 
 // Sample track data
 const trackData = {
@@ -111,6 +112,7 @@ export default function TrackDetail() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(35);
   const [activeTab, setActiveTab] = useState<string>("overview");
+  const { permissions } = useRole();
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -177,9 +179,11 @@ export default function TrackDetail() {
 
                 {/* Action buttons */}
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px]">
-                    <Edit3 className="w-4 h-4" /> Edit Track
-                  </button>
+                  {permissions.canEditOwnTracks && (
+                    <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px]">
+                      <Edit3 className="w-4 h-4" /> Edit Track
+                    </button>
+                  )}
                   <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]">
                     <Download className="w-4 h-4" /> Download
                   </button>

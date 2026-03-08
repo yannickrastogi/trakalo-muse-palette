@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { UploadTrackModal } from "@/components/UploadTrackModal";
+import { useRole } from "@/contexts/RoleContext";
 import { motion } from "framer-motion";
 import {
   Music,
@@ -81,6 +82,7 @@ export default function Catalog() {
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [uploadOpen, setUploadOpen] = useState(false);
   const navigate = useNavigate();
+  const { permissions } = useRole();
 
   const activeFilterCount = [typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter].filter(Boolean).length;
 
@@ -119,9 +121,11 @@ export default function Catalog() {
               {t("catalog.tracksInCatalog", { total: allTracks.length, shown: filteredTracks.length })}
             </p>
           </div>
-          <button onClick={() => setUploadOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start">
-            <Upload className="w-4 h-4" /> {t("catalog.uploadTrack")}
-          </button>
+          {permissions.canUploadTracks && (
+            <button onClick={() => setUploadOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start">
+              <Upload className="w-4 h-4" /> {t("catalog.uploadTrack")}
+            </button>
+          )}
         </motion.div>
 
         {/* Search & Filter bar */}
