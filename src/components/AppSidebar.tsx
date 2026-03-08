@@ -12,6 +12,8 @@ import {
   ChevronRight,
   Menu,
   X,
+  Link2,
+  BookUser,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -26,6 +28,8 @@ const navItems = [
   { titleKey: "nav.stems", icon: Layers, url: "/stems", permKey: null },
   { titleKey: "nav.playlists", icon: ListMusic, url: "/playlists", permKey: null },
   { titleKey: "nav.pitch", icon: Send, url: "/pitch", permKey: "canSendPitches" as const },
+  { titleKey: "nav.contacts", icon: BookUser, url: "/contacts", permKey: null },
+  { titleKey: "nav.sharedLinks", icon: Link2, url: "/shared-links", permKey: null },
   { titleKey: "nav.team", icon: Users, url: "/team", permKey: null },
   { titleKey: "nav.settings", icon: Settings, url: "/settings", permKey: "canAccessSettings" as const },
 ];
