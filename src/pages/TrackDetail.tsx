@@ -381,6 +381,11 @@ export default function TrackDetail() {
           trackData={trackData}
         />
       )}
+      <EditTrackModal
+        open={editTrackModalOpen}
+        onClose={() => setEditTrackModalOpen(false)}
+        trackId={Number(id)}
+      />
     </PageShell>
   );
 }
