@@ -1,5 +1,6 @@
 import { useState } from "react";
 import JSZip from "jszip";
+import { jsPDF } from "jspdf";
 import {
   Dialog,
   DialogContent,
@@ -423,7 +424,6 @@ function drawFallbackCover(ctx: CanvasRenderingContext2D, size: number, trackDat
 
 /** Generate a watermarked placeholder document PDF */
 function generateWatermarkedDocumentPdf(docName: string, status: string, date: string, trackTitle: string, trackArtist: string): Blob {
-  const { jsPDF } = await import("jspdf") as any;
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
