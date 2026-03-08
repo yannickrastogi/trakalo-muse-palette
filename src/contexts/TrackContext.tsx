@@ -46,6 +46,7 @@ export interface TrackData {
   key: string;
   duration: string;
   mood: string[];
+  voice: string;
   status: string;
   isrc: string;
   upc: string;
@@ -79,7 +80,7 @@ export interface TrackData {
 const defaultTracks: TrackData[] = [
   {
     id: 1, title: "Velvet Hour", artist: "Kira Nomura", featuredArtists: ["JVNE"], album: "Late Bloom EP",
-    genre: "Neo-Soul", bpm: 92, key: "Ab Maj", duration: "4:12", mood: ["emotional", "dreamy", "smooth"],
+    genre: "Neo-Soul", bpm: 92, key: "Ab Maj", duration: "4:12", mood: ["emotional", "dreamy", "smooth"], voice: "Female",
     status: "Available", isrc: "USRC12600001", upc: "0850123456789", releaseDate: "2026-04-12",
     label: "Nightfall Records", publisher: "Nomura Publishing", writtenBy: ["Kira Nomura", "Jun Tanaka"],
     producedBy: ["JVNE", "Kira Nomura"], mixedBy: "Marco Silva", masteredBy: "Sterling Sound NYC",
@@ -111,7 +112,7 @@ const defaultTracks: TrackData[] = [
   },
   {
     id: 2, title: "Ghost Protocol", artist: "Dex Moraes × JVNE", featuredArtists: [], album: "Singles 2026",
-    genre: "Electronic", bpm: 128, key: "F# Min", duration: "3:38", mood: ["energetic", "dark"],
+    genre: "Electronic", bpm: 128, key: "F# Min", duration: "3:38", mood: ["energetic", "dark"], voice: "Male",
     status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: ["Dex Moraes"], producedBy: ["JVNE"], mixedBy: "", masteredBy: "",
     copyright: "", language: "English", explicit: false, type: "Sample", coverIdx: 1,
@@ -120,7 +121,7 @@ const defaultTracks: TrackData[] = [
   },
   {
     id: 3, title: "Burning Chrome", artist: "Alina Voss", featuredArtists: [], album: "Neon Archive",
-    genre: "Synthwave", bpm: 118, key: "C Min", duration: "5:01", mood: ["nostalgic", "driving"],
+    genre: "Synthwave", bpm: 118, key: "C Min", duration: "5:01", mood: ["nostalgic", "driving"], voice: "Female",
     status: "Available", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: ["Alina Voss"], producedBy: ["Alina Voss"], mixedBy: "", masteredBy: "",
     copyright: "", language: "Portuguese", explicit: false, type: "Song", coverIdx: 2,
@@ -129,7 +130,7 @@ const defaultTracks: TrackData[] = [
   },
   {
     id: 4, title: "Soft Landing", artist: "Marco Silva", featuredArtists: [], album: "Ambient Vol. II",
-    genre: "Ambient", bpm: 72, key: "D Maj", duration: "6:44", mood: ["calm", "uplifting"],
+    genre: "Ambient", bpm: 72, key: "D Maj", duration: "6:44", mood: ["calm", "uplifting"], voice: "N/A",
     status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: ["Marco Silva"], producedBy: ["Marco Silva"], mixedBy: "", masteredBy: "",
     copyright: "", language: "Instrumental", explicit: false, type: "Instrumental", coverIdx: 3,
@@ -138,7 +139,7 @@ const defaultTracks: TrackData[] = [
   },
   {
     id: 5, title: "Paper Moons", artist: "Kira Nomura × AYA", featuredArtists: [], album: "Late Bloom EP",
-    genre: "Indie Pop", bpm: 105, key: "Bb Maj", duration: "3:22", mood: ["happy", "playful"],
+    genre: "Indie Pop", bpm: 105, key: "Bb Maj", duration: "3:22", mood: ["happy", "playful"], voice: "Duet",
     status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
     copyright: "", language: "Japanese", explicit: false, type: "Song", coverIdx: 4,
@@ -147,7 +148,7 @@ const defaultTracks: TrackData[] = [
   },
   {
     id: 6, title: "Static Bloom", artist: "JVNE", featuredArtists: [], album: "Singles 2026",
-    genre: "Glitch Hop", bpm: 140, key: "E Min", duration: "2:59", mood: ["aggressive", "experimental"],
+    genre: "Glitch Hop", bpm: 140, key: "E Min", duration: "2:59", mood: ["aggressive", "experimental"], voice: "Male",
     status: "Available", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
     copyright: "", language: "English", explicit: false, type: "Acapella", coverIdx: 5,
@@ -156,7 +157,7 @@ const defaultTracks: TrackData[] = [
   },
   {
     id: 7, title: "Golden Frequency", artist: "Alina Voss × Marco", featuredArtists: [], album: "Neon Archive",
-    genre: "House", bpm: 124, key: "G Maj", duration: "5:33", mood: ["euphoric", "warm"],
+    genre: "House", bpm: 124, key: "G Maj", duration: "5:33", mood: ["euphoric", "warm"], voice: "Duet",
     status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
     copyright: "", language: "Spanish", explicit: false, type: "Song", coverIdx: 2,
@@ -165,7 +166,7 @@ const defaultTracks: TrackData[] = [
   },
   {
     id: 8, title: "Daybreak", artist: "Kira Nomura", featuredArtists: [], album: "Late Bloom EP",
-    genre: "Neo-Soul", bpm: 88, key: "Eb Maj", duration: "3:55", mood: ["hopeful", "smooth"],
+    genre: "Neo-Soul", bpm: 88, key: "Eb Maj", duration: "3:55", mood: ["hopeful", "smooth"], voice: "N/A",
     status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
     copyright: "", language: "English", explicit: false, type: "Instrumental", coverIdx: 0,
@@ -174,7 +175,7 @@ const defaultTracks: TrackData[] = [
   },
   {
     id: 9, title: "Obsidian", artist: "Dex Moraes", featuredArtists: [], album: "Singles 2026",
-    genre: "Techno", bpm: 136, key: "A Min", duration: "6:12", mood: ["dark", "hypnotic"],
+    genre: "Techno", bpm: 136, key: "A Min", duration: "6:12", mood: ["dark", "hypnotic"], voice: "N/A",
     status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
     copyright: "", language: "Instrumental", explicit: false, type: "Sample", coverIdx: 1,
@@ -183,7 +184,7 @@ const defaultTracks: TrackData[] = [
   },
   {
     id: 10, title: "Slow Drift", artist: "Marco Silva", featuredArtists: [], album: "Ambient Vol. II",
-    genre: "Ambient", bpm: 65, key: "F Maj", duration: "7:08", mood: ["meditative", "calm"],
+    genre: "Ambient", bpm: 65, key: "F Maj", duration: "7:08", mood: ["meditative", "calm"], voice: "N/A",
     status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
     copyright: "", language: "Instrumental", explicit: false, type: "Instrumental", coverIdx: 3,
@@ -192,7 +193,7 @@ const defaultTracks: TrackData[] = [
   },
   {
     id: 11, title: "Neon Pulse", artist: "JVNE × Alina Voss", featuredArtists: [], album: "Neon Archive",
-    genre: "Synthwave", bpm: 110, key: "B Min", duration: "4:28", mood: ["energetic", "nostalgic"],
+    genre: "Synthwave", bpm: 110, key: "B Min", duration: "4:28", mood: ["energetic", "nostalgic"], voice: "Female",
     status: "Available", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
     copyright: "", language: "French", explicit: false, type: "Song", coverIdx: 2,
@@ -201,7 +202,7 @@ const defaultTracks: TrackData[] = [
   },
   {
     id: 12, title: "Afterglow", artist: "Kira Nomura × Dex", featuredArtists: [], album: "Late Bloom EP",
-    genre: "R&B", bpm: 96, key: "C# Min", duration: "3:47", mood: ["romantic", "emotional"],
+    genre: "R&B", bpm: 96, key: "C# Min", duration: "3:47", mood: ["romantic", "emotional"], voice: "Female",
     status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
     copyright: "", language: "English", explicit: false, type: "Acapella", coverIdx: 0,
