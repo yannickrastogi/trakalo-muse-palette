@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback /* refresh */ } from "react";
-import { jsPDF } from "jspdf";
 import { useParams, Link } from "react-router-dom";
 import { useTrack, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
-import trakalogLogo from "@/assets/trakalog-logo.png";
+import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf } from "@/lib/pdf-generators";
+import { DownloadTrackModal } from "@/components/DownloadTrackModal";
 import { Textarea } from "@/components/ui/textarea";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { ShareModal } from "@/components/ShareModal";
