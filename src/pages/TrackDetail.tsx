@@ -1230,11 +1230,23 @@ function SplitsTab({ trackId }: { trackId: number }) {
     );
   }
 
+  const handleDownloadPdf = () => {
+    if (!trackData) return;
+    generateSplitsPdf(trackData.title, trackData.artist, splits, totalShares);
+  };
+
   return (
     <SectionCard
       title="Publishing & Ownership Splits"
       icon={PieChart}
-      action={<button className="text-xs text-primary hover:underline">Edit Splits</button>}
+      action={
+        <div className="flex items-center gap-2">
+          <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:underline">
+            <Download className="w-3.5 h-3.5" /> Download PDF
+          </button>
+          <button className="text-xs text-primary hover:underline">Edit Splits</button>
+        </div>
+      }
     >
       {/* Visual bar */}
       <div className="px-5 pt-4 pb-2">
