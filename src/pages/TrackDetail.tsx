@@ -90,7 +90,7 @@ export default function TrackDetail() {
   const { id } = useParams();
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(35);
-  const [activeTab, setActiveTab] = useState<string>("overview");
+  const [activeTab, setActiveTab] = useState<string>("lyrics");
   const { permissions } = useRole();
   const { getTrack, updateTrack } = useTrack();
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -114,10 +114,10 @@ export default function TrackDetail() {
   };
 
   const tabs = [
-    { id: "overview", label: "Overview" },
-    { id: "stems", label: "Stems" },
     { id: "lyrics", label: "Lyrics" },
+    { id: "stems", label: "Stems" },
     { id: "splits", label: "Splits" },
+    { id: "metadata", label: "Metadata" },
     { id: "paperwork", label: "Paperwork" },
     { id: "pitches", label: "Pitch History" },
     { id: "status", label: "Status" },
@@ -286,10 +286,10 @@ export default function TrackDetail() {
 
             {/* Tab content */}
             <motion.div variants={item}>
-              {activeTab === "overview" && <OverviewTab trackId={Number(id)} />}
-              {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
               {activeTab === "lyrics" && <LyricsTab trackId={Number(id)} />}
+              {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
               {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
+              {activeTab === "metadata" && <OverviewTab trackId={Number(id)} />}
               {activeTab === "paperwork" && <PaperworkTab />}
               {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
               {activeTab === "status" && <StatusTab trackId={Number(id)} />}
