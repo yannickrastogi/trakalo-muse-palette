@@ -2,7 +2,7 @@ import { useState, useRef, useCallback /* refresh */ } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
-import { ShareStemsModal } from "@/components/ShareStemsModal";
+import { ShareModal } from "@/components/ShareModal";
 import { usePitches } from "@/contexts/PitchContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
