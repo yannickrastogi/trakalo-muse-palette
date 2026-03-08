@@ -1,84 +1,296 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { ListMusic, Plus, Play, MoreHorizontal, Search, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import {
+  ListMusic,
+  Plus,
+  Play,
+  Pause,
+  MoreHorizontal,
+  Search,
+  X,
+  Clock,
+  Music,
+  Disc3,
+} from "lucide-react";
 import { PageShell } from "@/components/PageShell";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-const playlists = [
-  { name: "Summer EP — Final Selects", tracks: 8, duration: "32 min", updated: "2h ago", mood: "Uplifting" },
-  { name: "Sync Pitches — Q2 2026", tracks: 14, duration: "52 min", updated: "1d ago", mood: "Cinematic" },
-  { name: "Late Night Sessions", tracks: 22, duration: "1h 18m", updated: "3d ago", mood: "Chill" },
-  { name: "High Energy — Ads", tracks: 11, duration: "38 min", updated: "5d ago", mood: "Energetic" },
-  { name: "Neo-Soul Collection", tracks: 19, duration: "1h 04m", updated: "1w ago", mood: "Smooth" },
-  { name: "Unreleased Vault", tracks: 31, duration: "1h 52m", updated: "2w ago", mood: "Mixed" },
+import cover1 from "@/assets/covers/cover-1.jpg";
+import cover2 from "@/assets/covers/cover-2.jpg";
+import cover3 from "@/assets/covers/cover-3.jpg";
+import cover4 from "@/assets/covers/cover-4.jpg";
+import cover5 from "@/assets/covers/cover-5.jpg";
+import cover6 from "@/assets/covers/cover-6.jpg";
+
+const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
+
+export const playlistsData = [
+  {
+    id: "summer-ep",
+    name: "Summer EP — Final Selects",
+    description: "Curated finals for the summer release. Warm, uplifting vibes across neo-soul and indie.",
+    tracks: 8,
+    duration: "32 min",
+    updated: "2h ago",
+    mood: "Uplifting",
+    coverIdxs: [0, 2, 4, 3],
+    color: "from-brand-orange/20 to-brand-pink/10",
+  },
+  {
+    id: "sync-pitches-q2",
+    name: "Sync Pitches — Q2 2026",
+    description: "Tracks shortlisted for film, TV, and ad sync placements this quarter.",
+    tracks: 14,
+    duration: "52 min",
+    updated: "1d ago",
+    mood: "Cinematic",
+    coverIdxs: [1, 3, 5, 0],
+    color: "from-brand-purple/20 to-brand-pink/10",
+  },
+  {
+    id: "late-night",
+    name: "Late Night Sessions",
+    description: "Downtempo, ambient, and lo-fi selections for after-hours listening.",
+    tracks: 22,
+    duration: "1h 18m",
+    updated: "3d ago",
+    mood: "Chill",
+    coverIdxs: [3, 4, 0, 2],
+    color: "from-brand-pink/15 to-brand-purple/15",
+  },
+  {
+    id: "high-energy",
+    name: "High Energy — Ads",
+    description: "Punchy, high-tempo tracks perfect for advertising and brand campaigns.",
+    tracks: 11,
+    duration: "38 min",
+    updated: "5d ago",
+    mood: "Energetic",
+    coverIdxs: [5, 1, 2, 4],
+    color: "from-brand-orange/25 to-brand-purple/10",
+  },
+  {
+    id: "neo-soul",
+    name: "Neo-Soul Collection",
+    description: "A definitive collection of our best neo-soul productions and collaborations.",
+    tracks: 19,
+    duration: "1h 04m",
+    updated: "1w ago",
+    mood: "Smooth",
+    coverIdxs: [0, 3, 1, 5],
+    color: "from-brand-pink/20 to-brand-orange/10",
+  },
+  {
+    id: "unreleased-vault",
+    name: "Unreleased Vault",
+    description: "Demos, unreleased masters, and works-in-progress awaiting final clearance.",
+    tracks: 31,
+    duration: "1h 52m",
+    updated: "2w ago",
+    mood: "Mixed",
+    coverIdxs: [2, 5, 3, 1],
+    color: "from-brand-purple/15 to-brand-orange/15",
+  },
 ];
 
-const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
-const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+};
+const item = {
+  hidden: { opacity: 0, y: 16 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: "easeOut" as const },
+  },
+};
+
+function MiniCoverGrid({ idxs }: { idxs: number[] }) {
+  return (
+    <div className="grid grid-cols-2 gap-0.5 w-full aspect-square rounded-xl overflow-hidden">
+      {idxs.slice(0, 4).map((ci, i) => (
+        <img
+          key={i}
+          src={covers[ci]}
+          alt=""
+          className="w-full h-full object-cover"
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function Playlists() {
   const [search, setSearch] = useState("");
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const filtered = useMemo(() => {
-    if (!search) return playlists;
+    if (!search) return playlistsData;
     const q = search.toLowerCase();
-    return playlists.filter((pl) => pl.name.toLowerCase().includes(q) || pl.mood.toLowerCase().includes(q));
+    return playlistsData.filter(
+      (pl) =>
+        pl.name.toLowerCase().includes(q) ||
+        pl.mood.toLowerCase().includes(q) ||
+        pl.description.toLowerCase().includes(q)
+    );
   }, [search]);
 
   return (
     <PageShell>
-      <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
-        <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-7 max-w-[1400px]"
+      >
+        {/* Header */}
+        <motion.div
+          variants={item}
+          className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
+        >
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Playlists</h1>
-            <p className="text-muted-foreground text-xs sm:text-sm mt-1">Organize and curate your track collections</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+              Playlists
+            </h1>
+            <p className="text-muted-foreground text-xs sm:text-sm mt-1">
+              {playlistsData.length} curated collections ·{" "}
+              {playlistsData.reduce((s, p) => s + p.tracks, 0)} total tracks
+            </p>
           </div>
-          <button className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
-            <Plus className="w-3.5 h-3.5" /> New Playlist
+          <button className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
+            <Plus className="w-4 h-4" /> Create Playlist
           </button>
         </motion.div>
 
         {/* Search */}
         <motion.div variants={item}>
-          <div className="flex items-center gap-2.5 bg-secondary/50 rounded-lg px-3.5 py-2.5 max-w-md border border-border/50 focus-within:border-primary/25 transition-all">
+          <div className="flex items-center gap-2.5 bg-secondary/50 rounded-xl px-4 py-2.5 max-w-md border border-border/50 focus-brand transition-all">
             <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-            <input type="text" placeholder="Search playlists…" value={search} onChange={(e) => setSearch(e.target.value)}
-              className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium" />
-            {search && <button onClick={() => setSearch("")} className="text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"><X className="w-3.5 h-3.5" /></button>}
+            <input
+              type="text"
+              placeholder="Search playlists by name, mood, or description…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {filtered.length === 0 ? (
-            <motion.div variants={item} className="col-span-full py-16 text-center text-muted-foreground">
-              <ListMusic className="w-8 h-8 mx-auto mb-3 opacity-20" />
-              <p className="text-sm font-semibold">No playlists found</p>
-              <p className="text-xs mt-1 text-muted-foreground/70">Try a different search term</p>
-            </motion.div>
-          ) : filtered.map((pl) => (
-            <motion.div key={pl.name} variants={item}
-              className="card-premium p-4 sm:p-5 group cursor-pointer">
-              <div className="flex items-start justify-between mb-3 sm:mb-4">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-purple/15 via-brand-pink/10 to-brand-orange/15 flex items-center justify-center group-hover:from-brand-purple/25 group-hover:to-brand-orange/25 transition-all duration-300">
-                  <ListMusic className="w-[18px] h-[18px] text-foreground/35" />
-                </div>
-                <button className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-100 sm:opacity-0 group-hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center">
-                  <MoreHorizontal className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <h3 className="font-semibold text-foreground text-sm mb-1 truncate tracking-tight">{pl.name}</h3>
-              <p className="text-xs text-muted-foreground">{pl.tracks} tracks · {pl.duration}</p>
-              <div className="flex items-center justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border/60">
-                <span className="text-2xs text-muted-foreground font-medium">Updated {pl.updated}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70">#{pl.mood}</span>
-                  <button className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-100 sm:opacity-0 group-hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center">
-                    <Play className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        {/* Playlist Grid */}
+        {filtered.length === 0 ? (
+          <motion.div
+            variants={item}
+            className="card-premium py-20 text-center"
+          >
+            <ListMusic className="w-10 h-10 mx-auto mb-4 text-muted-foreground/15" />
+            <p className="text-sm font-semibold text-foreground">
+              No playlists found
+            </p>
+            <p className="text-xs mt-1.5 text-muted-foreground/70">
+              Try a different search term
+            </p>
+          </motion.div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {filtered.map((pl) => {
+              const isPlaying = playingId === pl.id;
+              return (
+                <motion.div
+                  key={pl.id}
+                  variants={item}
+                  whileHover={{ y: -4 }}
+                  transition={{ duration: 0.2 }}
+                  className="card-premium group cursor-pointer flex flex-col"
+                  onClick={() => navigate(`/playlist/${pl.id}`)}
+                >
+                  {/* Cover art mosaic */}
+                  <div className="relative p-4 pb-0">
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${pl.color} opacity-60 group-hover:opacity-90 transition-opacity duration-500 rounded-t-[var(--radius)]`}
+                    />
+                    <div className="relative w-full max-w-[200px] mx-auto">
+                      <MiniCoverGrid idxs={pl.coverIdxs} />
+                      {/* Play overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPlayingId(isPlaying ? null : pl.id);
+                          }}
+                          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg min-h-[48px] min-w-[48px] ${
+                            isPlaying
+                              ? "btn-brand scale-100"
+                              : "bg-foreground/80 backdrop-blur-sm scale-90 hover:scale-100"
+                          }`}
+                        >
+                          {isPlaying ? (
+                            <Pause className="w-5 h-5 text-primary-foreground" />
+                          ) : (
+                            <Play className="w-5 h-5 text-background ml-0.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-4 pt-4 flex-1 flex flex-col">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-semibold text-foreground text-sm tracking-tight leading-snug line-clamp-2">
+                        {pl.name}
+                      </h3>
+                      <button
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center -mt-1 -mr-1"
+                      >
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground/70 mt-1.5 leading-relaxed line-clamp-2">
+                      {pl.description}
+                    </p>
+
+                    {/* Meta row */}
+                    <div className="flex items-center gap-3 mt-3 text-muted-foreground">
+                      <span className="flex items-center gap-1 text-2xs font-medium">
+                        <Music className="w-3 h-3" />
+                        {pl.tracks} tracks
+                      </span>
+                      <span className="w-px h-3 bg-border" />
+                      <span className="flex items-center gap-1 text-2xs font-medium">
+                        <Clock className="w-3 h-3" />
+                        {pl.duration}
+                      </span>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between mt-auto pt-3.5 border-t border-border/50 mt-3.5">
+                      <span className="text-2xs text-muted-foreground/60 font-medium">
+                        Updated {pl.updated}
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/12 text-accent/80">
+                        #{pl.mood}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </motion.div>
     </PageShell>
   );
