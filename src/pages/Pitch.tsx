@@ -95,7 +95,7 @@ export default function Pitch() {
   }, [pitches, search, statusFilter]);
 
   const handleCreate = (pitch: PitchEntry) => {
-    setPitches((prev) => [pitch, ...prev]);
+    addPitch(pitch);
   };
 
   return (
