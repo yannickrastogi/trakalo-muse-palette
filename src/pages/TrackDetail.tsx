@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
 import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf } from "@/lib/pdf-generators";
 import { DownloadTrackModal } from "@/components/DownloadTrackModal";
+import { SharePackModal } from "@/components/SharePackModal";
 import { Textarea } from "@/components/ui/textarea";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { ShareModal } from "@/components/ShareModal";
@@ -49,6 +50,7 @@ import {
   Pause as PauseIcon,
   Mic,
   Guitar as GuitarIcon,
+  Package,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
@@ -131,6 +133,7 @@ export default function TrackDetail() {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTrackModalOpen, setShareTrackModalOpen] = useState(false);
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
+  const [sharePackModalOpen, setSharePackModalOpen] = useState(false);
 
   const trackData = getTrack(Number(id));
 
@@ -262,6 +265,12 @@ export default function TrackDetail() {
                   >
                     <Share2 className="w-4 h-4" /> Share Stems
                   </button>
+                  <button
+                    onClick={() => setSharePackModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+                  >
+                    <Package className="w-4 h-4" /> Share Pack
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -358,6 +367,13 @@ export default function TrackDetail() {
           onClose={() => setDownloadModalOpen(false)}
           trackData={trackData}
           meta={buildMeta(trackData)}
+        />
+      )}
+      {trackData && (
+        <SharePackModal
+          open={sharePackModalOpen}
+          onClose={() => setSharePackModalOpen(false)}
+          trackData={trackData}
         />
       )}
     </PageShell>

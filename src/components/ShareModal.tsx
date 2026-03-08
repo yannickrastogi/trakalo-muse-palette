@@ -19,24 +19,29 @@ interface ShareModalProps {
   playlistName?: string;
   playlistCover?: string;
   playlistTracks?: { id: number; title: string; artist: string; duration: string; genre: string; coverImage?: string }[];
+  // For pack
+  packItems?: string[];
 }
 
 const shareTypeLabels: Record<ShareType, string> = {
   stems: "Share Stems",
   track: "Share Track",
   playlist: "Share Playlist",
+  pack: "Share Trakalog Pack",
 };
 
 const shareTypeItemLabel: Record<ShareType, string> = {
   stems: "stems",
   track: "track",
   playlist: "tracks",
+  pack: "items",
 };
 
 export function ShareModal({
   open, onClose, shareType,
   trackId, trackTitle, trackArtist, trackCover, stems,
   playlistId, playlistName, playlistCover, playlistTracks,
+  packItems,
 }: ShareModalProps) {
   const { createSharedLink } = useSharedLinks();
 
@@ -51,18 +56,24 @@ export function ShareModal({
   const title = shareType === "playlist" ? playlistName || "Playlist" : trackTitle || "Track";
   const subtitle = shareType === "playlist"
     ? `${playlistTracks?.length || 0} tracks`
+    : shareType === "pack"
+    ? `${packItems?.length || 0} items in pack`
     : `${trackArtist || ""}`;
 
   const itemCount = shareType === "stems"
     ? stems?.length || 0
     : shareType === "track"
     ? 1
+    : shareType === "pack"
+    ? packItems?.length || 0
     : playlistTracks?.length || 0;
 
   const defaultLinkName = shareType === "playlist"
     ? `${playlistName}`
     : shareType === "stems"
     ? `${trackTitle} — Stems`
+    : shareType === "pack"
+    ? `${trackTitle} — Trakalog Pack`
     : `${trackTitle}`;
 
   const handleCreate = () => {
@@ -93,6 +104,7 @@ export function ShareModal({
       playlistName: playlistName || undefined,
       playlistCover: playlistCover || undefined,
       playlistTracks: playlistTracks || undefined,
+      packItems: packItems || undefined,
     };
 
     createSharedLink(newLink);
