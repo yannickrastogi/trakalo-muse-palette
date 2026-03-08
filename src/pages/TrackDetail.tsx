@@ -2,6 +2,7 @@ import { useState, useRef, useCallback /* refresh */ } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
+import { ShareStemsModal } from "@/components/ShareStemsModal";
 import { usePitches } from "@/contexts/PitchContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -90,6 +91,7 @@ export default function TrackDetail() {
   const { permissions } = useRole();
   const { getTrack, updateTrack } = useTrack();
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   const trackData = getTrack(Number(id));
 
@@ -205,8 +207,11 @@ export default function TrackDetail() {
                   <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]">
                     <Download className="w-4 h-4" /> Download
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]">
-                    <Share2 className="w-4 h-4" /> Share
+                  <button
+                    onClick={() => setShareModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+                  >
+                    <Share2 className="w-4 h-4" /> Share Stems
                   </button>
                 </div>
               </div>
