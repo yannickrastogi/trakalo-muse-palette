@@ -412,7 +412,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     setEditStep(0);
   };
 
-  const allProcessing = queue.some((e) => e.analyzing || e.compressing);
+  const allProcessing = queue.some((e) => e.analyzing);
 
   // ─── Render ────────────────────────────────────────────────
 

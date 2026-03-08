@@ -62,6 +62,9 @@ export interface TrackData {
   coverIdx: number;
   coverImage?: string;
   previewUrl?: string;
+  originalFileUrl?: string;
+  originalFileName?: string;
+  originalFileSize?: number;
   notes: string;
   details: Record<string, string[]>;
   stems: TrackStem[];
