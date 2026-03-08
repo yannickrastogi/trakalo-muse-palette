@@ -94,7 +94,7 @@ const detailLabels: Record<string, string> = {
   mixingStudio: "Mixing Studio", recordingStudio: "Recording Studio", recordingDate: "Recording Date",
 };
 
-function buildMeta(trackData: NonNullable<ReturnType<ReturnType<typeof useTrack>["getTrack"]>>) {
+function buildMeta(trackData: import("@/contexts/TrackContext").TrackData) {
   const meta = [
     { label: "Album / EP", value: trackData.album || "—" },
     { label: "Label", value: trackData.label || "—" },
