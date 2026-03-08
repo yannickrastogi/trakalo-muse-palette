@@ -349,11 +349,19 @@ function StemsTab() {
   const [pendingFiles, setPendingFiles] = useState<{ file: File; type: StemType; customName: string }[]>([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [modalDragOver, setModalDragOver] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modalFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDelete = (id: string) => {
-    setStems((prev) => prev.filter((s) => s.id !== id));
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirmId) {
+      setStems((prev) => prev.filter((s) => s.id !== deleteConfirmId));
+      setDeleteConfirmId(null);
+    }
   };
 
   const handleChangeType = (id: string, newType: StemType) => {
