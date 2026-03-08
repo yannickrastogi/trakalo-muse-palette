@@ -265,6 +265,12 @@ export default function TrackDetail() {
                   >
                     <Share2 className="w-4 h-4" /> Share Stems
                   </button>
+                  <button
+                    onClick={() => setSharePackModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+                  >
+                    <Package className="w-4 h-4" /> Share Pack
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -361,6 +367,13 @@ export default function TrackDetail() {
           onClose={() => setDownloadModalOpen(false)}
           trackData={trackData}
           meta={buildMeta(trackData)}
+        />
+      )}
+      {trackData && (
+        <SharePackModal
+          open={sharePackModalOpen}
+          onClose={() => setSharePackModalOpen(false)}
+          trackData={trackData}
         />
       )}
     </PageShell>
