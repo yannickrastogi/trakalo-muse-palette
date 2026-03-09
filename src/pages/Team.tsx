@@ -336,7 +336,7 @@ export default function Team() {
         </motion.div>
 
         {/* ─── Activity Feed ─── */}
-        <motion.div variants={item} className="card-premium rounded-xl overflow-hidden">
+        <motion.div variants={item} id="team-activity-feed" className="card-premium rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-muted-foreground" />
