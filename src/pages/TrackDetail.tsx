@@ -371,7 +371,7 @@ export default function TrackDetail() {
             {/* Tab content */}
             <motion.div variants={item}>
               {activeTab === "lyrics" && <LyricsTab trackId={Number(id)} />}
-               {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
+               {activeTab === "stems" && <StemsTab trackId={Number(id)} autoOpenUpload={shouldAutoUpload} />}
                {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
                {activeTab === "engagement" && <EngagementTab trackId={Number(id)} />}
                {activeTab === "metadata" && <OverviewTab trackId={Number(id)} onEdit={() => setEditTrackModalOpen(true)} />}
@@ -782,7 +782,7 @@ function LyricsTab({ trackId }: { trackId: number }) {
 
 // PDF generators are now imported from @/lib/pdf-generators
 
-function StemsTab({ trackId }: { trackId: number }) {
+function StemsTab({ trackId, autoOpenUpload = false }: { trackId: number; autoOpenUpload?: boolean }) {
   const { getTrack, updateTrackStems } = useTrack();
   const trackData = getTrack(trackId);
   const initialStems: StemFile[] = (trackData?.stems || []).map((s) => ({
@@ -794,7 +794,7 @@ function StemsTab({ trackId }: { trackId: number }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<{ file: File; type: StemType; customName: string }[]>([]);
-  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(autoOpenUpload);
   const [modalDragOver, setModalDragOver] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
