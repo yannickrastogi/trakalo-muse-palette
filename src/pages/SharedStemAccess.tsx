@@ -18,7 +18,7 @@ const roleOptions = ["Admin", "Manager", "Producer", "Viewer", "Other"];
 export default function SharedStemAccess() {
   const { linkId } = useParams();
   const { getSharedLink, addDownloadEvent } = useSharedLinks();
-  const { tracks } = useTracks();
+  const { tracks } = useTrack();
   const { addOrUpdateContact } = useContacts();
 
   const [password, setPassword] = useState("");
