@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ShareModal } from "@/components/ShareModal";
+import { useEngagement } from "@/contexts/EngagementContext";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -17,6 +18,7 @@ import {
   Copy,
   Trash2,
   Check,
+  Headphones,
 } from "lucide-react";
 import {
   DndContext,
