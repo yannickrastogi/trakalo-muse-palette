@@ -346,7 +346,7 @@ export default function TrackDetail() {
               {activeTab === "lyrics" && <LyricsTab trackId={Number(id)} />}
               {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
               {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
-              {activeTab === "credits" && <CreditsTab trackId={Number(id)} />}
+              {activeTab === "credits" && <CreditsTab trackId={Number(id)} onEdit={() => setEditTrackModalOpen(true)} />}
               {activeTab === "metadata" && <OverviewTab trackId={Number(id)} />}
               {activeTab === "paperwork" && <PaperworkTab />}
               {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
@@ -480,7 +480,7 @@ const PRODUCTION_CREDIT_KEYS = [
   { key: "recordingDate", label: "Recording Date" },
 ];
 
-function CreditsTab({ trackId }: { trackId: number }) {
+function CreditsTab({ trackId, onEdit }: { trackId: number; onEdit: () => void }) {
   const { getTrack } = useTrack();
   const trackData = getTrack(trackId);
   if (!trackData) return null;
@@ -550,7 +550,14 @@ function CreditsTab({ trackId }: { trackId: number }) {
               </div>
             </div>
           )}
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              onClick={onEdit}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground text-xs font-semibold transition-colors"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              Edit Credits
+            </button>
             <button
               onClick={handleDownloadPdf}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-colors"
@@ -567,7 +574,14 @@ function CreditsTab({ trackId }: { trackId: number }) {
           </div>
           <div>
             <p className="text-sm font-medium text-muted-foreground">No credits added yet</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Add performer and production credits via Edit Track</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Add performer and production credits</p>
+            <button
+              onClick={onEdit}
+              className="mt-3 flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-colors mx-auto"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              Add Credits
+            </button>
           </div>
         </div>
       )}
