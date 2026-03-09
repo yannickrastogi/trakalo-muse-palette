@@ -1203,7 +1203,25 @@ function StepReview({
   details: Record<string, string[]>;
   lyrics?: string;
 }) {
-  const filledDetails = DETAIL_FIELDS.filter((f) => details[f.key]?.some((v) => v.trim()));
+  const ALL_DETAIL_FIELDS = [
+    { key: "producers", label: "Producer(s)" },
+    { key: "songwriters", label: "Songwriter(s)" },
+    { key: "recordingEngineer", label: "Recording Engineer" },
+    { key: "mixingEngineer", label: "Mixing Engineer" },
+    { key: "masteringEngineer", label: "Mastering Engineer" },
+    { key: "drumsBy", label: "Drums By" },
+    { key: "synthsBy", label: "Synths By" },
+    { key: "keysBy", label: "Keys By" },
+    { key: "guitarsBy", label: "Guitars By" },
+    { key: "bassBy", label: "Bass By" },
+    { key: "programmingBy", label: "Programming By" },
+    { key: "vocalsBy", label: "Lead Vocals By" },
+    { key: "backgroundVocalsBy", label: "Background Vocals By" },
+    { key: "mixingStudio", label: "Mixing Studio" },
+    { key: "recordingStudio", label: "Recording Studio" },
+    { key: "recordingDate", label: "Recording Date" },
+  ];
+  const filledDetails = ALL_DETAIL_FIELDS.filter((f) => details[f.key]?.some((v) => v.trim()));
 
   return (
     <div className="space-y-5">
