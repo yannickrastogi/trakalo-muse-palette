@@ -54,6 +54,22 @@ const roleColors: Record<string, string> = {
   Viewer: "from-muted-foreground/40 to-muted-foreground/20",
 };
 
+const activityIcons: Record<ActivityType, React.ElementType> = {
+  upload: Upload,
+  pitch: Send,
+  link: ExternalLink,
+  member: UserPlus,
+  status: Activity,
+};
+
+const activityColors: Record<ActivityType, string> = {
+  upload: "bg-brand-orange/12 text-brand-orange",
+  pitch: "bg-brand-purple/12 text-brand-purple",
+  link: "bg-primary/12 text-primary",
+  member: "bg-emerald-500/12 text-emerald-400",
+  status: "bg-brand-pink/12 text-brand-pink",
+};
+
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
 
