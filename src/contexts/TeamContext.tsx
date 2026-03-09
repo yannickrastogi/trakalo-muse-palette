@@ -2,6 +2,16 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 
 export type TeamRole = "Admin" | "Manager" | "A&R" | "Assistant" | "Producer" | "Songwriter" | "Musician" | "Mix Engineer" | "Mastering Engineer" | "Publisher" | "Viewer";
 
+export type ActivityType = "upload" | "pitch" | "link" | "member" | "status";
+
+export interface TeamActivity {
+  id: string;
+  type: ActivityType;
+  message: string;
+  user: string;
+  date: string;
+}
+
 export interface TeamMember {
   id: string;
   firstName: string;
@@ -17,6 +27,8 @@ export interface Team {
   name: string;
   createdAt: string;
   members: TeamMember[];
+  sharedTrackCount: number;
+  activities: TeamActivity[];
 }
 
 interface TeamContextValue {
