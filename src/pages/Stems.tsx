@@ -4,6 +4,7 @@ import { Search, Filter, Upload, Play, Download, ExternalLink, Layers, ChevronDo
 import { PageShell } from "@/components/PageShell";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
 import { useNavigate } from "react-router-dom";
+import { SelectTrackForStemsModal } from "@/components/SelectTrackForStemsModal";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
@@ -77,6 +78,7 @@ export default function Stems() {
 
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [showTrackPicker, setShowTrackPicker] = useState(false);
 
   // Filter states
   const [trackFilter, setTrackFilter] = useState("all");
@@ -196,7 +198,7 @@ export default function Stems() {
             <p className="text-muted-foreground text-xs sm:text-sm mt-1">Browse and manage all stems across your catalog.</p>
           </div>
           <button
-            onClick={() => navigate("/tracks")}
+            onClick={() => setShowTrackPicker(true)}
             className="btn-brand px-5 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 shrink-0 min-h-[44px]"
           >
             <Upload className="w-4 h-4" />
@@ -498,6 +500,7 @@ export default function Stems() {
           </motion.div>
         )}
       </motion.div>
+      <SelectTrackForStemsModal open={showTrackPicker} onClose={() => setShowTrackPicker(false)} />
     </PageShell>
   );
 }

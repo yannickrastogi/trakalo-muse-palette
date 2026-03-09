@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback /* refresh */ } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useRef, useCallback, useEffect /* refresh */ } from "react";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useTeams } from "@/contexts/TeamContext";
 import { useTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
 import { useEngagement } from "@/contexts/EngagementContext";
@@ -133,9 +133,18 @@ function buildMeta(trackData: TrackData) {
 
 export default function TrackDetail() {
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(35);
-  const [activeTab, setActiveTab] = useState<string>("lyrics");
+  const [activeTab, setActiveTab] = useState<string>(searchParams.get("tab") || "lyrics");
+  const shouldAutoUpload = searchParams.get("upload") === "true";
+
+  // Clear query params after consuming them
+  useEffect(() => {
+    if (searchParams.has("tab") || searchParams.has("upload")) {
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
   const { permissions } = useRole();
   const { getTrack, updateTrack } = useTrack();
   const { getTrackEngagement } = useEngagement();
@@ -362,7 +371,7 @@ export default function TrackDetail() {
             {/* Tab content */}
             <motion.div variants={item}>
               {activeTab === "lyrics" && <LyricsTab trackId={Number(id)} />}
-               {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
+               {activeTab === "stems" && <StemsTab trackId={Number(id)} autoOpenUpload={shouldAutoUpload} />}
                {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
                {activeTab === "engagement" && <EngagementTab trackId={Number(id)} />}
                {activeTab === "metadata" && <OverviewTab trackId={Number(id)} onEdit={() => setEditTrackModalOpen(true)} />}
@@ -773,7 +782,7 @@ function LyricsTab({ trackId }: { trackId: number }) {
 
 // PDF generators are now imported from @/lib/pdf-generators
 
-function StemsTab({ trackId }: { trackId: number }) {
+function StemsTab({ trackId, autoOpenUpload = false }: { trackId: number; autoOpenUpload?: boolean }) {
   const { getTrack, updateTrackStems } = useTrack();
   const trackData = getTrack(trackId);
   const initialStems: StemFile[] = (trackData?.stems || []).map((s) => ({
@@ -785,7 +794,7 @@ function StemsTab({ trackId }: { trackId: number }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<{ file: File; type: StemType; customName: string }[]>([]);
-  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(autoOpenUpload);
   const [modalDragOver, setModalDragOver] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
