@@ -7,13 +7,17 @@ const languages = [
   { code: "en", flag: "🇺🇸", label: "English" },
   { code: "fr", flag: "🇫🇷", label: "Français" },
   { code: "es", flag: "🇪🇸", label: "Español" },
+  { code: "pt", flag: "🇧🇷", label: "Português" },
+  { code: "it", flag: "🇮🇹", label: "Italiano" },
+  { code: "de", flag: "🇩🇪", label: "Deutsch" },
+  { code: "ko", flag: "🇰🇷", label: "한국어" },
+  { code: "ja", flag: "🇯🇵", label: "日本語" },
 ];
 
 export function LanguageSwitcher() {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [open, setOpen] = useState(false);
 
-  // Use resolvedLanguage for reliable matching (handles fr-FR → fr)
   const currentLang = i18n.resolvedLanguage || i18n.language?.split("-")[0] || "en";
   const current = languages.find((l) => l.code === currentLang) || languages[0];
 
@@ -42,7 +46,7 @@ export function LanguageSwitcher() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute right-0 top-full mt-1.5 w-44 bg-popover border border-border rounded-xl z-50 p-1 backdrop-blur-xl overflow-hidden"
+              className="absolute right-0 top-full mt-1.5 w-48 bg-popover border border-border rounded-xl z-50 p-1 backdrop-blur-xl overflow-hidden max-h-[400px] overflow-y-auto"
               style={{ boxShadow: "var(--shadow-elevated)" }}
             >
               <div className="px-3 py-2 border-b border-border/50 mb-1">
