@@ -60,6 +60,7 @@ const App = () => (
       </PlaylistProvider>
       </PitchProvider>
       </TrackProvider>
+      </TeamProvider>
       </RoleProvider>
     </TooltipProvider>
   </QueryClientProvider>
