@@ -281,7 +281,7 @@ export default function Team() {
           />
         ) : (
         <>
-        <motion.div variants={item} className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <motion.div variants={item} className="grid gap-3 grid-cols-2">
           {/* Team's Catalog */}
           <button
             onClick={() => setShowSharedCatalog(true)}
@@ -315,31 +315,6 @@ export default function Team() {
             </div>
           </button>
           {/* Pitches */}
-          <div className="card-premium p-4 rounded-xl relative overflow-hidden">
-            <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-brand-pink/8 blur-xl" />
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-brand-pink/12 flex items-center justify-center">
-                <Send className="w-5 h-5 text-brand-pink" />
-              </div>
-              <div>
-                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Pitches Made</p>
-                <p className="text-xl font-bold text-foreground">{selectedTeam.activities.filter((a) => a.type === "pitch").length}</p>
-              </div>
-            </div>
-          </div>
-          {/* Links */}
-          <div className="card-premium p-4 rounded-xl relative overflow-hidden">
-            <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-primary/8 blur-xl" />
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/12 flex items-center justify-center">
-                <ExternalLink className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Links Created</p>
-                <p className="text-xl font-bold text-foreground">{selectedTeam.activities.filter((a) => a.type === "link").length}</p>
-              </div>
-            </div>
-          </div>
         </motion.div>
 
         {/* ─── Activity Feed ─── */}
