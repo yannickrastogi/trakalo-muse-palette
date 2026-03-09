@@ -32,6 +32,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <RoleProvider>
+      <TeamProvider>
       <TrackProvider>
       <PitchProvider>
       <PlaylistProvider>
