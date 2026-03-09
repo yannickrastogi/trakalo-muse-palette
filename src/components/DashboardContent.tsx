@@ -8,21 +8,17 @@ import {
   ListMusic,
   Users,
   Send,
-  Play,
-  Pause,
   Clock,
   Upload,
   ArrowUpRight,
   MessageSquare,
   Star,
   TrendingUp,
-  MoreHorizontal,
   Headphones,
   Download,
   X,
   Search,
 } from "lucide-react";
-import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { useRole } from "@/contexts/RoleContext";
@@ -35,13 +31,6 @@ import cover5 from "@/assets/covers/cover-5.jpg";
 
 const covers = [cover1, cover2, cover3, cover4, cover5];
 
-const recentTracks = [
-  { title: "Velvet Hour", artist: "Kira Nomura", album: "Late Bloom EP", genre: "Neo-Soul", duration: "4:12", bpm: 92, key: "Ab Maj", mood: ["emotional", "dreamy"], status: "Available", language: "English", type: "Song", voice: "Female", coverIdx: 0 },
-  { title: "Ghost Protocol", artist: "Dex Moraes × JVNE", album: "Singles 2026", genre: "Electronic", duration: "3:38", bpm: 128, key: "F# Min", mood: ["energetic", "dark"], status: "On Hold", language: "English", type: "Sample", voice: "Male", coverIdx: 1 },
-  { title: "Burning Chrome", artist: "Alina Voss", album: "Neon Archive", genre: "Synthwave", duration: "5:01", bpm: 118, key: "C Min", mood: ["nostalgic", "driving"], status: "Available", language: "Portuguese", type: "Song", voice: "Female", coverIdx: 2 },
-  { title: "Soft Landing", artist: "Marco Silva", album: "Ambient Vol. II", genre: "Ambient", duration: "6:44", bpm: 72, key: "D Maj", mood: ["calm", "uplifting"], status: "Released", language: "Instrumental", type: "Instrumental", voice: "N/A", coverIdx: 3 },
-  { title: "Paper Moons", artist: "Kira Nomura × AYA", album: "Late Bloom EP", genre: "Indie Pop", duration: "3:22", bpm: 105, key: "Bb Maj", mood: ["happy", "playful"], status: "On Hold", language: "Japanese", type: "Acapella", voice: "Duet", coverIdx: 4 },
-];
 
 const activity = [
   { icon: Star, textKey: "Kira Nomura starred \"Velvet Hour\" master", time: "12m ago" },
@@ -61,7 +50,6 @@ const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } 
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
 
 export function DashboardContent() {
-  const [playingTrack, setPlayingTrack] = useState<string | null>(null);
   const [showTracksPanel, setShowTracksPanel] = useState(false);
   const [tracksRange, setTracksRange] = useState<"1d" | "1w" | "1m" | "1y" | "all">("1w");
   const [tracksSearch, setTracksSearch] = useState("");
