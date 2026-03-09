@@ -1,16 +1,29 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal, Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3, Music, Clock, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal,
+  Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3,
+  Music, Clock, CheckCircle2, XCircle, Users, ArrowLeft, Trash2, UserPlus,
+} from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { InviteMemberModal, type InvitePayload } from "@/components/InviteMemberModal";
+import { CreateTeamModal } from "@/components/CreateTeamModal";
 import { toast } from "sonner";
 import { useRole } from "@/contexts/RoleContext";
+import { useTeams, type Team, type TeamRole } from "@/contexts/TeamContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const ROLES = ["Admin", "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer", "Manager", "Publisher", "A&R", "Assistant", "Viewer"] as const;
+const ROLES: TeamRole[] = ["Admin", "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer", "Manager", "Publisher", "A&R", "Assistant", "Viewer"];
 
 const roleIcons: Record<string, React.ElementType> = {
   Admin: Shield,
@@ -40,40 +53,11 @@ const roleColors: Record<string, string> = {
   Viewer: "from-muted-foreground/40 to-muted-foreground/20",
 };
 
-const members = [
-  { name: "Kira Nomura", email: "kira@nightfallrecords.com", role: "Admin", joined: "2024-09-12", status: "active" },
-  { name: "Dex Moraes", email: "dex@dexmoraes.com", role: "Producer", joined: "2024-11-03", status: "active" },
-  { name: "Marco Silva", email: "marco@studiosilva.io", role: "Songwriter", joined: "2025-02-22", status: "active" },
-  { name: "Nao Kimura", email: "nao@naokimura.com", role: "Musician", joined: "2025-03-01", status: "active" },
-  { name: "Tony Maserati", email: "tony@maseratimix.com", role: "Mix Engineer", joined: "2025-03-15", status: "active" },
-  { name: "Emily Lazar", email: "emily@thelodge.nyc", role: "Mastering Engineer", joined: "2025-04-02", status: "active" },
-  { name: "Alina Voss", email: "alina@alinav.co", role: "Manager", joined: "2025-01-18", status: "active" },
-  { name: "JVNE", email: "mgmt@jvne.music", role: "Producer", joined: "2025-04-10", status: "active" },
-  { name: "AYA", email: "aya@songbird.pub", role: "Publisher", joined: "2025-08-05", status: "invited" },
-  { name: "Jun Tanaka", email: "jun@tanaka.jp", role: "A&R", joined: "2025-09-14", status: "active" },
-  { name: "Sterling Sound NYC", email: "bookings@sterling.com", role: "Assistant", joined: "2025-06-01", status: "active" },
-  { name: "Lena Park", email: "lena@lenapark.kr", role: "Viewer", joined: "2025-10-01", status: "active" },
-];
-
-interface Invite {
-  email: string;
-  name?: string;
-  role: string;
-  sentAt: string;
-  status: "pending" | "accepted" | "expired";
-}
-
-const initialInvites: Invite[] = [
-  { email: "alex@studioflow.com", name: "Alex Rivera", role: "Producer", sentAt: "2026-03-05", status: "pending" },
-  { email: "sam@musicpub.co", name: "Sam Chen", role: "Manager", sentAt: "2026-02-20", status: "accepted" },
-  { email: "riley@oldlabel.net", name: "Riley James", role: "Viewer", sentAt: "2026-01-10", status: "expired" },
-];
-
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
 
-function getInitials(name: string) {
-  return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+function getInitials(first: string, last: string) {
+  return ((first[0] || "") + (last[0] || "")).toUpperCase() || "?";
 }
 
 function formatDate(dateStr: string) {
@@ -83,7 +67,7 @@ function formatDate(dateStr: string) {
 
 const statusConfig = {
   pending: { icon: Clock, color: "bg-brand-orange/12 text-brand-orange" },
-  accepted: { icon: CheckCircle2, color: "bg-emerald-500/12 text-emerald-400" },
+  active: { icon: CheckCircle2, color: "bg-emerald-500/12 text-emerald-400" },
   expired: { icon: XCircle, color: "bg-destructive/12 text-destructive" },
 };
 
@@ -91,57 +75,188 @@ export default function Team() {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { permissions } = useRole();
-  const [search, setSearch] = useState("");
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [invites, setInvites] = useState<Invite[]>(initialInvites);
+  const { teams, createTeam, addMember, removeMember, updateMemberRole, deleteTeam } = useTeams();
 
-  const filtered = members.filter(
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const selectedTeam = teams.find((t) => t.id === selectedTeamId);
+
+  const handleCreateTeam = (name: string) => {
+    const team = createTeam(name);
+    setSelectedTeamId(team.id);
+    toast.success(t("createTeam.created", { name }));
+  };
+
+  const handleInvite = (payload: InvitePayload) => {
+    if (!selectedTeamId) return;
+    addMember(selectedTeamId, {
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      email: payload.email,
+      role: payload.role as TeamRole,
+    });
+    toast.success(t("inviteMember.inviteSent", { email: payload.email }));
+  };
+
+  const handleRemoveMember = (memberId: string) => {
+    if (!selectedTeamId) return;
+    removeMember(selectedTeamId, memberId);
+    toast.success(t("team.memberRemoved"));
+  };
+
+  const handleRoleChange = (memberId: string, role: TeamRole) => {
+    if (!selectedTeamId) return;
+    updateMemberRole(selectedTeamId, memberId, role);
+    toast.success(t("team.roleUpdated"));
+  };
+
+  // ─── TEAMS LIST VIEW ───
+  if (!selectedTeam) {
+    return (
+      <PageShell>
+        <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1400px]">
+          {/* Header */}
+          <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("team.title")}</h1>
+              <p className="text-muted-foreground text-xs sm:text-sm mt-1">
+                {t("team.teamsSubtitle", { count: teams.length })}
+              </p>
+            </div>
+            {permissions.canInviteMembers && (
+              <button
+                onClick={() => setCreateTeamOpen(true)}
+                className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold shrink-0 self-start min-h-[44px]"
+              >
+                <Plus className="w-3.5 h-3.5" /> {t("team.createTeam")}
+              </button>
+            )}
+          </motion.div>
+
+          {/* Teams grid */}
+          {teams.length === 0 ? (
+            <motion.div variants={item} className="card-premium p-12 flex flex-col items-center gap-4 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center">
+                <Users className="w-7 h-7 text-primary-foreground" />
+              </div>
+              <div>
+                <h3 className="text-foreground font-semibold text-base">{t("team.noTeams")}</h3>
+                <p className="text-muted-foreground text-sm mt-1">{t("team.noTeamsDesc")}</p>
+              </div>
+              <button
+                onClick={() => setCreateTeamOpen(true)}
+                className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold min-h-[44px] mt-2"
+              >
+                <Plus className="w-3.5 h-3.5" /> {t("team.createTeam")}
+              </button>
+            </motion.div>
+          ) : (
+            <motion.div variants={item} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {teams.map((team) => {
+                const adminCount = team.members.filter((m) => m.role === "Admin").length;
+                const pendingCount = team.members.filter((m) => m.status === "pending").length;
+                return (
+                  <button
+                    key={team.id}
+                    onClick={() => setSelectedTeamId(team.id)}
+                    className="card-premium p-5 text-left hover:border-brand-orange/30 transition-colors group"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                        <Users className="w-5 h-5 text-primary-foreground" />
+                      </div>
+                      <span className="text-2xs text-muted-foreground">{formatDate(team.createdAt)}</span>
+                    </div>
+                    <h3 className="text-foreground font-bold text-[15px] mt-3 group-hover:text-brand-orange transition-colors">
+                      {team.name}
+                    </h3>
+                    <div className="flex items-center gap-3 mt-2.5">
+                      <span className="text-2xs text-muted-foreground">
+                        {t("team.membersCount", { count: team.members.length })}
+                      </span>
+                      {pendingCount > 0 && (
+                        <span className="text-2xs bg-brand-orange/12 text-brand-orange px-2 py-0.5 rounded-full font-semibold">
+                          {t("team.pendingCount", { count: pendingCount })}
+                        </span>
+                      )}
+                    </div>
+                    {/* Member avatars */}
+                    <div className="flex -space-x-2 mt-3">
+                      {team.members.slice(0, 5).map((m) => (
+                        <Avatar key={m.id} className="w-7 h-7 border-2 border-card">
+                          <AvatarFallback className={`bg-gradient-to-br ${roleColors[m.role]} text-primary-foreground text-[9px] font-bold`}>
+                            {getInitials(m.firstName, m.lastName)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                      {team.members.length > 5 && (
+                        <Avatar className="w-7 h-7 border-2 border-card">
+                          <AvatarFallback className="bg-secondary text-muted-foreground text-[9px] font-bold">
+                            +{team.members.length - 5}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </motion.div>
+          )}
+        </motion.div>
+
+        <CreateTeamModal open={createTeamOpen} onOpenChange={setCreateTeamOpen} onCreate={handleCreateTeam} />
+      </PageShell>
+    );
+  }
+
+  // ─── TEAM DETAIL VIEW ───
+  const filteredMembers = selectedTeam.members.filter(
     (m) =>
-      m.name.toLowerCase().includes(search.toLowerCase()) ||
+      `${m.firstName} ${m.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
       m.email.toLowerCase().includes(search.toLowerCase()) ||
       m.role.toLowerCase().includes(search.toLowerCase())
   );
-
-  const roleCounts = members.reduce((acc, m) => {
-    acc[m.role] = (acc[m.role] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const handleInvite = (payload: InvitePayload) => {
-    const newInvite: Invite = {
-      email: payload.email,
-      name: `${payload.firstName} ${payload.lastName}`,
-      role: payload.role,
-      sentAt: new Date().toISOString().split("T")[0],
-      status: "pending",
-    };
-    setInvites((prev) => [newInvite, ...prev]);
-    toast.success(t("inviteMember.inviteSent", { email: payload.email }));
-  };
 
   return (
     <PageShell>
       <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
         {/* Header */}
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("team.title")}</h1>
-            <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("team.subtitle", { count: members.length })}</p>
-          </div>
-          {permissions.canInviteMembers && (
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setInviteOpen(true)}
-              className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold shrink-0 self-start min-h-[44px]"
+              onClick={() => { setSelectedTeamId(null); setSearch(""); }}
+              className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
-              <Plus className="w-3.5 h-3.5" /> {t("team.inviteMember")}
+              <ArrowLeft className="w-4 h-4" />
             </button>
-          )}
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{selectedTeam.name}</h1>
+              <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+                {t("team.subtitle", { count: selectedTeam.members.length })}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-start">
+            {permissions.canInviteMembers && (
+              <button
+                onClick={() => setInviteOpen(true)}
+                className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold shrink-0 min-h-[44px]"
+              >
+                <UserPlus className="w-3.5 h-3.5" /> {t("team.inviteMember")}
+              </button>
+            )}
+          </div>
         </motion.div>
 
         {/* Role stat pills */}
         <motion.div variants={item} className="flex flex-wrap gap-2">
           {ROLES.map((role) => {
             const Icon = roleIcons[role];
+            const count = selectedTeam.members.filter((m) => m.role === role).length;
+            if (count === 0) return null;
             return (
               <div key={role} className="card-premium flex items-center gap-2.5 px-4 py-2.5 rounded-xl">
                 <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${roleColors[role]} flex items-center justify-center`}>
@@ -149,7 +264,7 @@ export default function Team() {
                 </div>
                 <div>
                   <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">{t(`team.role_${role.toLowerCase()}`)}</p>
-                  <p className="text-sm font-bold text-foreground">{roleCounts[role] || 0}</p>
+                  <p className="text-sm font-bold text-foreground">{count}</p>
                 </div>
               </div>
             );
@@ -169,59 +284,27 @@ export default function Team() {
           </div>
         </motion.div>
 
-        {/* Pending Invites */}
-        {invites.length > 0 && (
-          <motion.div variants={item} className="space-y-3">
-            <h2 className="text-sm font-semibold text-foreground">{t("invites.title")}</h2>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {invites.map((inv) => {
-                const cfg = statusConfig[inv.status];
-                const StatusIcon = cfg.icon;
-                return (
-                  <div key={inv.email + inv.sentAt} className="card-premium p-4 flex items-center gap-3">
-                    <Avatar className="w-9 h-9 shrink-0">
-                      <AvatarFallback className="bg-secondary text-muted-foreground text-2xs font-bold">
-                        <Mail className="w-3.5 h-3.5" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <p className="text-[13px] font-medium text-foreground truncate">{inv.email}</p>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className="text-2xs border-border bg-secondary/50 text-secondary-foreground">
-                          {t(`team.role_${inv.role.toLowerCase()}`)}
-                        </Badge>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold ${cfg.color}`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {t(`invites.${inv.status}`)}
-                        </span>
-                      </div>
-                      <p className="text-2xs text-muted-foreground">
-                        {t("invites.sentOn")} {formatDate(inv.sentAt)}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-
         {/* Members list */}
         <motion.div variants={item}>
           {isMobile ? (
             <div className="space-y-2.5">
-              {filtered.map((m) => {
+              {filteredMembers.map((m) => {
                 const RoleIcon = roleIcons[m.role];
+                const cfg = statusConfig[m.status];
+                const StatusIcon = cfg.icon;
+                const isOwner = m.firstName === "You";
                 return (
-                  <div key={m.email} className="card-premium p-4 flex items-start gap-3">
+                  <div key={m.id} className="card-premium p-4 flex items-start gap-3">
                     <Avatar className="w-10 h-10 shrink-0">
                       <AvatarFallback className={`bg-gradient-to-br ${roleColors[m.role]} text-primary-foreground text-2xs font-bold`}>
-                        {getInitials(m.name)}
+                        {getInitials(m.firstName, m.lastName)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1 space-y-1.5">
                       <div>
-                        <p className="font-semibold text-foreground text-[13px] tracking-tight truncate">{m.name}</p>
+                        <p className="font-semibold text-foreground text-[13px] tracking-tight truncate">
+                          {m.firstName} {m.lastName}
+                        </p>
                         <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
                           <Mail className="w-3 h-3 shrink-0" /> {m.email}
                         </p>
@@ -230,19 +313,23 @@ export default function Team() {
                         <Badge variant="outline" className="text-2xs gap-1 border-border bg-secondary/50 text-secondary-foreground">
                           <RoleIcon className="w-3 h-3" /> {t(`team.role_${m.role.toLowerCase()}`)}
                         </Badge>
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold ${
-                          m.status === "active" ? "bg-emerald-500/12 text-emerald-400" : "bg-brand-orange/12 text-brand-orange"
-                        }`}>
-                          {m.status === "active" ? t("team.active") : t("team.invited")}
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold ${cfg.color}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {m.status === "active" ? t("team.active") : m.status === "pending" ? t("team.invited") : t("team.expired")}
                         </span>
                       </div>
                       <p className="text-2xs text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3 h-3" /> {t("team.joined")} {formatDate(m.joined)}
+                        <Calendar className="w-3 h-3" /> {t("team.joined")} {formatDate(m.joinedAt)}
                       </p>
                     </div>
-                    <button className="p-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
+                    {!isOwner && permissions.canManageTeam && (
+                      <button
+                        onClick={() => handleRemoveMember(m.id)}
+                        className="p-2 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -262,38 +349,63 @@ export default function Team() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((m) => {
+                    {filteredMembers.map((m) => {
                       const RoleIcon = roleIcons[m.role];
+                      const cfg = statusConfig[m.status];
+                      const StatusIcon = cfg.icon;
+                      const isOwner = m.firstName === "You";
                       return (
-                        <tr key={m.email} className="border-b border-border/60 last:border-0 hover:bg-secondary/30 transition-colors group">
+                        <tr key={m.id} className="border-b border-border/60 last:border-0 hover:bg-secondary/30 transition-colors group">
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-3">
                               <Avatar className="w-8 h-8">
                                 <AvatarFallback className={`bg-gradient-to-br ${roleColors[m.role]} text-primary-foreground text-2xs font-bold`}>
-                                  {getInitials(m.name)}
+                                  {getInitials(m.firstName, m.lastName)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-semibold text-foreground text-[13px] tracking-tight">{m.name}</span>
+                              <span className="font-semibold text-foreground text-[13px] tracking-tight">
+                                {m.firstName} {m.lastName}
+                              </span>
                             </div>
                           </td>
                           <td className="px-5 py-3.5 text-muted-foreground hidden md:table-cell text-xs">{m.email}</td>
                           <td className="px-5 py-3.5">
-                            <Badge variant="outline" className="text-2xs gap-1 border-border bg-secondary/50 text-secondary-foreground font-medium">
-                              <RoleIcon className="w-3 h-3" /> {t(`team.role_${m.role.toLowerCase()}`)}
-                            </Badge>
+                            {isOwner || !permissions.canManageTeam ? (
+                              <Badge variant="outline" className="text-2xs gap-1 border-border bg-secondary/50 text-secondary-foreground font-medium">
+                                <RoleIcon className="w-3 h-3" /> {t(`team.role_${m.role.toLowerCase()}`)}
+                              </Badge>
+                            ) : (
+                              <Select value={m.role} onValueChange={(v) => handleRoleChange(m.id, v as TeamRole)}>
+                                <SelectTrigger className="h-7 w-auto min-w-[130px] bg-secondary/50 border-border text-2xs gap-1">
+                                  <RoleIcon className="w-3 h-3 shrink-0" />
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-card border-border">
+                                  {ROLES.map((r) => (
+                                    <SelectItem key={r} value={r} className="text-2xs">
+                                      {t(`team.role_${r.toLowerCase()}`)}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
                           </td>
-                          <td className="px-5 py-3.5 text-muted-foreground hidden lg:table-cell text-xs">{formatDate(m.joined)}</td>
+                          <td className="px-5 py-3.5 text-muted-foreground hidden lg:table-cell text-xs">{formatDate(m.joinedAt)}</td>
                           <td className="px-5 py-3.5">
-                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${
-                              m.status === "active" ? "bg-emerald-500/12 text-emerald-400" : "bg-brand-orange/12 text-brand-orange"
-                            }`}>
-                              {m.status === "active" ? t("team.active") : t("team.invited")}
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-semibold ${cfg.color}`}>
+                              <StatusIcon className="w-3 h-3" />
+                              {m.status === "active" ? t("team.active") : m.status === "pending" ? t("team.invited") : t("team.expired")}
                             </span>
                           </td>
                           <td className="px-5 py-3.5">
-                            <button className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100">
-                              <MoreHorizontal className="w-3.5 h-3.5" />
-                            </button>
+                            {!isOwner && permissions.canManageTeam && (
+                              <button
+                                onClick={() => handleRemoveMember(m.id)}
+                                className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );
@@ -301,7 +413,7 @@ export default function Team() {
                   </tbody>
                 </table>
               </div>
-              {filtered.length === 0 && (
+              {filteredMembers.length === 0 && (
                 <div className="py-12 text-center text-muted-foreground text-sm">{t("team.noResults")}</div>
               )}
             </div>
@@ -313,4 +425,3 @@ export default function Team() {
     </PageShell>
   );
 }
-

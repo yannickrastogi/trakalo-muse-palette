@@ -155,8 +155,10 @@
     "sendPitch": "Send Pitch"
   },
   "team": {
-    "title": "Team",
-    "subtitle": "{{count}} collaborators in your network",
+    "title": "Teams",
+    "teamsSubtitle": "{{count}} teams in your workspace",
+    "subtitle": "{{count}} collaborators in this team",
+    "createTeam": "Create New Team",
     "inviteMember": "Invite Member",
     "member": "Member",
     "name": "Name",
@@ -167,9 +169,16 @@
     "dateJoined": "Date Joined",
     "joined": "Joined",
     "active": "Active",
-    "invited": "Invited",
+    "invited": "Pending",
+    "expired": "Expired",
     "searchPlaceholder": "Search by name, email, or role…",
     "noResults": "No team members found",
+    "noTeams": "No teams yet",
+    "noTeamsDesc": "Create your first team to start collaborating on your catalog.",
+    "membersCount": "{{count}} members",
+    "pendingCount": "{{count}} pending",
+    "memberRemoved": "Member removed",
+    "roleUpdated": "Role updated",
     "role_admin": "Admin",
     "role_producer": "Producer",
     "role_songwriter": "Songwriter",
@@ -325,5 +334,16 @@
   "common": {
     "pitch": "pitch",
     "pitches": "pitches"
+  },
+  "createTeam": {
+    "title": "Create New Team",
+    "description": "Name your team and start adding collaborators. You'll be the admin with full access.",
+    "nameLabel": "Team Name",
+    "namePlaceholder": "e.g. Nightfall Records, Studio Session A",
+    "nameRequired": "Team name is required",
+    "adminNote": "You will be automatically added as the Admin of this team with full access to the shared catalog.",
+    "cancel": "Cancel",
+    "create": "Create Team",
+    "created": "Team \"{{name}}\" created successfully"
   }
 }

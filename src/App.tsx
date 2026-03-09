@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { PlaylistProvider } from "@/contexts/PlaylistContext";
 import { RoleProvider } from "@/contexts/RoleContext";
+import { TeamProvider } from "@/contexts/TeamContext";
 import { TrackProvider } from "@/contexts/TrackContext";
 import { PitchProvider } from "@/contexts/PitchContext";
 import { SharedLinksProvider } from "@/contexts/SharedLinksContext";
@@ -31,6 +32,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <RoleProvider>
+      <TeamProvider>
       <TrackProvider>
       <PitchProvider>
       <PlaylistProvider>
@@ -58,6 +60,7 @@ const App = () => (
       </PlaylistProvider>
       </PitchProvider>
       </TrackProvider>
+      </TeamProvider>
       </RoleProvider>
     </TooltipProvider>
   </QueryClientProvider>
