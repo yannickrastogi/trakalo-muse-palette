@@ -407,7 +407,7 @@ export default function Catalog() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {filteredTracks.map((track) => {
-                  const isPlaying = playingTrack === track.id;
+                  const isPlaying = isTrackPlaying(track.id);
                   return (
                     <motion.div
                       key={track.id}
@@ -428,7 +428,7 @@ export default function Catalog() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setPlayingTrack(isPlaying ? null : track.id);
+                              if (isPlaying) { togglePlay(); } else { setQueue(filteredTracks); playTrack(track); }
                             }}
                             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
                               isPlaying
