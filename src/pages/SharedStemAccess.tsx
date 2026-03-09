@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Lock, Download, Music, Layers, User, Mail, Building2, Briefcase, Package, ListMusic, Clock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Lock, Download, Music, Layers, User, Mail, Building2, Briefcase,
+  Package, ListMusic, Clock, Play, Pause, FileText, PieChart, Users,
+  Tag, Disc, Globe, Hash, Calendar, Headphones, ShieldOff
+} from "lucide-react";
 import { useSharedLinks } from "@/contexts/SharedLinksContext";
+import { useTracks } from "@/contexts/TrackContext";
 import { useContacts } from "@/contexts/ContactsContext";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
 const roleOptions = ["Admin", "Manager", "Producer", "Viewer", "Other"];
@@ -12,6 +18,7 @@ const roleOptions = ["Admin", "Manager", "Producer", "Viewer", "Other"];
 export default function SharedStemAccess() {
   const { linkId } = useParams();
   const { getSharedLink, addDownloadEvent } = useSharedLinks();
+  const { tracks } = useTracks();
   const { addOrUpdateContact } = useContacts();
 
   const [password, setPassword] = useState("");
@@ -25,6 +32,12 @@ export default function SharedStemAccess() {
   const [passwordError, setPasswordError] = useState(false);
 
   const link = linkId ? getSharedLink(linkId) : undefined;
+
+  // Get full track data for detail display
+  const trackData = useMemo(() => {
+    if (!link) return null;
+    return tracks.find(t => t.id === link.trackId) || null;
+  }, [link, tracks]);
 
   if (!link) {
     return (
@@ -63,7 +76,6 @@ export default function SharedStemAccess() {
     ? `${link.playlistTracks?.length || 0} tracks`
     : link.trackArtist;
   const displayCover = shareType === "playlist" ? (link.playlistCover || link.trackCover) : link.trackCover;
-
   const accessLabel = shareType === "stems" ? "stems" : shareType === "track" ? "this track" : "this playlist";
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -82,14 +94,7 @@ export default function SharedStemAccess() {
       toast.error("Please fill in all fields");
       return;
     }
-    addOrUpdateContact({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.trim(),
-      organization: organization.trim(),
-      role,
-      trackName: displayTitle,
-    });
+    addOrUpdateContact({ firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), organization: organization.trim(), role, trackName: displayTitle });
     setFormCompleted(true);
   };
 
@@ -106,12 +111,14 @@ export default function SharedStemAccess() {
   });
 
   const handleDownloadItem = (fileName: string) => {
+    if (!link.allowDownload) return;
     addDownloadEvent(link.id, createDownloadEvent([fileName]));
     addOrUpdateContact({ firstName, lastName, email, organization, role, trackName: displayTitle });
-    toast.success(`Downloading ${fileName}`);
+    toast.success(`Downloading ${fileName} (${link.downloadQuality === "hi-res" ? "Hi-Res" : "Low-Res"})`);
   };
 
   const handleDownloadAll = () => {
+    if (!link.allowDownload) return;
     const allFiles = shareType === "stems"
       ? link.stems.map((s) => s.fileName)
       : shareType === "track"
@@ -124,7 +131,7 @@ export default function SharedStemAccess() {
       : shareType === "stems"
       ? `${link.trackTitle}_Stems.zip`
       : `${link.trackTitle}.zip`;
-    toast.success(`Downloading ${zipName}`);
+    toast.success(`Downloading ${zipName} (${link.downloadQuality === "hi-res" ? "Hi-Res" : "Low-Res"})`);
   };
 
   // Password gate
@@ -237,10 +244,10 @@ export default function SharedStemAccess() {
     );
   }
 
-  // Download page — different layouts per share type
+  // ── Main content view ──
   return (
     <ExternalShell>
-      <div className="max-w-lg mx-auto py-8">
+      <div className="max-w-2xl mx-auto py-8">
         {/* Header */}
         <div className="text-center mb-8">
           {displayCover ? (
@@ -259,72 +266,23 @@ export default function SharedStemAccess() {
           )}
         </div>
 
-        {/* Download All */}
-        <button onClick={handleDownloadAll} className="w-full h-12 rounded-xl text-sm font-semibold btn-brand flex items-center justify-center gap-2 mb-6">
-          <Package className="w-4 h-4" />
-          {shareType === "track" ? "Download Track" : "Download All as ZIP"}
-        </button>
-
-        {/* Content list */}
-        {shareType === "stems" && (
-          <div className="bg-card border border-border rounded-2xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
-            <div className="px-5 py-3 border-b border-border">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-muted-foreground" />
-                <span className="text-xs font-semibold text-foreground">{link.stems.length} Stems</span>
-              </div>
-            </div>
-            <div className="divide-y divide-border">
-              {link.stems.map((stem) => (
-                <div key={stem.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                      <Music className="w-3.5 h-3.5 text-muted-foreground" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{stem.fileName}</p>
-                      <p className="text-[11px] text-muted-foreground capitalize">{stem.type} · {stem.fileSize}</p>
-                    </div>
-                  </div>
-                  <button onClick={() => handleDownloadItem(stem.fileName)} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
-                    <Download className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
+        {/* Download section */}
+        {link.allowDownload ? (
+          <button onClick={handleDownloadAll} className="w-full h-12 rounded-xl text-sm font-semibold btn-brand flex items-center justify-center gap-2 mb-6">
+            <Package className="w-4 h-4" />
+            {shareType === "track" ? "Download Track" : "Download All as ZIP"}
+            <span className="text-[10px] opacity-70 ml-1">({link.downloadQuality === "hi-res" ? "Hi-Res" : "Low-Res"})</span>
+          </button>
+        ) : (
+          <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-secondary/50 border border-border mb-6">
+            <ShieldOff className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Downloads are not enabled for this shared link</span>
           </div>
         )}
 
-        {shareType === "track" && (
-          <div className="bg-card border border-border rounded-2xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
-            <div className="px-5 py-3 border-b border-border">
-              <div className="flex items-center gap-2">
-                <Music className="w-4 h-4 text-muted-foreground" />
-                <span className="text-xs font-semibold text-foreground">Track</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between px-5 py-4 hover:bg-secondary/30 transition-colors">
-              <div className="flex items-center gap-3 min-w-0">
-                {link.trackCover ? (
-                  <img src={link.trackCover} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                ) : (
-                  <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                    <Music className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{link.trackTitle}</p>
-                  <p className="text-[11px] text-muted-foreground">{link.trackArtist}</p>
-                </div>
-              </div>
-              <button onClick={() => handleDownloadItem(link.trackTitle)} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
-                <Download className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {shareType === "playlist" && link.playlistTracks && (
+        {/* Tabbed content — only shows relevant tabs */}
+        {shareType === "playlist" && link.playlistTracks ? (
+          /* Playlist view — list of tracks */
           <div className="bg-card border border-border rounded-2xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
             <div className="px-5 py-3 border-b border-border">
               <div className="flex items-center gap-2">
@@ -349,16 +307,299 @@ export default function SharedStemAccess() {
                       <p className="text-[11px] text-muted-foreground">{track.artist} · {track.duration}</p>
                     </div>
                   </div>
-                  <button onClick={() => handleDownloadItem(track.title)} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
-                    <Download className="w-4 h-4" />
-                  </button>
+                  {link.allowDownload && (
+                    <button onClick={() => handleDownloadItem(track.title)} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
+                      <Download className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
           </div>
+        ) : trackData ? (
+          /* Track/Stems view with detailed tabs */
+          <TrackDetailTabs
+            trackData={trackData}
+            link={link}
+            allowDownload={link.allowDownload}
+            onDownloadItem={handleDownloadItem}
+          />
+        ) : (
+          /* Fallback: simple stems/track list */
+          <SimpleContentList link={link} onDownloadItem={handleDownloadItem} />
         )}
       </div>
     </ExternalShell>
+  );
+}
+
+// ── Track Detail Tabs (read-only, no paperwork/engagement) ──
+function TrackDetailTabs({
+  trackData,
+  link,
+  allowDownload,
+  onDownloadItem,
+}: {
+  trackData: any;
+  link: any;
+  allowDownload: boolean;
+  onDownloadItem: (name: string) => void;
+}) {
+  const availableTabs = [
+    { id: "overview", label: "Overview" },
+    ...(trackData.lyrics ? [{ id: "lyrics", label: "Lyrics" }] : []),
+    ...(trackData.stems?.length ? [{ id: "stems", label: "Stems" }] : []),
+    ...(trackData.splits?.length ? [{ id: "splits", label: "Splits" }] : []),
+    { id: "metadata", label: "Metadata" },
+    { id: "status", label: "Status" },
+  ];
+
+  return (
+    <Tabs defaultValue="overview" className="w-full">
+      <TabsList className="w-full bg-secondary/50 border border-border rounded-xl p-1 flex flex-wrap gap-1 h-auto">
+        {availableTabs.map(tab => (
+          <TabsTrigger key={tab.id} value={tab.id} className="text-xs rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm flex-1 min-w-[70px]">
+            {tab.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+
+      {/* Overview */}
+      <TabsContent value="overview" className="mt-4">
+        <div className="bg-card border border-border rounded-2xl p-5 space-y-4" style={{ boxShadow: "var(--shadow-card)" }}>
+          <div className="grid grid-cols-2 gap-3">
+            <InfoRow icon={Disc} label="Genre" value={trackData.genre} />
+            <InfoRow icon={Hash} label="BPM" value={String(trackData.bpm)} />
+            <InfoRow icon={Music} label="Key" value={trackData.key} />
+            <InfoRow icon={Clock} label="Duration" value={trackData.duration} />
+            <InfoRow icon={Headphones} label="Voice" value={trackData.voice} />
+            <InfoRow icon={Globe} label="Language" value={trackData.language} />
+            <InfoRow icon={Tag} label="Mood" value={trackData.mood?.join(", ")} />
+            <InfoRow icon={Calendar} label="Release" value={trackData.releaseDate || "—"} />
+          </div>
+          {trackData.featuredArtists?.length > 0 && (
+            <div className="pt-2 border-t border-border">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-1">Featured Artists</p>
+              <p className="text-sm text-foreground">{trackData.featuredArtists.join(", ")}</p>
+            </div>
+          )}
+        </div>
+      </TabsContent>
+
+      {/* Lyrics */}
+      {trackData.lyrics && (
+        <TabsContent value="lyrics" className="mt-4">
+          <div className="bg-card border border-border rounded-2xl p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs font-semibold text-foreground">Lyrics</span>
+            </div>
+            <pre className="text-sm text-foreground/90 whitespace-pre-wrap font-sans leading-relaxed">
+              {trackData.lyrics}
+            </pre>
+          </div>
+        </TabsContent>
+      )}
+
+      {/* Stems */}
+      {trackData.stems?.length > 0 && (
+        <TabsContent value="stems" className="mt-4">
+          <div className="bg-card border border-border rounded-2xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+            <div className="px-5 py-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-muted-foreground" />
+                <span className="text-xs font-semibold text-foreground">{trackData.stems.length} Stems</span>
+              </div>
+            </div>
+            <div className="divide-y divide-border">
+              {trackData.stems.map((stem: any) => (
+                <div key={stem.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                      <Music className="w-3.5 h-3.5 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{stem.fileName}</p>
+                      <p className="text-[11px] text-muted-foreground capitalize">{stem.type} · {stem.fileSize}</p>
+                    </div>
+                  </div>
+                  {allowDownload && (
+                    <button onClick={() => onDownloadItem(stem.fileName)} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
+                      <Download className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </TabsContent>
+      )}
+
+      {/* Splits */}
+      {trackData.splits?.length > 0 && (
+        <TabsContent value="splits" className="mt-4">
+          <div className="bg-card border border-border rounded-2xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+            <div className="px-5 py-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <PieChart className="w-4 h-4 text-muted-foreground" />
+                <span className="text-xs font-semibold text-foreground">Publishing Splits</span>
+              </div>
+            </div>
+            <div className="divide-y divide-border">
+              {trackData.splits.map((split: any) => (
+                <div key={split.id} className="flex items-center justify-between px-5 py-3.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">{split.name}</p>
+                    <p className="text-[11px] text-muted-foreground">{split.role} · {split.pro}</p>
+                  </div>
+                  <span className="text-sm font-bold text-primary shrink-0">{split.share}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </TabsContent>
+      )}
+
+      {/* Metadata */}
+      <TabsContent value="metadata" className="mt-4">
+        <div className="bg-card border border-border rounded-2xl p-5 space-y-3" style={{ boxShadow: "var(--shadow-card)" }}>
+          <div className="flex items-center gap-2 mb-2">
+            <PieChart className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-semibold text-foreground">Track Metadata</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2">
+            <MetaRow label="ISRC" value={trackData.isrc || "—"} />
+            <MetaRow label="UPC" value={trackData.upc || "—"} />
+            <MetaRow label="Label" value={trackData.label || "—"} />
+            <MetaRow label="Publisher" value={trackData.publisher || "—"} />
+            <MetaRow label="Copyright" value={trackData.copyright || "—"} />
+            <MetaRow label="Written By" value={trackData.writtenBy?.join(", ") || "—"} />
+            <MetaRow label="Produced By" value={trackData.producedBy?.join(", ") || "—"} />
+            <MetaRow label="Mixed By" value={trackData.mixedBy || "—"} />
+            <MetaRow label="Mastered By" value={trackData.masteredBy || "—"} />
+            <MetaRow label="Type" value={trackData.type || "—"} />
+            <MetaRow label="Explicit" value={trackData.explicit ? "Yes" : "No"} />
+          </div>
+        </div>
+      </TabsContent>
+
+      {/* Status */}
+      <TabsContent value="status" className="mt-4">
+        <div className="bg-card border border-border rounded-2xl p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-semibold text-foreground">Current Status</span>
+            <span className="ml-auto px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">
+              {trackData.status}
+            </span>
+          </div>
+          {trackData.statusHistory?.length > 0 && (
+            <div className="space-y-3 border-t border-border pt-3">
+              {trackData.statusHistory.map((entry: any, i: number) => (
+                <div key={i} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="w-2 h-2 rounded-full bg-primary mt-1.5" />
+                    {i < trackData.statusHistory.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
+                  </div>
+                  <div className="pb-3">
+                    <p className="text-xs font-semibold text-foreground">{entry.status}</p>
+                    <p className="text-[11px] text-muted-foreground">{entry.date}</p>
+                    {entry.note && <p className="text-[11px] text-foreground/70 mt-0.5">{entry.note}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+// ── Fallback simple content list ──
+function SimpleContentList({ link, onDownloadItem }: { link: any; onDownloadItem: (name: string) => void }) {
+  if (link.shareType === "stems") {
+    return (
+      <div className="bg-card border border-border rounded-2xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+        <div className="px-5 py-3 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-semibold text-foreground">{link.stems.length} Stems</span>
+          </div>
+        </div>
+        <div className="divide-y divide-border">
+          {link.stems.map((stem: any) => (
+            <div key={stem.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                  <Music className="w-3.5 h-3.5 text-muted-foreground" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{stem.fileName}</p>
+                  <p className="text-[11px] text-muted-foreground capitalize">{stem.type} · {stem.fileSize}</p>
+                </div>
+              </div>
+              {link.allowDownload && (
+                <button onClick={() => onDownloadItem(stem.fileName)} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
+                  <Download className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+      <div className="px-5 py-3 border-b border-border">
+        <div className="flex items-center gap-2">
+          <Music className="w-4 h-4 text-muted-foreground" />
+          <span className="text-xs font-semibold text-foreground">Track</span>
+        </div>
+      </div>
+      <div className="flex items-center justify-between px-5 py-4 hover:bg-secondary/30 transition-colors">
+        <div className="flex items-center gap-3 min-w-0">
+          {link.trackCover ? (
+            <img src={link.trackCover} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+              <Music className="w-4 h-4 text-muted-foreground" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">{link.trackTitle}</p>
+            <p className="text-[11px] text-muted-foreground">{link.trackArtist}</p>
+          </div>
+        </div>
+        {link.allowDownload && (
+          <button onClick={() => onDownloadItem(link.trackTitle)} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
+            <Download className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Helper components ──
+function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2.5 py-1.5">
+      <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+      <span className="text-[11px] text-muted-foreground w-16 shrink-0">{label}</span>
+      <span className="text-sm text-foreground">{value || "—"}</span>
+    </div>
+  );
+}
+
+function MetaRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-1.5 px-1">
+      <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{label}</span>
+      <span className="text-sm text-foreground text-right">{value}</span>
+    </div>
   );
 }
 
