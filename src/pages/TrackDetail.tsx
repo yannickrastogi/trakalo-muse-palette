@@ -1738,7 +1738,7 @@ function EngagementTab({ trackId }: { trackId: number }) {
       </div>
 
       {/* Recipient breakdown */}
-      <SectionCard>
+      <SectionCard title="Recipient Breakdown" icon={Users}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-foreground">Recipient Breakdown</h3>
           <span className="text-2xs text-muted-foreground">{engagement.recipients.length} recipients</span>
