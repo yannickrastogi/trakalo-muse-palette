@@ -2,7 +2,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 
 export type TeamRole = "Admin" | "Manager" | "A&R" | "Assistant" | "Producer" | "Songwriter" | "Musician" | "Mix Engineer" | "Mastering Engineer" | "Publisher" | "Viewer";
 
-export type ActivityType = "upload" | "pitch" | "link" | "member" | "status" | "metadata" | "splits" | "stems" | "lyrics" | "paperwork";
+export type ActivityType = "upload" | "pitch" | "link" | "member" | "status" | "metadata" | "splits" | "stems" | "lyrics" | "paperwork" | "recipient_opened" | "recipient_played" | "recipient_downloaded" | "recipient_pack" | "recipient_stems";
 
 export interface TeamActivity {
   id: string;
@@ -52,8 +52,15 @@ const demoTeams: Team[] = [
     sharedTrackIds: [1, 2, 3, 4, 5, 6, 7, 8],
     activities: [
       { id: "a-1", type: "upload", message: "added \"Midnight Run\" to the catalog", user: "Dex Moraes", date: "2026-03-09T14:30:00" },
+      { id: "a-18", type: "recipient_opened", message: "Atlantic Records opened playlist \"Summer Selects\"", user: "Notification", date: "2026-03-09T12:05:00" },
+      { id: "a-19", type: "recipient_played", message: "Atlantic Records played \"Velvet Skies\" from playlist \"Summer Selects\"", user: "Notification", date: "2026-03-09T12:08:00" },
+      { id: "a-20", type: "recipient_downloaded", message: "Atlantic Records downloaded \"Velvet Skies\"", user: "Notification", date: "2026-03-09T12:12:00" },
       { id: "a-2", type: "pitch", message: "pitched \"Velvet Skies\" to Atlantic Records", user: "You", date: "2026-03-08T11:15:00" },
+      { id: "a-21", type: "recipient_pack", message: "Interscope Records downloaded Trakalog Pack for \"Echoes\"", user: "Notification", date: "2026-03-08T09:30:00" },
+      { id: "a-22", type: "recipient_stems", message: "Interscope Records downloaded stems for \"Echoes\"", user: "Notification", date: "2026-03-08T09:45:00" },
       { id: "a-3", type: "link", message: "created and shared a link for \"Neon Dreams\"", user: "Marco Silva", date: "2026-03-07T16:45:00" },
+      { id: "a-23", type: "recipient_opened", message: "Sony Music opened shared link for \"Neon Dreams\"", user: "Notification", date: "2026-03-07T18:20:00" },
+      { id: "a-24", type: "recipient_played", message: "Sony Music played \"Neon Dreams\"", user: "Notification", date: "2026-03-07T18:22:00" },
       { id: "a-4", type: "status", message: "modified status on \"Golden Hour\" to Released", user: "You", date: "2026-03-06T09:20:00" },
       { id: "a-5", type: "member", message: "invited AYA as Publisher", user: "You", date: "2026-03-05T10:00:00" },
       { id: "a-6", type: "stems", message: "added stems on \"Midnight Run\"", user: "Tony Maserati", date: "2026-03-04T13:10:00" },
