@@ -10,16 +10,12 @@ function formatDate(iso: string) {
 }
 
 export function exportContactsCsv(contacts: ContactExportEntry[]) {
-  const headers = ["First Name", "Last Name", "Email", "Organization", "Role", "Tracks Downloaded", "Total Downloads", "Last Interaction"];
+  const headers = ["Name", "Email", "Organization", "Role"];
   const rows = contacts.map((c) => [
-    c.firstName,
-    c.lastName,
+    `${c.firstName} ${c.lastName}`,
     c.email,
     c.organization,
     c.role,
-    c.tracksDownloaded.join("; "),
-    String(c.totalDownloads),
-    formatDate(c.lastDownload),
   ]);
 
   const csv = [headers, ...rows]
@@ -30,20 +26,15 @@ export function exportContactsCsv(contacts: ContactExportEntry[]) {
 }
 
 export function exportContactsXlsx(contacts: ContactExportEntry[]) {
-  // Build a simple XLSX using XML spreadsheet format (no extra dependency needed)
-  const headers = ["First Name", "Last Name", "Email", "Organization", "Role", "Tracks Downloaded", "Total Downloads", "Last Interaction"];
+  const headers = ["Name", "Email", "Organization", "Role"];
 
   const escapeXml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   const rows = contacts.map((c) => [
-    c.firstName,
-    c.lastName,
+    `${c.firstName} ${c.lastName}`,
     c.email,
     c.organization,
     c.role,
-    c.tracksDownloaded.join("; "),
-    String(c.totalDownloads),
-    formatDate(c.lastDownload),
   ]);
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -66,9 +57,8 @@ export function exportContactsXlsx(contacts: ContactExportEntry[]) {
   // Data rows
   rows.forEach((row) => {
     xml += `\n      <Row>`;
-    row.forEach((cell, i) => {
-      const type = i === 6 ? "Number" : "String";
-      xml += `<Cell><Data ss:Type="${type}">${escapeXml(cell)}</Data></Cell>`;
+    row.forEach((cell) => {
+      xml += `<Cell><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>`;
     });
     xml += `</Row>`;
   });
