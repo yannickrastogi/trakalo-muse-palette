@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { UploadTrackModal } from "@/components/UploadTrackModal";
 import { useRole } from "@/contexts/RoleContext";
@@ -56,7 +56,9 @@ export default function Catalog() {
   const { t } = useTranslation();
   const { tracks: allTracks } = useTrack();
   const { getTotalPlaysForTrack, getTotalDownloadsForTrack } = useEngagement();
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuery = searchParams.get("q") || "";
+  const [search, setSearch] = useState(initialQuery);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [keyFilter, setKeyFilter] = useState<string | null>(null);
@@ -71,6 +73,13 @@ export default function Catalog() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const navigate = useNavigate();
   const { permissions } = useRole();
+
+  // Clear query param after consuming it
+  useEffect(() => {
+    if (searchParams.has("q")) {
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
 
   const types = useMemo(() => [...new Set(allTracks.map((t) => t.type))].sort(), [allTracks]);
   const genres = [...GENRES];
