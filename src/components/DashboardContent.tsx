@@ -999,10 +999,10 @@ export function DashboardContent() {
 
       {/* Modals */}
       <UploadTrackModal open={showUploadModal} onOpenChange={setShowUploadModal} />
-      <CreatePlaylistModal open={showPlaylistModal} onOpenChange={setShowPlaylistModal} onCreate={(data) => { addPlaylist(data); setShowPlaylistModal(false); }} />
-      <InviteMemberModal open={showInviteModal} onOpenChange={setShowInviteModal} onInvite={() => setShowInviteModal(false)} />
-      <CreatePitchModal open={showPitchModal} onOpenChange={setShowPitchModal} onCreate={(pitch) => { addPitch(pitch); setShowPitchModal(false); }} />
-      <CreateTeamModal open={showCreateTeamModal} onOpenChange={setShowCreateTeamModal} onCreate={(name) => { createTeam(name); setShowCreateTeamModal(false); }} />
+      <CreatePlaylistModal open={showPlaylistModal} onOpenChange={setShowPlaylistModal} onCreate={(data) => { addPlaylist(data); completeStep("create_playlist"); setShowPlaylistModal(false); }} />
+      <InviteMemberModal open={showInviteModal} onOpenChange={setShowInviteModal} onInvite={() => { completeStep("add_credits"); setShowInviteModal(false); }} />
+      <CreatePitchModal open={showPitchModal} onOpenChange={setShowPitchModal} onCreate={(pitch) => { addPitch(pitch); completeStep("share_or_pitch"); setShowPitchModal(false); }} />
+      <CreateTeamModal open={showCreateTeamModal} onOpenChange={setShowCreateTeamModal} onCreate={(name) => { createTeam(name); completeStep("create_team"); setShowCreateTeamModal(false); }} />
     </motion.div>
   );
 }
