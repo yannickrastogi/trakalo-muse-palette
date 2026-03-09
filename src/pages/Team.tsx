@@ -268,6 +268,99 @@ export default function Team() {
           </div>
         </motion.div>
 
+        {/* ─── Team Dashboard ─── */}
+        <motion.div variants={item} className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          {/* Shared Tracks */}
+          <div className="card-premium p-4 rounded-xl relative overflow-hidden">
+            <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-brand-orange/8 blur-xl" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-orange/12 flex items-center justify-center">
+                <Music className="w-5 h-5 text-brand-orange" />
+              </div>
+              <div>
+                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Shared Tracks</p>
+                <p className="text-xl font-bold text-foreground">{selectedTeam.sharedTrackCount}</p>
+              </div>
+            </div>
+          </div>
+          {/* Members */}
+          <div className="card-premium p-4 rounded-xl relative overflow-hidden">
+            <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-brand-purple/8 blur-xl" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-purple/12 flex items-center justify-center">
+                <Users className="w-5 h-5 text-brand-purple" />
+              </div>
+              <div>
+                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Members</p>
+                <p className="text-xl font-bold text-foreground">{selectedTeam.members.length}</p>
+              </div>
+            </div>
+          </div>
+          {/* Pitches */}
+          <div className="card-premium p-4 rounded-xl relative overflow-hidden">
+            <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-brand-pink/8 blur-xl" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-pink/12 flex items-center justify-center">
+                <Send className="w-5 h-5 text-brand-pink" />
+              </div>
+              <div>
+                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Pitches Made</p>
+                <p className="text-xl font-bold text-foreground">{selectedTeam.activities.filter((a) => a.type === "pitch").length}</p>
+              </div>
+            </div>
+          </div>
+          {/* Links */}
+          <div className="card-premium p-4 rounded-xl relative overflow-hidden">
+            <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-primary/8 blur-xl" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/12 flex items-center justify-center">
+                <ExternalLink className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Links Created</p>
+                <p className="text-xl font-bold text-foreground">{selectedTeam.activities.filter((a) => a.type === "link").length}</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ─── Activity Feed ─── */}
+        <motion.div variants={item} className="card-premium rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-muted-foreground" />
+              <h3 className="text-sm font-bold text-foreground">Team Activity</h3>
+            </div>
+            <span className="text-2xs text-muted-foreground">{selectedTeam.activities.length} events</span>
+          </div>
+          {selectedTeam.activities.length === 0 ? (
+            <div className="py-10 text-center text-muted-foreground text-sm">No activity yet</div>
+          ) : (
+            <div className="divide-y divide-border/60 max-h-[320px] overflow-y-auto">
+              {selectedTeam.activities.map((activity) => {
+                const Icon = activityIcons[activity.type];
+                const colorClass = activityColors[activity.type];
+                const d = new Date(activity.date);
+                const timeStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " · " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+                return (
+                  <div key={activity.id} className="px-5 py-3.5 flex items-start gap-3 hover:bg-secondary/30 transition-colors">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${colorClass}`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] text-foreground">
+                        <span className="font-semibold">{activity.user}</span>{" "}
+                        <span className="text-muted-foreground">{activity.message}</span>
+                      </p>
+                      <p className="text-2xs text-muted-foreground/60 mt-0.5">{timeStr}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+
         {/* Role stat pills */}
         <motion.div variants={item} className="flex flex-wrap gap-2">
           {ROLES.map((role) => {
@@ -287,6 +380,7 @@ export default function Team() {
             );
           })}
         </motion.div>
+
 
         {/* Search */}
         <motion.div variants={item}>
