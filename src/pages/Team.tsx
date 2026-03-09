@@ -4,6 +4,7 @@ import {
   Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal,
   Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3,
   Music, Clock, CheckCircle2, XCircle, Users, ArrowLeft, Trash2, UserPlus,
+  Upload, Send, ExternalLink, Activity, BarChart3,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
