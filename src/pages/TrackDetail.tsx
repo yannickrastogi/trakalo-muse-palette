@@ -64,6 +64,7 @@ import {
   Eye,
   ChevronDown,
   ChevronUp,
+  MessageSquare,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
