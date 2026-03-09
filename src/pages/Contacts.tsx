@@ -65,26 +65,29 @@ export default function Contacts() {
             )}
           </div>
           {roles.length > 0 && (
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-secondary/60 border border-border">
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-secondary/60 border border-border overflow-x-auto no-scrollbar">
               <button
                 onClick={() => setRoleFilter("")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  !roleFilter ? "bg-brand-orange text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                  !roleFilter ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                 }`}
               >
-                All
+                All ({contacts.length})
               </button>
-              {roles.map((r) => (
-                <button
-                  key={r}
-                  onClick={() => setRoleFilter(roleFilter === r ? "" : r)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-                    roleFilter === r ? "bg-brand-orange text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
+              {roles.map((r) => {
+                const count = contacts.filter((c) => c.role === r).length;
+                return (
+                  <button
+                    key={r}
+                    onClick={() => setRoleFilter(roleFilter === r ? "" : r)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                      roleFilter === r ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    {r} ({count})
+                  </button>
+                );
+              })}
             </div>
           )}
         </motion.div>
