@@ -158,7 +158,7 @@ export default function TrackDetail() {
     { id: "lyrics", label: "Lyrics" },
     { id: "stems", label: "Stems" },
     { id: "splits", label: "Splits" },
-    { id: "credits", label: "Credits" },
+    
     { id: "metadata", label: "Metadata" },
     { id: "paperwork", label: "Paperwork" },
     { id: "pitches", label: "Pitch History" },
@@ -346,7 +346,7 @@ export default function TrackDetail() {
               {activeTab === "lyrics" && <LyricsTab trackId={Number(id)} />}
               {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
               {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
-              {activeTab === "credits" && <CreditsTab trackId={Number(id)} onEdit={() => setEditTrackModalOpen(true)} />}
+              
               {activeTab === "metadata" && <OverviewTab trackId={Number(id)} onEdit={() => setEditTrackModalOpen(true)} />}
               {activeTab === "paperwork" && <PaperworkTab />}
               {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
