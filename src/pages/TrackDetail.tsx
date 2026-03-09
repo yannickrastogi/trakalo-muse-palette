@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback /* refresh */ } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
-import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf } from "@/lib/pdf-generators";
+import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf, generateCreditsPdf, type CreditEntry } from "@/lib/pdf-generators";
 import { DownloadTrackModal } from "@/components/DownloadTrackModal";
 import { SharePackModal } from "@/components/SharePackModal";
 import { EditTrackModal } from "@/components/EditTrackModal";
@@ -498,6 +498,18 @@ function CreditsTab({ trackId }: { trackId: number }) {
 
   const hasAny = performerCredits.length > 0 || productionCredits.length > 0 || topLevelCredits.length > 0;
 
+  const handleDownloadPdf = () => {
+    const perfEntries: CreditEntry[] = performerCredits.map((f) => ({
+      label: f.label,
+      value: details[f.key].filter(Boolean).join(", "),
+    }));
+    const prodEntries: CreditEntry[] = productionCredits.map((f) => ({
+      label: f.label,
+      value: details[f.key].filter(Boolean).join(", "),
+    }));
+    generateCreditsPdf(trackData.title, trackData.artist, topLevelCredits, perfEntries, prodEntries);
+  };
+
   return (
     <SectionCard title="Credits" icon={Users}>
       {hasAny ? (
@@ -538,6 +550,15 @@ function CreditsTab({ trackId }: { trackId: number }) {
               </div>
             </div>
           )}
+          <div className="flex justify-end pt-2">
+            <button
+              onClick={handleDownloadPdf}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download PDF
+            </button>
+          </div>
         </div>
       ) : (
         <div className="text-center py-12 space-y-3">
