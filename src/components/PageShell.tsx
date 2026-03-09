@@ -3,10 +3,12 @@ import { AppSidebar, MobileSidebar } from "@/components/AppSidebar";
 import { TopBar } from "@/components/TopBar";
 import { PersistentPlayer } from "@/components/PersistentPlayer";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
+import { useGlobalShortcuts } from "@/hooks/use-global-shortcuts";
 
 export function PageShell({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { currentTrack } = useAudioPlayer();
+  useGlobalShortcuts();
 
   return (
     <div className="flex min-h-screen w-full bg-background">
