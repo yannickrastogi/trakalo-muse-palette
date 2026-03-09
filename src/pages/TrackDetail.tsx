@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback /* refresh */ } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useTeams } from "@/contexts/TeamContext";
 import { useTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
 import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf, generateCreditsPdf, type CreditEntry } from "@/lib/pdf-generators";
 import { DownloadTrackModal } from "@/components/DownloadTrackModal";
@@ -8,6 +9,7 @@ import { EditTrackModal } from "@/components/EditTrackModal";
 import { Textarea } from "@/components/ui/textarea";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { ShareModal } from "@/components/ShareModal";
+import { ShareWithTeamModal } from "@/components/ShareWithTeamModal";
 import { usePitches } from "@/contexts/PitchContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -137,6 +139,8 @@ export default function TrackDetail() {
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
   const [sharePackModalOpen, setSharePackModalOpen] = useState(false);
   const [editTrackModalOpen, setEditTrackModalOpen] = useState(false);
+  const [shareWithTeamOpen, setShareWithTeamOpen] = useState(false);
+  const { teams } = useTeams();
 
   const trackData = getTrack(Number(id));
 
@@ -262,6 +266,12 @@ export default function TrackDetail() {
                     className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
                   >
                     <Download className="w-4 h-4" /> Download
+                  </button>
+                  <button
+                    onClick={() => setShareWithTeamOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+                  >
+                    <Users className="w-4 h-4" /> Share with Team
                   </button>
                   <button
                     onClick={() => setShareTrackModalOpen(true)}
@@ -392,6 +402,13 @@ export default function TrackDetail() {
         onClose={() => setEditTrackModalOpen(false)}
         trackId={Number(id)}
       />
+      {trackData && (
+        <ShareWithTeamModal
+          open={shareWithTeamOpen}
+          onClose={() => setShareWithTeamOpen(false)}
+          trackTitle={trackData.title}
+        />
+      )}
     </PageShell>
   );
 }
