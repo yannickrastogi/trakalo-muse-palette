@@ -471,6 +471,200 @@ export function DashboardContent() {
         )}
       </AnimatePresence>
 
+      {/* ─── Total Plays Panel ─── */}
+      <AnimatePresence>
+        {showPlaysPanel && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="card-premium rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-border flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Headphones className="w-4 h-4 text-brand-pink" />
+                    <h3 className="text-sm font-bold text-foreground">
+                      Total Plays
+                      <span className="ml-2 text-muted-foreground font-normal">· {engagementStats.totalPlays} total</span>
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
+                      {(["1d", "1w", "1m", "1y", "all"] as const).map((range) => (
+                        <button
+                          key={range}
+                          onClick={() => setPlaysRange(range)}
+                          className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
+                            playsRange === range
+                              ? "bg-brand-pink/15 text-brand-pink"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {range.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={() => setShowPlaysPanel(false)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={playsSearch}
+                    onChange={(e) => setPlaysSearch(e.target.value)}
+                    placeholder="Search by track, artist, or recipient…"
+                    className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div className="px-5 py-2.5 border-b border-border/50 bg-secondary/20">
+                <p className="text-2xs text-muted-foreground font-medium">
+                  {totalFilteredPlays} play{totalFilteredPlays !== 1 ? "s" : ""} across {filteredPlays.length} recipient{filteredPlays.length !== 1 ? "s" : ""} in the last {playsRange === "all" ? "all time" : playsRange === "1d" ? "24 hours" : playsRange === "1w" ? "week" : playsRange === "1m" ? "month" : "year"}
+                </p>
+              </div>
+              {filteredPlays.length === 0 ? (
+                <div className="py-10 text-center text-muted-foreground text-sm">No plays recorded in this period</div>
+              ) : (
+                <div className="divide-y divide-border/40 max-h-[360px] overflow-y-auto">
+                  {filteredPlays.map((entry, idx) => (
+                    <div
+                      key={`${entry.trackId}-${entry.recipientName}-${idx}`}
+                      className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
+                      onClick={() => navigate(`/track/${entry.trackId}`)}
+                    >
+                      <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
+                      <img src={covers[entry.coverIdx]} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-pink transition-colors">{entry.trackTitle}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{entry.trackArtist}</p>
+                      </div>
+                      <div className="hidden sm:block text-right min-w-[80px]">
+                        <p className="text-[11px] text-foreground/70 truncate">{entry.recipientName}</p>
+                        <p className="text-2xs text-muted-foreground truncate">{entry.recipientCompany}</p>
+                      </div>
+                      <span className="inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-pink/12 text-brand-pink">
+                        {entry.plays} plays
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="px-5 py-3 border-t border-border/50 flex items-center justify-between">
+                <span className="text-2xs text-muted-foreground">
+                  Showing {filteredPlays.length} entries · {totalFilteredPlays} total plays
+                </span>
+                <Link to="/tracks" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
+                  View catalog →
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Total Downloads Panel ─── */}
+      <AnimatePresence>
+        {showDownloadsPanel && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="card-premium rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-border flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Download className="w-4 h-4 text-brand-purple" />
+                    <h3 className="text-sm font-bold text-foreground">
+                      Downloads
+                      <span className="ml-2 text-muted-foreground font-normal">· {engagementStats.totalDownloads} total</span>
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
+                      {(["1d", "1w", "1m", "1y", "all"] as const).map((range) => (
+                        <button
+                          key={range}
+                          onClick={() => setDownloadsRange(range)}
+                          className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
+                            downloadsRange === range
+                              ? "bg-brand-purple/15 text-brand-purple"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {range.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={() => setShowDownloadsPanel(false)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={downloadsSearch}
+                    onChange={(e) => setDownloadsSearch(e.target.value)}
+                    placeholder="Search by track, artist, or recipient…"
+                    className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div className="px-5 py-2.5 border-b border-border/50 bg-secondary/20">
+                <p className="text-2xs text-muted-foreground font-medium">
+                  {totalFilteredDownloads} download{totalFilteredDownloads !== 1 ? "s" : ""} across {filteredDownloads.length} recipient{filteredDownloads.length !== 1 ? "s" : ""} in the last {downloadsRange === "all" ? "all time" : downloadsRange === "1d" ? "24 hours" : downloadsRange === "1w" ? "week" : downloadsRange === "1m" ? "month" : "year"}
+                </p>
+              </div>
+              {filteredDownloads.length === 0 ? (
+                <div className="py-10 text-center text-muted-foreground text-sm">No downloads recorded in this period</div>
+              ) : (
+                <div className="divide-y divide-border/40 max-h-[360px] overflow-y-auto">
+                  {filteredDownloads.map((entry, idx) => (
+                    <div
+                      key={`${entry.trackId}-${entry.recipientName}-${idx}`}
+                      className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
+                      onClick={() => navigate(`/track/${entry.trackId}`)}
+                    >
+                      <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
+                      <img src={covers[entry.coverIdx]} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-purple transition-colors">{entry.trackTitle}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{entry.trackArtist}</p>
+                      </div>
+                      <div className="hidden sm:block text-right min-w-[80px]">
+                        <p className="text-[11px] text-foreground/70 truncate">{entry.recipientName}</p>
+                        <p className="text-2xs text-muted-foreground truncate">{entry.recipientCompany}</p>
+                      </div>
+                      <span className="inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-purple/12 text-brand-purple">
+                        {entry.downloads} dl
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="px-5 py-3 border-t border-border/50 flex items-center justify-between">
+                <span className="text-2xs text-muted-foreground">
+                  Showing {filteredDownloads.length} entries · {totalFilteredDownloads} total downloads
+                </span>
+                <Link to="/tracks" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
+                  View catalog →
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 sm:gap-6">
         {/* Right column */}
         <div className="space-y-5 sm:space-y-6">
