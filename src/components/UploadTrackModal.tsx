@@ -581,6 +581,18 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   details={currentTrack.details} lyrics={currentTrack.lyrics}
                 />
               )}
+              {phase === "edit" && currentTrack && editStep === 5 && (
+                <StepTeams
+                  teams={teams}
+                  selectedTeams={currentTrack.sharedTeams}
+                  onToggle={(teamId) => {
+                    const sharedTeams = currentTrack.sharedTeams.includes(teamId)
+                      ? currentTrack.sharedTeams.filter((id) => id !== teamId)
+                      : [...currentTrack.sharedTeams, teamId];
+                    updateCurrent({ sharedTeams });
+                  }}
+                />
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
