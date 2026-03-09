@@ -2,6 +2,7 @@ import { useState, useRef, useCallback /* refresh */ } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTeams } from "@/contexts/TeamContext";
 import { useTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
+import { useEngagement } from "@/contexts/EngagementContext";
 import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf, generateCreditsPdf, type CreditEntry } from "@/lib/pdf-generators";
 import { DownloadTrackModal } from "@/components/DownloadTrackModal";
 import { SharePackModal } from "@/components/SharePackModal";
@@ -55,6 +56,10 @@ import {
   Guitar as GuitarIcon,
   Package,
   Plus,
+  Headphones,
+  Eye,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
@@ -133,6 +138,7 @@ export default function TrackDetail() {
   const [activeTab, setActiveTab] = useState<string>("lyrics");
   const { permissions } = useRole();
   const { getTrack, updateTrack } = useTrack();
+  const { getTrackEngagement } = useEngagement();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTrackModalOpen, setShareTrackModalOpen] = useState(false);
@@ -158,11 +164,13 @@ export default function TrackDetail() {
     Released: "bg-brand-purple/15 text-brand-purple",
   };
 
+  const engagement = getTrackEngagement(Number(id));
+
   const tabs = [
     { id: "lyrics", label: "Lyrics" },
     { id: "stems", label: "Stems" },
     { id: "splits", label: "Splits" },
-    
+    { id: "engagement", label: `Engagement${engagement ? ` (${engagement.totalPlays})` : ""}` },
     { id: "metadata", label: "Metadata" },
     { id: "paperwork", label: "Paperwork" },
     { id: "pitches", label: "Pitch History" },
@@ -354,14 +362,14 @@ export default function TrackDetail() {
             {/* Tab content */}
             <motion.div variants={item}>
               {activeTab === "lyrics" && <LyricsTab trackId={Number(id)} />}
-              {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
-              {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
-              
-              {activeTab === "metadata" && <OverviewTab trackId={Number(id)} onEdit={() => setEditTrackModalOpen(true)} />}
-              {activeTab === "paperwork" && <PaperworkTab />}
-              {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
-              {activeTab === "status" && <StatusTab trackId={Number(id)} />}
-            </motion.div>
+               {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
+               {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
+               {activeTab === "engagement" && <EngagementTab trackId={Number(id)} />}
+               {activeTab === "metadata" && <OverviewTab trackId={Number(id)} onEdit={() => setEditTrackModalOpen(true)} />}
+               {activeTab === "paperwork" && <PaperworkTab />}
+               {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
+               {activeTab === "status" && <StatusTab trackId={Number(id)} />}
+             </motion.div>
           </motion.div>
       <ShareModal
         open={shareModalOpen}

@@ -680,3 +680,20 @@ function MobileTrackList({
     </div>
   );
 }
+
+/* ─── Plays Cell (uses hook) ─── */
+function PlaysCell({ trackId }: { trackId: number }) {
+  const { getTotalPlaysForTrack } = useEngagement();
+  const plays = getTotalPlaysForTrack(trackId);
+  return (
+    <td className="px-4 py-3 hidden lg:table-cell text-center">
+      {plays > 0 ? (
+        <span className="inline-flex items-center gap-1 text-2xs font-semibold text-foreground/70">
+          <Headphones className="w-3 h-3 text-brand-pink/60" />{plays}
+        </span>
+      ) : (
+        <span className="text-2xs text-muted-foreground/40">—</span>
+      )}
+    </td>
+  );
+}
