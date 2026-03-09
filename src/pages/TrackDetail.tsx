@@ -443,10 +443,20 @@ export default function TrackDetail() {
               {activeTab === "lyrics" && <LyricsTab trackId={Number(id)} />}
                {activeTab === "stems" && <StemsTab trackId={Number(id)} autoOpenUpload={shouldAutoUpload} />}
                {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
-               {activeTab === "engagement" && <EngagementTab trackId={Number(id)} />}
+               {activeTab === "engagement" && <EngagementTab trackId={Number(id)} onSeek={handleCommentSeek} />}
                {activeTab === "metadata" && <OverviewTab trackId={Number(id)} onEdit={() => setEditTrackModalOpen(true)} />}
                {activeTab === "paperwork" && <PaperworkTab />}
                {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
+               {activeTab === "review" && (
+                 <TrackReviewPanel
+                   trackId={Number(id)}
+                   currentUserName="Kira Nomura"
+                   progress={progress}
+                   onSeek={handleCommentSeek}
+                   totalDurationSeconds={totalDurationSeconds}
+                   isPlaying={isPlaying}
+                 />
+               )}
                {activeTab === "status" && <StatusTab trackId={Number(id)} />}
              </motion.div>
           </motion.div>
