@@ -572,7 +572,20 @@ function TrackDetailTabs({
           )}
         </div>
       </TabsContent>
+
+      {/* Review */}
+      <TabsContent value="review" className="mt-4">
+        <RecipientReviewPlayer
+          trackId={trackData.id}
+          recipientName={recipientName}
+          recipientEmail={recipientEmail}
+          progress={progress}
+          totalDurationSeconds={totalDurationSeconds}
+          onSeek={handleSeek}
+        />
+      </TabsContent>
     </Tabs>
+    </div>
   );
 }
 
