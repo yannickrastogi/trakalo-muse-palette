@@ -324,7 +324,7 @@ export default function SharedStemAccess() {
           /* Track/Stems view with detailed tabs */
           <TrackDetailTabs
             trackData={trackData}
-            link={link}
+            link={{ ...link, _recipientName: `${firstName} ${lastName}`, _recipientEmail: email }}
             allowDownload={link.allowDownload}
             onDownloadItem={handleDownloadItem}
           />
