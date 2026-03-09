@@ -9,6 +9,7 @@ import { EditTrackModal } from "@/components/EditTrackModal";
 import { Textarea } from "@/components/ui/textarea";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { ShareModal } from "@/components/ShareModal";
+import { ShareWithTeamModal } from "@/components/ShareWithTeamModal";
 import { usePitches } from "@/contexts/PitchContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
