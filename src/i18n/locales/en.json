@@ -334,5 +334,16 @@
   "common": {
     "pitch": "pitch",
     "pitches": "pitches"
+  },
+  "createTeam": {
+    "title": "Create New Team",
+    "description": "Name your team and start adding collaborators. You'll be the admin with full access.",
+    "nameLabel": "Team Name",
+    "namePlaceholder": "e.g. Nightfall Records, Studio Session A",
+    "nameRequired": "Team name is required",
+    "adminNote": "You will be automatically added as the Admin of this team with full access to the shared catalog.",
+    "cancel": "Cancel",
+    "create": "Create Team",
+    "created": "Team \"{{name}}\" created successfully"
   }
 }
