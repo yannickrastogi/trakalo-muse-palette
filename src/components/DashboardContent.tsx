@@ -90,6 +90,7 @@ export function DashboardContent() {
   const { contacts: allContacts } = useContacts();
   const { pitches: allPitches, addPitch } = usePitches();
   const navigate = useNavigate();
+  const { completeStep } = useOnboarding();
   const engagementStats = getTotalStats();
 
   // Simulated upload dates for demo tracks (spread across recent dates)
