@@ -14,6 +14,7 @@ import {
   X,
   Link2,
   BookUser,
+  Bell,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -31,6 +32,7 @@ const navItems = [
   { titleKey: "nav.contacts", icon: BookUser, url: "/contacts", permKey: null },
   { titleKey: "nav.sharedLinks", icon: Link2, url: "/shared-links", permKey: null },
   { titleKey: "nav.team", icon: Users, url: "/team", permKey: null },
+  { titleKey: "nav.notifications", icon: Bell, url: "/notifications", permKey: null },
   { titleKey: "nav.settings", icon: Settings, url: "/settings", permKey: "canAccessSettings" as const },
 ];
 

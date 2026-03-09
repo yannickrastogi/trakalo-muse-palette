@@ -24,6 +24,7 @@ import Contacts from "./pages/Contacts";
 import SharedLinks from "./pages/SharedLinks";
 import SharedStemAccess from "./pages/SharedStemAccess";
 import NotFound from "./pages/NotFound";
+import NotificationCenter from "./pages/NotificationCenter";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/shared-links" element={<SharedLinks />} />
             <Route path="/shared/:linkId" element={<SharedStemAccess />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/notifications" element={<NotificationCenter />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
