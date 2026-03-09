@@ -27,7 +27,7 @@ export interface Team {
   name: string;
   createdAt: string;
   members: TeamMember[];
-  sharedTrackCount: number;
+  sharedTrackIds: number[];
   activities: TeamActivity[];
 }
 
