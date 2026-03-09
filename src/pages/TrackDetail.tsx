@@ -158,6 +158,7 @@ export default function TrackDetail() {
     { id: "lyrics", label: "Lyrics" },
     { id: "stems", label: "Stems" },
     { id: "splits", label: "Splits" },
+    { id: "credits", label: "Credits" },
     { id: "metadata", label: "Metadata" },
     { id: "paperwork", label: "Paperwork" },
     { id: "pitches", label: "Pitch History" },
@@ -345,6 +346,7 @@ export default function TrackDetail() {
               {activeTab === "lyrics" && <LyricsTab trackId={Number(id)} />}
               {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
               {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
+              {activeTab === "credits" && <CreditsTab trackId={Number(id)} />}
               {activeTab === "metadata" && <OverviewTab trackId={Number(id)} />}
               {activeTab === "paperwork" && <PaperworkTab />}
               {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
@@ -452,6 +454,102 @@ function OverviewTab({ trackId }: { trackId: number }) {
           </div>
         ))}
       </div>
+    </SectionCard>
+  );
+}
+
+const PERFORMER_CREDIT_KEYS = [
+  { key: "vocalsBy", label: "Lead Vocals By" },
+  { key: "backgroundVocalsBy", label: "Background Vocals By" },
+  { key: "drumsBy", label: "Drums By" },
+  { key: "synthsBy", label: "Synths By" },
+  { key: "keysBy", label: "Keys By" },
+  { key: "guitarsBy", label: "Guitars By" },
+  { key: "bassBy", label: "Bass By" },
+];
+
+const PRODUCTION_CREDIT_KEYS = [
+  { key: "producers", label: "Producer(s)" },
+  { key: "songwriters", label: "Songwriter(s)" },
+  { key: "recordingEngineer", label: "Recording Engineer" },
+  { key: "mixingEngineer", label: "Mixing Engineer" },
+  { key: "masteringEngineer", label: "Mastering Engineer" },
+  { key: "programmingBy", label: "Programming By" },
+  { key: "mixingStudio", label: "Mixing Studio" },
+  { key: "recordingStudio", label: "Recording Studio" },
+  { key: "recordingDate", label: "Recording Date" },
+];
+
+function CreditsTab({ trackId }: { trackId: number }) {
+  const { getTrack } = useTrack();
+  const trackData = getTrack(trackId);
+  if (!trackData) return null;
+
+  const details = trackData.details || {};
+  const performerCredits = PERFORMER_CREDIT_KEYS.filter((f) => details[f.key]?.some((v) => v.trim()));
+  const productionCredits = PRODUCTION_CREDIT_KEYS.filter((f) => details[f.key]?.some((v) => v.trim()));
+
+  const topLevelCredits = [
+    { label: "Written By", value: trackData.writtenBy.length ? trackData.writtenBy.join(", ") : "" },
+    { label: "Produced By", value: trackData.producedBy.length ? trackData.producedBy.join(", ") : "" },
+    { label: "Mixed By", value: trackData.mixedBy || "" },
+    { label: "Mastered By", value: trackData.masteredBy || "" },
+  ].filter((c) => c.value);
+
+  const hasAny = performerCredits.length > 0 || productionCredits.length > 0 || topLevelCredits.length > 0;
+
+  return (
+    <SectionCard title="Credits" icon={Users}>
+      {hasAny ? (
+        <div className="p-5 space-y-6">
+          {topLevelCredits.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {topLevelCredits.map((c) => (
+                <div key={c.label}>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">{c.label}</p>
+                  <p className="text-sm text-foreground font-medium">{c.value}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {performerCredits.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-foreground border-b border-border pb-1 mb-3">Performer Credits</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {performerCredits.map((f) => (
+                  <div key={f.key}>
+                    <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">{f.label}</p>
+                    <p className="text-sm text-foreground font-medium">{details[f.key].filter(Boolean).join(", ")}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {productionCredits.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-foreground border-b border-border pb-1 mb-3">Production & Other Credits</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {productionCredits.map((f) => (
+                  <div key={f.key}>
+                    <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">{f.label}</p>
+                    <p className="text-sm text-foreground font-medium">{details[f.key].filter(Boolean).join(", ")}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-center py-12 space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center mx-auto">
+            <Users className="w-7 h-7 text-muted-foreground/50" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">No credits added yet</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Add performer and production credits via Edit Track</p>
+          </div>
+        </div>
+      )}
     </SectionCard>
   );
 }
