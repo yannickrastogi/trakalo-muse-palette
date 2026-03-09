@@ -281,6 +281,9 @@ export function DashboardContent() {
         <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("dashboard.subtitle")}</p>
       </motion.div>
 
+      {/* Onboarding Checklist */}
+      <OnboardingChecklist />
+
       {/* Stats — 3×2 grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         {stats.map((stat) => (

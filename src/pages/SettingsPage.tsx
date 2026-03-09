@@ -566,6 +566,8 @@ function AppearanceSection() {
         <Divider />
         <SettingToggleRow icon={Sparkles} label="Motion & Animations" description="Enable entrance animations and micro-interactions" enabled={animations} onToggle={() => setAnimations(!animations)} />
       </SectionBlock>
+
+      <ResetOnboardingBlock />
     </motion.div>
   );
 }
