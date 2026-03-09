@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { TeamSharedCatalog } from "@/components/TeamSharedCatalog";
 import {
@@ -97,6 +97,7 @@ export default function Team() {
 
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [showSharedCatalog, setShowSharedCatalog] = useState(false);
+  const membersRef = React.useRef<HTMLDivElement>(null);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -298,7 +299,10 @@ export default function Team() {
             </div>
           </button>
           {/* Members */}
-          <div className="card-premium p-4 rounded-xl relative overflow-hidden">
+          <button
+            onClick={() => membersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="card-premium p-4 rounded-xl relative overflow-hidden text-left hover:border-brand-purple/30 transition-colors group"
+          >
             <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-brand-purple/8 blur-xl" />
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-brand-purple/12 flex items-center justify-center">
@@ -306,10 +310,10 @@ export default function Team() {
               </div>
               <div>
                 <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Members</p>
-                <p className="text-xl font-bold text-foreground">{selectedTeam.members.length}</p>
+                <p className="text-xl font-bold text-foreground group-hover:text-brand-purple transition-colors">{selectedTeam.members.length}</p>
               </div>
             </div>
-          </div>
+          </button>
           {/* Pitches */}
           <div className="card-premium p-4 rounded-xl relative overflow-hidden">
             <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-brand-pink/8 blur-xl" />
@@ -397,7 +401,7 @@ export default function Team() {
 
 
         {/* Search */}
-        <motion.div variants={item}>
+        <motion.div variants={item} ref={membersRef}>
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
