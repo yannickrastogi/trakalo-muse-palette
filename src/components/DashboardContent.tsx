@@ -135,7 +135,8 @@ export function DashboardContent() {
           <motion.div
             key={stat.label}
             variants={item}
-            className={`card-premium p-4 sm:p-5 group relative overflow-hidden cursor-default ${stat.borderAccent}`}
+            onClick={stat.clickable ? () => setShowTracksPanel(!showTracksPanel) : undefined}
+            className={`card-premium p-4 sm:p-5 group relative overflow-hidden ${stat.clickable ? "cursor-pointer" : "cursor-default"} ${stat.borderAccent} ${stat.clickable && showTracksPanel ? "border-brand-orange/40 ring-1 ring-brand-orange/20" : ""}`}
           >
             <div
               className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-60 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
@@ -157,6 +158,110 @@ export function DashboardContent() {
           </motion.div>
         ))}
       </div>
+
+      {/* ─── Total Tracks Panel ─── */}
+      <AnimatePresence>
+        {showTracksPanel && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="card-premium rounded-xl overflow-hidden">
+              {/* Panel header */}
+              <div className="px-5 py-4 border-b border-border flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Music className="w-4 h-4 text-brand-orange" />
+                    <h3 className="text-sm font-bold text-foreground">
+                      Catalog Tracks
+                      <span className="ml-2 text-muted-foreground font-normal">· {allTracks.length} total</span>
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
+                      {(["1d", "1w", "1m", "1y"] as const).map((range) => (
+                        <button
+                          key={range}
+                          onClick={() => setTracksRange(range)}
+                          className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
+                            tracksRange === range
+                              ? "bg-brand-orange/15 text-brand-orange"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {range.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setShowTracksPanel(false)}
+                      className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={tracksSearch}
+                    onChange={(e) => setTracksSearch(e.target.value)}
+                    placeholder="Search by title or artist…"
+                    className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  />
+                </div>
+              </div>
+              {/* Subtitle */}
+              <div className="px-5 py-2.5 border-b border-border/50 bg-secondary/20">
+                <p className="text-2xs text-muted-foreground font-medium">
+                  {filteredByRange.length} track{filteredByRange.length !== 1 ? "s" : ""} uploaded in the last {tracksRange === "1d" ? "24 hours" : tracksRange === "1w" ? "week" : tracksRange === "1m" ? "month" : "year"}
+                </p>
+              </div>
+              {/* Track list */}
+              {filteredByRange.length === 0 ? (
+                <div className="py-10 text-center text-muted-foreground text-sm">No tracks uploaded in this period</div>
+              ) : (
+                <div className="divide-y divide-border/40 max-h-[360px] overflow-y-auto">
+                  {filteredByRange.map((track, idx) => (
+                    <div
+                      key={track.id}
+                      className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
+                      onClick={() => navigate(`/track/${track.id}`)}
+                    >
+                      <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
+                      <img
+                        src={track.coverImage || covers[track.coverIdx % covers.length]}
+                        alt={track.title}
+                        className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-orange transition-colors">{track.title}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
+                      </div>
+                      <span className="text-2xs text-muted-foreground hidden sm:inline">{track.genre}</span>
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
+                      <span className="text-2xs text-muted-foreground/50 font-mono hidden sm:inline">{track.duration}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Footer */}
+              <div className="px-5 py-3 border-t border-border/50 flex items-center justify-between">
+                <span className="text-2xs text-muted-foreground">
+                  Showing {filteredByRange.length} of {allTracks.length} total tracks
+                </span>
+                <Link to="/tracks" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
+                  View full catalog →
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 sm:gap-6">
