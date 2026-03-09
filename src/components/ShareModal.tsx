@@ -294,7 +294,7 @@ export function ShareModal({
                         {allowDownload ? (
                           <Download className="w-4 h-4 text-primary" />
                         ) : (
-                          <DownloadOff className="w-4 h-4 text-muted-foreground" />
+                          <ShieldOff className="w-4 h-4 text-muted-foreground" />
                         )}
                         <div>
                           <p className="text-xs font-semibold text-foreground">{allowDownload ? "Download Enabled" : "Download Disabled"}</p>
