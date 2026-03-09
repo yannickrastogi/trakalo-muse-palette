@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ShareModal } from "@/components/ShareModal";
+import { useEngagement } from "@/contexts/EngagementContext";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -17,6 +18,7 @@ import {
   Copy,
   Trash2,
   Check,
+  Headphones,
 } from "lucide-react";
 import {
   DndContext,
@@ -63,7 +65,9 @@ export default function PlaylistDetail() {
   const { getPlaylist, updatePlaylist } = usePlaylists();
   const { permissions } = useRole();
   const { tracks: allTracks } = useTrack();
+  const { getTotalPlaysForTrack, getPlaylistEngagement } = useEngagement();
   const playlist = getPlaylist(id || "");
+  const plEngagement = getPlaylistEngagement(id || "");
 
   const [tracks, setTracks] = useState<Track[]>(() => {
     if (!playlist) return [];
@@ -200,19 +204,28 @@ export default function PlaylistDetail() {
               </p>
             </div>
 
-            <div className="flex items-center gap-4 text-muted-foreground">
-              <span className="flex items-center gap-1.5 text-xs font-medium">
-                <Music className="w-3.5 h-3.5" />
-                {tracks.length} tracks
-              </span>
-              <span className="w-px h-4 bg-border" />
-              <span className="flex items-center gap-1.5 text-xs font-medium">
-                <Clock className="w-3.5 h-3.5" />
-                {playlist.duration}
-              </span>
-              <span className="w-px h-4 bg-border hidden sm:block" />
-              <span className="text-xs font-medium hidden sm:inline">Updated {playlist.updated}</span>
-            </div>
+             <div className="flex items-center gap-4 text-muted-foreground">
+               <span className="flex items-center gap-1.5 text-xs font-medium">
+                 <Music className="w-3.5 h-3.5" />
+                 {tracks.length} tracks
+               </span>
+               <span className="w-px h-4 bg-border" />
+               <span className="flex items-center gap-1.5 text-xs font-medium">
+                 <Clock className="w-3.5 h-3.5" />
+                 {playlist.duration}
+               </span>
+               {plEngagement && plEngagement.totalPlays > 0 && (
+                 <>
+                   <span className="w-px h-4 bg-border" />
+                   <span className="flex items-center gap-1.5 text-xs font-semibold text-brand-pink">
+                     <Headphones className="w-3.5 h-3.5" />
+                     {plEngagement.totalPlays} plays
+                   </span>
+                 </>
+               )}
+               <span className="w-px h-4 bg-border hidden sm:block" />
+               <span className="text-xs font-medium hidden sm:inline">Updated {playlist.updated}</span>
+             </div>
 
             <div className="flex flex-wrap gap-2 pt-1">
               <button
@@ -470,10 +483,11 @@ function SortableDesktopRow({
           ))}
         </div>
       </td>
-      <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.language}</span></td>
-      <td className="px-4 py-3">
-        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
-      </td>
+       <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.language}</span></td>
+       <PlaysCell trackId={track.id} />
+       <td className="px-4 py-3">
+         <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
+       </td>
       <td className="px-2 py-3">
         <button
           onClick={() => removeTrack(track.id)}
@@ -515,9 +529,10 @@ function DesktopTrackTable({
               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">BPM</th>
               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Mood</th>
-              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
-              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
-              <th className="px-2 py-3 w-20"></th>
+               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
+               <th className="text-center px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Plays</th>
+               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
+               <th className="px-2 py-3 w-20"></th>
             </tr>
           </thead>
           <tbody>
@@ -663,5 +678,22 @@ function MobileTrackList({
         />
       ))}
     </div>
+  );
+}
+
+/* ─── Plays Cell (uses hook) ─── */
+function PlaysCell({ trackId }: { trackId: number }) {
+  const { getTotalPlaysForTrack } = useEngagement();
+  const plays = getTotalPlaysForTrack(trackId);
+  return (
+    <td className="px-4 py-3 hidden lg:table-cell text-center">
+      {plays > 0 ? (
+        <span className="inline-flex items-center gap-1 text-2xs font-semibold text-foreground/70">
+          <Headphones className="w-3 h-3 text-brand-pink/60" />{plays}
+        </span>
+      ) : (
+        <span className="text-2xs text-muted-foreground/40">—</span>
+      )}
+    </td>
   );
 }

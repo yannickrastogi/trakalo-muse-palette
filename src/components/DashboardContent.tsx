@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useEngagement } from "@/contexts/EngagementContext";
 import { Link } from "react-router-dom";
 import {
   Music,
@@ -15,6 +16,8 @@ import {
   Star,
   TrendingUp,
   MoreHorizontal,
+  Headphones,
+  Download,
 } from "lucide-react";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -59,10 +62,14 @@ export function DashboardContent() {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { permissions } = useRole();
+  const { getTotalStats } = useEngagement();
+  const engagementStats = getTotalStats();
 
   const stats = [
     { label: t("dashboard.totalTracks"), value: "2,847", icon: Music, change: t("dashboard.thisWeek"), accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20" },
     { label: t("dashboard.playlists"), value: "64", icon: ListMusic, change: t("dashboard.new"), accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20" },
+    { label: "Total Plays", value: engagementStats.totalPlays.toLocaleString(), icon: Headphones, change: `${engagementStats.uniqueRecipients} recipients`, accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20" },
+    { label: "Downloads", value: engagementStats.totalDownloads.toLocaleString(), icon: Download, change: `across ${engagementStats.uniqueRecipients} contacts`, accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20" },
     { label: t("dashboard.collaborators"), value: "126", icon: Users, change: t("dashboard.active"), accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20" },
     { label: t("dashboard.pendingPitches"), value: "9", icon: Send, change: t("dashboard.dueToday"), accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20" },
   ];
@@ -83,7 +90,7 @@ export function DashboardContent() {
       </motion.div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {stats.map((stat) => (
           <motion.div
             key={stat.label}

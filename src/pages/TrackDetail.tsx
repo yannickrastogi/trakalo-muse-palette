@@ -2,6 +2,7 @@ import { useState, useRef, useCallback /* refresh */ } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTeams } from "@/contexts/TeamContext";
 import { useTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
+import { useEngagement } from "@/contexts/EngagementContext";
 import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf, generateCreditsPdf, type CreditEntry } from "@/lib/pdf-generators";
 import { DownloadTrackModal } from "@/components/DownloadTrackModal";
 import { SharePackModal } from "@/components/SharePackModal";
@@ -55,6 +56,10 @@ import {
   Guitar as GuitarIcon,
   Package,
   Plus,
+  Headphones,
+  Eye,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
@@ -133,6 +138,7 @@ export default function TrackDetail() {
   const [activeTab, setActiveTab] = useState<string>("lyrics");
   const { permissions } = useRole();
   const { getTrack, updateTrack } = useTrack();
+  const { getTrackEngagement } = useEngagement();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTrackModalOpen, setShareTrackModalOpen] = useState(false);
@@ -158,11 +164,13 @@ export default function TrackDetail() {
     Released: "bg-brand-purple/15 text-brand-purple",
   };
 
+  const engagement = getTrackEngagement(Number(id));
+
   const tabs = [
     { id: "lyrics", label: "Lyrics" },
     { id: "stems", label: "Stems" },
     { id: "splits", label: "Splits" },
-    
+    { id: "engagement", label: `Engagement${engagement ? ` (${engagement.totalPlays})` : ""}` },
     { id: "metadata", label: "Metadata" },
     { id: "paperwork", label: "Paperwork" },
     { id: "pitches", label: "Pitch History" },
@@ -354,14 +362,14 @@ export default function TrackDetail() {
             {/* Tab content */}
             <motion.div variants={item}>
               {activeTab === "lyrics" && <LyricsTab trackId={Number(id)} />}
-              {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
-              {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
-              
-              {activeTab === "metadata" && <OverviewTab trackId={Number(id)} onEdit={() => setEditTrackModalOpen(true)} />}
-              {activeTab === "paperwork" && <PaperworkTab />}
-              {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
-              {activeTab === "status" && <StatusTab trackId={Number(id)} />}
-            </motion.div>
+               {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
+               {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
+               {activeTab === "engagement" && <EngagementTab trackId={Number(id)} />}
+               {activeTab === "metadata" && <OverviewTab trackId={Number(id)} onEdit={() => setEditTrackModalOpen(true)} />}
+               {activeTab === "paperwork" && <PaperworkTab />}
+               {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
+               {activeTab === "status" && <StatusTab trackId={Number(id)} />}
+             </motion.div>
           </motion.div>
       <ShareModal
         open={shareModalOpen}
@@ -1658,5 +1666,150 @@ function StatusTab({ trackId }: { trackId: number }) {
         </div>
       </div>
     </SectionCard>
+  );
+}
+
+/* ─── ENGAGEMENT TAB ─── */
+function EngagementTab({ trackId }: { trackId: number }) {
+  const { getTrackEngagement } = useEngagement();
+  const [expandedRecipient, setExpandedRecipient] = useState<string | null>(null);
+  const engagement = getTrackEngagement(trackId);
+
+  if (!engagement || engagement.totalPlays === 0) {
+    return (
+      <SectionCard title="Engagement" icon={Headphones}>
+        <div className="text-center py-12 text-muted-foreground">
+          <Headphones className="w-10 h-10 mx-auto mb-3 opacity-20" />
+          <p className="text-sm font-semibold">No engagement yet</p>
+          <p className="text-xs mt-1 text-muted-foreground/60">Share this track to start tracking plays and downloads</p>
+        </div>
+      </SectionCard>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="card-premium p-4 rounded-xl">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-brand-pink/12 flex items-center justify-center">
+              <Headphones className="w-4 h-4 text-brand-pink" />
+            </div>
+            <div>
+              <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Total Plays</p>
+              <p className="text-xl font-bold text-foreground">{engagement.totalPlays}</p>
+            </div>
+          </div>
+        </div>
+        <div className="card-premium p-4 rounded-xl">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-[hsl(200,70%,50%)]/12 flex items-center justify-center">
+              <Download className="w-4 h-4 text-[hsl(200,70%,50%)]" />
+            </div>
+            <div>
+              <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Downloads</p>
+              <p className="text-xl font-bold text-foreground">{engagement.totalDownloads}</p>
+            </div>
+          </div>
+        </div>
+        <div className="card-premium p-4 rounded-xl">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-brand-purple/12 flex items-center justify-center">
+              <Users className="w-4 h-4 text-brand-purple" />
+            </div>
+            <div>
+              <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Recipients</p>
+              <p className="text-xl font-bold text-foreground">{engagement.recipients.length}</p>
+            </div>
+          </div>
+        </div>
+        <div className="card-premium p-4 rounded-xl">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-brand-orange/12 flex items-center justify-center">
+              <Eye className="w-4 h-4 text-brand-orange" />
+            </div>
+            <div>
+              <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Avg Plays</p>
+              <p className="text-xl font-bold text-foreground">{Math.round(engagement.totalPlays / engagement.recipients.length)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recipient breakdown */}
+      <SectionCard title="Recipient Breakdown" icon={Users}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-foreground">Recipient Breakdown</h3>
+          <span className="text-2xs text-muted-foreground">{engagement.recipients.length} recipients</span>
+        </div>
+        <div className="space-y-1">
+          {engagement.recipients
+            .sort((a, b) => b.plays - a.plays)
+            .map((r) => {
+              const isExpanded = expandedRecipient === r.recipientName;
+              return (
+                <div key={r.recipientName} className="rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setExpandedRecipient(isExpanded ? null : r.recipientName)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                      <span className="text-[10px] font-bold text-primary-foreground">
+                        {r.recipientName.split(" ").map((n) => n[0]).join("").toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold text-foreground truncate">{r.recipientName}</p>
+                      <p className="text-2xs text-muted-foreground truncate">{r.recipientCompany}</p>
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0">
+                      <span className="inline-flex items-center gap-1 text-2xs font-semibold text-brand-pink">
+                        <Headphones className="w-3 h-3" /> {r.plays}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-2xs font-semibold text-[hsl(200,70%,50%)]">
+                        <Download className="w-3 h-3" /> {r.downloads}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                      )}
+                    </div>
+                  </button>
+                  {isExpanded && (
+                    <div className="px-4 pb-3 pt-0 ml-11 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="bg-secondary/50 rounded-lg p-2.5">
+                        <p className="text-2xs text-muted-foreground">Plays</p>
+                        <p className="text-sm font-bold text-foreground">{r.plays}</p>
+                      </div>
+                      <div className="bg-secondary/50 rounded-lg p-2.5">
+                        <p className="text-2xs text-muted-foreground">Downloads</p>
+                        <p className="text-sm font-bold text-foreground">{r.downloads}</p>
+                      </div>
+                      <div className="bg-secondary/50 rounded-lg p-2.5">
+                        <p className="text-2xs text-muted-foreground">Pack Downloads</p>
+                        <p className="text-sm font-bold text-foreground">{r.packDownloads}</p>
+                      </div>
+                      <div className="bg-secondary/50 rounded-lg p-2.5">
+                        <p className="text-2xs text-muted-foreground">Stem Downloads</p>
+                        <p className="text-sm font-bold text-foreground">{r.stemDownloads}</p>
+                      </div>
+                      <div className="col-span-2 sm:col-span-4 bg-secondary/50 rounded-lg p-2.5">
+                        <p className="text-2xs text-muted-foreground">Last Activity</p>
+                        <p className="text-sm font-medium text-foreground">
+                          {new Date(r.lastActivity).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          {" · "}
+                          {new Date(r.lastActivity).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+        </div>
+      </SectionCard>
+    </div>
   );
 }

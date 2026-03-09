@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { UploadTrackModal } from "@/components/UploadTrackModal";
 import { useRole } from "@/contexts/RoleContext";
 import { useTrack } from "@/contexts/TrackContext";
+import { useEngagement } from "@/contexts/EngagementContext";
 import { GENRES, KEYS, MOODS, LANGUAGES, GENDERS } from "@/lib/constants";
 import { motion } from "framer-motion";
 import {
@@ -19,6 +20,8 @@ import {
   SlidersHorizontal,
   LayoutGrid,
   List,
+  Headphones,
+  Download,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { MiniWaveform } from "@/components/MiniWaveform";
@@ -52,6 +55,7 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 export default function Catalog() {
   const { t } = useTranslation();
   const { tracks: allTracks } = useTrack();
+  const { getTotalPlaysForTrack, getTotalDownloadsForTrack } = useEngagement();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
@@ -262,9 +266,10 @@ export default function Catalog() {
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Mood</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Gender</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
-                    <th className="px-4 py-3 w-10"></th>
+                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Gender</th>
+                     <th className="text-center px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Plays</th>
+                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
+                     <th className="px-4 py-3 w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -344,9 +349,21 @@ export default function Catalog() {
                             )}
                           </td>
                           <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.language || "—"}</span></td>
-                          <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.voice || "—"}</span></td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
+                           <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.voice || "—"}</span></td>
+                           <td className="px-4 py-3 hidden lg:table-cell text-center">
+                             {(() => {
+                               const plays = getTotalPlaysForTrack(track.id);
+                               return plays > 0 ? (
+                                 <span className="inline-flex items-center gap-1 text-2xs font-semibold text-foreground/70">
+                                   <Headphones className="w-3 h-3 text-brand-pink/60" />{plays}
+                                 </span>
+                               ) : (
+                                 <span className="text-2xs text-muted-foreground/40">—</span>
+                               );
+                             })()}
+                           </td>
+                           <td className="px-4 py-3">
+                             <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
                           </td>
                           <td className="px-4 py-3">
                             <button className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground opacity-0 group-hover/row:opacity-100" onClick={(e) => e.stopPropagation()}>
@@ -425,19 +442,27 @@ export default function Catalog() {
                       <div className="p-3 space-y-1.5">
                         <p className="font-semibold text-foreground text-[13px] tracking-tight truncate leading-tight">{track.title}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
-                        <div className="flex items-center gap-2 pt-1 flex-wrap">
-                          <span className="text-2xs text-muted-foreground shrink-0">{track.genre || "—"}</span>
-                          <span className="w-px h-3 bg-border shrink-0" />
-                          <span className="text-2xs font-mono text-foreground/50 tabular-nums shrink-0">{track.bpm ? `${track.bpm} BPM` : "—"}</span>
-                          <span className="w-px h-3 bg-border shrink-0" />
-                          <span className="text-2xs font-semibold text-foreground/50 shrink-0">{track.key || "—"}</span>
-                          {track.voice && (
-                            <>
-                              <span className="w-px h-3 bg-border shrink-0" />
-                              <span className="text-2xs text-muted-foreground shrink-0">{track.voice}</span>
-                            </>
-                          )}
-                        </div>
+                         <div className="flex items-center gap-2 pt-1 flex-wrap">
+                           <span className="text-2xs text-muted-foreground shrink-0">{track.genre || "—"}</span>
+                           <span className="w-px h-3 bg-border shrink-0" />
+                           <span className="text-2xs font-mono text-foreground/50 tabular-nums shrink-0">{track.bpm ? `${track.bpm} BPM` : "—"}</span>
+                           <span className="w-px h-3 bg-border shrink-0" />
+                           <span className="text-2xs font-semibold text-foreground/50 shrink-0">{track.key || "—"}</span>
+                           {track.voice && (
+                             <>
+                               <span className="w-px h-3 bg-border shrink-0" />
+                               <span className="text-2xs text-muted-foreground shrink-0">{track.voice}</span>
+                             </>
+                           )}
+                           {getTotalPlaysForTrack(track.id) > 0 && (
+                             <>
+                               <span className="w-px h-3 bg-border shrink-0" />
+                               <span className="inline-flex items-center gap-0.5 text-2xs font-semibold text-brand-pink/70 shrink-0">
+                                 <Headphones className="w-2.5 h-2.5" />{getTotalPlaysForTrack(track.id)}
+                               </span>
+                             </>
+                           )}
+                         </div>
                       </div>
                     </motion.div>
                   );
