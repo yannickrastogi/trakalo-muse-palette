@@ -989,9 +989,9 @@ export function DashboardContent() {
 
       {/* Modals */}
       <UploadTrackModal open={showUploadModal} onOpenChange={setShowUploadModal} />
-      <CreatePlaylistModal open={showPlaylistModal} onOpenChange={setShowPlaylistModal} onCreate={() => setShowPlaylistModal(false)} />
+      <CreatePlaylistModal open={showPlaylistModal} onOpenChange={setShowPlaylistModal} onCreate={(data) => { addPlaylist(data); setShowPlaylistModal(false); }} />
       <InviteMemberModal open={showInviteModal} onOpenChange={setShowInviteModal} onInvite={() => setShowInviteModal(false)} />
-      <CreatePitchModal open={showPitchModal} onOpenChange={setShowPitchModal} onCreate={() => setShowPitchModal(false)} />
+      <CreatePitchModal open={showPitchModal} onOpenChange={setShowPitchModal} onCreate={(pitch) => { addPitch(pitch); setShowPitchModal(false); }} />
     </motion.div>
   );
 }
