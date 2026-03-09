@@ -12,6 +12,7 @@ import { SharedLinksProvider } from "@/contexts/SharedLinksContext";
 import { ContactsProvider } from "@/contexts/ContactsContext";
 import { EngagementProvider } from "@/contexts/EngagementContext";
 import { TrackReviewProvider } from "@/contexts/TrackReviewContext";
+import { ApprovalProvider } from "@/contexts/ApprovalContext";
 import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import TrackDetail from "./pages/TrackDetail";
@@ -26,6 +27,7 @@ import SharedLinks from "./pages/SharedLinks";
 import SharedStemAccess from "./pages/SharedStemAccess";
 import NotFound from "./pages/NotFound";
 import NotificationCenter from "./pages/NotificationCenter";
+import ApprovalQueue from "./pages/ApprovalQueue";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +41,7 @@ const App = () => (
       <TrackProvider>
       <EngagementProvider>
       <TrackReviewProvider>
+      <ApprovalProvider>
       <PitchProvider>
       <PlaylistProvider>
       <SharedLinksProvider>
@@ -59,6 +62,7 @@ const App = () => (
             <Route path="/shared/:linkId" element={<SharedStemAccess />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/notifications" element={<NotificationCenter />} />
+            <Route path="/approvals" element={<ApprovalQueue />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
@@ -66,6 +70,7 @@ const App = () => (
       </SharedLinksProvider>
       </PlaylistProvider>
       </PitchProvider>
+      </ApprovalProvider>
       </TrackReviewProvider>
       </EngagementProvider>
       </TrackProvider>

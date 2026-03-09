@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { TeamSharedCatalog } from "@/components/TeamSharedCatalog";
+import { SendApprovalSettings } from "@/components/SendApprovalSettings";
 import {
   Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal,
   Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3,
@@ -429,6 +430,13 @@ export default function Team() {
             );
           })()}
         </motion.div>
+
+        {/* Send Approvals Section */}
+        {permissions.canManageTeam && (
+          <motion.div variants={item} className="card-premium p-5 rounded-xl">
+            <SendApprovalSettings teamId={selectedTeamId!} />
+          </motion.div>
+        )}
 
         {/* Role stat pills */}
         <motion.div variants={item} className="flex flex-wrap gap-2">
