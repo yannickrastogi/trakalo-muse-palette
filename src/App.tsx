@@ -40,6 +40,7 @@ const App = () => (
       <RoleProvider>
       <TeamProvider>
       <TrackProvider>
+      <AudioPlayerProvider>
       <EngagementProvider>
       <TrackReviewProvider>
       <ApprovalProvider>
