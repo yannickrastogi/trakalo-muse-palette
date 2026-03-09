@@ -1,5 +1,9 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { UploadTrackModal } from "@/components/UploadTrackModal";
+import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
+import { InviteMemberModal } from "@/components/InviteMemberModal";
+import { CreatePitchModal } from "@/components/CreatePitchModal";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
@@ -78,9 +82,9 @@ export function DashboardContent() {
   const { permissions } = useRole();
   const { getTotalStats, trackEngagement } = useEngagement();
   const { tracks: allTracks } = useTrack();
-  const { playlists: allPlaylists } = usePlaylists();
+  const { playlists: allPlaylists, addPlaylist } = usePlaylists();
   const { contacts: allContacts } = useContacts();
-  const { pitches: allPitches } = usePitches();
+  const { pitches: allPitches, addPitch } = usePitches();
   const navigate = useNavigate();
   const engagementStats = getTotalStats();
 
@@ -251,11 +255,16 @@ export function DashboardContent() {
     { id: "pitches", label: t("pitch.title"), value: allPitches.length.toLocaleString(), icon: Send, change: `${allPitches.filter(p => p.status === "Sent" || p.status === "Opened").length} active`, accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", clickable: true },
   ];
 
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showPitchModal, setShowPitchModal] = useState(false);
+
   const quickActions = [
-    { label: t("dashboard.uploadTrack"), icon: Upload, primary: true, visible: permissions.canUploadTracks },
-    { label: t("dashboard.newPlaylist"), icon: ListMusic, visible: permissions.canCreatePlaylists },
-    { label: t("dashboard.inviteMember"), icon: Users, visible: permissions.canInviteMembers },
-    { label: t("dashboard.newPitch"), icon: Send, visible: permissions.canSendPitches },
+    { label: t("dashboard.uploadTrack"), icon: Upload, primary: true, visible: permissions.canUploadTracks, onClick: () => setShowUploadModal(true) },
+    { label: t("dashboard.newPlaylist"), icon: ListMusic, visible: permissions.canCreatePlaylists, onClick: () => setShowPlaylistModal(true) },
+    { label: t("dashboard.inviteMember"), icon: Users, visible: permissions.canInviteMembers, onClick: () => setShowInviteModal(true) },
+    { label: t("dashboard.newPitch"), icon: Send, visible: permissions.canSendPitches, onClick: () => setShowPitchModal(true) },
   ].filter((a) => a.visible);
 
   return (
@@ -941,6 +950,7 @@ export function DashboardContent() {
             {quickActions.map((action) => (
               <button
                 key={action.label}
+                onClick={action.onClick}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-[13px] group min-h-[72px] ${
                   action.primary
                     ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange hover:bg-brand-orange/12 hover:border-brand-orange/40 gradient-border"
@@ -976,6 +986,12 @@ export function DashboardContent() {
           </div>
         </motion.div>
       </div>
+
+      {/* Modals */}
+      <UploadTrackModal open={showUploadModal} onOpenChange={setShowUploadModal} />
+      <CreatePlaylistModal open={showPlaylistModal} onOpenChange={setShowPlaylistModal} onCreate={(data) => { addPlaylist(data); setShowPlaylistModal(false); }} />
+      <InviteMemberModal open={showInviteModal} onOpenChange={setShowInviteModal} onInvite={() => setShowInviteModal(false)} />
+      <CreatePitchModal open={showPitchModal} onOpenChange={setShowPitchModal} onCreate={(pitch) => { addPitch(pitch); setShowPitchModal(false); }} />
     </motion.div>
   );
 }
