@@ -350,25 +350,37 @@ export default function Team() {
 
         {/* ─── Activity Feed ─── */}
         <motion.div variants={item} id="team-activity-feed" className="card-premium rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-muted-foreground" />
-              <h3 className="text-sm font-bold text-foreground">Team Activity</h3>
+          <div className="px-5 py-4 border-b border-border flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-muted-foreground" />
+                <h3 className="text-sm font-bold text-foreground">Team Activity</h3>
+              </div>
+              <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
+                {(["1d", "1w", "1m", "1y"] as const).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setActivityRange(range)}
+                    className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
+                      activityRange === range
+                        ? "bg-brand-pink/15 text-brand-pink"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {range === "1d" ? "1D" : range === "1w" ? "1W" : range === "1m" ? "1M" : "1Y"}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
-              {(["1d", "1w", "1m", "1y"] as const).map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setActivityRange(range)}
-                  className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
-                    activityRange === range
-                      ? "bg-brand-pink/15 text-brand-pink"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {range === "1d" ? "1D" : range === "1w" ? "1W" : range === "1m" ? "1M" : "1Y"}
-                </button>
-              ))}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                value={activitySearch}
+                onChange={(e) => setActivitySearch(e.target.value)}
+                placeholder="Search activity… e.g. track name, pitched, stems, status"
+                className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+              />
             </div>
           </div>
           {(() => {
@@ -378,9 +390,16 @@ export default function Team() {
             else if (activityRange === "1w") cutoff.setDate(now.getDate() - 7);
             else if (activityRange === "1m") cutoff.setMonth(now.getMonth() - 1);
             else cutoff.setFullYear(now.getFullYear() - 1);
-            const filtered = selectedTeam.activities.filter((a) => new Date(a.date) >= cutoff);
+            const q = activitySearch.toLowerCase().trim();
+            const filtered = selectedTeam.activities.filter((a) => {
+              if (new Date(a.date) < cutoff) return false;
+              if (q && !a.message.toLowerCase().includes(q) && !a.user.toLowerCase().includes(q) && !a.type.toLowerCase().includes(q)) return false;
+              return true;
+            });
             return filtered.length === 0 ? (
-              <div className="py-10 text-center text-muted-foreground text-sm">No activity in this period</div>
+              <div className="py-10 text-center text-muted-foreground text-sm">
+                {q ? "No matching activity" : "No activity in this period"}
+              </div>
             ) : (
               <div className="divide-y divide-border/60 max-h-[320px] overflow-y-auto">
                 {filtered.map((activity) => {
