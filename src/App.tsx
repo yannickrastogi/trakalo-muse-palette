@@ -11,6 +11,7 @@ import { PitchProvider } from "@/contexts/PitchContext";
 import { SharedLinksProvider } from "@/contexts/SharedLinksContext";
 import { ContactsProvider } from "@/contexts/ContactsContext";
 import { EngagementProvider } from "@/contexts/EngagementContext";
+import { TrackReviewProvider } from "@/contexts/TrackReviewContext";
 import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import TrackDetail from "./pages/TrackDetail";
@@ -37,6 +38,7 @@ const App = () => (
       <TeamProvider>
       <TrackProvider>
       <EngagementProvider>
+      <TrackReviewProvider>
       <PitchProvider>
       <PlaylistProvider>
       <SharedLinksProvider>
@@ -64,6 +66,7 @@ const App = () => (
       </SharedLinksProvider>
       </PlaylistProvider>
       </PitchProvider>
+      </TrackReviewProvider>
       </EngagementProvider>
       </TrackProvider>
       </TeamProvider>

@@ -4,13 +4,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Lock, Download, Music, Layers, User, Mail, Building2, Briefcase,
   Package, ListMusic, Clock, Play, Pause, FileText, PieChart, Users,
-  Tag, Disc, Globe, Hash, Calendar, Headphones, ShieldOff
+  Tag, Disc, Globe, Hash, Calendar, Headphones, ShieldOff, MessageSquare
 } from "lucide-react";
 import { useSharedLinks } from "@/contexts/SharedLinksContext";
 import { useTrack } from "@/contexts/TrackContext";
 import { useContacts } from "@/contexts/ContactsContext";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RecipientReviewPlayer } from "@/components/RecipientReviewPlayer";
+import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
+import { CommentMarkerLayer } from "@/components/CommentMarkerLayer";
+import { useTrackReview, formatTimestamp } from "@/contexts/TrackReviewContext";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
 const roleOptions = ["Admin", "Manager", "Producer", "Viewer", "Other"];
@@ -320,7 +324,7 @@ export default function SharedStemAccess() {
           /* Track/Stems view with detailed tabs */
           <TrackDetailTabs
             trackData={trackData}
-            link={link}
+            link={{ ...link, _recipientName: `${firstName} ${lastName}`, _recipientEmail: email }}
             allowDownload={link.allowDownload}
             onDownloadItem={handleDownloadItem}
           />
@@ -345,16 +349,72 @@ function TrackDetailTabs({
   allowDownload: boolean;
   onDownloadItem: (name: string) => void;
 }) {
+  const { getCommentsForTrack } = useTrackReview();
+  const [progress, setProgress] = useState(35);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const parseDuration = (dur: string): number => {
+    const parts = dur.split(":").map(Number);
+    return parts.length === 2 ? parts[0] * 60 + parts[1] : 0;
+  };
+  const totalDurationSeconds = parseDuration(trackData.duration);
+  const trackComments = getCommentsForTrack(trackData.id);
+
+  const recipientName = link._recipientName || "Recipient";
+  const recipientEmail = link._recipientEmail || "";
+
+  const handleSeek = (seconds: number, _total: number) => {
+    const pct = (seconds / totalDurationSeconds) * 100;
+    setProgress(pct);
+  };
+
   const availableTabs = [
     { id: "overview", label: "Overview" },
     ...(trackData.lyrics ? [{ id: "lyrics", label: "Lyrics" }] : []),
     ...(trackData.stems?.length ? [{ id: "stems", label: "Stems" }] : []),
     ...(trackData.splits?.length ? [{ id: "splits", label: "Splits" }] : []),
     { id: "metadata", label: "Metadata" },
+    { id: "review", label: "Review" },
     { id: "status", label: "Status" },
   ];
 
   return (
+    <div className="space-y-4">
+      {/* Mini player with waveform */}
+      <div className="bg-card border border-border rounded-2xl p-4" style={{ boxShadow: "var(--shadow-card)" }}>
+        <div className="flex items-center gap-3 mb-3">
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors shrink-0"
+          >
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+          </button>
+          <div className="flex-1 flex items-center justify-between text-[11px] text-muted-foreground font-mono">
+            <span>{formatTimestamp((progress / 100) * totalDurationSeconds)}</span>
+            <span>{trackData.duration}</span>
+          </div>
+        </div>
+        <div className="relative">
+          <TrackWaveformPlayer
+            seed={trackData.id}
+            progress={progress}
+            onSeek={setProgress}
+            onDoubleClick={(pct) => {
+              // Jump there; the recipient review player handles comment creation
+              setProgress(pct);
+            }}
+            chapters={trackData.chapters || []}
+            isPlaying={isPlaying}
+          />
+          <CommentMarkerLayer
+            comments={trackComments}
+            totalDurationSeconds={totalDurationSeconds}
+            onMarkerClick={(seconds) => handleSeek(seconds, totalDurationSeconds)}
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground/40 mt-2 text-center">Double-click waveform to jump to a moment</p>
+      </div>
+
     <Tabs defaultValue="overview" className="w-full">
       <TabsList className="w-full bg-secondary/50 border border-border rounded-xl p-1 flex flex-wrap gap-1 h-auto">
         {availableTabs.map(tab => (
@@ -512,7 +572,20 @@ function TrackDetailTabs({
           )}
         </div>
       </TabsContent>
+
+      {/* Review */}
+      <TabsContent value="review" className="mt-4">
+        <RecipientReviewPlayer
+          trackId={trackData.id}
+          recipientName={recipientName}
+          recipientEmail={recipientEmail}
+          progress={progress}
+          totalDurationSeconds={totalDurationSeconds}
+          onSeek={handleSeek}
+        />
+      </TabsContent>
     </Tabs>
+    </div>
   );
 }
 

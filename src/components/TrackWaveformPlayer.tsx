@@ -7,6 +7,7 @@ interface TrackWaveformPlayerProps {
   bars?: number;
   progress: number;
   onSeek: (percent: number) => void;
+  onDoubleClick?: (percent: number) => void;
   chapters?: TrackChapter[];
   isPlaying?: boolean;
   className?: string;
@@ -21,6 +22,7 @@ export function TrackWaveformPlayer({
   bars = 120,
   progress,
   onSeek,
+  onDoubleClick,
   chapters = [],
   isPlaying = false,
   className = "",
@@ -76,6 +78,13 @@ export function TrackWaveformPlayer({
       <div
         className="relative cursor-pointer group"
         onClick={handleClick}
+        onDoubleClick={(e) => {
+          if (onDoubleClick) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+            onDoubleClick(pct);
+          }
+        }}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => {
           setHoverPercent(null);
