@@ -251,11 +251,16 @@ export function DashboardContent() {
     { id: "pitches", label: t("pitch.title"), value: allPitches.length.toLocaleString(), icon: Send, change: `${allPitches.filter(p => p.status === "Sent" || p.status === "Opened").length} active`, accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", clickable: true },
   ];
 
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showPitchModal, setShowPitchModal] = useState(false);
+
   const quickActions = [
-    { label: t("dashboard.uploadTrack"), icon: Upload, primary: true, visible: permissions.canUploadTracks },
-    { label: t("dashboard.newPlaylist"), icon: ListMusic, visible: permissions.canCreatePlaylists },
-    { label: t("dashboard.inviteMember"), icon: Users, visible: permissions.canInviteMembers },
-    { label: t("dashboard.newPitch"), icon: Send, visible: permissions.canSendPitches },
+    { label: t("dashboard.uploadTrack"), icon: Upload, primary: true, visible: permissions.canUploadTracks, onClick: () => setShowUploadModal(true) },
+    { label: t("dashboard.newPlaylist"), icon: ListMusic, visible: permissions.canCreatePlaylists, onClick: () => setShowPlaylistModal(true) },
+    { label: t("dashboard.inviteMember"), icon: Users, visible: permissions.canInviteMembers, onClick: () => setShowInviteModal(true) },
+    { label: t("dashboard.newPitch"), icon: Send, visible: permissions.canSendPitches, onClick: () => setShowPitchModal(true) },
   ].filter((a) => a.visible);
 
   return (
