@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Search, Bell, Menu, X, Music, ListMusic, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { UserMenu } from "./UserMenu";
+import { FirstUseTooltip } from "@/components/FirstUseTooltip";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
