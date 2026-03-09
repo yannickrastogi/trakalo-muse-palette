@@ -78,6 +78,13 @@ export function TrackWaveformPlayer({
       <div
         className="relative cursor-pointer group"
         onClick={handleClick}
+        onDoubleClick={(e) => {
+          if (onDoubleClick) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+            onDoubleClick(pct);
+          }
+        }}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => {
           setHoverPercent(null);
