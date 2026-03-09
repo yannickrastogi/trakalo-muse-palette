@@ -404,6 +404,77 @@ export function generatePaperworkPdf(title: string, artist: string, documents: {
   return doc.output("blob");
 }
 
+export interface CreditEntry {
+  label: string;
+  value: string;
+}
+
+/** Generate credits PDF */
+export function generateCreditsPdf(
+  title: string,
+  artist: string,
+  topLevel: CreditEntry[],
+  performerCredits: CreditEntry[],
+  productionCredits: CreditEntry[],
+  asBlob?: boolean,
+): Blob | void {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 56;
+  const contentW = pageW - marginX * 2;
+
+  drawPageBackground(doc);
+  drawLogo(doc, marginX);
+  drawHeaderCard(doc, marginX, contentW, pageW, title, artist, "CREDITS");
+  drawDividerDots(doc, pageW);
+
+  let y = 210;
+
+  const drawSection = (heading: string, entries: CreditEntry[]) => {
+    if (entries.length === 0) return;
+    if (y + 40 > pageH - 60) { doc.addPage(); drawPageBackground(doc); y = 48; }
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...textMuted);
+    doc.text(heading.toUpperCase(), marginX, y);
+    y += 20;
+
+    const colW = (contentW - 12) / 2;
+    const rowH = 44;
+    entries.forEach((m, i) => {
+      if (y + rowH > pageH - 60) { doc.addPage(); drawPageBackground(doc); y = 48; }
+      const col = i % 2;
+      const x = marginX + col * (colW + 12);
+      doc.setFillColor(...cardBg);
+      doc.roundedRect(x, y, colW, rowH - 4, 4, 4, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(...brandOrange);
+      doc.text(m.label.toUpperCase(), x + 12, y + 15);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(...textLight);
+      const wrappedLines = doc.splitTextToSize(m.value || "—", colW - 24);
+      doc.text(wrappedLines[0] || "—", x + 12, y + 30);
+      if (col === 1) y += rowH;
+    });
+    if (entries.length % 2 !== 0) y += rowH;
+    y += 8;
+  };
+
+  drawSection("Key Credits", topLevel);
+  drawSection("Performer Credits", performerCredits);
+  drawSection("Production & Other Credits", productionCredits);
+
+  drawFooters(doc, marginX);
+
+  if (asBlob) {
+    return doc.output("blob");
+  }
+  doc.save(`${title} - Credits.pdf`);
+}
+
 /** Add diagonal TRAKALOG watermark across all pages */
 export function addWatermark(doc: jsPDF) {
   const totalPages = doc.getNumberOfPages();
@@ -414,19 +485,15 @@ export function addWatermark(doc: jsPDF) {
     doc.setPage(p);
     doc.saveGraphicsState();
 
-    // Set transparent watermark text
     const gState = (doc as any).GState({ opacity: 0.06 });
     doc.setGState(gState);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(72);
     doc.setTextColor(...brandOrange);
 
-    // Draw multiple diagonal watermark lines
     const text = "TRAKALOG";
     const angle = -35;
-    // angle in degrees for text rotation
 
-    // Multiple positions to cover the page
     const positions = [
       { x: pageW * 0.5, y: pageH * 0.35 },
       { x: pageW * 0.5, y: pageH * 0.65 },

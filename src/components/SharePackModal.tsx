@@ -17,7 +17,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Package, Music, Image, FileText, Layers, Paperclip, PieChart, Send } from "lucide-react";
+import { Package, Music, Image, FileText, Layers, Paperclip, PieChart, Send, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { ShareModal } from "@/components/ShareModal";
 import type { TrackData } from "@/contexts/TrackContext";
@@ -33,6 +33,7 @@ const packItems = [
   { id: "cover", label: "Cover Art", description: "3000×3000 JPEG artwork", icon: Image },
   { id: "lyrics", label: "Lyrics", description: "Branded PDF document", icon: FileText },
   { id: "stems", label: "Stems", description: "All stem files (original format)", icon: Layers },
+  { id: "credits", label: "Credits", description: "Branded PDF with all credits", icon: Users },
   { id: "metadata", label: "Metadata", description: "Branded PDF with all track info", icon: PieChart },
   { id: "paperwork", label: "Paperwork", description: "All documents with watermark", icon: Paperclip },
 ] as const;
@@ -41,7 +42,7 @@ type PackItemId = typeof packItems[number]["id"];
 
 export function SharePackModal({ open, onClose, trackData }: SharePackModalProps) {
   const [selectedItems, setSelectedItems] = useState<Set<PackItemId>>(
-    new Set(["track", "cover", "lyrics", "stems", "metadata", "paperwork"])
+    new Set(["track", "cover", "lyrics", "stems", "credits", "metadata", "paperwork"])
   );
   const [showConfirm, setShowConfirm] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -56,7 +57,7 @@ export function SharePackModal({ open, onClose, trackData }: SharePackModalProps
   };
 
   const handleClose = () => {
-    setSelectedItems(new Set(["track", "cover", "lyrics", "stems", "metadata", "paperwork"]));
+    setSelectedItems(new Set(["track", "cover", "lyrics", "stems", "credits", "metadata", "paperwork"]));
     setShowConfirm(false);
     setShowShareModal(false);
     onClose();
@@ -76,7 +77,7 @@ export function SharePackModal({ open, onClose, trackData }: SharePackModalProps
 
   const handleShareModalClose = () => {
     setShowShareModal(false);
-    setSelectedItems(new Set(["track", "cover", "lyrics", "stems", "metadata", "paperwork"]));
+    setSelectedItems(new Set(["track", "cover", "lyrics", "stems", "credits", "metadata", "paperwork"]));
   };
 
   return (
