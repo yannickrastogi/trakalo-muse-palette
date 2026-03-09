@@ -137,11 +137,74 @@ export function DashboardContent() {
     });
   }, [playlistDates, playlistsRange, playlistsSearch]);
 
+  // Build per-recipient engagement data with simulated dates for plays/downloads
+  const engagementEntries = useMemo(() => {
+    const entries: { trackId: number; trackTitle: string; trackArtist: string; recipientName: string; recipientCompany: string; plays: number; downloads: number; lastActivity: Date; coverIdx: number }[] = [];
+    trackEngagement.forEach((te) => {
+      const track = allTracks.find((t) => t.id === te.trackId);
+      te.recipients.forEach((r) => {
+        entries.push({
+          trackId: te.trackId,
+          trackTitle: track?.title || `Track ${te.trackId}`,
+          trackArtist: track?.artist || "Unknown",
+          recipientName: r.recipientName,
+          recipientCompany: r.recipientCompany,
+          plays: r.plays,
+          downloads: r.downloads,
+          lastActivity: new Date(r.lastActivity),
+          coverIdx: (te.trackId - 1) % 5,
+        });
+      });
+    });
+    return entries;
+  }, [trackEngagement, allTracks]);
+
+  const filteredPlays = useMemo(() => {
+    const now = new Date();
+    const cutoff = new Date(now);
+    if (playsRange === "all") cutoff.setTime(0);
+    else if (playsRange === "1d") cutoff.setDate(now.getDate() - 1);
+    else if (playsRange === "1w") cutoff.setDate(now.getDate() - 7);
+    else if (playsRange === "1m") cutoff.setMonth(now.getMonth() - 1);
+    else cutoff.setFullYear(now.getFullYear() - 1);
+
+    return engagementEntries
+      .filter((e) => e.plays > 0 && e.lastActivity >= cutoff)
+      .filter((e) => {
+        if (!playsSearch) return true;
+        const q = playsSearch.toLowerCase();
+        return e.trackTitle.toLowerCase().includes(q) || e.trackArtist.toLowerCase().includes(q) || e.recipientName.toLowerCase().includes(q) || e.recipientCompany.toLowerCase().includes(q);
+      })
+      .sort((a, b) => b.plays - a.plays);
+  }, [engagementEntries, playsRange, playsSearch]);
+
+  const filteredDownloads = useMemo(() => {
+    const now = new Date();
+    const cutoff = new Date(now);
+    if (downloadsRange === "all") cutoff.setTime(0);
+    else if (downloadsRange === "1d") cutoff.setDate(now.getDate() - 1);
+    else if (downloadsRange === "1w") cutoff.setDate(now.getDate() - 7);
+    else if (downloadsRange === "1m") cutoff.setMonth(now.getMonth() - 1);
+    else cutoff.setFullYear(now.getFullYear() - 1);
+
+    return engagementEntries
+      .filter((e) => e.downloads > 0 && e.lastActivity >= cutoff)
+      .filter((e) => {
+        if (!downloadsSearch) return true;
+        const q = downloadsSearch.toLowerCase();
+        return e.trackTitle.toLowerCase().includes(q) || e.trackArtist.toLowerCase().includes(q) || e.recipientName.toLowerCase().includes(q) || e.recipientCompany.toLowerCase().includes(q);
+      })
+      .sort((a, b) => b.downloads - a.downloads);
+  }, [engagementEntries, downloadsRange, downloadsSearch]);
+
+  const totalFilteredPlays = filteredPlays.reduce((sum, e) => sum + e.plays, 0);
+  const totalFilteredDownloads = filteredDownloads.reduce((sum, e) => sum + e.downloads, 0);
+
   const stats = [
     { id: "tracks", label: t("dashboard.totalTracks"), value: allTracks.length.toLocaleString(), icon: Music, change: t("dashboard.thisWeek"), accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20", clickable: true },
     { id: "playlists", label: t("dashboard.playlists"), value: allPlaylists.length.toLocaleString(), icon: ListMusic, change: t("dashboard.new"), accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
-    { id: "plays", label: "Total Plays", value: engagementStats.totalPlays.toLocaleString(), icon: Headphones, change: `${engagementStats.uniqueRecipients} recipients`, accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20" },
-    { id: "downloads", label: "Downloads", value: engagementStats.totalDownloads.toLocaleString(), icon: Download, change: `across ${engagementStats.uniqueRecipients} contacts`, accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20" },
+    { id: "plays", label: "Total Plays", value: engagementStats.totalPlays.toLocaleString(), icon: Headphones, change: `${engagementStats.uniqueRecipients} recipients`, accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
+    { id: "downloads", label: "Downloads", value: engagementStats.totalDownloads.toLocaleString(), icon: Download, change: `across ${engagementStats.uniqueRecipients} contacts`, accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
     { id: "collabs", label: t("dashboard.collaborators"), value: "126", icon: Users, change: t("dashboard.active"), accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20" },
     { id: "pitches", label: t("dashboard.pendingPitches"), value: "9", icon: Send, change: t("dashboard.dueToday"), accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20" },
   ];
