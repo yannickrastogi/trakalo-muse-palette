@@ -430,6 +430,13 @@ export default function Team() {
           })()}
         </motion.div>
 
+        {/* Send Approvals Section */}
+        {permissions.canManageTeam && (
+          <motion.div variants={item} className="card-premium p-5 rounded-xl">
+            <SendApprovalSettings teamId={selectedTeamId!} />
+          </motion.div>
+        )}
+
         {/* Role stat pills */}
         <motion.div variants={item} className="flex flex-wrap gap-2">
           {ROLES.map((role) => {
