@@ -574,6 +574,29 @@ function AppearanceSection() {
   );
 }
 
+function ResetOnboardingBlock() {
+  const { resetOnboarding } = useOnboarding();
+  return (
+    <motion.div variants={fadeUp} className="card-premium p-5 flex items-center justify-between gap-4">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-10 h-10 rounded-xl icon-brand flex items-center justify-center shrink-0">
+          <RotateCcw className="w-4 h-4 text-primary" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">Restart Onboarding</p>
+          <p className="text-2xs text-muted-foreground mt-0.5">Show the welcome modal and getting started checklist again</p>
+        </div>
+      </div>
+      <button
+        onClick={() => { resetOnboarding(); toast.success("Onboarding reset — refresh to see the welcome screen"); }}
+        className="px-4 py-2 rounded-lg border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"
+      >
+        Reset
+      </button>
+    </motion.div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════
    SECTION: SECURITY
    ═══════════════════════════════════════════════════════ */
