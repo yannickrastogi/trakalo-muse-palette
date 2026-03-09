@@ -29,7 +29,9 @@ import {
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRole } from "@/contexts/RoleContext";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 import { toast } from "sonner";
+import { RotateCcw } from "lucide-react";
 
 /* ─── Animations ─── */
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
