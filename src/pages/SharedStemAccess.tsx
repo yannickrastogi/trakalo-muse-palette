@@ -7,7 +7,7 @@ import {
   Tag, Disc, Globe, Hash, Calendar, Headphones, ShieldOff
 } from "lucide-react";
 import { useSharedLinks } from "@/contexts/SharedLinksContext";
-import { useTracks } from "@/contexts/TrackContext";
+import { useTrack } from "@/contexts/TrackContext";
 import { useContacts } from "@/contexts/ContactsContext";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
