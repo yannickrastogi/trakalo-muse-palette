@@ -349,12 +349,32 @@ function TrackDetailTabs({
   allowDownload: boolean;
   onDownloadItem: (name: string) => void;
 }) {
+  const { getCommentsForTrack } = useTrackReview();
+  const [progress, setProgress] = useState(35);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const parseDuration = (dur: string): number => {
+    const parts = dur.split(":").map(Number);
+    return parts.length === 2 ? parts[0] * 60 + parts[1] : 0;
+  };
+  const totalDurationSeconds = parseDuration(trackData.duration);
+  const trackComments = getCommentsForTrack(trackData.id);
+
+  const recipientName = link._recipientName || "Recipient";
+  const recipientEmail = link._recipientEmail || "";
+
+  const handleSeek = (seconds: number, _total: number) => {
+    const pct = (seconds / totalDurationSeconds) * 100;
+    setProgress(pct);
+  };
+
   const availableTabs = [
     { id: "overview", label: "Overview" },
     ...(trackData.lyrics ? [{ id: "lyrics", label: "Lyrics" }] : []),
     ...(trackData.stems?.length ? [{ id: "stems", label: "Stems" }] : []),
     ...(trackData.splits?.length ? [{ id: "splits", label: "Splits" }] : []),
     { id: "metadata", label: "Metadata" },
+    { id: "review", label: "Review" },
     { id: "status", label: "Status" },
   ];
 
