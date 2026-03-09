@@ -46,6 +46,9 @@ export interface SharedLink {
   playlistTracks?: SharedLinkTrack[];
   // For pack sharing
   packItems?: string[];
+  // Download permissions
+  allowDownload: boolean;
+  downloadQuality?: "hi-res" | "low-res";
 }
 
 interface SharedLinksContextValue {

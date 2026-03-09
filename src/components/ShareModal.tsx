@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Link2, Lock, Copy, Check, Music, ListMusic } from "lucide-react";
+import { X, Link2, Lock, Copy, Check, Music, ListMusic, Download, ShieldOff } from "lucide-react";
 import { useSharedLinks, type SharedLink, type ShareType } from "@/contexts/SharedLinksContext";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
 interface ShareModalProps {
@@ -50,6 +51,8 @@ export function ShareModal({
   const [linkName, setLinkName] = useState("");
   const [expirationDate, setExpirationDate] = useState("");
   const [message, setMessage] = useState("");
+  const [allowDownload, setAllowDownload] = useState(false);
+  const [downloadQuality, setDownloadQuality] = useState<"hi-res" | "low-res">("low-res");
   const [copied, setCopied] = useState(false);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
 
@@ -105,6 +108,8 @@ export function ShareModal({
       playlistCover: playlistCover || undefined,
       playlistTracks: playlistTracks || undefined,
       packItems: packItems || undefined,
+      allowDownload,
+      downloadQuality: allowDownload ? downloadQuality : undefined,
     };
 
     createSharedLink(newLink);
@@ -128,6 +133,8 @@ export function ShareModal({
     setLinkName("");
     setExpirationDate("");
     setMessage("");
+    setAllowDownload(false);
+    setDownloadQuality("low-res");
     onClose();
   };
 
@@ -276,6 +283,58 @@ export function ShareModal({
                     rows={3}
                     className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-all resize-none"
                   />
+                </div>
+
+                {/* Download Permissions */}
+                <div className="space-y-3">
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">Download Permission</label>
+                  <div className={`rounded-xl border transition-all ${allowDownload ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/30"} p-3.5`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        {allowDownload ? (
+                          <Download className="w-4 h-4 text-primary" />
+                        ) : (
+                          <ShieldOff className="w-4 h-4 text-muted-foreground" />
+                        )}
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">{allowDownload ? "Download Enabled" : "Download Disabled"}</p>
+                          <p className="text-[10px] text-muted-foreground">{allowDownload ? "Recipient can download files" : "Recipient can only view & play"}</p>
+                        </div>
+                      </div>
+                      <Switch checked={allowDownload} onCheckedChange={setAllowDownload} />
+                    </div>
+
+                    <AnimatePresence>
+                      {allowDownload && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                          <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-border/50">
+                            <button
+                              onClick={() => setDownloadQuality("low-res")}
+                              className={`p-2.5 rounded-lg border text-center transition-all ${
+                                downloadQuality === "low-res"
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border hover:bg-secondary"
+                              }`}
+                            >
+                              <p className="text-xs font-semibold text-foreground">Low-Res</p>
+                              <p className="text-[10px] text-muted-foreground">Compressed MP3</p>
+                            </button>
+                            <button
+                              onClick={() => setDownloadQuality("hi-res")}
+                              className={`p-2.5 rounded-lg border text-center transition-all ${
+                                downloadQuality === "hi-res"
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border hover:bg-secondary"
+                              }`}
+                            >
+                              <p className="text-xs font-semibold text-foreground">Hi-Res</p>
+                              <p className="text-[10px] text-muted-foreground">Original WAV/FLAC</p>
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
 
                 {/* Item count */}
