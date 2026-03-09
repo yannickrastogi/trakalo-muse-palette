@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEngagement } from "@/contexts/EngagementContext";
-import { Link } from "react-router-dom";
+import { useTrack } from "@/contexts/TrackContext";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Music,
   ListMusic,
@@ -18,6 +19,8 @@ import {
   MoreHorizontal,
   Headphones,
   Download,
+  X,
+  Search,
 } from "lucide-react";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -59,11 +62,48 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 
 export function DashboardContent() {
   const [playingTrack, setPlayingTrack] = useState<string | null>(null);
+  const [showTracksPanel, setShowTracksPanel] = useState(false);
+  const [tracksRange, setTracksRange] = useState<"1d" | "1w" | "1m" | "1y">("1w");
+  const [tracksSearch, setTracksSearch] = useState("");
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { permissions } = useRole();
   const { getTotalStats } = useEngagement();
+  const { tracks: allTracks } = useTrack();
+  const navigate = useNavigate();
   const engagementStats = getTotalStats();
+
+  // Simulated upload dates for demo tracks (spread across recent dates)
+  const trackUploadDates = useMemo(() => {
+    const now = new Date();
+    return allTracks.map((track, i) => {
+      const d = new Date(now);
+      // Spread tracks across different time periods for demo
+      if (i < 2) d.setHours(d.getHours() - (i + 1) * 4); // today
+      else if (i < 5) d.setDate(d.getDate() - (i - 1)); // this week
+      else if (i < 9) d.setDate(d.getDate() - (i * 3)); // this month
+      else d.setMonth(d.getMonth() - (i - 7)); // older
+      return { ...track, uploadedAt: d };
+    });
+  }, [allTracks]);
+
+  const filteredByRange = useMemo(() => {
+    const now = new Date();
+    const cutoff = new Date(now);
+    if (tracksRange === "1d") cutoff.setDate(now.getDate() - 1);
+    else if (tracksRange === "1w") cutoff.setDate(now.getDate() - 7);
+    else if (tracksRange === "1m") cutoff.setMonth(now.getMonth() - 1);
+    else cutoff.setFullYear(now.getFullYear() - 1);
+
+    return trackUploadDates.filter((t) => {
+      if (t.uploadedAt < cutoff) return false;
+      if (tracksSearch) {
+        const q = tracksSearch.toLowerCase();
+        if (!t.title.toLowerCase().includes(q) && !t.artist.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }, [trackUploadDates, tracksRange, tracksSearch]);
 
   const stats = [
     { label: t("dashboard.totalTracks"), value: "2,847", icon: Music, change: t("dashboard.thisWeek"), accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20" },
