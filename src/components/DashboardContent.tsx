@@ -57,6 +57,12 @@ export function DashboardContent() {
   const [showPlaylistsPanel, setShowPlaylistsPanel] = useState(false);
   const [playlistsRange, setPlaylistsRange] = useState<"1d" | "1w" | "1m" | "1y" | "all">("1w");
   const [playlistsSearch, setPlaylistsSearch] = useState("");
+  const [showPlaysPanel, setShowPlaysPanel] = useState(false);
+  const [playsRange, setPlaysRange] = useState<"1d" | "1w" | "1m" | "1y" | "all">("1w");
+  const [playsSearch, setPlaysSearch] = useState("");
+  const [showDownloadsPanel, setShowDownloadsPanel] = useState(false);
+  const [downloadsRange, setDownloadsRange] = useState<"1d" | "1w" | "1m" | "1y" | "all">("1w");
+  const [downloadsSearch, setDownloadsSearch] = useState("");
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { permissions } = useRole();
