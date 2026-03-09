@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
+import { useTeams } from "@/contexts/TeamContext";
 import { analyzeAudio, type AudioAnalysisResult } from "@/lib/audio-analysis";
 import { compressAudio, type CompressedAudio } from "@/lib/audio-compression";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,6 +17,7 @@ import {
   Play,
   Pause,
   User,
+  Users,
   Loader2,
   AlertCircle,
 } from "lucide-react";
@@ -80,6 +82,7 @@ interface TrackEntry {
   stems: StemFile[];
   splits: Split[];
   lyrics: string;
+  sharedTeams: string[];
   // Status
   metadataComplete: boolean;
 }
@@ -115,12 +118,14 @@ function createTrackEntry(file: File): TrackEntry {
     stems: [],
     splits: [{ id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
     lyrics: "",
+    sharedTeams: [],
     metadataComplete: false,
   };
 }
 
 export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) {
   const { tracks, addTrack } = useTrack();
+  const { teams } = useTeams();
 
   // Phase: "upload" (drag & drop files) → "edit" (per-track metadata) → done
   const [phase, setPhase] = useState<"upload" | "edit">("upload");
@@ -134,7 +139,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const stemsInputRef = useRef<HTMLInputElement>(null);
   const lyricsFileInputRef = useRef<HTMLInputElement>(null);
 
-  const EDIT_STEPS = ["Info", "Stems", "Lyrics", "Splits", "Review"];
+  const EDIT_STEPS = ["Info", "Stems", "Lyrics", "Splits", "Review", "Teams"];
 
   const currentTrack = queue[currentIdx] || null;
 
