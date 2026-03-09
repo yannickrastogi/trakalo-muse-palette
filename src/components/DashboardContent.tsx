@@ -932,51 +932,49 @@ export function DashboardContent() {
         })()}
       </AnimatePresence>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 sm:gap-6">
-        {/* Right column */}
-        <div className="space-y-5 sm:space-y-6">
-          {/* Quick actions */}
-          <motion.div variants={item} className="space-y-3 sm:space-y-4">
-            <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">{t("dashboard.quickActions")}</h2>
-            <div className="grid grid-cols-2 gap-2.5">
-              {quickActions.map((action) => (
-                <button
-                  key={action.label}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-[13px] group min-h-[72px] ${
-                    action.primary
-                      ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange hover:bg-brand-orange/12 hover:border-brand-orange/40 gradient-border"
-                      : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-brand-pink/20 hover:bg-secondary/40"
-                  }`}
-                  style={{ boxShadow: "var(--shadow-inner-glow)" }}
-                >
-                  <action.icon className="w-[18px] h-[18px] transition-colors" />
-                  <span className="text-[11px] font-semibold tracking-tight">{action.label}</span>
-                </button>
-              ))}
-            </div>
-          </motion.div>
+      {/* Quick Actions & Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+        {/* Quick actions */}
+        <motion.div variants={item} className="space-y-3 sm:space-y-4">
+          <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">{t("dashboard.quickActions")}</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {quickActions.map((action) => (
+              <button
+                key={action.label}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-[13px] group min-h-[72px] ${
+                  action.primary
+                    ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange hover:bg-brand-orange/12 hover:border-brand-orange/40 gradient-border"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-brand-pink/20 hover:bg-secondary/40"
+                }`}
+                style={{ boxShadow: "var(--shadow-inner-glow)" }}
+              >
+                <action.icon className="w-[18px] h-[18px] transition-colors" />
+                <span className="text-[11px] font-semibold tracking-tight">{action.label}</span>
+              </button>
+            ))}
+          </div>
+        </motion.div>
 
-          {/* Activity */}
-          <motion.div variants={item} className="space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">{t("dashboard.activity")}</h2>
-              <button className="text-xs gradient-text hover:opacity-80 transition-opacity font-semibold">{t("dashboard.seeAll")}</button>
-            </div>
-            <div className="card-premium divide-y divide-border/60 overflow-hidden">
-              {activity.map((a, i) => (
-                <div key={i} className="flex items-start gap-3 px-3 sm:px-4 py-3 sm:py-3.5 hover:bg-secondary/20 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 mt-0.5">
-                    <a.icon className="w-3.5 h-3.5 text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-foreground/85 leading-relaxed">{a.textKey}</p>
-                    <p className="text-2xs text-muted-foreground mt-1 font-medium">{a.time}</p>
-                  </div>
+        {/* Activity */}
+        <motion.div variants={item} className="space-y-3 sm:space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">{t("dashboard.activity")}</h2>
+            <button className="text-xs gradient-text hover:opacity-80 transition-opacity font-semibold">{t("dashboard.seeAll")}</button>
+          </div>
+          <div className="card-premium divide-y divide-border/60 overflow-hidden">
+            {activity.map((a, i) => (
+              <div key={i} className="flex items-start gap-3 px-3 sm:px-4 py-3 sm:py-3.5 hover:bg-secondary/20 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 mt-0.5">
+                  <a.icon className="w-3.5 h-3.5 text-muted-foreground" />
                 </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-foreground/85 leading-relaxed">{a.textKey}</p>
+                  <p className="text-2xs text-muted-foreground mt-1 font-medium">{a.time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
       </div>
     </motion.div>
   );
