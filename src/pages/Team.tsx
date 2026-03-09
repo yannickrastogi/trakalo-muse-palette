@@ -15,7 +15,7 @@ import { InviteMemberModal, type InvitePayload } from "@/components/InviteMember
 import { CreateTeamModal } from "@/components/CreateTeamModal";
 import { toast } from "sonner";
 import { useRole } from "@/contexts/RoleContext";
-import { useTeams, type Team, type TeamRole } from "@/contexts/TeamContext";
+import { useTeams, type Team, type TeamRole, type ActivityType } from "@/contexts/TeamContext";
 import {
   Select,
   SelectContent,
