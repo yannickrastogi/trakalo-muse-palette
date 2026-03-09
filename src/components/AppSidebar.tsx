@@ -15,6 +15,7 @@ import {
   Link2,
   BookUser,
   Bell,
+  ShieldCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useIsMobile } from "@/hooks/use-mobile";
