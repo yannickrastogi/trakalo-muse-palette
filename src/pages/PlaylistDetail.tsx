@@ -483,10 +483,11 @@ function SortableDesktopRow({
           ))}
         </div>
       </td>
-      <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.language}</span></td>
-      <td className="px-4 py-3">
-        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
-      </td>
+       <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.language}</span></td>
+       <PlaysCell trackId={track.id} />
+       <td className="px-4 py-3">
+         <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
+       </td>
       <td className="px-2 py-3">
         <button
           onClick={() => removeTrack(track.id)}
