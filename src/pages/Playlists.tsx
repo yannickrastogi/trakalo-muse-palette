@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, forwardRef } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -32,22 +32,25 @@ const item = {
   },
 };
 
-function MiniCoverGrid({ idxs, coverImage }: { idxs: number[]; coverImage?: string }) {
-  if (coverImage) {
+const MiniCoverGrid = forwardRef<HTMLDivElement, { idxs: number[]; coverImage?: string }>(
+  ({ idxs, coverImage }, ref) => {
+    if (coverImage) {
+      return (
+        <div ref={ref} className="w-full aspect-square rounded-xl overflow-hidden">
+          <img src={coverImage} alt="" className="w-full h-full object-cover" />
+        </div>
+      );
+    }
     return (
-      <div className="w-full aspect-square rounded-xl overflow-hidden">
-        <img src={coverImage} alt="" className="w-full h-full object-cover" />
+      <div ref={ref} className="grid grid-cols-2 gap-0.5 w-full aspect-square rounded-xl overflow-hidden">
+        {idxs.slice(0, 4).map((ci, i) => (
+          <img key={i} src={covers[ci]} alt="" className="w-full h-full object-cover" />
+        ))}
       </div>
     );
   }
-  return (
-    <div className="grid grid-cols-2 gap-0.5 w-full aspect-square rounded-xl overflow-hidden">
-      {idxs.slice(0, 4).map((ci, i) => (
-        <img key={i} src={covers[ci]} alt="" className="w-full h-full object-cover" />
-      ))}
-    </div>
-  );
-}
+);
+MiniCoverGrid.displayName = "MiniCoverGrid";
 
 export default function Playlists() {
   const { t } = useTranslation();

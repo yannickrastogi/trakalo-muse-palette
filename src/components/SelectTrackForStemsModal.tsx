@@ -37,7 +37,7 @@ export function SelectTrackForStemsModal({ open, onClose }: Props) {
   const handleSelect = (trackId: number) => {
     onClose();
     setSearch("");
-    navigate(`/tracks/${trackId}?tab=stems&upload=true`);
+    navigate(`/track/${trackId}?tab=stems&upload=true`);
   };
 
   if (!open) return null;
