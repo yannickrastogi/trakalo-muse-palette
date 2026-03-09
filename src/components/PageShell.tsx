@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { AppSidebar, MobileSidebar } from "@/components/AppSidebar";
 import { TopBar } from "@/components/TopBar";
+import { PersistentPlayer } from "@/components/PersistentPlayer";
+import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 
 export function PageShell({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { currentTrack } = useAudioPlayer();
 
   return (
     <div className="flex min-h-screen w-full bg-background">
@@ -11,10 +14,11 @@ export function PageShell({ children }: { children: React.ReactNode }) {
       <MobileSidebar open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} />
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar onMenuClick={() => setMobileMenuOpen(true)} />
-        <main className="flex-1 overflow-auto">
+        <main className={`flex-1 overflow-auto ${currentTrack ? "pb-16" : ""}`}>
           {children}
         </main>
       </div>
+      <PersistentPlayer />
     </div>
   );
 }

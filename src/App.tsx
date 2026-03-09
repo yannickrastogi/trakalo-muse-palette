@@ -7,6 +7,7 @@ import { PlaylistProvider } from "@/contexts/PlaylistContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { TeamProvider } from "@/contexts/TeamContext";
 import { TrackProvider } from "@/contexts/TrackContext";
+import { AudioPlayerProvider } from "@/contexts/AudioPlayerContext";
 import { PitchProvider } from "@/contexts/PitchContext";
 import { SharedLinksProvider } from "@/contexts/SharedLinksContext";
 import { ContactsProvider } from "@/contexts/ContactsContext";
