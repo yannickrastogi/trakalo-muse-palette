@@ -401,6 +401,13 @@ export default function TrackDetail() {
         onClose={() => setEditTrackModalOpen(false)}
         trackId={Number(id)}
       />
+      {trackData && (
+        <ShareWithTeamModal
+          open={shareWithTeamOpen}
+          onClose={() => setShareWithTeamOpen(false)}
+          trackTitle={trackData.title}
+        />
+      )}
     </PageShell>
   );
 }
