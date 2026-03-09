@@ -268,8 +268,8 @@ export function DashboardContent() {
     { label: t("dashboard.uploadTrack"), icon: Upload, primary: true, visible: permissions.canUploadTracks, onClick: () => setShowUploadModal(true) },
     { label: t("dashboard.newPlaylist"), icon: ListMusic, visible: permissions.canCreatePlaylists, onClick: () => setShowPlaylistModal(true) },
     { label: t("dashboard.inviteMember"), icon: Users, visible: permissions.canInviteMembers, onClick: () => setShowInviteModal(true) },
-    { label: t("dashboard.newPitch"), icon: Send, visible: permissions.canSendPitches, onClick: () => setShowPitchModal(true) },
     { label: "Create Team", icon: Building2, visible: permissions.canInviteMembers, onClick: () => setShowCreateTeamModal(true) },
+    { label: t("dashboard.newPitch"), icon: Send, visible: permissions.canSendPitches, onClick: () => setShowPitchModal(true) },
   ].filter((a) => a.visible);
 
   return (
