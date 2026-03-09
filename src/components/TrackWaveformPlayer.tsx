@@ -7,6 +7,7 @@ interface TrackWaveformPlayerProps {
   bars?: number;
   progress: number;
   onSeek: (percent: number) => void;
+  onDoubleClick?: (percent: number) => void;
   chapters?: TrackChapter[];
   isPlaying?: boolean;
   className?: string;
