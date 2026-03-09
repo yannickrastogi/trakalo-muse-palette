@@ -1,5 +1,9 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { UploadTrackModal } from "@/components/UploadTrackModal";
+import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
+import { InviteMemberModal } from "@/components/InviteMemberModal";
+import { CreatePitchModal } from "@/components/CreatePitchModal";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
@@ -946,6 +950,7 @@ export function DashboardContent() {
             {quickActions.map((action) => (
               <button
                 key={action.label}
+                onClick={action.onClick}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-[13px] group min-h-[72px] ${
                   action.primary
                     ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange hover:bg-brand-orange/12 hover:border-brand-orange/40 gradient-border"
