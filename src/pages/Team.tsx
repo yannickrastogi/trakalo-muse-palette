@@ -401,7 +401,7 @@ export default function Team() {
 
 
         {/* Search */}
-        <motion.div variants={item}>
+        <motion.div variants={item} ref={membersRef}>
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
