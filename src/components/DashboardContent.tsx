@@ -974,7 +974,7 @@ export function DashboardContent() {
         <motion.div variants={item} className="space-y-3 sm:space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">{t("dashboard.activity")}</h2>
-            <button className="text-xs gradient-text hover:opacity-80 transition-opacity font-semibold">{t("dashboard.seeAll")}</button>
+            <button onClick={() => navigate("/notifications")} className="text-xs gradient-text hover:opacity-80 transition-opacity font-semibold">{t("dashboard.seeAll")}</button>
           </div>
           <div className="card-premium divide-y divide-border/60 overflow-hidden">
             {activity.map((a, i) => (
