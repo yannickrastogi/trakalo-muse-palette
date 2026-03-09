@@ -51,6 +51,8 @@ export function ShareModal({
   const [linkName, setLinkName] = useState("");
   const [expirationDate, setExpirationDate] = useState("");
   const [message, setMessage] = useState("");
+  const [allowDownload, setAllowDownload] = useState(false);
+  const [downloadQuality, setDownloadQuality] = useState<"hi-res" | "low-res">("low-res");
   const [copied, setCopied] = useState(false);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
 
