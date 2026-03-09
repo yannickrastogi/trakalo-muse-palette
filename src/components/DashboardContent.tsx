@@ -4,6 +4,7 @@ import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { Link, useNavigate } from "react-router-dom";
+import { useContacts } from "@/contexts/ContactsContext";
 import {
   Music,
   ListMusic,
@@ -19,6 +20,8 @@ import {
   Download,
   X,
   Search,
+  Mail,
+  Building2,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
@@ -63,12 +66,16 @@ export function DashboardContent() {
   const [showDownloadsPanel, setShowDownloadsPanel] = useState(false);
   const [downloadsRange, setDownloadsRange] = useState<"1d" | "1w" | "1m" | "1y" | "all">("1w");
   const [downloadsSearch, setDownloadsSearch] = useState("");
+  const [showContactsPanel, setShowContactsPanel] = useState(false);
+  const [contactsRange, setContactsRange] = useState<"1d" | "1w" | "1m" | "1y" | "all">("1w");
+  const [contactsSearch, setContactsSearch] = useState("");
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { permissions } = useRole();
   const { getTotalStats, trackEngagement } = useEngagement();
   const { tracks: allTracks } = useTrack();
   const { playlists: allPlaylists } = usePlaylists();
+  const { contacts: allContacts } = useContacts();
   const navigate = useNavigate();
   const engagementStats = getTotalStats();
 
@@ -200,12 +207,78 @@ export function DashboardContent() {
   const totalFilteredPlays = filteredPlays.reduce((sum, e) => sum + e.plays, 0);
   const totalFilteredDownloads = filteredDownloads.reduce((sum, e) => sum + e.downloads, 0);
 
+  // Build contacts list from engagement recipients + actual contacts, with simulated dates
+  const contactEntries = useMemo(() => {
+    const now = new Date();
+    // Merge engagement recipients into a unique contacts list
+    const contactMap = new Map<string, { name: string; email: string; company: string; role: string; addedAt: Date }>();
+    
+    // From engagement recipients
+    const recipientNames = [
+      { name: "Jamie Lin", email: "jamie@atlantic.com", company: "Atlantic Records", role: "A&R" },
+      { name: "Sarah Chen", email: "sarah@sonymusic.com", company: "Sony Music", role: "A&R Manager" },
+      { name: "Marcus Webb", email: "marcus@interscope.com", company: "Interscope Records", role: "Head of A&R" },
+      { name: "Diana Rossi", email: "diana@warnermusic.com", company: "Warner Music", role: "Music Supervisor" },
+      { name: "Alex Turner", email: "alex@republic.com", company: "Republic Records", role: "A&R" },
+      { name: "Kenji Mori", email: "kenji@88rising.com", company: "88rising", role: "Artist Manager" },
+      { name: "Lisa Park", email: "lisa@hybe.com", company: "HYBE", role: "Creative Director" },
+      { name: "Tom Richards", email: "tom@umg.com", company: "Universal Music", role: "Sync Licensing" },
+      { name: "Elena Vasquez", email: "elena@bmg.com", company: "BMG Rights", role: "Publisher" },
+      { name: "Ryan Cooper", email: "ryan@kobalt.com", company: "Kobalt Music", role: "A&R Scout" },
+      { name: "Mia Zhang", email: "mia@netease.com", company: "NetEase Music", role: "Playlist Curator" },
+      { name: "David Kim", email: "david@spotify.com", company: "Spotify", role: "Editorial Curator" },
+    ];
+
+    recipientNames.forEach((r, i) => {
+      const d = new Date(now);
+      if (i < 2) d.setHours(d.getHours() - (i + 2) * 3);
+      else if (i < 5) d.setDate(d.getDate() - (i));
+      else if (i < 8) d.setDate(d.getDate() - (i * 3));
+      else d.setMonth(d.getMonth() - (i - 6));
+      contactMap.set(r.email, { ...r, addedAt: d });
+    });
+
+    // Merge actual contacts from context
+    allContacts.forEach((c) => {
+      if (!contactMap.has(c.email)) {
+        contactMap.set(c.email, {
+          name: `${c.firstName} ${c.lastName}`,
+          email: c.email,
+          company: c.organization,
+          role: c.role,
+          addedAt: new Date(c.firstInteraction),
+        });
+      }
+    });
+
+    return Array.from(contactMap.values());
+  }, [allContacts]);
+
+  const filteredContacts = useMemo(() => {
+    const now = new Date();
+    const cutoff = new Date(now);
+    if (contactsRange === "all") cutoff.setTime(0);
+    else if (contactsRange === "1d") cutoff.setDate(now.getDate() - 1);
+    else if (contactsRange === "1w") cutoff.setDate(now.getDate() - 7);
+    else if (contactsRange === "1m") cutoff.setMonth(now.getMonth() - 1);
+    else cutoff.setFullYear(now.getFullYear() - 1);
+
+    return contactEntries
+      .filter((c) => c.addedAt >= cutoff)
+      .filter((c) => {
+        if (!contactsSearch) return true;
+        const q = contactsSearch.toLowerCase();
+        return c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.company.toLowerCase().includes(q) || c.role.toLowerCase().includes(q);
+      })
+      .sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime());
+  }, [contactEntries, contactsRange, contactsSearch]);
+
   const stats = [
     { id: "tracks", label: t("dashboard.totalTracks"), value: allTracks.length.toLocaleString(), icon: Music, change: t("dashboard.thisWeek"), accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20", clickable: true },
     { id: "playlists", label: t("dashboard.playlists"), value: allPlaylists.length.toLocaleString(), icon: ListMusic, change: t("dashboard.new"), accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
     { id: "plays", label: "Total Plays", value: engagementStats.totalPlays.toLocaleString(), icon: Headphones, change: `${engagementStats.uniqueRecipients} recipients`, accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
     { id: "downloads", label: "Downloads", value: engagementStats.totalDownloads.toLocaleString(), icon: Download, change: `across ${engagementStats.uniqueRecipients} contacts`, accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
-    { id: "collabs", label: t("dashboard.collaborators"), value: "126", icon: Users, change: t("dashboard.active"), accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20" },
+    { id: "contacts", label: t("nav.contacts"), value: contactEntries.length.toLocaleString(), icon: Users, change: `+${filteredContacts.length} recent`, accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
     { id: "pitches", label: t("dashboard.pendingPitches"), value: "9", icon: Send, change: t("dashboard.dueToday"), accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20" },
   ];
 
@@ -231,13 +304,14 @@ export function DashboardContent() {
             key={stat.label}
             variants={item}
             onClick={stat.clickable ? () => {
-              const closeAll = () => { setShowTracksPanel(false); setShowPlaylistsPanel(false); setShowPlaysPanel(false); setShowDownloadsPanel(false); };
+              const closeAll = () => { setShowTracksPanel(false); setShowPlaylistsPanel(false); setShowPlaysPanel(false); setShowDownloadsPanel(false); setShowContactsPanel(false); };
               if (stat.id === "tracks") { const next = !showTracksPanel; closeAll(); setShowTracksPanel(next); }
               else if (stat.id === "playlists") { const next = !showPlaylistsPanel; closeAll(); setShowPlaylistsPanel(next); }
               else if (stat.id === "plays") { const next = !showPlaysPanel; closeAll(); setShowPlaysPanel(next); }
               else if (stat.id === "downloads") { const next = !showDownloadsPanel; closeAll(); setShowDownloadsPanel(next); }
+              else if (stat.id === "contacts") { const next = !showContactsPanel; closeAll(); setShowContactsPanel(next); }
             } : undefined}
-            className={`card-premium p-4 sm:p-5 group relative overflow-hidden ${stat.clickable ? "cursor-pointer" : "cursor-default"} ${stat.borderAccent} ${stat.clickable && ((stat.id === "tracks" && showTracksPanel) || (stat.id === "playlists" && showPlaylistsPanel) || (stat.id === "plays" && showPlaysPanel) || (stat.id === "downloads" && showDownloadsPanel)) ? `border-brand-orange/40 ring-1 ring-brand-orange/20` : ""}`}
+            className={`card-premium p-4 sm:p-5 group relative overflow-hidden ${stat.clickable ? "cursor-pointer" : "cursor-default"} ${stat.borderAccent} ${stat.clickable && ((stat.id === "tracks" && showTracksPanel) || (stat.id === "playlists" && showPlaylistsPanel) || (stat.id === "plays" && showPlaysPanel) || (stat.id === "downloads" && showDownloadsPanel) || (stat.id === "contacts" && showContactsPanel)) ? `border-brand-orange/40 ring-1 ring-brand-orange/20` : ""}`}
           >
             <div
               className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-60 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
@@ -658,6 +732,110 @@ export function DashboardContent() {
                 </span>
                 <Link to="/tracks" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
                   View catalog →
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Contacts Panel ─── */}
+      <AnimatePresence>
+        {showContactsPanel && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="card-premium rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-border flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-brand-purple" />
+                    <h3 className="text-sm font-bold text-foreground">
+                      Contacts
+                      <span className="ml-2 text-muted-foreground font-normal">· {contactEntries.length} total</span>
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
+                      {(["1d", "1w", "1m", "1y", "all"] as const).map((range) => (
+                        <button
+                          key={range}
+                          onClick={() => setContactsRange(range)}
+                          className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
+                            contactsRange === range
+                              ? "bg-brand-purple/15 text-brand-purple"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {range.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={() => setShowContactsPanel(false)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={contactsSearch}
+                    onChange={(e) => setContactsSearch(e.target.value)}
+                    placeholder="Search by name, email, company, or role…"
+                    className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div className="px-5 py-2.5 border-b border-border/50 bg-secondary/20">
+                <p className="text-2xs text-muted-foreground font-medium">
+                  {filteredContacts.length} contact{filteredContacts.length !== 1 ? "s" : ""} collected in the last {contactsRange === "all" ? "all time" : contactsRange === "1d" ? "24 hours" : contactsRange === "1w" ? "week" : contactsRange === "1m" ? "month" : "year"}
+                </p>
+              </div>
+              {filteredContacts.length === 0 ? (
+                <div className="py-10 text-center text-muted-foreground text-sm">No contacts collected in this period</div>
+              ) : (
+                <div className="divide-y divide-border/40 max-h-[360px] overflow-y-auto">
+                  {filteredContacts.map((contact, idx) => (
+                    <div
+                      key={contact.email}
+                      className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
+                      onClick={() => navigate("/contacts")}
+                    >
+                      <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
+                      <div className="w-9 h-9 rounded-full bg-brand-purple/10 flex items-center justify-center shrink-0 ring-1 ring-border/50">
+                        <span className="text-xs font-bold text-brand-purple">
+                          {contact.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-purple transition-colors">{contact.name}</p>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                          <p className="text-[11px] text-muted-foreground truncate">{contact.email}</p>
+                        </div>
+                      </div>
+                      <div className="hidden sm:flex items-center gap-1.5 min-w-[100px]">
+                        <Building2 className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                        <span className="text-[11px] text-foreground/70 truncate">{contact.company}</span>
+                      </div>
+                      <span className="inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-purple/12 text-brand-purple">
+                        {contact.role}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="px-5 py-3 border-t border-border/50 flex items-center justify-between">
+                <span className="text-2xs text-muted-foreground">
+                  Showing {filteredContacts.length} of {contactEntries.length} total contacts
+                </span>
+                <Link to="/contacts" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
+                  View all contacts →
                 </Link>
               </div>
             </div>
