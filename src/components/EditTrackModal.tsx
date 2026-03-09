@@ -494,15 +494,15 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 </button>
               </div>
 
-              {/* More Details */}
+              {/* Credits */}
               <div className="border-t border-border pt-4">
                 <button
                   onClick={() => setShowDetails(!showDetails)}
                   className="flex items-center gap-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showDetails ? "rotate-90" : ""}`} />
-                  More Details
-                  <span className="text-2xs text-muted-foreground/50 font-normal">— credits, studios, dates</span>
+                  Credits
+                  <span className="text-2xs text-muted-foreground/50 font-normal">— performers, production, studios</span>
                 </button>
                 {showDetails && (
                   <motion.div
