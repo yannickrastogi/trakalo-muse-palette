@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { UploadTrackModal } from "@/components/UploadTrackModal";
 import { useRole } from "@/contexts/RoleContext";
 import { useTrack } from "@/contexts/TrackContext";
+import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { GENRES, KEYS, MOODS, LANGUAGES, GENDERS } from "@/lib/constants";
 import { motion } from "framer-motion";
