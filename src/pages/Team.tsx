@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { TeamSharedCatalog } from "@/components/TeamSharedCatalog";
 import {
@@ -97,6 +97,7 @@ export default function Team() {
 
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [showSharedCatalog, setShowSharedCatalog] = useState(false);
+  const membersRef = React.useRef<HTMLDivElement>(null);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [search, setSearch] = useState("");
