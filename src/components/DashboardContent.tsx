@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrack } from "@/contexts/TrackContext";
-import { usePlaylist } from "@/contexts/PlaylistContext";
+import { usePlaylists } from "@/contexts/PlaylistContext";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Music,
@@ -62,7 +62,7 @@ export function DashboardContent() {
   const { permissions } = useRole();
   const { getTotalStats } = useEngagement();
   const { tracks: allTracks } = useTrack();
-  const { playlists: allPlaylists } = usePlaylist();
+  const { playlists: allPlaylists } = usePlaylists();
   const navigate = useNavigate();
   const engagementStats = getTotalStats();
 
