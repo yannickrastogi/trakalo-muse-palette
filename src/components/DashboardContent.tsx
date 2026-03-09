@@ -266,8 +266,8 @@ export function DashboardContent() {
         <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("dashboard.subtitle")}</p>
       </motion.div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      {/* Stats — 3×2 grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         {stats.map((stat) => (
           <motion.div
             key={stat.label}
@@ -281,24 +281,24 @@ export function DashboardContent() {
               else if (stat.id === "contacts") { const next = !showContactsPanel; closeAll(); setShowContactsPanel(next); }
               else if (stat.id === "pitches") { const next = !showPitchesPanel; closeAll(); setShowPitchesPanel(next); }
             } : undefined}
-            className={`card-premium p-4 sm:p-5 group relative overflow-hidden ${stat.clickable ? "cursor-pointer" : "cursor-default"} ${stat.borderAccent} ${stat.clickable && ((stat.id === "tracks" && showTracksPanel) || (stat.id === "playlists" && showPlaylistsPanel) || (stat.id === "plays" && showPlaysPanel) || (stat.id === "downloads" && showDownloadsPanel) || (stat.id === "contacts" && showContactsPanel) || (stat.id === "pitches" && showPitchesPanel)) ? `border-brand-orange/40 ring-1 ring-brand-orange/20` : ""}`}
+            className={`card-premium p-5 sm:p-7 group relative overflow-hidden ${stat.clickable ? "cursor-pointer" : "cursor-default"} ${stat.borderAccent} ${stat.clickable && ((stat.id === "tracks" && showTracksPanel) || (stat.id === "playlists" && showPlaylistsPanel) || (stat.id === "plays" && showPlaysPanel) || (stat.id === "downloads" && showDownloadsPanel) || (stat.id === "contacts" && showContactsPanel) || (stat.id === "pitches" && showPitchesPanel)) ? `border-brand-orange/40 ring-1 ring-brand-orange/20` : ""}`}
           >
             <div
-              className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-60 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+              className="absolute -top-12 -right-12 w-40 h-40 rounded-full blur-3xl opacity-50 group-hover:opacity-90 transition-opacity duration-700 pointer-events-none"
               style={{ background: `radial-gradient(circle, ${stat.glowColor}, transparent 70%)` }}
             />
             <div className={`absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r ${stat.accent} opacity-[0.15] group-hover:opacity-30 transition-opacity duration-500`} />
 
-            <div className="flex items-center justify-between mb-2 sm:mb-3 relative">
-              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl ${stat.iconBg} flex items-center justify-center transition-all duration-300`} style={{ boxShadow: `0 0 20px ${stat.glowColor}` }}>
-                <stat.icon className={`w-4 h-4 sm:w-[18px] sm:h-[18px] ${stat.iconColor} transition-colors duration-300`} />
+            <div className="flex items-center justify-between mb-4 relative">
+              <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl ${stat.iconBg} flex items-center justify-center transition-all duration-300`} style={{ boxShadow: `0 0 24px ${stat.glowColor}` }}>
+                <stat.icon className={`w-5 h-5 sm:w-[22px] sm:h-[22px] ${stat.iconColor} transition-colors duration-300`} />
               </div>
-              <ArrowUpRight className={`w-3.5 h-3.5 text-muted-foreground/20 group-hover:${stat.iconColor} transition-colors duration-300 opacity-0 group-hover:opacity-50 hidden sm:block`} />
+              <ArrowUpRight className={`w-4 h-4 text-muted-foreground/20 group-hover:${stat.iconColor} transition-colors duration-300 opacity-0 group-hover:opacity-50`} />
             </div>
-            <p className="text-xl sm:text-[28px] font-bold text-foreground tracking-tight leading-none relative">{stat.value}</p>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-1.5 sm:mt-2 relative gap-0.5">
-              <p className="text-2xs sm:text-xs text-muted-foreground font-medium">{stat.label}</p>
-              <p className="text-2xs sm:text-xs text-emerald-400/80 font-medium">{stat.change}</p>
+            <p className="text-2xl sm:text-[34px] font-bold text-foreground tracking-tight leading-none relative">{stat.value}</p>
+            <div className="flex items-center justify-between mt-2.5 sm:mt-3 relative">
+              <p className="text-xs sm:text-sm text-muted-foreground font-medium">{stat.label}</p>
+              <p className="text-xs sm:text-sm text-emerald-400/80 font-medium">{stat.change}</p>
             </div>
           </motion.div>
         ))}
