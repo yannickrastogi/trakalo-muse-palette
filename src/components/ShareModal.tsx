@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Link2, Lock, Copy, Check, Music, ListMusic, Download, DownloadOff } from "lucide-react";
+import { X, Link2, Lock, Copy, Check, Music, ListMusic, Download, ShieldOff } from "lucide-react";
 import { useSharedLinks, type SharedLink, type ShareType } from "@/contexts/SharedLinksContext";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
