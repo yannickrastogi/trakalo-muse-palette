@@ -271,9 +271,21 @@ export default function Team() {
         </motion.div>
 
         {/* ─── Team Dashboard ─── */}
+        {/* ─── Shared Catalog View ─── */}
+        {showSharedCatalog ? (
+          <TeamSharedCatalog
+            teamName={selectedTeam.name}
+            sharedTrackIds={selectedTeam.sharedTrackIds}
+            onBack={() => setShowSharedCatalog(false)}
+          />
+        ) : (
+        <>
         <motion.div variants={item} className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           {/* Shared Tracks */}
-          <div className="card-premium p-4 rounded-xl relative overflow-hidden">
+          <button
+            onClick={() => setShowSharedCatalog(true)}
+            className="card-premium p-4 rounded-xl relative overflow-hidden text-left hover:border-brand-orange/30 transition-colors group"
+          >
             <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-brand-orange/8 blur-xl" />
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-brand-orange/12 flex items-center justify-center">
@@ -281,10 +293,10 @@ export default function Team() {
               </div>
               <div>
                 <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Shared Tracks</p>
-                <p className="text-xl font-bold text-foreground">{selectedTeam.sharedTrackCount}</p>
+                <p className="text-xl font-bold text-foreground group-hover:text-brand-orange transition-colors">{selectedTeam.sharedTrackIds.length}</p>
               </div>
             </div>
-          </div>
+          </button>
           {/* Members */}
           <div className="card-premium p-4 rounded-xl relative overflow-hidden">
             <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-brand-purple/8 blur-xl" />
