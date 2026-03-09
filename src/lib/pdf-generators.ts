@@ -509,3 +509,169 @@ export function addWatermark(doc: jsPDF) {
     doc.restoreGraphicsState();
   }
 }
+
+// ─── Contact List PDF ────────────────────────────────────────────────
+export interface ContactExportEntry {
+  firstName: string;
+  lastName: string;
+  email: string;
+  organization: string;
+  role: string;
+  tracksDownloaded: string[];
+  totalDownloads: number;
+  lastDownload: string;
+}
+
+export function generateContactListPdf(contacts: ContactExportEntry[]) {
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 40;
+  const contentW = pageW - marginX * 2;
+
+  // Background + gradient bar
+  doc.setFillColor(...bgDark);
+  doc.rect(0, 0, pageW, pageH, "F");
+  drawGradientBar(doc, pageW, 0, 5);
+
+  // Logo
+  const logoY = 24;
+  const iconSize = 22;
+  try {
+    doc.addImage(trakalogLogo, "PNG", marginX, logoY, iconSize, iconSize);
+  } catch {
+    doc.setFillColor(...brandOrange);
+    doc.roundedRect(marginX, logoY, iconSize, iconSize, 4, 4, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(255, 255, 255);
+    doc.text("T", marginX + iconSize / 2, logoY + iconSize / 2 + 1, { align: "center", baseline: "middle" });
+  }
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...brandOrange);
+  doc.text("TRAKALOG", marginX + iconSize + 8, logoY + iconSize / 2 + 1, { baseline: "middle" });
+
+  // Title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(...textLight);
+  doc.text("Contact List", marginX, 72);
+
+  // Date + count badge
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...textMuted);
+  const dateStr = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  doc.text(`Exported ${dateStr}  ·  ${contacts.length} contact${contacts.length !== 1 ? "s" : ""}`, marginX, 88);
+
+  // Table
+  const cols = [
+    { label: "NAME", width: contentW * 0.18 },
+    { label: "EMAIL", width: contentW * 0.22 },
+    { label: "ORGANIZATION", width: contentW * 0.18 },
+    { label: "ROLE", width: contentW * 0.14 },
+    { label: "TRACKS", width: contentW * 0.14 },
+    { label: "DOWNLOADS", width: contentW * 0.07 },
+    { label: "LAST INTERACTION", width: contentW * 0.07 },
+  ];
+
+  const rowH = 24;
+  const headerY = 108;
+  let y = headerY;
+
+  const drawTableHeader = () => {
+    doc.setFillColor(28, 28, 32);
+    doc.roundedRect(marginX, y, contentW, rowH, 4, 4, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...textMuted);
+    let x = marginX + 10;
+    cols.forEach((col) => {
+      doc.text(col.label, x, y + rowH / 2 + 1, { baseline: "middle" });
+      x += col.width;
+    });
+    y += rowH + 2;
+  };
+
+  const formatDate = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    } catch {
+      return "—";
+    }
+  };
+
+  drawTableHeader();
+
+  contacts.forEach((c, idx) => {
+    // New page check
+    if (y + rowH > pageH - 40) {
+      doc.addPage();
+      doc.setFillColor(...bgDark);
+      doc.rect(0, 0, pageW, pageH, "F");
+      drawGradientBar(doc, pageW, 0, 5);
+      y = 24;
+      drawTableHeader();
+    }
+
+    // Alternating row bg
+    if (idx % 2 === 0) {
+      doc.setFillColor(22, 22, 26);
+      doc.rect(marginX, y, contentW, rowH, "F");
+    }
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...textLight);
+
+    let x = marginX + 10;
+    const textY = y + rowH / 2 + 1;
+
+    // Name
+    doc.setFont("helvetica", "bold");
+    doc.text(`${c.firstName} ${c.lastName}`.slice(0, 24), x, textY, { baseline: "middle" });
+    x += cols[0].width;
+
+    // Email
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...textMuted);
+    doc.text(c.email.slice(0, 32), x, textY, { baseline: "middle" });
+    x += cols[1].width;
+
+    // Organization
+    doc.setTextColor(...textLight);
+    doc.text(c.organization.slice(0, 24), x, textY, { baseline: "middle" });
+    x += cols[2].width;
+
+    // Role
+    doc.setTextColor(...brandOrange);
+    doc.text(c.role.slice(0, 20), x, textY, { baseline: "middle" });
+    x += cols[3].width;
+
+    // Tracks
+    doc.setTextColor(...textMuted);
+    const trackStr = c.tracksDownloaded.slice(0, 2).join(", ") + (c.tracksDownloaded.length > 2 ? ` +${c.tracksDownloaded.length - 2}` : "");
+    doc.text(trackStr.slice(0, 22), x, textY, { baseline: "middle" });
+    x += cols[4].width;
+
+    // Downloads
+    doc.setTextColor(...textLight);
+    doc.text(String(c.totalDownloads), x, textY, { baseline: "middle" });
+    x += cols[5].width;
+
+    // Last Interaction
+    doc.setTextColor(...textMuted);
+    doc.text(formatDate(c.lastDownload), x, textY, { baseline: "middle" });
+
+    y += rowH;
+  });
+
+  // Footer
+  doc.setFontSize(7);
+  doc.setTextColor(...textMuted);
+  doc.text("Generated by Trakalog", marginX, pageH - 20);
+  doc.text("trakalog.com", pageW - marginX, pageH - 20, { align: "right" });
+
+  doc.save("trakalog-contacts.pdf");
+}

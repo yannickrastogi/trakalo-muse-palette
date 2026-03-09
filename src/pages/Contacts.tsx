@@ -1,9 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Users, Mail, Building2, Download, Calendar, X } from "lucide-react";
+import { Search, Users, Mail, Building2, Download, Calendar, X, FileText, FileSpreadsheet, ChevronDown } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useContacts } from "@/contexts/ContactsContext";
 import { format } from "date-fns";
+import { generateContactListPdf } from "@/lib/pdf-generators";
+import { exportContactsCsv, exportContactsXlsx } from "@/lib/contact-export";
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
@@ -12,6 +14,19 @@ export default function Contacts() {
   const { contacts } = useContacts();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  // Close export menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const roles = useMemo(() => [...new Set(contacts.map((c) => c.role))].sort(), [contacts]);
 
@@ -36,6 +51,23 @@ export default function Contacts() {
     try { return format(new Date(iso), "MMM d, yyyy"); } catch { return "—"; }
   };
 
+  const handleExport = (type: "pdf" | "csv" | "xlsx") => {
+    setShowExportMenu(false);
+    const data = filtered.map((c) => ({
+      firstName: c.firstName,
+      lastName: c.lastName,
+      email: c.email,
+      organization: c.organization,
+      role: c.role,
+      tracksDownloaded: c.tracksDownloaded,
+      totalDownloads: c.totalDownloads,
+      lastDownload: c.lastDownload,
+    }));
+    if (type === "pdf") generateContactListPdf(data);
+    else if (type === "csv") exportContactsCsv(data);
+    else exportContactsXlsx(data);
+  };
+
   return (
     <PageShell>
       <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
@@ -45,6 +77,71 @@ export default function Contacts() {
             <p className="text-muted-foreground text-xs sm:text-sm mt-1">
               {contacts.length} contacts collected from shared links
             </p>
+          </div>
+          {/* Export button */}
+          <div className="relative" ref={exportRef}>
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="btn-brand px-5 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 shrink-0 min-h-[44px]"
+            >
+              <Download className="w-4 h-4" />
+              Export List
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showExportMenu ? "rotate-180" : ""}`} />
+            </button>
+            {showExportMenu && (
+              <motion.div
+                initial={{ opacity: 0, y: 4, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 mt-2 w-52 bg-card border border-border rounded-xl overflow-hidden z-50"
+                style={{ boxShadow: "var(--shadow-card)" }}
+              >
+                <div className="p-1.5">
+                  <button
+                    onClick={() => handleExport("pdf")}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-secondary/60 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                      <FileText className="w-4 h-4 text-destructive" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-xs">PDF</p>
+                      <p className="text-[10px] text-muted-foreground">Branded Trakalog report</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleExport("csv")}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-secondary/60 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-xs">CSV</p>
+                      <p className="text-[10px] text-muted-foreground">Universal spreadsheet format</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleExport("xlsx")}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-secondary/60 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <FileSpreadsheet className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-xs">Excel (XLSX)</p>
+                      <p className="text-[10px] text-muted-foreground">Microsoft Excel compatible</p>
+                    </div>
+                  </button>
+                </div>
+                <div className="px-3 py-2 border-t border-border">
+                  <p className="text-[10px] text-muted-foreground text-center">
+                    Exporting {filtered.length} contact{filtered.length !== 1 ? "s" : ""}
+                    {roleFilter && ` (${roleFilter})`}
+                  </p>
+                </div>
+              </motion.div>
+            )}
           </div>
         </motion.div>
 
