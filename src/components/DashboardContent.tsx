@@ -986,6 +986,12 @@ export function DashboardContent() {
           </div>
         </motion.div>
       </div>
+
+      {/* Modals */}
+      <UploadTrackModal open={showUploadModal} onOpenChange={setShowUploadModal} />
+      <CreatePlaylistModal open={showPlaylistModal} onOpenChange={setShowPlaylistModal} />
+      <InviteMemberModal open={showInviteModal} onOpenChange={setShowInviteModal} />
+      <CreatePitchModal open={showPitchModal} onOpenChange={setShowPitchModal} />
     </motion.div>
   );
 }
