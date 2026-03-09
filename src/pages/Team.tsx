@@ -544,6 +544,8 @@ export default function Team() {
             </div>
           )}
         </motion.div>
+        </>
+        )}
       </motion.div>
 
       <InviteMemberModal open={inviteOpen} onOpenChange={setInviteOpen} onInvite={handleInvite} />
