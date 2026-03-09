@@ -379,7 +379,7 @@ export function DashboardContent() {
                       </div>
                       <span className="text-2xs text-muted-foreground hidden sm:inline">{pl.genre || "—"}</span>
                       <span className="inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-pink/12 text-brand-pink">
-                        {pl.tracks.length} tracks
+                        {pl.tracks} tracks
                       </span>
                     </div>
                   ))}
