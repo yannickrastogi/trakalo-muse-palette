@@ -142,6 +142,8 @@ export default function TrackDetail() {
   const [progress, setProgress] = useState(35);
   const [activeTab, setActiveTab] = useState<string>(searchParams.get("tab") || "lyrics");
   const shouldAutoUpload = searchParams.get("upload") === "true";
+  const [waveformComposerOpen, setWaveformComposerOpen] = useState(false);
+  const [waveformComposerTimestamp, setWaveformComposerTimestamp] = useState(0);
 
   // Clear query params after consuming them
   useEffect(() => {
@@ -152,6 +154,7 @@ export default function TrackDetail() {
   const { permissions } = useRole();
   const { getTrack, updateTrack } = useTrack();
   const { getTrackEngagement } = useEngagement();
+  const { getCommentsForTrack, getCommentCountForTrack, addComment } = useTrackReview();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTrackModalOpen, setShareTrackModalOpen] = useState(false);
@@ -178,6 +181,44 @@ export default function TrackDetail() {
   };
 
   const engagement = getTrackEngagement(Number(id));
+  const commentCount = getCommentCountForTrack(Number(id));
+  const trackComments = getCommentsForTrack(Number(id));
+
+  // Parse duration string to seconds
+  const parseDuration = (dur: string): number => {
+    const parts = dur.split(":").map(Number);
+    return parts.length === 2 ? parts[0] * 60 + parts[1] : parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : 0;
+  };
+  const totalDurationSeconds = parseDuration(trackData.duration);
+
+  const handleWaveformClick = (pct: number) => {
+    setProgress(pct);
+  };
+
+  const handleWaveformDoubleClick = (pct: number) => {
+    const seconds = (pct / 100) * totalDurationSeconds;
+    setWaveformComposerTimestamp(seconds);
+    setWaveformComposerOpen(true);
+    setProgress(pct);
+  };
+
+  const handleCommentSeek = (seconds: number, _totalDuration: number) => {
+    const pct = (seconds / totalDurationSeconds) * 100;
+    setProgress(pct);
+  };
+
+  const handleWaveformCommentSubmit = (text: string, timestampSeconds: number) => {
+    addComment({
+      trackId: Number(id),
+      authorName: "Kira Nomura",
+      authorType: "owner",
+      commentText: text,
+      timestampSeconds,
+      timestampLabel: formatTimestamp(timestampSeconds),
+      sourceContext: "internal_review",
+    });
+    setWaveformComposerOpen(false);
+  };
 
   const tabs = [
     { id: "lyrics", label: "Lyrics" },
@@ -186,6 +227,7 @@ export default function TrackDetail() {
     { id: "metadata", label: "Metadata" },
     { id: "paperwork", label: "Paperwork" },
     { id: "pitches", label: "Pitch History" },
+    { id: "review", label: `Review${commentCount ? ` (${commentCount})` : ""}` },
     { id: "engagement", label: `Engagement${engagement ? ` (${engagement.totalPlays})` : ""}` },
     { id: "status", label: "Status" },
   ];
