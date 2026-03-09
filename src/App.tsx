@@ -75,6 +75,7 @@ const App = () => (
       </ApprovalProvider>
       </TrackReviewProvider>
       </EngagementProvider>
+      </AudioPlayerProvider>
       </TrackProvider>
       </TeamProvider>
       </RoleProvider>
