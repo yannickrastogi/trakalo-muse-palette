@@ -1677,7 +1677,7 @@ function EngagementTab({ trackId }: { trackId: number }) {
 
   if (!engagement || engagement.totalPlays === 0) {
     return (
-      <SectionCard>
+      <SectionCard title="Engagement" icon={Headphones}>
         <div className="text-center py-12 text-muted-foreground">
           <Headphones className="w-10 h-10 mx-auto mb-3 opacity-20" />
           <p className="text-sm font-semibold">No engagement yet</p>
