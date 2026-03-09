@@ -293,7 +293,7 @@ export default function Catalog() {
                     </tr>
                   ) : (
                     filteredTracks.map((track, idx) => {
-                      const isPlaying = playingTrack === track.id;
+                      const isPlaying = isTrackPlaying(track.id);
                       return (
                         <tr
                           key={track.id}
@@ -304,7 +304,7 @@ export default function Catalog() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setPlayingTrack(isPlaying ? null : track.id);
+                                if (isPlaying) { togglePlay(); } else { setQueue(filteredTracks); playTrack(track); }
                               }}
                               className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
                                 isPlaying
