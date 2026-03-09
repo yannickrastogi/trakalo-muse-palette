@@ -281,7 +281,7 @@ export default function Team() {
           />
         ) : (
         <>
-        <motion.div variants={item} className="grid gap-3 grid-cols-2">
+        <motion.div variants={item} className="grid gap-3 grid-cols-3">
           {/* Team's Catalog */}
           <button
             onClick={() => setShowSharedCatalog(true)}
@@ -314,7 +314,25 @@ export default function Team() {
               </div>
             </div>
           </button>
-          {/* Pitches */}
+          {/* Activity */}
+          <button
+            onClick={() => {
+              const el = document.getElementById("team-activity-feed");
+              el?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            className="card-premium p-4 rounded-xl relative overflow-hidden text-left hover:border-brand-pink/30 transition-colors group"
+          >
+            <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-brand-pink/8 blur-xl" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-pink/12 flex items-center justify-center">
+                <Activity className="w-5 h-5 text-brand-pink" />
+              </div>
+              <div>
+                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Activity</p>
+                <p className="text-xl font-bold text-foreground group-hover:text-brand-pink transition-colors">{selectedTeam.activities.length}</p>
+              </div>
+            </div>
+          </button>
         </motion.div>
 
         {/* ─── Activity Feed ─── */}
