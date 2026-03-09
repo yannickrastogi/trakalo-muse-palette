@@ -5,7 +5,8 @@ import {
   Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal,
   Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3,
   Music, Clock, CheckCircle2, XCircle, Users, ArrowLeft, Trash2, UserPlus,
-  Upload, Send, ExternalLink, Activity, BarChart3,
+  Upload, Send, ExternalLink, Activity, BarChart3, FileText, SplitSquareVertical,
+  Layers, Type,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -61,6 +62,11 @@ const activityIcons: Record<ActivityType, React.ElementType> = {
   link: ExternalLink,
   member: UserPlus,
   status: Activity,
+  metadata: PenTool,
+  splits: SplitSquareVertical,
+  stems: Layers,
+  lyrics: Type,
+  paperwork: FileText,
 };
 
 const activityColors: Record<ActivityType, string> = {
@@ -69,6 +75,11 @@ const activityColors: Record<ActivityType, string> = {
   link: "bg-primary/12 text-primary",
   member: "bg-emerald-500/12 text-emerald-400",
   status: "bg-brand-pink/12 text-brand-pink",
+  metadata: "bg-[hsl(200,70%,50%)]/12 text-[hsl(200,70%,50%)]",
+  splits: "bg-brand-orange/12 text-brand-orange",
+  stems: "bg-[hsl(180,60%,45%)]/12 text-[hsl(180,60%,45%)]",
+  lyrics: "bg-brand-purple/12 text-brand-purple",
+  paperwork: "bg-muted-foreground/12 text-muted-foreground",
 };
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
