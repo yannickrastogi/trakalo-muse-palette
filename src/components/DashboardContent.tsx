@@ -66,7 +66,7 @@ export function DashboardContent() {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { permissions } = useRole();
-  const { getTotalStats } = useEngagement();
+  const { getTotalStats, trackEngagement } = useEngagement();
   const { tracks: allTracks } = useTrack();
   const { playlists: allPlaylists } = usePlaylists();
   const navigate = useNavigate();
