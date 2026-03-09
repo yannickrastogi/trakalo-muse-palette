@@ -14,6 +14,7 @@ import { ContactsProvider } from "@/contexts/ContactsContext";
 import { EngagementProvider } from "@/contexts/EngagementContext";
 import { TrackReviewProvider } from "@/contexts/TrackReviewContext";
 import { ApprovalProvider } from "@/contexts/ApprovalContext";
+import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import TrackDetail from "./pages/TrackDetail";
@@ -37,6 +38,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <OnboardingProvider>
       <RoleProvider>
       <TeamProvider>
       <TrackProvider>
@@ -79,6 +81,7 @@ const App = () => (
       </TrackProvider>
       </TeamProvider>
       </RoleProvider>
+      </OnboardingProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -4,6 +4,7 @@ import { TopBar } from "@/components/TopBar";
 import { PersistentPlayer } from "@/components/PersistentPlayer";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useGlobalShortcuts } from "@/hooks/use-global-shortcuts";
+import { WelcomeModal } from "@/components/WelcomeModal";
 
 export function PageShell({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -21,6 +22,7 @@ export function PageShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       <PersistentPlayer />
+      <WelcomeModal />
     </div>
   );
 }
