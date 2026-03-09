@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Search, Users, Mail, Building2, Download, Calendar } from "lucide-react";
+import { Search, Users, Mail, Building2, Download, Calendar, X } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useContacts } from "@/contexts/ContactsContext";
 import { format } from "date-fns";
@@ -50,29 +50,47 @@ export default function Contacts() {
 
         {/* Search & filters */}
         <motion.div variants={item} className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <div className="flex items-center gap-2.5 bg-secondary/50 rounded-xl px-4 py-2.5 flex-1 border border-border/50 focus-brand transition-all">
+            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, email, or organization…"
-              className="h-10 w-full pl-10 pr-3 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-all"
+              className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
             />
+            {search && (
+              <button onClick={() => setSearch("")} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
           {roles.length > 0 && (
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="h-10 px-3 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none appearance-none cursor-pointer"
-            >
-              <option value="">All Roles</option>
-              {roles.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-secondary/60 border border-border">
+              <button
+                onClick={() => setRoleFilter("")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  !roleFilter ? "bg-brand-orange text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
+              >
+                All
+              </button>
+              {roles.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRoleFilter(roleFilter === r ? "" : r)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                    roleFilter === r ? "bg-brand-orange text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
           )}
         </motion.div>
 
         {/* Table */}
-        <motion.div variants={item} className="bg-card border border-border rounded-xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+        <motion.div variants={item} className="card-premium overflow-hidden">
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-14 h-14 rounded-2xl icon-brand flex items-center justify-center mb-4">
