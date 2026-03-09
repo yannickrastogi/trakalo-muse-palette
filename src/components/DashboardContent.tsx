@@ -5,6 +5,7 @@ import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { Link, useNavigate } from "react-router-dom";
 import { useContacts } from "@/contexts/ContactsContext";
+import { usePitches } from "@/contexts/PitchContext";
 import {
   Music,
   ListMusic,
@@ -69,6 +70,9 @@ export function DashboardContent() {
   const [showContactsPanel, setShowContactsPanel] = useState(false);
   const [contactsRange, setContactsRange] = useState<"1d" | "1w" | "1m" | "1y" | "all">("1w");
   const [contactsSearch, setContactsSearch] = useState("");
+  const [showPitchesPanel, setShowPitchesPanel] = useState(false);
+  const [pitchesSearch, setPitchesSearch] = useState("");
+  const [pitchesStatusFilter, setPitchesStatusFilter] = useState<string>("all");
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { permissions } = useRole();
@@ -76,6 +80,7 @@ export function DashboardContent() {
   const { tracks: allTracks } = useTrack();
   const { playlists: allPlaylists } = usePlaylists();
   const { contacts: allContacts } = useContacts();
+  const { pitches: allPitches } = usePitches();
   const navigate = useNavigate();
   const engagementStats = getTotalStats();
 
@@ -243,7 +248,7 @@ export function DashboardContent() {
     { id: "plays", label: "Total Plays", value: engagementStats.totalPlays.toLocaleString(), icon: Headphones, change: `${engagementStats.uniqueRecipients} recipients`, accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
     { id: "downloads", label: "Downloads", value: engagementStats.totalDownloads.toLocaleString(), icon: Download, change: `across ${engagementStats.uniqueRecipients} contacts`, accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
     { id: "contacts", label: t("nav.contacts"), value: contactEntries.length.toLocaleString(), icon: Users, change: `+${filteredContacts.length} recent`, accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
-    { id: "pitches", label: t("dashboard.pendingPitches"), value: "9", icon: Send, change: t("dashboard.dueToday"), accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20" },
+    { id: "pitches", label: t("pitch.title"), value: allPitches.length.toLocaleString(), icon: Send, change: `${allPitches.filter(p => p.status === "Sent" || p.status === "Opened").length} active`, accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", clickable: true },
   ];
 
   const quickActions = [
@@ -268,14 +273,15 @@ export function DashboardContent() {
             key={stat.label}
             variants={item}
             onClick={stat.clickable ? () => {
-              const closeAll = () => { setShowTracksPanel(false); setShowPlaylistsPanel(false); setShowPlaysPanel(false); setShowDownloadsPanel(false); setShowContactsPanel(false); };
+              const closeAll = () => { setShowTracksPanel(false); setShowPlaylistsPanel(false); setShowPlaysPanel(false); setShowDownloadsPanel(false); setShowContactsPanel(false); setShowPitchesPanel(false); };
               if (stat.id === "tracks") { const next = !showTracksPanel; closeAll(); setShowTracksPanel(next); }
               else if (stat.id === "playlists") { const next = !showPlaylistsPanel; closeAll(); setShowPlaylistsPanel(next); }
               else if (stat.id === "plays") { const next = !showPlaysPanel; closeAll(); setShowPlaysPanel(next); }
               else if (stat.id === "downloads") { const next = !showDownloadsPanel; closeAll(); setShowDownloadsPanel(next); }
               else if (stat.id === "contacts") { const next = !showContactsPanel; closeAll(); setShowContactsPanel(next); }
+              else if (stat.id === "pitches") { const next = !showPitchesPanel; closeAll(); setShowPitchesPanel(next); }
             } : undefined}
-            className={`card-premium p-4 sm:p-5 group relative overflow-hidden ${stat.clickable ? "cursor-pointer" : "cursor-default"} ${stat.borderAccent} ${stat.clickable && ((stat.id === "tracks" && showTracksPanel) || (stat.id === "playlists" && showPlaylistsPanel) || (stat.id === "plays" && showPlaysPanel) || (stat.id === "downloads" && showDownloadsPanel) || (stat.id === "contacts" && showContactsPanel)) ? `border-brand-orange/40 ring-1 ring-brand-orange/20` : ""}`}
+            className={`card-premium p-4 sm:p-5 group relative overflow-hidden ${stat.clickable ? "cursor-pointer" : "cursor-default"} ${stat.borderAccent} ${stat.clickable && ((stat.id === "tracks" && showTracksPanel) || (stat.id === "playlists" && showPlaylistsPanel) || (stat.id === "plays" && showPlaysPanel) || (stat.id === "downloads" && showDownloadsPanel) || (stat.id === "contacts" && showContactsPanel) || (stat.id === "pitches" && showPitchesPanel)) ? `border-brand-orange/40 ring-1 ring-brand-orange/20` : ""}`}
           >
             <div
               className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-60 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
@@ -805,6 +811,125 @@ export function DashboardContent() {
             </div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* ─── Pitches Panel ─── */}
+      <AnimatePresence>
+        {showPitchesPanel && (() => {
+          const pitchStatuses = ["all", "Draft", "Sent", "Opened", "Responded"] as const;
+          const filteredPitches = allPitches.filter((p) => {
+            if (pitchesStatusFilter !== "all" && p.status !== pitchesStatusFilter) return false;
+            if (pitchesSearch) {
+              const q = pitchesSearch.toLowerCase();
+              return p.itemName.toLowerCase().includes(q) || p.recipientName.toLowerCase().includes(q) || p.recipientCompany.toLowerCase().includes(q) || (p.recipientEmail || "").toLowerCase().includes(q);
+            }
+            return true;
+          });
+          const pitchStatusColors: Record<string, string> = {
+            Draft: "bg-muted text-muted-foreground",
+            Sent: "bg-blue-500/12 text-blue-400",
+            Opened: "bg-brand-orange/12 text-brand-orange",
+            Responded: "bg-emerald-500/12 text-emerald-400",
+          };
+          return (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <div className="card-premium rounded-xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-border flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Send className="w-4 h-4 text-brand-orange" />
+                      <h3 className="text-sm font-bold text-foreground">
+                        Pitches
+                        <span className="ml-2 text-muted-foreground font-normal">· {allPitches.length} total</span>
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
+                        {pitchStatuses.map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => setPitchesStatusFilter(s)}
+                            className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
+                              pitchesStatusFilter === s
+                                ? "bg-brand-orange/15 text-brand-orange"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {s === "all" ? "ALL" : s.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                      <button onClick={() => setShowPitchesPanel(false)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={pitchesSearch}
+                      onChange={(e) => setPitchesSearch(e.target.value)}
+                      placeholder="Search by track, recipient, or company…"
+                      className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                <div className="px-5 py-2.5 border-b border-border/50 bg-secondary/20">
+                  <p className="text-2xs text-muted-foreground font-medium">
+                    {filteredPitches.length} pitch{filteredPitches.length !== 1 ? "es" : ""}{pitchesStatusFilter !== "all" ? ` with status "${pitchesStatusFilter}"` : ""}
+                  </p>
+                </div>
+                {filteredPitches.length === 0 ? (
+                  <div className="py-10 text-center text-muted-foreground text-sm">No pitches found</div>
+                ) : (
+                  <div className="divide-y divide-border/40 max-h-[360px] overflow-y-auto">
+                    {filteredPitches.map((pitch) => (
+                      <div
+                        key={pitch.id}
+                        className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
+                        onClick={() => navigate("/pitch")}
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-brand-orange/10 flex items-center justify-center shrink-0 ring-1 ring-border/50">
+                          <Send className="w-3.5 h-3.5 text-brand-orange" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-orange transition-colors">
+                            {pitch.itemName}
+                            <span className="ml-1.5 text-[11px] text-muted-foreground font-normal">by {pitch.artist}</span>
+                          </p>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            → {pitch.recipientName} · {pitch.recipientCompany}
+                          </p>
+                        </div>
+                        <div className="hidden sm:block text-right min-w-[70px]">
+                          <p className="text-2xs text-muted-foreground">{pitch.date}</p>
+                        </div>
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold ${pitchStatusColors[pitch.status] || "bg-muted text-muted-foreground"}`}>
+                          {pitch.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="px-5 py-3 border-t border-border/50 flex items-center justify-between">
+                  <span className="text-2xs text-muted-foreground">
+                    Showing {filteredPitches.length} of {allPitches.length} total pitches
+                  </span>
+                  <Link to="/pitch" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
+                    View all pitches →
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })()}
       </AnimatePresence>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 sm:gap-6">
