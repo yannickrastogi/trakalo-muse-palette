@@ -22,6 +22,7 @@ export function TrackWaveformPlayer({
   bars = 120,
   progress,
   onSeek,
+  onDoubleClick,
   chapters = [],
   isPlaying = false,
   className = "",
