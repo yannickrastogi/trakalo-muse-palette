@@ -2,7 +2,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 
 export type TeamRole = "Admin" | "Manager" | "A&R" | "Assistant" | "Producer" | "Songwriter" | "Musician" | "Mix Engineer" | "Mastering Engineer" | "Publisher" | "Viewer";
 
-export type ActivityType = "upload" | "pitch" | "link" | "member" | "status";
+export type ActivityType = "upload" | "pitch" | "link" | "member" | "status" | "metadata" | "splits" | "stems" | "lyrics" | "paperwork";
 
 export interface TeamActivity {
   id: string;
@@ -51,14 +51,20 @@ const demoTeams: Team[] = [
     createdAt: "2025-09-12",
     sharedTrackIds: [1, 2, 3, 4, 5, 6, 7, 8],
     activities: [
-      { id: "a-1", type: "upload", message: "uploaded \"Midnight Run\" to the catalog", user: "Dex Moraes", date: "2026-03-09T14:30:00" },
+      { id: "a-1", type: "upload", message: "added \"Midnight Run\" to the catalog", user: "Dex Moraes", date: "2026-03-09T14:30:00" },
       { id: "a-2", type: "pitch", message: "pitched \"Velvet Skies\" to Atlantic Records", user: "You", date: "2026-03-08T11:15:00" },
-      { id: "a-3", type: "link", message: "created a share link for \"Neon Dreams\"", user: "Marco Silva", date: "2026-03-07T16:45:00" },
-      { id: "a-4", type: "status", message: "changed \"Golden Hour\" status to Released", user: "You", date: "2026-03-06T09:20:00" },
+      { id: "a-3", type: "link", message: "created and shared a link for \"Neon Dreams\"", user: "Marco Silva", date: "2026-03-07T16:45:00" },
+      { id: "a-4", type: "status", message: "modified status on \"Golden Hour\" to Released", user: "You", date: "2026-03-06T09:20:00" },
       { id: "a-5", type: "member", message: "invited AYA as Publisher", user: "You", date: "2026-03-05T10:00:00" },
-      { id: "a-6", type: "upload", message: "uploaded stems for \"Midnight Run\"", user: "Tony Maserati", date: "2026-03-04T13:10:00" },
+      { id: "a-6", type: "stems", message: "added stems on \"Midnight Run\"", user: "Tony Maserati", date: "2026-03-04T13:10:00" },
       { id: "a-7", type: "pitch", message: "pitched \"Echoes\" to Interscope Records", user: "You", date: "2026-03-03T15:30:00" },
-      { id: "a-8", type: "link", message: "created a share link for \"Velvet Skies\"", user: "Dex Moraes", date: "2026-03-02T11:00:00" },
+      { id: "a-8", type: "link", message: "created and shared a link for \"Velvet Skies\"", user: "Dex Moraes", date: "2026-03-02T11:00:00" },
+      { id: "a-9", type: "metadata", message: "modified metadata on \"Velvet Skies\"", user: "Marco Silva", date: "2026-03-01T09:45:00" },
+      { id: "a-13", type: "splits", message: "added splits on \"Midnight Run\"", user: "You", date: "2026-02-28T15:00:00" },
+      { id: "a-14", type: "lyrics", message: "added lyrics on \"Golden Hour\"", user: "Dex Moraes", date: "2026-02-27T11:30:00" },
+      { id: "a-15", type: "paperwork", message: "uploaded paperwork for \"Echoes\"", user: "Emily Lazar", date: "2026-02-26T14:20:00" },
+      { id: "a-16", type: "metadata", message: "added metadata on \"Neon Dreams\"", user: "You", date: "2026-02-25T10:10:00" },
+      { id: "a-17", type: "splits", message: "modified splits on \"Velvet Skies\"", user: "Marco Silva", date: "2026-02-24T16:00:00" },
     ],
     members: [
       { id: "m-0", firstName: "You", lastName: "(Owner)", email: "you@trakalog.com", role: "Admin", joinedAt: "2025-09-12", status: "active" },
