@@ -567,16 +567,13 @@ export function generateContactListPdf(contacts: ContactExportEntry[]) {
 
   // Table
   const cols = [
-    { label: "NAME", width: contentW * 0.18 },
-    { label: "EMAIL", width: contentW * 0.22 },
-    { label: "ORGANIZATION", width: contentW * 0.18 },
-    { label: "ROLE", width: contentW * 0.14 },
-    { label: "TRACKS", width: contentW * 0.14 },
-    { label: "DOWNLOADS", width: contentW * 0.07 },
-    { label: "LAST INTERACTION", width: contentW * 0.07 },
+    { label: "NAME", width: contentW * 0.25 },
+    { label: "EMAIL", width: contentW * 0.30 },
+    { label: "ORGANIZATION", width: contentW * 0.25 },
+    { label: "ROLE", width: contentW * 0.20 },
   ];
 
-  const rowH = 24;
+  const rowH = 26;
   const headerY = 108;
   let y = headerY;
 
@@ -586,7 +583,7 @@ export function generateContactListPdf(contacts: ContactExportEntry[]) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
     doc.setTextColor(...textMuted);
-    let x = marginX + 10;
+    let x = marginX + 12;
     cols.forEach((col) => {
       doc.text(col.label, x, y + rowH / 2 + 1, { baseline: "middle" });
       x += col.width;
@@ -594,18 +591,9 @@ export function generateContactListPdf(contacts: ContactExportEntry[]) {
     y += rowH + 2;
   };
 
-  const formatDate = (iso: string) => {
-    try {
-      return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch {
-      return "—";
-    }
-  };
-
   drawTableHeader();
 
   contacts.forEach((c, idx) => {
-    // New page check
     if (y + rowH > pageH - 40) {
       doc.addPage();
       doc.setFillColor(...bgDark);
@@ -615,54 +603,35 @@ export function generateContactListPdf(contacts: ContactExportEntry[]) {
       drawTableHeader();
     }
 
-    // Alternating row bg
     if (idx % 2 === 0) {
       doc.setFillColor(22, 22, 26);
       doc.rect(marginX, y, contentW, rowH, "F");
     }
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(...textLight);
-
-    let x = marginX + 10;
+    doc.setFontSize(8.5);
+    let x = marginX + 12;
     const textY = y + rowH / 2 + 1;
 
     // Name
     doc.setFont("helvetica", "bold");
-    doc.text(`${c.firstName} ${c.lastName}`.slice(0, 24), x, textY, { baseline: "middle" });
+    doc.setTextColor(...textLight);
+    doc.text(`${c.firstName} ${c.lastName}`.slice(0, 30), x, textY, { baseline: "middle" });
     x += cols[0].width;
 
     // Email
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...textMuted);
-    doc.text(c.email.slice(0, 32), x, textY, { baseline: "middle" });
+    doc.text(c.email.slice(0, 36), x, textY, { baseline: "middle" });
     x += cols[1].width;
 
     // Organization
     doc.setTextColor(...textLight);
-    doc.text(c.organization.slice(0, 24), x, textY, { baseline: "middle" });
+    doc.text(c.organization.slice(0, 28), x, textY, { baseline: "middle" });
     x += cols[2].width;
 
     // Role
     doc.setTextColor(...brandOrange);
-    doc.text(c.role.slice(0, 20), x, textY, { baseline: "middle" });
-    x += cols[3].width;
-
-    // Tracks
-    doc.setTextColor(...textMuted);
-    const trackStr = c.tracksDownloaded.slice(0, 2).join(", ") + (c.tracksDownloaded.length > 2 ? ` +${c.tracksDownloaded.length - 2}` : "");
-    doc.text(trackStr.slice(0, 22), x, textY, { baseline: "middle" });
-    x += cols[4].width;
-
-    // Downloads
-    doc.setTextColor(...textLight);
-    doc.text(String(c.totalDownloads), x, textY, { baseline: "middle" });
-    x += cols[5].width;
-
-    // Last Interaction
-    doc.setTextColor(...textMuted);
-    doc.text(formatDate(c.lastDownload), x, textY, { baseline: "middle" });
+    doc.text(c.role.slice(0, 24), x, textY, { baseline: "middle" });
 
     y += rowH;
   });
