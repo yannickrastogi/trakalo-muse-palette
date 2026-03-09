@@ -219,6 +219,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             )}
           </AnimatePresence>
         </div>
+        </FirstUseTooltip>
       </div>
 
       {/* Right actions */}
