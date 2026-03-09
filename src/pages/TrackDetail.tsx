@@ -179,10 +179,10 @@ export default function TrackDetail() {
     { id: "lyrics", label: "Lyrics" },
     { id: "stems", label: "Stems" },
     { id: "splits", label: "Splits" },
-    { id: "engagement", label: `Engagement${engagement ? ` (${engagement.totalPlays})` : ""}` },
     { id: "metadata", label: "Metadata" },
     { id: "paperwork", label: "Paperwork" },
     { id: "pitches", label: "Pitch History" },
+    { id: "engagement", label: `Engagement${engagement ? ` (${engagement.totalPlays})` : ""}` },
     { id: "status", label: "Status" },
   ];
 
