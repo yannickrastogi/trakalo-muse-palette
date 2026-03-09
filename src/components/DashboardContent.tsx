@@ -63,7 +63,7 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 export function DashboardContent() {
   const [playingTrack, setPlayingTrack] = useState<string | null>(null);
   const [showTracksPanel, setShowTracksPanel] = useState(false);
-  const [tracksRange, setTracksRange] = useState<"1d" | "1w" | "1m" | "1y">("1w");
+  const [tracksRange, setTracksRange] = useState<"1d" | "1w" | "1m" | "1y" | "all">("1w");
   const [tracksSearch, setTracksSearch] = useState("");
   const isMobile = useIsMobile();
   const { t } = useTranslation();
@@ -90,7 +90,8 @@ export function DashboardContent() {
   const filteredByRange = useMemo(() => {
     const now = new Date();
     const cutoff = new Date(now);
-    if (tracksRange === "1d") cutoff.setDate(now.getDate() - 1);
+    if (tracksRange === "all") cutoff.setTime(0);
+    else if (tracksRange === "1d") cutoff.setDate(now.getDate() - 1);
     else if (tracksRange === "1w") cutoff.setDate(now.getDate() - 7);
     else if (tracksRange === "1m") cutoff.setMonth(now.getMonth() - 1);
     else cutoff.setFullYear(now.getFullYear() - 1);
@@ -182,7 +183,7 @@ export function DashboardContent() {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
-                      {(["1d", "1w", "1m", "1y"] as const).map((range) => (
+                      {(["1d", "1w", "1m", "1y", "all"] as const).map((range) => (
                         <button
                           key={range}
                           onClick={() => setTracksRange(range)}
