@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Mail, ShieldCheck, User, Users, Plus } from "lucide-react";
+import { Mail, ShieldCheck, User, Users, Plus, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTeams } from "@/contexts/TeamContext";
+import { CreateTeamModal } from "@/components/CreateTeamModal";
 
 const INVITE_ROLES = ["Admin", "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer", "Manager", "Publisher", "A&R", "Assistant", "Viewer"] as const;
 export type InviteRole = (typeof INVITE_ROLES)[number];
@@ -52,6 +53,7 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<InviteRole>("Viewer");
   const [error, setError] = useState("");
+  const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
 
   const reset = () => {
     setSelectedTeamId(preselectedTeamId || "");
@@ -68,7 +70,7 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
     // Resolve team
     let teamId = selectedTeamId;
 
-    if (teams.length === 0 || showNewTeamInput) {
+    if (showNewTeamInput) {
       const name = newTeamName.trim() || "My Team";
       const newTeam = createTeam(name);
       teamId = newTeam.id;
@@ -107,6 +109,76 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
 
   const hasTeams = teams.length > 0;
 
+  const handleCreateTeam = (name: string) => {
+    createTeam(name);
+    setShowCreateTeamModal(false);
+  };
+
+  // No teams exist — show blocking message
+  if (!hasTeams && !preselectedTeamId) {
+    return (
+      <>
+        <Dialog
+          open={open}
+          onOpenChange={(v) => {
+            if (!v) reset();
+            onOpenChange(v);
+          }}
+        >
+          <DialogContent className="sm:max-w-md bg-card border-border">
+            <DialogHeader>
+              <DialogTitle className="text-foreground text-lg font-bold">
+                {t("inviteMember.title")}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground text-sm">
+                {t("inviteMember.description")}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-6 flex flex-col items-center text-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="w-7 h-7 text-destructive" />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-foreground text-[15px] font-semibold">
+                  You can't invite a member without creating a team.
+                </p>
+                <p className="text-muted-foreground text-[13px]">
+                  Would you like to create a new team first?
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => { reset(); onOpenChange(false); }}
+                className="text-muted-foreground text-[13px]"
+              >
+                {t("inviteMember.cancel")}
+              </Button>
+              <button
+                onClick={() => {
+                  onOpenChange(false);
+                  setShowCreateTeamModal(true);
+                }}
+                className="btn-brand px-5 py-2.5 rounded-lg text-[13px] font-semibold min-h-[40px]"
+              >
+                Create a Team
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <CreateTeamModal
+          open={showCreateTeamModal}
+          onOpenChange={setShowCreateTeamModal}
+          onCreate={handleCreateTeam}
+        />
+      </>
+    );
+  }
+
   return (
     <Dialog
       open={open}
@@ -133,7 +205,7 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
               Team
             </Label>
 
-            {hasTeams && !showNewTeamInput ? (
+            {!showNewTeamInput ? (
               <div className="space-y-2">
                 <Select value={selectedTeamId} onValueChange={(v) => { setSelectedTeamId(v); if (error) setError(""); }}>
                   <SelectTrigger className="bg-secondary border-border text-foreground text-[13px] min-h-[44px]">
@@ -166,19 +238,15 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
                   className="bg-secondary border-border text-foreground placeholder:text-muted-foreground text-[13px] min-h-[44px]"
                 />
                 <p className="text-2xs text-muted-foreground">
-                  {hasTeams
-                    ? "A new team will be created and you'll be added as Admin."
-                    : "No teams yet — a new team will be created automatically."}
+                  A new team will be created and you'll be added as Admin.
                 </p>
-                {hasTeams && (
-                  <button
-                    type="button"
-                    onClick={() => { setShowNewTeamInput(false); setNewTeamName(""); }}
-                    className="text-2xs text-muted-foreground hover:text-foreground font-medium transition-colors"
-                  >
-                    ← Select existing team
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => { setShowNewTeamInput(false); setNewTeamName(""); }}
+                  className="text-2xs text-muted-foreground hover:text-foreground font-medium transition-colors"
+                >
+                  ← Select existing team
+                </button>
               </div>
             )}
           </div>
