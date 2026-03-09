@@ -108,6 +108,8 @@ export function ShareModal({
       playlistCover: playlistCover || undefined,
       playlistTracks: playlistTracks || undefined,
       packItems: packItems || undefined,
+      allowDownload,
+      downloadQuality: allowDownload ? downloadQuality : undefined,
     };
 
     createSharedLink(newLink);
