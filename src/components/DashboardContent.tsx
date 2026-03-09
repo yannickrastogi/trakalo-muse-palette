@@ -4,6 +4,7 @@ import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { Link, useNavigate } from "react-router-dom";
+import { useContacts } from "@/contexts/ContactsContext";
 import {
   Music,
   ListMusic,
@@ -19,6 +20,8 @@ import {
   Download,
   X,
   Search,
+  Mail,
+  Building2,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
@@ -63,12 +66,16 @@ export function DashboardContent() {
   const [showDownloadsPanel, setShowDownloadsPanel] = useState(false);
   const [downloadsRange, setDownloadsRange] = useState<"1d" | "1w" | "1m" | "1y" | "all">("1w");
   const [downloadsSearch, setDownloadsSearch] = useState("");
+  const [showContactsPanel, setShowContactsPanel] = useState(false);
+  const [contactsRange, setContactsRange] = useState<"1d" | "1w" | "1m" | "1y" | "all">("1w");
+  const [contactsSearch, setContactsSearch] = useState("");
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { permissions } = useRole();
   const { getTotalStats, trackEngagement } = useEngagement();
   const { tracks: allTracks } = useTrack();
   const { playlists: allPlaylists } = usePlaylists();
+  const { contacts: allContacts } = useContacts();
   const navigate = useNavigate();
   const engagementStats = getTotalStats();
 
