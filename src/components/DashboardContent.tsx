@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrack } from "@/contexts/TrackContext";
+import { usePlaylist } from "@/contexts/PlaylistContext";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Music,
@@ -53,11 +54,15 @@ export function DashboardContent() {
   const [showTracksPanel, setShowTracksPanel] = useState(false);
   const [tracksRange, setTracksRange] = useState<"1d" | "1w" | "1m" | "1y" | "all">("1w");
   const [tracksSearch, setTracksSearch] = useState("");
+  const [showPlaylistsPanel, setShowPlaylistsPanel] = useState(false);
+  const [playlistsRange, setPlaylistsRange] = useState<"1d" | "1w" | "1m" | "1y" | "all">("1w");
+  const [playlistsSearch, setPlaylistsSearch] = useState("");
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { permissions } = useRole();
   const { getTotalStats } = useEngagement();
   const { tracks: allTracks } = useTrack();
+  const { playlists: allPlaylists } = usePlaylist();
   const navigate = useNavigate();
   const engagementStats = getTotalStats();
 
@@ -94,9 +99,41 @@ export function DashboardContent() {
     });
   }, [trackUploadDates, tracksRange, tracksSearch]);
 
+  // Simulated creation dates for demo playlists
+  const playlistDates = useMemo(() => {
+    const now = new Date();
+    return allPlaylists.map((pl, i) => {
+      const d = new Date(now);
+      if (i < 1) d.setHours(d.getHours() - 6);
+      else if (i < 3) d.setDate(d.getDate() - (i + 1));
+      else if (i < 6) d.setDate(d.getDate() - (i * 4));
+      else d.setMonth(d.getMonth() - (i - 4));
+      return { ...pl, createdAt: d };
+    });
+  }, [allPlaylists]);
+
+  const filteredPlaylists = useMemo(() => {
+    const now = new Date();
+    const cutoff = new Date(now);
+    if (playlistsRange === "all") cutoff.setTime(0);
+    else if (playlistsRange === "1d") cutoff.setDate(now.getDate() - 1);
+    else if (playlistsRange === "1w") cutoff.setDate(now.getDate() - 7);
+    else if (playlistsRange === "1m") cutoff.setMonth(now.getMonth() - 1);
+    else cutoff.setFullYear(now.getFullYear() - 1);
+
+    return playlistDates.filter((pl) => {
+      if (pl.createdAt < cutoff) return false;
+      if (playlistsSearch) {
+        const q = playlistsSearch.toLowerCase();
+        if (!pl.name.toLowerCase().includes(q) && !(pl.description || "").toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }, [playlistDates, playlistsRange, playlistsSearch]);
+
   const stats = [
     { id: "tracks", label: t("dashboard.totalTracks"), value: allTracks.length.toLocaleString(), icon: Music, change: t("dashboard.thisWeek"), accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20", clickable: true },
-    { id: "playlists", label: t("dashboard.playlists"), value: "64", icon: ListMusic, change: t("dashboard.new"), accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20" },
+    { id: "playlists", label: t("dashboard.playlists"), value: allPlaylists.length.toLocaleString(), icon: ListMusic, change: t("dashboard.new"), accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
     { id: "plays", label: "Total Plays", value: engagementStats.totalPlays.toLocaleString(), icon: Headphones, change: `${engagementStats.uniqueRecipients} recipients`, accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20" },
     { id: "downloads", label: "Downloads", value: engagementStats.totalDownloads.toLocaleString(), icon: Download, change: `across ${engagementStats.uniqueRecipients} contacts`, accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20" },
     { id: "collabs", label: t("dashboard.collaborators"), value: "126", icon: Users, change: t("dashboard.active"), accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20" },
@@ -124,8 +161,11 @@ export function DashboardContent() {
           <motion.div
             key={stat.label}
             variants={item}
-            onClick={stat.clickable ? () => setShowTracksPanel(!showTracksPanel) : undefined}
-            className={`card-premium p-4 sm:p-5 group relative overflow-hidden ${stat.clickable ? "cursor-pointer" : "cursor-default"} ${stat.borderAccent} ${stat.clickable && showTracksPanel ? "border-brand-orange/40 ring-1 ring-brand-orange/20" : ""}`}
+            onClick={stat.clickable ? () => {
+              if (stat.id === "tracks") { setShowTracksPanel(!showTracksPanel); setShowPlaylistsPanel(false); }
+              else if (stat.id === "playlists") { setShowPlaylistsPanel(!showPlaylistsPanel); setShowTracksPanel(false); }
+            } : undefined}
+            className={`card-premium p-4 sm:p-5 group relative overflow-hidden ${stat.clickable ? "cursor-pointer" : "cursor-default"} ${stat.borderAccent} ${stat.clickable && ((stat.id === "tracks" && showTracksPanel) || (stat.id === "playlists" && showPlaylistsPanel)) ? `border-brand-orange/40 ring-1 ring-brand-orange/20` : ""}`}
           >
             <div
               className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-60 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
