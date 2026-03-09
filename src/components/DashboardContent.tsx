@@ -33,6 +33,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { useRole } from "@/contexts/RoleContext";
+import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
