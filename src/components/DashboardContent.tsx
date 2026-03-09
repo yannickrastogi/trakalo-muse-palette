@@ -207,12 +207,78 @@ export function DashboardContent() {
   const totalFilteredPlays = filteredPlays.reduce((sum, e) => sum + e.plays, 0);
   const totalFilteredDownloads = filteredDownloads.reduce((sum, e) => sum + e.downloads, 0);
 
+  // Build contacts list from engagement recipients + actual contacts, with simulated dates
+  const contactEntries = useMemo(() => {
+    const now = new Date();
+    // Merge engagement recipients into a unique contacts list
+    const contactMap = new Map<string, { name: string; email: string; company: string; role: string; addedAt: Date }>();
+    
+    // From engagement recipients
+    const recipientNames = [
+      { name: "Jamie Lin", email: "jamie@atlantic.com", company: "Atlantic Records", role: "A&R" },
+      { name: "Sarah Chen", email: "sarah@sonymusic.com", company: "Sony Music", role: "A&R Manager" },
+      { name: "Marcus Webb", email: "marcus@interscope.com", company: "Interscope Records", role: "Head of A&R" },
+      { name: "Diana Rossi", email: "diana@warnermusic.com", company: "Warner Music", role: "Music Supervisor" },
+      { name: "Alex Turner", email: "alex@republic.com", company: "Republic Records", role: "A&R" },
+      { name: "Kenji Mori", email: "kenji@88rising.com", company: "88rising", role: "Artist Manager" },
+      { name: "Lisa Park", email: "lisa@hybe.com", company: "HYBE", role: "Creative Director" },
+      { name: "Tom Richards", email: "tom@umg.com", company: "Universal Music", role: "Sync Licensing" },
+      { name: "Elena Vasquez", email: "elena@bmg.com", company: "BMG Rights", role: "Publisher" },
+      { name: "Ryan Cooper", email: "ryan@kobalt.com", company: "Kobalt Music", role: "A&R Scout" },
+      { name: "Mia Zhang", email: "mia@netease.com", company: "NetEase Music", role: "Playlist Curator" },
+      { name: "David Kim", email: "david@spotify.com", company: "Spotify", role: "Editorial Curator" },
+    ];
+
+    recipientNames.forEach((r, i) => {
+      const d = new Date(now);
+      if (i < 2) d.setHours(d.getHours() - (i + 2) * 3);
+      else if (i < 5) d.setDate(d.getDate() - (i));
+      else if (i < 8) d.setDate(d.getDate() - (i * 3));
+      else d.setMonth(d.getMonth() - (i - 6));
+      contactMap.set(r.email, { ...r, addedAt: d });
+    });
+
+    // Merge actual contacts from context
+    allContacts.forEach((c) => {
+      if (!contactMap.has(c.email)) {
+        contactMap.set(c.email, {
+          name: `${c.firstName} ${c.lastName}`,
+          email: c.email,
+          company: c.organization,
+          role: c.role,
+          addedAt: new Date(c.firstInteraction),
+        });
+      }
+    });
+
+    return Array.from(contactMap.values());
+  }, [allContacts]);
+
+  const filteredContacts = useMemo(() => {
+    const now = new Date();
+    const cutoff = new Date(now);
+    if (contactsRange === "all") cutoff.setTime(0);
+    else if (contactsRange === "1d") cutoff.setDate(now.getDate() - 1);
+    else if (contactsRange === "1w") cutoff.setDate(now.getDate() - 7);
+    else if (contactsRange === "1m") cutoff.setMonth(now.getMonth() - 1);
+    else cutoff.setFullYear(now.getFullYear() - 1);
+
+    return contactEntries
+      .filter((c) => c.addedAt >= cutoff)
+      .filter((c) => {
+        if (!contactsSearch) return true;
+        const q = contactsSearch.toLowerCase();
+        return c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.company.toLowerCase().includes(q) || c.role.toLowerCase().includes(q);
+      })
+      .sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime());
+  }, [contactEntries, contactsRange, contactsSearch]);
+
   const stats = [
     { id: "tracks", label: t("dashboard.totalTracks"), value: allTracks.length.toLocaleString(), icon: Music, change: t("dashboard.thisWeek"), accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20", clickable: true },
     { id: "playlists", label: t("dashboard.playlists"), value: allPlaylists.length.toLocaleString(), icon: ListMusic, change: t("dashboard.new"), accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
     { id: "plays", label: "Total Plays", value: engagementStats.totalPlays.toLocaleString(), icon: Headphones, change: `${engagementStats.uniqueRecipients} recipients`, accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
     { id: "downloads", label: "Downloads", value: engagementStats.totalDownloads.toLocaleString(), icon: Download, change: `across ${engagementStats.uniqueRecipients} contacts`, accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
-    { id: "collabs", label: t("dashboard.collaborators"), value: "126", icon: Users, change: t("dashboard.active"), accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20" },
+    { id: "contacts", label: t("nav.contacts"), value: contactEntries.length.toLocaleString(), icon: Users, change: `+${filteredContacts.length} recent`, accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
     { id: "pitches", label: t("dashboard.pendingPitches"), value: "9", icon: Send, change: t("dashboard.dueToday"), accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20" },
   ];
 
