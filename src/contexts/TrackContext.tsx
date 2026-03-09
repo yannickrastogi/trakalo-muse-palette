@@ -256,7 +256,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           ? {
               ...t,
               status: newStatus,
-              statusHistory: [...t.statusHistory, { status: newStatus, date: dateStr, note }],
+              statusHistory: [...(t.statusHistory || []), { status: newStatus, date: dateStr, note }],
             }
           : t
       )
