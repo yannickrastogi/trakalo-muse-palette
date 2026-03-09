@@ -6,7 +6,7 @@ import {
   Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3,
   Music, Clock, CheckCircle2, XCircle, Users, ArrowLeft, Trash2, UserPlus,
   Upload, Send, ExternalLink, Activity, BarChart3, FileText, SplitSquareVertical,
-  Layers, Type,
+  Layers, Type, Play, Download, Package, Bell,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -67,6 +67,11 @@ const activityIcons: Record<ActivityType, React.ElementType> = {
   stems: Layers,
   lyrics: Type,
   paperwork: FileText,
+  recipient_opened: Eye,
+  recipient_played: Play,
+  recipient_downloaded: Download,
+  recipient_pack: Package,
+  recipient_stems: Layers,
 };
 
 const activityColors: Record<ActivityType, string> = {
@@ -80,6 +85,11 @@ const activityColors: Record<ActivityType, string> = {
   stems: "bg-[hsl(180,60%,45%)]/12 text-[hsl(180,60%,45%)]",
   lyrics: "bg-brand-purple/12 text-brand-purple",
   paperwork: "bg-muted-foreground/12 text-muted-foreground",
+  recipient_opened: "bg-amber-500/12 text-amber-400",
+  recipient_played: "bg-emerald-500/12 text-emerald-400",
+  recipient_downloaded: "bg-[hsl(200,70%,50%)]/12 text-[hsl(200,70%,50%)]",
+  recipient_pack: "bg-brand-purple/12 text-brand-purple",
+  recipient_stems: "bg-[hsl(180,60%,45%)]/12 text-[hsl(180,60%,45%)]",
 };
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
