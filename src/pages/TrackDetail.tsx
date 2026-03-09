@@ -347,7 +347,7 @@ export default function TrackDetail() {
               {activeTab === "stems" && <StemsTab trackId={Number(id)} />}
               {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
               {activeTab === "credits" && <CreditsTab trackId={Number(id)} onEdit={() => setEditTrackModalOpen(true)} />}
-              {activeTab === "metadata" && <OverviewTab trackId={Number(id)} />}
+              {activeTab === "metadata" && <OverviewTab trackId={Number(id)} onEdit={() => setEditTrackModalOpen(true)} />}
               {activeTab === "paperwork" && <PaperworkTab />}
               {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
               {activeTab === "status" && <StatusTab trackId={Number(id)} />}
@@ -422,7 +422,7 @@ function SectionCard({ title, icon: Icon, children, action }: { title: string; i
   );
 }
 
-function OverviewTab({ trackId }: { trackId: number }) {
+function OverviewTab({ trackId, onEdit }: { trackId: number; onEdit: () => void }) {
   const { getTrack } = useTrack();
   const trackData = getTrack(trackId);
   if (!trackData) return null;
@@ -439,10 +439,12 @@ function OverviewTab({ trackId }: { trackId: number }) {
       icon={FileText}
       action={
         <div className="flex items-center gap-2">
-          <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:underline">
+          <button onClick={onEdit} className="flex items-center gap-1.5 text-xs text-foreground hover:text-foreground/80 bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-lg font-semibold transition-colors">
+            <Edit3 className="w-3.5 h-3.5" /> Edit Metadata
+          </button>
+          <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg font-semibold transition-colors">
             <Download className="w-3.5 h-3.5" /> Download PDF
           </button>
-          <button className="text-xs text-primary hover:underline">Edit</button>
         </div>
       }
     >
