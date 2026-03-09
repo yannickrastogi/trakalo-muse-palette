@@ -27,6 +27,7 @@ import SharedLinks from "./pages/SharedLinks";
 import SharedStemAccess from "./pages/SharedStemAccess";
 import NotFound from "./pages/NotFound";
 import NotificationCenter from "./pages/NotificationCenter";
+import ApprovalQueue from "./pages/ApprovalQueue";
 
 const queryClient = new QueryClient();
 
