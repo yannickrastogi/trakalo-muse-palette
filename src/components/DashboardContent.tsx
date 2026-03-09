@@ -8,21 +8,17 @@ import {
   ListMusic,
   Users,
   Send,
-  Play,
-  Pause,
   Clock,
   Upload,
   ArrowUpRight,
   MessageSquare,
   Star,
   TrendingUp,
-  MoreHorizontal,
   Headphones,
   Download,
   X,
   Search,
 } from "lucide-react";
-import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { useRole } from "@/contexts/RoleContext";
@@ -35,13 +31,6 @@ import cover5 from "@/assets/covers/cover-5.jpg";
 
 const covers = [cover1, cover2, cover3, cover4, cover5];
 
-const recentTracks = [
-  { title: "Velvet Hour", artist: "Kira Nomura", album: "Late Bloom EP", genre: "Neo-Soul", duration: "4:12", bpm: 92, key: "Ab Maj", mood: ["emotional", "dreamy"], status: "Available", language: "English", type: "Song", voice: "Female", coverIdx: 0 },
-  { title: "Ghost Protocol", artist: "Dex Moraes × JVNE", album: "Singles 2026", genre: "Electronic", duration: "3:38", bpm: 128, key: "F# Min", mood: ["energetic", "dark"], status: "On Hold", language: "English", type: "Sample", voice: "Male", coverIdx: 1 },
-  { title: "Burning Chrome", artist: "Alina Voss", album: "Neon Archive", genre: "Synthwave", duration: "5:01", bpm: 118, key: "C Min", mood: ["nostalgic", "driving"], status: "Available", language: "Portuguese", type: "Song", voice: "Female", coverIdx: 2 },
-  { title: "Soft Landing", artist: "Marco Silva", album: "Ambient Vol. II", genre: "Ambient", duration: "6:44", bpm: 72, key: "D Maj", mood: ["calm", "uplifting"], status: "Released", language: "Instrumental", type: "Instrumental", voice: "N/A", coverIdx: 3 },
-  { title: "Paper Moons", artist: "Kira Nomura × AYA", album: "Late Bloom EP", genre: "Indie Pop", duration: "3:22", bpm: 105, key: "Bb Maj", mood: ["happy", "playful"], status: "On Hold", language: "Japanese", type: "Acapella", voice: "Duet", coverIdx: 4 },
-];
 
 const activity = [
   { icon: Star, textKey: "Kira Nomura starred \"Velvet Hour\" master", time: "12m ago" },
@@ -61,7 +50,6 @@ const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } 
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
 
 export function DashboardContent() {
-  const [playingTrack, setPlayingTrack] = useState<string | null>(null);
   const [showTracksPanel, setShowTracksPanel] = useState(false);
   const [tracksRange, setTracksRange] = useState<"1d" | "1w" | "1m" | "1y" | "all">("1w");
   const [tracksSearch, setTracksSearch] = useState("");
@@ -266,141 +254,6 @@ export function DashboardContent() {
 
       {/* Main grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 sm:gap-6">
-        {/* Recent tracks */}
-        <motion.div variants={item} className="xl:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">{t("dashboard.recentTracks")}</h2>
-            <Link to="/tracks" className="text-xs gradient-text hover:opacity-80 transition-opacity font-semibold tracking-tight">{t("dashboard.viewAll")}</Link>
-          </div>
-
-          {isMobile ? (
-            <div className="space-y-2.5">
-              {recentTracks.map((track, idx) => {
-                const isPlaying = playingTrack === track.title;
-                return (
-                  <div key={track.title} className="card-premium p-3.5 flex items-center gap-3">
-                    <button
-                      onClick={() => setPlayingTrack(isPlaying ? null : track.title)}
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 min-h-[44px] min-w-[44px] ${
-                        isPlaying ? "btn-brand shadow-none" : "bg-secondary"
-                      }`}
-                    >
-                      {isPlaying ? <Pause className="w-4 h-4 text-primary-foreground" /> : <Play className="w-4 h-4 text-muted-foreground ml-0.5" />}
-                    </button>
-                    <img src={covers[track.coverIdx]} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-foreground text-[13px] tracking-tight truncate">{track.title}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-2xs text-muted-foreground">{track.genre}</span>
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
-                      </div>
-                    </div>
-                    <span className="text-2xs text-muted-foreground font-mono shrink-0">{track.duration}</span>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="card-premium overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-[13px]">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left pl-5 pr-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-8">#</th>
-                      <th className="text-left px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("catalog.track")}</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">{t("catalog.type")}</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("catalog.genre")}</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">{t("catalog.bpm")}</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">{t("catalog.key")}</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("catalog.mood")}</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("catalog.language")}</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Gender</th>
-                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("catalog.status")}</th>
-                      <th className="px-4 py-3 w-10"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentTracks.map((track, idx) => {
-                      const isPlaying = playingTrack === track.title;
-                      return (
-                      <tr key={track.title} className="border-b border-border/40 last:border-0 hover:bg-secondary/25 transition-all duration-200 group/row cursor-pointer">
-                        <td className="pl-5 pr-2 py-3">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setPlayingTrack(isPlaying ? null : track.title); }}
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                              isPlaying
-                                ? "btn-brand shadow-none"
-                                : "text-muted-foreground/40 group-hover/row:text-foreground"
-                            }`}
-                          >
-                            {isPlaying ? (
-                              <Pause className="w-3 h-3 text-primary-foreground" />
-                            ) : (
-                              <>
-                                <span className="group-hover/row:hidden text-2xs font-mono font-medium">{idx + 1}</span>
-                                <Play className="w-3 h-3 hidden group-hover/row:block" />
-                              </>
-                            )}
-                          </button>
-                        </td>
-                        <td className="px-2 py-3">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={covers[track.coverIdx]}
-                              alt={track.title}
-                              className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50"
-                            />
-                            <div className="min-w-0 flex-1">
-                              <p className="font-semibold text-foreground truncate text-[13px] tracking-tight leading-tight">{track.title}</p>
-                              <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>
-                            </div>
-                            <div className={`hidden md:flex items-center gap-2 transition-opacity duration-300 ${isPlaying ? "opacity-100" : "opacity-20 group-hover/row:opacity-50"}`}>
-                              <MiniWaveform seed={idx * 7 + 13} bars={20} />
-                              <span className="text-2xs text-muted-foreground font-mono tabular-nums w-8 text-right">{track.duration}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-xs">{track.type}</td>
-                        <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.genre}</span></td>
-                        <td className="px-4 py-3 hidden lg:table-cell"><span className="font-mono text-2xs text-foreground/60 tabular-nums">{track.bpm}</span></td>
-                        <td className="px-4 py-3 hidden lg:table-cell">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary text-2xs font-semibold text-foreground/70">
-                            <Music className="w-2.5 h-2.5 text-brand-orange/50" />
-                            {track.key}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 hidden md:table-cell">
-                          <div className="flex flex-wrap gap-1 max-w-[140px]">
-                            {track.mood.map((tag) => (
-                              <span key={tag} className="inline-flex px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70">
-                                #{tag}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.language}</span></td>
-                        <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.voice}</span></td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>
-                            {track.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <button className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground opacity-0 group-hover/row:opacity-100">
-                            <MoreHorizontal className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </motion.div>
-
         {/* Right column */}
         <div className="space-y-5 sm:space-y-6">
           {/* Quick actions */}
