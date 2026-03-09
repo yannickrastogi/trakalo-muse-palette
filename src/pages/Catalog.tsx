@@ -69,7 +69,7 @@ export default function Catalog() {
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [voiceFilter, setVoiceFilter] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [playingTrack, setPlayingTrack] = useState<number | null>(null);
+  const { currentTrack, isPlaying: globalIsPlaying, playTrack, togglePlay, isTrackPlaying, setQueue } = useAudioPlayer();
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [uploadOpen, setUploadOpen] = useState(false);
   const navigate = useNavigate();
