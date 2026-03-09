@@ -97,6 +97,7 @@ export default function Team() {
 
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [showSharedCatalog, setShowSharedCatalog] = useState(false);
+  const [activityRange, setActivityRange] = useState<"1d" | "1w" | "1m" | "1y">("1w");
   const membersRef = React.useRef<HTMLDivElement>(null);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -342,13 +343,35 @@ export default function Team() {
               <BarChart3 className="w-4 h-4 text-muted-foreground" />
               <h3 className="text-sm font-bold text-foreground">Team Activity</h3>
             </div>
-            <span className="text-2xs text-muted-foreground">{selectedTeam.activities.length} events</span>
+            <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
+              {(["1d", "1w", "1m", "1y"] as const).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setActivityRange(range)}
+                  className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
+                    activityRange === range
+                      ? "bg-brand-pink/15 text-brand-pink"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {range === "1d" ? "1D" : range === "1w" ? "1W" : range === "1m" ? "1M" : "1Y"}
+                </button>
+              ))}
+            </div>
           </div>
-          {selectedTeam.activities.length === 0 ? (
-            <div className="py-10 text-center text-muted-foreground text-sm">No activity yet</div>
-          ) : (
-            <div className="divide-y divide-border/60 max-h-[320px] overflow-y-auto">
-              {selectedTeam.activities.map((activity) => {
+          {(() => {
+            const now = new Date();
+            const cutoff = new Date(now);
+            if (activityRange === "1d") cutoff.setDate(now.getDate() - 1);
+            else if (activityRange === "1w") cutoff.setDate(now.getDate() - 7);
+            else if (activityRange === "1m") cutoff.setMonth(now.getMonth() - 1);
+            else cutoff.setFullYear(now.getFullYear() - 1);
+            const filtered = selectedTeam.activities.filter((a) => new Date(a.date) >= cutoff);
+            return filtered.length === 0 ? (
+              <div className="py-10 text-center text-muted-foreground text-sm">No activity in this period</div>
+            ) : (
+              <div className="divide-y divide-border/60 max-h-[320px] overflow-y-auto">
+                {filtered.map((activity) => {
                 const Icon = activityIcons[activity.type];
                 const colorClass = activityColors[activity.type];
                 const d = new Date(activity.date);
@@ -368,9 +391,9 @@ export default function Team() {
                   </div>
                 );
               })}
-            </div>
-          )}
-        </motion.div>
+              </div>
+            );
+          })()}
 
         {/* Role stat pills */}
         <motion.div variants={item} className="flex flex-wrap gap-2">
