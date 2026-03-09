@@ -739,6 +739,110 @@ export function DashboardContent() {
         )}
       </AnimatePresence>
 
+      {/* ─── Contacts Panel ─── */}
+      <AnimatePresence>
+        {showContactsPanel && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="card-premium rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-border flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-brand-purple" />
+                    <h3 className="text-sm font-bold text-foreground">
+                      Contacts
+                      <span className="ml-2 text-muted-foreground font-normal">· {contactEntries.length} total</span>
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
+                      {(["1d", "1w", "1m", "1y", "all"] as const).map((range) => (
+                        <button
+                          key={range}
+                          onClick={() => setContactsRange(range)}
+                          className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
+                            contactsRange === range
+                              ? "bg-brand-purple/15 text-brand-purple"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {range.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={() => setShowContactsPanel(false)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={contactsSearch}
+                    onChange={(e) => setContactsSearch(e.target.value)}
+                    placeholder="Search by name, email, company, or role…"
+                    className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div className="px-5 py-2.5 border-b border-border/50 bg-secondary/20">
+                <p className="text-2xs text-muted-foreground font-medium">
+                  {filteredContacts.length} contact{filteredContacts.length !== 1 ? "s" : ""} collected in the last {contactsRange === "all" ? "all time" : contactsRange === "1d" ? "24 hours" : contactsRange === "1w" ? "week" : contactsRange === "1m" ? "month" : "year"}
+                </p>
+              </div>
+              {filteredContacts.length === 0 ? (
+                <div className="py-10 text-center text-muted-foreground text-sm">No contacts collected in this period</div>
+              ) : (
+                <div className="divide-y divide-border/40 max-h-[360px] overflow-y-auto">
+                  {filteredContacts.map((contact, idx) => (
+                    <div
+                      key={contact.email}
+                      className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
+                      onClick={() => navigate("/contacts")}
+                    >
+                      <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
+                      <div className="w-9 h-9 rounded-full bg-brand-purple/10 flex items-center justify-center shrink-0 ring-1 ring-border/50">
+                        <span className="text-xs font-bold text-brand-purple">
+                          {contact.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-purple transition-colors">{contact.name}</p>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                          <p className="text-[11px] text-muted-foreground truncate">{contact.email}</p>
+                        </div>
+                      </div>
+                      <div className="hidden sm:flex items-center gap-1.5 min-w-[100px]">
+                        <Building2 className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+                        <span className="text-[11px] text-foreground/70 truncate">{contact.company}</span>
+                      </div>
+                      <span className="inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-purple/12 text-brand-purple">
+                        {contact.role}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="px-5 py-3 border-t border-border/50 flex items-center justify-between">
+                <span className="text-2xs text-muted-foreground">
+                  Showing {filteredContacts.length} of {contactEntries.length} total contacts
+                </span>
+                <Link to="/contacts" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
+                  View all contacts →
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 sm:gap-6">
         {/* Right column */}
         <div className="space-y-5 sm:space-y-6">
