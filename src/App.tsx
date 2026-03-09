@@ -41,6 +41,7 @@ const App = () => (
       <TrackProvider>
       <EngagementProvider>
       <TrackReviewProvider>
+      <ApprovalProvider>
       <PitchProvider>
       <PlaylistProvider>
       <SharedLinksProvider>
