@@ -1353,6 +1353,75 @@ function StepReview({
   );
 }
 
+/* ─── Teams Step ─── */
+
+function StepTeams({
+  teams,
+  selectedTeams,
+  onToggle,
+}: {
+  teams: { id: string; name: string; members: { id: string }[]; createdAt: string }[];
+  selectedTeams: string[];
+  onToggle: (teamId: string) => void;
+}) {
+  return (
+    <div className="space-y-5">
+      <div>
+        <h3 className="text-sm font-semibold text-foreground mb-1">Share with Teams</h3>
+        <p className="text-2xs text-muted-foreground">
+          Select which teams should have access to this track. You can skip this step.
+        </p>
+      </div>
+
+      {teams.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Users className="w-10 h-10 text-muted-foreground/30 mb-3" />
+          <p className="text-sm font-medium text-muted-foreground">No teams yet</p>
+          <p className="text-2xs text-muted-foreground/60 mt-1">Create a team in the Team section to start collaborating</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {teams.map((team) => {
+            const isSelected = selectedTeams.includes(team.id);
+            return (
+              <button
+                key={team.id}
+                onClick={() => onToggle(team.id)}
+                className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${
+                  isSelected
+                    ? "border-primary/40 bg-primary/5"
+                    : "border-border bg-secondary/50 hover:border-border/80"
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
+                  isSelected ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"
+                }`}>
+                  <Users className="w-4.5 h-4.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{team.name}</p>
+                  <p className="text-2xs text-muted-foreground">{team.members.length} members</p>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                  isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
+                }`}>
+                  {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {selectedTeams.length > 0 && (
+        <p className="text-2xs text-muted-foreground">
+          {selectedTeams.length} team{selectedTeams.length > 1 ? "s" : ""} selected
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ─── Helpers ─── */
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
