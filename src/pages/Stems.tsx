@@ -195,8 +195,11 @@ export default function Stems() {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Stems</h1>
             <p className="text-muted-foreground text-xs sm:text-sm mt-1">Browse and manage all stems across your catalog.</p>
           </div>
-          <button className="btn-brand px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0">
-            <Upload className="w-3.5 h-3.5" />
+          <button
+            onClick={() => navigate("/tracks")}
+            className="btn-brand px-5 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 shrink-0 min-h-[44px]"
+          >
+            <Upload className="w-4 h-4" />
             Upload Stems
           </button>
         </motion.div>
