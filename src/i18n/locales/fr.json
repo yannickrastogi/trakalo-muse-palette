@@ -9,7 +9,8 @@
     "settings": "Paramètres",
     "contacts": "Contacts",
     "sharedLinks": "Liens Partagés",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "approvals": "Approbations"
   },
   "topbar": {
     "search": "Rechercher morceaux, artistes, playlists…",
