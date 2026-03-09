@@ -109,6 +109,7 @@ export default function Team() {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [showSharedCatalog, setShowSharedCatalog] = useState(false);
   const [activityRange, setActivityRange] = useState<"1d" | "1w" | "1m" | "1y">("1w");
+  const [activitySearch, setActivitySearch] = useState("");
   const membersRef = React.useRef<HTMLDivElement>(null);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
