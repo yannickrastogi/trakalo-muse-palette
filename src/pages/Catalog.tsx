@@ -130,9 +130,11 @@ export default function Catalog() {
             </p>
           </div>
           {permissions.canUploadTracks && (
-            <button onClick={() => setUploadOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start">
-              <Upload className="w-4 h-4" /> {t("catalog.uploadTrack")}
-            </button>
+            <FirstUseTooltip id="upload-track" message="Upload your first track to start building your catalog" position="left">
+              <button onClick={() => setUploadOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start">
+                <Upload className="w-4 h-4" /> {t("catalog.uploadTrack")}
+              </button>
+            </FirstUseTooltip>
           )}
         </motion.div>
 
