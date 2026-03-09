@@ -46,6 +46,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/tracks" element={<Catalog />} />
             <Route path="/track/:id" element={<TrackDetail />} />
+            <Route path="/tracks/:id" element={<TrackDetail />} />
             <Route path="/playlists" element={<Playlists />} />
             <Route path="/playlist/:id" element={<PlaylistDetail />} />
             <Route path="/stems" element={<Stems />} />
