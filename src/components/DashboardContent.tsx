@@ -207,51 +207,15 @@ export function DashboardContent() {
   const totalFilteredPlays = filteredPlays.reduce((sum, e) => sum + e.plays, 0);
   const totalFilteredDownloads = filteredDownloads.reduce((sum, e) => sum + e.downloads, 0);
 
-  // Build contacts list from engagement recipients + actual contacts, with simulated dates
+  // Build contacts list directly from context (single source of truth)
   const contactEntries = useMemo(() => {
-    const now = new Date();
-    // Merge engagement recipients into a unique contacts list
-    const contactMap = new Map<string, { name: string; email: string; company: string; role: string; addedAt: Date }>();
-    
-    // From engagement recipients
-    const recipientNames = [
-      { name: "Jamie Lin", email: "jamie@atlantic.com", company: "Atlantic Records", role: "A&R" },
-      { name: "Sarah Chen", email: "sarah@sonymusic.com", company: "Sony Music", role: "A&R Manager" },
-      { name: "Marcus Webb", email: "marcus@interscope.com", company: "Interscope Records", role: "Head of A&R" },
-      { name: "Diana Rossi", email: "diana@warnermusic.com", company: "Warner Music", role: "Music Supervisor" },
-      { name: "Alex Turner", email: "alex@republic.com", company: "Republic Records", role: "A&R" },
-      { name: "Kenji Mori", email: "kenji@88rising.com", company: "88rising", role: "Artist Manager" },
-      { name: "Lisa Park", email: "lisa@hybe.com", company: "HYBE", role: "Creative Director" },
-      { name: "Tom Richards", email: "tom@umg.com", company: "Universal Music", role: "Sync Licensing" },
-      { name: "Elena Vasquez", email: "elena@bmg.com", company: "BMG Rights", role: "Publisher" },
-      { name: "Ryan Cooper", email: "ryan@kobalt.com", company: "Kobalt Music", role: "A&R Scout" },
-      { name: "Mia Zhang", email: "mia@netease.com", company: "NetEase Music", role: "Playlist Curator" },
-      { name: "David Kim", email: "david@spotify.com", company: "Spotify", role: "Editorial Curator" },
-    ];
-
-    recipientNames.forEach((r, i) => {
-      const d = new Date(now);
-      if (i < 2) d.setHours(d.getHours() - (i + 2) * 3);
-      else if (i < 5) d.setDate(d.getDate() - (i));
-      else if (i < 8) d.setDate(d.getDate() - (i * 3));
-      else d.setMonth(d.getMonth() - (i - 6));
-      contactMap.set(r.email, { ...r, addedAt: d });
-    });
-
-    // Merge actual contacts from context
-    allContacts.forEach((c) => {
-      if (!contactMap.has(c.email)) {
-        contactMap.set(c.email, {
-          name: `${c.firstName} ${c.lastName}`,
-          email: c.email,
-          company: c.organization,
-          role: c.role,
-          addedAt: new Date(c.firstInteraction),
-        });
-      }
-    });
-
-    return Array.from(contactMap.values());
+    return allContacts.map((c) => ({
+      name: `${c.firstName} ${c.lastName}`,
+      email: c.email,
+      company: c.organization,
+      role: c.role,
+      addedAt: new Date(c.firstInteraction),
+    }));
   }, [allContacts]);
 
   const filteredContacts = useMemo(() => {
