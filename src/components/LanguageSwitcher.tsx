@@ -13,7 +13,14 @@ export function LanguageSwitcher() {
   const { i18n } = useTranslation();
   const [open, setOpen] = useState(false);
 
-  const current = languages.find((l) => l.code === i18n.language) || languages[0];
+  // Use resolvedLanguage for reliable matching (handles fr-FR → fr)
+  const currentLang = i18n.resolvedLanguage || i18n.language?.split("-")[0] || "en";
+  const current = languages.find((l) => l.code === currentLang) || languages[0];
+
+  const handleChange = (code: string) => {
+    i18n.changeLanguage(code);
+    setOpen(false);
+  };
 
   return (
     <div className="relative">
@@ -45,14 +52,11 @@ export function LanguageSwitcher() {
                 </div>
               </div>
               {languages.map((lang) => {
-                const isActive = i18n.language === lang.code;
+                const isActive = currentLang === lang.code;
                 return (
                   <button
                     key={lang.code}
-                    onClick={() => {
-                      i18n.changeLanguage(lang.code);
-                      setOpen(false);
-                    }}
+                    onClick={() => handleChange(lang.code)}
                     className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all ${
                       isActive
                         ? "bg-primary/10 text-primary"

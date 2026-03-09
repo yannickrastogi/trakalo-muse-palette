@@ -14,11 +14,14 @@ i18n
       fr: { translation: fr },
       es: { translation: es },
     },
+    supportedLngs: ["en", "fr", "es"],
     fallbackLng: "en",
+    load: "languageOnly",
     interpolation: { escapeValue: false },
     detection: {
       order: ["localStorage", "navigator"],
       caches: ["localStorage"],
+      lookupLocalStorage: "i18nextLng",
     },
   });
 
