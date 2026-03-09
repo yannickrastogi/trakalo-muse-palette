@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { User, LogOut, Settings, CreditCard, ChevronDown, Shield } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useRole, type AppRole } from "@/contexts/RoleContext";
@@ -14,6 +15,7 @@ export function UserMenu() {
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const { t } = useTranslation();
   const { role, setRole } = useRole();
+  const navigate = useNavigate();
 
   return (
     <div className="relative">
@@ -70,12 +72,13 @@ export function UserMenu() {
 
             <div className="border-t border-border mt-1.5 pt-1.5">
               {[
-                { icon: User, label: t("userMenu.profile") },
-                { icon: Settings, label: t("userMenu.settings") },
-                { icon: CreditCard, label: t("userMenu.billing") },
+                { icon: User, label: t("userMenu.profile"), path: "/settings" },
+                { icon: Settings, label: t("userMenu.settings"), path: "/settings" },
+                { icon: CreditCard, label: t("userMenu.billing"), path: "/settings" },
               ].map((item) => (
                 <button
                   key={item.label}
+                  onClick={() => { navigate(item.path); setOpen(false); }}
                   className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] text-secondary-foreground hover:bg-secondary rounded-lg transition-colors font-medium"
                 >
                   <item.icon className="w-3.5 h-3.5 text-muted-foreground" />
