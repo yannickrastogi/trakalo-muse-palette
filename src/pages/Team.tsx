@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { TeamSharedCatalog } from "@/components/TeamSharedCatalog";
+import { SendApprovalSettings } from "@/components/SendApprovalSettings";
 import {
   Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal,
   Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3,
