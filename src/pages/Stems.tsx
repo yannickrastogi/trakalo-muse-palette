@@ -500,6 +500,7 @@ export default function Stems() {
           </motion.div>
         )}
       </motion.div>
+      <SelectTrackForStemsModal open={showTrackPicker} onClose={() => setShowTrackPicker(false)} />
     </PageShell>
   );
 }

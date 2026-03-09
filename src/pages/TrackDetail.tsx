@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback /* refresh */ } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useRef, useCallback, useEffect /* refresh */ } from "react";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useTeams } from "@/contexts/TeamContext";
 import { useTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
 import { useEngagement } from "@/contexts/EngagementContext";
@@ -133,9 +133,18 @@ function buildMeta(trackData: TrackData) {
 
 export default function TrackDetail() {
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(35);
-  const [activeTab, setActiveTab] = useState<string>("lyrics");
+  const [activeTab, setActiveTab] = useState<string>(searchParams.get("tab") || "lyrics");
+  const shouldAutoUpload = searchParams.get("upload") === "true";
+
+  // Clear query params after consuming them
+  useEffect(() => {
+    if (searchParams.has("tab") || searchParams.has("upload")) {
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
   const { permissions } = useRole();
   const { getTrack, updateTrack } = useTrack();
   const { getTrackEngagement } = useEngagement();
