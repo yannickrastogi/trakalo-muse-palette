@@ -133,6 +133,8 @@ export function ShareModal({
     setLinkName("");
     setExpirationDate("");
     setMessage("");
+    setAllowDownload(false);
+    setDownloadQuality("low-res");
     onClose();
   };
 
