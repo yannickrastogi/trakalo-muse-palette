@@ -4,6 +4,7 @@ import { Search, Filter, Upload, Play, Download, ExternalLink, Layers, ChevronDo
 import { PageShell } from "@/components/PageShell";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
 import { useNavigate } from "react-router-dom";
+import { SelectTrackForStemsModal } from "@/components/SelectTrackForStemsModal";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
