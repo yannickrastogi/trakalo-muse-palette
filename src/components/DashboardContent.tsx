@@ -4,9 +4,11 @@ import { UploadTrackModal } from "@/components/UploadTrackModal";
 import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
 import { InviteMemberModal } from "@/components/InviteMemberModal";
 import { CreatePitchModal } from "@/components/CreatePitchModal";
+import { CreateTeamModal } from "@/components/CreateTeamModal";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
+import { useTeams } from "@/contexts/TeamContext";
 import { Link, useNavigate } from "react-router-dom";
 import { useContacts } from "@/contexts/ContactsContext";
 import { usePitches } from "@/contexts/PitchContext";
@@ -259,12 +261,15 @@ export function DashboardContent() {
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showPitchModal, setShowPitchModal] = useState(false);
+  const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
+  const { createTeam } = useTeams();
 
   const quickActions = [
     { label: t("dashboard.uploadTrack"), icon: Upload, primary: true, visible: permissions.canUploadTracks, onClick: () => setShowUploadModal(true) },
     { label: t("dashboard.newPlaylist"), icon: ListMusic, visible: permissions.canCreatePlaylists, onClick: () => setShowPlaylistModal(true) },
     { label: t("dashboard.inviteMember"), icon: Users, visible: permissions.canInviteMembers, onClick: () => setShowInviteModal(true) },
     { label: t("dashboard.newPitch"), icon: Send, visible: permissions.canSendPitches, onClick: () => setShowPitchModal(true) },
+    { label: "Create Team", icon: Building2, visible: permissions.canInviteMembers, onClick: () => setShowCreateTeamModal(true) },
   ].filter((a) => a.visible);
 
   return (
@@ -992,6 +997,7 @@ export function DashboardContent() {
       <CreatePlaylistModal open={showPlaylistModal} onOpenChange={setShowPlaylistModal} onCreate={(data) => { addPlaylist(data); setShowPlaylistModal(false); }} />
       <InviteMemberModal open={showInviteModal} onOpenChange={setShowInviteModal} onInvite={() => setShowInviteModal(false)} />
       <CreatePitchModal open={showPitchModal} onOpenChange={setShowPitchModal} onCreate={(pitch) => { addPitch(pitch); setShowPitchModal(false); }} />
+      <CreateTeamModal open={showCreateTeamModal} onOpenChange={setShowCreateTeamModal} onCreate={(name) => { createTeam(name); setShowCreateTeamModal(false); }} />
     </motion.div>
   );
 }
