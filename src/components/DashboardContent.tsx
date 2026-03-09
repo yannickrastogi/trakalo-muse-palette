@@ -82,9 +82,9 @@ export function DashboardContent() {
   const { permissions } = useRole();
   const { getTotalStats, trackEngagement } = useEngagement();
   const { tracks: allTracks } = useTrack();
-  const { playlists: allPlaylists } = usePlaylists();
+  const { playlists: allPlaylists, addPlaylist } = usePlaylists();
   const { contacts: allContacts } = useContacts();
-  const { pitches: allPitches } = usePitches();
+  const { pitches: allPitches, addPitch } = usePitches();
   const navigate = useNavigate();
   const engagementStats = getTotalStats();
 
