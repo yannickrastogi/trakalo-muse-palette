@@ -96,9 +96,9 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Shared Tracks</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{teamName}'s Catalog</h2>
             <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
-              {sharedTracks.length} tracks shared with {teamName}
+              {sharedTracks.length} tracks in {teamName}'s catalog
             </p>
           </div>
         </div>
@@ -110,7 +110,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
           <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             type="text"
-            placeholder="Search shared tracks…"
+            placeholder="Search catalog…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
@@ -221,7 +221,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
                     <tr>
                       <td colSpan={11} className="px-5 py-20 text-center text-muted-foreground">
                         <Music className="w-10 h-10 mx-auto mb-4 opacity-15" />
-                        <p className="text-sm font-semibold">No shared tracks found</p>
+                        <p className="text-sm font-semibold">No tracks found</p>
                         <p className="text-xs mt-1.5 text-muted-foreground/70">Try adjusting your search or filters</p>
                       </td>
                     </tr>
@@ -299,7 +299,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
               </table>
             </div>
             <div className="flex items-center justify-between px-5 py-3 text-xs text-muted-foreground font-medium" style={{ borderTop: "1px solid transparent", borderImage: "linear-gradient(90deg, hsl(24 100% 55% / 0.1), hsl(330 80% 60% / 0.06), transparent) 1" }}>
-              <span>Showing {filteredTracks.length} of {sharedTracks.length} shared tracks</span>
+              <span>Showing {filteredTracks.length} of {sharedTracks.length} tracks</span>
               <span className="text-2xs text-muted-foreground/50">{teamName}</span>
             </div>
           </div>
@@ -308,7 +308,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
             {filteredTracks.length === 0 ? (
               <div className="card-premium px-5 py-20 text-center text-muted-foreground">
                 <Music className="w-10 h-10 mx-auto mb-4 opacity-15" />
-                <p className="text-sm font-semibold">No shared tracks found</p>
+                <p className="text-sm font-semibold">No tracks found</p>
                 <p className="text-xs mt-1.5 text-muted-foreground/70">Try adjusting your search or filters</p>
               </div>
             ) : (
@@ -352,7 +352,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
               </div>
             )}
             <div className="flex items-center justify-between mt-4 px-1 text-xs text-muted-foreground font-medium">
-              <span>Showing {filteredTracks.length} of {sharedTracks.length} shared tracks</span>
+              <span>Showing {filteredTracks.length} of {sharedTracks.length} tracks</span>
               <span className="text-2xs text-muted-foreground/50">{teamName}</span>
             </div>
           </div>

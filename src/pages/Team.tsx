@@ -281,7 +281,7 @@ export default function Team() {
         ) : (
         <>
         <motion.div variants={item} className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          {/* Shared Tracks */}
+          {/* Team's Catalog */}
           <button
             onClick={() => setShowSharedCatalog(true)}
             className="card-premium p-4 rounded-xl relative overflow-hidden text-left hover:border-brand-orange/30 transition-colors group"
@@ -292,7 +292,7 @@ export default function Team() {
                 <Music className="w-5 h-5 text-brand-orange" />
               </div>
               <div>
-                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Shared Tracks</p>
+                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Team's Catalog</p>
                 <p className="text-xl font-bold text-foreground group-hover:text-brand-orange transition-colors">{selectedTeam.sharedTrackIds.length}</p>
               </div>
             </div>
