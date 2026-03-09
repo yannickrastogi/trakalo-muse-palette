@@ -78,6 +78,7 @@ export default function Stems() {
 
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [showTrackPicker, setShowTrackPicker] = useState(false);
 
   // Filter states
   const [trackFilter, setTrackFilter] = useState("all");
@@ -197,7 +198,7 @@ export default function Stems() {
             <p className="text-muted-foreground text-xs sm:text-sm mt-1">Browse and manage all stems across your catalog.</p>
           </div>
           <button
-            onClick={() => navigate("/tracks")}
+            onClick={() => setShowTrackPicker(true)}
             className="btn-brand px-5 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 shrink-0 min-h-[44px]"
           >
             <Upload className="w-4 h-4" />
