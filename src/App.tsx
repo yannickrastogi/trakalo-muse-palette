@@ -62,6 +62,7 @@ const App = () => (
             <Route path="/shared/:linkId" element={<SharedStemAccess />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/notifications" element={<NotificationCenter />} />
+            <Route path="/approvals" element={<ApprovalQueue />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
