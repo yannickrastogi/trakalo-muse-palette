@@ -1,4 +1,5 @@
-import { Search, Bell, Menu } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Search, Bell, Menu, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { UserMenu } from "./UserMenu";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -13,6 +14,14 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchValue, setSearchValue] = useState("");
+
+  const handleSearch = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchValue.trim()) {
+      navigate(`/tracks?q=${encodeURIComponent(searchValue.trim())}`);
+      setSearchValue("");
+    }
+  }, [searchValue, navigate]);
 
   return (
     <header className="h-14 flex items-center justify-between px-3 sm:px-6 glass sticky top-0 z-20" style={{ borderBottom: '1px solid transparent', borderImage: 'linear-gradient(90deg, hsl(24 100% 55% / 0.15), hsl(330 80% 60% / 0.1), hsl(270 70% 55% / 0.05), transparent) 1' }}>
@@ -27,18 +36,25 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             <Menu className="w-5 h-5" />
           </button>
         )}
-        <div className="flex items-center gap-2.5 bg-secondary/50 rounded-lg px-3.5 py-2 w-full max-w-md border border-border/50 focus-brand transition-all">
+        <div className="flex items-center gap-2.5 bg-secondary/50 rounded-lg px-3.5 py-2 w-full max-w-md border border-border/50 focus-within:border-primary/30 transition-all">
           <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
           <input
             type="text"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            onKeyDown={handleSearch}
             placeholder={isMobile ? t("topbar.searchShort") : t("topbar.search")}
             className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
           />
-          {!isMobile && (
+          {searchValue ? (
+            <button onClick={() => setSearchValue("")} className="text-muted-foreground hover:text-foreground transition-colors">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          ) : !isMobile ? (
             <kbd className="hidden sm:inline-flex text-2xs text-muted-foreground/40 bg-muted/40 px-1.5 py-0.5 rounded font-mono leading-none border border-border/50">
               ⌘K
             </kbd>
-          )}
+          ) : null}
         </div>
       </div>
 
