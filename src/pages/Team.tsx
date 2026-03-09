@@ -134,13 +134,6 @@ export default function Team() {
   };
 
   const handleInvite = (payload: InvitePayload) => {
-    if (!selectedTeamId) return;
-    addMember(selectedTeamId, {
-      firstName: payload.firstName,
-      lastName: payload.lastName,
-      email: payload.email,
-      role: payload.role as TeamRole,
-    });
     toast.success(t("inviteMember.inviteSent", { email: payload.email }));
   };
 
@@ -610,7 +603,7 @@ export default function Team() {
         )}
       </motion.div>
 
-      <InviteMemberModal open={inviteOpen} onOpenChange={setInviteOpen} onInvite={handleInvite} />
+      <InviteMemberModal open={inviteOpen} onOpenChange={setInviteOpen} onInvite={handleInvite} preselectedTeamId={selectedTeamId || undefined} />
     </PageShell>
   );
 }
