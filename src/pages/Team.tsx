@@ -299,7 +299,10 @@ export default function Team() {
             </div>
           </button>
           {/* Members */}
-          <div className="card-premium p-4 rounded-xl relative overflow-hidden">
+          <button
+            onClick={() => membersRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="card-premium p-4 rounded-xl relative overflow-hidden text-left hover:border-brand-purple/30 transition-colors group"
+          >
             <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-brand-purple/8 blur-xl" />
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-brand-purple/12 flex items-center justify-center">
@@ -307,10 +310,10 @@ export default function Team() {
               </div>
               <div>
                 <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Members</p>
-                <p className="text-xl font-bold text-foreground">{selectedTeam.members.length}</p>
+                <p className="text-xl font-bold text-foreground group-hover:text-brand-purple transition-colors">{selectedTeam.members.length}</p>
               </div>
             </div>
-          </div>
+          </button>
           {/* Pitches */}
           <div className="card-premium p-4 rounded-xl relative overflow-hidden">
             <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-brand-pink/8 blur-xl" />
