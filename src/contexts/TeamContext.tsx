@@ -27,7 +27,7 @@ export interface Team {
   name: string;
   createdAt: string;
   members: TeamMember[];
-  sharedTrackCount: number;
+  sharedTrackIds: number[];
   activities: TeamActivity[];
 }
 
@@ -49,7 +49,7 @@ const demoTeams: Team[] = [
     id: "team-1",
     name: "Nightfall Records",
     createdAt: "2025-09-12",
-    sharedTrackCount: 24,
+    sharedTrackIds: [1, 2, 3, 4, 5, 6, 7, 8],
     activities: [
       { id: "a-1", type: "upload", message: "uploaded \"Midnight Run\" to the catalog", user: "Dex Moraes", date: "2026-03-09T14:30:00" },
       { id: "a-2", type: "pitch", message: "pitched \"Velvet Skies\" to Atlantic Records", user: "You", date: "2026-03-08T11:15:00" },
@@ -73,7 +73,7 @@ const demoTeams: Team[] = [
     id: "team-2",
     name: "Studio Sessions",
     createdAt: "2026-01-10",
-    sharedTrackCount: 8,
+    sharedTrackIds: [3, 5, 11],
     activities: [
       { id: "a-10", type: "upload", message: "uploaded \"Sakura Drift\" to the catalog", user: "Nao Kimura", date: "2026-03-08T10:00:00" },
       { id: "a-11", type: "status", message: "changed \"Tokyo Nights\" status to On Hold", user: "Jun Tanaka", date: "2026-03-06T14:20:00" },
@@ -97,7 +97,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       id: `team-${++nextId}`,
       name,
       createdAt: new Date().toISOString().split("T")[0],
-      sharedTrackCount: 0,
+      sharedTrackIds: [],
       activities: [],
       members: [
         {

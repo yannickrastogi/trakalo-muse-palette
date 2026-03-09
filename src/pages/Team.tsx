@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { TeamSharedCatalog } from "@/components/TeamSharedCatalog";
 import {
   Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal,
   Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3,
@@ -95,6 +96,7 @@ export default function Team() {
   const { teams, createTeam, addMember, removeMember, updateMemberRole, deleteTeam } = useTeams();
 
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [showSharedCatalog, setShowSharedCatalog] = useState(false);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -244,7 +246,7 @@ export default function Team() {
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => { setSelectedTeamId(null); setSearch(""); }}
+              onClick={() => { setSelectedTeamId(null); setSearch(""); setShowSharedCatalog(false); }}
               className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -269,9 +271,21 @@ export default function Team() {
         </motion.div>
 
         {/* ─── Team Dashboard ─── */}
+        {/* ─── Shared Catalog View ─── */}
+        {showSharedCatalog ? (
+          <TeamSharedCatalog
+            teamName={selectedTeam.name}
+            sharedTrackIds={selectedTeam.sharedTrackIds}
+            onBack={() => setShowSharedCatalog(false)}
+          />
+        ) : (
+        <>
         <motion.div variants={item} className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           {/* Shared Tracks */}
-          <div className="card-premium p-4 rounded-xl relative overflow-hidden">
+          <button
+            onClick={() => setShowSharedCatalog(true)}
+            className="card-premium p-4 rounded-xl relative overflow-hidden text-left hover:border-brand-orange/30 transition-colors group"
+          >
             <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-brand-orange/8 blur-xl" />
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-brand-orange/12 flex items-center justify-center">
@@ -279,10 +293,10 @@ export default function Team() {
               </div>
               <div>
                 <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Shared Tracks</p>
-                <p className="text-xl font-bold text-foreground">{selectedTeam.sharedTrackCount}</p>
+                <p className="text-xl font-bold text-foreground group-hover:text-brand-orange transition-colors">{selectedTeam.sharedTrackIds.length}</p>
               </div>
             </div>
-          </div>
+          </button>
           {/* Members */}
           <div className="card-premium p-4 rounded-xl relative overflow-hidden">
             <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-brand-purple/8 blur-xl" />
@@ -530,6 +544,8 @@ export default function Team() {
             </div>
           )}
         </motion.div>
+        </>
+        )}
       </motion.div>
 
       <InviteMemberModal open={inviteOpen} onOpenChange={setInviteOpen} onInvite={handleInvite} />
