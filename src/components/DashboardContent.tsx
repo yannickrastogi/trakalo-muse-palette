@@ -33,6 +33,8 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { useRole } from "@/contexts/RoleContext";
+import { OnboardingChecklist } from "@/components/OnboardingChecklist";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
@@ -88,6 +90,7 @@ export function DashboardContent() {
   const { contacts: allContacts } = useContacts();
   const { pitches: allPitches, addPitch } = usePitches();
   const navigate = useNavigate();
+  const { completeStep } = useOnboarding();
   const engagementStats = getTotalStats();
 
   // Simulated upload dates for demo tracks (spread across recent dates)
@@ -279,6 +282,9 @@ export function DashboardContent() {
         <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("dashboard.title")}</h1>
         <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("dashboard.subtitle")}</p>
       </motion.div>
+
+      {/* Onboarding Checklist */}
+      <OnboardingChecklist />
 
       {/* Stats — 3×2 grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
@@ -994,10 +1000,10 @@ export function DashboardContent() {
 
       {/* Modals */}
       <UploadTrackModal open={showUploadModal} onOpenChange={setShowUploadModal} />
-      <CreatePlaylistModal open={showPlaylistModal} onOpenChange={setShowPlaylistModal} onCreate={(data) => { addPlaylist(data); setShowPlaylistModal(false); }} />
-      <InviteMemberModal open={showInviteModal} onOpenChange={setShowInviteModal} onInvite={() => setShowInviteModal(false)} />
-      <CreatePitchModal open={showPitchModal} onOpenChange={setShowPitchModal} onCreate={(pitch) => { addPitch(pitch); setShowPitchModal(false); }} />
-      <CreateTeamModal open={showCreateTeamModal} onOpenChange={setShowCreateTeamModal} onCreate={(name) => { createTeam(name); setShowCreateTeamModal(false); }} />
+      <CreatePlaylistModal open={showPlaylistModal} onOpenChange={setShowPlaylistModal} onCreate={(data) => { addPlaylist(data); completeStep("create_playlist"); setShowPlaylistModal(false); }} />
+      <InviteMemberModal open={showInviteModal} onOpenChange={setShowInviteModal} onInvite={() => { completeStep("add_credits"); setShowInviteModal(false); }} />
+      <CreatePitchModal open={showPitchModal} onOpenChange={setShowPitchModal} onCreate={(pitch) => { addPitch(pitch); completeStep("share_or_pitch"); setShowPitchModal(false); }} />
+      <CreateTeamModal open={showCreateTeamModal} onOpenChange={setShowCreateTeamModal} onCreate={(name) => { createTeam(name); completeStep("create_team"); setShowCreateTeamModal(false); }} />
     </motion.div>
   );
 }

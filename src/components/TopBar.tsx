@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Search, Bell, Menu, X, Music, ListMusic, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { UserMenu } from "./UserMenu";
+import { FirstUseTooltip } from "@/components/FirstUseTooltip";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
@@ -138,6 +139,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             <Menu className="w-5 h-5" />
           </button>
         )}
+        <FirstUseTooltip id="search-bar" message="Search tracks, artists, and playlists instantly" position="bottom">
         <div className="relative w-full max-w-md" ref={wrapperRef}>
           <div className="flex items-center gap-2.5 bg-secondary/50 rounded-lg px-3.5 py-2 w-full border border-border/50 focus-within:border-primary/30 transition-all">
             <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -217,6 +219,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             )}
           </AnimatePresence>
         </div>
+        </FirstUseTooltip>
       </div>
 
       {/* Right actions */}
