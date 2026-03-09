@@ -34,6 +34,7 @@ const navItems = [
   { titleKey: "nav.sharedLinks", icon: Link2, url: "/shared-links", permKey: null },
   { titleKey: "nav.team", icon: Users, url: "/team", permKey: null },
   { titleKey: "nav.notifications", icon: Bell, url: "/notifications", permKey: null },
+  { titleKey: "nav.approvals", icon: ShieldCheck, url: "/approvals", permKey: "canManageTeam" as const },
   { titleKey: "nav.settings", icon: Settings, url: "/settings", permKey: "canAccessSettings" as const },
 ];
 
