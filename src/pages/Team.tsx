@@ -246,7 +246,7 @@ export default function Team() {
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => { setSelectedTeamId(null); setSearch(""); }}
+              onClick={() => { setSelectedTeamId(null); setSearch(""); setShowSharedCatalog(false); }}
               className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <ArrowLeft className="w-4 h-4" />
