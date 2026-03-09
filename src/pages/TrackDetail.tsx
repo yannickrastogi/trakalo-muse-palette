@@ -376,7 +376,7 @@ export default function TrackDetail() {
                   </button>
                 </div>
                 <div className="flex-1 flex items-center justify-between text-[11px] text-muted-foreground font-mono">
-                  <span>1:28</span>
+                  <span>{formatTimestamp((progress / 100) * totalDurationSeconds)}</span>
                   <span>{trackData.duration}</span>
                 </div>
                 <div className="hidden sm:flex items-center gap-2">
@@ -386,13 +386,37 @@ export default function TrackDetail() {
                   </div>
                 </div>
               </div>
-              <TrackWaveformPlayer
-                seed={trackData.id}
-                progress={progress}
-                onSeek={setProgress}
-                chapters={trackData.chapters || []}
-                isPlaying={isPlaying}
-              />
+              <div className="relative">
+                <TrackWaveformPlayer
+                  seed={trackData.id}
+                  progress={progress}
+                  onSeek={handleWaveformClick}
+                  onDoubleClick={handleWaveformDoubleClick}
+                  chapters={trackData.chapters || []}
+                  isPlaying={isPlaying}
+                />
+                <CommentMarkerLayer
+                  comments={trackComments}
+                  totalDurationSeconds={totalDurationSeconds}
+                  onMarkerClick={(seconds) => handleCommentSeek(seconds, totalDurationSeconds)}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground/40 mt-2 text-center">Double-click waveform to leave a timecoded comment</p>
+
+              {/* Inline waveform comment composer */}
+              <AnimatePresence>
+                {waveformComposerOpen && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-3">
+                    <TimecodedCommentComposer
+                      currentSeconds={(progress / 100) * totalDurationSeconds}
+                      initialTimestamp={waveformComposerTimestamp}
+                      onSubmit={handleWaveformCommentSubmit}
+                      onCancel={() => setWaveformComposerOpen(false)}
+                      compact
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
 
             {/* Tabs */}
