@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { TeamSharedCatalog } from "@/components/TeamSharedCatalog";
 import {
   Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal,
   Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3,
@@ -95,6 +96,7 @@ export default function Team() {
   const { teams, createTeam, addMember, removeMember, updateMemberRole, deleteTeam } = useTeams();
 
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [showSharedCatalog, setShowSharedCatalog] = useState(false);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [search, setSearch] = useState("");
