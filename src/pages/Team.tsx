@@ -394,6 +394,7 @@ export default function Team() {
               </div>
             );
           })()}
+        </motion.div>
 
         {/* Role stat pills */}
         <motion.div variants={item} className="flex flex-wrap gap-2">
