@@ -65,7 +65,9 @@ export default function PlaylistDetail() {
   const { getPlaylist, updatePlaylist } = usePlaylists();
   const { permissions } = useRole();
   const { tracks: allTracks } = useTrack();
+  const { getTotalPlaysForTrack, getPlaylistEngagement } = useEngagement();
   const playlist = getPlaylist(id || "");
+  const plEngagement = getPlaylistEngagement(id || "");
 
   const [tracks, setTracks] = useState<Track[]>(() => {
     if (!playlist) return [];
@@ -202,19 +204,28 @@ export default function PlaylistDetail() {
               </p>
             </div>
 
-            <div className="flex items-center gap-4 text-muted-foreground">
-              <span className="flex items-center gap-1.5 text-xs font-medium">
-                <Music className="w-3.5 h-3.5" />
-                {tracks.length} tracks
-              </span>
-              <span className="w-px h-4 bg-border" />
-              <span className="flex items-center gap-1.5 text-xs font-medium">
-                <Clock className="w-3.5 h-3.5" />
-                {playlist.duration}
-              </span>
-              <span className="w-px h-4 bg-border hidden sm:block" />
-              <span className="text-xs font-medium hidden sm:inline">Updated {playlist.updated}</span>
-            </div>
+             <div className="flex items-center gap-4 text-muted-foreground">
+               <span className="flex items-center gap-1.5 text-xs font-medium">
+                 <Music className="w-3.5 h-3.5" />
+                 {tracks.length} tracks
+               </span>
+               <span className="w-px h-4 bg-border" />
+               <span className="flex items-center gap-1.5 text-xs font-medium">
+                 <Clock className="w-3.5 h-3.5" />
+                 {playlist.duration}
+               </span>
+               {plEngagement && plEngagement.totalPlays > 0 && (
+                 <>
+                   <span className="w-px h-4 bg-border" />
+                   <span className="flex items-center gap-1.5 text-xs font-semibold text-brand-pink">
+                     <Headphones className="w-3.5 h-3.5" />
+                     {plEngagement.totalPlays} plays
+                   </span>
+                 </>
+               )}
+               <span className="w-px h-4 bg-border hidden sm:block" />
+               <span className="text-xs font-medium hidden sm:inline">Updated {playlist.updated}</span>
+             </div>
 
             <div className="flex flex-wrap gap-2 pt-1">
               <button
@@ -517,9 +528,10 @@ function DesktopTrackTable({
               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">BPM</th>
               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Mood</th>
-              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
-              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
-              <th className="px-2 py-3 w-20"></th>
+               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
+               <th className="text-center px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Plays</th>
+               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
+               <th className="px-2 py-3 w-20"></th>
             </tr>
           </thead>
           <tbody>
