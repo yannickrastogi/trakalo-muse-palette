@@ -23,10 +23,16 @@ interface PitchContextValue {
 const PitchContext = createContext<PitchContextValue | null>(null);
 
 export function PitchProvider({ children }: { children: ReactNode }) {
-  const [pitches, setPitches] = useState<PitchEntry[]>(demoPitches);
+  const { activeWorkspace } = useWorkspace();
+  const [allPitches, setAllPitches] = useState<PitchEntry[]>(demoPitches);
+
+  const pitches = useMemo(
+    () => allPitches.filter((p) => p.workspace_id === activeWorkspace.id),
+    [allPitches, activeWorkspace.id]
+  );
 
   const addPitch = useCallback((pitch: PitchEntry) => {
-    setPitches((prev) => [pitch, ...prev]);
+    setAllPitches((prev) => [pitch, ...prev]);
   }, []);
 
   const getPitchesForTrack = useCallback(

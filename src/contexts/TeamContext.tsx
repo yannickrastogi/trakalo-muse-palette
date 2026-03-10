@@ -177,7 +177,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   };
 
   const updateMemberRole = (teamId: string, memberId: string, role: TeamRole) => {
-    setTeams((prev) =>
+    setAllTeams((prev) =>
       prev.map((t) =>
         t.id === teamId
           ? { ...t, members: t.members.map((m) => (m.id === memberId ? { ...m, role } : m)) }

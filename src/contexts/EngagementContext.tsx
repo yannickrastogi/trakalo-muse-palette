@@ -19,7 +19,7 @@ export interface TrackEngagement extends WorkspaceScoped {
   recipients: RecipientEngagement[];
 }
 
-export interface PlaylistEngagement {
+export interface PlaylistEngagement extends WorkspaceScoped {
   playlistId: string;
   totalPlays: number;
   perTrackPlays: Record<number, number>;

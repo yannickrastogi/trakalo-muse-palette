@@ -86,11 +86,11 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
         },
       ];
     });
-  }, []);
+  }, [activeWorkspace.id]);
 
   const getContact = useCallback((email: string) => {
-    return contacts.find((c) => c.email.toLowerCase() === email.toLowerCase());
-  }, [contacts]);
+    return allContacts.find((c) => c.email.toLowerCase() === email.toLowerCase());
+  }, [allContacts]);
 
   return (
     <ContactsContext.Provider value={{ contacts, addOrUpdateContact, getContact }}>
