@@ -185,7 +185,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "On Hold", date: "Feb 5, 2026", note: "Initial upload" }],
   },
   {
-    id: 10, title: "Slow Drift", artist: "Marco Silva", featuredArtists: [], album: "Ambient Vol. II",
+    id: 10, workspace_id: "ws-nightfall", title: "Slow Drift", artist: "Marco Silva", featuredArtists: [], album: "Ambient Vol. II",
     genre: "Ambient", bpm: 65, key: "F Maj", duration: "7:08", mood: ["meditative", "calm"], voice: "N/A",
     status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
