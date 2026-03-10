@@ -49,8 +49,8 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
 
   const addOrUpdateContact = useCallback((data: Omit<Contact, "id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => {
     const now = new Date().toISOString();
-    setContacts((prev) => {
-      const existing = prev.find((c) => c.email.toLowerCase() === data.email.toLowerCase());
+    setAllContacts((prev) => {
+      const existing = prev.find((c) => c.email.toLowerCase() === data.email.toLowerCase() && c.workspace_id === activeWorkspace.id);
       if (existing) {
         return prev.map((c) =>
           c.email.toLowerCase() === data.email.toLowerCase()
