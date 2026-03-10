@@ -85,7 +85,7 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
       return { ...link, status: "expired" as const };
     }
     return link;
-  }, [sharedLinks]);
+  }, [allSharedLinks]);
 
   const updateLinkStatus = useCallback((id: string, status: SharedLink["status"]) => {
     setSharedLinks((prev) => prev.map((l) => l.id === id ? { ...l, status } : l));
