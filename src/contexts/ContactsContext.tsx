@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import type { WorkspaceScoped } from "@/types/workspace";
 
-export interface Contact {
+export interface Contact extends WorkspaceScoped {
   id: string;
   firstName: string;
   lastName: string;
