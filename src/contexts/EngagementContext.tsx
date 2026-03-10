@@ -12,7 +12,7 @@ export interface RecipientEngagement {
   lastActivity: string;
 }
 
-export interface TrackEngagement {
+export interface TrackEngagement extends WorkspaceScoped {
   trackId: number;
   totalPlays: number;
   totalDownloads: number;
