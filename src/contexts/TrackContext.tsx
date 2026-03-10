@@ -227,15 +227,22 @@ interface TrackContextValue {
 const TrackContext = createContext<TrackContextValue | null>(null);
 
 export function TrackProvider({ children }: { children: ReactNode }) {
-  const [tracks, setTracks] = useState<TrackData[]>(defaultTracks);
+  const { activeWorkspace } = useWorkspace();
+  const [allTracks, setAllTracks] = useState<TrackData[]>(defaultTracks);
+
+  // Filter tracks by active workspace
+  const tracks = useMemo(
+    () => allTracks.filter((t) => t.workspace_id === activeWorkspace.id),
+    [allTracks, activeWorkspace.id]
+  );
 
   const getTrack = useCallback((id: number) => {
-    const track = tracks.find((t) => t.id === id);
+    const track = allTracks.find((t) => t.id === id);
     if (track && !track.chapters) {
       return { ...track, chapters: detectChapters(track.type, track.bpm, track.id) };
     }
     return track;
-  }, [tracks]);
+  }, [allTracks]);
 
   const addTrack = useCallback((track: TrackData) => {
     const withChapters = {
