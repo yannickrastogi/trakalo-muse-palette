@@ -118,6 +118,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const createTeam = (name: string): Team => {
     const newTeam: Team = {
       id: `team-${++nextId}`,
+      workspace_id: activeWorkspace.id,
       name,
       createdAt: new Date().toISOString().split("T")[0],
       sharedTrackIds: [],
