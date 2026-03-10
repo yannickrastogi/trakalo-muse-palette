@@ -24,7 +24,7 @@ export interface TeamMember {
   status: "active" | "pending" | "expired";
 }
 
-export interface Team {
+export interface Team extends WorkspaceScoped {
   id: string;
   name: string;
   createdAt: string;
