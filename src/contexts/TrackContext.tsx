@@ -113,7 +113,7 @@ const defaultTracks: TrackData[] = [
     ],
   },
   {
-    id: 2, title: "Ghost Protocol", artist: "Dex Moraes × JVNE", featuredArtists: [], album: "Singles 2026",
+    id: 2, workspace_id: "ws-nightfall", title: "Ghost Protocol", artist: "Dex Moraes × JVNE", featuredArtists: [], album: "Singles 2026",
     genre: "Electronic", bpm: 128, key: "F# Min", duration: "3:38", mood: ["energetic", "dark"], voice: "Male",
     status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: ["Dex Moraes"], producedBy: ["JVNE"], mixedBy: "", masteredBy: "",
