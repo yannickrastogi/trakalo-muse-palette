@@ -87,6 +87,7 @@ const demoTeams: Team[] = [
   },
   {
     id: "team-2",
+    workspace_id: "ws-nightfall",
     name: "Studio Sessions",
     createdAt: "2026-01-10",
     sharedTrackIds: [3, 5, 11],
