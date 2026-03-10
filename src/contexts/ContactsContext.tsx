@@ -39,7 +39,13 @@ const demoContacts: Contact[] = [
 ];
 
 export function ContactsProvider({ children }: { children: ReactNode }) {
-  const [contacts, setContacts] = useState<Contact[]>(demoContacts);
+  const { activeWorkspace } = useWorkspace();
+  const [allContacts, setAllContacts] = useState<Contact[]>(demoContacts);
+
+  const contacts = useMemo(
+    () => allContacts.filter((c) => c.workspace_id === activeWorkspace.id),
+    [allContacts, activeWorkspace.id]
+  );
 
   const addOrUpdateContact = useCallback((data: Omit<Contact, "id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => {
     const now = new Date().toISOString();
