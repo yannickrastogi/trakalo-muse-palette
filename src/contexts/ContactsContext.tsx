@@ -53,7 +53,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
       const existing = prev.find((c) => c.email.toLowerCase() === data.email.toLowerCase() && c.workspace_id === activeWorkspace.id);
       if (existing) {
         return prev.map((c) =>
-          c.email.toLowerCase() === data.email.toLowerCase()
+          c.email.toLowerCase() === data.email.toLowerCase() && c.workspace_id === activeWorkspace.id
             ? {
                 ...c,
                 firstName: data.firstName,
