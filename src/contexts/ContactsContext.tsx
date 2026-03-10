@@ -73,6 +73,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
         ...prev,
         {
           id: `contact-${Date.now()}`,
+          workspace_id: activeWorkspace.id,
           firstName: data.firstName,
           lastName: data.lastName,
           email: data.email,
