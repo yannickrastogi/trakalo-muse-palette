@@ -203,7 +203,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Available", date: "Feb 20, 2026", note: "Initial upload" }],
   },
   {
-    id: 12, title: "Afterglow", artist: "Kira Nomura × Dex", featuredArtists: [], album: "Late Bloom EP",
+    id: 12, workspace_id: "ws-nightfall", title: "Afterglow", artist: "Kira Nomura × Dex", featuredArtists: [], album: "Late Bloom EP",
     genre: "R&B", bpm: 96, key: "C# Min", duration: "3:47", mood: ["romantic", "emotional"], voice: "Female",
     status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
