@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
 import { type PitchEntry } from "@/components/CreatePitchModal";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 const demoPitches: PitchEntry[] = [
   { id: "p1", type: "track", itemName: "Velvet Hour", artist: "Kira Nomura", coverIdx: 0, recipientName: "Jamie Lin", recipientCompany: "Interscope Records", recipientEmail: "jamie.lin@interscope.com", date: "Mar 5, 2026", status: "Sent", notes: "Follow up next week if no response." },
