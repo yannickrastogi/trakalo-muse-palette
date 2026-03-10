@@ -12,7 +12,7 @@ import cover6 from "@/assets/covers/cover-6.jpg";
 
 export const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 
-export interface PlaylistItem {
+export interface PlaylistItem extends WorkspaceScoped {
   id: string;
   name: string;
   description: string;
