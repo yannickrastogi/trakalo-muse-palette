@@ -122,7 +122,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "On Hold", date: "Feb 1, 2026", note: "Initial upload" }],
   },
   {
-    id: 3, title: "Burning Chrome", artist: "Alina Voss", featuredArtists: [], album: "Neon Archive",
+    id: 3, workspace_id: "ws-nightfall", title: "Burning Chrome", artist: "Alina Voss", featuredArtists: [], album: "Neon Archive",
     genre: "Synthwave", bpm: 118, key: "C Min", duration: "5:01", mood: ["nostalgic", "driving"], voice: "Female",
     status: "Available", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: ["Alina Voss"], producedBy: ["Alina Voss"], mixedBy: "", masteredBy: "",
