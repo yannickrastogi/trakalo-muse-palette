@@ -17,7 +17,7 @@ export interface Contact extends WorkspaceScoped {
 
 interface ContactsContextValue {
   contacts: Contact[];
-  addOrUpdateContact: (data: Omit<Contact, "id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => void;
+  addOrUpdateContact: (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => void;
   getContact: (email: string) => Contact | undefined;
 }
 
