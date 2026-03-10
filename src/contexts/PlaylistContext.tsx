@@ -106,15 +106,21 @@ interface PlaylistContextType {
 const PlaylistContext = createContext<PlaylistContextType | null>(null);
 
 export function PlaylistProvider({ children }: { children: ReactNode }) {
-  const [playlists, setPlaylists] = useState<PlaylistItem[]>(defaultPlaylists);
+  const { activeWorkspace } = useWorkspace();
+  const [allPlaylists, setAllPlaylists] = useState<PlaylistItem[]>(defaultPlaylists);
+
+  const playlists = useMemo(
+    () => allPlaylists.filter((p) => p.workspace_id === activeWorkspace.id),
+    [allPlaylists, activeWorkspace.id]
+  );
 
   const addPlaylist = useCallback((pl: NewPlaylistData) => {
-    setPlaylists((prev) => [pl as PlaylistItem, ...prev]);
+    setAllPlaylists((prev) => [pl as PlaylistItem, ...prev]);
   }, []);
 
   const getPlaylist = useCallback(
-    (id: string) => playlists.find((p) => p.id === id),
-    [playlists]
+    (id: string) => allPlaylists.find((p) => p.id === id),
+    [allPlaylists]
   );
 
   const updatePlaylist = useCallback((id: string, updates: Partial<PlaylistItem>) => {
