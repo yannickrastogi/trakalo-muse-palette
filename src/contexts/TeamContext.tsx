@@ -144,7 +144,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   };
 
   const renameTeam = (teamId: string, name: string) => {
-    setTeams((prev) => prev.map((t) => (t.id === teamId ? { ...t, name } : t)));
+    setAllTeams((prev) => prev.map((t) => (t.id === teamId ? { ...t, name } : t)));
   };
 
   const addMember = (teamId: string, member: Omit<TeamMember, "id" | "joinedAt" | "status">) => {
