@@ -148,7 +148,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   };
 
   const addMember = (teamId: string, member: Omit<TeamMember, "id" | "joinedAt" | "status">) => {
-    setTeams((prev) =>
+    setAllTeams((prev) =>
       prev.map((t) =>
         t.id === teamId
           ? {
