@@ -88,7 +88,7 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
   }, [allSharedLinks]);
 
   const updateLinkStatus = useCallback((id: string, status: SharedLink["status"]) => {
-    setSharedLinks((prev) => prev.map((l) => l.id === id ? { ...l, status } : l));
+    setAllSharedLinks((prev) => prev.map((l) => l.id === id ? { ...l, status } : l));
   }, []);
 
   const addDownloadEvent = useCallback((linkId: string, event: DownloadEvent) => {
