@@ -82,6 +82,7 @@ const App = () => (
       </AudioPlayerProvider>
       </TrackProvider>
       </TeamProvider>
+      </WorkspaceProvider>
       </RoleProvider>
       </OnboardingProvider>
     </TooltipProvider>
