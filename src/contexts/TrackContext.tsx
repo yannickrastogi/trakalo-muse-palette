@@ -249,17 +249,17 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       ...track,
       chapters: track.chapters || detectChapters(track.type, track.bpm, track.id),
     };
-    setTracks((prev) => [...prev, withChapters]);
+    setAllTracks((prev) => [...prev, withChapters]);
   }, []);
 
   const updateTrack = useCallback((id: number, updates: Partial<TrackData>) => {
-    setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+    setAllTracks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
   }, []);
 
   const updateTrackStatus = useCallback((id: number, newStatus: string, note: string) => {
     const now = new Date();
     const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    setTracks((prev) =>
+    setAllTracks((prev) =>
       prev.map((t) =>
         t.id === id
           ? {
@@ -273,15 +273,15 @@ export function TrackProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateTrackLyrics = useCallback((id: number, lyrics: string) => {
-    setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, lyrics } : t)));
+    setAllTracks((prev) => prev.map((t) => (t.id === id ? { ...t, lyrics } : t)));
   }, []);
 
   const updateTrackStems = useCallback((id: number, stems: TrackStem[]) => {
-    setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, stems } : t)));
+    setAllTracks((prev) => prev.map((t) => (t.id === id ? { ...t, stems } : t)));
   }, []);
 
   const updateTrackSplits = useCallback((id: number, splits: TrackSplit[]) => {
-    setTracks((prev) =>
+    setAllTracks((prev) =>
       prev.map((t) =>
         t.id === id ? { ...t, splits: splits.map((s) => ({ ...s, share: s.share || 0 })) } : t
       )
