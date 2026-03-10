@@ -158,7 +158,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Available", date: "Feb 10, 2026", note: "Initial upload" }],
   },
   {
-    id: 7, title: "Golden Frequency", artist: "Alina Voss × Marco", featuredArtists: [], album: "Neon Archive",
+    id: 7, workspace_id: "ws-nightfall", title: "Golden Frequency", artist: "Alina Voss × Marco", featuredArtists: [], album: "Neon Archive",
     genre: "House", bpm: 124, key: "G Maj", duration: "5:33", mood: ["euphoric", "warm"], voice: "Duet",
     status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
