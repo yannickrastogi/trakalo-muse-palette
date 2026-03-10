@@ -80,7 +80,7 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const getSharedLink = useCallback((id: string) => {
-    const link = sharedLinks.find((l) => l.id === id);
+    const link = allSharedLinks.find((l) => l.id === id);
     if (link && link.expirationDate && new Date(link.expirationDate) < new Date() && link.status === "active") {
       return { ...link, status: "expired" as const };
     }
