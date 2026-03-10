@@ -176,7 +176,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Released", date: "Dec 15, 2025", note: "Initial upload" }],
   },
   {
-    id: 9, title: "Obsidian", artist: "Dex Moraes", featuredArtists: [], album: "Singles 2026",
+    id: 9, workspace_id: "ws-nightfall", title: "Obsidian", artist: "Dex Moraes", featuredArtists: [], album: "Singles 2026",
     genre: "Techno", bpm: 136, key: "A Min", duration: "6:12", mood: ["dark", "hypnotic"], voice: "N/A",
     status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
