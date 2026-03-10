@@ -25,7 +25,7 @@ export interface SharedLinkTrack {
   coverImage?: string;
 }
 
-export interface SharedLink {
+export interface SharedLink extends WorkspaceScoped {
   id: string;
   shareType: ShareType;
   trackId: number;
