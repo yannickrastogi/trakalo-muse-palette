@@ -169,7 +169,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   };
 
   const removeMember = (teamId: string, memberId: string) => {
-    setTeams((prev) =>
+    setAllTeams((prev) =>
       prev.map((t) =>
         t.id === teamId ? { ...t, members: t.members.filter((m) => m.id !== memberId) } : t
       )
