@@ -51,7 +51,7 @@ const defaultPlaylists: PlaylistItem[] = [
     color: "from-brand-purple/20 to-brand-pink/10",
   },
   {
-    id: "late-night",
+    id: "late-night", workspace_id: "ws-nightfall",
     name: "Late Night Sessions",
     description: "Downtempo, ambient, and lo-fi selections for after-hours listening.",
     tracks: 22,
