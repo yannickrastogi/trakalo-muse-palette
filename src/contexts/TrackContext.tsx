@@ -140,7 +140,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Released", date: "Dec 20, 2025", note: "Initial upload" }],
   },
   {
-    id: 5, title: "Paper Moons", artist: "Kira Nomura × AYA", featuredArtists: [], album: "Late Bloom EP",
+    id: 5, workspace_id: "ws-nightfall", title: "Paper Moons", artist: "Kira Nomura × AYA", featuredArtists: [], album: "Late Bloom EP",
     genre: "Indie Pop", bpm: 105, key: "Bb Maj", duration: "3:22", mood: ["happy", "playful"], voice: "Duet",
     status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
