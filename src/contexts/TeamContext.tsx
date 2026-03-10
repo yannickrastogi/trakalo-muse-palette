@@ -135,7 +135,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         },
       ],
     };
-    setTeams((prev) => [newTeam, ...prev]);
+    setAllTeams((prev) => [newTeam, ...prev]);
     return newTeam;
   };
 
