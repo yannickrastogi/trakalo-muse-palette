@@ -84,7 +84,7 @@ const defaultPlaylists: PlaylistItem[] = [
     color: "from-brand-pink/20 to-brand-orange/10",
   },
   {
-    id: "unreleased-vault",
+    id: "unreleased-vault", workspace_id: "ws-nightfall",
     name: "Unreleased Vault",
     description: "Demos, unreleased masters, and works-in-progress awaiting final clearance.",
     tracks: 31,
