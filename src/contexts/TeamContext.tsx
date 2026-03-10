@@ -107,7 +107,13 @@ const demoTeams: Team[] = [
 let nextId = 100;
 
 export function TeamProvider({ children }: { children: ReactNode }) {
-  const [teams, setTeams] = useState<Team[]>(demoTeams);
+  const { activeWorkspace } = useWorkspace();
+  const [allTeams, setAllTeams] = useState<Team[]>(demoTeams);
+
+  const teams = useMemo(
+    () => allTeams.filter((t) => t.workspace_id === activeWorkspace.id),
+    [allTeams, activeWorkspace.id]
+  );
 
   const createTeam = (name: string): Team => {
     const newTeam: Team = {
