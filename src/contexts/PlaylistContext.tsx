@@ -73,7 +73,7 @@ const defaultPlaylists: PlaylistItem[] = [
     color: "from-brand-orange/25 to-brand-purple/10",
   },
   {
-    id: "neo-soul",
+    id: "neo-soul", workspace_id: "ws-nightfall",
     name: "Neo-Soul Collection",
     description: "A definitive collection of our best neo-soul productions and collaborations.",
     tracks: 19,
