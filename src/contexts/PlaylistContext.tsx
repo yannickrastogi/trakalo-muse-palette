@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { type NewPlaylistData } from "@/components/CreatePlaylistModal";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import type { WorkspaceScoped } from "@/types/workspace";
-import { type NewPlaylistData } from "@/components/CreatePlaylistModal";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
@@ -29,64 +29,12 @@ export interface PlaylistItem extends WorkspaceScoped {
 }
 
 const defaultPlaylists: PlaylistItem[] = [
-  {
-    id: "summer-ep", workspace_id: "ws-nightfall",
-    name: "Summer EP — Final Selects",
-    description: "Curated finals for the summer release. Warm, uplifting vibes across neo-soul and indie.",
-    tracks: 8, duration: "32 min", updated: "2h ago", mood: "Uplifting",
-    coverIdxs: [0, 2, 4, 3], color: "from-brand-orange/20 to-brand-pink/10",
-  },
-  {
-    id: "sync-pitches-q2", workspace_id: "ws-nightfall",
-    name: "Sync Pitches — Q2 2026",
-    description: "Tracks shortlisted for film, TV, and ad sync placements this quarter.",
-    tracks: 14, duration: "52 min", updated: "1d ago", mood: "Cinematic",
-  },
-  },
-  {
-    id: "late-night", workspace_id: "ws-nightfall",
-    name: "Late Night Sessions",
-    description: "Downtempo, ambient, and lo-fi selections for after-hours listening.",
-    tracks: 22,
-    duration: "1h 18m",
-    updated: "3d ago",
-    mood: "Chill",
-    coverIdxs: [3, 4, 0, 2],
-    color: "from-brand-pink/15 to-brand-purple/15",
-  },
-  {
-    id: "high-energy", workspace_id: "ws-nightfall",
-    name: "High Energy — Ads",
-    description: "Punchy, high-tempo tracks perfect for advertising and brand campaigns.",
-    tracks: 11,
-    duration: "38 min",
-    updated: "5d ago",
-    mood: "Energetic",
-    coverIdxs: [5, 1, 2, 4],
-    color: "from-brand-orange/25 to-brand-purple/10",
-  },
-  {
-    id: "neo-soul", workspace_id: "ws-nightfall",
-    name: "Neo-Soul Collection",
-    description: "A definitive collection of our best neo-soul productions and collaborations.",
-    tracks: 19,
-    duration: "1h 04m",
-    updated: "1w ago",
-    mood: "Smooth",
-    coverIdxs: [0, 3, 1, 5],
-    color: "from-brand-pink/20 to-brand-orange/10",
-  },
-  {
-    id: "unreleased-vault", workspace_id: "ws-nightfall",
-    name: "Unreleased Vault",
-    description: "Demos, unreleased masters, and works-in-progress awaiting final clearance.",
-    tracks: 31,
-    duration: "1h 52m",
-    updated: "2w ago",
-    mood: "Mixed",
-    coverIdxs: [2, 5, 3, 1],
-    color: "from-brand-purple/15 to-brand-orange/15",
-  },
+  { id: "summer-ep", workspace_id: "ws-nightfall", name: "Summer EP — Final Selects", description: "Curated finals for the summer release. Warm, uplifting vibes across neo-soul and indie.", tracks: 8, duration: "32 min", updated: "2h ago", mood: "Uplifting", coverIdxs: [0, 2, 4, 3], color: "from-brand-orange/20 to-brand-pink/10" },
+  { id: "sync-pitches-q2", workspace_id: "ws-nightfall", name: "Sync Pitches — Q2 2026", description: "Tracks shortlisted for film, TV, and ad sync placements this quarter.", tracks: 14, duration: "52 min", updated: "1d ago", mood: "Cinematic", coverIdxs: [1, 3, 5, 0], color: "from-brand-purple/20 to-brand-pink/10" },
+  { id: "late-night", workspace_id: "ws-nightfall", name: "Late Night Sessions", description: "Downtempo, ambient, and lo-fi selections for after-hours listening.", tracks: 22, duration: "1h 18m", updated: "3d ago", mood: "Chill", coverIdxs: [3, 4, 0, 2], color: "from-brand-pink/15 to-brand-purple/15" },
+  { id: "high-energy", workspace_id: "ws-nightfall", name: "High Energy — Ads", description: "Punchy, high-tempo tracks perfect for advertising and brand campaigns.", tracks: 11, duration: "38 min", updated: "5d ago", mood: "Energetic", coverIdxs: [5, 1, 2, 4], color: "from-brand-orange/25 to-brand-purple/10" },
+  { id: "neo-soul", workspace_id: "ws-nightfall", name: "Neo-Soul Collection", description: "A definitive collection of our best neo-soul productions and collaborations.", tracks: 19, duration: "1h 04m", updated: "1w ago", mood: "Smooth", coverIdxs: [0, 3, 1, 5], color: "from-brand-pink/20 to-brand-orange/10" },
+  { id: "unreleased-vault", workspace_id: "ws-nightfall", name: "Unreleased Vault", description: "Demos, unreleased masters, and works-in-progress awaiting final clearance.", tracks: 31, duration: "1h 52m", updated: "2w ago", mood: "Mixed", coverIdxs: [2, 5, 3, 1], color: "from-brand-purple/15 to-brand-orange/15" },
 ];
 
 interface PlaylistContextType {
