@@ -81,8 +81,7 @@ const demoTrackEngagement: TrackEngagement[] = [
 
 const demoPlaylistEngagement: PlaylistEngagement[] = [
   {
-    playlistId: "pl-1",
-    totalPlays: 84,
+    workspace_id: W, playlistId: "pl-1", totalPlays: 84,
     perTrackPlays: { 1: 28, 2: 19, 3: 22, 5: 15 },
     recipients: [
       { recipientName: "Jamie Lin", recipientCompany: "Atlantic Records", plays: 35, downloads: 4, packDownloads: 0, stemDownloads: 0, lastActivity: "2026-03-09T12:12:00" },
@@ -91,8 +90,7 @@ const demoPlaylistEngagement: PlaylistEngagement[] = [
     ],
   },
   {
-    playlistId: "pl-2",
-    totalPlays: 42,
+    workspace_id: W, playlistId: "pl-2", totalPlays: 42,
     perTrackPlays: { 4: 12, 7: 18, 8: 12 },
     recipients: [
       { recipientName: "Diana Rossi", recipientCompany: "Warner Music", plays: 22, downloads: 2, packDownloads: 0, stemDownloads: 0, lastActivity: "2026-03-04T12:30:00" },
