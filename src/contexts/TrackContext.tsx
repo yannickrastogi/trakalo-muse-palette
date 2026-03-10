@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
 import { detectChapters } from "@/lib/chapter-detection";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import type { WorkspaceScoped } from "@/types/workspace";
 
 export interface TrackStem {
   id: string;
@@ -35,7 +37,7 @@ export interface TrackStatusEntry {
   note: string;
 }
 
-export interface TrackData {
+export interface TrackData extends WorkspaceScoped {
   id: number;
   title: string;
   artist: string;
@@ -79,7 +81,7 @@ export interface TrackData {
 // Default demo tracks with full data
 const defaultTracks: TrackData[] = [
   {
-    id: 1, title: "Velvet Hour", artist: "Kira Nomura", featuredArtists: ["JVNE"], album: "Late Bloom EP",
+    id: 1, workspace_id: "ws-nightfall", title: "Velvet Hour", artist: "Kira Nomura", featuredArtists: ["JVNE"], album: "Late Bloom EP",
     genre: "Neo-Soul", bpm: 92, key: "Ab Maj", duration: "4:12", mood: ["emotional", "dreamy", "smooth"], voice: "Female",
     status: "Available", isrc: "USRC12600001", upc: "0850123456789", releaseDate: "2026-04-12",
     label: "Nightfall Records", publisher: "Nomura Publishing", writtenBy: ["Kira Nomura", "Jun Tanaka"],
@@ -111,7 +113,7 @@ const defaultTracks: TrackData[] = [
     ],
   },
   {
-    id: 2, title: "Ghost Protocol", artist: "Dex Moraes × JVNE", featuredArtists: [], album: "Singles 2026",
+    id: 2, workspace_id: "ws-nightfall", title: "Ghost Protocol", artist: "Dex Moraes × JVNE", featuredArtists: [], album: "Singles 2026",
     genre: "Electronic", bpm: 128, key: "F# Min", duration: "3:38", mood: ["energetic", "dark"], voice: "Male",
     status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: ["Dex Moraes"], producedBy: ["JVNE"], mixedBy: "", masteredBy: "",
@@ -120,7 +122,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "On Hold", date: "Feb 1, 2026", note: "Initial upload" }],
   },
   {
-    id: 3, title: "Burning Chrome", artist: "Alina Voss", featuredArtists: [], album: "Neon Archive",
+    id: 3, workspace_id: "ws-nightfall", title: "Burning Chrome", artist: "Alina Voss", featuredArtists: [], album: "Neon Archive",
     genre: "Synthwave", bpm: 118, key: "C Min", duration: "5:01", mood: ["nostalgic", "driving"], voice: "Female",
     status: "Available", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: ["Alina Voss"], producedBy: ["Alina Voss"], mixedBy: "", masteredBy: "",
@@ -129,7 +131,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Available", date: "Jan 15, 2026", note: "Initial upload" }],
   },
   {
-    id: 4, title: "Soft Landing", artist: "Marco Silva", featuredArtists: [], album: "Ambient Vol. II",
+    id: 4, workspace_id: "ws-nightfall", title: "Soft Landing", artist: "Marco Silva", featuredArtists: [], album: "Ambient Vol. II",
     genre: "Ambient", bpm: 72, key: "D Maj", duration: "6:44", mood: ["calm", "uplifting"], voice: "N/A",
     status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: ["Marco Silva"], producedBy: ["Marco Silva"], mixedBy: "", masteredBy: "",
@@ -138,7 +140,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Released", date: "Dec 20, 2025", note: "Initial upload" }],
   },
   {
-    id: 5, title: "Paper Moons", artist: "Kira Nomura × AYA", featuredArtists: [], album: "Late Bloom EP",
+    id: 5, workspace_id: "ws-nightfall", title: "Paper Moons", artist: "Kira Nomura × AYA", featuredArtists: [], album: "Late Bloom EP",
     genre: "Indie Pop", bpm: 105, key: "Bb Maj", duration: "3:22", mood: ["happy", "playful"], voice: "Duet",
     status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
@@ -147,7 +149,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "On Hold", date: "Jan 5, 2026", note: "Initial upload" }],
   },
   {
-    id: 6, title: "Static Bloom", artist: "JVNE", featuredArtists: [], album: "Singles 2026",
+    id: 6, workspace_id: "ws-nightfall", title: "Static Bloom", artist: "JVNE", featuredArtists: [], album: "Singles 2026",
     genre: "Glitch Hop", bpm: 140, key: "E Min", duration: "2:59", mood: ["aggressive", "experimental"], voice: "Male",
     status: "Available", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
@@ -156,7 +158,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Available", date: "Feb 10, 2026", note: "Initial upload" }],
   },
   {
-    id: 7, title: "Golden Frequency", artist: "Alina Voss × Marco", featuredArtists: [], album: "Neon Archive",
+    id: 7, workspace_id: "ws-nightfall", title: "Golden Frequency", artist: "Alina Voss × Marco", featuredArtists: [], album: "Neon Archive",
     genre: "House", bpm: 124, key: "G Maj", duration: "5:33", mood: ["euphoric", "warm"], voice: "Duet",
     status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
@@ -165,7 +167,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Released", date: "Jan 1, 2026", note: "Initial upload" }],
   },
   {
-    id: 8, title: "Daybreak", artist: "Kira Nomura", featuredArtists: [], album: "Late Bloom EP",
+    id: 8, workspace_id: "ws-nightfall", title: "Daybreak", artist: "Kira Nomura", featuredArtists: [], album: "Late Bloom EP",
     genre: "Neo-Soul", bpm: 88, key: "Eb Maj", duration: "3:55", mood: ["hopeful", "smooth"], voice: "N/A",
     status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
@@ -174,7 +176,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Released", date: "Dec 15, 2025", note: "Initial upload" }],
   },
   {
-    id: 9, title: "Obsidian", artist: "Dex Moraes", featuredArtists: [], album: "Singles 2026",
+    id: 9, workspace_id: "ws-nightfall", title: "Obsidian", artist: "Dex Moraes", featuredArtists: [], album: "Singles 2026",
     genre: "Techno", bpm: 136, key: "A Min", duration: "6:12", mood: ["dark", "hypnotic"], voice: "N/A",
     status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
@@ -183,7 +185,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "On Hold", date: "Feb 5, 2026", note: "Initial upload" }],
   },
   {
-    id: 10, title: "Slow Drift", artist: "Marco Silva", featuredArtists: [], album: "Ambient Vol. II",
+    id: 10, workspace_id: "ws-nightfall", title: "Slow Drift", artist: "Marco Silva", featuredArtists: [], album: "Ambient Vol. II",
     genre: "Ambient", bpm: 65, key: "F Maj", duration: "7:08", mood: ["meditative", "calm"], voice: "N/A",
     status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
@@ -192,7 +194,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Released", date: "Nov 20, 2025", note: "Initial upload" }],
   },
   {
-    id: 11, title: "Neon Pulse", artist: "JVNE × Alina Voss", featuredArtists: [], album: "Neon Archive",
+    id: 11, workspace_id: "ws-nightfall", title: "Neon Pulse", artist: "JVNE × Alina Voss", featuredArtists: [], album: "Neon Archive",
     genre: "Synthwave", bpm: 110, key: "B Min", duration: "4:28", mood: ["energetic", "nostalgic"], voice: "Female",
     status: "Available", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
@@ -201,7 +203,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Available", date: "Feb 20, 2026", note: "Initial upload" }],
   },
   {
-    id: 12, title: "Afterglow", artist: "Kira Nomura × Dex", featuredArtists: [], album: "Late Bloom EP",
+    id: 12, workspace_id: "ws-nightfall", title: "Afterglow", artist: "Kira Nomura × Dex", featuredArtists: [], album: "Late Bloom EP",
     genre: "R&B", bpm: 96, key: "C# Min", duration: "3:47", mood: ["romantic", "emotional"], voice: "Female",
     status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
@@ -225,32 +227,39 @@ interface TrackContextValue {
 const TrackContext = createContext<TrackContextValue | null>(null);
 
 export function TrackProvider({ children }: { children: ReactNode }) {
-  const [tracks, setTracks] = useState<TrackData[]>(defaultTracks);
+  const { activeWorkspace } = useWorkspace();
+  const [allTracks, setAllTracks] = useState<TrackData[]>(defaultTracks);
+
+  // Filter tracks by active workspace
+  const tracks = useMemo(
+    () => allTracks.filter((t) => t.workspace_id === activeWorkspace.id),
+    [allTracks, activeWorkspace.id]
+  );
 
   const getTrack = useCallback((id: number) => {
-    const track = tracks.find((t) => t.id === id);
+    const track = allTracks.find((t) => t.id === id);
     if (track && !track.chapters) {
       return { ...track, chapters: detectChapters(track.type, track.bpm, track.id) };
     }
     return track;
-  }, [tracks]);
+  }, [allTracks]);
 
   const addTrack = useCallback((track: TrackData) => {
     const withChapters = {
       ...track,
       chapters: track.chapters || detectChapters(track.type, track.bpm, track.id),
     };
-    setTracks((prev) => [...prev, withChapters]);
+    setAllTracks((prev) => [...prev, withChapters]);
   }, []);
 
   const updateTrack = useCallback((id: number, updates: Partial<TrackData>) => {
-    setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+    setAllTracks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
   }, []);
 
   const updateTrackStatus = useCallback((id: number, newStatus: string, note: string) => {
     const now = new Date();
     const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    setTracks((prev) =>
+    setAllTracks((prev) =>
       prev.map((t) =>
         t.id === id
           ? {
@@ -264,15 +273,15 @@ export function TrackProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateTrackLyrics = useCallback((id: number, lyrics: string) => {
-    setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, lyrics } : t)));
+    setAllTracks((prev) => prev.map((t) => (t.id === id ? { ...t, lyrics } : t)));
   }, []);
 
   const updateTrackStems = useCallback((id: number, stems: TrackStem[]) => {
-    setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, stems } : t)));
+    setAllTracks((prev) => prev.map((t) => (t.id === id ? { ...t, stems } : t)));
   }, []);
 
   const updateTrackSplits = useCallback((id: number, splits: TrackSplit[]) => {
-    setTracks((prev) =>
+    setAllTracks((prev) =>
       prev.map((t) =>
         t.id === id ? { ...t, splits: splits.map((s) => ({ ...s, share: s.share || 0 })) } : t
       )

@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import type { WorkspaceScoped } from "@/types/workspace";
 
 export interface DownloadEvent {
   id: string;
@@ -23,7 +25,7 @@ export interface SharedLinkTrack {
   coverImage?: string;
 }
 
-export interface SharedLink {
+export interface SharedLink extends WorkspaceScoped {
   id: string;
   shareType: ShareType;
   trackId: number;
@@ -64,27 +66,33 @@ interface SharedLinksContextValue {
 const SharedLinksContext = createContext<SharedLinksContextValue | null>(null);
 
 export function SharedLinksProvider({ children }: { children: ReactNode }) {
-  const [sharedLinks, setSharedLinks] = useState<SharedLink[]>([]);
+  const { activeWorkspace } = useWorkspace();
+  const [allSharedLinks, setAllSharedLinks] = useState<SharedLink[]>([]);
   const [notifications, setNotifications] = useState<DownloadEvent[]>([]);
 
+  const sharedLinks = useMemo(
+    () => allSharedLinks.filter((l) => l.workspace_id === activeWorkspace.id),
+    [allSharedLinks, activeWorkspace.id]
+  );
+
   const createSharedLink = useCallback((link: SharedLink) => {
-    setSharedLinks((prev) => [link, ...prev]);
+    setAllSharedLinks((prev) => [link, ...prev]);
   }, []);
 
   const getSharedLink = useCallback((id: string) => {
-    const link = sharedLinks.find((l) => l.id === id);
+    const link = allSharedLinks.find((l) => l.id === id);
     if (link && link.expirationDate && new Date(link.expirationDate) < new Date() && link.status === "active") {
       return { ...link, status: "expired" as const };
     }
     return link;
-  }, [sharedLinks]);
+  }, [allSharedLinks]);
 
   const updateLinkStatus = useCallback((id: string, status: SharedLink["status"]) => {
-    setSharedLinks((prev) => prev.map((l) => l.id === id ? { ...l, status } : l));
+    setAllSharedLinks((prev) => prev.map((l) => l.id === id ? { ...l, status } : l));
   }, []);
 
   const addDownloadEvent = useCallback((linkId: string, event: DownloadEvent) => {
-    setSharedLinks((prev) =>
+    setAllSharedLinks((prev) =>
       prev.map((l) => l.id === linkId ? { ...l, downloads: [...l.downloads, event] } : l)
     );
     setNotifications((prev) => [event, ...prev]);

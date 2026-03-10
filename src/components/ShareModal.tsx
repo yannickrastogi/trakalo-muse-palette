@@ -89,6 +89,7 @@ export function ShareModal({
 
     const newLink: SharedLink = {
       id: linkId,
+      workspace_id: "", // Will inherit from active workspace context
       shareType,
       trackId: trackId || 0,
       trackTitle: trackTitle || playlistName || "",

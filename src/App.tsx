@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { PlaylistProvider } from "@/contexts/PlaylistContext";
 import { RoleProvider } from "@/contexts/RoleContext";
+import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { TeamProvider } from "@/contexts/TeamContext";
 import { TrackProvider } from "@/contexts/TrackContext";
 import { AudioPlayerProvider } from "@/contexts/AudioPlayerContext";
@@ -40,6 +41,7 @@ const App = () => (
       <Sonner />
       <OnboardingProvider>
       <RoleProvider>
+      <WorkspaceProvider>
       <TeamProvider>
       <TrackProvider>
       <AudioPlayerProvider>
@@ -80,6 +82,7 @@ const App = () => (
       </AudioPlayerProvider>
       </TrackProvider>
       </TeamProvider>
+      </WorkspaceProvider>
       </RoleProvider>
       </OnboardingProvider>
     </TooltipProvider>

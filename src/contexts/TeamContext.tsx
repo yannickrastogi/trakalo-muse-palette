@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useMemo, type ReactNode } from "react";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import type { WorkspaceScoped } from "@/types/workspace";
 
 export type TeamRole = "Admin" | "Manager" | "A&R" | "Assistant" | "Producer" | "Songwriter" | "Musician" | "Mix Engineer" | "Mastering Engineer" | "Publisher" | "Viewer";
 
@@ -22,7 +24,7 @@ export interface TeamMember {
   status: "active" | "pending" | "expired";
 }
 
-export interface Team {
+export interface Team extends WorkspaceScoped {
   id: string;
   name: string;
   createdAt: string;
@@ -47,6 +49,7 @@ const TeamContext = createContext<TeamContextValue | undefined>(undefined);
 const demoTeams: Team[] = [
   {
     id: "team-1",
+    workspace_id: "ws-nightfall",
     name: "Nightfall Records",
     createdAt: "2025-09-12",
     sharedTrackIds: [1, 2, 3, 4, 5, 6, 7, 8],
@@ -84,6 +87,7 @@ const demoTeams: Team[] = [
   },
   {
     id: "team-2",
+    workspace_id: "ws-nightfall",
     name: "Studio Sessions",
     createdAt: "2026-01-10",
     sharedTrackIds: [3, 5, 11],
@@ -103,11 +107,18 @@ const demoTeams: Team[] = [
 let nextId = 100;
 
 export function TeamProvider({ children }: { children: ReactNode }) {
-  const [teams, setTeams] = useState<Team[]>(demoTeams);
+  const { activeWorkspace } = useWorkspace();
+  const [allTeams, setAllTeams] = useState<Team[]>(demoTeams);
+
+  const teams = useMemo(
+    () => allTeams.filter((t) => t.workspace_id === activeWorkspace.id),
+    [allTeams, activeWorkspace.id]
+  );
 
   const createTeam = (name: string): Team => {
     const newTeam: Team = {
       id: `team-${++nextId}`,
+      workspace_id: activeWorkspace.id,
       name,
       createdAt: new Date().toISOString().split("T")[0],
       sharedTrackIds: [],
@@ -124,20 +135,20 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         },
       ],
     };
-    setTeams((prev) => [newTeam, ...prev]);
+    setAllTeams((prev) => [newTeam, ...prev]);
     return newTeam;
   };
 
   const deleteTeam = (teamId: string) => {
-    setTeams((prev) => prev.filter((t) => t.id !== teamId));
+    setAllTeams((prev) => prev.filter((t) => t.id !== teamId));
   };
 
   const renameTeam = (teamId: string, name: string) => {
-    setTeams((prev) => prev.map((t) => (t.id === teamId ? { ...t, name } : t)));
+    setAllTeams((prev) => prev.map((t) => (t.id === teamId ? { ...t, name } : t)));
   };
 
   const addMember = (teamId: string, member: Omit<TeamMember, "id" | "joinedAt" | "status">) => {
-    setTeams((prev) =>
+    setAllTeams((prev) =>
       prev.map((t) =>
         t.id === teamId
           ? {
@@ -158,7 +169,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   };
 
   const removeMember = (teamId: string, memberId: string) => {
-    setTeams((prev) =>
+    setAllTeams((prev) =>
       prev.map((t) =>
         t.id === teamId ? { ...t, members: t.members.filter((m) => m.id !== memberId) } : t
       )
@@ -166,7 +177,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   };
 
   const updateMemberRole = (teamId: string, memberId: string, role: TeamRole) => {
-    setTeams((prev) =>
+    setAllTeams((prev) =>
       prev.map((t) =>
         t.id === teamId
           ? { ...t, members: t.members.map((m) => (m.id === memberId ? { ...m, role } : m)) }

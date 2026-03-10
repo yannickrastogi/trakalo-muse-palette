@@ -336,6 +336,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
     const newTrack: TrackData = {
       id: newId,
+      workspace_id: "", // Will be set by context/provider
       title: currentTrack.title.trim() || "Untitled",
       artist: currentTrack.artist.trim() || "Unknown Artist",
       featuredArtists: [],

@@ -36,6 +36,7 @@ const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 
 export interface PitchEntry {
   id: string;
+  workspace_id: string;
   type: "track" | "playlist";
   itemName: string;
   artist: string;
@@ -144,6 +145,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
     const now = new Date();
     return {
       id: `pitch-${Date.now()}`,
+      workspace_id: "", // Inherited from active workspace
       type: pitchType,
       itemName: selectedItem!.name,
       artist: selectedItem!.artist,
