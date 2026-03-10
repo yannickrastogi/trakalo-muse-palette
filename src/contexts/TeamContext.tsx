@@ -140,7 +140,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteTeam = (teamId: string) => {
-    setTeams((prev) => prev.filter((t) => t.id !== teamId));
+    setAllTeams((prev) => prev.filter((t) => t.id !== teamId));
   };
 
   const renameTeam = (teamId: string, name: string) => {
