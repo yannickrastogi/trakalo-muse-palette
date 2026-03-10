@@ -36,6 +36,7 @@ const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 
 export interface PitchEntry {
   id: string;
+  workspace_id: string;
   type: "track" | "playlist";
   itemName: string;
   artist: string;
