@@ -76,7 +76,7 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
   );
 
   const createSharedLink = useCallback((link: SharedLink) => {
-    setSharedLinks((prev) => [link, ...prev]);
+    setAllSharedLinks((prev) => [link, ...prev]);
   }, []);
 
   const getSharedLink = useCallback((id: string) => {
