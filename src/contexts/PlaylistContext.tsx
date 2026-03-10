@@ -124,7 +124,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   );
 
   const updatePlaylist = useCallback((id: string, updates: Partial<PlaylistItem>) => {
-    setPlaylists((prev) =>
+    setAllPlaylists((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
     );
   }, []);
