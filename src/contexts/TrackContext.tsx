@@ -131,7 +131,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Available", date: "Jan 15, 2026", note: "Initial upload" }],
   },
   {
-    id: 4, title: "Soft Landing", artist: "Marco Silva", featuredArtists: [], album: "Ambient Vol. II",
+    id: 4, workspace_id: "ws-nightfall", title: "Soft Landing", artist: "Marco Silva", featuredArtists: [], album: "Ambient Vol. II",
     genre: "Ambient", bpm: 72, key: "D Maj", duration: "6:44", mood: ["calm", "uplifting"], voice: "N/A",
     status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: ["Marco Silva"], producedBy: ["Marco Silva"], mixedBy: "", masteredBy: "",
