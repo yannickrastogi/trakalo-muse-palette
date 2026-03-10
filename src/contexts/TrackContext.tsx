@@ -167,7 +167,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Released", date: "Jan 1, 2026", note: "Initial upload" }],
   },
   {
-    id: 8, title: "Daybreak", artist: "Kira Nomura", featuredArtists: [], album: "Late Bloom EP",
+    id: 8, workspace_id: "ws-nightfall", title: "Daybreak", artist: "Kira Nomura", featuredArtists: [], album: "Late Bloom EP",
     genre: "Neo-Soul", bpm: 88, key: "Eb Maj", duration: "3:55", mood: ["hopeful", "smooth"], voice: "N/A",
     status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
