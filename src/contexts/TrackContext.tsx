@@ -37,7 +37,7 @@ export interface TrackStatusEntry {
   note: string;
 }
 
-export interface TrackData {
+export interface TrackData extends WorkspaceScoped {
   id: number;
   title: string;
   artist: string;
