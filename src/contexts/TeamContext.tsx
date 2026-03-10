@@ -49,6 +49,7 @@ const TeamContext = createContext<TeamContextValue | undefined>(undefined);
 const demoTeams: Team[] = [
   {
     id: "team-1",
+    workspace_id: "ws-nightfall",
     name: "Nightfall Records",
     createdAt: "2025-09-12",
     sharedTrackIds: [1, 2, 3, 4, 5, 6, 7, 8],
