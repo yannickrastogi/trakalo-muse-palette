@@ -194,7 +194,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "Released", date: "Nov 20, 2025", note: "Initial upload" }],
   },
   {
-    id: 11, title: "Neon Pulse", artist: "JVNE × Alina Voss", featuredArtists: [], album: "Neon Archive",
+    id: 11, workspace_id: "ws-nightfall", title: "Neon Pulse", artist: "JVNE × Alina Voss", featuredArtists: [], album: "Neon Archive",
     genre: "Synthwave", bpm: 110, key: "B Min", duration: "4:28", mood: ["energetic", "nostalgic"], voice: "Female",
     status: "Available", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
