@@ -66,8 +66,14 @@ interface SharedLinksContextValue {
 const SharedLinksContext = createContext<SharedLinksContextValue | null>(null);
 
 export function SharedLinksProvider({ children }: { children: ReactNode }) {
-  const [sharedLinks, setSharedLinks] = useState<SharedLink[]>([]);
+  const { activeWorkspace } = useWorkspace();
+  const [allSharedLinks, setAllSharedLinks] = useState<SharedLink[]>([]);
   const [notifications, setNotifications] = useState<DownloadEvent[]>([]);
+
+  const sharedLinks = useMemo(
+    () => allSharedLinks.filter((l) => l.workspace_id === activeWorkspace.id),
+    [allSharedLinks, activeWorkspace.id]
+  );
 
   const createSharedLink = useCallback((link: SharedLink) => {
     setSharedLinks((prev) => [link, ...prev]);
