@@ -30,19 +30,18 @@ export interface PlaylistItem extends WorkspaceScoped {
 
 const defaultPlaylists: PlaylistItem[] = [
   {
-    id: "summer-ep",
+    id: "summer-ep", workspace_id: "ws-nightfall",
     name: "Summer EP — Final Selects",
     description: "Curated finals for the summer release. Warm, uplifting vibes across neo-soul and indie.",
-    tracks: 8,
-    duration: "32 min",
-    updated: "2h ago",
-    mood: "Uplifting",
-    coverIdxs: [0, 2, 4, 3],
-    color: "from-brand-orange/20 to-brand-pink/10",
+    tracks: 8, duration: "32 min", updated: "2h ago", mood: "Uplifting",
+    coverIdxs: [0, 2, 4, 3], color: "from-brand-orange/20 to-brand-pink/10",
   },
   {
-    id: "sync-pitches-q2",
+    id: "sync-pitches-q2", workspace_id: "ws-nightfall",
     name: "Sync Pitches — Q2 2026",
+    description: "Tracks shortlisted for film, TV, and ad sync placements this quarter.",
+    tracks: 14, duration: "52 min", updated: "1d ago", mood: "Cinematic",
+    coverIdxs: [1, 3, 5, 0], color: "from-brand-purple/20 to-brand-pink/10",
     description: "Tracks shortlisted for film, TV, and ad sync placements this quarter.",
     tracks: 14,
     duration: "52 min",
