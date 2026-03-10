@@ -41,6 +41,7 @@ const App = () => (
       <Sonner />
       <OnboardingProvider>
       <RoleProvider>
+      <WorkspaceProvider>
       <TeamProvider>
       <TrackProvider>
       <AudioPlayerProvider>
