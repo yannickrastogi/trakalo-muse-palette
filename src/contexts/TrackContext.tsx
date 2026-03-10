@@ -149,7 +149,7 @@ const defaultTracks: TrackData[] = [
     statusHistory: [{ status: "On Hold", date: "Jan 5, 2026", note: "Initial upload" }],
   },
   {
-    id: 6, title: "Static Bloom", artist: "JVNE", featuredArtists: [], album: "Singles 2026",
+    id: 6, workspace_id: "ws-nightfall", title: "Static Bloom", artist: "JVNE", featuredArtists: [], album: "Singles 2026",
     genre: "Glitch Hop", bpm: 140, key: "E Min", duration: "2:59", mood: ["aggressive", "experimental"], voice: "Male",
     status: "Available", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
     writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
