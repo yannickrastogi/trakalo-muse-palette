@@ -62,7 +62,7 @@ const defaultPlaylists: PlaylistItem[] = [
     color: "from-brand-pink/15 to-brand-purple/15",
   },
   {
-    id: "high-energy",
+    id: "high-energy", workspace_id: "ws-nightfall",
     name: "High Energy — Ads",
     description: "Punchy, high-tempo tracks perfect for advertising and brand campaigns.",
     tracks: 11,
