@@ -81,7 +81,7 @@ export interface TrackData extends WorkspaceScoped {
 // Default demo tracks with full data
 const defaultTracks: TrackData[] = [
   {
-    id: 1, title: "Velvet Hour", artist: "Kira Nomura", featuredArtists: ["JVNE"], album: "Late Bloom EP",
+    id: 1, workspace_id: "ws-nightfall", title: "Velvet Hour", artist: "Kira Nomura", featuredArtists: ["JVNE"], album: "Late Bloom EP",
     genre: "Neo-Soul", bpm: 92, key: "Ab Maj", duration: "4:12", mood: ["emotional", "dreamy", "smooth"], voice: "Female",
     status: "Available", isrc: "USRC12600001", upc: "0850123456789", releaseDate: "2026-04-12",
     label: "Nightfall Records", publisher: "Nomura Publishing", writtenBy: ["Kira Nomura", "Jun Tanaka"],
