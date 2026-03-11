@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      approvals: {
+        Row: {
+          changes: Json
+          id: string
+          requested_at: string
+          requested_by: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["approval_status"]
+          track_id: string
+          workspace_id: string
+        }
+        Insert: {
+          changes?: Json
+          id?: string
+          requested_at?: string
+          requested_by?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["approval_status"]
+          track_id: string
+          workspace_id: string
+        }
+        Update: {
+          changes?: Json
+          id?: string
+          requested_at?: string
+          requested_by?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["approval_status"]
+          track_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approvals_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approvals_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           company: string | null
@@ -66,6 +120,222 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "contacts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      link_downloads: {
+        Row: {
+          downloaded_at: string
+          downloader_email: string | null
+          downloader_name: string | null
+          id: string
+          ip_address: unknown
+          link_id: string
+          organization: string | null
+          role: string | null
+          stems_downloaded: string[] | null
+          track_name: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          downloaded_at?: string
+          downloader_email?: string | null
+          downloader_name?: string | null
+          id?: string
+          ip_address?: unknown
+          link_id: string
+          organization?: string | null
+          role?: string | null
+          stems_downloaded?: string[] | null
+          track_name?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          downloaded_at?: string
+          downloader_email?: string | null
+          downloader_name?: string | null
+          id?: string
+          ip_address?: unknown
+          link_id?: string
+          organization?: string | null
+          role?: string | null
+          stems_downloaded?: string[] | null
+          track_name?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_downloads_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "shared_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          approval_id: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          link_id: string | null
+          message: string | null
+          pitch_id: string | null
+          title: string
+          track_id: string | null
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          approval_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link_id?: string | null
+          message?: string | null
+          pitch_id?: string | null
+          title: string
+          track_id?: string | null
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          approval_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link_id?: string | null
+          message?: string | null
+          pitch_id?: string | null
+          title?: string
+          track_id?: string | null
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "shared_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_pitch_id_fkey"
+            columns: ["pitch_id"]
+            isOneToOne: false
+            referencedRelation: "pitches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pitches: {
+        Row: {
+          contact_id: string | null
+          created_at: string
+          id: string
+          message: string | null
+          opened_at: string | null
+          recipient_company: string | null
+          recipient_email: string | null
+          recipient_name: string
+          responded_at: string | null
+          response_note: string | null
+          sent_at: string | null
+          sent_by: string | null
+          share_link_id: string | null
+          status: Database["public"]["Enums"]["pitch_status"]
+          subject: string
+          track_ids: string[]
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          opened_at?: string | null
+          recipient_company?: string | null
+          recipient_email?: string | null
+          recipient_name: string
+          responded_at?: string | null
+          response_note?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          share_link_id?: string | null
+          status?: Database["public"]["Enums"]["pitch_status"]
+          subject: string
+          track_ids?: string[]
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          message?: string | null
+          opened_at?: string | null
+          recipient_company?: string | null
+          recipient_email?: string | null
+          recipient_name?: string
+          responded_at?: string | null
+          response_note?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          share_link_id?: string | null
+          status?: Database["public"]["Enums"]["pitch_status"]
+          subject?: string
+          track_ids?: string[]
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pitches_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pitches_share_link_id_fkey"
+            columns: ["share_link_id"]
+            isOneToOne: false
+            referencedRelation: "shared_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pitches_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -152,6 +422,151 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "playlists_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_links: {
+        Row: {
+          allow_download: boolean
+          created_at: string
+          created_by: string | null
+          download_quality: string | null
+          expires_at: string | null
+          id: string
+          link_name: string
+          link_slug: string
+          link_type: string
+          message: string | null
+          pack_items: Json | null
+          password_hash: string | null
+          playlist_id: string | null
+          share_type: Database["public"]["Enums"]["share_type"]
+          status: Database["public"]["Enums"]["link_status"]
+          track_id: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          allow_download?: boolean
+          created_at?: string
+          created_by?: string | null
+          download_quality?: string | null
+          expires_at?: string | null
+          id?: string
+          link_name: string
+          link_slug: string
+          link_type?: string
+          message?: string | null
+          pack_items?: Json | null
+          password_hash?: string | null
+          playlist_id?: string | null
+          share_type: Database["public"]["Enums"]["share_type"]
+          status?: Database["public"]["Enums"]["link_status"]
+          track_id?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          allow_download?: boolean
+          created_at?: string
+          created_by?: string | null
+          download_quality?: string | null
+          expires_at?: string | null
+          id?: string
+          link_name?: string
+          link_slug?: string
+          link_type?: string
+          message?: string | null
+          pack_items?: Json | null
+          password_hash?: string | null
+          playlist_id?: string | null
+          share_type?: Database["public"]["Enums"]["share_type"]
+          status?: Database["public"]["Enums"]["link_status"]
+          track_id?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_links_playlist_id_fkey"
+            columns: ["playlist_id"]
+            isOneToOne: false
+            referencedRelation: "playlists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_links_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_links_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stems: {
+        Row: {
+          bit_depth: number | null
+          created_at: string
+          duration_sec: number | null
+          file_name: string
+          file_size_bytes: number | null
+          file_url: string
+          id: string
+          sample_rate: number | null
+          stem_type: Database["public"]["Enums"]["stem_type"]
+          track_id: string
+          uploaded_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          bit_depth?: number | null
+          created_at?: string
+          duration_sec?: number | null
+          file_name: string
+          file_size_bytes?: number | null
+          file_url: string
+          id?: string
+          sample_rate?: number | null
+          stem_type?: Database["public"]["Enums"]["stem_type"]
+          track_id: string
+          uploaded_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          bit_depth?: number | null
+          created_at?: string
+          duration_sec?: number | null
+          file_name?: string
+          file_size_bytes?: number | null
+          file_url?: string
+          id?: string
+          sample_rate?: number | null
+          stem_type?: Database["public"]["Enums"]["stem_type"]
+          track_id?: string
+          uploaded_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stems_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stems_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -390,6 +805,34 @@ export type Database = {
         | "mastering_engineer"
         | "publisher"
         | "viewer"
+      approval_status: "pending" | "approved" | "rejected"
+      link_status: "active" | "expired" | "disabled"
+      notification_type:
+        | "pitch_opened"
+        | "pitch_accepted"
+        | "pitch_declined"
+        | "track_uploaded"
+        | "track_status_changed"
+        | "link_opened"
+        | "link_downloaded"
+        | "approval_requested"
+        | "approval_resolved"
+        | "member_invited"
+        | "member_joined"
+        | "comment_added"
+      pitch_status: "draft" | "sent" | "opened" | "declined" | "accepted"
+      share_type: "stems" | "track" | "playlist" | "pack"
+      stem_type:
+        | "kick"
+        | "snare"
+        | "bass"
+        | "guitar"
+        | "vocal"
+        | "synth"
+        | "drums"
+        | "background_vocal"
+        | "fx"
+        | "other"
       track_gender: "male" | "female" | "duet" | "n_a"
       track_status: "available" | "on_hold" | "released"
       track_type: "instrumental" | "sample" | "acapella" | "song"
@@ -532,6 +975,36 @@ export const Constants = {
         "mastering_engineer",
         "publisher",
         "viewer",
+      ],
+      approval_status: ["pending", "approved", "rejected"],
+      link_status: ["active", "expired", "disabled"],
+      notification_type: [
+        "pitch_opened",
+        "pitch_accepted",
+        "pitch_declined",
+        "track_uploaded",
+        "track_status_changed",
+        "link_opened",
+        "link_downloaded",
+        "approval_requested",
+        "approval_resolved",
+        "member_invited",
+        "member_joined",
+        "comment_added",
+      ],
+      pitch_status: ["draft", "sent", "opened", "declined", "accepted"],
+      share_type: ["stems", "track", "playlist", "pack"],
+      stem_type: [
+        "kick",
+        "snare",
+        "bass",
+        "guitar",
+        "vocal",
+        "synth",
+        "drums",
+        "background_vocal",
+        "fx",
+        "other",
       ],
       track_gender: ["male", "female", "duet", "n_a"],
       track_status: ["available", "on_hold", "released"],
