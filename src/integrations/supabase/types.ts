@@ -14,6 +14,252 @@ export type Database = {
   }
   public: {
     Tables: {
+      contacts: {
+        Row: {
+          company: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          favorite: boolean
+          first_name: string
+          id: string
+          last_name: string | null
+          notes: string | null
+          phone: string | null
+          role: string | null
+          tags: string[] | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          favorite?: boolean
+          first_name: string
+          id?: string
+          last_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          favorite?: boolean
+          first_name?: string
+          id?: string
+          last_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playlist_tracks: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          id: string
+          playlist_id: string
+          position: number
+          track_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          id?: string
+          playlist_id: string
+          position?: number
+          track_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          id?: string
+          playlist_id?: string
+          position?: number
+          track_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlist_tracks_playlist_id_fkey"
+            columns: ["playlist_id"]
+            isOneToOne: false
+            referencedRelation: "playlists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playlist_tracks_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playlists: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_public: boolean
+          name: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlists_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracks: {
+        Row: {
+          artist: string
+          audio_url: string | null
+          bpm: number | null
+          cover_url: string | null
+          created_at: string
+          duration_sec: number | null
+          featuring: string | null
+          gender: Database["public"]["Enums"]["track_gender"] | null
+          genre: string | null
+          id: string
+          isrc: string | null
+          iswc: string | null
+          key: string | null
+          labels: string[] | null
+          language: string | null
+          lyrics: string | null
+          mood: string[] | null
+          notes: string | null
+          publishers: string[] | null
+          released_at: string | null
+          splits: Json | null
+          status: Database["public"]["Enums"]["track_status"]
+          title: string
+          track_type: Database["public"]["Enums"]["track_type"]
+          updated_at: string
+          uploaded_by: string | null
+          waveform_data: Json | null
+          workspace_id: string
+        }
+        Insert: {
+          artist: string
+          audio_url?: string | null
+          bpm?: number | null
+          cover_url?: string | null
+          created_at?: string
+          duration_sec?: number | null
+          featuring?: string | null
+          gender?: Database["public"]["Enums"]["track_gender"] | null
+          genre?: string | null
+          id?: string
+          isrc?: string | null
+          iswc?: string | null
+          key?: string | null
+          labels?: string[] | null
+          language?: string | null
+          lyrics?: string | null
+          mood?: string[] | null
+          notes?: string | null
+          publishers?: string[] | null
+          released_at?: string | null
+          splits?: Json | null
+          status?: Database["public"]["Enums"]["track_status"]
+          title: string
+          track_type?: Database["public"]["Enums"]["track_type"]
+          updated_at?: string
+          uploaded_by?: string | null
+          waveform_data?: Json | null
+          workspace_id: string
+        }
+        Update: {
+          artist?: string
+          audio_url?: string | null
+          bpm?: number | null
+          cover_url?: string | null
+          created_at?: string
+          duration_sec?: number | null
+          featuring?: string | null
+          gender?: Database["public"]["Enums"]["track_gender"] | null
+          genre?: string | null
+          id?: string
+          isrc?: string | null
+          iswc?: string | null
+          key?: string | null
+          labels?: string[] | null
+          language?: string | null
+          lyrics?: string | null
+          mood?: string[] | null
+          notes?: string | null
+          publishers?: string[] | null
+          released_at?: string | null
+          splits?: Json | null
+          status?: Database["public"]["Enums"]["track_status"]
+          title?: string
+          track_type?: Database["public"]["Enums"]["track_type"]
+          updated_at?: string
+          uploaded_by?: string | null
+          waveform_data?: Json | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracks_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -144,6 +390,9 @@ export type Database = {
         | "mastering_engineer"
         | "publisher"
         | "viewer"
+      track_gender: "male" | "female" | "duet" | "n_a"
+      track_status: "available" | "on_hold" | "released"
+      track_type: "instrumental" | "sample" | "acapella" | "song"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -284,6 +533,9 @@ export const Constants = {
         "publisher",
         "viewer",
       ],
+      track_gender: ["male", "female", "duet", "n_a"],
+      track_status: ["available", "on_hold", "released"],
+      track_type: ["instrumental", "sample", "acapella", "song"],
     },
   },
 } as const
