@@ -60,12 +60,18 @@ export default function Auth() {
 
       <div className="relative z-10 w-full max-w-[420px]">
         {/* Logo */}
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
-            <Music2 className="h-6 w-6 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground font-[Sora]">Trakalog</h1>
-          <p className="text-sm text-muted-foreground">Music catalog management platform</p>
+        <div className="mb-8 flex flex-col items-center gap-2">
+          <img
+            src={trakalogLogo}
+            alt="Trakalog"
+            className="w-16 h-16 rounded-xl object-contain"
+          />
+          <h1 className="text-2xl font-bold tracking-tight gradient-text font-[Sora] mt-2">
+            TRAKALOG
+          </h1>
+          <p className="text-[11px] text-muted-foreground tracking-widest uppercase font-medium">
+            Catalog Manager
+          </p>
         </div>
 
         {/* Card */}
