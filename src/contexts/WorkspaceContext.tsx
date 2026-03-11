@@ -5,7 +5,7 @@ import type { Workspace, WorkspaceSettings } from "@/types/workspace";
 
 interface WorkspaceContextValue {
   /** Currently active workspace */
-  activeWorkspace: Workspace | null;
+  activeWorkspace: Workspace;
   /** All workspaces the user belongs to */
   workspaces: Workspace[];
   /** Whether workspaces are still loading */
@@ -137,7 +137,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [activeWorkspace]
   );
 
-// Don't render children until we have an active workspace
+  // Don't render children until we have an active workspace
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
