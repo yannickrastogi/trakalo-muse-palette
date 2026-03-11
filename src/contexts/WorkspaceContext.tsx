@@ -1,75 +1,146 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
-import type { Workspace } from "@/types/workspace";
-
-// ── Mock data ──
-const MOCK_USER_ID = "user-owner-001";
-
-const mockWorkspaces: Workspace[] = [
-  {
-    id: "ws-nightfall",
-    name: "Nightfall Records",
-    slug: "nightfall-records",
-    owner_id: MOCK_USER_ID,
-    plan: "pro",
-    created_at: "2025-09-12T00:00:00Z",
-    settings: {
-      defaultLanguage: "en",
-      allowPublicLinks: true,
-      requireApproval: true,
-      maxMembers: 25,
-      storageQuotaMB: 10240,
-    },
-  },
-  {
-    id: "ws-studio",
-    name: "Studio Sessions",
-    slug: "studio-sessions",
-    owner_id: MOCK_USER_ID,
-    plan: "free",
-    created_at: "2026-01-10T00:00:00Z",
-    settings: {
-      defaultLanguage: "en",
-      allowPublicLinks: false,
-      requireApproval: false,
-      maxMembers: 5,
-      storageQuotaMB: 2048,
-    },
-  },
-];
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import type { Workspace, WorkspaceSettings } from "@/types/workspace";
 
 interface WorkspaceContextValue {
   /** Currently active workspace */
-  activeWorkspace: Workspace;
+  activeWorkspace: Workspace | null;
   /** All workspaces the user belongs to */
   workspaces: Workspace[];
+  /** Whether workspaces are still loading */
+  loading: boolean;
   /** Switch to a different workspace by id */
   switchWorkspace: (workspaceId: string) => void;
   /** Update settings on the active workspace */
-  updateWorkspaceSettings: (updates: Partial<Workspace["settings"]>) => void;
+  updateWorkspaceSettings: (updates: Partial<WorkspaceSettings>) => void;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const [workspaces, setWorkspaces] = useState<Workspace[]>(mockWorkspaces);
-  const [activeId, setActiveId] = useState<string>(mockWorkspaces[0].id);
+  const { user } = useAuth();
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const activeWorkspace = workspaces.find((w) => w.id === activeId) || workspaces[0];
+  // Fetch workspaces the user belongs to
+  useEffect(() => {
+    if (!user) {
+      setWorkspaces([]);
+      setActiveId(null);
+      setLoading(false);
+      return;
+    }
+
+    const fetchWorkspaces = async () => {
+      setLoading(true);
+      try {
+        // Get workspace IDs the user is a member of
+        const { data: memberships, error: memberError } = await supabase
+          .from("workspace_members")
+          .select("workspace_id")
+          .eq("user_id", user.id);
+
+        if (memberError) {
+          console.error("Error fetching memberships:", memberError);
+          setLoading(false);
+          return;
+        }
+
+        if (!memberships || memberships.length === 0) {
+          setWorkspaces([]);
+          setActiveId(null);
+          setLoading(false);
+          return;
+        }
+
+        const workspaceIds = memberships.map((m) => m.workspace_id);
+
+        // Fetch workspace details
+        const { data: wsData, error: wsError } = await supabase
+          .from("workspaces")
+          .select("*")
+          .in("id", workspaceIds);
+
+        if (wsError) {
+          console.error("Error fetching workspaces:", wsError);
+          setLoading(false);
+          return;
+        }
+
+        const mapped: Workspace[] = (wsData || []).map((ws) => ({
+          id: ws.id,
+          name: ws.name,
+          slug: ws.slug,
+          owner_id: ws.owner_id,
+          plan: (ws.plan as Workspace["plan"]) || "free",
+          created_at: ws.created_at,
+          settings: (ws.settings as WorkspaceSettings) || {
+            defaultLanguage: "en",
+            allowPublicLinks: true,
+            requireApproval: false,
+            maxMembers: 5,
+            storageQuotaMB: 2048,
+          },
+        }));
+
+        setWorkspaces(mapped);
+
+        // Set active workspace: use stored preference or first workspace
+        const stored = localStorage.getItem("trakalog_active_workspace");
+        if (stored && mapped.some((w) => w.id === stored)) {
+          setActiveId(stored);
+        } else if (mapped.length > 0) {
+          setActiveId(mapped[0].id);
+        }
+      } catch (err) {
+        console.error("Unexpected error fetching workspaces:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWorkspaces();
+  }, [user]);
+
+  const activeWorkspace = workspaces.find((w) => w.id === activeId) || null;
 
   const switchWorkspace = useCallback((workspaceId: string) => {
     setActiveId(workspaceId);
+    localStorage.setItem("trakalog_active_workspace", workspaceId);
   }, []);
 
-  const updateWorkspaceSettings = useCallback((updates: Partial<Workspace["settings"]>) => {
-    setWorkspaces((prev) =>
-      prev.map((w) =>
-        w.id === activeId ? { ...w, settings: { ...w.settings, ...updates } } : w
-      )
-    );
-  }, [activeId]);
+  const updateWorkspaceSettings = useCallback(
+    async (updates: Partial<WorkspaceSettings>) => {
+      if (!activeWorkspace) return;
+
+      const newSettings = { ...activeWorkspace.settings, ...updates };
+
+      // Update locally first for instant UI
+      setWorkspaces((prev) =>
+        prev.map((w) =>
+          w.id === activeWorkspace.id ? { ...w, settings: newSettings } : w
+        )
+      );
+
+      // Persist to Supabase
+      const { error } = await supabase
+        .from("workspaces")
+        .update({ settings: newSettings as unknown as Record<string, unknown> })
+        .eq("id", activeWorkspace.id);
+
+      if (error) {
+        console.error("Error updating workspace settings:", error);
+      }
+    },
+    [activeWorkspace]
+  );
 
   return (
-    <WorkspaceContext.Provider value={{ activeWorkspace, workspaces, switchWorkspace, updateWorkspaceSettings }}>
+    <WorkspaceContext.Provider
+      value={{ activeWorkspace, workspaces, loading, switchWorkspace, updateWorkspaceSettings }}
+    >
       {children}
     </WorkspaceContext.Provider>
   );
@@ -80,3 +151,4 @@ export function useWorkspace() {
   if (!ctx) throw new Error("useWorkspace must be used within WorkspaceProvider");
   return ctx;
 }
+
