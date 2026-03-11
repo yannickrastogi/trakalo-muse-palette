@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { detectChapters } from "@/lib/chapter-detection";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useAuth } from "@/contexts/AuthContext";
 import type { WorkspaceScoped } from "@/types/workspace";
 
 export interface TrackStem {
@@ -39,6 +41,7 @@ export interface TrackStatusEntry {
 
 export interface TrackData extends WorkspaceScoped {
   id: number;
+  uuid: string; // Supabase UUID
   title: string;
   artist: string;
   featuredArtists: string[];
@@ -78,218 +81,372 @@ export interface TrackData extends WorkspaceScoped {
   statusHistory: TrackStatusEntry[];
 }
 
-// Default demo tracks with full data
-const defaultTracks: TrackData[] = [
-  {
-    id: 1, workspace_id: "ws-nightfall", title: "Velvet Hour", artist: "Kira Nomura", featuredArtists: ["JVNE"], album: "Late Bloom EP",
-    genre: "Neo-Soul", bpm: 92, key: "Ab Maj", duration: "4:12", mood: ["emotional", "dreamy", "smooth"], voice: "Female",
-    status: "Available", isrc: "USRC12600001", upc: "0850123456789", releaseDate: "2026-04-12",
-    label: "Nightfall Records", publisher: "Nomura Publishing", writtenBy: ["Kira Nomura", "Jun Tanaka"],
-    producedBy: ["JVNE", "Kira Nomura"], mixedBy: "Marco Silva", masteredBy: "Sterling Sound NYC",
-    copyright: "© 2026 Nightfall Records", language: "English", explicit: false, type: "Song", coverIdx: 0,
-    notes: "", details: {},
-    stems: [
-      { id: "1", fileName: "VelvetHour_Vocal_Lead.wav", type: "vocal", key: "Ab Maj", fileSize: "42.3 MB", uploadDate: "Mar 2, 2026", color: "text-brand-pink" },
-      { id: "2", fileName: "VelvetHour_BG_Vocals.wav", type: "background vocal", key: "Ab Maj", fileSize: "38.1 MB", uploadDate: "Mar 2, 2026", color: "text-brand-purple" },
-      { id: "3", fileName: "VelvetHour_Drums_Full.wav", type: "drums", fileSize: "56.7 MB", uploadDate: "Mar 1, 2026", color: "text-primary" },
-      { id: "4", fileName: "VelvetHour_Kick.wav", type: "kick", fileSize: "12.4 MB", uploadDate: "Mar 1, 2026", color: "text-primary" },
-      { id: "5", fileName: "VelvetHour_Snare.wav", type: "snare", fileSize: "8.9 MB", uploadDate: "Mar 1, 2026", color: "text-primary" },
-      { id: "6", fileName: "VelvetHour_Bass.wav", type: "bass", key: "Ab Maj", fileSize: "28.5 MB", uploadDate: "Feb 28, 2026", color: "text-chart-4" },
-      { id: "7", fileName: "VelvetHour_Synth_Pad.wav", type: "synth", key: "Ab Maj", fileSize: "34.2 MB", uploadDate: "Feb 28, 2026", color: "text-brand-orange" },
-      { id: "8", fileName: "VelvetHour_Guitar_Clean.wav", type: "guitar", key: "Ab Maj", fileSize: "31.0 MB", uploadDate: "Feb 27, 2026", color: "text-chart-5" },
-      { id: "9", fileName: "VelvetHour_FX_Risers.wav", type: "fx", fileSize: "15.8 MB", uploadDate: "Feb 27, 2026", color: "text-accent" },
-    ],
-    splits: [
-      { id: "s1", name: "Kira Nomura", role: "Writer / Artist", share: 40, pro: "ASCAP", ipi: "00123456789", publisher: "Nomura Publishing" },
-      { id: "s2", name: "Jun Tanaka", role: "Writer", share: 25, pro: "BMI", ipi: "00987654321", publisher: "" },
-      { id: "s3", name: "JVNE", role: "Producer", share: 20, pro: "SESAC", ipi: "00112233445", publisher: "" },
-      { id: "s4", name: "Nightfall Records", role: "Publisher", share: 15, pro: "—", ipi: "—", publisher: "" },
-    ],
-    lyrics: `[Verse 1]\nUnderneath the velvet hour\nWe find a place that's ours\nSilhouettes in amber light\nDancing through the night\n\n[Chorus]\nHold me close, don't let me go\nIn this glow, we're moving slow\nVelvet hour, velvet dreams\nNothing's ever what it seems\n\n[Verse 2]\nWhispers float on midnight air\nFingers running through your hair\nTime dissolves like sugar rain\nWe'll never feel this way again\n\n[Chorus]\nHold me close, don't let me go\nIn this glow, we're moving slow\nVelvet hour, velvet dreams\nNothing's ever what it seems\n\n[Bridge]\nAnd if the morning comes too soon\nWe'll chase the shadows of the moon\n\n[Outro]\nVelvet hour… velvet hour…`,
-    statusHistory: [
-      { status: "Available", date: "Jan 10, 2026", note: "Recording completed at Nightfall Studio" },
-      { status: "On Hold", date: "Jan 22, 2026", note: "Awaiting JVNE feature clearance" },
-      { status: "Available", date: "Feb 15, 2026", note: "Clearance received, track open for pitching" },
-    ],
-  },
-  {
-    id: 2, workspace_id: "ws-nightfall", title: "Ghost Protocol", artist: "Dex Moraes × JVNE", featuredArtists: [], album: "Singles 2026",
-    genre: "Electronic", bpm: 128, key: "F# Min", duration: "3:38", mood: ["energetic", "dark"], voice: "Male",
-    status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
-    writtenBy: ["Dex Moraes"], producedBy: ["JVNE"], mixedBy: "", masteredBy: "",
-    copyright: "", language: "English", explicit: false, type: "Sample", coverIdx: 1,
-    notes: "", details: {}, stems: [], splits: [],
-    statusHistory: [{ status: "On Hold", date: "Feb 1, 2026", note: "Initial upload" }],
-  },
-  {
-    id: 3, workspace_id: "ws-nightfall", title: "Burning Chrome", artist: "Alina Voss", featuredArtists: [], album: "Neon Archive",
-    genre: "Synthwave", bpm: 118, key: "C Min", duration: "5:01", mood: ["nostalgic", "driving"], voice: "Female",
-    status: "Available", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
-    writtenBy: ["Alina Voss"], producedBy: ["Alina Voss"], mixedBy: "", masteredBy: "",
-    copyright: "", language: "Portuguese", explicit: false, type: "Song", coverIdx: 2,
-    notes: "", details: {}, stems: [], splits: [],
-    statusHistory: [{ status: "Available", date: "Jan 15, 2026", note: "Initial upload" }],
-  },
-  {
-    id: 4, workspace_id: "ws-nightfall", title: "Soft Landing", artist: "Marco Silva", featuredArtists: [], album: "Ambient Vol. II",
-    genre: "Ambient", bpm: 72, key: "D Maj", duration: "6:44", mood: ["calm", "uplifting"], voice: "N/A",
-    status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
-    writtenBy: ["Marco Silva"], producedBy: ["Marco Silva"], mixedBy: "", masteredBy: "",
-    copyright: "", language: "Instrumental", explicit: false, type: "Instrumental", coverIdx: 3,
-    notes: "", details: {}, stems: [], splits: [],
-    statusHistory: [{ status: "Released", date: "Dec 20, 2025", note: "Initial upload" }],
-  },
-  {
-    id: 5, workspace_id: "ws-nightfall", title: "Paper Moons", artist: "Kira Nomura × AYA", featuredArtists: [], album: "Late Bloom EP",
-    genre: "Indie Pop", bpm: 105, key: "Bb Maj", duration: "3:22", mood: ["happy", "playful"], voice: "Duet",
-    status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
-    writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
-    copyright: "", language: "Japanese", explicit: false, type: "Song", coverIdx: 4,
-    notes: "", details: {}, stems: [], splits: [],
-    statusHistory: [{ status: "On Hold", date: "Jan 5, 2026", note: "Initial upload" }],
-  },
-  {
-    id: 6, workspace_id: "ws-nightfall", title: "Static Bloom", artist: "JVNE", featuredArtists: [], album: "Singles 2026",
-    genre: "Glitch Hop", bpm: 140, key: "E Min", duration: "2:59", mood: ["aggressive", "experimental"], voice: "Male",
-    status: "Available", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
-    writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
-    copyright: "", language: "English", explicit: false, type: "Acapella", coverIdx: 5,
-    notes: "", details: {}, stems: [], splits: [],
-    statusHistory: [{ status: "Available", date: "Feb 10, 2026", note: "Initial upload" }],
-  },
-  {
-    id: 7, workspace_id: "ws-nightfall", title: "Golden Frequency", artist: "Alina Voss × Marco", featuredArtists: [], album: "Neon Archive",
-    genre: "House", bpm: 124, key: "G Maj", duration: "5:33", mood: ["euphoric", "warm"], voice: "Duet",
-    status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
-    writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
-    copyright: "", language: "Spanish", explicit: false, type: "Song", coverIdx: 2,
-    notes: "", details: {}, stems: [], splits: [],
-    statusHistory: [{ status: "Released", date: "Jan 1, 2026", note: "Initial upload" }],
-  },
-  {
-    id: 8, workspace_id: "ws-nightfall", title: "Daybreak", artist: "Kira Nomura", featuredArtists: [], album: "Late Bloom EP",
-    genre: "Neo-Soul", bpm: 88, key: "Eb Maj", duration: "3:55", mood: ["hopeful", "smooth"], voice: "N/A",
-    status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
-    writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
-    copyright: "", language: "English", explicit: false, type: "Instrumental", coverIdx: 0,
-    notes: "", details: {}, stems: [], splits: [],
-    statusHistory: [{ status: "Released", date: "Dec 15, 2025", note: "Initial upload" }],
-  },
-  {
-    id: 9, workspace_id: "ws-nightfall", title: "Obsidian", artist: "Dex Moraes", featuredArtists: [], album: "Singles 2026",
-    genre: "Techno", bpm: 136, key: "A Min", duration: "6:12", mood: ["dark", "hypnotic"], voice: "N/A",
-    status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
-    writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
-    copyright: "", language: "Instrumental", explicit: false, type: "Sample", coverIdx: 1,
-    notes: "", details: {}, stems: [], splits: [],
-    statusHistory: [{ status: "On Hold", date: "Feb 5, 2026", note: "Initial upload" }],
-  },
-  {
-    id: 10, workspace_id: "ws-nightfall", title: "Slow Drift", artist: "Marco Silva", featuredArtists: [], album: "Ambient Vol. II",
-    genre: "Ambient", bpm: 65, key: "F Maj", duration: "7:08", mood: ["meditative", "calm"], voice: "N/A",
-    status: "Released", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
-    writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
-    copyright: "", language: "Instrumental", explicit: false, type: "Instrumental", coverIdx: 3,
-    notes: "", details: {}, stems: [], splits: [],
-    statusHistory: [{ status: "Released", date: "Nov 20, 2025", note: "Initial upload" }],
-  },
-  {
-    id: 11, workspace_id: "ws-nightfall", title: "Neon Pulse", artist: "JVNE × Alina Voss", featuredArtists: [], album: "Neon Archive",
-    genre: "Synthwave", bpm: 110, key: "B Min", duration: "4:28", mood: ["energetic", "nostalgic"], voice: "Female",
-    status: "Available", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
-    writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
-    copyright: "", language: "French", explicit: false, type: "Song", coverIdx: 2,
-    notes: "", details: {}, stems: [], splits: [],
-    statusHistory: [{ status: "Available", date: "Feb 20, 2026", note: "Initial upload" }],
-  },
-  {
-    id: 12, workspace_id: "ws-nightfall", title: "Afterglow", artist: "Kira Nomura × Dex", featuredArtists: [], album: "Late Bloom EP",
-    genre: "R&B", bpm: 96, key: "C# Min", duration: "3:47", mood: ["romantic", "emotional"], voice: "Female",
-    status: "On Hold", isrc: "", upc: "", releaseDate: "", label: "", publisher: "",
-    writtenBy: [], producedBy: [], mixedBy: "", masteredBy: "",
-    copyright: "", language: "English", explicit: false, type: "Acapella", coverIdx: 0,
-    notes: "", details: {}, stems: [], splits: [],
-    statusHistory: [{ status: "On Hold", date: "Mar 1, 2026", note: "Initial upload" }],
-  },
-];
+// Helper: convert Supabase row to TrackData
+function mapRowToTrack(row: Record<string, unknown>, index: number): TrackData {
+  return {
+    id: index + 1, // numeric id for frontend compatibility
+    uuid: row.id as string,
+    workspace_id: row.workspace_id as string,
+    title: (row.title as string) || "",
+    artist: (row.artist as string) || "",
+    featuredArtists: (row.featuring as string)
+      ? (row.featuring as string).split(",").map((s) => s.trim())
+      : [],
+    album: "",
+    genre: (row.genre as string) || "",
+    bpm: (row.bpm as number) || 0,
+    key: (row.key as string) || "",
+    duration: row.duration_sec
+      ? formatDuration(row.duration_sec as number)
+      : "0:00",
+    mood: (row.mood as string[]) || [],
+    voice: (row.gender as string) || "",
+    status: mapStatus(row.status as string),
+    isrc: (row.isrc as string) || "",
+    upc: "",
+    releaseDate: (row.released_at as string) || "",
+    label: Array.isArray(row.labels) && (row.labels as string[]).length > 0
+      ? (row.labels as string[])[0]
+      : "",
+    publisher: Array.isArray(row.publishers) && (row.publishers as string[]).length > 0
+      ? (row.publishers as string[])[0]
+      : "",
+    writtenBy: [],
+    producedBy: [],
+    mixedBy: "",
+    masteredBy: "",
+    copyright: "",
+    language: (row.language as string) || "",
+    explicit: false,
+    type: mapTrackType(row.track_type as string),
+    coverIdx: 0,
+    coverImage: (row.cover_url as string) || undefined,
+    previewUrl: (row.audio_url as string) || undefined,
+    originalFileUrl: (row.audio_url as string) || undefined,
+    notes: (row.notes as string) || "",
+    details: {},
+    stems: [],
+    splits: (row.splits as TrackSplit[]) || [],
+    lyrics: (row.lyrics as string) || undefined,
+    statusHistory: [],
+  };
+}
+
+function mapStatus(status: string): string {
+  switch (status) {
+    case "available": return "Available";
+    case "on_hold": return "On Hold";
+    case "released": return "Released";
+    default: return "Available";
+  }
+}
+
+function mapStatusToDb(status: string): string {
+  switch (status) {
+    case "Available": return "available";
+    case "On Hold": return "on_hold";
+    case "Released": return "released";
+    default: return "available";
+  }
+}
+
+function mapTrackType(type: string): string {
+  switch (type) {
+    case "instrumental": return "Instrumental";
+    case "sample": return "Sample";
+    case "acapella": return "Acapella";
+    case "song": return "Song";
+    default: return "Song";
+  }
+}
+
+function mapTrackTypeToDb(type: string): string {
+  switch (type) {
+    case "Instrumental": return "instrumental";
+    case "Sample": return "sample";
+    case "Acapella": return "acapella";
+    case "Song": return "song";
+    default: return "song";
+  }
+}
+
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function parseDurationToSeconds(dur: string): number {
+  const parts = dur.split(":").map(Number);
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return 0;
+}
 
 interface TrackContextValue {
   tracks: TrackData[];
+  loading: boolean;
   getTrack: (id: number) => TrackData | undefined;
-  addTrack: (track: TrackData) => void;
+  addTrack: (track: Partial<TrackData> & { title: string; artist: string }) => Promise<TrackData | null>;
   updateTrack: (id: number, updates: Partial<TrackData>) => void;
   updateTrackStatus: (id: number, newStatus: string, note: string) => void;
   updateTrackLyrics: (id: number, lyrics: string) => void;
   updateTrackStems: (id: number, stems: TrackStem[]) => void;
   updateTrackSplits: (id: number, splits: TrackSplit[]) => void;
+  refreshTracks: () => Promise<void>;
 }
 
 const TrackContext = createContext<TrackContextValue | null>(null);
 
 export function TrackProvider({ children }: { children: ReactNode }) {
   const { activeWorkspace } = useWorkspace();
-  const [allTracks, setAllTracks] = useState<TrackData[]>(defaultTracks);
+  const { user } = useAuth();
+  const [tracks, setTracks] = useState<TrackData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Filter tracks by active workspace
-  const tracks = useMemo(
-    () => allTracks.filter((t) => t.workspace_id === activeWorkspace.id),
-    [allTracks, activeWorkspace.id]
+  // Fetch tracks from Supabase when workspace changes
+  const fetchTracks = useCallback(async () => {
+    if (!activeWorkspace || !user) {
+      setTracks([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("tracks")
+        .select("*")
+        .eq("workspace_id", activeWorkspace.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching tracks:", error);
+        setTracks([]);
+      } else {
+        const mapped = (data || []).map((row, i) =>
+          mapRowToTrack(row as unknown as Record<string, unknown>, i)
+        );
+        setTracks(mapped);
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching tracks:", err);
+      setTracks([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeWorkspace, user]);
+
+  useEffect(() => {
+    fetchTracks();
+  }, [fetchTracks]);
+
+  const getTrack = useCallback(
+    (id: number) => {
+      const track = tracks.find((t) => t.id === id);
+      if (track && !track.chapters) {
+        return { ...track, chapters: detectChapters(track.type, track.bpm, track.id) };
+      }
+      return track;
+    },
+    [tracks]
   );
 
-  const getTrack = useCallback((id: number) => {
-    const track = allTracks.find((t) => t.id === id);
-    if (track && !track.chapters) {
-      return { ...track, chapters: detectChapters(track.type, track.bpm, track.id) };
-    }
-    return track;
-  }, [allTracks]);
+  const addTrack = useCallback(
+    async (trackInput: Partial<TrackData> & { title: string; artist: string }): Promise<TrackData | null> => {
+      if (!activeWorkspace || !user) return null;
 
-  const addTrack = useCallback((track: TrackData) => {
-    const withChapters = {
-      ...track,
-      chapters: track.chapters || detectChapters(track.type, track.bpm, track.id),
-    };
-    setAllTracks((prev) => [...prev, withChapters]);
-  }, []);
+      const { data, error } = await supabase
+        .from("tracks")
+        .insert({
+          workspace_id: activeWorkspace.id,
+          uploaded_by: user.id,
+          title: trackInput.title,
+          artist: trackInput.artist,
+          featuring: trackInput.featuredArtists?.join(", ") || null,
+          track_type: mapTrackTypeToDb(trackInput.type || "Song"),
+          status: mapStatusToDb(trackInput.status || "Available"),
+          bpm: trackInput.bpm || null,
+          key: trackInput.key || null,
+          duration_sec: trackInput.duration
+            ? parseDurationToSeconds(trackInput.duration)
+            : null,
+          genre: trackInput.genre || null,
+          mood: trackInput.mood || [],
+          language: trackInput.language || null,
+          gender: trackInput.voice?.toLowerCase().replace("n/a", "n_a") || null,
+          labels: trackInput.label ? [trackInput.label] : [],
+          publishers: trackInput.publisher ? [trackInput.publisher] : [],
+          audio_url: trackInput.originalFileUrl || null,
+          cover_url: trackInput.coverImage || null,
+          lyrics: trackInput.lyrics || null,
+          notes: trackInput.notes || null,
+          splits: trackInput.splits || [],
+          isrc: trackInput.isrc || null,
+        })
+        .select()
+        .single();
 
-  const updateTrack = useCallback((id: number, updates: Partial<TrackData>) => {
-    setAllTracks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
-  }, []);
+      if (error) {
+        console.error("Error adding track:", error);
+        return null;
+      }
 
-  const updateTrackStatus = useCallback((id: number, newStatus: string, note: string) => {
-    const now = new Date();
-    const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    setAllTracks((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              status: newStatus,
-              statusHistory: [...(t.statusHistory || []), { status: newStatus, date: dateStr, note }],
-            }
-          : t
-      )
-    );
-  }, []);
+      // Refresh tracks to get the new one with correct index
+      await fetchTracks();
 
-  const updateTrackLyrics = useCallback((id: number, lyrics: string) => {
-    setAllTracks((prev) => prev.map((t) => (t.id === id ? { ...t, lyrics } : t)));
-  }, []);
+      // Return the newly created track
+      const newTrack = mapRowToTrack(data as unknown as Record<string, unknown>, tracks.length);
+      return newTrack;
+    },
+    [activeWorkspace, user, fetchTracks, tracks.length]
+  );
 
-  const updateTrackStems = useCallback((id: number, stems: TrackStem[]) => {
-    setAllTracks((prev) => prev.map((t) => (t.id === id ? { ...t, stems } : t)));
-  }, []);
+  const updateTrack = useCallback(
+    async (id: number, updates: Partial<TrackData>) => {
+      const track = tracks.find((t) => t.id === id);
+      if (!track) return;
 
-  const updateTrackSplits = useCallback((id: number, splits: TrackSplit[]) => {
-    setAllTracks((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, splits: splits.map((s) => ({ ...s, share: s.share || 0 })) } : t
-      )
-    );
-  }, []);
+      // Update locally first for instant UI
+      setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+
+      // Build Supabase update payload
+      const payload: Record<string, unknown> = {};
+      if (updates.title !== undefined) payload.title = updates.title;
+      if (updates.artist !== undefined) payload.artist = updates.artist;
+      if (updates.featuredArtists !== undefined) payload.featuring = updates.featuredArtists.join(", ");
+      if (updates.type !== undefined) payload.track_type = mapTrackTypeToDb(updates.type);
+      if (updates.status !== undefined) payload.status = mapStatusToDb(updates.status);
+      if (updates.bpm !== undefined) payload.bpm = updates.bpm || null;
+      if (updates.key !== undefined) payload.key = updates.key || null;
+      if (updates.duration !== undefined) payload.duration_sec = parseDurationToSeconds(updates.duration);
+      if (updates.genre !== undefined) payload.genre = updates.genre || null;
+      if (updates.mood !== undefined) payload.mood = updates.mood;
+      if (updates.language !== undefined) payload.language = updates.language || null;
+      if (updates.voice !== undefined) payload.gender = updates.voice?.toLowerCase().replace("n/a", "n_a") || null;
+      if (updates.label !== undefined) payload.labels = updates.label ? [updates.label] : [];
+      if (updates.publisher !== undefined) payload.publishers = updates.publisher ? [updates.publisher] : [];
+      if (updates.coverImage !== undefined) payload.cover_url = updates.coverImage || null;
+      if (updates.originalFileUrl !== undefined) payload.audio_url = updates.originalFileUrl || null;
+      if (updates.lyrics !== undefined) payload.lyrics = updates.lyrics || null;
+      if (updates.notes !== undefined) payload.notes = updates.notes || null;
+      if (updates.splits !== undefined) payload.splits = updates.splits;
+      if (updates.isrc !== undefined) payload.isrc = updates.isrc || null;
+
+      if (Object.keys(payload).length > 0) {
+        const { error } = await supabase
+          .from("tracks")
+          .update(payload)
+          .eq("id", track.uuid);
+
+        if (error) {
+          console.error("Error updating track:", error);
+        }
+      }
+    },
+    [tracks]
+  );
+
+  const updateTrackStatus = useCallback(
+    async (id: number, newStatus: string, note: string) => {
+      const track = tracks.find((t) => t.id === id);
+      if (!track) return;
+
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+      // Update locally
+      setTracks((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                status: newStatus,
+                statusHistory: [...(t.statusHistory || []), { status: newStatus, date: dateStr, note }],
+              }
+            : t
+        )
+      );
+
+      // Persist status to Supabase
+      const { error } = await supabase
+        .from("tracks")
+        .update({ status: mapStatusToDb(newStatus) })
+        .eq("id", track.uuid);
+
+      if (error) {
+        console.error("Error updating track status:", error);
+      }
+    },
+    [tracks]
+  );
+
+  const updateTrackLyrics = useCallback(
+    async (id: number, lyrics: string) => {
+      const track = tracks.find((t) => t.id === id);
+      if (!track) return;
+
+      setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, lyrics } : t)));
+
+      const { error } = await supabase
+        .from("tracks")
+        .update({ lyrics })
+        .eq("id", track.uuid);
+
+      if (error) {
+        console.error("Error updating lyrics:", error);
+      }
+    },
+    [tracks]
+  );
+
+  const updateTrackStems = useCallback(
+    (id: number, stems: TrackStem[]) => {
+      // Stems are managed in the stems table — for now, update locally
+      setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, stems } : t)));
+      // TODO: sync with stems table in Supabase
+    },
+    []
+  );
+
+  const updateTrackSplits = useCallback(
+    async (id: number, splits: TrackSplit[]) => {
+      const track = tracks.find((t) => t.id === id);
+      if (!track) return;
+
+      const normalized = splits.map((s) => ({ ...s, share: s.share || 0 }));
+
+      setTracks((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, splits: normalized } : t))
+      );
+
+      const { error } = await supabase
+        .from("tracks")
+        .update({ splits: normalized as unknown as Record<string, unknown> })
+        .eq("id", track.uuid);
+
+      if (error) {
+        console.error("Error updating splits:", error);
+      }
+    },
+    [tracks]
+  );
 
   return (
-    <TrackContext.Provider value={{ tracks, getTrack, addTrack, updateTrack, updateTrackStatus, updateTrackLyrics, updateTrackStems, updateTrackSplits }}>
+    <TrackContext.Provider
+      value={{
+        tracks,
+        loading,
+        getTrack,
+        addTrack,
+        updateTrack,
+        updateTrackStatus,
+        updateTrackLyrics,
+        updateTrackStems,
+        updateTrackSplits,
+        refreshTracks: fetchTracks,
+      }}
+    >
       {children}
     </TrackContext.Provider>
   );
@@ -300,3 +457,4 @@ export function useTrack() {
   if (!ctx) throw new Error("useTrack must be used within TrackProvider");
   return ctx;
 }
+
