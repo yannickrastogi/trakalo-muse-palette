@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PlaylistProvider } from "@/contexts/PlaylistContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
@@ -16,6 +18,7 @@ import { EngagementProvider } from "@/contexts/EngagementContext";
 import { TrackReviewProvider } from "@/contexts/TrackReviewContext";
 import { ApprovalProvider } from "@/contexts/ApprovalContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
+import Auth from "./pages/Auth";
 import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import TrackDetail from "./pages/TrackDetail";
@@ -34,11 +37,9 @@ import ApprovalQueue from "./pages/ApprovalQueue";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
+function ProtectedApp({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
       <OnboardingProvider>
       <RoleProvider>
       <WorkspaceProvider>
@@ -52,26 +53,7 @@ const App = () => (
       <PlaylistProvider>
       <SharedLinksProvider>
       <ContactsProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/tracks" element={<Catalog />} />
-            <Route path="/track/:id" element={<TrackDetail />} />
-            <Route path="/tracks/:id" element={<TrackDetail />} />
-            <Route path="/playlists" element={<Playlists />} />
-            <Route path="/playlist/:id" element={<PlaylistDetail />} />
-            <Route path="/stems" element={<Stems />} />
-            <Route path="/pitch" element={<Pitch />} />
-            <Route path="/team" element={<Team />} />
-            <Route path="/contacts" element={<Contacts />} />
-            <Route path="/shared-links" element={<SharedLinks />} />
-            <Route path="/shared/:linkId" element={<SharedStemAccess />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/notifications" element={<NotificationCenter />} />
-            <Route path="/approvals" element={<ApprovalQueue />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        {children}
       </ContactsProvider>
       </SharedLinksProvider>
       </PlaylistProvider>
@@ -85,6 +67,38 @@ const App = () => (
       </WorkspaceProvider>
       </RoleProvider>
       </OnboardingProvider>
+    </ProtectedRoute>
+  );
+}
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/shared/:linkId" element={<SharedStemAccess />} />
+            <Route path="/" element={<ProtectedApp><Index /></ProtectedApp>} />
+            <Route path="/tracks" element={<ProtectedApp><Catalog /></ProtectedApp>} />
+            <Route path="/track/:id" element={<ProtectedApp><TrackDetail /></ProtectedApp>} />
+            <Route path="/tracks/:id" element={<ProtectedApp><TrackDetail /></ProtectedApp>} />
+            <Route path="/playlists" element={<ProtectedApp><Playlists /></ProtectedApp>} />
+            <Route path="/playlist/:id" element={<ProtectedApp><PlaylistDetail /></ProtectedApp>} />
+            <Route path="/stems" element={<ProtectedApp><Stems /></ProtectedApp>} />
+            <Route path="/pitch" element={<ProtectedApp><Pitch /></ProtectedApp>} />
+            <Route path="/team" element={<ProtectedApp><Team /></ProtectedApp>} />
+            <Route path="/contacts" element={<ProtectedApp><Contacts /></ProtectedApp>} />
+            <Route path="/shared-links" element={<ProtectedApp><SharedLinks /></ProtectedApp>} />
+            <Route path="/settings" element={<ProtectedApp><SettingsPage /></ProtectedApp>} />
+            <Route path="/notifications" element={<ProtectedApp><NotificationCenter /></ProtectedApp>} />
+            <Route path="/approvals" element={<ProtectedApp><ApprovalQueue /></ProtectedApp>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
