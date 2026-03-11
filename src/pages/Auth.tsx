@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Music2 } from "lucide-react";
+import trakalogLogo from "@/assets/trakalog-logo.png";
 
 export default function Auth() {
   const { session, loading, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
