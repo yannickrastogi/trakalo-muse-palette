@@ -1,5 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { supabase } from "@/integrations/supabase/client";
 import { useTeams } from "@/contexts/TeamContext";
 import { analyzeAudio, type AudioAnalysisResult } from "@/lib/audio-analysis";
 import { compressAudio, type CompressedAudio } from "@/lib/audio-compression";
@@ -126,6 +128,8 @@ function createTrackEntry(file: File): TrackEntry {
 export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) {
   const { tracks, addTrack } = useTrack();
   const { teams } = useTeams();
+  const { activeWorkspace } = useWorkspace();
+  const [isSaving, setIsSaving] = useState(false);
 
   // Phase: "upload" (drag & drop files) → "edit" (per-track metadata) → done
   const [phase, setPhase] = useState<"upload" | "edit">("upload");
@@ -328,81 +332,76 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   // ─── Save ──────────────────────────────────────────────────
 
-  const saveCurrentTrack = useCallback(() => {
-    if (!currentTrack) return;
-    const now = new Date();
-    const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    const newId = Math.max(...tracks.map((t) => t.id), ...queue.map((_, i) => tracks.length + i), 0) + 1 + currentIdx;
+  const saveCurrentTrack = useCallback(async () => {
+    if (!currentTrack || isSaving) return;
+    setIsSaving(true);
 
-    const newTrack: TrackData = {
-      id: newId,
-      workspace_id: "", // Will be set by context/provider
-      title: currentTrack.title.trim() || "Untitled",
-      artist: currentTrack.artist.trim() || "Unknown Artist",
-      featuredArtists: [],
-      album: "",
-      genre: currentTrack.genre || "",
-      bpm: parseInt(currentTrack.bpm) || 0,
-      key: currentTrack.trackKey || "",
-      duration: currentTrack.analysisResult?.duration || "0:00",
-      mood: currentTrack.mood,
-      status: "Available",
-      isrc: "",
-      upc: "",
-      releaseDate: "",
-      label: "",
-      publisher: "",
-      writtenBy: (currentTrack.details.songwriters || []).filter(Boolean),
-      producedBy: (currentTrack.details.producers || []).filter(Boolean),
-      mixedBy: (currentTrack.details.mixingEngineer || []).filter(Boolean).join(", "),
-      masteredBy: (currentTrack.details.masteringEngineer || []).filter(Boolean).join(", "),
-      copyright: "",
-      language: currentTrack.language || "",
-      voice: currentTrack.voice || "N/A",
-      explicit: false,
-      type: "Song",
-      coverIdx: newId % 6,
-      previewUrl: currentTrack.compressed?.url || undefined,
-      originalFileName: currentTrack.fileName,
-      originalFileSize: currentTrack.file.size,
-      originalFileUrl: URL.createObjectURL(currentTrack.file),
-      notes: currentTrack.notes,
-      details: currentTrack.details,
-      lyrics: currentTrack.lyrics || undefined,
-      stems: currentTrack.stems.map((s, i) => ({
-        id: `stem-${newId}-${i}`,
-        fileName: s.name,
-        type: "other",
-        fileSize: s.size,
-        uploadDate: dateStr,
-        color: "text-muted-foreground",
-      })),
-      splits: currentTrack.splits.filter((s) => s.name.trim()).map((s) => ({
-        id: s.id,
-        name: s.name,
-        role: s.role,
-        share: Number(s.percentage) || 0,
-        pro: s.pro,
-        ipi: s.ipi,
-        publisher: s.publisher,
-      })),
-      chapters: currentTrack.analysisResult?.chapters,
-      statusHistory: [{ status: "Available", date: dateStr, note: "Track uploaded" }],
-    };
+    try {
+      let audioUrl: string | undefined;
 
-    addTrack(newTrack);
+      if (currentTrack.file && activeWorkspace) {
+        const fileExt = currentTrack.file.name.split(".").pop() || "wav";
+        const filePath = `${activeWorkspace.id}/${crypto.randomUUID()}.${fileExt}`;
 
-    // Move to next track or close
-    if (currentIdx < queue.length - 1) {
-      setCurrentIdx(currentIdx + 1);
-      setEditStep(0);
-      setIsPlayingPreview(false);
-    } else {
-      // All done
-      onOpenChange(false);
-      handleReset();
+        const { error: uploadError } = await supabase.storage
+          .from("tracks")
+          .upload(filePath, currentTrack.file, {
+            contentType: currentTrack.file.type || "audio/wav",
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error("Error uploading audio:", uploadError);
+        } else {
+          const { data: signedData } = await supabase.storage
+            .from("tracks")
+            .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+          audioUrl = signedData?.signedUrl || undefined;
+        }
+      }
+
+      await addTrack({
+        title: currentTrack.title.trim() || "Untitled",
+        artist: currentTrack.artist.trim() || "Unknown Artist",
+        genre: currentTrack.genre || "",
+        bpm: parseInt(currentTrack.bpm) || 0,
+        key: currentTrack.trackKey || "",
+        duration: currentTrack.analysisResult?.duration || "0:00",
+        mood: currentTrack.mood,
+        status: "Available",
+        language: currentTrack.language || "",
+        voice: currentTrack.voice || "N/A",
+        type: "Song",
+        originalFileUrl: audioUrl,
+        originalFileName: currentTrack.fileName,
+        originalFileSize: currentTrack.file.size,
+        notes: currentTrack.notes,
+        lyrics: currentTrack.lyrics || undefined,
+        splits: currentTrack.splits.filter((s) => s.name.trim()).map((s) => ({
+          id: s.id,
+          name: s.name,
+          role: s.role,
+          share: Number(s.percentage) || 0,
+          pro: s.pro,
+          ipi: s.ipi,
+          publisher: s.publisher,
+        })),
+      });
+
+      if (currentIdx < queue.length - 1) {
+        setCurrentIdx(currentIdx + 1);
+        setEditStep(0);
+        setIsPlayingPreview(false);
+      } else {
+        onOpenChange(false);
+        handleReset();
+      }
+    } catch (err) {
+      console.error("Error saving track:", err);
+    } finally {
+      setIsSaving(false);
     }
-  }, [currentTrack, currentIdx, queue, tracks, addTrack, onOpenChange]);
+  }, [currentTrack, currentIdx, queue, addTrack, onOpenChange, isSaving, activeWorkspace]);
 
   // ─── Navigation ────────────────────────────────────────────
 
