@@ -140,7 +140,39 @@ export default function TrackDetail() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(35);
+  const [progress, setProgress] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  // Sync audio playback
+  const togglePlayback = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play().catch(() => {});
+    }
+    setIsPlaying(!isPlaying);
+  }, [isPlaying]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onTimeUpdate = () => {
+      if (audio.duration) {
+        setProgress((audio.currentTime / audio.duration) * 100);
+      }
+    };
+    const onEnded = () => {
+      setIsPlaying(false);
+      setProgress(0);
+    };
+    audio.addEventListener("timeupdate", onTimeUpdate);
+    audio.addEventListener("ended", onEnded);
+    return () => {
+      audio.removeEventListener("timeupdate", onTimeUpdate);
+      audio.removeEventListener("ended", onEnded);
+    };
+  }, []);
   const [activeTab, setActiveTab] = useState<string>(searchParams.get("tab") || "lyrics");
   const shouldAutoUpload = searchParams.get("upload") === "true";
   const [waveformComposerOpen, setWaveformComposerOpen] = useState(false);
@@ -194,6 +226,10 @@ export default function TrackDetail() {
 
   const handleWaveformClick = (pct: number) => {
     setProgress(pct);
+    const audio = audioRef.current;
+    if (audio && audio.duration) {
+      audio.currentTime = (pct / 100) * audio.duration;
+    }
   };
 
   const handleWaveformDoubleClick = (pct: number) => {
@@ -235,6 +271,10 @@ export default function TrackDetail() {
 
   return (
     <PageShell>
+      {trackData.previewUrl && (
+        <audio ref={audioRef} src={trackData.previewUrl} preload="metadata" />
+      )}
+          <motion.div variants={container}
           <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
             {/* Breadcrumb */}
             <motion.div variants={item} className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -367,7 +407,7 @@ export default function TrackDetail() {
                     <SkipBack className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => setIsPlaying(!isPlaying)}
+                    onClick={togglePlayback}
                     className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
                   >
                     {isPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
