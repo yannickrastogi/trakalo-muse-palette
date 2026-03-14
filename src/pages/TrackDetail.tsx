@@ -141,7 +141,7 @@ export default function TrackDetail() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Global audio player
-  const { currentTrack, isPlaying: globalIsPlaying, progress: globalProgress, playTrack: globalPlayTrack, togglePlay, seek } = useAudioPlayer();
+  const { currentTrack, isPlaying: globalIsPlaying, progress: globalProgress, playTrack: globalPlayTrack, togglePlay, seek, volume, setVolume } = useAudioPlayer();
 
   const isThisTrackPlaying = currentTrack?.id === Number(id) && globalIsPlaying;
   const currentProgress = currentTrack?.id === Number(id) ? globalProgress : 0;
@@ -400,10 +400,10 @@ export default function TrackDetail() {
                   <span>{trackData.duration}</span>
                 </div>
                 <div className="hidden sm:flex items-center gap-2">
-                  <Volume2 className="w-4 h-4 text-muted-foreground" />
-                  <div className="w-20 h-1.5 bg-secondary rounded-full overflow-hidden">
-                    <div className="h-full w-3/4 bg-muted-foreground/50 rounded-full" />
-                  </div>
+                  <button onClick={() => { const v = volume > 0 ? 0 : 0.8; setVolume(v); }} className="text-muted-foreground hover:text-foreground transition-colors">
+                    <Volume2 className="w-4 h-4" />
+                  </button>
+                  <input type="range" min="0" max="1" step="0.05" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="w-20 h-1.5 accent-primary cursor-pointer" />
                 </div>
               </div>
               <div className="relative">
