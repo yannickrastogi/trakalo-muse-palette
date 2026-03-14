@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect /* refresh */ } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useTeams } from "@/contexts/TeamContext";
 import { useTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
@@ -40,7 +40,6 @@ import {
   Edit3,
   Music,
   FileText,
-  
   Send,
   Users,
   Clock,
@@ -112,21 +111,21 @@ const detailLabels: Record<string, string> = {
 
 function buildMeta(trackData: TrackData) {
   const meta = [
-    { label: "Album / EP", value: trackData.album || "—" },
-    { label: "Label", value: trackData.label || "—" },
-    { label: "Publisher", value: trackData.publisher || "—" },
-    { label: "Release Date", value: trackData.releaseDate || "—" },
-    { label: "ISRC", value: trackData.isrc || "—" },
-    { label: "UPC", value: trackData.upc || "—" },
-    { label: "Written By", value: trackData.writtenBy.length ? trackData.writtenBy.join(", ") : "—" },
-    { label: "Produced By", value: trackData.producedBy.length ? trackData.producedBy.join(", ") : "—" },
-    { label: "Mixed By", value: trackData.mixedBy || "—" },
-    { label: "Mastered By", value: trackData.masteredBy || "—" },
-    { label: "Copyright", value: trackData.copyright || "—" },
-    { label: "Language", value: trackData.language || "—" },
-    { label: "Gender", value: trackData.voice || "—" },
+    { label: "Album / EP", value: trackData.album || "\u2014" },
+    { label: "Label", value: trackData.label || "\u2014" },
+    { label: "Publisher", value: trackData.publisher || "\u2014" },
+    { label: "Release Date", value: trackData.releaseDate || "\u2014" },
+    { label: "ISRC", value: trackData.isrc || "\u2014" },
+    { label: "UPC", value: trackData.upc || "\u2014" },
+    { label: "Written By", value: trackData.writtenBy.length ? trackData.writtenBy.join(", ") : "\u2014" },
+    { label: "Produced By", value: trackData.producedBy.length ? trackData.producedBy.join(", ") : "\u2014" },
+    { label: "Mixed By", value: trackData.mixedBy || "\u2014" },
+    { label: "Mastered By", value: trackData.masteredBy || "\u2014" },
+    { label: "Copyright", value: trackData.copyright || "\u2014" },
+    { label: "Language", value: trackData.language || "\u2014" },
+    { label: "Gender", value: trackData.voice || "\u2014" },
     { label: "Explicit", value: trackData.explicit ? "Yes" : "No" },
-    { label: "Notes", value: trackData.notes || "—" },
+    { label: "Notes", value: trackData.notes || "\u2014" },
   ];
   Object.entries(trackData.details || {}).forEach(([key, values]) => {
     const filtered = values.filter(Boolean);
@@ -140,22 +139,13 @@ function buildMeta(trackData: TrackData) {
 export default function TrackDetail() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { currentTrack, isPlaying: globalIsPlaying, progress: globalProgress, playTrack: globalPlayTrack, togglePlay, seek, pause } = useAudioPlayer();
+
+  // Global audio player
+  const { currentTrack, isPlaying: globalIsPlaying, progress: globalProgress, playTrack: globalPlayTrack, togglePlay, seek } = useAudioPlayer();
 
   const isThisTrackPlaying = currentTrack?.id === Number(id) && globalIsPlaying;
   const currentProgress = currentTrack?.id === Number(id) ? globalProgress : 0;
 
-  const handlePlayPause = useCallback(() => {
-    if (!trackData) return;
-    if (currentTrack?.id === Number(id)) {
-      togglePlay();
-    } else {
-      globalPlayTrack(trackData);
-    }
-  }, [trackData, currentTrack, id, togglePlay, globalPlayTrack]);
-```
-
-onClick={handlePlayPause}
   const [activeTab, setActiveTab] = useState<string>(searchParams.get("tab") || "lyrics");
   const shouldAutoUpload = searchParams.get("upload") === "true";
   const [waveformComposerOpen, setWaveformComposerOpen] = useState(false);
@@ -167,6 +157,7 @@ onClick={handlePlayPause}
       setSearchParams({}, { replace: true });
     }
   }, []);
+
   const { permissions } = useRole();
   const { getTrack, updateTrack } = useTrack();
   const { getTrackEngagement } = useEngagement();
@@ -181,6 +172,16 @@ onClick={handlePlayPause}
   const { teams } = useTeams();
 
   const trackData = getTrack(Number(id));
+
+  // Play/pause handler
+  const handlePlayPause = useCallback(() => {
+    if (!trackData) return;
+    if (currentTrack?.id === Number(id)) {
+      togglePlay();
+    } else {
+      globalPlayTrack(trackData);
+    }
+  }, [trackData, currentTrack, id, togglePlay, globalPlayTrack]);
 
   if (!trackData) {
     return (
@@ -253,8 +254,6 @@ onClick={handlePlayPause}
 
   return (
     <PageShell>
-      
-    
           <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
             {/* Breadcrumb */}
             <motion.div variants={item} className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -305,7 +304,7 @@ onClick={handlePlayPause}
               <div className="flex-1 min-w-0 space-y-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColorMap[trackData.status] || "bg-emerald-500/15 text-emerald-400"}`}>
+                    <span className={"inline-flex px-2.5 py-1 rounded-full text-xs font-medium " + (statusColorMap[trackData.status] || "bg-emerald-500/15 text-emerald-400")}>
                       {trackData.status}
                     </span>
                     {trackData.isrc && <span className="text-xs text-muted-foreground">{trackData.isrc}</span>}
@@ -323,7 +322,7 @@ onClick={handlePlayPause}
                 <div className="flex flex-wrap gap-2">
                   {trackData.type && <MetaChip icon={Music} label={trackData.type} />}
                   {trackData.genre && <MetaChip icon={Disc3} label={trackData.genre} />}
-                  {trackData.bpm > 0 && <MetaChip icon={Activity} label={`${trackData.bpm} BPM`} />}
+                  {trackData.bpm > 0 && <MetaChip icon={Activity} label={trackData.bpm + " BPM"} />}
                   {trackData.key && <MetaChip icon={({ className }: { className?: string }) => <span className={className}>#</span>} label={trackData.key} />}
                   {trackData.language && <MetaChip icon={Mic} label={trackData.language} />}
                   {trackData.voice && <MetaChip icon={Mic} label={trackData.voice} />}
@@ -387,13 +386,7 @@ onClick={handlePlayPause}
                     <SkipBack className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => {
-                      if (currentTrack?.id === Number(id)) {
-                        togglePlay();
-                      } else if (trackData) {
-                        globalPlayTrack(trackData);
-                      }
-                    }}
+                    onClick={handlePlayPause}
                     className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
                   >
                     {isThisTrackPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
@@ -453,11 +446,7 @@ onClick={handlePlayPause}
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap border-b-2 transition-colors min-h-[44px] ${
-                      activeTab === tab.id
-                        ? "border-primary text-primary"
-                        : "border-transparent text-muted-foreground hover:text-foreground"
-                    }`}
+                    className={"px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap border-b-2 transition-colors min-h-[44px] " + (activeTab === tab.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}
                   >
                     {tab.label}
                   </button>
@@ -536,7 +525,6 @@ onClick={handlePlayPause}
     </PageShell>
   );
 }
-
 /* ─── Sub-components ─── */
 
 function MetaChip({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
