@@ -140,11 +140,35 @@ function buildMeta(trackData: TrackData) {
 export default function TrackDetail() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { currentTrack, isPlaying, progress, playTrack: globalPlayTrack, togglePlay, seek, pause } = useAudioPlayer();
+  cconst { currentTrack, isPlaying: globalIsPlaying, progress: globalProgress, playTrack: globalPlayTrack, togglePlay, seek, pause } = useAudioPlayer();
 
-  // Sync: if this track is playing in global player, show its state
-  const isThisTrackPlaying = currentTrack?.id === Number(id) && isPlaying;
-  const currentProgress = currentTrack?.id === Number(id) ? progress : 0;
+  const isThisTrackPlaying = currentTrack?.id === Number(id) && globalIsPlaying;
+  const currentProgress = currentTrack?.id === Number(id) ? globalProgress : 0;
+
+  const handlePlayPause = useCallback(() => {
+    if (!trackData) return;
+    if (currentTrack?.id === Number(id)) {
+      togglePlay();
+    } else {
+      globalPlayTrack(trackData);
+    }
+  }, [trackData, currentTrack, id, togglePlay, globalPlayTrack]);
+```
+
+Ensuite cherche le bloc onClick du bouton play :
+```
+                    onClick={() => {
+                      if (currentTrack?.id === Number(id)) {
+                        togglePlay();
+                      } else if (trackData) {
+                        globalPlayTrack(trackData);
+                      }
+                    }}
+```
+
+Remplace par :
+```
+                    onClick={handlePlayPause}
   const [activeTab, setActiveTab] = useState<string>(searchParams.get("tab") || "lyrics");
   const shouldAutoUpload = searchParams.get("upload") === "true";
   const [waveformComposerOpen, setWaveformComposerOpen] = useState(false);
