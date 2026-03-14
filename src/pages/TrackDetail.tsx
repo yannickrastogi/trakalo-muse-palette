@@ -16,6 +16,7 @@ import { TimecodedCommentComposer } from "@/components/TimecodedCommentComposer"
 import { ShareModal } from "@/components/ShareModal";
 import { ShareWithTeamModal } from "@/components/ShareWithTeamModal";
 import { usePitches } from "@/contexts/PitchContext";
+import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertDialog,
@@ -139,40 +140,11 @@ function buildMeta(trackData: TrackData) {
 export default function TrackDetail() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  // Sync audio playback
-  const togglePlayback = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (isPlaying) {
-      audio.pause();
-    } else {
-      audio.play().catch(() => {});
-    }
-    setIsPlaying(!isPlaying);
-  }, [isPlaying]);
+  const { currentTrack, isPlaying, progress, playTrack: globalPlayTrack, togglePlay, seek, pause } = useAudioPlayer();
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const onTimeUpdate = () => {
-      if (audio.duration) {
-        setProgress((audio.currentTime / audio.duration) * 100);
-      }
-    };
-    const onEnded = () => {
-      setIsPlaying(false);
-      setProgress(0);
-    };
-    audio.addEventListener("timeupdate", onTimeUpdate);
-    audio.addEventListener("ended", onEnded);
-    return () => {
-      audio.removeEventListener("timeupdate", onTimeUpdate);
-      audio.removeEventListener("ended", onEnded);
-    };
-  }, []);
+  // Sync: if this track is playing in global player, show its state
+  const isThisTrackPlaying = currentTrack?.id === Number(id) && isPlaying;
+  const currentProgress = currentTrack?.id === Number(id) ? progress : 0;
   const [activeTab, setActiveTab] = useState<string>(searchParams.get("tab") || "lyrics");
   const shouldAutoUpload = searchParams.get("upload") === "true";
   const [waveformComposerOpen, setWaveformComposerOpen] = useState(false);
@@ -225,11 +197,10 @@ export default function TrackDetail() {
   const totalDurationSeconds = parseDuration(trackData.duration);
 
   const handleWaveformClick = (pct: number) => {
-    setProgress(pct);
-    const audio = audioRef.current;
-    if (audio && audio.duration) {
-      audio.currentTime = (pct / 100) * audio.duration;
+    if (currentTrack?.id !== Number(id) && trackData) {
+      globalPlayTrack(trackData);
     }
+    seek(pct);
   };
 
   const handleWaveformDoubleClick = (pct: number) => {
@@ -407,7 +378,13 @@ export default function TrackDetail() {
                     <SkipBack className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={togglePlayback}
+                    oonClick={() => {
+                      if (currentTrack?.id === Number(id)) {
+                        togglePlay();
+                      } else if (trackData) {
+                        globalPlayTrack(trackData);
+                      }
+                    }}
                     className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
                   >
                     {isPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
