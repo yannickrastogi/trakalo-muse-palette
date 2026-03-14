@@ -173,15 +173,7 @@ export default function TrackDetail() {
 
   const trackData = getTrack(Number(id));
 
-  // Play/pause handler
-  const handlePlayPause = useCallback(() => {
-    if (!trackData) return;
-    if (currentTrack?.id === Number(id)) {
-      togglePlay();
-    } else {
-      globalPlayTrack(trackData);
-    }
-  }, [trackData, currentTrack, id, togglePlay, globalPlayTrack]);
+  
 
   if (!trackData) {
     return (
@@ -190,6 +182,14 @@ export default function TrackDetail() {
       </PageShell>
     );
   }
+  // Play/pause handler
+  const handlePlayPause = useCallback(() => {
+    if (currentTrack?.id === Number(id)) {
+      togglePlay();
+    } else {
+      globalPlayTrack(trackData);
+    }
+  }, [trackData, currentTrack, id, togglePlay, globalPlayTrack]);
 
   const statusColorMap: Record<string, string> = {
     Available: "bg-emerald-500/15 text-emerald-400",
