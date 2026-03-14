@@ -140,7 +140,7 @@ function buildMeta(trackData: TrackData) {
 export default function TrackDetail() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  cconst { currentTrack, isPlaying: globalIsPlaying, progress: globalProgress, playTrack: globalPlayTrack, togglePlay, seek, pause } = useAudioPlayer();
+  const { currentTrack, isPlaying: globalIsPlaying, progress: globalProgress, playTrack: globalPlayTrack, togglePlay, seek, pause } = useAudioPlayer();
 
   const isThisTrackPlaying = currentTrack?.id === Number(id) && globalIsPlaying;
   const currentProgress = currentTrack?.id === Number(id) ? globalProgress : 0;
