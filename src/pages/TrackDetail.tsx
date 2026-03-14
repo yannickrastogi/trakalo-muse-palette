@@ -155,20 +155,7 @@ export default function TrackDetail() {
   }, [trackData, currentTrack, id, togglePlay, globalPlayTrack]);
 ```
 
-Ensuite cherche le bloc onClick du bouton play :
-```
-                    onClick={() => {
-                      if (currentTrack?.id === Number(id)) {
-                        togglePlay();
-                      } else if (trackData) {
-                        globalPlayTrack(trackData);
-                      }
-                    }}
-```
-
-Remplace par :
-```
-                    onClick={handlePlayPause}
+onClick={handlePlayPause}
   const [activeTab, setActiveTab] = useState<string>(searchParams.get("tab") || "lyrics");
   const shouldAutoUpload = searchParams.get("upload") === "true";
   const [waveformComposerOpen, setWaveformComposerOpen] = useState(false);
@@ -231,12 +218,12 @@ Remplace par :
     const seconds = (pct / 100) * totalDurationSeconds;
     setWaveformComposerTimestamp(seconds);
     setWaveformComposerOpen(true);
-    setProgress(pct);
+    seek(pct);
   };
 
   const handleCommentSeek = (seconds: number, _totalDuration: number) => {
     const pct = (seconds / totalDurationSeconds) * 100;
-    setProgress(pct);
+    seek(pct);
   };
 
   const handleWaveformCommentSubmit = (text: string, timestampSeconds: number) => {
@@ -400,7 +387,7 @@ Remplace par :
                     <SkipBack className="w-4 h-4" />
                   </button>
                   <button
-                    oonClick={() => {
+                    onClick={() => {
                       if (currentTrack?.id === Number(id)) {
                         togglePlay();
                       } else if (trackData) {
