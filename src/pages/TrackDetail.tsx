@@ -246,8 +246,8 @@ onClick={handlePlayPause}
     { id: "metadata", label: "Metadata" },
     { id: "paperwork", label: "Paperwork" },
     { id: "pitches", label: "Pitch History" },
-    { id: "review", label: `Review${commentCount ? ` (${commentCount})` : ""}` },
-    { id: "engagement", label: `Engagement${engagement ? ` (${engagement.totalPlays})` : ""}` },
+    { id: "review", label: commentCount ? "Review (" + commentCount + ")" : "Review" },
+    { id: "engagement", label: engagement ? "Engagement (" + engagement.totalPlays + ")" : "Engagement" },
     { id: "status", label: "Status" },
   ];
 
