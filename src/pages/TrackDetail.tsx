@@ -242,9 +242,7 @@ export default function TrackDetail() {
 
   return (
     <PageShell>
-      {trackData.previewUrl && (
-        <audio ref={audioRef} src={trackData.previewUrl} preload="metadata" />
-      )}
+      
     
           <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
             {/* Breadcrumb */}
@@ -387,14 +385,14 @@ export default function TrackDetail() {
                     }}
                     className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
                   >
-                    {isPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
+                    {isThisTrackPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
                   </button>
                   <button className="p-1.5 text-muted-foreground hover:text-foreground transition-colors">
                     <SkipForward className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="flex-1 flex items-center justify-between text-[11px] text-muted-foreground font-mono">
-                  <span>{formatTimestamp((progress / 100) * totalDurationSeconds)}</span>
+                  <span>{formatTimestamp((currentProgress / 100) * totalDurationSeconds)}</span>
                   <span>{trackData.duration}</span>
                 </div>
                 <div className="hidden sm:flex items-center gap-2">
@@ -407,11 +405,11 @@ export default function TrackDetail() {
               <div className="relative">
                 <TrackWaveformPlayer
                   seed={trackData.id}
-                  progress={progress}
+                  progress={currentProgress}
                   onSeek={handleWaveformClick}
                   onDoubleClick={handleWaveformDoubleClick}
                   chapters={trackData.chapters || []}
-                  isPlaying={isPlaying}
+                  isPlaying={isThisTrackPlaying}
                 />
                 <CommentMarkerLayer
                   comments={trackComments}
@@ -426,7 +424,7 @@ export default function TrackDetail() {
                 {waveformComposerOpen && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mt-3">
                     <TimecodedCommentComposer
-                      currentSeconds={(progress / 100) * totalDurationSeconds}
+                      currentSeconds={(currentProgress / 100) * totalDurationSeconds}
                       initialTimestamp={waveformComposerTimestamp}
                       onSubmit={handleWaveformCommentSubmit}
                       onCancel={() => setWaveformComposerOpen(false)}
@@ -469,10 +467,10 @@ export default function TrackDetail() {
                  <TrackReviewPanel
                    trackId={Number(id)}
                    currentUserName="Kira Nomura"
-                   progress={progress}
+                   progress={currentProgress}
                    onSeek={handleCommentSeek}
                    totalDurationSeconds={totalDurationSeconds}
-                   isPlaying={isPlaying}
+                   isPlaying={isThisTrackPlaying}
                  />
                )}
                {activeTab === "status" && <StatusTab trackId={Number(id)} />}
