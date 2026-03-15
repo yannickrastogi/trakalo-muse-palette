@@ -1,5 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTeams } from "@/contexts/TeamContext";
 import { useTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
 import { useEngagement } from "@/contexts/EngagementContext";
@@ -159,6 +161,7 @@ export default function TrackDetail() {
   }, []);
 
   const { permissions } = useRole();
+  const { activeWorkspace } = useWorkspace();
   const { getTrack, updateTrack } = useTrack();
   const { getTrackEngagement } = useEngagement();
   const { getCommentsForTrack, getCommentCountForTrack, addComment } = useTrackReview();
@@ -280,14 +283,21 @@ export default function TrackDetail() {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        updateTrack(trackData.id, { coverImage: reader.result as string });
-                      };
-                      reader.readAsDataURL(file);
+                      const path = activeWorkspace.id + "/" + trackData.uuid + ".jpg";
+                      const { error } = await supabase.storage
+                        .from("covers")
+                        .upload(path, file, { upsert: true, contentType: file.type });
+                      if (error) {
+                        console.error("Error uploading cover:", error);
+                        return;
+                      }
+                      const { data: urlData } = supabase.storage
+                        .from("covers")
+                        .getPublicUrl(path);
+                      updateTrack(trackData.id, { coverImage: urlData.publicUrl });
                       e.target.value = "";
                     }}
                   />
