@@ -1,5 +1,8 @@
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTrack } from "@/contexts/TrackContext";
 import type { WorkspaceScoped } from "@/types/workspace";
 
 export interface DownloadEvent {
@@ -33,6 +36,7 @@ export interface SharedLink extends WorkspaceScoped {
   trackArtist: string;
   trackCover?: string;
   linkName: string;
+  linkSlug?: string;
   linkType: "public" | "secured";
   password?: string;
   message?: string;
@@ -55,8 +59,9 @@ export interface SharedLink extends WorkspaceScoped {
 
 interface SharedLinksContextValue {
   sharedLinks: SharedLink[];
-  createSharedLink: (link: SharedLink) => void;
+  createSharedLink: (link: SharedLink) => Promise<SharedLink | null>;
   getSharedLink: (id: string) => SharedLink | undefined;
+  getSharedLinkBySlug: (slug: string) => SharedLink | undefined;
   updateLinkStatus: (id: string, status: SharedLink["status"]) => void;
   addDownloadEvent: (linkId: string, event: DownloadEvent) => void;
   notifications: DownloadEvent[];
@@ -65,52 +70,177 @@ interface SharedLinksContextValue {
 
 const SharedLinksContext = createContext<SharedLinksContextValue | null>(null);
 
+function generateSlug(): string {
+  var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  var slug = "";
+  for (var i = 0; i < 12; i++) {
+    slug += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return slug;
+}
+
+function mapRowToSharedLink(row: Record<string, unknown>): SharedLink {
+  var packItems = row.pack_items as Record<string, unknown> | null;
+  return {
+    id: row.id as string,
+    workspace_id: row.workspace_id as string,
+    shareType: (row.share_type as ShareType) || "track",
+    trackId: 0,
+    trackTitle: (row.link_name as string) || "",
+    trackArtist: "",
+    linkName: (row.link_name as string) || "",
+    linkSlug: (row.link_slug as string) || "",
+    linkType: (row.link_type as "public" | "secured") || "public",
+    password: undefined,
+    message: (row.message as string) || undefined,
+    expirationDate: (row.expires_at as string) || undefined,
+    createdAt: (row.created_at as string) || "",
+    status: (row.status as "active" | "expired" | "disabled") || "active",
+    downloads: [],
+    stems: [],
+    playlistId: (row.playlist_id as string) || undefined,
+    packItems: packItems && Array.isArray(packItems) ? packItems as unknown as string[] : undefined,
+    allowDownload: (row.allow_download as boolean) || false,
+    downloadQuality: (row.download_quality as "hi-res" | "low-res") || undefined,
+  };
+}
+
 export function SharedLinksProvider({ children }: { children: ReactNode }) {
-  const { activeWorkspace } = useWorkspace();
-  const [allSharedLinks, setAllSharedLinks] = useState<SharedLink[]>([]);
-  const [notifications, setNotifications] = useState<DownloadEvent[]>([]);
+  var { activeWorkspace } = useWorkspace();
+  var { user } = useAuth();
+  var { tracks } = useTrack();
+  var [sharedLinks, setSharedLinks] = useState<SharedLink[]>([]);
+  var [notifications, setNotifications] = useState<DownloadEvent[]>([]);
 
-  const sharedLinks = useMemo(
-    () => allSharedLinks.filter((l) => l.workspace_id === activeWorkspace.id),
-    [allSharedLinks, activeWorkspace.id]
-  );
+  var fetchLinks = useCallback(async () => {
+    if (!activeWorkspace || !user) {
+      setSharedLinks([]);
+      return;
+    }
 
-  const createSharedLink = useCallback((link: SharedLink) => {
-    setAllSharedLinks((prev) => [link, ...prev]);
-  }, []);
+    var { data, error } = await supabase
+      .from("shared_links")
+      .select("*")
+      .eq("workspace_id", activeWorkspace.id)
+      .order("created_at", { ascending: false });
 
-  const getSharedLink = useCallback((id: string) => {
-    const link = allSharedLinks.find((l) => l.id === id);
+    if (error) {
+      console.error("Error fetching shared links:", error);
+      setSharedLinks([]);
+    } else {
+      setSharedLinks((data || []).map(function(row) {
+        return mapRowToSharedLink(row as unknown as Record<string, unknown>);
+      }));
+    }
+  }, [activeWorkspace, user]);
+
+  useEffect(function() {
+    fetchLinks();
+  }, [fetchLinks]);
+
+  var createSharedLink = useCallback(async function(link: SharedLink): Promise<SharedLink | null> {
+    if (!activeWorkspace || !user) return null;
+
+    var slug = generateSlug();
+
+    // Resolve track UUID from numeric trackId
+    var trackUuid: string | null = null;
+    if (link.trackId && link.shareType !== "playlist") {
+      var matchedTrack = tracks.find(function(t) { return t.id === link.trackId; });
+      if (matchedTrack) trackUuid = matchedTrack.uuid;
+    }
+
+    var { data, error } = await supabase
+      .from("shared_links")
+      .insert({
+        workspace_id: activeWorkspace.id,
+        created_by: user.id,
+        share_type: link.shareType,
+        track_id: trackUuid || null,
+        playlist_id: link.playlistId || null,
+        link_name: link.linkName,
+        link_slug: slug,
+        link_type: link.linkType,
+        password_hash: link.linkType === "secured" && link.password ? link.password : null,
+        message: link.message || null,
+        allow_download: link.allowDownload,
+        download_quality: link.downloadQuality || null,
+        expires_at: link.expirationDate || null,
+        status: "active",
+        pack_items: link.packItems ? link.packItems as unknown as Record<string, unknown> : null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating shared link:", error);
+      return null;
+    }
+
+    var created = mapRowToSharedLink(data as unknown as Record<string, unknown>);
+    // Preserve UI fields from the original link
+    created.trackId = link.trackId;
+    created.trackTitle = link.trackTitle;
+    created.trackArtist = link.trackArtist;
+    created.trackCover = link.trackCover;
+    created.stems = link.stems;
+    created.playlistName = link.playlistName;
+    created.playlistCover = link.playlistCover;
+    created.playlistTracks = link.playlistTracks;
+
+    setSharedLinks(function(prev) { return [created].concat(prev); });
+    return created;
+  }, [activeWorkspace, user, tracks]);
+
+  var getSharedLink = useCallback(function(id: string) {
+    var link = sharedLinks.find(function(l) { return l.id === id; });
     if (link && link.expirationDate && new Date(link.expirationDate) < new Date() && link.status === "active") {
-      return { ...link, status: "expired" as const };
+      return Object.assign({}, link, { status: "expired" as const });
     }
     return link;
-  }, [allSharedLinks]);
+  }, [sharedLinks]);
 
-  const updateLinkStatus = useCallback((id: string, status: SharedLink["status"]) => {
-    setAllSharedLinks((prev) => prev.map((l) => l.id === id ? { ...l, status } : l));
+  var getSharedLinkBySlug = useCallback(function(slug: string) {
+    return sharedLinks.find(function(l) { return l.linkSlug === slug; });
+  }, [sharedLinks]);
+
+  var updateLinkStatus = useCallback(async function(id: string, status: SharedLink["status"]) {
+    setSharedLinks(function(prev) {
+      return prev.map(function(l) { return l.id === id ? Object.assign({}, l, { status: status }) : l; });
+    });
+
+    var { error } = await supabase
+      .from("shared_links")
+      .update({ status: status })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error updating link status:", error);
+    }
   }, []);
 
-  const addDownloadEvent = useCallback((linkId: string, event: DownloadEvent) => {
-    setAllSharedLinks((prev) =>
-      prev.map((l) => l.id === linkId ? { ...l, downloads: [...l.downloads, event] } : l)
-    );
-    setNotifications((prev) => [event, ...prev]);
+  var addDownloadEvent = useCallback(function(linkId: string, event: DownloadEvent) {
+    setSharedLinks(function(prev) {
+      return prev.map(function(l) {
+        return l.id === linkId ? Object.assign({}, l, { downloads: l.downloads.concat([event]) }) : l;
+      });
+    });
+    setNotifications(function(prev) { return [event].concat(prev); });
   }, []);
 
-  const clearNotification = useCallback((id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  var clearNotification = useCallback(function(id: string) {
+    setNotifications(function(prev) { return prev.filter(function(n) { return n.id !== id; }); });
   }, []);
 
   return (
-    <SharedLinksContext.Provider value={{ sharedLinks, createSharedLink, getSharedLink, updateLinkStatus, addDownloadEvent, notifications, clearNotification }}>
+    <SharedLinksContext.Provider value={{ sharedLinks, createSharedLink, getSharedLink, getSharedLinkBySlug, updateLinkStatus, addDownloadEvent, notifications, clearNotification }}>
       {children}
     </SharedLinksContext.Provider>
   );
 }
 
 export function useSharedLinks() {
-  const ctx = useContext(SharedLinksContext);
+  var ctx = useContext(SharedLinksContext);
   if (!ctx) throw new Error("useSharedLinks must be used within SharedLinksProvider");
   return ctx;
 }

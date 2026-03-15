@@ -79,17 +79,19 @@ export function ShareModal({
     ? `${trackTitle} — Trakalog Pack`
     : `${trackTitle}`;
 
-  const handleCreate = () => {
+  const [creating, setCreating] = useState(false);
+
+  const handleCreate = async () => {
     if (linkType === "secured" && !password.trim()) {
       toast.error("Please set a password for the secured link");
       return;
     }
 
-    const linkId = `sl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setCreating(true);
 
     const newLink: SharedLink = {
-      id: linkId,
-      workspace_id: "", // Will inherit from active workspace context
+      id: "",
+      workspace_id: "",
       shareType,
       trackId: trackId || 0,
       trackTitle: trackTitle || playlistName || "",
@@ -113,10 +115,16 @@ export function ShareModal({
       downloadQuality: allowDownload ? downloadQuality : undefined,
     };
 
-    createSharedLink(newLink);
-    const url = `${window.location.origin}/shared/${linkId}`;
-    setCreatedLink(url);
-    toast.success("Share link created!");
+    const created = await createSharedLink(newLink);
+    setCreating(false);
+
+    if (created && created.linkSlug) {
+      const url = "https://trakalo-muse-palette.vercel.app/share/" + created.linkSlug;
+      setCreatedLink(url);
+      toast.success("Share link created!");
+    } else {
+      toast.error("Failed to create share link");
+    }
   };
 
   const handleCopy = () => {
@@ -355,10 +363,10 @@ export function ShareModal({
                   </button>
                   <button
                     onClick={handleCreate}
-                    disabled={itemCount === 0 && shareType !== "track"}
+                    disabled={(itemCount === 0 && shareType !== "track") || creating}
                     className="px-5 py-2.5 rounded-lg text-xs font-semibold btn-brand disabled:opacity-40 disabled:pointer-events-none"
                   >
-                    Create Link
+                    {creating ? "Creating…" : "Create Link"}
                   </button>
                 </div>
               </div>
