@@ -34,6 +34,7 @@ import SharedStemAccess from "./pages/SharedStemAccess";
 import NotFound from "./pages/NotFound";
 import NotificationCenter from "./pages/NotificationCenter";
 import ApprovalQueue from "./pages/ApprovalQueue";
+import SharedLinkPage from "./pages/SharedLinkPage";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +81,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/share/:slug" element={<SharedLinkPage />} />
             <Route path="/shared/:linkId" element={<SharedStemAccess />} />
             <Route path="/" element={<ProtectedApp><Index /></ProtectedApp>} />
             <Route path="/tracks" element={<ProtectedApp><Catalog /></ProtectedApp>} />
