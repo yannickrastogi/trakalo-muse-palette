@@ -69,7 +69,7 @@ import {
 import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
-
+import { StemsTab } from "@/components/StemsTab";
 import { STEM_TYPES } from "@/lib/constants";
 import type { StemType } from "@/lib/constants";
 
