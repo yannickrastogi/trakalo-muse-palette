@@ -82,7 +82,6 @@ MiniCoverGrid.displayName = "MiniCoverGrid";
 export default function Playlists() {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
-  const [playingId, setPlayingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string } | null>(null);
@@ -92,7 +91,7 @@ export default function Playlists() {
   const isMobile = useIsMobile();
   const { playlists, addPlaylist, deletePlaylist, updatePlaylist } = usePlaylists();
   const { tracks: allTracks } = useTrack();
-  const { playTrack, setQueue, isPlaying: audioIsPlaying, currentTrack } = useAudioPlayer();
+  const { playTrack, togglePlay, setQueue, isPlaying: audioIsPlaying, currentTrack, queue } = useAudioPlayer();
   const { permissions } = useRole();
 
   const filtered = useMemo(() => {
@@ -190,8 +189,19 @@ export default function Playlists() {
                           onClick={(e) => {
                             e.stopPropagation();
                             if (plTracks.length === 0) return;
-                            setQueue(plTracks);
-                            playTrack(plTracks[0]);
+                            if (isPlaying) {
+                              // Already playing a track from this playlist — toggle pause
+                              togglePlay();
+                            } else {
+                              // Start playing this playlist from the beginning (or resume if same queue)
+                              var alreadyQueued = currentTrack != null && plTracks.some(function(t) { return t.id === currentTrack.id; });
+                              if (alreadyQueued) {
+                                togglePlay();
+                              } else {
+                                setQueue(plTracks);
+                                playTrack(plTracks[0]);
+                              }
+                            }
                           }}
                           className={"w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg min-h-[48px] min-w-[48px] " + (
                             isPlaying ? "btn-brand scale-100" : "bg-foreground/80 backdrop-blur-sm scale-90 hover:scale-100"

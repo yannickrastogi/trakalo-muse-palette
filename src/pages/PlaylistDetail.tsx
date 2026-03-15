@@ -110,7 +110,6 @@ export default function PlaylistDetail() {
       playTrack(track);
     }
   }, [tracks, currentTrack, togglePlay, playTrack, setQueue]);
-  const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState(playlist?.name || "");
   const [playlistName, setPlaylistName] = useState(playlist?.name || "");
   const [editingName, setEditingName] = useState(false);
@@ -367,14 +366,8 @@ export default function PlaylistDetail() {
                   <Plus className="w-4 h-4" /> Add Track
                 </button>
               )}
-              {permissions.canEditPlaylists && (
-                <button
-                  onClick={() => { setRenameValue(playlistName); setRenameOpen(true); }}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors min-h-[44px]"
-                >
-                  <Edit3 className="w-4 h-4" /> Rename
-                </button>
-              )}
+
+
               {permissions.canCreatePlaylists && (
                 <button
                   onClick={handleDuplicate}
@@ -425,32 +418,6 @@ export default function PlaylistDetail() {
           </DndContext>
         </motion.div>
       </motion.div>
-
-      {/* Rename Dialog */}
-      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-        <DialogContent className="sm:max-w-md bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Rename Playlist</DialogTitle>
-            <DialogDescription>Enter a new name for this playlist.</DialogDescription>
-          </DialogHeader>
-          <input
-            type="text"
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
-            className="w-full h-10 px-3 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/40 transition-colors font-medium"
-            autoFocus
-          />
-          <DialogFooter>
-            <button onClick={() => setRenameOpen(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
-            <button
-              onClick={() => { if (renameValue.trim()) { setPlaylistName(renameValue.trim()); syncToContext(tracks, renameValue.trim()); setRenameOpen(false); } }}
-              className="btn-brand px-5 py-2 rounded-lg text-sm font-semibold"
-            >
-              Save
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Add Track Dialog */}
       <Dialog open={addTrackOpen} onOpenChange={setAddTrackOpen}>
