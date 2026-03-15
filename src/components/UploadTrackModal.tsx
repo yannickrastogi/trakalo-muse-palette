@@ -353,10 +353,9 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         if (uploadError) {
           console.error("Error uploading audio:", uploadError);
         } else {
-          const { data: signedData } = await supabase.storage
-            .from("tracks")
-            .createSignedUrl(filePath, 60 * 60 * 24 * 365);
-          audioUrl = signedData?.signedUrl || undefined;
+          // Store the storage path, not a signed URL — TrackContext
+          // will generate signed URLs on fetch
+          audioUrl = filePath;
         }
       }
 

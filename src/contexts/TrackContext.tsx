@@ -275,6 +275,36 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           const trackStems = stemsByTrack[r.id as string] || [];
           return mapRowToTrack(r, i, trackStems);
         });
+
+        // Resolve storage paths to signed URLs for audio
+        const tracksNeedingUrls = mapped.filter(
+          (t) => t.previewUrl && !t.previewUrl.startsWith("http")
+        );
+        if (tracksNeedingUrls.length > 0) {
+          const paths = tracksNeedingUrls.map((t) => t.previewUrl as string);
+          const { data: signedUrls } = await supabase.storage
+            .from("tracks")
+            .createSignedUrls(paths, 3600);
+
+          if (signedUrls) {
+            const urlMap: Record<string, string> = {};
+            signedUrls.forEach((entry) => {
+              if (entry.signedUrl && !entry.error) {
+                urlMap[entry.path || ""] = entry.signedUrl;
+              }
+            });
+            mapped.forEach((t) => {
+              if (t.previewUrl && !t.previewUrl.startsWith("http")) {
+                var signed = urlMap[t.previewUrl];
+                if (signed) {
+                  t.previewUrl = signed;
+                  t.originalFileUrl = signed;
+                }
+              }
+            });
+          }
+        }
+
         setTracks(mapped);
       }
     } catch (err) {
