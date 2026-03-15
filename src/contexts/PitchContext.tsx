@@ -1,18 +1,54 @@
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { type PitchEntry } from "@/components/CreatePitchModal";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useAuth } from "@/contexts/AuthContext";
 
-const demoPitches: PitchEntry[] = [
-  { id: "p1", workspace_id: "ws-nightfall", type: "track", itemName: "Velvet Hour", artist: "Kira Nomura", coverIdx: 0, recipientName: "Jamie Lin", recipientCompany: "Interscope Records", recipientEmail: "jamie.lin@interscope.com", date: "Mar 5, 2026", status: "Sent", notes: "Follow up next week if no response." },
-  { id: "p2", workspace_id: "ws-nightfall", type: "track", itemName: "Soft Landing", artist: "Marco Silva", coverIdx: 3, recipientName: "David Park", recipientCompany: "Atlantic Records", recipientEmail: "d.park@atlantic.com", date: "Mar 3, 2026", status: "Responded", notes: "Positive response — requesting stems." },
-  { id: "p3", workspace_id: "ws-nightfall", type: "playlist", itemName: "Summer EP — Final Selects", artist: "Various", coverIdx: 0, recipientName: "Sarah Cho", recipientCompany: "Republic Records", recipientEmail: "sarah.cho@republic.com", date: "Mar 1, 2026", status: "Opened", notes: "" },
-  { id: "p4", workspace_id: "ws-nightfall", type: "track", itemName: "Ghost Protocol", artist: "Dex Moraes × JVNE", coverIdx: 1, recipientName: "Marcus Webb", recipientCompany: "Anjunadeep", recipientEmail: "marcus@anjunadeep.com", date: "Feb 28, 2026", status: "Sent", notes: "" },
-  { id: "p5", workspace_id: "ws-nightfall", type: "track", itemName: "Paper Moons", artist: "Kira Nomura × AYA", coverIdx: 4, recipientName: "Lena Torres", recipientCompany: "Darkroom Management", recipientEmail: "lena@darkroom.mgmt", date: "Feb 25, 2026", status: "Responded", notes: "Placement confirmed for sync licensing." },
-  { id: "p6", workspace_id: "ws-nightfall", type: "track", itemName: "Golden Frequency", artist: "Alina Voss × Marco", coverIdx: 2, recipientName: "Tom Ellis", recipientCompany: "Method Management", recipientEmail: "tom@method.co", date: "Feb 22, 2026", status: "Opened", notes: "" },
-  { id: "p7", workspace_id: "ws-nightfall", type: "track", itemName: "Neon Pulse", artist: "JVNE × Alina Voss", coverIdx: 2, recipientName: "Rachel Kim", recipientCompany: "Warner Records", recipientEmail: "r.kim@warnerrecords.com", date: "Feb 18, 2026", status: "Responded", notes: "Interested — scheduling follow-up call." },
-  { id: "p8", workspace_id: "ws-nightfall", type: "playlist", itemName: "Late Night Sessions", artist: "Various", coverIdx: 3, recipientName: "André Moreau", recipientCompany: "Maison Records", recipientEmail: "andre@maisonrecords.fr", date: "Feb 15, 2026", status: "Draft", notes: "Need to finalize tracklist before sending." },
-  { id: "p9", workspace_id: "ws-nightfall", type: "track", itemName: "Daybreak", artist: "Kira Nomura", coverIdx: 0, recipientName: "Chris Patel", recipientCompany: "Columbia Records", recipientEmail: "c.patel@columbia.com", date: "Feb 12, 2026", status: "Draft", notes: "" },
-];
+function mapStatusFromDb(status: string): string {
+  switch (status) {
+    case "draft": return "Draft";
+    case "sent": return "Sent";
+    case "opened": return "Opened";
+    case "declined": return "Declined";
+    case "accepted": return "Responded";
+    default: return "Draft";
+  }
+}
+
+function mapStatusToDb(status: string): string {
+  switch (status) {
+    case "Draft": return "draft";
+    case "Sent": return "sent";
+    case "Opened": return "opened";
+    case "Declined": return "declined";
+    case "Responded": return "accepted";
+    default: return "draft";
+  }
+}
+
+function formatDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function mapRowToPitch(row: Record<string, unknown>): PitchEntry {
+  const trackIds = (row.track_ids as string[]) || [];
+  return {
+    id: row.id as string,
+    workspace_id: row.workspace_id as string,
+    type: trackIds.length === 1 ? "track" : "playlist",
+    itemName: (row.subject as string) || "",
+    artist: "",
+    coverIdx: 0,
+    recipientName: (row.recipient_name as string) || "",
+    recipientCompany: (row.recipient_company as string) || "",
+    recipientEmail: (row.recipient_email as string) || "",
+    date: formatDate((row.sent_at as string) || (row.created_at as string) || ""),
+    status: mapStatusFromDb((row.status as string) || "draft"),
+    notes: (row.response_note as string) || (row.message as string) || "",
+  };
+}
 
 interface PitchContextValue {
   pitches: PitchEntry[];
@@ -24,16 +60,64 @@ const PitchContext = createContext<PitchContextValue | null>(null);
 
 export function PitchProvider({ children }: { children: ReactNode }) {
   const { activeWorkspace } = useWorkspace();
-  const [allPitches, setAllPitches] = useState<PitchEntry[]>(demoPitches);
+  const { user } = useAuth();
+  const [pitches, setPitches] = useState<PitchEntry[]>([]);
 
-  const pitches = useMemo(
-    () => allPitches.filter((p) => p.workspace_id === activeWorkspace.id),
-    [allPitches, activeWorkspace.id]
+  const fetchPitches = useCallback(async () => {
+    if (!activeWorkspace || !user) {
+      setPitches([]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("pitches")
+      .select("*")
+      .eq("workspace_id", activeWorkspace.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching pitches:", error);
+      setPitches([]);
+    } else {
+      setPitches((data || []).map((row) => mapRowToPitch(row as unknown as Record<string, unknown>)));
+    }
+  }, [activeWorkspace, user]);
+
+  useEffect(() => {
+    fetchPitches();
+  }, [fetchPitches]);
+
+  const addPitch = useCallback(
+    async (pitch: PitchEntry) => {
+      if (!activeWorkspace || !user) return;
+
+      const now = new Date().toISOString();
+      const dbStatus = mapStatusToDb(pitch.status);
+
+      const { error } = await supabase
+        .from("pitches")
+        .insert({
+          workspace_id: activeWorkspace.id,
+          sent_by: user.id,
+          recipient_name: pitch.recipientName,
+          recipient_email: pitch.recipientEmail,
+          recipient_company: pitch.recipientCompany,
+          subject: pitch.itemName,
+          message: pitch.notes || null,
+          track_ids: [],
+          status: dbStatus,
+          sent_at: dbStatus === "sent" ? now : null,
+        });
+
+      if (error) {
+        console.error("Error adding pitch:", error);
+        return;
+      }
+
+      await fetchPitches();
+    },
+    [activeWorkspace, user, fetchPitches]
   );
-
-  const addPitch = useCallback((pitch: PitchEntry) => {
-    setAllPitches((prev) => [pitch, ...prev]);
-  }, []);
 
   const getPitchesForTrack = useCallback(
     (trackName: string) => pitches.filter((p) => p.type === "track" && p.itemName === trackName),
