@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useAuth } from "@/contexts/AuthContext";
 import type { WorkspaceScoped } from "@/types/workspace";
 
 export type TeamRole = "Admin" | "Manager" | "A&R" | "Assistant" | "Producer" | "Songwriter" | "Musician" | "Mix Engineer" | "Mastering Engineer" | "Publisher" | "Viewer";
@@ -45,146 +47,226 @@ interface TeamContextValue {
 
 const TeamContext = createContext<TeamContextValue | undefined>(undefined);
 
-// Demo data
-const demoTeams: Team[] = [
-  {
-    id: "team-1",
-    workspace_id: "ws-nightfall",
-    name: "Nightfall Records",
-    createdAt: "2025-09-12",
-    sharedTrackIds: [1, 2, 3, 4, 5, 6, 7, 8],
-    activities: [
-      { id: "a-1", type: "upload", message: "added \"Midnight Run\" to the catalog", user: "Dex Moraes", date: "2026-03-09T14:30:00" },
-      { id: "a-18", type: "recipient_opened", message: "Atlantic Records opened playlist \"Summer Selects\"", user: "Notification", date: "2026-03-09T12:05:00" },
-      { id: "a-19", type: "recipient_played", message: "Atlantic Records played \"Velvet Skies\" from playlist \"Summer Selects\"", user: "Notification", date: "2026-03-09T12:08:00" },
-      { id: "a-20", type: "recipient_downloaded", message: "Atlantic Records downloaded \"Velvet Skies\"", user: "Notification", date: "2026-03-09T12:12:00" },
-      { id: "a-2", type: "pitch", message: "pitched \"Velvet Skies\" to Atlantic Records", user: "You", date: "2026-03-08T11:15:00" },
-      { id: "a-21", type: "recipient_pack", message: "Interscope Records downloaded Trakalog Pack for \"Echoes\"", user: "Notification", date: "2026-03-08T09:30:00" },
-      { id: "a-22", type: "recipient_stems", message: "Interscope Records downloaded stems for \"Echoes\"", user: "Notification", date: "2026-03-08T09:45:00" },
-      { id: "a-3", type: "link", message: "created and shared a link for \"Neon Dreams\"", user: "Marco Silva", date: "2026-03-07T16:45:00" },
-      { id: "a-23", type: "recipient_opened", message: "Sony Music opened shared link for \"Neon Dreams\"", user: "Notification", date: "2026-03-07T18:20:00" },
-      { id: "a-24", type: "recipient_played", message: "Sony Music played \"Neon Dreams\"", user: "Notification", date: "2026-03-07T18:22:00" },
-      { id: "a-4", type: "status", message: "modified status on \"Golden Hour\" to Released", user: "You", date: "2026-03-06T09:20:00" },
-      { id: "a-5", type: "member", message: "invited AYA as Publisher", user: "You", date: "2026-03-05T10:00:00" },
-      { id: "a-6", type: "stems", message: "added stems on \"Midnight Run\"", user: "Tony Maserati", date: "2026-03-04T13:10:00" },
-      { id: "a-7", type: "pitch", message: "pitched \"Echoes\" to Interscope Records", user: "You", date: "2026-03-03T15:30:00" },
-      { id: "a-8", type: "link", message: "created and shared a link for \"Velvet Skies\"", user: "Dex Moraes", date: "2026-03-02T11:00:00" },
-      { id: "a-9", type: "metadata", message: "modified metadata on \"Velvet Skies\"", user: "Marco Silva", date: "2026-03-01T09:45:00" },
-      { id: "a-13", type: "splits", message: "added splits on \"Midnight Run\"", user: "You", date: "2026-02-28T15:00:00" },
-      { id: "a-14", type: "lyrics", message: "added lyrics on \"Golden Hour\"", user: "Dex Moraes", date: "2026-02-27T11:30:00" },
-      { id: "a-15", type: "paperwork", message: "uploaded paperwork for \"Echoes\"", user: "Emily Lazar", date: "2026-02-26T14:20:00" },
-      { id: "a-16", type: "metadata", message: "added metadata on \"Neon Dreams\"", user: "You", date: "2026-02-25T10:10:00" },
-      { id: "a-17", type: "splits", message: "modified splits on \"Velvet Skies\"", user: "Marco Silva", date: "2026-02-24T16:00:00" },
-    ],
-    members: [
-      { id: "m-0", firstName: "You", lastName: "(Owner)", email: "you@trakalog.com", role: "Admin", joinedAt: "2025-09-12", status: "active" },
-      { id: "m-1", firstName: "Dex", lastName: "Moraes", email: "dex@dexmoraes.com", role: "Producer", joinedAt: "2024-11-03", status: "active" },
-      { id: "m-2", firstName: "Marco", lastName: "Silva", email: "marco@studiosilva.io", role: "Songwriter", joinedAt: "2025-02-22", status: "active" },
-      { id: "m-3", firstName: "Tony", lastName: "Maserati", email: "tony@maseratimix.com", role: "Mix Engineer", joinedAt: "2025-03-15", status: "active" },
-      { id: "m-4", firstName: "Emily", lastName: "Lazar", email: "emily@thelodge.nyc", role: "Mastering Engineer", joinedAt: "2025-04-02", status: "active" },
-      { id: "m-5", firstName: "AYA", lastName: "", email: "aya@songbird.pub", role: "Publisher", joinedAt: "2025-08-05", status: "pending" },
-    ],
-  },
-  {
-    id: "team-2",
-    workspace_id: "ws-nightfall",
-    name: "Studio Sessions",
-    createdAt: "2026-01-10",
-    sharedTrackIds: [3, 5, 11],
-    activities: [
-      { id: "a-10", type: "upload", message: "uploaded \"Sakura Drift\" to the catalog", user: "Nao Kimura", date: "2026-03-08T10:00:00" },
-      { id: "a-11", type: "status", message: "changed \"Tokyo Nights\" status to On Hold", user: "Jun Tanaka", date: "2026-03-06T14:20:00" },
-      { id: "a-12", type: "link", message: "created a share link for \"Sakura Drift\"", user: "You", date: "2026-03-05T09:30:00" },
-    ],
-    members: [
-      { id: "m-10", firstName: "You", lastName: "(Owner)", email: "you@trakalog.com", role: "Admin", joinedAt: "2026-01-10", status: "active" },
-      { id: "m-11", firstName: "Nao", lastName: "Kimura", email: "nao@naokimura.com", role: "Musician", joinedAt: "2026-01-15", status: "active" },
-      { id: "m-12", firstName: "Jun", lastName: "Tanaka", email: "jun@tanaka.jp", role: "A&R", joinedAt: "2026-02-01", status: "active" },
-    ],
-  },
-];
+const dbRoleToUi: Record<string, TeamRole> = {
+  admin: "Admin",
+  manager: "Manager",
+  a_r: "A&R",
+  assistant: "Assistant",
+  producer: "Producer",
+  songwriter: "Songwriter",
+  musician: "Musician",
+  mix_engineer: "Mix Engineer",
+  mastering_engineer: "Mastering Engineer",
+  publisher: "Publisher",
+  viewer: "Viewer",
+};
 
-let nextId = 100;
+const uiRoleToDb: Record<string, string> = Object.fromEntries(
+  Object.entries(dbRoleToUi).map(([k, v]) => [v, k])
+);
 
 export function TeamProvider({ children }: { children: ReactNode }) {
   const { activeWorkspace } = useWorkspace();
-  const [allTeams, setAllTeams] = useState<Team[]>(demoTeams);
+  const { user } = useAuth();
+  const [teams, setTeams] = useState<Team[]>([]);
 
-  const teams = useMemo(
-    () => allTeams.filter((t) => t.workspace_id === activeWorkspace.id),
-    [allTeams, activeWorkspace.id]
-  );
+  const fetchTeam = useCallback(async () => {
+    if (!activeWorkspace || !user) {
+      setTeams([]);
+      return;
+    }
 
-  const createTeam = (name: string): Team => {
-    const newTeam: Team = {
-      id: `team-${++nextId}`,
+    // Fetch workspace members
+    const { data: members, error: mErr } = await supabase
+      .from("workspace_members")
+      .select("id, user_id, joined_at")
+      .eq("workspace_id", activeWorkspace.id);
+
+    if (mErr) {
+      console.error("Error fetching workspace members:", mErr);
+      setTeams([]);
+      return;
+    }
+
+    // Fetch roles for all members in this workspace
+    const { data: roles, error: rErr } = await supabase
+      .from("user_roles")
+      .select("user_id, role")
+      .eq("workspace_id", activeWorkspace.id);
+
+    if (rErr) {
+      console.error("Error fetching user roles:", rErr);
+    }
+
+    const roleMap: Record<string, string> = {};
+    for (const r of roles || []) {
+      roleMap[r.user_id] = r.role;
+    }
+
+    // Build TeamMember list
+    const teamMembers: TeamMember[] = (members || []).map((m) => {
+      const isCurrentUser = m.user_id === user.id;
+      const dbRole = roleMap[m.user_id] || "viewer";
+      const meta = user.user_metadata || {};
+
+      return {
+        id: m.user_id,
+        firstName: isCurrentUser ? (meta.first_name || meta.full_name?.split(" ")[0] || "You") : "Member",
+        lastName: isCurrentUser ? (meta.last_name || meta.full_name?.split(" ").slice(1).join(" ") || "") : m.user_id.slice(0, 8),
+        email: isCurrentUser ? (user.email || "") : "",
+        role: dbRoleToUi[dbRole] || "Viewer",
+        joinedAt: m.joined_at ? m.joined_at.split("T")[0] : "",
+        status: "active" as const,
+      };
+    });
+
+    // Model workspace as a single team
+    const team: Team = {
+      id: activeWorkspace.id,
       workspace_id: activeWorkspace.id,
-      name,
-      createdAt: new Date().toISOString().split("T")[0],
+      name: activeWorkspace.name,
+      createdAt: activeWorkspace.created_at ? activeWorkspace.created_at.split("T")[0] : "",
+      members: teamMembers,
       sharedTrackIds: [],
       activities: [],
-      members: [
-        {
-          id: `m-${++nextId}`,
-          firstName: "You",
-          lastName: "(Owner)",
-          email: "you@trakalog.com",
-          role: "Admin",
-          joinedAt: new Date().toISOString().split("T")[0],
-          status: "active",
-        },
-      ],
     };
-    setAllTeams((prev) => [newTeam, ...prev]);
-    return newTeam;
-  };
 
-  const deleteTeam = (teamId: string) => {
-    setAllTeams((prev) => prev.filter((t) => t.id !== teamId));
-  };
+    setTeams([team]);
+  }, [activeWorkspace, user]);
 
-  const renameTeam = (teamId: string, name: string) => {
-    setAllTeams((prev) => prev.map((t) => (t.id === teamId ? { ...t, name } : t)));
-  };
+  useEffect(() => {
+    fetchTeam();
+  }, [fetchTeam]);
 
-  const addMember = (teamId: string, member: Omit<TeamMember, "id" | "joinedAt" | "status">) => {
-    setAllTeams((prev) =>
-      prev.map((t) =>
-        t.id === teamId
-          ? {
-              ...t,
-              members: [
-                ...t.members,
-                {
-                  ...member,
-                  id: `m-${++nextId}`,
-                  joinedAt: new Date().toISOString().split("T")[0],
-                  status: "pending" as const,
-                },
-              ],
-            }
-          : t
-      )
-    );
-  };
+  const createTeam = useCallback(
+    (name: string): Team => {
+      // Create a local-only team (no dedicated teams table)
+      const newTeam: Team = {
+        id: "team-" + Date.now(),
+        workspace_id: activeWorkspace.id,
+        name,
+        createdAt: new Date().toISOString().split("T")[0],
+        sharedTrackIds: [],
+        activities: [],
+        members: [
+          {
+            id: user?.id || "owner",
+            firstName: "You",
+            lastName: "(Owner)",
+            email: user?.email || "",
+            role: "Admin",
+            joinedAt: new Date().toISOString().split("T")[0],
+            status: "active",
+          },
+        ],
+      };
+      setTeams((prev) => [newTeam, ...prev]);
+      return newTeam;
+    },
+    [activeWorkspace, user]
+  );
 
-  const removeMember = (teamId: string, memberId: string) => {
-    setAllTeams((prev) =>
-      prev.map((t) =>
-        t.id === teamId ? { ...t, members: t.members.filter((m) => m.id !== memberId) } : t
-      )
-    );
-  };
+  const deleteTeam = useCallback((teamId: string) => {
+    setTeams((prev) => prev.filter((t) => t.id !== teamId));
+  }, []);
 
-  const updateMemberRole = (teamId: string, memberId: string, role: TeamRole) => {
-    setAllTeams((prev) =>
-      prev.map((t) =>
-        t.id === teamId
-          ? { ...t, members: t.members.map((m) => (m.id === memberId ? { ...m, role } : m)) }
-          : t
-      )
-    );
-  };
+  const renameTeam = useCallback((teamId: string, name: string) => {
+    setTeams((prev) => prev.map((t) => (t.id === teamId ? { ...t, name } : t)));
+  }, []);
+
+  const addMember = useCallback(
+    async (teamId: string, member: Omit<TeamMember, "id" | "joinedAt" | "status">) => {
+      if (!activeWorkspace) return;
+
+      // Insert into workspace_members (using email as a lookup isn't possible without profiles,
+      // so we add the member locally and persist the role if we have a user_id)
+      const newMember: TeamMember = {
+        ...member,
+        id: "pending-" + Date.now(),
+        joinedAt: new Date().toISOString().split("T")[0],
+        status: "pending",
+      };
+
+      setTeams((prev) =>
+        prev.map((t) =>
+          t.id === teamId ? { ...t, members: [...t.members, newMember] } : t
+        )
+      );
+    },
+    [activeWorkspace]
+  );
+
+  const removeMember = useCallback(
+    async (teamId: string, memberId: string) => {
+      // Update locally
+      setTeams((prev) =>
+        prev.map((t) =>
+          t.id === teamId ? { ...t, members: t.members.filter((m) => m.id !== memberId) } : t
+        )
+      );
+
+      // Remove from workspace_members in Supabase
+      if (activeWorkspace && !memberId.startsWith("pending-")) {
+        const { error } = await supabase
+          .from("workspace_members")
+          .delete()
+          .eq("user_id", memberId)
+          .eq("workspace_id", activeWorkspace.id);
+
+        if (error) {
+          console.error("Error removing member:", error);
+          await fetchTeam();
+        }
+      }
+    },
+    [activeWorkspace, fetchTeam]
+  );
+
+  const updateMemberRole = useCallback(
+    async (teamId: string, memberId: string, role: TeamRole) => {
+      // Update locally
+      setTeams((prev) =>
+        prev.map((t) =>
+          t.id === teamId
+            ? { ...t, members: t.members.map((m) => (m.id === memberId ? { ...m, role } : m)) }
+            : t
+        )
+      );
+
+      // Persist to user_roles
+      if (activeWorkspace && !memberId.startsWith("pending-")) {
+        const dbRole = uiRoleToDb[role] || "viewer";
+
+        // Upsert: try update first, insert if not found
+        const { data: existing } = await supabase
+          .from("user_roles")
+          .select("id")
+          .eq("user_id", memberId)
+          .eq("workspace_id", activeWorkspace.id)
+          .maybeSingle();
+
+        if (existing) {
+          const { error } = await supabase
+            .from("user_roles")
+            .update({ role: dbRole })
+            .eq("id", existing.id);
+
+          if (error) console.error("Error updating role:", error);
+        } else {
+          const { error } = await supabase
+            .from("user_roles")
+            .insert({
+              user_id: memberId,
+              workspace_id: activeWorkspace.id,
+              role: dbRole,
+            });
+
+          if (error) console.error("Error inserting role:", error);
+        }
+      }
+    },
+    [activeWorkspace]
+  );
 
   return (
     <TeamContext.Provider value={{ teams, createTeam, deleteTeam, renameTeam, addMember, removeMember, updateMemberRole }}>
