@@ -1,4 +1,7 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type AuthorType = "owner" | "team_member" | "recipient" | "guest_recipient";
 export type SourceContext = "internal_review" | "recipient_review" | "shared_link_review" | "pitching_feedback";
@@ -60,81 +63,93 @@ function formatTimestamp(seconds: number): string {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
-// Demo data
-const demoComments: TimecodedComment[] = [
-  {
-    id: "rc-1", trackId: 1, authorName: "Jamie Lin", authorEmail: "jamie@atlantic.com",
-    authorType: "recipient", commentText: "This vocal layering is incredible. The harmony at this section gives me chills. Perfect for the sync opportunity we discussed.",
-    timestampSeconds: 37, timestampLabel: "00:37", createdAt: "2026-03-08T14:22:00", updatedAt: "2026-03-08T14:22:00",
-    isEdited: false, sourceContext: "recipient_review",
-  },
-  {
-    id: "rc-2", trackId: 1, authorName: "Jamie Lin", authorEmail: "jamie@atlantic.com",
-    authorType: "recipient", commentText: "The bridge transition here feels slightly abrupt. Could we get a smoother crossfade?",
-    timestampSeconds: 142, timestampLabel: "02:22", createdAt: "2026-03-08T14:25:00", updatedAt: "2026-03-08T14:25:00",
-    isEdited: false, sourceContext: "recipient_review",
-  },
-  {
-    id: "rc-3", trackId: 1, authorName: "Sarah Chen", authorEmail: "sarah@sony.com",
-    authorType: "recipient", commentText: "Love the intro. Very cinematic feel. This would work great for the film placement.",
-    timestampSeconds: 8, timestampLabel: "00:08", createdAt: "2026-03-07T10:15:00", updatedAt: "2026-03-07T10:15:00",
-    isEdited: false, sourceContext: "shared_link_review",
-  },
-  {
-    id: "rc-4", trackId: 1, authorName: "Kira Nomura", authorType: "owner",
-    commentText: "Need to re-record this vocal take. Pitch is slightly off on the high note.",
-    timestampSeconds: 95, timestampLabel: "01:35", createdAt: "2026-03-06T09:00:00", updatedAt: "2026-03-06T09:00:00",
-    isEdited: false, sourceContext: "internal_review",
-  },
-  {
-    id: "rc-5", trackId: 1, authorName: "JVNE", authorType: "team_member",
-    commentText: "I can add a synth pad underneath here to fill out the low end. Let me know if you want me to try it.",
-    timestampSeconds: 180, timestampLabel: "03:00", createdAt: "2026-03-06T11:30:00", updatedAt: "2026-03-06T16:45:00",
-    isEdited: true, sourceContext: "internal_review",
-  },
-  {
-    id: "rc-6", trackId: 1, authorName: "Marcus Webb", authorEmail: "marcus@interscope.com",
-    authorType: "recipient", commentText: "The drop here is fire. This is exactly the energy we need for the campaign.",
-    timestampSeconds: 112, timestampLabel: "01:52", createdAt: "2026-03-05T16:30:00", updatedAt: "2026-03-05T16:30:00",
-    isEdited: false, sourceContext: "recipient_review",
-  },
-  {
-    id: "rc-7", trackId: 3, authorName: "Sarah Chen", authorEmail: "sarah@sony.com",
-    authorType: "recipient", commentText: "The synth arpeggios here remind me of early Kavinsky. Great retro vibes.",
-    timestampSeconds: 65, timestampLabel: "01:05", createdAt: "2026-03-07T14:00:00", updatedAt: "2026-03-07T14:00:00",
-    isEdited: false, sourceContext: "recipient_review",
-  },
-  {
-    id: "rc-8", trackId: 5, authorName: "Kenji Mori", authorEmail: "kenji@88rising.com",
-    authorType: "recipient", commentText: "The J-pop influence here is exactly what the Asian market is looking for right now.",
-    timestampSeconds: 48, timestampLabel: "00:48", createdAt: "2026-03-08T13:15:00", updatedAt: "2026-03-08T13:15:00",
-    isEdited: false, sourceContext: "pitching_feedback",
-  },
-];
+// Comments are stored in the tracks table's waveform_data jsonb column
+// as { comments: TimecodedComment[] } until a dedicated comments table is created.
 
-const demoNotifications: CommentNotification[] = [
-  {
-    id: "cn-1", trackId: 1, trackTitle: "Velvet Hour", commentId: "rc-1",
-    authorName: "Jamie Lin", authorType: "recipient", timestampLabel: "00:37",
-    commentPreview: "This vocal layering is incredible...", createdAt: "2026-03-08T14:22:00", read: false,
-  },
-  {
-    id: "cn-2", trackId: 1, trackTitle: "Velvet Hour", commentId: "rc-2",
-    authorName: "Jamie Lin", authorType: "recipient", timestampLabel: "02:22",
-    commentPreview: "The bridge transition here feels slightly...", createdAt: "2026-03-08T14:25:00", read: false,
-  },
-  {
-    id: "cn-3", trackId: 1, trackTitle: "Velvet Hour", commentId: "rc-3",
-    authorName: "Sarah Chen", authorType: "recipient", timestampLabel: "00:08",
-    commentPreview: "Love the intro. Very cinematic feel...", createdAt: "2026-03-07T10:15:00", read: true,
-  },
-];
+interface WaveformDataWithComments {
+  comments?: TimecodedComment[];
+  [key: string]: unknown;
+}
 
 const TrackReviewContext = createContext<TrackReviewContextValue | null>(null);
 
 export function TrackReviewProvider({ children }: { children: ReactNode }) {
-  const [comments, setComments] = useState<TimecodedComment[]>(demoComments);
-  const [notifications, setNotifications] = useState<CommentNotification[]>(demoNotifications);
+  const { activeWorkspace } = useWorkspace();
+  const { user } = useAuth();
+  const [comments, setComments] = useState<TimecodedComment[]>([]);
+  const [notifications, setNotifications] = useState<CommentNotification[]>([]);
+
+  // Load comments from all tracks' waveform_data in the workspace
+  const fetchComments = useCallback(async () => {
+    if (!activeWorkspace || !user) {
+      setComments([]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("tracks")
+      .select("id, waveform_data")
+      .eq("workspace_id", activeWorkspace.id);
+
+    if (error) {
+      console.error("Error fetching track comments:", error);
+      setComments([]);
+      return;
+    }
+
+    const allComments: TimecodedComment[] = [];
+    for (const row of data || []) {
+      const wd = row.waveform_data as WaveformDataWithComments | null;
+      if (wd?.comments && Array.isArray(wd.comments)) {
+        allComments.push(...wd.comments);
+      }
+    }
+
+    setComments(allComments);
+  }, [activeWorkspace, user]);
+
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
+
+  // Persist comments for a specific track back to waveform_data
+  const persistCommentsForTrack = useCallback(async (trackUuid: string, trackComments: TimecodedComment[]) => {
+    // Read current waveform_data to preserve other keys
+    const { data: current } = await supabase
+      .from("tracks")
+      .select("waveform_data")
+      .eq("id", trackUuid)
+      .single();
+
+    const existing = (current?.waveform_data as WaveformDataWithComments) || {};
+    const updated = { ...existing, comments: trackComments };
+
+    const { error } = await supabase
+      .from("tracks")
+      .update({ waveform_data: updated as unknown as Record<string, unknown> })
+      .eq("id", trackUuid);
+
+    if (error) {
+      console.error("Error persisting comments:", error);
+    }
+  }, []);
+
+  // Map trackId (numeric) to track uuid for persistence
+  const getTrackUuid = useCallback(async (trackId: number): Promise<string | null> => {
+    if (!activeWorkspace) return null;
+
+    const { data, error } = await supabase
+      .from("tracks")
+      .select("id")
+      .eq("workspace_id", activeWorkspace.id)
+      .order("created_at", { ascending: false });
+
+    if (error || !data) return null;
+
+    // trackId is index+1 based (from TrackContext mapping)
+    const idx = trackId - 1;
+    return data[idx]?.id || null;
+  }, [activeWorkspace]);
 
   const getCommentsForTrack = useCallback((trackId: number) => {
     return comments.filter((c) => c.trackId === trackId && !c.deletedAt);
@@ -144,19 +159,32 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
     const now = new Date().toISOString();
     const newComment: TimecodedComment = {
       ...data,
-      id: `rc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: "rc-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
       createdAt: now,
       updatedAt: now,
       isEdited: false,
     };
-    setComments((prev) => [...prev, newComment]);
+
+    setComments((prev) => {
+      const updated = [...prev, newComment];
+
+      // Persist async
+      getTrackUuid(data.trackId).then((uuid) => {
+        if (uuid) {
+          const trackComments = updated.filter((c) => c.trackId === data.trackId);
+          persistCommentsForTrack(uuid, trackComments);
+        }
+      });
+
+      return updated;
+    });
 
     // Generate notification for non-owner comments
     if (data.authorType !== "owner") {
       const notification: CommentNotification = {
-        id: `cn-${Date.now()}`,
+        id: "cn-" + Date.now(),
         trackId: data.trackId,
-        trackTitle: "", // Will be resolved by consumer
+        trackTitle: "",
         commentId: newComment.id,
         authorName: data.authorName,
         authorType: data.authorType,
@@ -168,23 +196,45 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       setNotifications((prev) => [...prev, notification]);
     }
     return newComment;
-  }, []);
+  }, [getTrackUuid, persistCommentsForTrack]);
 
   const editComment = useCallback((commentId: string, newText: string) => {
-    setComments((prev) =>
-      prev.map((c) =>
+    setComments((prev) => {
+      const updated = prev.map((c) =>
         c.id === commentId ? { ...c, commentText: newText, updatedAt: new Date().toISOString(), isEdited: true } : c
-      )
-    );
-  }, []);
+      );
+
+      const target = updated.find((c) => c.id === commentId);
+      if (target) {
+        getTrackUuid(target.trackId).then((uuid) => {
+          if (uuid) {
+            persistCommentsForTrack(uuid, updated.filter((c) => c.trackId === target.trackId));
+          }
+        });
+      }
+
+      return updated;
+    });
+  }, [getTrackUuid, persistCommentsForTrack]);
 
   const deleteComment = useCallback((commentId: string) => {
-    setComments((prev) =>
-      prev.map((c) =>
+    setComments((prev) => {
+      const updated = prev.map((c) =>
         c.id === commentId ? { ...c, deletedAt: new Date().toISOString() } : c
-      )
-    );
-  }, []);
+      );
+
+      const target = updated.find((c) => c.id === commentId);
+      if (target) {
+        getTrackUuid(target.trackId).then((uuid) => {
+          if (uuid) {
+            persistCommentsForTrack(uuid, updated.filter((c) => c.trackId === target.trackId));
+          }
+        });
+      }
+
+      return updated;
+    });
+  }, [getTrackUuid, persistCommentsForTrack]);
 
   const getFilteredComments = useCallback(
     (trackId: number, filter: CommentFilter, currentUserId: string, searchQuery?: string) => {
