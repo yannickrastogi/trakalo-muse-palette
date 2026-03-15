@@ -468,7 +468,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                           exit={{ opacity: 0, scale: 0.9 }}
                           className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg bg-primary/8 border border-primary/15 text-xs font-medium text-foreground"
                         >
-                          <img src={covers[track.coverIdx]} alt="" className="w-5 h-5 rounded object-cover" />
+                          <img src={track.coverImage || covers[track.coverIdx]} alt="" className="w-5 h-5 rounded object-cover" />
                           <span className="truncate max-w-[120px]">{track.title}</span>
                           <button
                             onClick={() => removeTrack(track.id)}
@@ -521,7 +521,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                         className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/50 transition-all cursor-pointer group/track"
                         onClick={() => addTrack(track)}
                       >
-                        <img src={covers[track.coverIdx]} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                        <img src={track.coverImage || covers[track.coverIdx]} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                         <div className="min-w-0 flex-1">
                           <p className="text-[13px] font-semibold text-foreground truncate tracking-tight">{track.title}</p>
                           <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>

@@ -160,13 +160,13 @@ export function DashboardContent() {
 
   // Build per-recipient engagement data with simulated dates for plays/downloads
   const engagementEntries = useMemo(() => {
-    const entries: { trackId: number; trackTitle: string; trackArtist: string; recipientName: string; recipientCompany: string; plays: number; downloads: number; lastActivity: Date; coverIdx: number }[] = [];
+    const entries: { trackId: number; trackTitle: string; trackArtist: string; recipientName: string; recipientCompany: string; plays: number; downloads: number; lastActivity: Date; coverIdx: number; coverImage?: string }[] = [];
     trackEngagement.forEach((te) => {
       const track = allTracks.find((t) => t.id === te.trackId);
       te.recipients.forEach((r) => {
         entries.push({
           trackId: te.trackId,
-          trackTitle: track?.title || `Track ${te.trackId}`,
+          trackTitle: track?.title || "Track " + te.trackId,
           trackArtist: track?.artist || "Unknown",
           recipientName: r.recipientName,
           recipientCompany: r.recipientCompany,
@@ -174,6 +174,7 @@ export function DashboardContent() {
           downloads: r.downloads,
           lastActivity: new Date(r.lastActivity),
           coverIdx: (te.trackId - 1) % 5,
+          coverImage: track?.coverImage,
         });
       });
     });
@@ -603,7 +604,7 @@ export function DashboardContent() {
                       onClick={() => navigate(`/track/${entry.trackId}`)}
                     >
                       <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
-                      <img src={covers[entry.coverIdx]} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                      <img src={entry.coverImage || covers[entry.coverIdx]} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-pink transition-colors">{entry.trackTitle}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{entry.trackArtist}</p>
@@ -700,7 +701,7 @@ export function DashboardContent() {
                       onClick={() => navigate(`/track/${entry.trackId}`)}
                     >
                       <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
-                      <img src={covers[entry.coverIdx]} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                      <img src={entry.coverImage || covers[entry.coverIdx]} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-purple transition-colors">{entry.trackTitle}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{entry.trackArtist}</p>

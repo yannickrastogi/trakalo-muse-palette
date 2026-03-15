@@ -54,6 +54,7 @@ interface SelectedItem {
   name: string;
   artist: string;
   coverIdx: number;
+  coverImage?: string;
   trackCount?: number;
 }
 
@@ -267,7 +268,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                 {selectedItem && (
                   <div className="px-6 pb-2">
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/6 border border-primary/15">
-                      <img src={covers[selectedItem.coverIdx]} alt="" className="w-10 h-10 rounded-lg object-cover ring-1 ring-primary/20" />
+                      <img src={selectedItem.coverImage || covers[selectedItem.coverIdx]} alt="" className="w-10 h-10 rounded-lg object-cover ring-1 ring-primary/20" />
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-semibold text-foreground truncate">{selectedItem.name}</p>
                         <p className="text-[11px] text-muted-foreground truncate">
@@ -312,9 +313,10 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                           sub={track.artist}
                           extra={track.genre}
                           coverIdx={track.coverIdx}
+                          coverImage={track.coverImage}
                           icon={<Music className="w-3 h-3 text-primary/40" />}
                           selected={selectedItem?.name === track.title}
-                          onClick={() => setSelectedItem({ name: track.title, artist: track.artist, coverIdx: track.coverIdx })}
+                          onClick={() => setSelectedItem({ name: track.title, artist: track.artist, coverIdx: track.coverIdx, coverImage: track.coverImage })}
                         />
                       ))
                     )
@@ -325,8 +327,9 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                       <ItemRow
                         key={pl.id}
                         name={pl.name}
-                        sub={`${pl.tracks} tracks · ${pl.duration}`}
+                        sub={pl.tracks + " tracks \u00B7 " + pl.duration}
                         coverIdx={pl.coverIdxs[0]}
+                        coverImage={pl.coverImage}
                         icon={<ListMusic className="w-3 h-3 text-accent/40" />}
                         selected={selectedItem?.name === pl.name}
                         onClick={() =>
@@ -334,6 +337,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                             name: pl.name,
                             artist: "Various",
                             coverIdx: pl.coverIdxs[0],
+                            coverImage: pl.coverImage,
                             trackCount: pl.tracks,
                           })
                         }
@@ -359,7 +363,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                     <div className="absolute inset-0 border border-primary/10 rounded-xl" />
                     <div className="relative flex items-center gap-4">
                       <img
-                        src={covers[selectedItem.coverIdx]}
+                        src={selectedItem.coverImage || covers[selectedItem.coverIdx]}
                         alt=""
                         className="w-16 h-16 rounded-xl object-cover ring-2 ring-primary/15 shadow-lg shrink-0"
                       />
@@ -574,6 +578,7 @@ function ItemRow({
   sub,
   extra,
   coverIdx,
+  coverImage,
   icon,
   selected,
   onClick,
@@ -582,6 +587,7 @@ function ItemRow({
   sub: string;
   extra?: string;
   coverIdx: number;
+  coverImage?: string;
   icon: React.ReactNode;
   selected: boolean;
   onClick: () => void;
@@ -593,7 +599,7 @@ function ItemRow({
       }`}
       onClick={onClick}
     >
-      <img src={covers[coverIdx]} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+      <img src={coverImage || covers[coverIdx]} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           {icon}
