@@ -1,7 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { ShareModal } from "@/components/ShareModal";
 import { useEngagement } from "@/contexts/EngagementContext";
+import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -66,6 +69,9 @@ export default function PlaylistDetail() {
   const { permissions } = useRole();
   const { tracks: allTracks } = useTrack();
   const { getTotalPlaysForTrack, getPlaylistEngagement } = useEngagement();
+  const { playTrack, togglePlay, isTrackPlaying, isPlaying: audioIsPlaying, currentTrack, setQueue } = useAudioPlayer();
+  const { activeWorkspace } = useWorkspace();
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const playlist = getPlaylist(id || "");
   const plEngagement = getPlaylistEngagement(id || "");
 
@@ -76,7 +82,23 @@ export default function PlaylistDetail() {
     }
     return allTracks.slice(0, Math.min(playlist.tracks, allTracks.length));
   });
-  const [playingTrackId, setPlayingTrackId] = useState<number | null>(null);
+
+  const playingTrackId = currentTrack && tracks.some((t) => t.id === currentTrack.id) && audioIsPlaying ? currentTrack.id : null;
+
+  const setPlayingTrackId = useCallback((trackId: number | null) => {
+    if (trackId === null) {
+      togglePlay();
+      return;
+    }
+    const track = tracks.find((t) => t.id === trackId);
+    if (!track) return;
+    if (currentTrack?.id === trackId) {
+      togglePlay();
+    } else {
+      setQueue(tracks);
+      playTrack(track);
+    }
+  }, [tracks, currentTrack, togglePlay, playTrack, setQueue]);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState(playlist?.name || "");
   const [playlistName, setPlaylistName] = useState(playlist?.name || "");
@@ -175,7 +197,7 @@ export default function PlaylistDetail() {
         <motion.div variants={itemVariant} className="flex flex-col sm:flex-row gap-5 sm:gap-6">
           <div className="w-full sm:w-52 lg:w-60 shrink-0">
             <div
-              className={`relative aspect-square rounded-xl overflow-hidden bg-gradient-to-br ${playlist.color}`}
+              className={"relative aspect-square rounded-xl overflow-hidden bg-gradient-to-br group " + playlist.color}
               style={{ boxShadow: "var(--shadow-elevated)" }}
             >
               {playlist.coverImage ? (
@@ -188,6 +210,37 @@ export default function PlaylistDetail() {
                 </div>
               )}
               <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background/80 to-transparent pointer-events-none" />
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  var file = e.target.files?.[0];
+                  if (!file || !id) return;
+                  var path = activeWorkspace.id + "/playlist-" + id + ".jpg";
+                  var { error: uploadErr } = await supabase.storage
+                    .from("covers")
+                    .upload(path, file, { upsert: true, contentType: file.type });
+                  if (uploadErr) {
+                    console.error("Error uploading playlist cover:", uploadErr);
+                    return;
+                  }
+                  var { data: urlData } = supabase.storage
+                    .from("covers")
+                    .getPublicUrl(path);
+                  updatePlaylist(id, { coverImage: urlData.publicUrl });
+                  e.target.value = "";
+                }}
+              />
+              {permissions.canEditPlaylists && (
+                <button
+                  onClick={() => coverInputRef.current?.click()}
+                  className="absolute bottom-3 right-3 p-2 rounded-lg bg-card/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 z-10"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -229,7 +282,14 @@ export default function PlaylistDetail() {
 
             <div className="flex flex-wrap gap-2 pt-1">
               <button
-                onClick={() => setPlayingTrackId(playingTrackId ? null : tracks[0]?.id || null)}
+                onClick={() => {
+                  if (playingTrackId) {
+                    togglePlay();
+                  } else if (tracks.length > 0) {
+                    setQueue(tracks);
+                    playTrack(tracks[0]);
+                  }
+                }}
                 className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold min-h-[44px]"
               >
                 {playingTrackId ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
