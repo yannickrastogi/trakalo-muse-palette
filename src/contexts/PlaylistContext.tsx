@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { type NewPlaylistData } from "@/components/CreatePlaylistModal";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTrack } from "@/contexts/TrackContext";
 import type { WorkspaceScoped } from "@/types/workspace";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
@@ -77,6 +78,7 @@ const PlaylistContext = createContext<PlaylistContextType | null>(null);
 export function PlaylistProvider({ children }: { children: ReactNode }) {
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
+  const { tracks } = useTrack();
   const [playlists, setPlaylists] = useState<PlaylistItem[]>([]);
 
   const fetchPlaylists = useCallback(async () => {
@@ -114,22 +116,28 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
       console.error("Error fetching playlist_tracks:", ptError);
     }
 
-    // Group track IDs by playlist
-    const tracksByPlaylist: Record<string, number[]> = {};
+    // Group track UUIDs by playlist, then map to numeric IDs
+    const trackUuidsByPlaylist: Record<string, string[]> = {};
     for (const pt of ptRows || []) {
       const pid = pt.playlist_id as string;
-      if (!tracksByPlaylist[pid]) tracksByPlaylist[pid] = [];
-      tracksByPlaylist[pid].push(pt.track_id as number);
+      if (!trackUuidsByPlaylist[pid]) trackUuidsByPlaylist[pid] = [];
+      trackUuidsByPlaylist[pid].push(pt.track_id as string);
     }
 
     const mapped = rows.map((row) => {
       const r = row as unknown as Record<string, unknown>;
-      const ids = tracksByPlaylist[r.id as string] || [];
-      return mapRowToPlaylist(r, ids.length, ids);
+      const uuids = trackUuidsByPlaylist[r.id as string] || [];
+      const numericIds = uuids
+        .map((uuid) => {
+          const t = tracks.find((tr) => tr.uuid === uuid);
+          return t ? t.id : null;
+        })
+        .filter((id): id is number => id !== null);
+      return mapRowToPlaylist(r, uuids.length, numericIds);
     });
 
     setPlaylists(mapped);
-  }, [activeWorkspace, user]);
+  }, [activeWorkspace, user, tracks]);
 
   useEffect(() => {
     fetchPlaylists();
@@ -156,27 +164,35 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Insert track associations if any
+      // Insert track associations if any — map numeric IDs to UUIDs
       if (pl.trackIds && pl.trackIds.length > 0 && data) {
-        const ptInserts = pl.trackIds.map((trackId, idx) => ({
-          playlist_id: data.id,
-          track_id: trackId,
-          position: idx,
-          added_by: user.id,
-        }));
+        const ptInserts = pl.trackIds
+          .map((numericId, idx) => {
+            const t = tracks.find((tr) => tr.id === numericId);
+            if (!t) return null;
+            return {
+              playlist_id: data.id,
+              track_id: t.uuid,
+              position: idx,
+              added_by: user.id,
+            };
+          })
+          .filter(Boolean);
 
-        const { error: ptError } = await supabase
-          .from("playlist_tracks")
-          .insert(ptInserts);
+        if (ptInserts.length > 0) {
+          const { error: ptError } = await supabase
+            .from("playlist_tracks")
+            .insert(ptInserts);
 
-        if (ptError) {
-          console.error("Error adding playlist tracks:", ptError);
+          if (ptError) {
+            console.error("Error adding playlist tracks:", ptError);
+          }
         }
       }
 
       await fetchPlaylists();
     },
-    [activeWorkspace, user, fetchPlaylists]
+    [activeWorkspace, user, tracks, fetchPlaylists]
   );
 
   const getPlaylist = useCallback(
@@ -219,24 +235,32 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
         if (delError) {
           console.error("Error clearing playlist tracks:", delError);
         } else if (updates.trackIds.length > 0) {
-          const ptInserts = updates.trackIds.map((trackId, idx) => ({
-            playlist_id: id,
-            track_id: trackId,
-            position: idx,
-            added_by: user.id,
-          }));
+          const ptInserts = updates.trackIds
+            .map((numericId, idx) => {
+              const t = tracks.find((tr) => tr.id === numericId);
+              if (!t) return null;
+              return {
+                playlist_id: id,
+                track_id: t.uuid,
+                position: idx,
+                added_by: user.id,
+              };
+            })
+            .filter(Boolean);
 
-          const { error: insError } = await supabase
-            .from("playlist_tracks")
-            .insert(ptInserts);
+          if (ptInserts.length > 0) {
+            const { error: insError } = await supabase
+              .from("playlist_tracks")
+              .insert(ptInserts);
 
-          if (insError) {
-            console.error("Error updating playlist tracks:", insError);
+            if (insError) {
+              console.error("Error updating playlist tracks:", insError);
+            }
           }
         }
       }
     },
-    [user]
+    [user, tracks]
   );
 
   return (
