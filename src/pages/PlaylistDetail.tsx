@@ -1,10 +1,20 @@
 import { useState, useCallback, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ShareModal } from "@/components/ShareModal";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -65,7 +75,8 @@ const itemVariant = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, t
 export default function PlaylistDetail() {
   const { id } = useParams();
   const isMobile = useIsMobile();
-  const { getPlaylist, updatePlaylist } = usePlaylists();
+  const navigate = useNavigate();
+  const { getPlaylist, updatePlaylist, deletePlaylist } = usePlaylists();
   const { permissions } = useRole();
   const { tracks: allTracks } = useTrack();
   const { getTotalPlaysForTrack, getPlaylistEngagement } = useEngagement();
@@ -107,6 +118,7 @@ export default function PlaylistDetail() {
   const [duplicateToast, setDuplicateToast] = useState(false);
 
   const [shareOpen, setShareOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // Sync changes back to context
   const syncToContext = useCallback((updatedTracks: Track[], updatedName?: string) => {
@@ -325,6 +337,14 @@ export default function PlaylistDetail() {
               >
                 <Share2 className="w-4 h-4" /> Share
               </button>
+              {permissions.canEditPlaylists && (
+                <button
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-destructive/30 bg-card text-destructive hover:bg-destructive/10 transition-colors min-h-[44px]"
+                >
+                  <Trash2 className="w-4 h-4" /> Delete
+                </button>
+              )}
             </div>
           </div>
         </motion.div>
@@ -451,6 +471,32 @@ export default function PlaylistDetail() {
           coverImage: t.coverImage,
         }))}
       />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Delete Playlist</AlertDialogTitle>
+            <AlertDialogDescription>
+              {"Are you sure you want to delete \"" + playlistName + "\"? This action cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-sm"
+              onClick={async () => {
+                if (id) {
+                  await deletePlaylist(id);
+                  navigate("/playlists");
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 }

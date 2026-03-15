@@ -71,6 +71,7 @@ interface PlaylistContextType {
   addPlaylist: (pl: NewPlaylistData) => void;
   getPlaylist: (id: string) => PlaylistItem | undefined;
   updatePlaylist: (id: string, updates: Partial<PlaylistItem>) => void;
+  deletePlaylist: (id: string) => Promise<void>;
 }
 
 const PlaylistContext = createContext<PlaylistContextType | null>(null);
@@ -263,8 +264,36 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     [user, tracks]
   );
 
+  const deletePlaylist = useCallback(
+    async (id: string) => {
+      // Remove locally first
+      setPlaylists((prev) => prev.filter((p) => p.id !== id));
+
+      // Delete playlist_tracks first (may not cascade automatically)
+      const { error: ptErr } = await supabase
+        .from("playlist_tracks")
+        .delete()
+        .eq("playlist_id", id);
+
+      if (ptErr) {
+        console.error("Error deleting playlist tracks:", ptErr);
+      }
+
+      const { error } = await supabase
+        .from("playlists")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error deleting playlist:", error);
+        await fetchPlaylists();
+      }
+    },
+    [fetchPlaylists]
+  );
+
   return (
-    <PlaylistContext.Provider value={{ playlists, addPlaylist, getPlaylist, updatePlaylist }}>
+    <PlaylistContext.Provider value={{ playlists, addPlaylist, getPlaylist, updatePlaylist, deletePlaylist }}>
       {children}
     </PlaylistContext.Provider>
   );

@@ -12,12 +12,37 @@ import {
   X,
   Clock,
   Music,
+  Edit3,
+  Trash2,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
 import { usePlaylists, covers } from "@/contexts/PlaylistContext";
 import { useRole } from "@/contexts/RoleContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const container = {
   hidden: {},
@@ -57,9 +82,13 @@ export default function Playlists() {
   const [search, setSearch] = useState("");
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string } | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDesc, setEditDesc] = useState("");
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { playlists, addPlaylist } = usePlaylists();
+  const { playlists, addPlaylist, deletePlaylist, updatePlaylist } = usePlaylists();
   const { permissions } = useRole();
 
   const filtered = useMemo(() => {
@@ -165,12 +194,43 @@ export default function Playlists() {
                   <div className="p-4 pt-4 flex-1 flex flex-col">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-semibold text-foreground text-sm tracking-tight leading-snug line-clamp-2">{pl.name}</h3>
-                      <button
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center -mt-1 -mr-1"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center -mt-1 -mr-1"
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          {permissions.canEditPlaylists && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditTarget({ id: pl.id, name: pl.name, description: pl.description });
+                                setEditName(pl.name);
+                                setEditDesc(pl.description);
+                              }}
+                            >
+                              <Edit3 className="w-3.5 h-3.5 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                          )}
+                          {permissions.canEditPlaylists && (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteTarget({ id: pl.id, name: pl.name });
+                              }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                     <p className="text-xs text-muted-foreground/70 mt-1.5 leading-relaxed line-clamp-2">{pl.description}</p>
                     <div className="flex items-center gap-3 mt-3 text-muted-foreground">
@@ -190,6 +250,76 @@ export default function Playlists() {
         )}
       </motion.div>
       <CreatePlaylistModal open={createOpen} onOpenChange={setCreateOpen} onCreate={addPlaylist} />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Delete Playlist</AlertDialogTitle>
+            <AlertDialogDescription>
+              {"Are you sure you want to delete \"" + (deleteTarget?.name || "") + "\"? This action cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-sm"
+              onClick={() => {
+                if (deleteTarget) {
+                  deletePlaylist(deleteTarget.id);
+                  setDeleteTarget(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Edit Playlist</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">Name</label>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full h-10 px-3 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-colors font-medium"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">Description</label>
+              <textarea
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-colors resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <button onClick={() => setEditTarget(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+            <button
+              onClick={() => {
+                if (editTarget && editName.trim()) {
+                  updatePlaylist(editTarget.id, { name: editName.trim(), description: editDesc.trim() });
+                  setEditTarget(null);
+                }
+              }}
+              className="btn-brand px-5 py-2 rounded-lg text-sm font-semibold"
+            >
+              Save
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }
