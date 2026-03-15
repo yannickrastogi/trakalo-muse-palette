@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
-import { useTeams } from "@/contexts/TeamContext";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ── Types ──
 
@@ -95,117 +97,108 @@ export interface ApprovalNotification {
 
 const ApprovalContext = createContext<ApprovalContextValue | undefined>(undefined);
 
-let nextId = 1000;
+function mapDbStatusToSend(status: string): SendStatus {
+  switch (status) {
+    case "pending": return "pending_approval";
+    case "approved": return "approved";
+    case "rejected": return "rejected";
+    default: return "pending_approval";
+  }
+}
 
-// Demo sends
-const demoSends: SendRecord[] = [
-  {
-    id: "send-1",
-    teamId: "team-1",
-    createdByUserId: "m-2",
-    createdByName: "Marco Silva",
-    createdByRole: "Songwriter",
-    sendType: "pitch",
-    relatedEntityTitle: "Velvet Skies",
-    recipients: "Atlantic Records",
-    message: "Hi, please consider this track for your upcoming playlist.",
-    status: "pending_approval",
-    approvalRequired: true,
-    approvalModeSnapshot: "everyone_requires_approval",
-    senderApprovalRuleSnapshot: "requires_approval",
-    autoApproved: false,
-    submittedForApprovalAt: "2026-03-09T10:30:00",
-    createdAt: "2026-03-09T10:30:00",
-  },
-  {
-    id: "send-2",
-    teamId: "team-1",
-    createdByUserId: "m-1",
-    createdByName: "Dex Moraes",
-    createdByRole: "Producer",
-    sendType: "share_link",
-    relatedEntityTitle: "Midnight Run",
-    recipients: "Sony Music A&R",
-    message: "Sharing the latest mix for review.",
-    status: "pending_approval",
-    approvalRequired: true,
-    approvalModeSnapshot: "everyone_requires_approval",
-    senderApprovalRuleSnapshot: "requires_approval",
-    autoApproved: false,
-    submittedForApprovalAt: "2026-03-08T15:00:00",
-    createdAt: "2026-03-08T15:00:00",
-  },
-  {
-    id: "send-3",
-    teamId: "team-1",
-    createdByUserId: "m-0",
-    createdByName: "You",
-    createdByRole: "Admin",
-    sendType: "track",
-    relatedEntityTitle: "Neon Dreams",
-    recipients: "Warner Records",
-    message: "",
-    status: "sent",
-    approvalRequired: false,
-    approvalModeSnapshot: "everyone_requires_approval",
-    senderApprovalRuleSnapshot: "n/a",
-    autoApproved: true,
-    createdAt: "2026-03-07T09:00:00",
-    approvedByName: "System",
-    approvedAt: "2026-03-07T09:00:00",
-    sentAt: "2026-03-07T09:00:01",
-  },
-  {
-    id: "send-4",
-    teamId: "team-1",
-    createdByUserId: "m-3",
-    createdByName: "Tony Maserati",
-    createdByRole: "Mix Engineer",
-    sendType: "playlist",
-    relatedEntityTitle: "Summer EP — Final Selects",
-    recipients: "Republic Records",
-    message: "Final selects for the summer EP.",
-    status: "rejected",
-    approvalRequired: true,
-    approvalModeSnapshot: "everyone_requires_approval",
-    senderApprovalRuleSnapshot: "requires_approval",
-    autoApproved: false,
-    submittedForApprovalAt: "2026-03-06T11:00:00",
-    createdAt: "2026-03-06T11:00:00",
-    rejectedByName: "You",
-    rejectedAt: "2026-03-06T14:30:00",
-    rejectionReason: "Missing updated mix for track 3. Please resubmit after revision.",
-  },
-];
+function mapSendStatusToDb(status: SendStatus): string {
+  switch (status) {
+    case "pending_approval": return "pending";
+    case "approved": case "sent": return "approved";
+    case "rejected": return "rejected";
+    default: return "pending";
+  }
+}
 
-const demoAudit: AuditEvent[] = [
-  { id: "ae-1", sendId: "send-1", eventType: "send_created", actorName: "Marco Silva", createdAt: "2026-03-09T10:30:00" },
-  { id: "ae-2", sendId: "send-1", eventType: "submitted_for_approval", actorName: "Marco Silva", createdAt: "2026-03-09T10:30:00" },
-  { id: "ae-3", sendId: "send-2", eventType: "send_created", actorName: "Dex Moraes", createdAt: "2026-03-08T15:00:00" },
-  { id: "ae-4", sendId: "send-2", eventType: "submitted_for_approval", actorName: "Dex Moraes", createdAt: "2026-03-08T15:00:00" },
-  { id: "ae-5", sendId: "send-3", eventType: "send_created", actorName: "You", createdAt: "2026-03-07T09:00:00" },
-  { id: "ae-6", sendId: "send-3", eventType: "auto_approved", actorName: "System", createdAt: "2026-03-07T09:00:00" },
-  { id: "ae-7", sendId: "send-3", eventType: "sent", actorName: "System", createdAt: "2026-03-07T09:00:01" },
-  { id: "ae-8", sendId: "send-4", eventType: "send_created", actorName: "Tony Maserati", createdAt: "2026-03-06T11:00:00" },
-  { id: "ae-9", sendId: "send-4", eventType: "submitted_for_approval", actorName: "Tony Maserati", createdAt: "2026-03-06T11:00:00" },
-  { id: "ae-10", sendId: "send-4", eventType: "rejected", actorName: "You", note: "Missing updated mix for track 3. Please resubmit after revision.", createdAt: "2026-03-06T14:30:00" },
-];
+function mapRowToSend(row: Record<string, unknown>): SendRecord {
+  const changes = (row.changes as Record<string, unknown>) || {};
+  const dbStatus = (row.status as string) || "pending";
+  const sendStatus = mapDbStatusToSend(dbStatus);
 
-const demoNotifications: ApprovalNotification[] = [
-  { id: "an-1", sendId: "send-1", type: "pending", message: "New pitch pending approval from Marco Silva — \"Velvet Skies\"", createdAt: "2026-03-09T10:30:00", read: false },
-  { id: "an-2", sendId: "send-2", type: "pending", message: "Share link pending approval from Dex Moraes — \"Midnight Run\"", createdAt: "2026-03-08T15:00:00", read: false },
-];
+  return {
+    id: row.id as string,
+    teamId: row.workspace_id as string,
+    createdByUserId: (row.requested_by as string) || "",
+    createdByName: (changes.created_by_name as string) || "",
+    createdByRole: (changes.created_by_role as string) || "",
+    sendType: (changes.send_type as SendType) || "track",
+    relatedEntityId: row.track_id as string,
+    relatedEntityTitle: (changes.entity_title as string) || "",
+    recipients: (changes.recipients as string) || "",
+    message: (changes.message as string) || "",
+    status: sendStatus === "approved" && changes.sent_at ? "sent" : sendStatus,
+    approvalRequired: dbStatus === "pending" || dbStatus === "rejected" || !!(changes.approval_required),
+    approvalModeSnapshot: (changes.approval_mode as ApprovalMode) || "everyone_auto_approved",
+    senderApprovalRuleSnapshot: (changes.sender_rule as MemberApprovalRule | "n/a") || "n/a",
+    autoApproved: !!(changes.auto_approved),
+    submittedForApprovalAt: (row.requested_at as string) || undefined,
+    approvedByName: dbStatus === "approved" ? (changes.approved_by_name as string) || "" : undefined,
+    approvedAt: (row.reviewed_at as string) || undefined,
+    rejectedByName: dbStatus === "rejected" ? (changes.rejected_by_name as string) || "" : undefined,
+    rejectedAt: dbStatus === "rejected" ? (row.reviewed_at as string) || undefined : undefined,
+    rejectionReason: (row.review_note as string) || undefined,
+    internalNote: (changes.internal_note as string) || undefined,
+    createdAt: (row.requested_at as string) || "",
+    sentAt: (changes.sent_at as string) || undefined,
+  };
+}
+
+let nextLocalId = 1000;
 
 export function ApprovalProvider({ children }: { children: ReactNode }) {
-  const [teamSettings, setTeamSettings] = useState<Record<string, TeamApprovalSettings>>({
-    "team-1": { teamId: "team-1", approvalMode: "everyone_requires_approval", updatedAt: "2026-03-01T00:00:00" },
-    "team-2": { teamId: "team-2", approvalMode: "everyone_auto_approved", updatedAt: "2026-01-10T00:00:00" },
-  });
+  const { activeWorkspace } = useWorkspace();
+  const { user } = useAuth();
 
+  const [teamSettings, setTeamSettings] = useState<Record<string, TeamApprovalSettings>>({});
   const [memberRules, setMemberRules] = useState<Record<string, MemberApprovalRule>>({});
-  const [sends, setSends] = useState<SendRecord[]>(demoSends);
-  const [auditTrail, setAuditTrail] = useState<AuditEvent[]>(demoAudit);
-  const [notifications, setNotifications] = useState<ApprovalNotification[]>(demoNotifications);
+  const [sends, setSends] = useState<SendRecord[]>([]);
+  const [auditTrail, setAuditTrail] = useState<AuditEvent[]>([]);
+  const [notifications, setNotifications] = useState<ApprovalNotification[]>([]);
+
+  // Fetch approvals from Supabase
+  const fetchApprovals = useCallback(async () => {
+    if (!activeWorkspace || !user) {
+      setSends([]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("approvals")
+      .select("*")
+      .eq("workspace_id", activeWorkspace.id)
+      .order("requested_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching approvals:", error);
+      setSends([]);
+      return;
+    }
+
+    const mapped = (data || []).map((row) => mapRowToSend(row as unknown as Record<string, unknown>));
+    setSends(mapped);
+
+    // Build notifications from pending approvals
+    const pendingNotifs: ApprovalNotification[] = mapped
+      .filter((s) => s.status === "pending_approval")
+      .map((s) => ({
+        id: "an-" + s.id,
+        sendId: s.id,
+        type: "pending" as const,
+        message: "New " + s.sendType + " pending approval from " + s.createdByName + ' — "' + s.relatedEntityTitle + '"',
+        createdAt: s.createdAt,
+        read: false,
+      }));
+    setNotifications(pendingNotifs);
+  }, [activeWorkspace, user]);
+
+  useEffect(() => {
+    fetchApprovals();
+  }, [fetchApprovals]);
 
   const getTeamSettings = useCallback((teamId: string): TeamApprovalSettings => {
     return teamSettings[teamId] || { teamId, approvalMode: "everyone_auto_approved", updatedAt: new Date().toISOString() };
@@ -217,23 +210,14 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
       ...prev,
       [teamId]: { teamId, approvalMode: mode, updatedAt: now },
     }));
-    setAuditTrail(prev => [...prev, {
-      id: `ae-${++nextId}`,
-      sendId: "",
-      eventType: "approval_mode_changed",
-      actorName: "You",
-      previousValue: prev[teamId]?.approvalMode || "unknown",
-      newValue: mode,
-      createdAt: now,
-    } as AuditEvent]);
-  }, [teamSettings]);
+  }, []);
 
   const getMemberRule = useCallback((teamId: string, userId: string): MemberApprovalRule => {
-    return memberRules[`${teamId}:${userId}`] || "requires_approval";
+    return memberRules[teamId + ":" + userId] || "requires_approval";
   }, [memberRules]);
 
   const setMemberRule = useCallback((teamId: string, userId: string, rule: MemberApprovalRule) => {
-    setMemberRules(prev => ({ ...prev, [`${teamId}:${userId}`]: rule }));
+    setMemberRules(prev => ({ ...prev, [teamId + ":" + userId]: rule }));
   }, []);
 
   const doesSenderRequireApproval = useCallback((teamId: string, userId: string): boolean => {
@@ -257,10 +241,12 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
       ? getMemberRule(sendInput.teamId, sendInput.createdByUserId)
       : "n/a" as MemberApprovalRule | "n/a";
 
+    const localId = "send-" + (++nextLocalId);
+
     const newSend: SendRecord = {
       ...sendInput,
-      id: `send-${++nextId}`,
-      status: requiresApproval ? "pending_approval" : "approved",
+      id: localId,
+      status: requiresApproval ? "pending_approval" : "sent",
       approvalRequired: requiresApproval,
       approvalModeSnapshot: settings.approvalMode,
       senderApprovalRuleSnapshot: memberRule,
@@ -272,35 +258,70 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
       sentAt: !requiresApproval ? now : undefined,
     };
 
-    if (!requiresApproval) {
-      newSend.status = "sent";
-    }
-
     setSends(prev => [newSend, ...prev]);
 
-    // Audit
-    const events: AuditEvent[] = [
-      { id: `ae-${++nextId}`, sendId: newSend.id, eventType: "send_created", actorName: sendInput.createdByName, createdAt: now },
-    ];
+    // Persist to Supabase
+    if (activeWorkspace && user) {
+      supabase
+        .from("approvals")
+        .insert({
+          workspace_id: activeWorkspace.id,
+          track_id: sendInput.relatedEntityId || sendInput.teamId,
+          requested_by: user.id,
+          status: mapSendStatusToDb(newSend.status),
+          requested_at: now,
+          review_note: null,
+          changes: {
+            send_type: sendInput.sendType,
+            entity_title: sendInput.relatedEntityTitle,
+            recipients: sendInput.recipients,
+            message: sendInput.message,
+            created_by_name: sendInput.createdByName,
+            created_by_role: sendInput.createdByRole,
+            approval_mode: settings.approvalMode,
+            sender_rule: memberRule,
+            auto_approved: !requiresApproval,
+            approval_required: requiresApproval,
+            sent_at: !requiresApproval ? now : null,
+          },
+        })
+        .select()
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("Error creating approval:", error);
+          } else if (data) {
+            // Update local id with Supabase id
+            setSends(prev => prev.map(s => s.id === localId ? { ...s, id: data.id } : s));
+          }
+        });
+    }
+
     if (requiresApproval) {
-      events.push({ id: `ae-${++nextId}`, sendId: newSend.id, eventType: "submitted_for_approval", actorName: sendInput.createdByName, createdAt: now });
-      // Notify admin
       setNotifications(prev => [{
-        id: `an-${++nextId}`,
-        sendId: newSend.id,
+        id: "an-" + localId,
+        sendId: localId,
         type: "pending",
-        message: `New ${sendInput.sendType} pending approval from ${sendInput.createdByName} — "${sendInput.relatedEntityTitle}"`,
+        message: "New " + sendInput.sendType + " pending approval from " + sendInput.createdByName + ' — "' + sendInput.relatedEntityTitle + '"',
         createdAt: now,
         read: false,
       }, ...prev]);
+    }
+
+    // Audit
+    const events: AuditEvent[] = [
+      { id: "ae-" + (++nextLocalId), sendId: localId, eventType: "send_created", actorName: sendInput.createdByName, createdAt: now },
+    ];
+    if (requiresApproval) {
+      events.push({ id: "ae-" + (++nextLocalId), sendId: localId, eventType: "submitted_for_approval", actorName: sendInput.createdByName, createdAt: now });
     } else {
-      events.push({ id: `ae-${++nextId}`, sendId: newSend.id, eventType: "auto_approved", actorName: "System", createdAt: now });
-      events.push({ id: `ae-${++nextId}`, sendId: newSend.id, eventType: "sent", actorName: "System", createdAt: now });
+      events.push({ id: "ae-" + (++nextLocalId), sendId: localId, eventType: "auto_approved", actorName: "System", createdAt: now });
+      events.push({ id: "ae-" + (++nextLocalId), sendId: localId, eventType: "sent", actorName: "System", createdAt: now });
     }
     setAuditTrail(prev => [...prev, ...events]);
 
     return newSend;
-  }, [getTeamSettings, doesSenderRequireApproval, getMemberRule]);
+  }, [activeWorkspace, user, getTeamSettings, doesSenderRequireApproval, getMemberRule]);
 
   const approveSend = useCallback((sendId: string, approverName: string, note?: string) => {
     const now = new Date().toISOString();
@@ -312,22 +333,64 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
       sentAt: now,
       internalNote: note || s.internalNote,
     } : s));
+
+    // Persist
+    supabase
+      .from("approvals")
+      .update({
+        status: "approved",
+        reviewed_by: user?.id || null,
+        reviewed_at: now,
+        review_note: note || null,
+        changes: supabase.rpc ? undefined : undefined, // changes are preserved server-side
+      })
+      .eq("id", sendId)
+      .then(({ error }) => {
+        if (error) console.error("Error approving:", error);
+      });
+
+    // Update changes jsonb with approval info
+    supabase
+      .from("approvals")
+      .select("changes")
+      .eq("id", sendId)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          const changes = (data.changes as Record<string, unknown>) || {};
+          supabase
+            .from("approvals")
+            .update({
+              status: "approved",
+              reviewed_by: user?.id || null,
+              reviewed_at: now,
+              review_note: note || null,
+              changes: { ...changes, approved_by_name: approverName, sent_at: now, internal_note: note },
+            })
+            .eq("id", sendId)
+            .then(({ error }) => {
+              if (error) console.error("Error updating approval changes:", error);
+            });
+        }
+      });
+
     setAuditTrail(prev => [...prev,
-      { id: `ae-${++nextId}`, sendId, eventType: "manually_approved", actorName: approverName, note, createdAt: now },
-      { id: `ae-${++nextId}`, sendId, eventType: "sent", actorName: "System", createdAt: now },
+      { id: "ae-" + (++nextLocalId), sendId, eventType: "manually_approved", actorName: approverName, note, createdAt: now },
+      { id: "ae-" + (++nextLocalId), sendId, eventType: "sent", actorName: "System", createdAt: now },
     ]);
+
     const send = sends.find(s => s.id === sendId);
     if (send) {
       setNotifications(prev => [{
-        id: `an-${++nextId}`,
+        id: "an-" + (++nextLocalId),
         sendId,
         type: "approved",
-        message: `Your ${send.sendType} "${send.relatedEntityTitle}" has been approved and sent`,
+        message: 'Your ' + send.sendType + ' "' + send.relatedEntityTitle + '" has been approved and sent',
         createdAt: now,
         read: false,
       }, ...prev]);
     }
-  }, [sends]);
+  }, [sends, user]);
 
   const rejectSend = useCallback((sendId: string, rejectorName: string, reason?: string, note?: string) => {
     const now = new Date().toISOString();
@@ -339,27 +402,52 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
       rejectionReason: reason || s.rejectionReason,
       internalNote: note || s.internalNote,
     } : s));
+
+    // Persist
+    supabase
+      .from("approvals")
+      .select("changes")
+      .eq("id", sendId)
+      .single()
+      .then(({ data }) => {
+        const changes = ((data?.changes as Record<string, unknown>) || {});
+        supabase
+          .from("approvals")
+          .update({
+            status: "rejected",
+            reviewed_by: user?.id || null,
+            reviewed_at: now,
+            review_note: reason || null,
+            changes: { ...changes, rejected_by_name: rejectorName, internal_note: note },
+          })
+          .eq("id", sendId)
+          .then(({ error }) => {
+            if (error) console.error("Error rejecting:", error);
+          });
+      });
+
     setAuditTrail(prev => [...prev,
-      { id: `ae-${++nextId}`, sendId, eventType: "rejected", actorName: rejectorName, note: reason, createdAt: now },
+      { id: "ae-" + (++nextLocalId), sendId, eventType: "rejected", actorName: rejectorName, note: reason, createdAt: now },
     ]);
+
     const send = sends.find(s => s.id === sendId);
     if (send) {
       setNotifications(prev => [{
-        id: `an-${++nextId}`,
+        id: "an-" + (++nextLocalId),
         sendId,
         type: "rejected",
-        message: `Your ${send.sendType} "${send.relatedEntityTitle}" was rejected${reason ? `: ${reason}` : ""}`,
+        message: 'Your ' + send.sendType + ' "' + send.relatedEntityTitle + '" was rejected' + (reason ? ": " + reason : ""),
         createdAt: now,
         read: false,
       }, ...prev]);
     }
-  }, [sends]);
+  }, [sends, user]);
 
   const cancelSend = useCallback((sendId: string) => {
     const now = new Date().toISOString();
     setSends(prev => prev.map(s => s.id === sendId ? { ...s, status: "cancelled" as SendStatus } : s));
     setAuditTrail(prev => [...prev,
-      { id: `ae-${++nextId}`, sendId, eventType: "cancelled", actorName: "You", createdAt: now },
+      { id: "ae-" + (++nextLocalId), sendId, eventType: "cancelled", actorName: "You", createdAt: now },
     ]);
   }, []);
 
