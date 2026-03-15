@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { type NewPlaylistData } from "@/components/CreatePlaylistModal";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useAuth } from "@/contexts/AuthContext";
 import type { WorkspaceScoped } from "@/types/workspace";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
@@ -28,14 +30,40 @@ export interface PlaylistItem extends WorkspaceScoped {
   coverImage?: string;
 }
 
-const defaultPlaylists: PlaylistItem[] = [
-  { id: "summer-ep", workspace_id: "ws-nightfall", name: "Summer EP — Final Selects", description: "Curated finals for the summer release. Warm, uplifting vibes across neo-soul and indie.", tracks: 8, duration: "32 min", updated: "2h ago", mood: "Uplifting", coverIdxs: [0, 2, 4, 3], color: "from-brand-orange/20 to-brand-pink/10" },
-  { id: "sync-pitches-q2", workspace_id: "ws-nightfall", name: "Sync Pitches — Q2 2026", description: "Tracks shortlisted for film, TV, and ad sync placements this quarter.", tracks: 14, duration: "52 min", updated: "1d ago", mood: "Cinematic", coverIdxs: [1, 3, 5, 0], color: "from-brand-purple/20 to-brand-pink/10" },
-  { id: "late-night", workspace_id: "ws-nightfall", name: "Late Night Sessions", description: "Downtempo, ambient, and lo-fi selections for after-hours listening.", tracks: 22, duration: "1h 18m", updated: "3d ago", mood: "Chill", coverIdxs: [3, 4, 0, 2], color: "from-brand-pink/15 to-brand-purple/15" },
-  { id: "high-energy", workspace_id: "ws-nightfall", name: "High Energy — Ads", description: "Punchy, high-tempo tracks perfect for advertising and brand campaigns.", tracks: 11, duration: "38 min", updated: "5d ago", mood: "Energetic", coverIdxs: [5, 1, 2, 4], color: "from-brand-orange/25 to-brand-purple/10" },
-  { id: "neo-soul", workspace_id: "ws-nightfall", name: "Neo-Soul Collection", description: "A definitive collection of our best neo-soul productions and collaborations.", tracks: 19, duration: "1h 04m", updated: "1w ago", mood: "Smooth", coverIdxs: [0, 3, 1, 5], color: "from-brand-pink/20 to-brand-orange/10" },
-  { id: "unreleased-vault", workspace_id: "ws-nightfall", name: "Unreleased Vault", description: "Demos, unreleased masters, and works-in-progress awaiting final clearance.", tracks: 31, duration: "1h 52m", updated: "2w ago", mood: "Mixed", coverIdxs: [2, 5, 3, 1], color: "from-brand-purple/15 to-brand-orange/15" },
-];
+function formatUpdated(dateStr: string): string {
+  if (!dateStr) return "";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return mins + "m ago";
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return hours + "h ago";
+  const days = Math.floor(hours / 24);
+  if (days < 7) return days + "d ago";
+  const weeks = Math.floor(days / 7);
+  return weeks + "w ago";
+}
+
+function mapRowToPlaylist(
+  row: Record<string, unknown>,
+  trackCount: number,
+  trackIds: number[]
+): PlaylistItem {
+  return {
+    id: row.id as string,
+    workspace_id: row.workspace_id as string,
+    name: (row.name as string) || "",
+    description: (row.description as string) || "",
+    tracks: trackCount,
+    duration: trackCount * 4 + " min",
+    updated: formatUpdated((row.updated_at as string) || (row.created_at as string) || ""),
+    mood: "",
+    coverIdxs: [0, 1, 2, 3],
+    color: "from-brand-purple/20 to-brand-pink/10",
+    trackIds,
+    coverImage: (row.cover_url as string) || undefined,
+  };
+}
 
 interface PlaylistContextType {
   playlists: PlaylistItem[];
@@ -48,27 +76,168 @@ const PlaylistContext = createContext<PlaylistContextType | null>(null);
 
 export function PlaylistProvider({ children }: { children: ReactNode }) {
   const { activeWorkspace } = useWorkspace();
-  const [allPlaylists, setAllPlaylists] = useState<PlaylistItem[]>(defaultPlaylists);
+  const { user } = useAuth();
+  const [playlists, setPlaylists] = useState<PlaylistItem[]>([]);
 
-  const playlists = useMemo(
-    () => allPlaylists.filter((p) => p.workspace_id === activeWorkspace.id),
-    [allPlaylists, activeWorkspace.id]
+  const fetchPlaylists = useCallback(async () => {
+    if (!activeWorkspace || !user) {
+      setPlaylists([]);
+      return;
+    }
+
+    const { data: rows, error } = await supabase
+      .from("playlists")
+      .select("*")
+      .eq("workspace_id", activeWorkspace.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching playlists:", error);
+      setPlaylists([]);
+      return;
+    }
+
+    if (!rows || rows.length === 0) {
+      setPlaylists([]);
+      return;
+    }
+
+    // Fetch track associations for all playlists in one query
+    const playlistIds = rows.map((r) => r.id);
+    const { data: ptRows, error: ptError } = await supabase
+      .from("playlist_tracks")
+      .select("playlist_id, track_id, position")
+      .in("playlist_id", playlistIds)
+      .order("position", { ascending: true });
+
+    if (ptError) {
+      console.error("Error fetching playlist_tracks:", ptError);
+    }
+
+    // Group track IDs by playlist
+    const tracksByPlaylist: Record<string, number[]> = {};
+    for (const pt of ptRows || []) {
+      const pid = pt.playlist_id as string;
+      if (!tracksByPlaylist[pid]) tracksByPlaylist[pid] = [];
+      tracksByPlaylist[pid].push(pt.track_id as number);
+    }
+
+    const mapped = rows.map((row) => {
+      const r = row as unknown as Record<string, unknown>;
+      const ids = tracksByPlaylist[r.id as string] || [];
+      return mapRowToPlaylist(r, ids.length, ids);
+    });
+
+    setPlaylists(mapped);
+  }, [activeWorkspace, user]);
+
+  useEffect(() => {
+    fetchPlaylists();
+  }, [fetchPlaylists]);
+
+  const addPlaylist = useCallback(
+    async (pl: NewPlaylistData) => {
+      if (!activeWorkspace || !user) return;
+
+      const { data, error } = await supabase
+        .from("playlists")
+        .insert({
+          workspace_id: activeWorkspace.id,
+          created_by: user.id,
+          name: pl.name,
+          description: pl.description || "",
+          cover_url: pl.coverImage || null,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error adding playlist:", error);
+        return;
+      }
+
+      // Insert track associations if any
+      if (pl.trackIds && pl.trackIds.length > 0 && data) {
+        const ptInserts = pl.trackIds.map((trackId, idx) => ({
+          playlist_id: data.id,
+          track_id: trackId,
+          position: idx,
+          added_by: user.id,
+        }));
+
+        const { error: ptError } = await supabase
+          .from("playlist_tracks")
+          .insert(ptInserts);
+
+        if (ptError) {
+          console.error("Error adding playlist tracks:", ptError);
+        }
+      }
+
+      await fetchPlaylists();
+    },
+    [activeWorkspace, user, fetchPlaylists]
   );
-
-  const addPlaylist = useCallback((pl: NewPlaylistData) => {
-    setAllPlaylists((prev) => [pl as PlaylistItem, ...prev]);
-  }, []);
 
   const getPlaylist = useCallback(
-    (id: string) => allPlaylists.find((p) => p.id === id),
-    [allPlaylists]
+    (id: string) => playlists.find((p) => p.id === id),
+    [playlists]
   );
 
-  const updatePlaylist = useCallback((id: string, updates: Partial<PlaylistItem>) => {
-    setAllPlaylists((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
-    );
-  }, []);
+  const updatePlaylist = useCallback(
+    async (id: string, updates: Partial<PlaylistItem>) => {
+      // Update locally first for instant UI
+      setPlaylists((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
+      );
+
+      // Build Supabase payload (only persist DB-backed fields)
+      const payload: Record<string, unknown> = {};
+      if (updates.name !== undefined) payload.name = updates.name;
+      if (updates.description !== undefined) payload.description = updates.description;
+      if (updates.coverImage !== undefined) payload.cover_url = updates.coverImage || null;
+
+      if (Object.keys(payload).length > 0) {
+        const { error } = await supabase
+          .from("playlists")
+          .update(payload)
+          .eq("id", id);
+
+        if (error) {
+          console.error("Error updating playlist:", error);
+        }
+      }
+
+      // Sync trackIds to playlist_tracks if provided
+      if (updates.trackIds !== undefined && user) {
+        // Replace all tracks: delete existing, insert new
+        const { error: delError } = await supabase
+          .from("playlist_tracks")
+          .delete()
+          .eq("playlist_id", id);
+
+        if (delError) {
+          console.error("Error clearing playlist tracks:", delError);
+        } else if (updates.trackIds.length > 0) {
+          const ptInserts = updates.trackIds.map((trackId, idx) => ({
+            playlist_id: id,
+            track_id: trackId,
+            position: idx,
+            added_by: user.id,
+          }));
+
+          const { error: insError } = await supabase
+            .from("playlist_tracks")
+            .insert(ptInserts);
+
+          if (insError) {
+            console.error("Error updating playlist tracks:", insError);
+          }
+        }
+      }
+    },
+    [user]
+  );
 
   return (
     <PlaylistContext.Provider value={{ playlists, addPlaylist, getPlaylist, updatePlaylist }}>
