@@ -81,8 +81,38 @@ export interface TrackData extends WorkspaceScoped {
   statusHistory: TrackStatusEntry[];
 }
 
+const stemTypeColors: Record<string, string> = {
+  vocal: "text-brand-pink",
+  background_vocal: "text-brand-purple",
+  drums: "text-primary",
+  kick: "text-primary",
+  snare: "text-primary",
+  bass: "text-chart-4",
+  synth: "text-brand-orange",
+  guitar: "text-chart-5",
+  fx: "text-accent",
+  other: "text-muted-foreground",
+};
+
+function formatFileSize(bytes: number | null): string {
+  if (!bytes) return "0 MB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function mapStemRow(row: Record<string, unknown>): TrackStem {
+  const stemType = (row.stem_type as string) || "other";
+  return {
+    id: row.id as string,
+    fileName: (row.file_name as string) || "",
+    type: stemType === "background_vocal" ? "background vocal" : stemType,
+    fileSize: formatFileSize(row.file_size_bytes as number | null),
+    uploadDate: (row.created_at as string) || "",
+    color: stemTypeColors[stemType] || "text-muted-foreground",
+  };
+}
+
 // Helper: convert Supabase row to TrackData
-function mapRowToTrack(row: Record<string, unknown>, index: number): TrackData {
+function mapRowToTrack(row: Record<string, unknown>, index: number, stems: TrackStem[]): TrackData {
   return {
     id: index + 1, // numeric id for frontend compatibility
     uuid: row.id as string,
@@ -125,7 +155,7 @@ function mapRowToTrack(row: Record<string, unknown>, index: number): TrackData {
     originalFileUrl: (row.audio_url as string) || undefined,
     notes: (row.notes as string) || "",
     details: {},
-    stems: [],
+    stems,
     splits: (row.splits as TrackSplit[]) || [],
     lyrics: (row.lyrics as string) || undefined,
     statusHistory: [],
@@ -214,19 +244,37 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("tracks")
-        .select("*")
-        .eq("workspace_id", activeWorkspace.id)
-        .order("created_at", { ascending: false });
+      // Fetch tracks and stems in parallel
+      const [tracksRes, stemsRes] = await Promise.all([
+        supabase
+          .from("tracks")
+          .select("*")
+          .eq("workspace_id", activeWorkspace.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("stems")
+          .select("*")
+          .eq("workspace_id", activeWorkspace.id)
+          .order("created_at", { ascending: true }),
+      ]);
 
-      if (error) {
-        console.error("Error fetching tracks:", error);
+      if (tracksRes.error) {
+        console.error("Error fetching tracks:", tracksRes.error);
         setTracks([]);
       } else {
-        const mapped = (data || []).map((row, i) =>
-          mapRowToTrack(row as unknown as Record<string, unknown>, i)
-        );
+        // Group stems by track_id
+        const stemsByTrack: Record<string, TrackStem[]> = {};
+        for (const row of stemsRes.data || []) {
+          const tid = row.track_id as string;
+          if (!stemsByTrack[tid]) stemsByTrack[tid] = [];
+          stemsByTrack[tid].push(mapStemRow(row as unknown as Record<string, unknown>));
+        }
+
+        const mapped = (tracksRes.data || []).map((row, i) => {
+          const r = row as unknown as Record<string, unknown>;
+          const trackStems = stemsByTrack[r.id as string] || [];
+          return mapRowToTrack(r, i, trackStems);
+        });
         setTracks(mapped);
       }
     } catch (err) {
@@ -401,12 +449,44 @@ export function TrackProvider({ children }: { children: ReactNode }) {
   );
 
   const updateTrackStems = useCallback(
-    (id: number, stems: TrackStem[]) => {
-      // Stems are managed in the stems table — for now, update locally
+    async (id: number, stems: TrackStem[]) => {
+      const track = tracks.find((t) => t.id === id);
+      if (!track || !activeWorkspace) return;
+
+      // Update locally first
       setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, stems } : t)));
-      // TODO: sync with stems table in Supabase
+
+      // Delete existing stems for this track, then insert new ones
+      const { error: delError } = await supabase
+        .from("stems")
+        .delete()
+        .eq("track_id", track.uuid);
+
+      if (delError) {
+        console.error("Error clearing stems:", delError);
+        return;
+      }
+
+      if (stems.length > 0) {
+        const inserts = stems.map((s) => ({
+          track_id: track.uuid,
+          workspace_id: activeWorkspace.id,
+          file_name: s.fileName,
+          file_url: "",
+          stem_type: s.type === "background vocal" ? "background_vocal" : s.type,
+          uploaded_by: user?.id || null,
+        }));
+
+        const { error: insError } = await supabase
+          .from("stems")
+          .insert(inserts);
+
+        if (insError) {
+          console.error("Error inserting stems:", insError);
+        }
+      }
     },
-    []
+    [tracks, activeWorkspace, user]
   );
 
   const updateTrackSplits = useCallback(
