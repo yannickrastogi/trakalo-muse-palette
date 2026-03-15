@@ -70,6 +70,9 @@ export default function SharedLinkPage() {
   var [duration, setDuration] = useState(0);
   var [volume, setVolume] = useState(0.8);
 
+  // Cache resolved audio URLs to avoid re-fetching
+  var audioUrlCache = useRef<Record<string, string>>({});
+
   // Fetch link data
   useEffect(function() {
     if (!slug) {
@@ -199,9 +202,30 @@ export default function SharedLinkPage() {
     };
   }, []);
 
+  var fetchAudioUrl = useCallback(async function(trackId: string): Promise<string | null> {
+    if (audioUrlCache.current[trackId]) return audioUrlCache.current[trackId];
+    try {
+      var res = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/get-audio-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: slug, track_id: trackId })
+      });
+      if (!res.ok) return null;
+      var json = await res.json();
+      if (json.url) {
+        audioUrlCache.current[trackId] = json.url;
+        return json.url;
+      }
+      return null;
+    } catch (err) {
+      console.error("Failed to fetch audio URL:", err);
+      return null;
+    }
+  }, [slug]);
+
   var handlePlayTrack = useCallback(function(track: TrackData) {
     var audio = audioRef.current;
-    if (!audio || !track.audio_url) return;
+    if (!audio) return;
 
     if (playingTrackId === track.id) {
       // Toggle pause/play
@@ -210,9 +234,7 @@ export default function SharedLinkPage() {
       } else {
         audio.pause();
       }
-      // If paused after toggle, clear playing id
       if (!audio.paused) {
-        // Will be playing
         setPlayingTrackId(track.id);
       } else {
         setPlayingTrackId(null);
@@ -220,13 +242,20 @@ export default function SharedLinkPage() {
       return;
     }
 
-    // New track
-    audio.src = track.audio_url;
-    audio.play().catch(function(err) { console.error("Play error:", err); });
+    // New track — fetch signed URL from edge function
     setPlayingTrackId(track.id);
     setCurrentTime(0);
     setDuration(0);
-  }, [playingTrackId]);
+    fetchAudioUrl(track.id).then(function(url) {
+      if (!url) {
+        console.error("No audio URL returned for track", track.id);
+        setPlayingTrackId(null);
+        return;
+      }
+      audio.src = url;
+      audio.play().catch(function(err) { console.error("Play error:", err); });
+    });
+  }, [playingTrackId, fetchAudioUrl]);
 
   var handleSeek = useCallback(function(e: React.MouseEvent<HTMLDivElement>) {
     var audio = audioRef.current;
@@ -382,14 +411,14 @@ export default function SharedLinkPage() {
                       <button
                         onClick={function() { handlePlayTrack(track); }}
                         className={"w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all " + (isAudioPlaying ? "btn-brand" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}
-                        disabled={!track.audio_url}
+                        disabled={!track.audio_url && !slug}
                       >
                         {isAudioPlaying ? (
                           <Pause className="w-3.5 h-3.5 text-primary-foreground" />
                         ) : (
-                          <span className="text-xs font-mono">{track.audio_url ? "" : (idx + 1)}</span>
+                          <span className="text-xs font-mono">{(track.audio_url || slug) ? "" : (idx + 1)}</span>
                         )}
-                        {!isAudioPlaying && track.audio_url && <Play className="w-3.5 h-3.5 ml-0.5" />}
+                        {!isAudioPlaying && (track.audio_url || slug) && <Play className="w-3.5 h-3.5 ml-0.5" />}
                       </button>
 
                       {/* Cover */}
@@ -543,7 +572,7 @@ export default function SharedLinkPage() {
             </div>
 
             {/* Player */}
-            {trackData.audio_url && (
+            {(trackData.audio_url || slug) && (
               <div className="border-t border-border px-6 py-4 space-y-3">
                 <div
                   className="h-1.5 bg-secondary rounded-full cursor-pointer group relative"
@@ -596,16 +625,25 @@ export default function SharedLinkPage() {
               </div>
             )}
 
-            {linkData?.allow_download && trackData.audio_url && (
+            {linkData?.allow_download && (trackData.audio_url || slug) && (
               <div className="border-t border-border px-6 py-4">
-                <a
-                  href={trackData.audio_url}
-                  download={trackData.title + " - " + trackData.artist}
+                <button
+                  onClick={function() {
+                    fetchAudioUrl(trackData!.id).then(function(url) {
+                      if (!url) return;
+                      var a = document.createElement("a");
+                      a.href = url;
+                      a.download = trackData!.title + " - " + trackData!.artist;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                    });
+                  }}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold border border-border bg-card text-foreground hover:bg-secondary transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   {"Download " + (linkData.download_quality === "hi-res" ? "(Hi-Res)" : "(Low-Res)")}
-                </a>
+                </button>
               </div>
             )}
           </div>
