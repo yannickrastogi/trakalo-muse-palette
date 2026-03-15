@@ -113,6 +113,9 @@ export default function PlaylistDetail() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState(playlist?.name || "");
   const [playlistName, setPlaylistName] = useState(playlist?.name || "");
+  const [editingName, setEditingName] = useState(false);
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descValue, setDescValue] = useState(playlist?.description || "");
   const [addTrackOpen, setAddTrackOpen] = useState(false);
   const [addSearch, setAddSearch] = useState("");
   const [duplicateToast, setDuplicateToast] = useState(false);
@@ -261,12 +264,61 @@ export default function PlaylistDetail() {
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/12 text-accent/80 mb-2">
                 #{playlist.mood}
               </span>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
-                {playlistName}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed max-w-lg">
-                {playlist.description}
-              </p>
+              {editingName ? (
+                <input
+                  autoFocus
+                  type="text"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onBlur={() => {
+                    if (renameValue.trim() && renameValue.trim() !== playlistName) {
+                      setPlaylistName(renameValue.trim());
+                      syncToContext(tracks, renameValue.trim());
+                    }
+                    setEditingName(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    if (e.key === "Escape") { setRenameValue(playlistName); setEditingName(false); }
+                  }}
+                  className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight bg-transparent border-b-2 border-primary/40 outline-none w-full"
+                />
+              ) : (
+                <h1
+                  className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight cursor-pointer hover:text-primary/80 transition-colors group/name"
+                  onClick={() => { if (permissions.canEditPlaylists) { setRenameValue(playlistName); setEditingName(true); } }}
+                  title={permissions.canEditPlaylists ? "Click to edit" : undefined}
+                >
+                  {playlistName}
+                  {permissions.canEditPlaylists && <Edit3 className="w-4 h-4 inline ml-2 opacity-0 group-hover/name:opacity-40 transition-opacity" />}
+                </h1>
+              )}
+              {editingDesc ? (
+                <textarea
+                  autoFocus
+                  value={descValue}
+                  onChange={(e) => setDescValue(e.target.value)}
+                  onBlur={() => {
+                    if (id && descValue !== playlist.description) {
+                      updatePlaylist(id, { description: descValue.trim() });
+                    }
+                    setEditingDesc(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") { setDescValue(playlist.description); setEditingDesc(false); }
+                  }}
+                  rows={2}
+                  className="text-sm text-muted-foreground mt-1.5 leading-relaxed max-w-lg bg-transparent border-b-2 border-primary/40 outline-none w-full resize-none"
+                />
+              ) : (
+                <p
+                  className={"text-sm text-muted-foreground mt-1.5 leading-relaxed max-w-lg" + (permissions.canEditPlaylists ? " cursor-pointer hover:text-foreground/70 transition-colors" : "")}
+                  onClick={() => { if (permissions.canEditPlaylists) { setDescValue(playlist.description); setEditingDesc(true); } }}
+                  title={permissions.canEditPlaylists ? "Click to edit" : undefined}
+                >
+                  {playlist.description || (permissions.canEditPlaylists ? "Click to add a description…" : "")}
+                </p>
+              )}
             </div>
 
              <div className="flex items-center gap-4 text-muted-foreground">

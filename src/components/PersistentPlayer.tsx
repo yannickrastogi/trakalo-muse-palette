@@ -109,11 +109,11 @@ export function PersistentPlayer() {
       </div>
 
       {/* Main player bar */}
-      <div className="glass border-t border-border/40 px-3 sm:px-5 py-2.5 flex items-center gap-3 sm:gap-4">
+      <div className="glass border-t border-border/40 px-3 sm:px-5 py-2.5 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-4">
         {/* Track info — left */}
         <button
-          onClick={() => navigate(`/track/${currentTrack.id}`)}
-          className="flex items-center gap-3 min-w-0 flex-shrink group/info"
+          onClick={() => navigate("/track/" + currentTrack.id)}
+          className="flex items-center gap-3 min-w-0 group/info justify-self-start"
         >
           <img
             src={coverSrc}
@@ -121,17 +121,17 @@ export function PersistentPlayer() {
             className="w-10 h-10 sm:w-11 sm:h-11 rounded-lg object-cover ring-1 ring-border/50 group-hover/info:ring-primary/30 transition-all shrink-0"
           />
           <div className="min-w-0 hidden sm:block">
-            <p className="text-[13px] font-semibold text-foreground truncate max-w-[180px] leading-tight group-hover/info:text-primary transition-colors">
+            <p className="text-[13px] font-semibold text-foreground truncate leading-tight group-hover/info:text-primary transition-colors">
               {currentTrack.title}
             </p>
-            <p className="text-[11px] text-muted-foreground truncate max-w-[160px] mt-0.5">
+            <p className="text-[11px] text-muted-foreground truncate mt-0.5">
               {currentTrack.artist}
             </p>
           </div>
         </button>
 
-        {/* Center — controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2 mx-auto">
+        {/* Center — controls (fixed width) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 justify-self-center">
           <button
             onClick={prevTrack}
             className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
@@ -153,7 +153,7 @@ export function PersistentPlayer() {
         </div>
 
         {/* Right — time + volume + minimize */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 justify-self-end">
           <span className="text-[11px] font-mono text-muted-foreground tabular-nums hidden sm:block">
             {formatTime(currentTime)}
             <span className="text-muted-foreground/40 mx-0.5">/</span>
