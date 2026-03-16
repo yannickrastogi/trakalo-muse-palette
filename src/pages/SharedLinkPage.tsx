@@ -63,9 +63,11 @@ export default function SharedLinkPage() {
   var [passwordVerified, setPasswordVerified] = useState(false);
   var [passwordError, setPasswordError] = useState(false);
 
-  // Audio player state — track the currently playing track id
+  // Audio player state
   var audioRef = useRef<HTMLAudioElement | null>(null);
+  var loadedTrackIdRef = useRef<string | null>(null);
   var [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+  var [isPlaying, setIsPlaying] = useState(false);
   var [currentTime, setCurrentTime] = useState(0);
   var [duration, setDuration] = useState(0);
   var [volume, setVolume] = useState(0.8);
@@ -184,19 +186,25 @@ export default function SharedLinkPage() {
       setDuration(audio.duration);
     };
     var onEnded = function() {
-      setPlayingTrackId(null);
+      setIsPlaying(false);
       setCurrentTime(0);
       setDuration(0);
     };
+    var onPlay = function() { setIsPlaying(true); };
+    var onPause = function() { setIsPlaying(false); };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("loadedmetadata", onLoadedMetadata);
     audio.addEventListener("ended", onEnded);
+    audio.addEventListener("play", onPlay);
+    audio.addEventListener("pause", onPause);
 
     return function() {
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("loadedmetadata", onLoadedMetadata);
       audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("play", onPlay);
+      audio.removeEventListener("pause", onPause);
       audio.pause();
       audio.src = "";
     };
@@ -231,35 +239,32 @@ export default function SharedLinkPage() {
     var audio = audioRef.current;
     if (!audio) return;
 
-    if (playingTrackId === track.id) {
-      // Toggle pause/play
+    // Same track — just toggle pause/resume
+    if (loadedTrackIdRef.current === track.id) {
       if (audio.paused) {
         audio.play().catch(function(err) { console.error("Play error:", err); });
       } else {
         audio.pause();
       }
-      if (!audio.paused) {
-        setPlayingTrackId(track.id);
-      } else {
-        setPlayingTrackId(null);
-      }
       return;
     }
 
-    // New track — fetch signed URL from edge function
+    // Different track — fetch signed URL and load
+    loadedTrackIdRef.current = track.id;
     setPlayingTrackId(track.id);
     setCurrentTime(0);
     setDuration(0);
     fetchAudioUrl(track.id).then(function(url) {
       if (!url) {
         console.error("No audio URL returned for track", track.id);
+        loadedTrackIdRef.current = null;
         setPlayingTrackId(null);
         return;
       }
       audio.src = url;
       audio.play().catch(function(err) { console.error("Play error:", err); });
     });
-  }, [playingTrackId, fetchAudioUrl]);
+  }, [fetchAudioUrl]);
 
   var handleSeek = useCallback(function(e: React.MouseEvent<HTMLDivElement>) {
     var audio = audioRef.current;
@@ -269,9 +274,8 @@ export default function SharedLinkPage() {
     audio.currentTime = pct * audio.duration;
   }, []);
 
-  var handleVolume = useCallback(function(e: React.MouseEvent<HTMLDivElement>) {
-    var rect = e.currentTarget.getBoundingClientRect();
-    var vol = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  var handleVolumeChange = useCallback(function(e: React.ChangeEvent<HTMLInputElement>) {
+    var vol = parseFloat(e.target.value);
     if (audioRef.current) audioRef.current.volume = vol;
     setVolume(vol);
   }, []);
@@ -405,7 +409,7 @@ export default function SharedLinkPage() {
               <div className="border-t border-border">
                 {playlistTracks.map(function(track, idx) {
                   var isActive = playingTrackId === track.id;
-                  var isAudioPlaying = isActive && audioRef.current != null && !audioRef.current.paused;
+                  var isAudioPlaying = isActive && isPlaying;
                   return (
                     <div
                       key={track.id}
@@ -487,15 +491,15 @@ export default function SharedLinkPage() {
                     >
                       {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                     </button>
-                    <div
-                      className="w-16 h-1.5 bg-secondary rounded-full cursor-pointer hidden sm:block"
-                      onClick={handleVolume}
-                    >
-                      <div
-                        className="h-full rounded-full bg-primary transition-[width] duration-75"
-                        style={{ width: (volume * 100) + "%" }}
-                      />
-                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={volume}
+                      onChange={handleVolumeChange}
+                      className="w-20 h-1.5 accent-primary cursor-pointer hidden sm:block"
+                    />
                     <span className="text-[11px] font-mono text-muted-foreground tabular-nums ml-1">
                       {formatDuration(duration)}
                     </span>
@@ -599,7 +603,7 @@ export default function SharedLinkPage() {
                     onClick={function() { handlePlayTrack(trackData!); }}
                     className="w-11 h-11 rounded-full btn-brand flex items-center justify-center"
                   >
-                    {playingTrackId === trackData.id && audioRef.current && !audioRef.current.paused ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                    {playingTrackId === trackData.id && isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
                   </button>
                   <div className="flex items-center gap-2">
                     <button
@@ -612,15 +616,15 @@ export default function SharedLinkPage() {
                     >
                       {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                     </button>
-                    <div
-                      className="w-16 h-1.5 bg-secondary rounded-full cursor-pointer hidden sm:block"
-                      onClick={handleVolume}
-                    >
-                      <div
-                        className="h-full rounded-full bg-primary transition-[width] duration-75"
-                        style={{ width: (volume * 100) + "%" }}
-                      />
-                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={volume}
+                      onChange={handleVolumeChange}
+                      className="w-20 h-1.5 accent-primary cursor-pointer hidden sm:block"
+                    />
                     <span className="text-[11px] font-mono text-muted-foreground tabular-nums ml-1">
                       {formatDuration(duration)}
                     </span>
