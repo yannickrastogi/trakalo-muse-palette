@@ -119,7 +119,7 @@ export function ShareModal({
     setCreating(false);
 
     if (created && created.linkSlug) {
-      const url = "https://trakalo-muse-palette.vercel.app/share/" + created.linkSlug;
+      const url = window.location.origin + "/share/" + created.linkSlug;
       setCreatedLink(url);
       toast.success("Share link created!");
     } else {
@@ -161,8 +161,8 @@ export function ShareModal({
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative z-10 w-full max-w-md bg-card border border-border rounded-2xl overflow-hidden"
-            style={{ boxShadow: "var(--shadow-elevated)" }}
+            className="relative z-10 w-full max-w-md max-h-[85vh] bg-card border border-border rounded-2xl overflow-hidden"
+            style={{ boxShadow: "var(--shadow-elevated)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}
           >
             {/* Header */}
             <div className="px-6 py-4 border-b border-border">
@@ -207,7 +207,7 @@ export function ShareModal({
               </div>
             ) : (
               /* Form */
-              <div className="p-6 space-y-5">
+              <div className="px-6 pt-6 pb-3 space-y-5 flex-1 overflow-y-auto min-h-0" style={{ maxHeight: "calc(70vh - 120px)" }}>
                 {/* Link Type */}
                 <div>
                   <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-2">Link Type</label>
@@ -357,7 +357,7 @@ export function ShareModal({
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center justify-between pt-1">
+                <div className="px-6 pb-3 pt-1 flex items-center justify-between">
                   <button onClick={handleClose} className="px-4 py-2.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">
                     Cancel
                   </button>
@@ -369,6 +369,7 @@ export function ShareModal({
                     {creating ? "Creating…" : "Create Link"}
                   </button>
                 </div>
+
               </div>
             )}
           </motion.div>

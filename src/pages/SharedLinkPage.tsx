@@ -335,12 +335,27 @@ export default function SharedLinkPage() {
     setVolume(vol);
   }, []);
 
-  var handlePasswordSubmit = function() {
+  var handlePasswordSubmit = async function() {
     if (!linkData) return;
-    if (passwordInput === linkData.password_hash) {
-      setPasswordVerified(true);
-      setPasswordError(false);
-    } else {
+    try {
+      var res = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/verify-link-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
+          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik"
+        },
+        body: JSON.stringify({ slug: linkData.link_slug, password: passwordInput })
+      });
+      var json = await res.json();
+      if (json.valid) {
+        setPasswordVerified(true);
+        setPasswordError(false);
+      } else {
+        setPasswordError(true);
+      }
+    } catch (err) {
+      console.error("Password verification error:", err);
       setPasswordError(true);
     }
   };

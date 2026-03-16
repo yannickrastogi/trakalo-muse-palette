@@ -139,7 +139,6 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
   }, [fetchLinks]);
 
   var createSharedLink = useCallback(async function(link: SharedLink): Promise<SharedLink | null> {
-    if (!activeWorkspace || !user) return null;
 
     var slug = generateSlug();
 
@@ -148,6 +147,23 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
     if (link.trackId && link.shareType !== "playlist") {
       var matchedTrack = tracks.find(function(t) { return t.id === link.trackId; });
       if (matchedTrack) trackUuid = matchedTrack.uuid;
+    }
+
+    var hashedPassword: string | null = null;
+    if (link.linkType === "secured" && link.password) {
+      var hashRes = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/hash-link-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
+          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik"
+        },
+        body: JSON.stringify({ password: link.password })
+      });
+      if (hashRes.ok) {
+        var hashJson = await hashRes.json();
+        hashedPassword = hashJson.hash || null;
+      }
     }
 
     var { data, error } = await supabase
@@ -161,7 +177,7 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
         link_name: link.linkName,
         link_slug: slug,
         link_type: link.linkType,
-        password_hash: link.linkType === "secured" && link.password ? link.password : null,
+        password_hash: hashedPassword,
         message: link.message || null,
         allow_download: link.allowDownload,
         download_quality: link.downloadQuality || null,
