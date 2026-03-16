@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { createClient } from "@supabase/supabase-js";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward } from "lucide-react";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
@@ -48,6 +49,11 @@ function formatDuration(seconds: number): string {
   return m + ":" + (s < 10 ? "0" : "") + s;
 }
 
+// Anon-only client: never picks up a stored user session, so RLS anon policies always apply
+var anonSupabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false }
+});
+
 export default function SharedLinkPage() {
   var { slug } = useParams<{ slug: string }>();
 
@@ -90,7 +96,7 @@ export default function SharedLinkPage() {
     }
 
     async function fetchLink() {
-      var { data, error: fetchErr } = await supabase
+      var { data, error: fetchErr } = await anonSupabase
         .from("shared_links")
         .select("*")
         .eq("link_slug", slug!)
