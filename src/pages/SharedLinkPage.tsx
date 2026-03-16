@@ -132,7 +132,7 @@ export default function SharedLinkPage() {
 
       if (link.share_type === "playlist" && link.playlist_id) {
         // Fetch playlist metadata
-        var { data: pl } = await supabase
+        var { data: pl } = await anonSupabase
           .from("playlists")
           .select("id, name, description, cover_url")
           .eq("id", link.playlist_id)
@@ -143,7 +143,7 @@ export default function SharedLinkPage() {
         }
 
         // Fetch playlist tracks via playlist_tracks join
-        var { data: ptRows } = await supabase
+        var { data: ptRows } = await anonSupabase
           .from("playlist_tracks")
           .select("track_id, position")
           .eq("playlist_id", link.playlist_id)
@@ -151,7 +151,7 @@ export default function SharedLinkPage() {
 
         if (ptRows && ptRows.length > 0) {
           var trackIds = ptRows.map(function(r) { return r.track_id; });
-          var { data: tracks } = await supabase
+          var { data: tracks } = await anonSupabase
             .from("tracks")
             .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood")
             .in("id", trackIds);
@@ -168,7 +168,7 @@ export default function SharedLinkPage() {
         }
       } else if (link.track_id) {
         // Single track
-        var { data: track } = await supabase
+        var { data: track } = await anonSupabase
           .from("tracks")
           .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood")
           .eq("id", link.track_id)
