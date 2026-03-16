@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic } from "lucide-react";
+import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward } from "lucide-react";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
 interface SharedLinkData {
@@ -74,6 +74,12 @@ export default function SharedLinkPage() {
 
   // Cache resolved audio URLs to avoid re-fetching
   var audioUrlCache = useRef<Record<string, string>>({});
+
+  // Refs for access from onEnded callback (avoids stale closures)
+  var playlistTracksRef = useRef<TrackData[]>([]);
+  var loadAndPlayTrackRef = useRef<(track: TrackData) => void>(function() {});
+
+  useEffect(function() { playlistTracksRef.current = playlistTracks; }, [playlistTracks]);
 
   // Fetch link data
   useEffect(function() {
@@ -173,7 +179,7 @@ export default function SharedLinkPage() {
     fetchLink();
   }, [slug]);
 
-  // Setup audio element
+  // Setup audio element (single instance for lifetime of page)
   useEffect(function() {
     var audio = new Audio();
     audio.volume = volume;
@@ -187,6 +193,16 @@ export default function SharedLinkPage() {
     };
     var onEnded = function() {
       setIsPlaying(false);
+      // Auto-play next track in playlist
+      var tracks = playlistTracksRef.current;
+      var currentId = loadedTrackIdRef.current;
+      if (tracks.length > 0 && currentId) {
+        var idx = tracks.findIndex(function(t) { return t.id === currentId; });
+        if (idx >= 0 && idx < tracks.length - 1) {
+          loadAndPlayTrackRef.current(tracks[idx + 1]);
+          return;
+        }
+      }
       setCurrentTime(0);
       setDuration(0);
     };
@@ -235,21 +251,10 @@ export default function SharedLinkPage() {
     }
   }, [slug]);
 
-  var handlePlayTrack = useCallback(function(track: TrackData) {
+  // Load a new track into the audio element and play it
+  var loadAndPlayTrack = useCallback(function(track: TrackData) {
     var audio = audioRef.current;
     if (!audio) return;
-
-    // Same track — just toggle pause/resume
-    if (loadedTrackIdRef.current === track.id) {
-      if (audio.paused) {
-        audio.play().catch(function(err) { console.error("Play error:", err); });
-      } else {
-        audio.pause();
-      }
-      return;
-    }
-
-    // Different track — fetch signed URL and load
     loadedTrackIdRef.current = track.id;
     setPlayingTrackId(track.id);
     setCurrentTime(0);
@@ -265,6 +270,50 @@ export default function SharedLinkPage() {
       audio.play().catch(function(err) { console.error("Play error:", err); });
     });
   }, [fetchAudioUrl]);
+
+  // Keep ref in sync so onEnded can call it without stale closure
+  useEffect(function() { loadAndPlayTrackRef.current = loadAndPlayTrack; }, [loadAndPlayTrack]);
+
+  // Toggle pause/resume on same track, or load+play a different track
+  var handlePlayTrack = useCallback(function(track: TrackData) {
+    var audio = audioRef.current;
+    if (!audio) return;
+
+    if (loadedTrackIdRef.current === track.id) {
+      if (audio.paused) {
+        audio.play().catch(function(err) { console.error("Play error:", err); });
+      } else {
+        audio.pause();
+      }
+      return;
+    }
+
+    loadAndPlayTrack(track);
+  }, [loadAndPlayTrack]);
+
+  var handleNextTrack = useCallback(function() {
+    if (playlistTracks.length === 0 || !playingTrackId) return;
+    var idx = playlistTracks.findIndex(function(t) { return t.id === playingTrackId; });
+    if (idx >= 0 && idx < playlistTracks.length - 1) {
+      loadAndPlayTrack(playlistTracks[idx + 1]);
+    }
+  }, [playlistTracks, playingTrackId, loadAndPlayTrack]);
+
+  var handlePrevTrack = useCallback(function() {
+    var audio = audioRef.current;
+    if (!audio || playlistTracks.length === 0 || !playingTrackId) return;
+    // If more than 3s in, restart current track
+    if (audio.currentTime > 3) {
+      audio.currentTime = 0;
+      return;
+    }
+    var idx = playlistTracks.findIndex(function(t) { return t.id === playingTrackId; });
+    if (idx > 0) {
+      loadAndPlayTrack(playlistTracks[idx - 1]);
+    } else {
+      audio.currentTime = 0;
+    }
+  }, [playlistTracks, playingTrackId, loadAndPlayTrack]);
 
   var handleSeek = useCallback(function(e: React.MouseEvent<HTMLDivElement>) {
     var audio = audioRef.current;
@@ -460,53 +509,109 @@ export default function SharedLinkPage() {
             )}
 
             {/* Player bar for active track */}
-            {playingTrackId && (
-              <div className="border-t border-border px-6 py-4 space-y-3 bg-secondary/20">
-                {/* Progress */}
-                <div
-                  className="h-1.5 bg-secondary rounded-full cursor-pointer group relative"
-                  onClick={handleSeek}
-                >
+            {playingTrackId && (function() {
+              var activeTrack = playlistTracks.find(function(t) { return t.id === playingTrackId; });
+              var activeIdx = playlistTracks.findIndex(function(t) { return t.id === playingTrackId; });
+              var hasPrev = activeIdx > 0;
+              var hasNext = activeIdx >= 0 && activeIdx < playlistTracks.length - 1;
+              return (
+                <div className="border-t border-border px-6 py-4 space-y-3 bg-secondary/20">
+                  {/* Now playing info */}
+                  {activeTrack && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-secondary border border-border/50">
+                        {activeTrack.cover_url ? (
+                          <img src={activeTrack.cover_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Disc3 className="w-5 h-5 text-foreground/15" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-semibold text-foreground truncate">{activeTrack.title}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {activeTrack.artist}
+                          {activeTrack.featuring ? " ft. " + activeTrack.featuring : ""}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Progress bar */}
                   <div
-                    className="h-full rounded-full transition-[width] duration-100 ease-linear"
-                    style={{ width: progress + "%", background: "var(--gradient-brand-horizontal)" }}
-                  />
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                    style={{ left: "calc(" + progress + "% - 6px)" }}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
-                    {formatDuration(currentTime)}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={function() {
-                        var newVol = volume === 0 ? 0.8 : 0;
-                        if (audioRef.current) audioRef.current.volume = newVol;
-                        setVolume(newVol);
-                      }}
-                      className="p-1 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                    </button>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={volume}
-                      onChange={handleVolumeChange}
-                      className="w-20 h-1.5 accent-primary cursor-pointer hidden sm:block"
+                    className="h-1.5 bg-secondary rounded-full cursor-pointer group relative"
+                    onClick={handleSeek}
+                  >
+                    <div
+                      className="h-full rounded-full transition-[width] duration-100 ease-linear"
+                      style={{ width: progress + "%", background: "var(--gradient-brand-horizontal)" }}
                     />
-                    <span className="text-[11px] font-mono text-muted-foreground tabular-nums ml-1">
-                      {formatDuration(duration)}
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                      style={{ left: "calc(" + progress + "% - 6px)" }}
+                    />
+                  </div>
+
+                  {/* Controls row */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-muted-foreground tabular-nums w-10">
+                      {formatDuration(currentTime)}
                     </span>
+
+                    {/* Transport controls */}
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handlePrevTrack}
+                        disabled={!hasPrev && (!audioRef.current || audioRef.current.currentTime < 1)}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
+                      >
+                        <SkipBack className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={function() { if (activeTrack) handlePlayTrack(activeTrack); }}
+                        className="w-10 h-10 rounded-full btn-brand flex items-center justify-center"
+                      >
+                        {isPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
+                      </button>
+                      <button
+                        onClick={handleNextTrack}
+                        disabled={!hasNext}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
+                      >
+                        <SkipForward className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Volume + duration */}
+                    <div className="flex items-center gap-1.5 w-10 justify-end sm:w-auto">
+                      <button
+                        onClick={function() {
+                          var newVol = volume === 0 ? 0.8 : 0;
+                          if (audioRef.current) audioRef.current.volume = newVol;
+                          setVolume(newVol);
+                        }}
+                        className="p-1 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                      </button>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={volume}
+                        onChange={handleVolumeChange}
+                        className="w-20 h-1.5 accent-primary cursor-pointer hidden sm:block"
+                      />
+                      <span className="text-[11px] font-mono text-muted-foreground tabular-nums ml-1 hidden sm:inline">
+                        {formatDuration(duration)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           <p className="text-center text-[10px] text-muted-foreground/60">
