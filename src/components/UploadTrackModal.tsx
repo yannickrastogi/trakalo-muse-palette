@@ -4,7 +4,6 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeams } from "@/contexts/TeamContext";
 import { analyzeAudio, type AudioAnalysisResult } from "@/lib/audio-analysis";
-import { encodeToMp3 } from "@/lib/audioEncoder";
 import { compressAudio, type CompressedAudio } from "@/lib/audio-compression";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -339,8 +338,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
     try {
       let audioUrl: string | undefined;
-      let audioPreviewUrl: string | undefined;
-
       if (currentTrack.file && activeWorkspace) {
         const fileExt = currentTrack.file.name.split(".").pop() || "wav";
         const filePath = `${activeWorkspace.id}/${crypto.randomUUID()}.${fileExt}`;
@@ -358,29 +355,10 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           // Store the storage path, not a signed URL — TrackContext
           // will generate signed URLs on fetch
           audioUrl = filePath;
-
-          // Encode low-res MP3 preview
-          try {
-            const mp3Blob = await encodeToMp3(currentTrack.file, 128);
-            const previewPath = `${activeWorkspace.id}/${crypto.randomUUID()}.mp3`;
-            const { error: previewUploadError } = await supabase.storage
-              .from("tracks")
-              .upload(previewPath, mp3Blob, {
-                contentType: "audio/mp3",
-                upsert: false,
-              });
-            if (!previewUploadError) {
-              audioPreviewUrl = previewPath;
-            } else {
-              console.error("Error uploading preview:", previewUploadError);
-            }
-          } catch (encodeErr) {
-            console.error("Error encoding MP3 preview:", encodeErr);
-          }
         }
       }
 
-      await addTrack({
+      const savedTrack = await addTrack({
         title: currentTrack.title.trim() || "Untitled",
         artist: currentTrack.artist.trim() || "Unknown Artist",
         genre: currentTrack.genre || "",
@@ -393,7 +371,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         voice: currentTrack.voice || "N/A",
         type: "Song",
         originalFileUrl: audioUrl,
-        previewFileUrl: audioPreviewUrl,
+        previewFileUrl: undefined,
         originalFileName: currentTrack.fileName,
         originalFileSize: currentTrack.file.size,
         notes: currentTrack.notes,
@@ -408,6 +386,19 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           publisher: s.publisher,
         })),
       });
+
+      // Fire-and-forget: compress audio to MP3 preview in background
+      if (savedTrack && audioUrl) {
+        fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/compress-audio", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
+          },
+          body: JSON.stringify({ track_id: savedTrack.uuid, audio_path: audioUrl }),
+        }).catch((err) => console.error("Background audio compression failed:", err));
+      }
 
       if (currentIdx < queue.length - 1) {
         setCurrentIdx(currentIdx + 1);
