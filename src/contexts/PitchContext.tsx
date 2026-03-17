@@ -114,6 +114,23 @@ export function PitchProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/send-pitch-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
+        },
+        body: JSON.stringify({
+          to_email: pitch.recipientEmail,
+          to_name: pitch.recipientName,
+          from_name: user.user_metadata?.full_name || user.email,
+          subject: pitch.itemName || "New Pitch from Trakalog",
+          message: pitch.notes || "",
+          tracks: [],
+          share_link: "",
+        }),
+      }).catch(function(err) { console.error("Failed to send pitch email:", err); });
+
       await fetchPitches();
     },
     [activeWorkspace, user, fetchPitches]

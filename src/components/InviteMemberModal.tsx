@@ -102,6 +102,22 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
       role: role,
     });
 
+    fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/send-invitation-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
+      },
+      body: JSON.stringify({
+        to_email: trimmedEmail,
+        to_name: firstName.trim(),
+        inviter_name: "Your team",
+        workspace_name: "Trakalog",
+        role: role,
+        invite_link: window.location.origin,
+      }),
+    }).catch(function(err) { console.error("Failed to send invitation email:", err); });
+
     onInvite({ firstName: firstName.trim(), lastName: lastName.trim(), email: trimmedEmail, role, teamId });
     reset();
     onOpenChange(false);
