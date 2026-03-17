@@ -15,6 +15,8 @@ import {
   MessageSquare,
   Download,
   ShieldOff,
+  Link2,
+  Lock,
 } from "lucide-react";
 import {
   Dialog,
@@ -49,6 +51,8 @@ export interface PitchEntry {
   playlistUuid?: string;
   allowDownload?: boolean;
   downloadQuality?: "hi-res" | "low-res";
+  linkType?: "public" | "secured";
+  password?: string;
   recipientName: string;
   recipientCompany: string;
   recipientEmail: string;
@@ -84,6 +88,8 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
   const [message, setMessage] = useState("");
   const [allowDownload, setAllowDownload] = useState(false);
   const [downloadQuality, setDownloadQuality] = useState<"hi-res" | "low-res">("low-res");
+  const [linkType, setLinkType] = useState<"public" | "secured">("public");
+  const [password, setPassword] = useState("");
   const [showContactSuggestions, setShowContactSuggestions] = useState(false);
   const [contactQuery, setContactQuery] = useState("");
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -129,6 +135,8 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
     setMessage("");
     setAllowDownload(false);
     setDownloadQuality("low-res");
+    setLinkType("public");
+    setPassword("");
   };
 
   const handleOpenChange = (v: boolean) => {
@@ -169,6 +177,8 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
       playlistUuid: selectedItem!.playlistUuid,
       allowDownload,
       downloadQuality: allowDownload ? downloadQuality : undefined,
+      linkType,
+      password: linkType === "secured" ? password : undefined,
       recipientName: recipientName.trim(),
       recipientCompany: recipientCompany.trim(),
       recipientEmail: recipientEmail.trim(),
@@ -197,6 +207,10 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
 
   const handleSend = () => {
     if (!selectedItem || !canSubmit) return;
+    if (linkType === "secured" && !password.trim()) {
+      alert("Please enter a password for the secured link.");
+      return;
+    }
     persistContact();
     onCreate(buildPitch("Sent"));
     handleOpenChange(false);
@@ -529,6 +543,54 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                     className="w-full px-4 py-3 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40 resize-none leading-relaxed"
                   />
                   <p className="text-2xs text-muted-foreground/40 text-right">{message.length}/2000</p>
+                </div>
+
+                {/* Link Type */}
+                <div className="space-y-3">
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">Link Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setLinkType("public")}
+                      className={"flex items-center justify-center gap-2 p-3 rounded-xl border text-center transition-all " + (
+                        linkType === "public"
+                          ? "border-primary bg-primary/10"
+                          : "border-border hover:bg-secondary"
+                      )}
+                    >
+                      <Link2 className="w-4 h-4" />
+                      <span className="text-xs font-semibold text-foreground">Public</span>
+                    </button>
+                    <button
+                      onClick={() => setLinkType("secured")}
+                      className={"flex items-center justify-center gap-2 p-3 rounded-xl border text-center transition-all " + (
+                        linkType === "secured"
+                          ? "border-primary bg-primary/10"
+                          : "border-border hover:bg-secondary"
+                      )}
+                    >
+                      <Lock className="w-4 h-4" />
+                      <span className="text-xs font-semibold text-foreground">Secured</span>
+                    </button>
+                  </div>
+                  <AnimatePresence>
+                    {linkType === "secured" && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Enter a password…"
+                          maxLength={100}
+                          className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40 mt-2"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* Download Permissions */}

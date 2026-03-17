@@ -128,6 +128,16 @@ export function PitchProvider({ children }: { children: ReactNode }) {
       var trackUuid = pitch.trackUuid || null;
       var playlistUuid = pitch.playlistUuid || null;
 
+      var hashedPassword = null;
+      if (pitch.linkType === "secured" && pitch.password) {
+        var hashRes = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/hash-link-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik" },
+          body: JSON.stringify({ password: pitch.password }),
+        });
+        if (hashRes.ok) { var hj = await hashRes.json(); hashedPassword = hj.hash || null; }
+      }
+
       var { error: linkError } = await supabase
         .from("shared_links")
         .insert({
@@ -138,7 +148,8 @@ export function PitchProvider({ children }: { children: ReactNode }) {
           playlist_id: playlistUuid,
           link_name: pitch.itemName,
           link_slug: slug,
-          link_type: "public",
+          link_type: pitch.linkType || "public",
+          password_hash: hashedPassword,
           status: "active",
           allow_download: pitch.allowDownload || false,
           download_quality: pitch.downloadQuality || null,
