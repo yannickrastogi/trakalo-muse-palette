@@ -141,8 +141,9 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   }, [activeWorkspace, user, tracks]);
 
   useEffect(() => {
+    if (tracks.length === 0 && activeWorkspace) return;
     fetchPlaylists();
-  }, [fetchPlaylists]);
+  }, [fetchPlaylists, tracks, activeWorkspace]);
 
   const addPlaylist = useCallback(
     async (pl: NewPlaylistData) => {
