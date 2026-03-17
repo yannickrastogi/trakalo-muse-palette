@@ -125,12 +125,8 @@ export function PitchProvider({ children }: { children: ReactNode }) {
 
       var shareType = pitch.type === "playlist" ? "playlist" : "track";
 
-      var trackUuid = null;
+      var trackUuid = pitch.trackUuid || null;
       var playlistUuid = null;
-      if (pitch.type === "track") {
-        var matchedTrack = tracks.find(function(t) { return t.title === pitch.itemName; });
-        if (matchedTrack) trackUuid = matchedTrack.uuid;
-      }
 
       var { error: linkError } = await supabase
         .from("shared_links")

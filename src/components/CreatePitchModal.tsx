@@ -42,6 +42,7 @@ export interface PitchEntry {
   artist: string;
   coverIdx: number;
   trackCount?: number;
+  trackUuid?: string;
   recipientName: string;
   recipientCompany: string;
   recipientEmail: string;
@@ -56,6 +57,7 @@ interface SelectedItem {
   coverIdx: number;
   coverImage?: string;
   trackCount?: number;
+  trackUuid?: string;
 }
 
 interface CreatePitchModalProps {
@@ -152,6 +154,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
       artist: selectedItem!.artist,
       coverIdx: selectedItem!.coverIdx,
       trackCount: selectedItem!.trackCount,
+      trackUuid: selectedItem!.trackUuid,
       recipientName: recipientName.trim(),
       recipientCompany: recipientCompany.trim(),
       recipientEmail: recipientEmail.trim(),
@@ -316,7 +319,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                           coverImage={track.coverImage}
                           icon={<Music className="w-3 h-3 text-primary/40" />}
                           selected={selectedItem?.name === track.title}
-                          onClick={() => setSelectedItem({ name: track.title, artist: track.artist, coverIdx: track.coverIdx, coverImage: track.coverImage })}
+                          onClick={() => setSelectedItem({ name: track.title, artist: track.artist, coverIdx: track.coverIdx, coverImage: track.coverImage, trackUuid: track.uuid })}
                         />
                       ))
                     )
