@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { slug, track_id } = await req.json();
+    const { slug, track_id, quality } = await req.json();
 
     if (!slug || !track_id) {
       return new Response(JSON.stringify({ error: "Missing slug or track_id" }), {
@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
     // 3. Get the audio_url (storage path) from the tracks table
     const { data: track, error: trackErr } = await supabaseAdmin
       .from("tracks")
-      .select("audio_url")
+      .select("audio_url, audio_preview_url")
       .eq("id", track_id)
       .single();
 
@@ -110,7 +110,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    const audioPath = track.audio_url as string;
+    // Use preview URL when requested, fall back to original if no preview exists
+    const audioPath = (quality === "preview" && track.audio_preview_url)
+      ? (track.audio_preview_url as string)
+      : (track.audio_url as string);
 
     // If it's already a full URL (legacy), return as-is
     if (audioPath.startsWith("http")) {

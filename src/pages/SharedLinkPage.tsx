@@ -238,8 +238,9 @@ export default function SharedLinkPage() {
     };
   }, []);
 
-  var fetchAudioUrl = useCallback(async function(trackId: string): Promise<string | null> {
-    if (audioUrlCache.current[trackId]) return audioUrlCache.current[trackId];
+  var fetchAudioUrl = useCallback(async function(trackId: string, quality?: string): Promise<string | null> {
+    var cacheKey = trackId + ":" + (quality || "original");
+    if (audioUrlCache.current[cacheKey]) return audioUrlCache.current[cacheKey];
     try {
       var res = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/get-audio-url", {
         method: "POST",
@@ -248,12 +249,12 @@ export default function SharedLinkPage() {
           "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
           "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik"
         },
-        body: JSON.stringify({ slug: slug, track_id: trackId })
+        body: JSON.stringify({ slug: slug, track_id: trackId, quality: quality || "original" })
       });
       if (!res.ok) return null;
       var json = await res.json();
       if (json.url) {
-        audioUrlCache.current[trackId] = json.url;
+        audioUrlCache.current[cacheKey] = json.url;
         return json.url;
       }
       return null;
@@ -659,7 +660,7 @@ export default function SharedLinkPage() {
                     <button
                       key={track.id}
                       onClick={function() {
-                        fetchAudioUrl(track.id).then(function(url) {
+                        fetchAudioUrl(track.id, linkData.download_quality === "hi-res" ? "original" : "preview").then(function(url) {
                           if (!url) return;
                           fetch(url).then(function(res) { return res.blob(); }).then(function(blob) {
                             var blobUrl = URL.createObjectURL(blob);
@@ -824,7 +825,7 @@ export default function SharedLinkPage() {
               <div className="border-t border-border px-6 py-4">
                 <button
                   onClick={function() {
-                    fetchAudioUrl(trackData!.id).then(function(url) {
+                    fetchAudioUrl(trackData!.id, linkData.download_quality === "hi-res" ? "original" : "preview").then(function(url) {
                       if (!url) return;
                       fetch(url).then(function(res) { return res.blob(); }).then(function(blob) {
                         var blobUrl = URL.createObjectURL(blob);

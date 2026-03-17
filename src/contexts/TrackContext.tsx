@@ -69,6 +69,7 @@ export interface TrackData extends WorkspaceScoped {
   coverIdx: number;
   coverImage?: string;
   previewUrl?: string;
+  previewFileUrl?: string;
   originalFileUrl?: string;
   originalFileName?: string;
   originalFileSize?: number;
@@ -152,6 +153,7 @@ function mapRowToTrack(row: Record<string, unknown>, index: number, stems: Track
     coverIdx: 0,
     coverImage: (row.cover_url as string) || undefined,
     previewUrl: (row.audio_url as string) || undefined,
+    previewFileUrl: (row.audio_preview_url as string) || undefined,
     originalFileUrl: (row.audio_url as string) || undefined,
     notes: (row.notes as string) || "",
     details: {},
@@ -356,6 +358,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           labels: trackInput.label ? [trackInput.label] : [],
           publishers: trackInput.publisher ? [trackInput.publisher] : [],
           audio_url: trackInput.originalFileUrl || null,
+          audio_preview_url: trackInput.previewFileUrl || null,
           cover_url: trackInput.coverImage || null,
           lyrics: trackInput.lyrics || null,
           notes: trackInput.notes || null,
@@ -406,6 +409,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (updates.publisher !== undefined) payload.publishers = updates.publisher ? [updates.publisher] : [];
       if (updates.coverImage !== undefined) payload.cover_url = updates.coverImage || null;
       if (updates.originalFileUrl !== undefined) payload.audio_url = updates.originalFileUrl || null;
+      if (updates.previewFileUrl !== undefined) payload.audio_preview_url = updates.previewFileUrl || null;
       if (updates.lyrics !== undefined) payload.lyrics = updates.lyrics || null;
       if (updates.notes !== undefined) payload.notes = updates.notes || null;
       if (updates.splits !== undefined) payload.splits = updates.splits;

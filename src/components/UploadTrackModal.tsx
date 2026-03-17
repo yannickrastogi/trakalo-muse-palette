@@ -4,6 +4,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeams } from "@/contexts/TeamContext";
 import { analyzeAudio, type AudioAnalysisResult } from "@/lib/audio-analysis";
+import { encodeToMp3 } from "@/lib/audioEncoder";
 import { compressAudio, type CompressedAudio } from "@/lib/audio-compression";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -338,6 +339,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
     try {
       let audioUrl: string | undefined;
+      let audioPreviewUrl: string | undefined;
 
       if (currentTrack.file && activeWorkspace) {
         const fileExt = currentTrack.file.name.split(".").pop() || "wav";
@@ -356,6 +358,25 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           // Store the storage path, not a signed URL — TrackContext
           // will generate signed URLs on fetch
           audioUrl = filePath;
+
+          // Encode low-res MP3 preview
+          try {
+            const mp3Blob = await encodeToMp3(currentTrack.file, 128);
+            const previewPath = `${activeWorkspace.id}/${crypto.randomUUID()}.mp3`;
+            const { error: previewUploadError } = await supabase.storage
+              .from("tracks")
+              .upload(previewPath, mp3Blob, {
+                contentType: "audio/mp3",
+                upsert: false,
+              });
+            if (!previewUploadError) {
+              audioPreviewUrl = previewPath;
+            } else {
+              console.error("Error uploading preview:", previewUploadError);
+            }
+          } catch (encodeErr) {
+            console.error("Error encoding MP3 preview:", encodeErr);
+          }
         }
       }
 
@@ -372,6 +393,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         voice: currentTrack.voice || "N/A",
         type: "Song",
         originalFileUrl: audioUrl,
+        previewFileUrl: audioPreviewUrl,
         originalFileName: currentTrack.fileName,
         originalFileSize: currentTrack.file.size,
         notes: currentTrack.notes,
