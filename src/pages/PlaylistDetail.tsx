@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ShareModal } from "@/components/ShareModal";
@@ -94,22 +94,78 @@ export default function PlaylistDetail() {
     return allTracks.slice(0, Math.min(playlist.tracks, allTracks.length));
   });
 
-  const playingTrackId = currentTrack && tracks.some((t) => t.id === currentTrack.id) && audioIsPlaying ? currentTrack.id : null;
+  const [dbTracks, setDbTracks] = useState<Track[]>([]);
+
+  useEffect(function() {
+    if (!id) return;
+    supabase.from("playlist_tracks").select("track_id, position").eq("playlist_id", id).order("position", { ascending: true }).then(function(res) {
+      if (!res.data || res.data.length === 0) return;
+      var uuids = res.data.map(function(r) { return r.track_id; });
+      supabase.from("tracks").select("*").in("id", uuids).then(function(res2) {
+        if (!res2.data) return;
+        var map: Record<string, any> = {};
+        res2.data.forEach(function(t: any) { map[t.id] = t; });
+        var ordered = uuids.map(function(uid) { return map[uid]; }).filter(Boolean);
+        setDbTracks(ordered.map(function(row: any, idx: number) {
+          var durationSec = row.duration_sec as number;
+          var dur = durationSec ? Math.floor(durationSec / 60) + ":" + String(durationSec % 60).padStart(2, "0") : "0:00";
+          var status = row.status === "on_hold" ? "On Hold" : row.status === "released" ? "Released" : "Available";
+          var trackType = row.track_type === "instrumental" ? "Instrumental" : row.track_type === "sample" ? "Sample" : row.track_type === "acapella" ? "Acapella" : "Song";
+          return {
+            id: idx + 10000,
+            uuid: row.id,
+            workspace_id: row.workspace_id || "",
+            title: row.title || "",
+            artist: row.artist || "",
+            featuredArtists: row.featuring ? String(row.featuring).split(",").map(function(s: string) { return s.trim(); }) : [],
+            album: "",
+            genre: row.genre || "",
+            bpm: row.bpm || 0,
+            key: row.key || "",
+            duration: dur,
+            mood: row.mood || [],
+            voice: row.gender || "",
+            status: status,
+            isrc: row.isrc || "",
+            upc: "",
+            releaseDate: row.released_at || "",
+            label: Array.isArray(row.labels) && row.labels.length > 0 ? row.labels[0] : "",
+            publisher: Array.isArray(row.publishers) && row.publishers.length > 0 ? row.publishers[0] : "",
+            writtenBy: [],
+            producedBy: [],
+            mixedBy: "",
+            masteredBy: "",
+            copyright: "",
+            language: row.language || "",
+            explicit: false,
+            type: trackType,
+            coverIdx: 0,
+            coverImage: row.cover_url || undefined,
+            previewUrl: row.audio_url || undefined,
+          } as Track;
+        }));
+      });
+    });
+  }, [id]);
+
+  var displayTracks = tracks.length > 0 ? tracks : dbTracks;
+
+  const playingTrackId = currentTrack && displayTracks.some((t) => t.id === currentTrack.id) && audioIsPlaying ? currentTrack.id : null;
 
   const setPlayingTrackId = useCallback((trackId: number | null) => {
     if (trackId === null) {
       togglePlay();
       return;
     }
-    const track = tracks.find((t) => t.id === trackId);
+    const track = displayTracks.find((t) => t.id === trackId);
     if (!track) return;
     if (currentTrack?.id === trackId) {
       togglePlay();
     } else {
-      setQueue(tracks);
+      setQueue(displayTracks);
       playTrack(track);
     }
-  }, [tracks, currentTrack, togglePlay, playTrack, setQueue]);
+  }, [displayTracks, currentTrack, togglePlay, playTrack, setQueue]);
   const [renameValue, setRenameValue] = useState(playlist?.name || "");
   const [playlistName, setPlaylistName] = useState(playlist?.name || "");
   const [editingName, setEditingName] = useState(false);
@@ -160,7 +216,7 @@ export default function PlaylistDetail() {
     });
   }, [syncToContext]);
 
-  const availableToAdd = allTracks.filter((t) => !tracks.some((pt) => pt.id === t.id));
+  const availableToAdd = allTracks.filter((t) => !displayTracks.some((pt) => pt.id === t.id));
   const filteredAvailable = addSearch
     ? availableToAdd.filter(
         (t) =>
@@ -272,7 +328,7 @@ export default function PlaylistDetail() {
                   onBlur={() => {
                     if (renameValue.trim() && renameValue.trim() !== playlistName) {
                       setPlaylistName(renameValue.trim());
-                      syncToContext(tracks, renameValue.trim());
+                      syncToContext(displayTracks, renameValue.trim());
                     }
                     setEditingName(false);
                   }}
@@ -323,7 +379,7 @@ export default function PlaylistDetail() {
              <div className="flex items-center gap-4 text-muted-foreground">
                <span className="flex items-center gap-1.5 text-xs font-medium">
                  <Music className="w-3.5 h-3.5" />
-                 {tracks.length} tracks
+                 {displayTracks.length} tracks
                </span>
                <span className="w-px h-4 bg-border" />
                <span className="flex items-center gap-1.5 text-xs font-medium">
@@ -348,9 +404,9 @@ export default function PlaylistDetail() {
                 onClick={() => {
                   if (playingTrackId) {
                     togglePlay();
-                  } else if (tracks.length > 0) {
-                    setQueue(tracks);
-                    playTrack(tracks[0]);
+                  } else if (displayTracks.length > 0) {
+                    setQueue(displayTracks);
+                    playTrack(displayTracks[0]);
                   }
                 }}
                 className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold min-h-[44px]"
@@ -397,17 +453,17 @@ export default function PlaylistDetail() {
         {/* Track list */}
         <motion.div variants={itemVariant}>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={tracks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext items={displayTracks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
               {isMobile ? (
                 <MobileTrackList
-                  tracks={tracks}
+                  tracks={displayTracks}
                   playingTrackId={playingTrackId}
                   setPlayingTrackId={setPlayingTrackId}
                   removeTrack={removeTrack}
                 />
               ) : (
                 <DesktopTrackTable
-                  tracks={tracks}
+                  tracks={displayTracks}
                   playingTrackId={playingTrackId}
                   setPlayingTrackId={setPlayingTrackId}
                   removeTrack={removeTrack}
@@ -447,7 +503,7 @@ export default function PlaylistDetail() {
                 <div
                   key={track.id}
                   className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer group/add"
-                  onClick={() => { const updated = [...tracks, track]; setTracks(updated); syncToContext(updated); }}
+                  onClick={() => { const updated = [...displayTracks, track]; setTracks(updated); syncToContext(updated); }}
                 >
                   <img src={track.coverImage || covers[track.coverIdx]} alt={track.title} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                   <div className="min-w-0 flex-1">
@@ -481,7 +537,7 @@ export default function PlaylistDetail() {
         playlistId={id}
         playlistName={playlistName}
         playlistCover={playlist.coverImage}
-        playlistTracks={tracks.map((t) => ({
+        playlistTracks={displayTracks.map((t) => ({
           id: t.id,
           title: t.title,
           artist: t.artist,
