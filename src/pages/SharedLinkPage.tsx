@@ -310,6 +310,7 @@ export default function SharedLinkPage() {
     }
 
     loadAndPlayTrack(track);
+    logEvent(track.id, "play");
   }, [loadAndPlayTrack]);
 
   var handleNextTrack = useCallback(function() {
@@ -392,6 +393,20 @@ export default function SharedLinkPage() {
       headers: { "Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik" },
       body: JSON.stringify({ slug: slug, name: visitorName.trim(), email: visitorEmail.trim(), role: visitorRole.trim(), company: visitorCompany.trim() }),
     }).catch(function(err) { console.error("Failed to log access:", err); });
+
+    // Log view event
+    logEvent(null, "view");
+  };
+
+  var logEvent = function(trackId: string | null, eventType: string) {
+    fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/log-link-event", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
+      },
+      body: JSON.stringify({ slug: slug, track_id: trackId, visitor_email: visitorEmail, event_type: eventType }),
+    }).catch(function(err) { console.error("Failed to log event:", err); });
   };
 
   var progress = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -760,6 +775,7 @@ export default function SharedLinkPage() {
                     <button
                       key={track.id}
                       onClick={function() {
+                        logEvent(track.id, "download");
                         fetchAudioUrl(track.id, linkData.download_quality === "hi-res" ? "original" : "preview").then(function(url) {
                           if (!url) return;
                           fetch(url).then(function(res) { return res.blob(); }).then(function(blob) {
@@ -925,6 +941,7 @@ export default function SharedLinkPage() {
               <div className="border-t border-border px-6 py-4">
                 <button
                   onClick={function() {
+                    logEvent(trackData!.id, "download");
                     fetchAudioUrl(trackData!.id, linkData.download_quality === "hi-res" ? "original" : "preview").then(function(url) {
                       if (!url) return;
                       fetch(url).then(function(res) { return res.blob(); }).then(function(blob) {

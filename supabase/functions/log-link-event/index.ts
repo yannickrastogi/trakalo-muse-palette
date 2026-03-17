@@ -1,0 +1,78 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    const { slug, track_id, visitor_email, event_type } = await req.json();
+
+    if (!slug || !event_type) {
+      return new Response(JSON.stringify({ error: "slug and event_type are required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const validEvents = ["play", "download", "view"];
+    if (!validEvents.includes(event_type)) {
+      return new Response(JSON.stringify({ error: "event_type must be play, download, or view" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // Find the shared link by slug
+    const { data: link, error: linkError } = await supabase
+      .from("shared_links")
+      .select("id")
+      .eq("link_slug", slug)
+      .single();
+
+    if (linkError || !link) {
+      return new Response(JSON.stringify({ error: "Link not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Insert into link_events
+    const { error: insertError } = await supabase
+      .from("link_events")
+      .insert({
+        link_id: link.id,
+        track_id: track_id || null,
+        visitor_email: visitor_email || null,
+        event_type: event_type,
+      });
+
+    if (insertError) {
+      console.error("Error inserting link_event:", insertError);
+      return new Response(JSON.stringify({ error: "Failed to log event" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
