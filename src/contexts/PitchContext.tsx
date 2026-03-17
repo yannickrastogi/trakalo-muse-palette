@@ -140,7 +140,8 @@ export function PitchProvider({ children }: { children: ReactNode }) {
           link_slug: slug,
           link_type: "public",
           status: "active",
-          allow_download: false,
+          allow_download: pitch.allowDownload || false,
+          download_quality: pitch.downloadQuality || null,
         });
 
       if (linkError) {
@@ -168,7 +169,7 @@ export function PitchProvider({ children }: { children: ReactNode }) {
 
       await fetchPitches();
     },
-    [activeWorkspace, user, tracks, fetchPitches]
+    [activeWorkspace, user, fetchPitches]
   );
 
   const getPitchesForTrack = useCallback(

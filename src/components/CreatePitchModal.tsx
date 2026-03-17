@@ -13,6 +13,8 @@ import {
   Building2,
   Mail,
   MessageSquare,
+  Download,
+  ShieldOff,
 } from "lucide-react";
 import {
   Dialog,
@@ -21,6 +23,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { getSavedContacts, saveContact, type SavedContact } from "@/hooks/use-saved-contacts";
@@ -43,6 +46,8 @@ export interface PitchEntry {
   coverIdx: number;
   trackCount?: number;
   trackUuid?: string;
+  allowDownload?: boolean;
+  downloadQuality?: "hi-res" | "low-res";
   recipientName: string;
   recipientCompany: string;
   recipientEmail: string;
@@ -75,6 +80,8 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
   const [recipientCompany, setRecipientCompany] = useState("");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [allowDownload, setAllowDownload] = useState(false);
+  const [downloadQuality, setDownloadQuality] = useState<"hi-res" | "low-res">("low-res");
   const [showContactSuggestions, setShowContactSuggestions] = useState(false);
   const [contactQuery, setContactQuery] = useState("");
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -118,6 +125,8 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
     setRecipientCompany("");
     setRecipientEmail("");
     setMessage("");
+    setAllowDownload(false);
+    setDownloadQuality("low-res");
   };
 
   const handleOpenChange = (v: boolean) => {
@@ -155,6 +164,8 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
       coverIdx: selectedItem!.coverIdx,
       trackCount: selectedItem!.trackCount,
       trackUuid: selectedItem!.trackUuid,
+      allowDownload,
+      downloadQuality: allowDownload ? downloadQuality : undefined,
       recipientName: recipientName.trim(),
       recipientCompany: recipientCompany.trim(),
       recipientEmail: recipientEmail.trim(),
@@ -514,6 +525,58 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                     className="w-full px-4 py-3 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40 resize-none leading-relaxed"
                   />
                   <p className="text-2xs text-muted-foreground/40 text-right">{message.length}/2000</p>
+                </div>
+
+                {/* Download Permissions */}
+                <div className="space-y-3">
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">Download Permission</label>
+                  <div className={`rounded-xl border transition-all ${allowDownload ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/30"} p-3.5`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        {allowDownload ? (
+                          <Download className="w-4 h-4 text-primary" />
+                        ) : (
+                          <ShieldOff className="w-4 h-4 text-muted-foreground" />
+                        )}
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">{allowDownload ? "Download Enabled" : "Download Disabled"}</p>
+                          <p className="text-[10px] text-muted-foreground">{allowDownload ? "Recipient can download files" : "Recipient can only view & play"}</p>
+                        </div>
+                      </div>
+                      <Switch checked={allowDownload} onCheckedChange={setAllowDownload} />
+                    </div>
+
+                    <AnimatePresence>
+                      {allowDownload && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                          <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-border/50">
+                            <button
+                              onClick={() => setDownloadQuality("low-res")}
+                              className={`p-2.5 rounded-lg border text-center transition-all ${
+                                downloadQuality === "low-res"
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border hover:bg-secondary"
+                              }`}
+                            >
+                              <p className="text-xs font-semibold text-foreground">Low-Res</p>
+                              <p className="text-[10px] text-muted-foreground">Compressed MP3</p>
+                            </button>
+                            <button
+                              onClick={() => setDownloadQuality("hi-res")}
+                              className={`p-2.5 rounded-lg border text-center transition-all ${
+                                downloadQuality === "hi-res"
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border hover:bg-secondary"
+                              }`}
+                            >
+                              <p className="text-xs font-semibold text-foreground">Hi-Res</p>
+                              <p className="text-[10px] text-muted-foreground">Original WAV/FLAC</p>
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
               </motion.div>
             )}
