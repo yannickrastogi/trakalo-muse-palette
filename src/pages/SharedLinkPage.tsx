@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
-import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward } from "lucide-react";
+import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User } from "lucide-react";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
 interface SharedLinkData {
@@ -63,6 +63,14 @@ export default function SharedLinkPage() {
   var [playlistData, setPlaylistData] = useState<PlaylistData | null>(null);
   var [playlistTracks, setPlaylistTracks] = useState<TrackData[]>([]);
   var [error, setError] = useState<string | null>(null);
+
+  // Gate state
+  var [gateCompleted, setGateCompleted] = useState(false);
+  var [visitorName, setVisitorName] = useState("");
+  var [visitorEmail, setVisitorEmail] = useState("");
+  var [visitorRole, setVisitorRole] = useState("");
+  var [visitorCompany, setVisitorCompany] = useState("");
+  var [gateError, setGateError] = useState("");
 
   // Password state
   var [passwordInput, setPasswordInput] = useState("");
@@ -367,8 +375,28 @@ export default function SharedLinkPage() {
     }
   };
 
+  var handleGateSubmit = function() {
+    if (!visitorName.trim()) {
+      setGateError("Please enter your name.");
+      return;
+    }
+    if (!visitorEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(visitorEmail.trim())) {
+      setGateError("Please enter a valid email address.");
+      return;
+    }
+    setGateError("");
+    setGateCompleted(true);
+
+    fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/log-link-access", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik" },
+      body: JSON.stringify({ slug: slug, name: visitorName.trim(), email: visitorEmail.trim(), role: visitorRole.trim(), company: visitorCompany.trim() }),
+    }).catch(function(err) { console.error("Failed to log access:", err); });
+  };
+
   var progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-  var needsPassword = linkData && linkData.link_type === "secured" && !passwordVerified;
+  var needsGate = linkData && !gateCompleted;
+  var needsPassword = linkData && linkData.link_type === "secured" && !passwordVerified && gateCompleted;
   var isPlaylist = linkData?.share_type === "playlist";
 
   // Loading
@@ -392,6 +420,78 @@ export default function SharedLinkPage() {
           </div>
           <h2 className="text-lg font-semibold text-foreground">Link Unavailable</h2>
           <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">{error}</p>
+        </div>
+      </Shell>
+    );
+  }
+
+  // Visitor gate
+  if (needsGate) {
+    return (
+      <Shell>
+        <div className="max-w-sm mx-auto text-center py-12 px-4">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <User className="w-6 h-6 text-primary" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground">Welcome</h2>
+          <p className="text-sm text-muted-foreground mt-1.5 mb-6">Please enter your details to access this content.</p>
+          <div className="space-y-3 text-left">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Full Name <span className="text-destructive">*</span></label>
+              <input
+                type="text"
+                value={visitorName}
+                onChange={function(e) { setVisitorName(e.target.value); }}
+                placeholder="Your name"
+                maxLength={100}
+                className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+                autoFocus
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Email <span className="text-destructive">*</span></label>
+              <input
+                type="email"
+                value={visitorEmail}
+                onChange={function(e) { setVisitorEmail(e.target.value); }}
+                placeholder="your@email.com"
+                maxLength={255}
+                className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Role</label>
+              <input
+                type="text"
+                value={visitorRole}
+                onChange={function(e) { setVisitorRole(e.target.value); }}
+                placeholder="e.g. A&R, Manager, DJ"
+                maxLength={100}
+                className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Company</label>
+              <input
+                type="text"
+                value={visitorCompany}
+                onChange={function(e) { setVisitorCompany(e.target.value); }}
+                onKeyDown={function(e) { if (e.key === "Enter") handleGateSubmit(); }}
+                placeholder="Your company or label"
+                maxLength={100}
+                className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+              />
+            </div>
+            {gateError && (
+              <p className="text-xs text-destructive text-center">{gateError}</p>
+            )}
+            <button
+              onClick={handleGateSubmit}
+              className="w-full h-11 rounded-xl text-sm font-semibold btn-brand"
+            >
+              Continue
+            </button>
+          </div>
         </div>
       </Shell>
     );
