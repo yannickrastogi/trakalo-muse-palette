@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -17,12 +17,17 @@ import {
   ListMusic,
   Filter,
   ChevronDown,
+  Play,
+  Download,
+  Users,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePitchModal, type PitchEntry } from "@/components/CreatePitchModal";
 import { useRole } from "@/contexts/RoleContext";
 import { usePitches } from "@/contexts/PitchContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
@@ -54,10 +59,54 @@ export default function Pitch() {
   const isMobile = useIsMobile();
   const { permissions } = useRole();
   const { pitches, addPitch } = usePitches();
+  const { activeWorkspace } = useWorkspace();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PitchStatus | "active" | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [pitchStats, setPitchStats] = useState<Record<string, { views: number; plays: number; downloads: number }>>({});
+
+  useEffect(function() {
+    if (!activeWorkspace) return;
+
+    async function fetchStats() {
+      var { data: links } = await supabase
+        .from("shared_links")
+        .select("id, link_name")
+        .eq("workspace_id", activeWorkspace!.id);
+
+      if (!links || links.length === 0) return;
+
+      var linkIds = links.map(function(l) { return l.id; });
+      var { data: events } = await supabase
+        .from("link_events")
+        .select("link_id, event_type")
+        .in("link_id", linkIds);
+
+      var linkStatsMap: Record<string, { views: number; plays: number; downloads: number }> = {};
+      (events || []).forEach(function(e: { link_id: string; event_type: string }) {
+        if (!linkStatsMap[e.link_id]) linkStatsMap[e.link_id] = { views: 0, plays: 0, downloads: 0 };
+        if (e.event_type === "view") linkStatsMap[e.link_id].views++;
+        if (e.event_type === "play") linkStatsMap[e.link_id].plays++;
+        if (e.event_type === "download") linkStatsMap[e.link_id].downloads++;
+      });
+
+      // Aggregate by link_name (matches pitch itemName)
+      var byName: Record<string, { views: number; plays: number; downloads: number }> = {};
+      links.forEach(function(l) {
+        var s = linkStatsMap[l.id];
+        if (!s) return;
+        if (!byName[l.link_name]) byName[l.link_name] = { views: 0, plays: 0, downloads: 0 };
+        byName[l.link_name].views += s.views;
+        byName[l.link_name].plays += s.plays;
+        byName[l.link_name].downloads += s.downloads;
+      });
+
+      setPitchStats(byName);
+    }
+
+    fetchStats();
+  }, [activeWorkspace, pitches]);
 
   const stats = useMemo(() => {
     const total = pitches.length;
@@ -227,9 +276,10 @@ export default function Pitch() {
               pitches={filtered}
               expandedId={expandedId}
               onToggle={(id) => setExpandedId(expandedId === id ? null : id)}
+              pitchStats={pitchStats}
             />
           ) : (
-            <DesktopPitchTable pitches={filtered} expandedId={expandedId} onToggle={(id) => setExpandedId(expandedId === id ? null : id)} />
+            <DesktopPitchTable pitches={filtered} expandedId={expandedId} onToggle={(id) => setExpandedId(expandedId === id ? null : id)} pitchStats={pitchStats} />
           )}
         </motion.div>
       </motion.div>
@@ -244,10 +294,12 @@ function DesktopPitchTable({
   pitches,
   expandedId,
   onToggle,
+  pitchStats,
 }: {
   pitches: PitchEntry[];
   expandedId: string | null;
   onToggle: (id: string) => void;
+  pitchStats: Record<string, { views: number; plays: number; downloads: number }>;
 }) {
   return (
     <div className="card-premium overflow-hidden">
@@ -260,6 +312,7 @@ function DesktopPitchTable({
               <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Company</th>
               <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Email</th>
               <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Date</th>
+              <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Engagement</th>
               <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
             </tr>
           </thead>
@@ -313,6 +366,27 @@ function DesktopPitchTable({
                   <td className="px-5 py-3.5 hidden sm:table-cell">
                     <span className="text-muted-foreground text-xs">{p.date}</span>
                   </td>
+                  <td className="px-5 py-3.5 hidden md:table-cell">
+                    {(() => {
+                      const s = pitchStats[p.itemName];
+                      if (!s || (s.views === 0 && s.plays === 0 && s.downloads === 0)) {
+                        return <span className="text-2xs text-muted-foreground/40">—</span>;
+                      }
+                      return (
+                        <div className="flex items-center gap-2.5">
+                          <span className="inline-flex items-center gap-1 text-2xs font-semibold text-brand-orange">
+                            <Eye className="w-3 h-3" /> {s.views}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-2xs font-semibold text-brand-pink">
+                            <Play className="w-3 h-3" /> {s.plays}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-2xs font-semibold text-chart-5">
+                            <Download className="w-3 h-3" /> {s.downloads}
+                          </span>
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="px-5 py-3.5">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-2xs font-semibold ${cfg.color}`}>
                       <StatusIcon className="w-3 h-3" />
@@ -344,10 +418,12 @@ function MobilePitchList({
   pitches,
   expandedId,
   onToggle,
+  pitchStats,
 }: {
   pitches: PitchEntry[];
   expandedId: string | null;
   onToggle: (id: string) => void;
+  pitchStats: Record<string, { views: number; plays: number; downloads: number }>;
 }) {
   return (
     <div className="space-y-2.5">
@@ -378,12 +454,29 @@ function MobilePitchList({
                 <p className="text-[11px] text-muted-foreground truncate mt-0.5">
                   → {p.recipientName} · {p.recipientCompany}
                 </p>
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <span className="text-2xs text-muted-foreground/60">{p.date}</span>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold ${cfg.color}`}>
                     <StatusIcon className="w-2.5 h-2.5" />
                     {p.status}
                   </span>
+                  {(() => {
+                    const s = pitchStats[p.itemName];
+                    if (!s || (s.views === 0 && s.plays === 0 && s.downloads === 0)) return null;
+                    return (
+                      <>
+                        <span className="inline-flex items-center gap-0.5 text-2xs font-semibold text-brand-orange">
+                          <Eye className="w-2.5 h-2.5" /> {s.views}
+                        </span>
+                        <span className="inline-flex items-center gap-0.5 text-2xs font-semibold text-brand-pink">
+                          <Play className="w-2.5 h-2.5" /> {s.plays}
+                        </span>
+                        <span className="inline-flex items-center gap-0.5 text-2xs font-semibold text-chart-5">
+                          <Download className="w-2.5 h-2.5" /> {s.downloads}
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               <ChevronDown className={`w-4 h-4 text-muted-foreground/40 shrink-0 mt-1 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
