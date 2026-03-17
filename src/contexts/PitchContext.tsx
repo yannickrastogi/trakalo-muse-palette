@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { type PitchEntry } from "@/components/CreatePitchModal";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTrack } from "@/contexts/TrackContext";
 
 function mapStatusFromDb(status: string): string {
   switch (status) {
@@ -61,6 +62,7 @@ const PitchContext = createContext<PitchContextValue | null>(null);
 export function PitchProvider({ children }: { children: ReactNode }) {
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
+  const { tracks } = useTrack();
   const [pitches, setPitches] = useState<PitchEntry[]>([]);
 
   const fetchPitches = useCallback(async () => {
@@ -123,12 +125,21 @@ export function PitchProvider({ children }: { children: ReactNode }) {
 
       var shareType = pitch.type === "playlist" ? "playlist" : "track";
 
+      var trackUuid = null;
+      var playlistUuid = null;
+      if (pitch.type === "track") {
+        var matchedTrack = tracks.find(function(t) { return t.title === pitch.itemName; });
+        if (matchedTrack) trackUuid = matchedTrack.uuid;
+      }
+
       var { error: linkError } = await supabase
         .from("shared_links")
         .insert({
           workspace_id: activeWorkspace.id,
           created_by: user.id,
           share_type: shareType,
+          track_id: trackUuid,
+          playlist_id: playlistUuid,
           link_name: pitch.itemName,
           link_slug: slug,
           link_type: "public",
@@ -154,14 +165,14 @@ export function PitchProvider({ children }: { children: ReactNode }) {
           from_name: user.user_metadata?.full_name || user.email,
           subject: pitch.itemName || "New Pitch from Trakalog",
           message: pitch.notes || "",
-          tracks: [{ name: pitch.itemName, artist: pitch.artist }],
+          tracks: [{ title: pitch.itemName, artist: pitch.artist }],
           share_link: shareLink,
         }),
       }).catch(function(err) { console.error("Failed to send pitch email:", err); });
 
       await fetchPitches();
     },
-    [activeWorkspace, user, fetchPitches]
+    [activeWorkspace, user, tracks, fetchPitches]
   );
 
   const getPitchesForTrack = useCallback(
