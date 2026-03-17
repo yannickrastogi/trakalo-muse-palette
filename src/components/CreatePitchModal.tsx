@@ -46,6 +46,7 @@ export interface PitchEntry {
   coverIdx: number;
   trackCount?: number;
   trackUuid?: string;
+  playlistUuid?: string;
   allowDownload?: boolean;
   downloadQuality?: "hi-res" | "low-res";
   recipientName: string;
@@ -63,6 +64,7 @@ interface SelectedItem {
   coverImage?: string;
   trackCount?: number;
   trackUuid?: string;
+  playlistUuid?: string;
 }
 
 interface CreatePitchModalProps {
@@ -164,6 +166,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
       coverIdx: selectedItem!.coverIdx,
       trackCount: selectedItem!.trackCount,
       trackUuid: selectedItem!.trackUuid,
+      playlistUuid: selectedItem!.playlistUuid,
       allowDownload,
       downloadQuality: allowDownload ? downloadQuality : undefined,
       recipientName: recipientName.trim(),
@@ -353,6 +356,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                             coverIdx: pl.coverIdxs[0],
                             coverImage: pl.coverImage,
                             trackCount: pl.tracks,
+                            playlistUuid: pl.id,
                           })
                         }
                       />
