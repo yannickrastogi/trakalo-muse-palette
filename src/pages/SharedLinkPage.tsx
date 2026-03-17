@@ -116,6 +116,12 @@ export default function SharedLinkPage() {
         return;
       }
 
+      if (link.status === "revoked") {
+        setError("This link has been revoked.");
+        setLoading(false);
+        return;
+      }
+
       if (link.expires_at && new Date(link.expires_at) < new Date()) {
         setError("This link has expired.");
         setLoading(false);
@@ -436,6 +442,15 @@ export default function SharedLinkPage() {
             </div>
           )}
 
+          {linkData?.expires_at && (
+            <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-orange/10 border border-brand-orange/20">
+              <Clock className="w-3.5 h-3.5 text-brand-orange" />
+              <p className="text-xs font-medium text-brand-orange">
+                {"This link expires on " + new Date(linkData.expires_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+              </p>
+            </div>
+          )}
+
           {/* Playlist header */}
           <div className="rounded-2xl bg-card border border-border overflow-hidden" style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
             <div className="flex items-start gap-5 p-6">
@@ -635,6 +650,43 @@ export default function SharedLinkPage() {
             })()}
           </div>
 
+          {linkData?.allow_download && playlistTracks.length > 0 && (
+            <div className="rounded-2xl bg-card border border-border overflow-hidden p-4">
+              <p className="text-xs text-muted-foreground mb-3">Download is enabled for this shared link</p>
+              <div className="space-y-2">
+                {playlistTracks.map(function(track) {
+                  return (
+                    <button
+                      key={track.id}
+                      onClick={function() {
+                        fetchAudioUrl(track.id).then(function(url) {
+                          if (!url) return;
+                          fetch(url).then(function(res) { return res.blob(); }).then(function(blob) {
+                            var blobUrl = URL.createObjectURL(blob);
+                            var a = document.createElement("a");
+                            a.href = blobUrl;
+                            a.download = track.title + " - " + track.artist + ".mp3";
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(blobUrl);
+                          });
+                        });
+                      }}
+                      className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs border border-border bg-card hover:bg-secondary transition-colors"
+                    >
+                      <span className="font-medium text-foreground">{track.title} - {track.artist}</span>
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        <Download className="w-3.5 h-3.5" />
+                        {linkData.download_quality === "hi-res" ? "Hi-Res" : "Low-Res"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <p className="text-center text-[10px] text-muted-foreground/60">
             {"Shared via Trakalog on " + new Date(linkData?.created_at || "").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
           </p>
@@ -650,6 +702,15 @@ export default function SharedLinkPage() {
         {linkData?.message && (
           <div className="px-4 py-3 rounded-xl bg-secondary/50 border border-border">
             <p className="text-sm text-muted-foreground italic">{linkData.message}</p>
+          </div>
+        )}
+
+        {linkData?.expires_at && (
+          <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-orange/10 border border-brand-orange/20">
+            <Clock className="w-3.5 h-3.5 text-brand-orange" />
+            <p className="text-xs font-medium text-brand-orange">
+              {"This link expires on " + new Date(linkData.expires_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+            </p>
           </div>
         )}
 
@@ -765,12 +826,16 @@ export default function SharedLinkPage() {
                   onClick={function() {
                     fetchAudioUrl(trackData!.id).then(function(url) {
                       if (!url) return;
-                      var a = document.createElement("a");
-                      a.href = url;
-                      a.download = trackData!.title + " - " + trackData!.artist;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
+                      fetch(url).then(function(res) { return res.blob(); }).then(function(blob) {
+                        var blobUrl = URL.createObjectURL(blob);
+                        var a = document.createElement("a");
+                        a.href = blobUrl;
+                        a.download = trackData!.title + " - " + trackData!.artist + ".mp3";
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(blobUrl);
+                      });
                     });
                   }}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold border border-border bg-card text-foreground hover:bg-secondary transition-colors"
