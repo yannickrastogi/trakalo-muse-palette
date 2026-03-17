@@ -114,6 +114,34 @@ export function PitchProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Generate a shared link for this pitch
+      var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+      var slug = "";
+      for (var i = 0; i < 12; i++) {
+        slug += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+
+      var shareType = pitch.type === "playlist" ? "playlist" : "track";
+
+      var { error: linkError } = await supabase
+        .from("shared_links")
+        .insert({
+          workspace_id: activeWorkspace.id,
+          created_by: user.id,
+          share_type: shareType,
+          link_name: pitch.itemName,
+          link_slug: slug,
+          link_type: "public",
+          status: "active",
+          allow_download: false,
+        });
+
+      if (linkError) {
+        console.error("Error creating shared link for pitch:", linkError);
+      }
+
+      var shareLink = window.location.origin + "/share/" + slug;
+
       fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/send-pitch-email", {
         method: "POST",
         headers: {
@@ -126,8 +154,8 @@ export function PitchProvider({ children }: { children: ReactNode }) {
           from_name: user.user_metadata?.full_name || user.email,
           subject: pitch.itemName || "New Pitch from Trakalog",
           message: pitch.notes || "",
-          tracks: [],
-          share_link: "",
+          tracks: [{ name: pitch.itemName, artist: pitch.artist }],
+          share_link: shareLink,
         }),
       }).catch(function(err) { console.error("Failed to send pitch email:", err); });
 
