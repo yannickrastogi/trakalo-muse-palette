@@ -666,7 +666,7 @@ export default function SharedLinkPage() {
                             var blobUrl = URL.createObjectURL(blob);
                             var a = document.createElement("a");
                             a.href = blobUrl;
-                            a.download = track.title + " - " + track.artist + ".mp3";
+                            a.download = track.title + " - " + track.artist + (linkData.download_quality === "hi-res" ? ".wav" : ".mp3");
                             document.body.appendChild(a);
                             a.click();
                             document.body.removeChild(a);
@@ -831,7 +831,7 @@ export default function SharedLinkPage() {
                         var blobUrl = URL.createObjectURL(blob);
                         var a = document.createElement("a");
                         a.href = blobUrl;
-                        a.download = trackData!.title + " - " + trackData!.artist + ".mp3";
+                        a.download = trackData!.title + " - " + trackData!.artist + (linkData.download_quality === "hi-res" ? ".wav" : ".mp3");
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
