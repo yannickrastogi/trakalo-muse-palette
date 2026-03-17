@@ -51,7 +51,7 @@ export default function SharedLinks() {
         <motion.div variants={item}>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Shared Links</h1>
           <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-            {sharedLinks.length} links created · {sharedLinks.reduce((s, l) => s + l.downloads.length, 0)} total downloads
+            {sharedLinks.length} links created · {sharedLinks.reduce((s, l) => s + (l.views || 0), 0)} views · {sharedLinks.reduce((s, l) => s + (l.plays || 0), 0)} plays · {sharedLinks.reduce((s, l) => s + (l.downloadCount || 0), 0)} downloads
           </p>
         </motion.div>
 
@@ -94,6 +94,8 @@ export default function SharedLinks() {
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden sm:table-cell">Track</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden sm:table-cell">Share Type</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden md:table-cell">Link Type</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden md:table-cell">Views</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden md:table-cell">Plays</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden md:table-cell">Downloads</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Created</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Expires</th>
@@ -129,7 +131,13 @@ export default function SharedLinks() {
                           </span>
                         </td>
                         <td className="px-4 py-3.5 hidden md:table-cell">
-                          <span className="text-xs font-semibold text-foreground">{link.downloads.length}</span>
+                          <span className="text-xs font-semibold text-foreground">{link.views || 0}</span>
+                        </td>
+                        <td className="px-4 py-3.5 hidden md:table-cell">
+                          <span className="text-xs font-semibold text-foreground">{link.plays || 0}</span>
+                        </td>
+                        <td className="px-4 py-3.5 hidden md:table-cell">
+                          <span className="text-xs font-semibold text-foreground">{link.downloadCount || 0}</span>
                         </td>
                         <td className="px-4 py-3.5 text-muted-foreground hidden lg:table-cell text-xs">{formatDate(link.createdAt)}</td>
                         <td className="px-4 py-3.5 text-muted-foreground hidden lg:table-cell text-xs">
