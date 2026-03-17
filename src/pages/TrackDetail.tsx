@@ -1303,9 +1303,31 @@ function StatusTab({ trackId }: { trackId: number }) {
 function EngagementTab({ trackId, onSeek }: { trackId: number; onSeek?: (seconds: number, totalDuration: number) => void }) {
   const { getTrackEngagement } = useEngagement();
   const { getCommentsForTrack } = useTrackReview();
+  const { getTrack } = useTrack();
   const [expandedRecipient, setExpandedRecipient] = useState<string | null>(null);
   const engagement = getTrackEngagement(trackId);
   const trackComments = getCommentsForTrack(trackId);
+
+  // Fetch link_events for this track
+  const trackUuid = getTrack(trackId)?.uuid;
+  const [linkEvents, setLinkEvents] = useState<{ event_type: string; visitor_email: string | null; created_at: string }[]>([]);
+
+  useEffect(function() {
+    if (!trackUuid) return;
+    supabase
+      .from("link_events")
+      .select("event_type, visitor_email, created_at")
+      .eq("track_id", trackUuid)
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .then(function(res) {
+        if (res.data) setLinkEvents(res.data);
+      });
+  }, [trackUuid]);
+
+  var linkPlays = linkEvents.filter(function(e) { return e.event_type === "play"; }).length;
+  var linkDownloads = linkEvents.filter(function(e) { return e.event_type === "download"; }).length;
+  var uniqueListeners = new Set(linkEvents.filter(function(e) { return e.visitor_email; }).map(function(e) { return e.visitor_email; })).size;
 
   // Build comment engagement events
   const commentEvents = trackComments
@@ -1319,7 +1341,7 @@ function EngagementTab({ trackId, onSeek }: { trackId: number; onSeek?: (seconds
     guest_recipient: { label: "Guest", className: "bg-muted text-muted-foreground" },
   };
 
-  if ((!engagement || engagement.totalPlays === 0) && commentEvents.length === 0) {
+  if ((!engagement || engagement.totalPlays === 0) && commentEvents.length === 0 && linkEvents.length === 0) {
     return (
       <SectionCard title="Engagement" icon={Headphones}>
         <div className="text-center py-12 text-muted-foreground">
@@ -1392,6 +1414,51 @@ function EngagementTab({ trackId, onSeek }: { trackId: number; onSeek?: (seconds
             </div>
           </div>
         </div>
+      )}
+
+      {/* Shared link activity */}
+      {linkEvents.length > 0 && (
+        <SectionCard title="Shared Link Activity" icon={Activity}>
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="bg-secondary/50 rounded-lg p-3 text-center">
+              <Play className="w-4 h-4 text-brand-pink mx-auto mb-1" />
+              <p className="text-xl font-bold text-foreground">{linkPlays}</p>
+              <p className="text-2xs text-muted-foreground">Plays</p>
+            </div>
+            <div className="bg-secondary/50 rounded-lg p-3 text-center">
+              <Download className="w-4 h-4 text-chart-5 mx-auto mb-1" />
+              <p className="text-xl font-bold text-foreground">{linkDownloads}</p>
+              <p className="text-2xs text-muted-foreground">Downloads</p>
+            </div>
+            <div className="bg-secondary/50 rounded-lg p-3 text-center">
+              <Users className="w-4 h-4 text-brand-purple mx-auto mb-1" />
+              <p className="text-xl font-bold text-foreground">{uniqueListeners}</p>
+              <p className="text-2xs text-muted-foreground">Unique Listeners</p>
+            </div>
+          </div>
+          <div className="divide-y divide-border/50">
+            {linkEvents.map(function(evt, i) {
+              return (
+                <div key={i} className="flex items-center gap-3 px-4 py-2.5 hover:bg-secondary/20 transition-colors">
+                  {evt.event_type === "play" ? (
+                    <Play className="w-3.5 h-3.5 text-brand-pink shrink-0" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5 text-chart-5 shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-foreground truncate">
+                      <span className="font-semibold">{evt.visitor_email || "Anonymous"}</span>
+                      {" " + (evt.event_type === "play" ? "played" : "downloaded") + " this track"}
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground/50 shrink-0">
+                    {new Date(evt.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </SectionCard>
       )}
 
       {/* Comment activity feed */}
