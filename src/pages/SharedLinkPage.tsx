@@ -68,6 +68,7 @@ export default function SharedLinkPage() {
   var [gateCompleted, setGateCompleted] = useState(false);
   var [visitorName, setVisitorName] = useState("");
   var [visitorEmail, setVisitorEmail] = useState("");
+  var visitorEmailRef = useRef("");
   var [visitorRole, setVisitorRole] = useState("");
   var [visitorCompany, setVisitorCompany] = useState("");
   var [gateError, setGateError] = useState("");
@@ -387,6 +388,7 @@ export default function SharedLinkPage() {
     }
     setGateError("");
     setGateCompleted(true);
+    visitorEmailRef.current = visitorEmail;
 
     fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/log-link-access", {
       method: "POST",
@@ -405,7 +407,7 @@ export default function SharedLinkPage() {
         "Content-Type": "application/json",
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
       },
-      body: JSON.stringify({ slug: slug, track_id: trackId, visitor_email: visitorEmail, event_type: eventType }),
+      body: JSON.stringify({ slug: slug, track_id: trackId, visitor_email: visitorEmailRef.current, event_type: eventType }),
     }).catch(function(err) { console.error("Failed to log event:", err); });
   };
 
