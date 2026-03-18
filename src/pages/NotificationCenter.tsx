@@ -1,7 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useTeams, type TeamActivity, type ActivityType } from "@/contexts/TeamContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/PageShell";
 import {
   Upload,
@@ -102,11 +104,74 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 export default function NotificationCenter() {
   const { t } = useTranslation();
   const { teams } = useTeams();
+  const { activeWorkspace } = useWorkspace();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [linkEventActivities, setLinkEventActivities] = useState<EnrichedActivity[]>([]);
 
-  // Merge all activities from all teams
+  // Fetch link_events and convert to activities
+  useEffect(function() {
+    if (!activeWorkspace) return;
+
+    async function fetchLinkEvents() {
+      // Get shared_links for this workspace to filter events
+      var { data: links } = await supabase
+        .from("shared_links")
+        .select("id, link_name")
+        .eq("workspace_id", activeWorkspace!.id);
+
+      if (!links || links.length === 0) {
+        setLinkEventActivities([]);
+        return;
+      }
+
+      var linkIds = links.map(function(l) { return l.id; });
+      var linkNameMap: Record<string, string> = {};
+      links.forEach(function(l) { linkNameMap[l.id] = l.link_name; });
+
+      var { data: events } = await supabase
+        .from("link_events")
+        .select("id, event_type, visitor_email, created_at, link_id")
+        .in("link_id", linkIds)
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (!events) {
+        setLinkEventActivities([]);
+        return;
+      }
+
+      var activities: EnrichedActivity[] = events.map(function(evt) {
+        var typeMap: Record<string, ActivityType> = {
+          play: "recipient_played",
+          download: "recipient_downloaded",
+          view: "recipient_opened",
+        };
+        var messageMap: Record<string, string> = {
+          play: "listened to your track",
+          download: "downloaded your track",
+          view: "viewed your shared link",
+        };
+        var linkName = linkNameMap[evt.link_id] || "";
+        return {
+          id: evt.id,
+          user: evt.visitor_email || "Anonymous visitor",
+          message: messageMap[evt.event_type] + (linkName ? " \"" + linkName + "\"" : ""),
+          type: typeMap[evt.event_type] || "recipient_opened",
+          date: evt.created_at,
+          teamName: "Shared Links",
+          teamId: "__link_events__",
+        };
+      });
+
+      setLinkEventActivities(activities);
+    }
+
+    fetchLinkEvents();
+  }, [activeWorkspace]);
+
+  // Merge all activities from all teams + link events
   const allActivities = useMemo<EnrichedActivity[]>(() => {
     const merged: EnrichedActivity[] = [];
     teams.forEach((team) => {
@@ -114,8 +179,9 @@ export default function NotificationCenter() {
         merged.push({ ...activity, teamName: team.name, teamId: team.id });
       });
     });
+    linkEventActivities.forEach(function(a) { merged.push(a); });
     return merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [teams]);
+  }, [teams, linkEventActivities]);
 
   // Apply filters
   const filteredActivities = useMemo(() => {
