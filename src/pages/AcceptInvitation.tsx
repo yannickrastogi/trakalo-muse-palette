@@ -99,12 +99,17 @@ export default function AcceptInvitation() {
     setAccepting(true);
 
     try {
-      var { data, error: fnError } = await supabase.functions.invoke("accept-invitation", {
-        body: { token: invitation.token }
+      var res = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/accept-invitation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
+        },
+        body: JSON.stringify({ token: invitation.token, user_id: session.user.id }),
       });
-
-      if (fnError) {
-        setError("Failed to accept invitation: " + fnError.message);
+      var data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to accept invitation");
         setAccepting(false);
         return;
       }

@@ -82,7 +82,7 @@ serve(async (req) => {
     // 5. Insert into user_roles
     const { error: roleError } = await supabase
       .from("user_roles")
-      .upsert({ user_id: userId, workspace_id: workspaceId, role: role }, { onConflict: "user_id,workspace_id,role" });
+      .upsert({ user_id: userId, workspace_id: workspaceId, role: role.toLowerCase() }, { onConflict: "user_id,workspace_id,role" });
 
     if (roleError) {
       return new Response(JSON.stringify({ error: "Failed to assign role: " + roleError.message }), {
