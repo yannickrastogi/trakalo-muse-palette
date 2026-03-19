@@ -161,11 +161,11 @@ export function ShareModal({
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative z-10 w-full max-w-md max-h-[85vh] bg-card border border-border rounded-2xl overflow-hidden"
+            className="relative z-10 w-full max-w-md bg-card border border-border rounded-2xl overflow-hidden"
             style={{ boxShadow: "var(--shadow-elevated)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}
           >
             {/* Header */}
-            <div className="px-6 py-4 border-b border-border">
+            <div className="shrink-0 px-6 py-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">{shareTypeLabels[shareType]}</h3>
@@ -179,7 +179,7 @@ export function ShareModal({
 
             {createdLink ? (
               /* Success state */
-              <div className="p-6 space-y-4">
+              <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-4">
                 <div className="text-center py-4">
                   <div className="w-12 h-12 rounded-2xl icon-brand flex items-center justify-center mx-auto mb-3">
                     <Check className="w-6 h-6 text-primary" />
@@ -206,8 +206,9 @@ export function ShareModal({
                 </button>
               </div>
             ) : (
-              /* Form */
-              <div className="px-6 pt-6 pb-3 space-y-5 flex-1 overflow-y-auto min-h-0" style={{ maxHeight: "calc(70vh - 120px)" }}>
+              <>
+              {/* Form */}
+              <div className="flex-1 overflow-y-auto min-h-0 px-6 pt-6 pb-4 space-y-5">
                 {/* Link Type */}
                 <div>
                   <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-2">Link Type</label>
@@ -355,22 +356,22 @@ export function ShareModal({
                       : `${itemCount} ${shareTypeItemLabel[shareType]}`}
                   </span>
                 </div>
-
-                {/* Actions */}
-                <div className="px-6 pb-3 pt-1 flex items-center justify-between">
-                  <button onClick={handleClose} className="px-4 py-2.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleCreate}
-                    disabled={(itemCount === 0 && shareType !== "track") || creating}
-                    className="px-5 py-2.5 rounded-lg text-xs font-semibold btn-brand disabled:opacity-40 disabled:pointer-events-none"
-                  >
-                    {creating ? "Creating…" : "Create Link"}
-                  </button>
-                </div>
-
               </div>
+
+              {/* Actions — fixed at bottom */}
+              <div className="shrink-0 px-6 py-3 border-t border-border flex items-center justify-between">
+                <button onClick={handleClose} className="px-4 py-2.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreate}
+                  disabled={(itemCount === 0 && shareType !== "track") || creating}
+                  className="px-5 py-2.5 rounded-lg text-xs font-semibold btn-brand disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  {creating ? "Creating…" : "Create Link"}
+                </button>
+              </div>
+              </>
             )}
           </motion.div>
         </motion.div>
