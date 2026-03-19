@@ -105,16 +105,16 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
     setError("");
 
     try {
-      const session = (await supabase.auth.getSession()).data.session;
       const res = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/create-invitation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer " + (session?.access_token || ""),
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
         },
         body: JSON.stringify({
           workspace_id: activeWorkspace?.id,
           workspace_name: activeWorkspace?.name || "Trakalog",
+          user_id: user?.id,
           invited_by: user?.id,
           inviter_name: user?.user_metadata?.full_name || user?.email || "Your team",
           email: trimmedEmail,

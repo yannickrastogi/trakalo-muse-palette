@@ -12,10 +12,10 @@ serve(async (req) => {
   }
 
   try {
-    const { token } = await req.json();
+    const { token, user_id } = await req.json();
 
-    if (!token) {
-      return new Response(JSON.stringify({ error: "token is required" }), {
+    if (!token || !user_id) {
+      return new Response(JSON.stringify({ error: "token and user_id are required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -31,30 +31,7 @@ serve(async (req) => {
       });
     }
 
-    // Extract user_id from the JWT passed in the Authorization header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Authorization header required" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Create an auth-aware client to get the user, then a service role client for writes
-    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") || "", {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false },
-    });
-
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid or expired session" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const userId = user.id;
+    const userId = user_id;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // 1. Find the invitation by token
