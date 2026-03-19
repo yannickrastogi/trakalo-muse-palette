@@ -70,7 +70,7 @@ export default function Auth() {
             TRAKALOG
           </h1>
           <p className="text-[11px] text-muted-foreground tracking-widest uppercase font-medium">
-            Catalog Manager
+            Smart Catalog Manager
           </p>
         </div>
 

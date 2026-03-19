@@ -447,8 +447,8 @@ export default function SharedLinkPage() {
     return (
       <Shell>
         <div className="max-w-sm mx-auto py-12 px-4">
-          <div className="bg-card border border-border rounded-2xl p-8 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+          <div className="rounded-2xl p-8 text-center" style={{ background: "linear-gradient(145deg, rgba(249,115,22,0.08), rgba(139,92,246,0.05), transparent)", border: "1px solid rgba(249,115,22,0.15)" }}>
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "linear-gradient(135deg, rgba(249,115,22,0.2), rgba(139,92,246,0.2))" }}>
               <User className="w-6 h-6 text-primary" />
             </div>
             <h2 className="text-lg font-semibold text-foreground">Welcome</h2>
@@ -990,17 +990,17 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-center">
+        <div className="max-w-2xl mx-auto px-4 py-5 flex items-center justify-center">
           <div className="flex items-center justify-center gap-3">
             <img src={trakalogLogo} alt="Trakalog" className="h-10" />
-            <span className="text-xl font-bold tracking-wider text-foreground uppercase">Trakalog</span>
+            <span className="text-xl font-bold tracking-wider uppercase" style={{ background: "linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Trakalog</span>
           </div>
         </div>
       </header>
       <div className="flex-1">{children}</div>
       <footer className="py-6 text-center">
-        <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors">
-          Powered by Trakalog
+        <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] hover:opacity-80 transition-opacity" style={{ color: "#f97316" }}>
+          {"Powered by Trakalog \u2726"}
         </a>
       </footer>
     </div>

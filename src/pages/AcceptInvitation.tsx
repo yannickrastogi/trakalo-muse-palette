@@ -28,17 +28,17 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-center">
+        <div className="max-w-2xl mx-auto px-4 py-5 flex items-center justify-center">
           <div className="flex items-center justify-center gap-3">
             <img src={trakalogLogo} alt="Trakalog" className="h-10" />
-            <span className="text-xl font-bold tracking-wider text-foreground uppercase">Trakalog</span>
+            <span className="text-xl font-bold tracking-wider uppercase" style={{ background: "linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Trakalog</span>
           </div>
         </div>
       </header>
       <div className="flex-1">{children}</div>
       <footer className="py-6 text-center">
-        <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors">
-          Powered by Trakalog
+        <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] hover:opacity-80 transition-opacity" style={{ color: "#f97316" }}>
+          {"Powered by Trakalog \u2726"}
         </a>
       </footer>
     </div>
