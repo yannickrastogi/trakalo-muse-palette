@@ -77,7 +77,7 @@ function SidebarLogo() {
           TRAKALOG
         </span>
         <span className="text-[11px] text-muted-foreground mt-1 tracking-widest uppercase font-medium">
-          Smart Catalog Manager
+          Catalog Manager
         </span>
       </div>
     </div>
@@ -144,7 +144,7 @@ export function AppSidebar() {
               TRAKALOG
             </span>
             <span className="text-[11px] text-muted-foreground mt-1 tracking-widest uppercase font-medium">
-              Smart Catalog Manager
+              Catalog Manager
             </span>
           </motion.div>
         )}
