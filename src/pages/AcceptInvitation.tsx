@@ -22,8 +22,6 @@ interface InvitationData {
   status: string;
   created_at: string;
   expires_at: string | null;
-  workspace: { name: string } | null;
-  inviter: { first_name: string | null; last_name: string | null } | null;
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -70,7 +68,7 @@ export default function AcceptInvitation() {
     try {
       var { data, error: fetchError } = await anonSupabase
         .from("invitations")
-        .select("*, workspace:workspaces(name), inviter:profiles!invitations_invited_by_fkey(first_name, last_name)")
+        .select("*")
         .eq("token", token)
         .single();
 
@@ -155,7 +153,7 @@ export default function AcceptInvitation() {
           <CheckCircle2 className="h-12 w-12 text-green-500" />
           <h2 className="text-xl font-semibold text-foreground">You're in!</h2>
           <p className="text-muted-foreground text-center">
-            {"You've joined " + (invitation?.workspace?.name || "the workspace") + " as " + invitation?.role + "."}
+            {"You've joined the workspace as " + invitation?.role + "."}
           </p>
           <button
             onClick={function () { navigate("/"); }}
@@ -169,8 +167,7 @@ export default function AcceptInvitation() {
   }
 
   // Invitation details
-  var workspaceName = invitation?.workspace?.name || "a workspace";
-  var inviterName = [invitation?.inviter?.first_name, invitation?.inviter?.last_name].filter(Boolean).join(" ") || "Someone";
+  var inviteeName = [invitation?.first_name, invitation?.last_name].filter(Boolean).join(" ") || null;
   var roleName = invitation?.role || "member";
 
   return (
@@ -188,25 +185,20 @@ export default function AcceptInvitation() {
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <Users className="h-5 w-5 text-muted-foreground shrink-0" />
-              <div>
-                <p className="text-sm text-muted-foreground">Workspace</p>
-                <p className="font-medium text-foreground">{workspaceName}</p>
+            {inviteeName && (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <Users className="h-5 w-5 text-muted-foreground shrink-0" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Invited as</p>
+                  <p className="font-medium text-foreground">{inviteeName}</p>
+                </div>
               </div>
-            </div>
+            )}
             <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
               <span className="text-sm font-medium text-muted-foreground w-5 h-5 flex items-center justify-center shrink-0">@</span>
               <div>
                 <p className="text-sm text-muted-foreground">Role</p>
                 <p className="font-medium text-foreground capitalize">{roleName}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <span className="text-sm font-medium text-muted-foreground w-5 h-5 flex items-center justify-center shrink-0">by</span>
-              <div>
-                <p className="text-sm text-muted-foreground">Invited by</p>
-                <p className="font-medium text-foreground">{inviterName}</p>
               </div>
             </div>
           </div>
