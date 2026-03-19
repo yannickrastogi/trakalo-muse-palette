@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
+import { isEmailWhitelisted } from "@/lib/whitelist";
+import { toast } from "sonner";
 
 interface AuthContextValue {
   session: Session | null;
@@ -19,12 +21,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const checkWhitelist = async (session: Session | null) => {
+      if (session?.user?.email && !isEmailWhitelisted(session.user.email)) {
+        await supabase.auth.signOut();
+        toast.error("Trakalog is currently in private beta. Request access at hello@trakalog.com");
+        setSession(null);
+        setLoading(false);
+        return false;
+      }
+      return true;
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        const allowed = await checkWhitelist(session);
+        if (!allowed) return;
+      }
       setSession(session);
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        const allowed = await checkWhitelist(session);
+        if (!allowed) return;
+      }
       setSession(session);
       setLoading(false);
     });
@@ -50,6 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUpWithEmail = useCallback(async (email: string, password: string) => {
+    if (!isEmailWhitelisted(email)) {
+      return { error: new Error("Trakalog is currently in private beta. Request access at hello@trakalog.com") };
+    }
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) return { error };
     if (data.user && !data.session) {
