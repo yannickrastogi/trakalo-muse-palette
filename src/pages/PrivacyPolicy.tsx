@@ -2,15 +2,20 @@ import trakalogLogo from "@/assets/trakalog-logo.png";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-center">
           <a href="/">
-            <img src={trakalogLogo} alt="Trakalog" className="h-6 opacity-80" />
+            <img src={trakalogLogo} alt="Trakalog" className="h-8" />
           </a>
         </div>
       </header>
-      {children}
+      <div className="flex-1">{children}</div>
+      <footer className="py-6 text-center">
+        <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors">
+          Powered by Trakalog
+        </a>
+      </footer>
     </div>
   );
 }

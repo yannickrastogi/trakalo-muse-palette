@@ -26,13 +26,18 @@ interface InvitationData {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-center">
-          <img src={trakalogLogo} alt="Trakalog" className="h-6 opacity-80" />
+          <img src={trakalogLogo} alt="Trakalog" className="h-8" />
         </div>
       </header>
-      {children}
+      <div className="flex-1">{children}</div>
+      <footer className="py-6 text-center">
+        <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors">
+          Powered by Trakalog
+        </a>
+      </footer>
     </div>
   );
 }
@@ -162,7 +167,7 @@ export default function AcceptInvitation() {
           </p>
           <button
             onClick={function () { navigate("/"); }}
-            className="mt-4 inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="mt-4 inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-semibold btn-brand"
           >
             Go to Dashboard
           </button>
@@ -217,7 +222,7 @@ export default function AcceptInvitation() {
             <button
               onClick={handleAccept}
               disabled={accepting}
-              className="w-full inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="w-full inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-semibold btn-brand disabled:opacity-50"
             >
               {accepting ? (
                 <>
@@ -231,7 +236,7 @@ export default function AcceptInvitation() {
           ) : (
             <button
               onClick={handleSignUp}
-              className="w-full inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="w-full inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-semibold btn-brand"
             >
               Sign up to accept
             </button>

@@ -446,68 +446,70 @@ export default function SharedLinkPage() {
   if (needsGate) {
     return (
       <Shell>
-        <div className="max-w-sm mx-auto text-center py-12 px-4">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-            <User className="w-6 h-6 text-primary" />
-          </div>
-          <h2 className="text-lg font-semibold text-foreground">Welcome</h2>
-          <p className="text-sm text-muted-foreground mt-1.5 mb-6">Please enter your details to access this content.</p>
-          <div className="space-y-3 text-left">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Full Name <span className="text-destructive">*</span></label>
-              <input
-                type="text"
-                value={visitorName}
-                onChange={function(e) { setVisitorName(e.target.value); }}
-                placeholder="Your name"
-                maxLength={100}
-                className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
-                autoFocus
-              />
+        <div className="max-w-sm mx-auto py-12 px-4">
+          <div className="bg-card border border-border rounded-2xl p-8 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <User className="w-6 h-6 text-primary" />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Email <span className="text-destructive">*</span></label>
-              <input
-                type="email"
-                value={visitorEmail}
-                onChange={function(e) { setVisitorEmail(e.target.value); }}
-                placeholder="your@email.com"
-                maxLength={255}
-                className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
-              />
+            <h2 className="text-lg font-semibold text-foreground">Welcome</h2>
+            <p className="text-sm text-muted-foreground mt-1.5 mb-6">Please enter your details to access this content.</p>
+            <div className="space-y-3 text-left">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Full Name <span className="text-destructive">*</span></label>
+                <input
+                  type="text"
+                  value={visitorName}
+                  onChange={function(e) { setVisitorName(e.target.value); }}
+                  placeholder="Your name"
+                  maxLength={100}
+                  className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Email <span className="text-destructive">*</span></label>
+                <input
+                  type="email"
+                  value={visitorEmail}
+                  onChange={function(e) { setVisitorEmail(e.target.value); }}
+                  placeholder="your@email.com"
+                  maxLength={255}
+                  className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Role</label>
+                <input
+                  type="text"
+                  value={visitorRole}
+                  onChange={function(e) { setVisitorRole(e.target.value); }}
+                  placeholder="e.g. A&R, Manager, DJ"
+                  maxLength={100}
+                  className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Company</label>
+                <input
+                  type="text"
+                  value={visitorCompany}
+                  onChange={function(e) { setVisitorCompany(e.target.value); }}
+                  onKeyDown={function(e) { if (e.key === "Enter") handleGateSubmit(); }}
+                  placeholder="Your company or label"
+                  maxLength={100}
+                  className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+                />
+              </div>
+              {gateError && (
+                <p className="text-xs text-destructive text-center">{gateError}</p>
+              )}
+              <button
+                onClick={handleGateSubmit}
+                className="w-full h-11 rounded-xl text-sm font-semibold btn-brand"
+              >
+                Continue
+              </button>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Role</label>
-              <input
-                type="text"
-                value={visitorRole}
-                onChange={function(e) { setVisitorRole(e.target.value); }}
-                placeholder="e.g. A&R, Manager, DJ"
-                maxLength={100}
-                className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Company</label>
-              <input
-                type="text"
-                value={visitorCompany}
-                onChange={function(e) { setVisitorCompany(e.target.value); }}
-                onKeyDown={function(e) { if (e.key === "Enter") handleGateSubmit(); }}
-                placeholder="Your company or label"
-                maxLength={100}
-                className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
-              />
-            </div>
-            {gateError && (
-              <p className="text-xs text-destructive text-center">{gateError}</p>
-            )}
-            <button
-              onClick={handleGateSubmit}
-              className="w-full h-11 rounded-xl text-sm font-semibold btn-brand"
-            >
-              Continue
-            </button>
           </div>
         </div>
       </Shell>
@@ -694,7 +696,7 @@ export default function SharedLinkPage() {
 
                   {/* Progress bar */}
                   <div
-                    className="h-1.5 bg-secondary rounded-full cursor-pointer group relative"
+                    className="h-2 bg-secondary rounded-full cursor-pointer group relative"
                     onClick={handleSeek}
                   >
                     <div
@@ -889,7 +891,7 @@ export default function SharedLinkPage() {
             {(trackData.audio_url || slug) && (
               <div className="border-t border-border px-6 py-4 space-y-3">
                 <div
-                  className="h-1.5 bg-secondary rounded-full cursor-pointer group relative"
+                  className="h-2 bg-secondary rounded-full cursor-pointer group relative"
                   onClick={handleSeek}
                 >
                   <div
@@ -958,7 +960,7 @@ export default function SharedLinkPage() {
                       });
                     });
                   }}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold border border-border bg-card text-foreground hover:bg-secondary transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold btn-brand"
                 >
                   <Download className="w-4 h-4" />
                   {"Download " + (linkData.download_quality === "hi-res" ? "(Hi-Res)" : "(Low-Res)")}
@@ -986,13 +988,18 @@ export default function SharedLinkPage() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-center">
-          <img src={trakalogLogo} alt="Trakalog" className="h-6 opacity-80" />
+          <img src={trakalogLogo} alt="Trakalog" className="h-8" />
         </div>
       </header>
-      {children}
+      <div className="flex-1">{children}</div>
+      <footer className="py-6 text-center">
+        <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors">
+          Powered by Trakalog
+        </a>
+      </footer>
     </div>
   );
 }
