@@ -36,6 +36,8 @@ import NotificationCenter from "./pages/NotificationCenter";
 import ApprovalQueue from "./pages/ApprovalQueue";
 import SharedLinkPage from "./pages/SharedLinkPage";
 import AcceptInvitation from "./pages/AcceptInvitation";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +87,8 @@ const App = () => (
             <Route path="/share/:slug" element={<SharedLinkPage />} />
             <Route path="/shared/:linkId" element={<SharedStemAccess />} />
             <Route path="/invite/:token" element={<AcceptInvitation />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
             <Route path="/" element={<ProtectedApp><Index /></ProtectedApp>} />
             <Route path="/tracks" element={<ProtectedApp><Catalog /></ProtectedApp>} />
             <Route path="/track/:id" element={<ProtectedApp><TrackDetail /></ProtectedApp>} />
