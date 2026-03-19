@@ -35,6 +35,7 @@ import NotFound from "./pages/NotFound";
 import NotificationCenter from "./pages/NotificationCenter";
 import ApprovalQueue from "./pages/ApprovalQueue";
 import SharedLinkPage from "./pages/SharedLinkPage";
+import AcceptInvitation from "./pages/AcceptInvitation";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/share/:slug" element={<SharedLinkPage />} />
             <Route path="/shared/:linkId" element={<SharedStemAccess />} />
+            <Route path="/invite/:token" element={<AcceptInvitation />} />
             <Route path="/" element={<ProtectedApp><Index /></ProtectedApp>} />
             <Route path="/tracks" element={<ProtectedApp><Catalog /></ProtectedApp>} />
             <Route path="/track/:id" element={<ProtectedApp><TrackDetail /></ProtectedApp>} />

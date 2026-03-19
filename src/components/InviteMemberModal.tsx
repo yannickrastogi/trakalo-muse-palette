@@ -21,6 +21,9 @@ import {
 } from "@/components/ui/select";
 import { useTeams } from "@/contexts/TeamContext";
 import { CreateTeamModal } from "@/components/CreateTeamModal";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const INVITE_ROLES = ["Admin", "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer", "Manager", "Publisher", "A&R", "Assistant", "Viewer"] as const;
 export type InviteRole = (typeof INVITE_ROLES)[number];
@@ -44,6 +47,8 @@ interface Props {
 export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTeamId }: Props) {
   const { t } = useTranslation();
   const { teams, createTeam, addMember } = useTeams();
+  const { user } = useAuth();
+  const { activeWorkspace } = useWorkspace();
 
   const [selectedTeamId, setSelectedTeamId] = useState<string>(preselectedTeamId || "");
   const [newTeamName, setNewTeamName] = useState("");
@@ -53,6 +58,7 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<InviteRole>("Viewer");
   const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
 
   const reset = () => {
@@ -64,9 +70,10 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
     setEmail("");
     setRole("Viewer");
     setError("");
+    setSending(false);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     // Resolve team
     let teamId = selectedTeamId;
 
@@ -94,33 +101,53 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
       return;
     }
 
-    // Add member to team context
-    addMember(teamId, {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: trimmedEmail,
-      role: role,
-    });
+    setSending(true);
+    setError("");
 
-    fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/send-invitation-email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
-      },
-      body: JSON.stringify({
-        to_email: trimmedEmail,
-        to_name: firstName.trim(),
-        inviter_name: "Your team",
-        workspace_name: "Trakalog",
+    try {
+      const session = (await supabase.auth.getSession()).data.session;
+      const res = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/create-invitation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + (session?.access_token || ""),
+        },
+        body: JSON.stringify({
+          workspace_id: activeWorkspace?.id,
+          workspace_name: activeWorkspace?.name || "Trakalog",
+          invited_by: user?.id,
+          inviter_name: user?.user_metadata?.full_name || user?.email || "Your team",
+          email: trimmedEmail,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          role: role,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Failed to send invitation");
+        setSending(false);
+        return;
+      }
+
+      // Also add to local team context for immediate UI update
+      addMember(teamId, {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: trimmedEmail,
         role: role,
-        invite_link: window.location.origin,
-      }),
-    }).catch(function(err) { console.error("Failed to send invitation email:", err); });
+      });
 
-    onInvite({ firstName: firstName.trim(), lastName: lastName.trim(), email: trimmedEmail, role, teamId });
-    reset();
-    onOpenChange(false);
+      onInvite({ firstName: firstName.trim(), lastName: lastName.trim(), email: trimmedEmail, role, teamId });
+      reset();
+      onOpenChange(false);
+    } catch (err: any) {
+      setError("Failed to send invitation: " + (err.message || "unknown error"));
+    } finally {
+      setSending(false);
+    }
   };
 
   const hasTeams = teams.length > 0;
@@ -345,9 +372,10 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
           </Button>
           <button
             onClick={handleSend}
-            className="btn-brand px-5 py-2.5 rounded-lg text-[13px] font-semibold min-h-[40px]"
+            disabled={sending}
+            className="btn-brand px-5 py-2.5 rounded-lg text-[13px] font-semibold min-h-[40px] disabled:opacity-50"
           >
-            {t("inviteMember.sendInvite")}
+            {sending ? "Sending…" : t("inviteMember.sendInvite")}
           </button>
         </DialogFooter>
       </DialogContent>

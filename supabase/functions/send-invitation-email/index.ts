@@ -55,7 +55,7 @@ serve(async (req) => {
         "Authorization": "Bearer " + RESEND_API_KEY,
       },
       body: JSON.stringify({
-        from: "Trakalog <onboarding@resend.dev>",
+        from: "Trakalog <noreply@trakalog.com>",
         to: [to_email],
         subject: inviter + " invited you to join " + workspace_name + " on Trakalog",
         html: htmlBody,
