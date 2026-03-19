@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { to_email, to_name, from_name, subject, message, tracks, share_link } = await req.json();
+    const { to_email, to_name, from_name, from_email, subject, message, tracks, share_link } = await req.json();
 
     if (!to_email || !subject) {
       return new Response(JSON.stringify({ error: "to_email and subject required" }), {
@@ -68,7 +68,8 @@ serve(async (req) => {
         "Authorization": "Bearer " + RESEND_API_KEY,
       },
       body: JSON.stringify({
-        from: "Trakalog <onboarding@resend.dev>",
+        from: "Trakalog <noreply@trakalog.com>",
+        reply_to: from_email || undefined,
         to: [to_email],
         subject: subject,
         html: htmlBody,

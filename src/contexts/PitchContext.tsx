@@ -171,6 +171,7 @@ export function PitchProvider({ children }: { children: ReactNode }) {
           to_email: pitch.recipientEmail,
           to_name: pitch.recipientName,
           from_name: user.user_metadata?.full_name || user.email,
+          from_email: user.email,
           subject: pitch.itemName || "New Pitch from Trakalog",
           message: pitch.notes || "",
           tracks: [{ title: pitch.itemName, artist: pitch.artist }],
