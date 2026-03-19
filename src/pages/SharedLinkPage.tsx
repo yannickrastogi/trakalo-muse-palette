@@ -991,7 +991,10 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-center">
-          <img src={trakalogLogo} alt="Trakalog" className="h-8" />
+          <div className="flex items-center justify-center gap-3">
+            <img src={trakalogLogo} alt="Trakalog" className="h-10" />
+            <span className="text-xl font-bold tracking-wider text-foreground uppercase">Trakalog</span>
+          </div>
         </div>
       </header>
       <div className="flex-1">{children}</div>
