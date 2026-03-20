@@ -5,14 +5,7 @@ import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ChevronUp, Chevro
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { motion, AnimatePresence } from "framer-motion";
 
-import cover1 from "@/assets/covers/cover-1.jpg";
-import cover2 from "@/assets/covers/cover-2.jpg";
-import cover3 from "@/assets/covers/cover-3.jpg";
-import cover4 from "@/assets/covers/cover-4.jpg";
-import cover5 from "@/assets/covers/cover-5.jpg";
-import cover6 from "@/assets/covers/cover-6.jpg";
-
-const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
+import { DEFAULT_COVER } from "@/lib/constants";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -59,7 +52,7 @@ export function PersistentPlayer() {
 
   if (!currentTrack) return null;
 
-  const coverSrc = currentTrack.coverImage || covers[currentTrack.coverIdx % covers.length];
+  const coverSrc = currentTrack.coverImage || DEFAULT_COVER;
 
   if (minimized) {
     return (

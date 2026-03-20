@@ -52,7 +52,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { PageShell } from "@/components/PageShell";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { usePlaylists, covers } from "@/contexts/PlaylistContext";
+import { usePlaylists } from "@/contexts/PlaylistContext";
+import { DEFAULT_COVER } from "@/lib/constants";
 import { statusColors } from "./Catalog";
 import { useTrack, mapRowToTrack, type TrackData } from "@/contexts/TrackContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -252,7 +253,7 @@ export default function PlaylistDetail() {
               ) : (
                 <div className="grid grid-cols-2 gap-0.5 w-full h-full">
                   {playlist.coverIdxs.slice(0, 4).map((ci, i) => (
-                    <img key={i} src={covers[ci]} alt="" className="w-full h-full object-cover" />
+                    <img key={i} src={DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
                   ))}
                 </div>
               )}
@@ -482,7 +483,7 @@ export default function PlaylistDetail() {
                   className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer group/add"
                   onClick={() => { const updated = [...displayTracks, track]; setTracks(updated); syncToContext(updated); }}
                 >
-                  <img src={track.coverImage || covers[track.coverIdx]} alt={track.title} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                  <img src={track.coverImage || DEFAULT_COVER} alt={track.title} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground truncate">{track.title}</p>
                     <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
@@ -615,7 +616,7 @@ function SortableDesktopRow({
       {/* Track info */}
       <td className="px-2 py-3">
         <div className="flex items-center gap-3">
-          <img src={track.coverImage || covers[track.coverIdx]} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+          <img src={track.coverImage || DEFAULT_COVER} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
           <div className="min-w-0 flex-1">
             <p className="font-semibold text-foreground truncate text-[13px] tracking-tight leading-tight">{track.title}</p>
             <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>
@@ -780,7 +781,7 @@ function SortableMobileCard({
         )}
       </button>
 
-      <img src={track.coverImage || covers[track.coverIdx]} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+      <img src={track.coverImage || DEFAULT_COVER} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0" />
 
       <div className="min-w-0 flex-1">
         <p className="font-semibold text-foreground text-[13px] tracking-tight truncate">{track.title}</p>

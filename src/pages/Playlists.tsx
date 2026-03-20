@@ -18,7 +18,8 @@ import {
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
-import { usePlaylists, covers } from "@/contexts/PlaylistContext";
+import { usePlaylists } from "@/contexts/PlaylistContext";
+import { DEFAULT_COVER } from "@/lib/constants";
 import { useTrack } from "@/contexts/TrackContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -71,7 +72,7 @@ const MiniCoverGrid = forwardRef<HTMLDivElement, { idxs: number[]; coverImage?: 
     return (
       <div ref={ref} className="grid grid-cols-2 gap-0.5 w-full aspect-square rounded-xl overflow-hidden">
         {idxs.slice(0, 4).map((ci, i) => (
-          <img key={i} src={covers[ci]} alt="" className="w-full h-full object-cover" />
+          <img key={i} src={DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
         ))}
       </div>
     );

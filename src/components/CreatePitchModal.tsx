@@ -30,14 +30,7 @@ import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { getSavedContacts, saveContact, type SavedContact } from "@/hooks/use-saved-contacts";
 
-import cover1 from "@/assets/covers/cover-1.jpg";
-import cover2 from "@/assets/covers/cover-2.jpg";
-import cover3 from "@/assets/covers/cover-3.jpg";
-import cover4 from "@/assets/covers/cover-4.jpg";
-import cover5 from "@/assets/covers/cover-5.jpg";
-import cover6 from "@/assets/covers/cover-6.jpg";
-
-const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
+import { DEFAULT_COVER } from "@/lib/constants";
 
 export interface PitchEntry {
   id: string;
@@ -299,7 +292,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                 {selectedItem && (
                   <div className="px-6 pb-2">
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/6 border border-primary/15">
-                      <img src={selectedItem.coverImage || covers[selectedItem.coverIdx]} alt="" className="w-10 h-10 rounded-lg object-cover ring-1 ring-primary/20" />
+                      <img src={selectedItem.coverImage || DEFAULT_COVER} alt="" className="w-10 h-10 rounded-lg object-cover ring-1 ring-primary/20" />
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-semibold text-foreground truncate">{selectedItem.name}</p>
                         <p className="text-[11px] text-muted-foreground truncate">
@@ -395,7 +388,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
                     <div className="absolute inset-0 border border-primary/10 rounded-xl" />
                     <div className="relative flex items-center gap-4">
                       <img
-                        src={selectedItem.coverImage || covers[selectedItem.coverIdx]}
+                        src={selectedItem.coverImage || DEFAULT_COVER}
                         alt=""
                         className="w-16 h-16 rounded-xl object-cover ring-2 ring-primary/15 shadow-lg shrink-0"
                       />
@@ -731,7 +724,7 @@ function ItemRow({
       }`}
       onClick={onClick}
     >
-      <img src={coverImage || covers[coverIdx]} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+      <img src={coverImage || DEFAULT_COVER} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           {icon}

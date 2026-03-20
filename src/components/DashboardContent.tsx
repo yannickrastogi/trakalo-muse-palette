@@ -35,13 +35,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 
-import cover1 from "@/assets/covers/cover-1.jpg";
-import cover2 from "@/assets/covers/cover-2.jpg";
-import cover3 from "@/assets/covers/cover-3.jpg";
-import cover4 from "@/assets/covers/cover-4.jpg";
-import cover5 from "@/assets/covers/cover-5.jpg";
-
-const covers = [cover1, cover2, cover3, cover4, cover5];
+import { DEFAULT_COVER } from "@/lib/constants";
 
 
 function timeAgo(dateStr: string): string {
@@ -452,7 +446,7 @@ export function DashboardContent() {
                     >
                       <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
                       <img
-                        src={track.coverImage || covers[track.coverIdx % covers.length]}
+                        src={track.coverImage || DEFAULT_COVER}
                         alt={track.title}
                         className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50"
                       />
@@ -656,7 +650,7 @@ export function DashboardContent() {
                       onClick={() => navigate(`/track/${entry.trackUuid}`)}
                     >
                       <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
-                      <img src={entry.coverImage || covers[entry.coverIdx]} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                      <img src={entry.coverImage || DEFAULT_COVER} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-pink transition-colors">{entry.trackTitle}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{entry.trackArtist}</p>
@@ -753,7 +747,7 @@ export function DashboardContent() {
                       onClick={() => navigate(`/track/${entry.trackUuid}`)}
                     >
                       <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
-                      <img src={entry.coverImage || covers[entry.coverIdx]} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                      <img src={entry.coverImage || DEFAULT_COVER} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-purple transition-colors">{entry.trackTitle}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{entry.trackArtist}</p>

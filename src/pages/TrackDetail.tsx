@@ -81,7 +81,7 @@ import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
 import { StemsTab } from "@/components/StemsTab";
-import { STEM_TYPES } from "@/lib/constants";
+import { STEM_TYPES, DEFAULT_COVER } from "@/lib/constants";
 import type { StemType } from "@/lib/constants";
 
 interface StemFile {
@@ -365,14 +365,7 @@ export default function TrackDetail() {
               {/* Cover artwork */}
               <div className="w-full lg:w-64 shrink-0">
                 <div className="aspect-square rounded-2xl bg-gradient-to-br from-brand-purple/30 via-brand-pink/20 to-brand-orange/30 border border-border flex items-center justify-center relative overflow-hidden group" style={{ boxShadow: "var(--shadow-card)" }}>
-                  {track.coverImage ? (
-                    <img src={track.coverImage} alt={track.title} className="absolute inset-0 w-full h-full object-cover rounded-2xl" />
-                  ) : (
-                    <>
-                      <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/15 via-brand-pink/5 to-brand-orange/15 group-hover:opacity-80 transition-opacity duration-300" />
-                      <Disc3 className="w-16 h-16 text-foreground/15" />
-                    </>
-                  )}
+                  <img src={track.coverImage || DEFAULT_COVER} alt={track.title} className="absolute inset-0 w-full h-full object-cover rounded-2xl" />
                   <input
                     ref={coverInputRef}
                     type="file"

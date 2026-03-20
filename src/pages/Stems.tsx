@@ -6,17 +6,8 @@ import { useTrack, type TrackStem } from "@/contexts/TrackContext";
 import { useNavigate } from "react-router-dom";
 import { SelectTrackForStemsModal } from "@/components/SelectTrackForStemsModal";
 
-import cover1 from "@/assets/covers/cover-1.jpg";
-import cover2 from "@/assets/covers/cover-2.jpg";
-import cover3 from "@/assets/covers/cover-3.jpg";
-import cover4 from "@/assets/covers/cover-4.jpg";
-import cover5 from "@/assets/covers/cover-5.jpg";
-import cover6 from "@/assets/covers/cover-6.jpg";
-
-const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
-
 // Use centralized constants
-import { STEM_TYPES, GENRES } from "@/lib/constants";
+import { STEM_TYPES, GENRES, DEFAULT_COVER } from "@/lib/constants";
 import type { StemType } from "@/lib/constants";
 
 interface FlatStem extends TrackStem {
@@ -398,7 +389,7 @@ export default function Stems() {
                 </thead>
                 <tbody>
                   {filtered.map((stem, idx) => {
-                    const coverSrc = stem.trackCover || covers[stem.trackCoverIdx % covers.length];
+                    const coverSrc = stem.trackCover || DEFAULT_COVER;
                     const typeClass = stemTypeColors[stem.type] || "bg-muted text-muted-foreground";
 
                     return (

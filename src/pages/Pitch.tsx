@@ -29,14 +29,7 @@ import { usePitches } from "@/contexts/PitchContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 
-import cover1 from "@/assets/covers/cover-1.jpg";
-import cover2 from "@/assets/covers/cover-2.jpg";
-import cover3 from "@/assets/covers/cover-3.jpg";
-import cover4 from "@/assets/covers/cover-4.jpg";
-import cover5 from "@/assets/covers/cover-5.jpg";
-import cover6 from "@/assets/covers/cover-6.jpg";
-
-const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
+import { DEFAULT_COVER } from "@/lib/constants";
 
 type PitchStatus = "Draft" | "Sent" | "Opened" | "Responded";
 
@@ -330,7 +323,7 @@ function DesktopPitchTable({
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 ring-1 ring-border/50">
-                        <img src={covers[p.coverIdx]} alt="" className="w-full h-full object-cover" />
+                        <img src={DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
@@ -440,7 +433,7 @@ function MobilePitchList({
           >
             <div className="p-4 flex items-start gap-3">
               <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0 ring-1 ring-border/50">
-                <img src={covers[p.coverIdx]} alt="" className="w-full h-full object-cover" />
+                <img src={DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">

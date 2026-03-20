@@ -6,6 +6,7 @@ import {
   Package, ListMusic, Clock, Play, Pause, FileText, PieChart, Users,
   Tag, Disc, Globe, Hash, Calendar, Headphones, ShieldOff, MessageSquare
 } from "lucide-react";
+import { DEFAULT_COVER } from "@/lib/constants";
 import { useSharedLinks } from "@/contexts/SharedLinksContext";
 import { useTrack } from "@/contexts/TrackContext";
 import { useContacts } from "@/contexts/ContactsContext";
@@ -299,13 +300,7 @@ export default function SharedStemAccess() {
                 <div key={track.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="text-[11px] text-muted-foreground font-mono w-5 text-right shrink-0">{i + 1}</span>
-                    {track.coverImage ? (
-                      <img src={track.coverImage} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                        <Music className="w-3.5 h-3.5 text-muted-foreground" />
-                      </div>
-                    )}
+                    <img src={track.coverImage || DEFAULT_COVER} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">{track.title}</p>
                       <p className="text-[11px] text-muted-foreground">{track.artist} · {track.duration}</p>

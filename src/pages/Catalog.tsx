@@ -7,7 +7,7 @@ import { FirstUseTooltip } from "@/components/FirstUseTooltip";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useEngagement } from "@/contexts/EngagementContext";
-import { GENRES, KEYS, MOODS, LANGUAGES, GENDERS } from "@/lib/constants";
+import { GENRES, KEYS, MOODS, LANGUAGES, GENDERS, DEFAULT_COVER } from "@/lib/constants";
 import { motion } from "framer-motion";
 import {
   Music,
@@ -46,14 +46,6 @@ import {
 import { PageShell } from "@/components/PageShell";
 import { MiniWaveform } from "@/components/MiniWaveform";
 
-import cover1 from "@/assets/covers/cover-1.jpg";
-import cover2 from "@/assets/covers/cover-2.jpg";
-import cover3 from "@/assets/covers/cover-3.jpg";
-import cover4 from "@/assets/covers/cover-4.jpg";
-import cover5 from "@/assets/covers/cover-5.jpg";
-import cover6 from "@/assets/covers/cover-6.jpg";
-
-const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
 
 const statuses = ["Available", "On Hold", "Released"];
 const bpmRanges = [
@@ -350,7 +342,7 @@ export default function Catalog() {
                           </td>
                           <td className="px-2 py-3">
                             <div className="flex items-center gap-3">
-                              <img src={track.coverImage || covers[track.coverIdx % covers.length]} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                              <img src={track.coverImage || DEFAULT_COVER} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                               <div className="min-w-0 flex-1">
                                 <p className="font-semibold text-foreground truncate text-[13px] tracking-tight leading-tight">{track.title}</p>
                                 <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>
@@ -459,7 +451,7 @@ export default function Catalog() {
                       {/* Cover art */}
                       <div className="relative aspect-square overflow-hidden">
                         <img
-                          src={track.coverImage || covers[track.coverIdx % covers.length]}
+                          src={track.coverImage || DEFAULT_COVER}
                           alt={track.title}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105"
                         />

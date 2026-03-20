@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X } from "lucide-react";
+import { DEFAULT_COVER } from "@/lib/constants";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
 interface SharedLinkData {
@@ -712,13 +713,7 @@ export default function SharedLinkPage() {
           <div className="rounded-2xl bg-card border border-border overflow-hidden" style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
             <div className="flex items-start gap-5 p-6">
               <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50">
-                {playlistData.cover_url ? (
-                  <img src={playlistData.cover_url} alt={playlistData.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-purple/10 via-transparent to-brand-orange/10">
-                    <ListMusic className="w-12 h-12 text-foreground/15" />
-                  </div>
-                )}
+                <img src={playlistData.cover_url || DEFAULT_COVER} alt={playlistData.name} className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1 pt-1">
                 <p className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1">Playlist</p>
@@ -773,13 +768,7 @@ export default function SharedLinkPage() {
 
                       {/* Cover */}
                       <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-secondary border border-border/50">
-                        {track.cover_url ? (
-                          <img src={track.cover_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Disc3 className="w-5 h-5 text-foreground/15" />
-                          </div>
-                        )}
+                        <img src={track.cover_url || DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
                       </div>
 
                       {/* Info */}
@@ -813,13 +802,7 @@ export default function SharedLinkPage() {
                   {activeTrack && (
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-secondary border border-border/50">
-                        {activeTrack.cover_url ? (
-                          <img src={activeTrack.cover_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Disc3 className="w-5 h-5 text-foreground/15" />
-                          </div>
-                        )}
+                        <img src={activeTrack.cover_url || DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-semibold text-foreground truncate">{activeTrack.title}</p>
@@ -1016,13 +999,7 @@ export default function SharedLinkPage() {
           <div className="rounded-2xl bg-card border border-border overflow-hidden" style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
             <div className="flex items-start gap-5 p-6">
               <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50">
-                {trackData.cover_url ? (
-                  <img src={trackData.cover_url} alt={trackData.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-purple/10 via-transparent to-brand-orange/10">
-                    <Disc3 className="w-12 h-12 text-foreground/15" />
-                  </div>
-                )}
+                <img src={trackData.cover_url || DEFAULT_COVER} alt={trackData.title} className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1 pt-1">
                 <p className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1">

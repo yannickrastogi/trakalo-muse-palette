@@ -4,14 +4,7 @@ import { Search, X, Music, ChevronRight } from "lucide-react";
 import { useTrack } from "@/contexts/TrackContext";
 import { useNavigate } from "react-router-dom";
 
-import cover1 from "@/assets/covers/cover-1.jpg";
-import cover2 from "@/assets/covers/cover-2.jpg";
-import cover3 from "@/assets/covers/cover-3.jpg";
-import cover4 from "@/assets/covers/cover-4.jpg";
-import cover5 from "@/assets/covers/cover-5.jpg";
-import cover6 from "@/assets/covers/cover-6.jpg";
-
-const covers = [cover1, cover2, cover3, cover4, cover5, cover6];
+import { DEFAULT_COVER } from "@/lib/constants";
 
 interface Props {
   open: boolean;
@@ -109,7 +102,7 @@ export function SelectTrackForStemsModal({ open, onClose }: Props) {
               ) : (
                 <div className="py-1">
                   {filtered.map((track) => {
-                    const coverSrc = track.coverImage || covers[track.coverIdx % covers.length];
+                    const coverSrc = track.coverImage || DEFAULT_COVER;
                     const stemCount = track.stems.length;
                     return (
                       <button

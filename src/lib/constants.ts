@@ -1,6 +1,8 @@
 // Centralized constants used across the platform.
 // Any change here automatically reflects in all menus, filters, and forms.
 
+export const DEFAULT_COVER = "/images/default-cover.png";
+
 export const GENRES = [
   "Afrobeats", "Afrohouse", "Ambient", "Blues", "Bouyon", "Caribbean", "Classical",
   "Country", "Dance", "Disco-Funk", "DnB", "Dubstep", "Electronic",
