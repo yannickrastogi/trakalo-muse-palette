@@ -255,27 +255,6 @@ export default function TrackDetail() {
     }
   }, [track, currentTrack, id, togglePlay, globalPlayTrack]);
 
-  if (!track) {
-    return (
-      <PageShell>
-        {hadTrackRef.current ? (
-          <div className="p-8 flex items-center justify-center gap-3 text-muted-foreground">
-            <Disc3 className="w-5 h-5 animate-spin" />
-            <span className="text-sm">Loading track...</span>
-          </div>
-        ) : (
-          <div className="p-8 text-center text-muted-foreground">Track not found.</div>
-        )}
-      </PageShell>
-    );
-  }
-
-  const statusColorMap: Record<string, string> = {
-    Available: "bg-emerald-500/15 text-emerald-400",
-    "On Hold": "bg-brand-orange/15 text-brand-orange",
-    Released: "bg-brand-purple/15 text-brand-purple",
-  };
-
   const numericId = track?.id;
   const engagement = numericId ? getTrackEngagement(numericId) : undefined;
   const trackComments = numericId ? getCommentsForTrack(numericId) : [];
@@ -302,6 +281,27 @@ export default function TrackDetail() {
     });
     return Array.from(map.values());
   }, [trackComments]);
+
+  if (!track) {
+    return (
+      <PageShell>
+        {hadTrackRef.current ? (
+          <div className="p-8 flex items-center justify-center gap-3 text-muted-foreground">
+            <Disc3 className="w-5 h-5 animate-spin" />
+            <span className="text-sm">Loading track...</span>
+          </div>
+        ) : (
+          <div className="p-8 text-center text-muted-foreground">Track not found.</div>
+        )}
+      </PageShell>
+    );
+  }
+
+  const statusColorMap: Record<string, string> = {
+    Available: "bg-emerald-500/15 text-emerald-400",
+    "On Hold": "bg-brand-orange/15 text-brand-orange",
+    Released: "bg-brand-purple/15 text-brand-purple",
+  };
 
   // Parse duration string to seconds
   const parseDuration = (dur: string): number => {
