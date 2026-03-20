@@ -76,6 +76,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
@@ -186,7 +187,7 @@ export default function TrackDetail() {
   const { permissions } = useRole();
   const { activeWorkspace } = useWorkspace();
   const navigate = useNavigate();
-  const { getTrackByUuid, updateTrack, deleteTrack } = useTrack();
+  const { getTrackByUuid, getTrack, updateTrack, updateTrackStatus, deleteTrack } = useTrack();
   const { getTrackEngagement } = useEngagement();
   const { getCommentsForTrack, getCommentCountForTrack, addComment } = useTrackReview();
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -199,6 +200,7 @@ export default function TrackDetail() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [shareExpanded, setShareExpanded] = useState(false);
+  const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
   const { teams } = useTeams();
 
   const trackData = id ? getTrackByUuid(id) : undefined;
@@ -353,9 +355,31 @@ export default function TrackDetail() {
               <div className="flex-1 min-w-0 space-y-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <span className={"inline-flex px-2.5 py-1 rounded-full text-xs font-medium " + (statusColorMap[track.status] || "bg-emerald-500/15 text-emerald-400")}>
-                      {track.status}
-                    </span>
+                    <Popover open={statusPopoverOpen} onOpenChange={setStatusPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <button className={"inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity " + (statusColorMap[track.status] || "bg-emerald-500/15 text-emerald-400")}>
+                          {track.status}
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-56 p-1.5">
+                        {statusOptions.map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => {
+                              if (opt.value !== track.status) {
+                                updateTrackStatus(track.id, opt.value, "Status updated");
+                              }
+                              setStatusPopoverOpen(false);
+                            }}
+                            className={"flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm transition-colors " + (opt.value === track.status ? opt.color + " font-medium" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}
+                          >
+                            <opt.icon className="w-4 h-4" />
+                            {opt.value}
+                          </button>
+                        ))}
+                      </PopoverContent>
+                    </Popover>
                     {track.isrc && <span className="text-xs text-muted-foreground">{track.isrc}</span>}
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{track.title}</h1>
@@ -587,11 +611,15 @@ export default function TrackDetail() {
                      <h3 className="text-lg font-semibold text-foreground mb-4">Engagement</h3>
                      <EngagementTab trackId={track.id} onSeek={handleCommentSeek} />
                    </section>
-                   <div className="border-t border-border" />
-                   <section>
-                     <h3 className="text-lg font-semibold text-foreground mb-4">Status</h3>
-                     <StatusTab trackId={track.id} />
-                   </section>
+                   {(getTrack(track.id)?.statusHistory || []).length > 0 && (
+                     <>
+                       <div className="border-t border-border" />
+                       <section>
+                         <h3 className="text-lg font-semibold text-foreground mb-4">Status History</h3>
+                         <StatusHistoryTimeline trackId={track.id} />
+                       </section>
+                     </>
+                   )}
                  </div>
                )}
                {activeTab === "review" && (
@@ -1445,6 +1473,35 @@ function StatusTab({ trackId }: { trackId: number }) {
         </div>
       </div>
     </SectionCard>
+  );
+}
+
+function StatusHistoryTimeline({ trackId }: { trackId: number }) {
+  const { getTrack } = useTrack();
+  const trackData = getTrack(trackId);
+  const statusHistory = trackData?.statusHistory || [];
+
+  return (
+    <div className="space-y-0">
+      {statusHistory.map((entry, i) => {
+        const opt = statusOptions.find((o) => o.value === entry.status);
+        const isLast = i === statusHistory.length - 1;
+        return (
+          <div key={i} className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <div className={"w-7 h-7 rounded-full flex items-center justify-center shrink-0 " + (isLast ? "bg-primary/15" : "bg-secondary")}>
+                {opt && <opt.icon className={"w-3.5 h-3.5 " + (isLast ? "text-primary" : "text-muted-foreground")} />}
+              </div>
+              {!isLast && <div className="w-px h-8 bg-border" />}
+            </div>
+            <div className="pb-6">
+              <p className="text-sm font-medium text-foreground">{entry.status}</p>
+              <p className="text-[11px] text-muted-foreground">{entry.date} · {entry.note}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
