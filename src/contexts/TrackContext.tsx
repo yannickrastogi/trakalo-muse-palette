@@ -245,7 +245,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
   // Fetch tracks from Supabase when workspace changes
   const fetchTracks = useCallback(async () => {
     if (!activeWorkspace || !user) {
-      setTracks([]);
+      // Don't clear tracks during transient auth/workspace revalidation
       setLoading(false);
       return;
     }
@@ -268,7 +268,6 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
       if (tracksRes.error) {
         console.error("Error fetching tracks:", tracksRes.error);
-        setTracks([]);
       } else {
         // Group stems by track_id
         const stemsByTrack: Record<string, TrackStem[]> = {};
@@ -317,7 +316,6 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       }
     } catch (err) {
       console.error("Unexpected error fetching tracks:", err);
-      setTracks([]);
     } finally {
       setLoading(false);
     }

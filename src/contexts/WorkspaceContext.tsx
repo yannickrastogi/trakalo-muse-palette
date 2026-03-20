@@ -27,14 +27,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // Fetch workspaces the user belongs to
   useEffect(() => {
     if (!user) {
-      setWorkspaces([]);
-      setActiveId(null);
-      setLoading(false);
+      // Don't reset if we already have workspaces (tab switch revalidation)
+      if (workspaces.length === 0) setLoading(false);
       return;
     }
 
     const fetchWorkspaces = async () => {
-      setLoading(true);
+      // Don't show loading spinner if we already have data (re-fetch in background)
+      if (workspaces.length === 0) setLoading(true);
       try {
         // Get workspace IDs the user is a member of
         const { data: memberships, error: memberError } = await supabase

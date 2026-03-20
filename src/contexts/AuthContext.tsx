@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 import { isEmailWhitelisted } from "@/lib/whitelist";
@@ -19,10 +19,11 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    const checkWhitelist = async (session: Session | null) => {
-      if (session?.user?.email && !isEmailWhitelisted(session.user.email)) {
+    const checkWhitelist = async (sess: Session | null) => {
+      if (sess?.user?.email && !isEmailWhitelisted(sess.user.email)) {
         await supabase.auth.signOut();
         toast.error("Trakalog is currently in private beta. Request access at hello@trakalog.com");
         setSession(null);
@@ -32,22 +33,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        const allowed = await checkWhitelist(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      // During revalidation (tab switch), ignore transient null sessions.
+      // Only clear session on an explicit SIGNED_OUT event.
+      if (!newSession && event !== "SIGNED_OUT" && initializedRef.current) {
+        return;
+      }
+      if (newSession) {
+        const allowed = await checkWhitelist(newSession);
         if (!allowed) return;
       }
-      setSession(session);
+      setSession(newSession);
       setLoading(false);
+      initializedRef.current = true;
     });
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        const allowed = await checkWhitelist(session);
+    supabase.auth.getSession().then(async ({ data: { session: initSession } }) => {
+      if (initSession) {
+        const allowed = await checkWhitelist(initSession);
         if (!allowed) return;
       }
-      setSession(session);
+      setSession(initSession);
       setLoading(false);
+      initializedRef.current = true;
     });
 
     return () => subscription.unsubscribe();
