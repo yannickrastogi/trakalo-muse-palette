@@ -111,7 +111,7 @@ const features = [
 const audiences = [
   { icon: Mic2, label: "Artists" },
   { icon: Music, label: "Producers & Songwriters" },
-  { icon: Building2, label: "Labels & A&R" },
+  { icon: Building2, label: "Labels, A&R & Managers" },
 ];
 
 export default function LandingPage() {
