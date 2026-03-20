@@ -29,9 +29,12 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="max-w-2xl mx-auto px-4 py-5 flex items-center justify-center">
-          <div className="flex items-center justify-center gap-3">
-            <img src={trakalogLogo} alt="Trakalog" className="h-10" />
-            <span className="text-xl font-bold tracking-wider uppercase" style={{ background: "linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Trakalog</span>
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-3">
+              <img src={trakalogLogo} alt="Trakalog" className="h-10" />
+              <span className="text-xl font-bold tracking-wider uppercase" style={{ background: "linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Trakalog</span>
+            </div>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 mt-1">Catalog Manager</span>
           </div>
         </div>
       </header>
