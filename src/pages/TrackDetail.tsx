@@ -192,6 +192,15 @@ export default function TrackDetail() {
 
   const track = trackData || dbTrack;
 
+  // Play/pause handler — must be before early return to respect Rules of Hooks
+  const handlePlayPause = useCallback(() => {
+    if (currentTrack?.uuid === id) {
+      togglePlay();
+    } else if (track) {
+      globalPlayTrack(track);
+    }
+  }, [track, currentTrack, id, togglePlay, globalPlayTrack]);
+
   if (!track) {
     return (
       <PageShell>
@@ -199,14 +208,6 @@ export default function TrackDetail() {
       </PageShell>
     );
   }
-  // Play/pause handler
-  const handlePlayPause = useCallback(() => {
-    if (currentTrack?.uuid === id) {
-      togglePlay();
-    } else {
-      globalPlayTrack(track);
-    }
-  }, [track, currentTrack, id, togglePlay, globalPlayTrack]);
 
   const statusColorMap: Record<string, string> = {
     Available: "bg-emerald-500/15 text-emerald-400",
