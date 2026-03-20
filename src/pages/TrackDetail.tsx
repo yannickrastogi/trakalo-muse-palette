@@ -67,6 +67,7 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquare,
+  X,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -192,6 +193,7 @@ export default function TrackDetail() {
   const [shareWithTeamOpen, setShareWithTeamOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [shareExpanded, setShareExpanded] = useState(false);
   const { teams } = useTeams();
 
   const trackData = id ? getTrackByUuid(id) : undefined;
@@ -381,53 +383,94 @@ export default function TrackDetail() {
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  {permissions.canEditOwnTracks && (
-                    <button
-                      onClick={() => setEditTrackModalOpen(true)}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 min-h-[44px]"
-                    >
-                      <Edit3 className="w-4 h-4" /> Edit Track
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setShareTrackModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
-                  >
-                    <Share2 className="w-4 h-4" /> Share Track
-                  </button>
-                  <button
-                    onClick={() => setDownloadModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
-                  >
-                    <Download className="w-4 h-4" /> Download
-                  </button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="flex items-center justify-center w-10 h-10 rounded-lg border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={() => setShareWithTeamOpen(true)}>
-                        <Users className="w-4 h-4 mr-2" /> Share with Team
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setShareModalOpen(true)}>
-                        <Layers className="w-4 h-4 mr-2" /> Share Stems
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSharePackModalOpen(true)}>
-                        <Package className="w-4 h-4 mr-2" /> Share Pack
-                      </DropdownMenuItem>
-                      {permissions.canEditOwnTracks && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} className="text-destructive focus:text-destructive">
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                <div className="pt-1">
+                  <AnimatePresence mode="wait" initial={false}>
+                    {!shareExpanded ? (
+                      <motion.div
+                        key="main-actions"
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -8 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex flex-wrap items-center gap-2"
+                      >
+                        {permissions.canEditOwnTracks && (
+                          <button
+                            onClick={() => setEditTrackModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 min-h-[44px]"
+                          >
+                            <Edit3 className="w-4 h-4" /> Edit Track
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setShareExpanded(true)}
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
+                        >
+                          <Share2 className="w-4 h-4" /> Share
+                        </button>
+                        <button
+                          onClick={() => setDownloadModalOpen(true)}
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
+                        >
+                          <Download className="w-4 h-4" /> Download
+                        </button>
+                        {permissions.canEditOwnTracks && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="flex items-center justify-center w-10 h-10 rounded-lg border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} className="text-destructive focus:text-destructive">
+                                <Trash2 className="w-4 h-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="share-actions"
+                        initial={{ opacity: 0, x: 8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 8 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex flex-wrap items-center gap-2"
+                      >
+                        <button
+                          onClick={() => setShareExpanded(false)}
+                          className="flex items-center justify-center w-10 h-10 rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => { setShareTrackModalOpen(true); setShareExpanded(false); }}
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
+                        >
+                          <Music className="w-4 h-4" /> Share Track
+                        </button>
+                        <button
+                          onClick={() => { setShareModalOpen(true); setShareExpanded(false); }}
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
+                        >
+                          <Layers className="w-4 h-4" /> Share Stems
+                        </button>
+                        <button
+                          onClick={() => { setSharePackModalOpen(true); setShareExpanded(false); }}
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
+                        >
+                          <Package className="w-4 h-4" /> Share Pack
+                        </button>
+                        <button
+                          onClick={() => { setShareWithTeamOpen(true); setShareExpanded(false); }}
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
+                        >
+                          <Users className="w-4 h-4" /> Share with Team
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </motion.div>
