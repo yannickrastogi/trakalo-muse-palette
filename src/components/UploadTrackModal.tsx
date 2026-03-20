@@ -131,7 +131,7 @@ function createTrackEntry(file: File): TrackEntry {
 }
 
 export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) {
-  const { tracks, addTrack, updateTrack } = useTrack();
+  const { tracks, addTrack, updateTrack, refreshTracks } = useTrack();
   const { teams } = useTeams();
   const { activeWorkspace } = useWorkspace();
   const [isSaving, setIsSaving] = useState(false);
@@ -465,7 +465,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           const { data: urlData } = supabase.storage
             .from("covers")
             .getPublicUrl(coverPath);
-          updateTrack(savedTrack.id, { coverImage: urlData.publicUrl });
+          // Update DB directly with uuid (same as TrackDetail.tsx),
+          // then refresh local state so UI reflects the change
+          await supabase
+            .from("tracks")
+            .update({ cover_url: urlData.publicUrl })
+            .eq("id", savedTrack.uuid);
+          await refreshTracks();
         }
         setUploadProgress(98);
       }
