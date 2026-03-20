@@ -4,6 +4,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useTeams } from "@/contexts/TeamContext";
 import { analyzeAudio, type AudioAnalysisResult } from "@/lib/audio-analysis";
+import { generateWaveform } from "@/lib/waveformGenerator";
 import { compressAudio, type CompressedAudio } from "@/lib/audio-compression";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -338,6 +339,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
     try {
       let audioUrl: string | undefined;
+      let waveformData: number[] | undefined;
       if (currentTrack.file && activeWorkspace) {
         const fileExt = currentTrack.file.name.split(".").pop() || "wav";
         const filePath = `${activeWorkspace.id}/${crypto.randomUUID()}.${fileExt}`;
@@ -355,6 +357,10 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           // Store the storage path, not a signed URL — TrackContext
           // will generate signed URLs on fetch
           audioUrl = filePath;
+          try {
+            var waveform = await generateWaveform(currentTrack.file, 200);
+            waveformData = waveform;
+          } catch (e) { console.error("Waveform generation error:", e); }
         }
       }
 
@@ -376,6 +382,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         originalFileSize: currentTrack.file.size,
         notes: currentTrack.notes,
         lyrics: currentTrack.lyrics || undefined,
+        waveformData: waveformData,
         splits: currentTrack.splits.filter((s) => s.name.trim()).map((s) => ({
           id: s.id,
           name: s.name,

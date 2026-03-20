@@ -34,6 +34,7 @@ interface TrackData {
   cover_url: string | null;
   audio_url: string | null;
   mood: string[] | null;
+  waveform_data: number[] | null;
 }
 
 interface PlaylistData {
@@ -47,6 +48,33 @@ function formatDuration(seconds: number): string {
   var m = Math.floor(seconds / 60);
   var s = Math.floor(seconds % 60);
   return m + ":" + (s < 10 ? "0" : "") + s;
+}
+
+function WaveformBar({ peaks, progress, onSeek }: { peaks: number[]; progress: number; onSeek: (e: React.MouseEvent<HTMLDivElement>) => void }) {
+  var barCount = peaks.length;
+  return (
+    <div
+      className="w-full cursor-pointer flex items-end gap-[1px]"
+      style={{ height: 48 }}
+      onClick={onSeek}
+    >
+      {peaks.map(function(peak, i) {
+        var pct = (i / barCount) * 100;
+        var active = pct < progress;
+        return (
+          <div
+            key={i}
+            className="rounded-sm flex-shrink-0"
+            style={{
+              width: 2,
+              height: Math.max(2, peak * 48),
+              background: active ? "#f97316" : "rgba(255,255,255,0.15)",
+            }}
+          />
+        );
+      })}
+    </div>
+  );
 }
 
 // Anon-only client: never picks up a stored user session, so RLS anon policies always apply
@@ -694,20 +722,24 @@ export default function SharedLinkPage() {
                     </div>
                   )}
 
-                  {/* Progress bar */}
-                  <div
-                    className="h-2 bg-secondary rounded-full cursor-pointer group relative"
-                    onClick={handleSeek}
-                  >
+                  {/* Progress bar / Waveform */}
+                  {activeTrack && activeTrack.waveform_data ? (
+                    <WaveformBar peaks={activeTrack.waveform_data} progress={progress} onSeek={handleSeek} />
+                  ) : (
                     <div
-                      className="h-full rounded-full transition-[width] duration-100 ease-linear"
-                      style={{ width: progress + "%", background: "var(--gradient-brand-horizontal)" }}
-                    />
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                      style={{ left: "calc(" + progress + "% - 6px)" }}
-                    />
-                  </div>
+                      className="h-2 bg-secondary rounded-full cursor-pointer group relative"
+                      onClick={handleSeek}
+                    >
+                      <div
+                        className="h-full rounded-full transition-[width] duration-100 ease-linear"
+                        style={{ width: progress + "%", background: "var(--gradient-brand-horizontal)" }}
+                      />
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                        style={{ left: "calc(" + progress + "% - 6px)" }}
+                      />
+                    </div>
+                  )}
 
                   {/* Controls row */}
                   <div className="flex items-center justify-between">
@@ -890,19 +922,23 @@ export default function SharedLinkPage() {
             {/* Player */}
             {(trackData.audio_url || slug) && (
               <div className="border-t border-border px-6 py-4 space-y-3">
-                <div
-                  className="h-2 bg-secondary rounded-full cursor-pointer group relative"
-                  onClick={handleSeek}
-                >
+                {trackData.waveform_data ? (
+                  <WaveformBar peaks={trackData.waveform_data} progress={progress} onSeek={handleSeek} />
+                ) : (
                   <div
-                    className="h-full rounded-full transition-[width] duration-100 ease-linear"
-                    style={{ width: progress + "%", background: "var(--gradient-brand-horizontal)" }}
-                  />
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                    style={{ left: "calc(" + progress + "% - 6px)" }}
-                  />
-                </div>
+                    className="h-2 bg-secondary rounded-full cursor-pointer group relative"
+                    onClick={handleSeek}
+                  >
+                    <div
+                      className="h-full rounded-full transition-[width] duration-100 ease-linear"
+                      style={{ width: progress + "%", background: "var(--gradient-brand-horizontal)" }}
+                    />
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                      style={{ left: "calc(" + progress + "% - 6px)" }}
+                    />
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
                     {formatDuration(currentTime)}

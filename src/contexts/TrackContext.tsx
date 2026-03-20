@@ -78,6 +78,7 @@ export interface TrackData extends WorkspaceScoped {
   stems: TrackStem[];
   splits: TrackSplit[];
   lyrics?: string;
+  waveformData?: number[];
   chapters?: TrackChapter[];
   statusHistory: TrackStatusEntry[];
 }
@@ -160,6 +161,7 @@ function mapRowToTrack(row: Record<string, unknown>, index: number, stems: Track
     stems,
     splits: (row.splits as TrackSplit[]) || [],
     lyrics: (row.lyrics as string) || undefined,
+    waveformData: row.waveform_data ? (row.waveform_data as number[]) : undefined,
     statusHistory: [],
   };
 }
@@ -364,6 +366,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           notes: trackInput.notes || null,
           splits: trackInput.splits || [],
           isrc: trackInput.isrc || null,
+          waveform_data: trackInput.waveformData || null,
         })
         .select()
         .single();
