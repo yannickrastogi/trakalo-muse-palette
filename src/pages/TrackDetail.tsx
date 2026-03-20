@@ -246,37 +246,7 @@ export default function TrackDetail() {
 
   const numericId = track?.id;
   const engagement = numericId ? getTrackEngagement(numericId) : undefined;
-  const internalComments = numericId ? getCommentsForTrack(numericId) : [];
-
-  // Fetch recipient comments from track_comments table
-  const [recipientComments, setRecipientComments] = useState<import("@/contexts/TrackReviewContext").TimecodedComment[]>([]);
-  useEffect(() => {
-    if (!track?.uuid) return;
-    supabase
-      .from("track_comments")
-      .select("*")
-      .eq("track_id", track.uuid)
-      .order("timestamp_sec", { ascending: true })
-      .then(({ data }) => {
-        if (!data) return;
-        setRecipientComments(data.map((c: any) => ({
-          id: c.id,
-          trackId: numericId || 0,
-          authorName: c.author_name,
-          authorEmail: c.author_email || undefined,
-          authorType: c.author_type as any,
-          commentText: c.content,
-          timestampSeconds: Number(c.timestamp_sec),
-          timestampLabel: formatTimestamp(Number(c.timestamp_sec)),
-          createdAt: c.created_at,
-          updatedAt: c.created_at,
-          isEdited: false,
-          sourceContext: "shared_link_review" as const,
-        })));
-      });
-  }, [track?.uuid, numericId]);
-
-  const trackComments = internalComments.concat(recipientComments);
+  const trackComments = numericId ? getCommentsForTrack(numericId) : [];
   const commentCount = trackComments.length;
 
   // Parse duration string to seconds

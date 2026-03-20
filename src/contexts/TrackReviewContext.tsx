@@ -79,7 +79,11 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
   const [comments, setComments] = useState<TimecodedComment[]>([]);
   const [notifications, setNotifications] = useState<CommentNotification[]>([]);
 
-  // Load comments from all tracks' waveform_data in the workspace
+  // Map track UUID → numeric trackId (index+1 based)
+  const [trackUuidToId, setTrackUuidToId] = useState<Record<string, number>>({});
+  const [trackIdToUuid, setTrackIdToUuid] = useState<Record<number, string>>({});
+
+  // Load comments from waveform_data + track_comments table
   const fetchComments = useCallback(async () => {
     if (!activeWorkspace || !user) {
       setComments([]);
@@ -89,7 +93,8 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase
       .from("tracks")
       .select("id, waveform_data")
-      .eq("workspace_id", activeWorkspace.id);
+      .eq("workspace_id", activeWorkspace.id)
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching track comments:", error);
@@ -97,11 +102,56 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Build UUID <-> numeric ID maps
+    const uuidToId: Record<string, number> = {};
+    const idToUuid: Record<number, string> = {};
+    (data || []).forEach((row, idx) => {
+      const numericId = idx + 1;
+      uuidToId[row.id] = numericId;
+      idToUuid[numericId] = row.id;
+    });
+    setTrackUuidToId(uuidToId);
+    setTrackIdToUuid(idToUuid);
+
+    // 1. Comments from waveform_data (legacy)
     const allComments: TimecodedComment[] = [];
     for (const row of data || []) {
       const wd = row.waveform_data as WaveformDataWithComments | null;
       if (wd?.comments && Array.isArray(wd.comments)) {
         allComments.push(...wd.comments);
+      }
+    }
+
+    // 2. Comments from track_comments table
+    const trackUuids = (data || []).map((r) => r.id);
+    if (trackUuids.length > 0) {
+      const { data: dbComments } = await supabase
+        .from("track_comments")
+        .select("*")
+        .in("track_id", trackUuids)
+        .order("created_at", { ascending: true });
+
+      if (dbComments) {
+        for (const c of dbComments) {
+          const numId = uuidToId[c.track_id];
+          if (!numId) continue;
+          // Skip if already exists (by id)
+          if (allComments.some((existing) => existing.id === c.id)) continue;
+          allComments.push({
+            id: c.id,
+            trackId: numId,
+            authorName: c.author_name,
+            authorEmail: c.author_email || undefined,
+            authorType: (c.author_type || "guest_recipient") as AuthorType,
+            commentText: c.content,
+            timestampSeconds: Number(c.timestamp_sec),
+            timestampLabel: formatTimestamp(Number(c.timestamp_sec)),
+            createdAt: c.created_at,
+            updatedAt: c.created_at,
+            isEdited: false,
+            sourceContext: "shared_link_review" as SourceContext,
+          });
+        }
       }
     }
 
@@ -168,7 +218,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
     setComments((prev) => {
       const updated = [...prev, newComment];
 
-      // Persist async
+      // Persist to waveform_data (legacy)
       getTrackUuid(data.trackId).then((uuid) => {
         if (uuid) {
           const trackComments = updated.filter((c) => c.trackId === data.trackId);
@@ -178,6 +228,21 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
 
       return updated;
     });
+
+    // Also persist to track_comments table
+    const trackUuid = trackIdToUuid[data.trackId];
+    if (trackUuid) {
+      supabase.from("track_comments").insert({
+        track_id: trackUuid,
+        author_name: data.authorName,
+        author_email: data.authorEmail || null,
+        author_type: data.authorType,
+        timestamp_sec: data.timestampSeconds,
+        content: data.commentText,
+      }).then(({ error: insertErr }) => {
+        if (insertErr) console.error("Error inserting to track_comments:", insertErr);
+      });
+    }
 
     // Generate notification for non-owner comments
     if (data.authorType !== "owner") {
@@ -196,7 +261,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       setNotifications((prev) => [...prev, notification]);
     }
     return newComment;
-  }, [getTrackUuid, persistCommentsForTrack]);
+  }, [getTrackUuid, persistCommentsForTrack, trackIdToUuid]);
 
   const editComment = useCallback((commentId: string, newText: string) => {
     setComments((prev) => {
@@ -234,6 +299,12 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
 
       return updated;
     });
+
+    // Also delete from track_comments table
+    supabase.from("track_comments").delete().eq("id", commentId)
+      .then(({ error: delErr }) => {
+        if (delErr) console.error("Error deleting from track_comments:", delErr);
+      });
   }, [getTrackUuid, persistCommentsForTrack]);
 
   const getFilteredComments = useCallback(
