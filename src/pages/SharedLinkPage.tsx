@@ -196,7 +196,7 @@ export default function SharedLinkPage() {
           var trackIds = ptRows.map(function(r) { return r.track_id; });
           var { data: tracks } = await anonSupabase
             .from("tracks")
-            .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood")
+            .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood, waveform_data")
             .in("id", trackIds);
 
           if (tracks) {
@@ -213,7 +213,7 @@ export default function SharedLinkPage() {
         // Single track
         var { data: track } = await anonSupabase
           .from("tracks")
-          .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood")
+          .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood, waveform_data")
           .eq("id", link.track_id)
           .single();
 
