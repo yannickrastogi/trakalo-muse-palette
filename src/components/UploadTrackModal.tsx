@@ -452,29 +452,22 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       });
       setUploadProgress(90);
 
-      // Upload cover art if provided (now that we have track_id)
+      // Upload cover art if provided — same logic as TrackDetail.tsx
       if (savedTrack && currentTrack.coverFile && activeWorkspace) {
         setUploadStage("Uploading cover...");
-        const coverExt = currentTrack.coverFile.name.split(".").pop() || "jpg";
-        const coverPath = activeWorkspace.id + "/" + savedTrack.uuid + "." + coverExt;
-        const { error: coverUploadError } = await uploadFileWithProgress(
-          "covers",
-          coverPath,
-          currentTrack.coverFile,
-          currentTrack.coverFile.type,
-          (pct) => setUploadProgress(90 + Math.round(pct * 0.08)), // 90–98%
-          true,
-        );
-        if (coverUploadError) {
-          console.error("Error uploading cover:", coverUploadError);
+        const coverPath = activeWorkspace.id + "/" + savedTrack.uuid + ".jpg";
+        const { error: coverError } = await supabase.storage
+          .from("covers")
+          .upload(coverPath, currentTrack.coverFile, { upsert: true, contentType: currentTrack.coverFile.type });
+        if (coverError) {
+          console.error("Error uploading cover:", coverError);
         } else {
           const { data: urlData } = supabase.storage
             .from("covers")
             .getPublicUrl(coverPath);
-          if (urlData?.publicUrl) {
-            await updateTrack(savedTrack.id, { coverImage: urlData.publicUrl });
-          }
+          updateTrack(savedTrack.id, { coverImage: urlData.publicUrl });
         }
+        setUploadProgress(98);
       }
 
       setUploadProgress(100);
