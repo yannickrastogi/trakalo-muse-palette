@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { useTeams } from "@/contexts/TeamContext";
 import { analyzeAudio, type AudioAnalysisResult } from "@/lib/audio-analysis";
 import { generateWaveform } from "@/lib/waveformGenerator";
@@ -24,6 +24,7 @@ import {
   Loader2,
   AlertCircle,
   ImagePlus,
+  CheckCircle2,
 } from "lucide-react";
 import { PerformerCreditsSection } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
@@ -134,6 +135,9 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const { teams } = useTeams();
   const { activeWorkspace } = useWorkspace();
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState("");
+  const [uploadComplete, setUploadComplete] = useState(false);
 
   // Phase: "upload" (drag & drop files) → "edit" (per-track metadata) → done
   const [phase, setPhase] = useState<"upload" | "edit">("upload");
@@ -334,38 +338,88 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     setIsPlayingPreview(!isPlayingPreview);
   }, [isPlayingPreview]);
 
+  // ─── XHR upload with progress ─────────────────────────────
+
+  const uploadFileWithProgress = useCallback((
+    bucket: string,
+    path: string,
+    file: File,
+    contentType: string,
+    onProgress: (pct: number) => void,
+    upsert = false,
+  ): Promise<{ error: string | null }> => {
+    return new Promise(async (resolve) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || SUPABASE_PUBLISHABLE_KEY;
+
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      });
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({ error: null });
+        } else {
+          resolve({ error: "Upload failed with status " + xhr.status });
+        }
+      });
+      xhr.addEventListener("error", () => resolve({ error: "Network error" }));
+
+      const url = SUPABASE_URL + "/storage/v1/object/" + bucket + "/" + path;
+      xhr.open("POST", url, true);
+      xhr.setRequestHeader("Authorization", "Bearer " + token);
+      xhr.setRequestHeader("apikey", SUPABASE_PUBLISHABLE_KEY);
+      xhr.setRequestHeader("Content-Type", contentType);
+      if (upsert) xhr.setRequestHeader("x-upsert", "true");
+      xhr.send(file);
+    });
+  }, []);
+
   // ─── Save ──────────────────────────────────────────────────
 
   const saveCurrentTrack = useCallback(async () => {
     if (!currentTrack || isSaving) return;
     setIsSaving(true);
+    setUploadProgress(0);
+    setUploadStage("Uploading audio...");
+    setUploadComplete(false);
 
     try {
+      // ── Stage 1: Upload audio (0–60%) ──
       let audioUrl: string | undefined;
       let waveformData: number[] | undefined;
       if (currentTrack.file && activeWorkspace) {
         const fileExt = currentTrack.file.name.split(".").pop() || "wav";
-        const filePath = `${activeWorkspace.id}/${crypto.randomUUID()}.${fileExt}`;
+        const filePath = activeWorkspace.id + "/" + crypto.randomUUID() + "." + fileExt;
 
-        const { error: uploadError } = await supabase.storage
-          .from("tracks")
-          .upload(filePath, currentTrack.file, {
-            contentType: currentTrack.file.type || "audio/wav",
-            upsert: false,
-          });
+        const { error: uploadError } = await uploadFileWithProgress(
+          "tracks",
+          filePath,
+          currentTrack.file,
+          currentTrack.file.type || "audio/wav",
+          (pct) => setUploadProgress(Math.round(pct * 0.6)), // 0–60%
+        );
 
         if (uploadError) {
           console.error("Error uploading audio:", uploadError);
         } else {
-          // Store the storage path, not a signed URL — TrackContext
-          // will generate signed URLs on fetch
           audioUrl = filePath;
-          try {
-            var waveform = await generateWaveform(currentTrack.file, 200);
-            waveformData = waveform;
-          } catch (e) { console.error("Waveform generation error:", e); }
         }
       }
+      setUploadProgress(60);
+
+      // ── Stage 2: Generate waveform (60–85%) ──
+      setUploadStage("Generating waveform...");
+      setUploadProgress(65);
+      if (audioUrl && currentTrack.file) {
+        try {
+          waveformData = await generateWaveform(currentTrack.file, 200);
+        } catch (e) { console.error("Waveform generation error:", e); }
+      }
+      setUploadProgress(85);
+
+      // ── Stage 4: Save track (85–100%) ──
+      setUploadStage("Saving track...");
 
       const savedTrack = await addTrack({
         title: currentTrack.title.trim() || "Untitled",
@@ -396,17 +450,21 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           publisher: s.publisher,
         })),
       });
+      setUploadProgress(90);
 
-      // Upload cover art if provided
+      // Upload cover art if provided (now that we have track_id)
       if (savedTrack && currentTrack.coverFile && activeWorkspace) {
+        setUploadStage("Uploading cover...");
         const coverExt = currentTrack.coverFile.name.split(".").pop() || "jpg";
         const coverPath = activeWorkspace.id + "/" + savedTrack.uuid + "." + coverExt;
-        const { error: coverUploadError } = await supabase.storage
-          .from("covers")
-          .upload(coverPath, currentTrack.coverFile, {
-            contentType: currentTrack.coverFile.type,
-            upsert: true,
-          });
+        const { error: coverUploadError } = await uploadFileWithProgress(
+          "covers",
+          coverPath,
+          currentTrack.coverFile,
+          currentTrack.coverFile.type,
+          (pct) => setUploadProgress(90 + Math.round(pct * 0.08)), // 90–98%
+          true,
+        );
         if (coverUploadError) {
           console.error("Error uploading cover:", coverUploadError);
         } else {
@@ -422,18 +480,29 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         }
       }
 
+      setUploadProgress(100);
+      setUploadStage("Track uploaded!");
+      setUploadComplete(true);
+
       // Fire-and-forget: compress audio to MP3 preview in background
       if (savedTrack && audioUrl) {
-        fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/compress-audio", {
+        fetch(SUPABASE_URL + "/functions/v1/compress-audio", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
-            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik",
+            "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+            "apikey": SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({ track_id: savedTrack.uuid, audio_path: audioUrl }),
         }).catch((err) => console.error("Background audio compression failed:", err));
       }
+
+      // Show success for 1.5s then proceed
+      await new Promise((r) => setTimeout(r, 1500));
+
+      setUploadComplete(false);
+      setUploadProgress(0);
+      setUploadStage("");
 
       if (currentIdx < queue.length - 1) {
         setCurrentIdx(currentIdx + 1);
@@ -447,8 +516,11 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       console.error("Error saving track:", err);
     } finally {
       setIsSaving(false);
+      setUploadProgress(0);
+      setUploadStage("");
+      setUploadComplete(false);
     }
-  }, [currentTrack, currentIdx, queue, addTrack, onOpenChange, isSaving, activeWorkspace]);
+  }, [currentTrack, currentIdx, queue, addTrack, onOpenChange, isSaving, activeWorkspace, uploadFileWithProgress]);
 
   // ─── Navigation ────────────────────────────────────────────
 
@@ -477,8 +549,12 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   // ─── Render ────────────────────────────────────────────────
 
   return (
-    <Dialog open={open} onOpenChange={(val) => { if (!val) handleReset(); onOpenChange(val); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[90vh] h-[100dvh] sm:h-auto overflow-hidden flex flex-col p-0 gap-0 bg-card border-border w-full sm:w-auto">
+    <Dialog open={open} onOpenChange={(val) => { if (isSaving) return; if (!val) handleReset(); onOpenChange(val); }}>
+      <DialogContent
+        className="max-w-2xl max-h-[90vh] sm:max-h-[90vh] h-[100dvh] sm:h-auto overflow-hidden flex flex-col p-0 gap-0 bg-card border-border w-full sm:w-auto"
+        onInteractOutside={(e) => { if (isSaving) e.preventDefault(); }}
+        onEscapeKeyDown={(e) => { if (isSaving) e.preventDefault(); }}
+      >
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border space-y-3">
           <DialogTitle className="text-lg font-bold text-foreground tracking-tight">
@@ -648,70 +724,91 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border flex items-center justify-between">
-          {phase === "upload" ? (
-            <>
-              <span className="text-2xs text-muted-foreground">
-                {queue.length} / {MAX_TRACKS} tracks
-              </span>
-              <button
-                onClick={startEditing}
-                disabled={queue.length === 0 || allProcessing}
-                className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {allProcessing ? (
-                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing…</>
-                ) : (
-                  <>Continue <ChevronRight className="w-3.5 h-3.5" /></>
-                )}
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => {
-                  if (editStep > 0) setEditStep(editStep - 1);
-                  else if (currentIdx > 0) {
-                    setCurrentIdx(currentIdx - 1);
-                    setEditStep(EDIT_STEPS.length - 1);
-                  } else {
-                    setPhase("upload");
-                  }
-                }}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" /> Back
-              </button>
-              {editStep < EDIT_STEPS.length - 1 ? (
+        <div className="px-6 py-4 border-t border-border">
+          {isSaving ? (
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setEditStep(editStep + 1)}
-                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors border border-border hover:border-border/80"
-                  >
-                    Skip
-                  </button>
-                  <button
-                    onClick={() => setEditStep(editStep + 1)}
-                    className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold"
-                  >
-                    Next <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+                  {uploadComplete ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <Loader2 className="w-4 h-4 animate-spin text-brand-orange" />
+                  )}
+                  <span className={`text-[13px] font-semibold ${uploadComplete ? "text-emerald-400" : "text-foreground"}`}>
+                    {uploadStage}
+                  </span>
                 </div>
+                <span className="text-[13px] font-bold tabular-nums text-foreground">{uploadProgress}%</span>
+              </div>
+              <Progress value={uploadProgress} className="h-2" />
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              {phase === "upload" ? (
+                <>
+                  <span className="text-2xs text-muted-foreground">
+                    {queue.length} / {MAX_TRACKS} tracks
+                  </span>
+                  <button
+                    onClick={startEditing}
+                    disabled={queue.length === 0 || allProcessing}
+                    className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {allProcessing ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing…</>
+                    ) : (
+                      <>Continue <ChevronRight className="w-3.5 h-3.5" /></>
+                    )}
+                  </button>
+                </>
               ) : (
-                <button
-                  onClick={saveCurrentTrack}
-                  className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  {currentIdx < queue.length - 1
-                    ? `Save & Next (${currentIdx + 2}/${queue.length})`
-                    : queue.length > 1
-                    ? "Save All to Catalog"
-                    : "Save Track to Catalog"
-                  }
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      if (editStep > 0) setEditStep(editStep - 1);
+                      else if (currentIdx > 0) {
+                        setCurrentIdx(currentIdx - 1);
+                        setEditStep(EDIT_STEPS.length - 1);
+                      } else {
+                        setPhase("upload");
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" /> Back
+                  </button>
+                  {editStep < EDIT_STEPS.length - 1 ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setEditStep(editStep + 1)}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors border border-border hover:border-border/80"
+                      >
+                        Skip
+                      </button>
+                      <button
+                        onClick={() => setEditStep(editStep + 1)}
+                        className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold"
+                      >
+                        Next <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={saveCurrentTrack}
+                      className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      {currentIdx < queue.length - 1
+                        ? `Save & Next (${currentIdx + 2}/${queue.length})`
+                        : queue.length > 1
+                        ? "Save All to Catalog"
+                        : "Save Track to Catalog"
+                      }
+                    </button>
+                  )}
+                </>
               )}
-            </>
+            </div>
           )}
         </div>
       </DialogContent>
