@@ -208,9 +208,18 @@ export default function TrackDetail() {
   const trackData = id ? getTrackByUuid(id) : undefined;
 
   const [dbTrack, setDbTrack] = useState<any>(null);
+  const dbFetchedRef = useRef<string | null>(null);
 
   useEffect(function() {
-    if (trackData || !id) return;
+    if (!id) return;
+    // Already fetched for this id, or context has the track
+    if (dbFetchedRef.current === id) return;
+    if (trackData) {
+      dbFetchedRef.current = id;
+      return;
+    }
+    // Fetch from DB as fallback
+    dbFetchedRef.current = id;
     supabase
       .from("tracks")
       .select("*")
@@ -220,6 +229,14 @@ export default function TrackDetail() {
         if (res.data) setDbTrack(mapRowToTrack(res.data as Record<string, unknown>, 0));
       });
   }, [id, trackData]);
+
+  // Reset when navigating to a different track
+  useEffect(function() {
+    return function() {
+      dbFetchedRef.current = null;
+      setDbTrack(null);
+    };
+  }, [id]);
 
   const track = trackData || dbTrack;
 
