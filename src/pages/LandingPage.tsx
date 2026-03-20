@@ -240,13 +240,13 @@ export default function LandingPage() {
           className="text-center"
         >
           <motion.p variants={fadeUp} className="text-sm text-muted-foreground font-medium mb-8">Built for music professionals</motion.p>
-          <motion.div variants={fadeUp} className="flex items-center justify-center gap-8 sm:gap-14">
+          <motion.div variants={fadeUp} className="grid grid-cols-3 max-w-xl mx-auto">
             {audiences.map((a) => (
               <div key={a.label} className="flex flex-col items-center gap-2.5">
                 <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center">
                   <a.icon className="w-6 h-6 text-muted-foreground" />
                 </div>
-                <span className="text-sm font-medium text-foreground">{a.label}</span>
+                <span className="text-sm font-medium text-foreground text-center">{a.label}</span>
               </div>
             ))}
           </motion.div>
