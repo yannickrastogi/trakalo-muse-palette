@@ -183,12 +183,11 @@ export default function LandingPage() {
             <div className="w-2.5 h-2.5 rounded-full bg-brand-orange/40" />
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/40" />
           </div>
-          <div className="aspect-[16/9] sm:aspect-[2/1] bg-gradient-to-br from-brand-purple/8 via-brand-pink/4 to-brand-orange/8 flex items-center justify-center">
-            <div className="text-center space-y-3">
-              <Disc3 className="w-16 h-16 text-foreground/10 mx-auto" />
-              <p className="text-sm text-muted-foreground/40 font-medium">App Preview</p>
-            </div>
-          </div>
+          <img
+            src="/images/app-preview.png"
+            alt="Trakalog App Preview"
+            className="w-full h-auto rounded-b-2xl"
+          />
         </motion.div>
       </motion.section>
 
