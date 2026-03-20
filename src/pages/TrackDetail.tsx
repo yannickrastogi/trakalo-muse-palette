@@ -165,7 +165,12 @@ export default function TrackDetail() {
   const isThisTrackPlaying = currentTrack?.uuid === id && globalIsPlaying;
   const currentProgress = currentTrack?.uuid === id ? globalProgress : 0;
 
-  const [activeTab, setActiveTab] = useState<string>(searchParams.get("tab") || "lyrics");
+  const tabParamMap: Record<string, string> = {
+    splits: "details", metadata: "details", paperwork: "details",
+    pitches: "activity", engagement: "activity", status: "activity",
+  };
+  const rawTab = searchParams.get("tab") || "lyrics";
+  const [activeTab, setActiveTab] = useState<string>(tabParamMap[rawTab] || rawTab);
   const shouldAutoUpload = searchParams.get("upload") === "true";
   const shouldAutoEdit = searchParams.get("edit") === "true";
   const [waveformComposerOpen, setWaveformComposerOpen] = useState(false);
@@ -284,13 +289,9 @@ export default function TrackDetail() {
   const tabs = [
     { id: "lyrics", label: "Lyrics" },
     { id: "stems", label: "Stems" },
-    { id: "splits", label: "Splits" },
-    { id: "metadata", label: "Metadata" },
-    { id: "paperwork", label: "Paperwork" },
-    { id: "pitches", label: "Pitch History" },
+    { id: "details", label: "Details" },
+    { id: "activity", label: engagement ? "Activity (" + engagement.totalPlays + ")" : "Activity" },
     { id: "review", label: commentCount ? "Review (" + commentCount + ")" : "Review" },
-    { id: "engagement", label: engagement ? "Engagement (" + engagement.totalPlays + ")" : "Engagement" },
-    { id: "status", label: "Status" },
   ];
 
   return (
@@ -557,11 +558,42 @@ export default function TrackDetail() {
             <motion.div variants={item}>
               {activeTab === "lyrics" && <LyricsTab trackId={track.id} />}
                {activeTab === "stems" && <StemsTab trackId={track.id} autoOpenUpload={shouldAutoUpload} />}
-               {activeTab === "splits" && <SplitsTab trackId={track.id} />}
-               {activeTab === "engagement" && <EngagementTab trackId={track.id} onSeek={handleCommentSeek} />}
-               {activeTab === "metadata" && <OverviewTab trackId={track.id} onEdit={() => setEditTrackModalOpen(true)} />}
-               {activeTab === "paperwork" && <PaperworkTab />}
-               {activeTab === "pitches" && <PitchHistoryTab trackId={track.id} />}
+               {activeTab === "details" && (
+                 <div className="space-y-10">
+                   <section>
+                     <h3 className="text-lg font-semibold text-foreground mb-4">Splits</h3>
+                     <SplitsTab trackId={track.id} />
+                   </section>
+                   <div className="border-t border-border" />
+                   <section>
+                     <h3 className="text-lg font-semibold text-foreground mb-4">Metadata</h3>
+                     <OverviewTab trackId={track.id} onEdit={() => setEditTrackModalOpen(true)} />
+                   </section>
+                   <div className="border-t border-border" />
+                   <section>
+                     <h3 className="text-lg font-semibold text-foreground mb-4">Paperwork</h3>
+                     <PaperworkTab />
+                   </section>
+                 </div>
+               )}
+               {activeTab === "activity" && (
+                 <div className="space-y-10">
+                   <section>
+                     <h3 className="text-lg font-semibold text-foreground mb-4">Pitch History</h3>
+                     <PitchHistoryTab trackId={track.id} />
+                   </section>
+                   <div className="border-t border-border" />
+                   <section>
+                     <h3 className="text-lg font-semibold text-foreground mb-4">Engagement</h3>
+                     <EngagementTab trackId={track.id} onSeek={handleCommentSeek} />
+                   </section>
+                   <div className="border-t border-border" />
+                   <section>
+                     <h3 className="text-lg font-semibold text-foreground mb-4">Status</h3>
+                     <StatusTab trackId={track.id} />
+                   </section>
+                 </div>
+               )}
                {activeTab === "review" && (
                  <TrackReviewPanel
                    trackId={track.id}
@@ -572,7 +604,6 @@ export default function TrackDetail() {
                    isPlaying={isThisTrackPlaying}
                  />
                )}
-               {activeTab === "status" && <StatusTab trackId={track.id} />}
              </motion.div>
           </motion.div>
       <ShareModal
