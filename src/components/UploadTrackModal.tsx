@@ -23,6 +23,7 @@ import {
   Users,
   Loader2,
   AlertCircle,
+  ImagePlus,
 } from "lucide-react";
 import { PerformerCreditsSection } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
@@ -86,6 +87,7 @@ interface TrackEntry {
   splits: Split[];
   lyrics: string;
   sharedTeams: string[];
+  coverFile: File | null;
   // Status
   metadataComplete: boolean;
 }
@@ -122,6 +124,7 @@ function createTrackEntry(file: File): TrackEntry {
     splits: [{ id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
     lyrics: "",
     sharedTeams: [],
+    coverFile: null,
     metadataComplete: false,
   };
 }
@@ -394,6 +397,31 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         })),
       });
 
+      // Upload cover art if provided
+      if (savedTrack && currentTrack.coverFile && activeWorkspace) {
+        const coverExt = currentTrack.coverFile.name.split(".").pop() || "jpg";
+        const coverPath = activeWorkspace.id + "/" + savedTrack.uuid + "." + coverExt;
+        const { error: coverUploadError } = await supabase.storage
+          .from("covers")
+          .upload(coverPath, currentTrack.coverFile, {
+            contentType: currentTrack.coverFile.type,
+            upsert: true,
+          });
+        if (coverUploadError) {
+          console.error("Error uploading cover:", coverUploadError);
+        } else {
+          const { data: urlData } = supabase.storage
+            .from("covers")
+            .getPublicUrl(coverPath);
+          if (urlData?.publicUrl) {
+            await supabase
+              .from("tracks")
+              .update({ cover_url: urlData.publicUrl })
+              .eq("id", savedTrack.id);
+          }
+        }
+      }
+
       // Fire-and-forget: compress audio to MP3 preview in background
       if (savedTrack && audioUrl) {
         fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/compress-audio", {
@@ -562,6 +590,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   addDetailEntry={addDetailEntry} removeDetailEntry={removeDetailEntry}
                   analysisResult={currentTrack.analysisResult}
                   analyzing={currentTrack.analyzing}
+                  coverFile={currentTrack.coverFile}
+                  setCoverFile={(f) => updateCurrent({ coverFile: f })}
                 />
               )}
               {phase === "edit" && currentTrack && editStep === 1 && (
@@ -598,6 +628,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   audioFile={currentTrack.file} stems={currentTrack.stems}
                   splits={currentTrack.splits} totalSplit={totalSplit}
                   details={currentTrack.details} lyrics={currentTrack.lyrics}
+                  coverFile={currentTrack.coverFile}
                 />
               )}
               {phase === "edit" && currentTrack && editStep === 5 && (
@@ -852,6 +883,7 @@ function StepInfo({
   language, setLanguage, notes, setNotes,
   details, updateDetail, addDetailEntry, removeDetailEntry,
   analysisResult, analyzing,
+  coverFile, setCoverFile,
 }: {
   title: string; setTitle: (v: string) => void;
   artist: string; setArtist: (v: string) => void;
@@ -866,11 +898,73 @@ function StepInfo({
   addDetailEntry: (key: string) => void; removeDetailEntry: (key: string, index: number) => void;
   analysisResult: AudioAnalysisResult | null;
   analyzing: boolean;
+  coverFile: File | null;
+  setCoverFile: (f: File | null) => void;
 }) {
   const [showDetails, setShowDetails] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const coverPreviewUrl = coverFile ? URL.createObjectURL(coverFile) : null;
+
+  const handleCoverSelect = (file: File) => {
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) return;
+    if (file.size > 5 * 1024 * 1024) return; // 5MB max
+    setCoverFile(file);
+  };
 
   return (
     <div className="space-y-4">
+      {/* Cover Art */}
+      <div className="space-y-1.5">
+        <FieldLabel>Cover Art <span className="text-muted-foreground/50 normal-case tracking-normal font-normal">(optional)</span></FieldLabel>
+        <div className="flex items-start gap-4">
+          <div
+            onClick={() => coverInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const file = e.dataTransfer.files?.[0];
+              if (file) handleCoverSelect(file);
+            }}
+            className="w-24 h-24 rounded-lg border-2 border-dashed border-border hover:border-brand-orange/30 flex items-center justify-center cursor-pointer transition-all group overflow-hidden shrink-0"
+          >
+            {coverPreviewUrl ? (
+              <img src={coverPreviewUrl} alt="Cover preview" className="w-full h-full object-cover" />
+            ) : (
+              <div className="flex flex-col items-center gap-1">
+                <ImagePlus className="w-6 h-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
+                <span className="text-[9px] text-muted-foreground group-hover:text-brand-orange transition-colors">Add cover</span>
+              </div>
+            )}
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleCoverSelect(file);
+                e.target.value = "";
+              }}
+            />
+          </div>
+          {coverFile && (
+            <div className="flex flex-col gap-1 pt-1">
+              <p className="text-[13px] font-medium text-foreground truncate max-w-[200px]">{coverFile.name}</p>
+              <p className="text-2xs text-muted-foreground">{formatFileSize(coverFile.size)}</p>
+              <button
+                onClick={() => setCoverFile(null)}
+                className="text-2xs text-destructive hover:text-destructive/80 font-semibold mt-1 self-start"
+              >
+                Remove
+              </button>
+            </div>
+          )}
+        </div>
+        <p className="text-[10px] text-muted-foreground/50">JPG, PNG or WebP · max 5 MB</p>
+      </div>
+
       {/* Smart analysis banner */}
       {(analyzing || analysisResult) && (
         <div className="rounded-lg border border-border bg-card p-3 space-y-2">
@@ -1231,13 +1325,14 @@ function StepLyrics({
 
 function StepReview({
   title, artist, bpm, trackKey, genre, mood, voice, language, notes,
-  audioFile, stems, splits, totalSplit, details, lyrics,
+  audioFile, stems, splits, totalSplit, details, lyrics, coverFile,
 }: {
   title: string; artist: string; bpm: string; trackKey: string;
   genre: string; mood: string[]; voice: string; language: string; notes: string;
   audioFile: File | null; stems: StemFile[]; splits: Split[]; totalSplit: number;
   details: Record<string, string[]>;
   lyrics?: string;
+  coverFile?: File | null;
 }) {
   const ALL_DETAIL_FIELDS = [
     { key: "producers", label: "Producer(s)" },
@@ -1269,6 +1364,15 @@ function StepReview({
       {/* Info */}
       <div className="rounded-xl bg-secondary/50 border border-border p-4 space-y-2">
         <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Info</p>
+        {coverFile && (
+          <div className="flex items-center gap-3 pb-2">
+            <img src={URL.createObjectURL(coverFile)} alt="Cover" className="w-16 h-16 rounded-lg object-cover" />
+            <div>
+              <p className="text-2xs text-muted-foreground font-medium">Cover Art</p>
+              <p className="text-[13px] font-medium text-foreground truncate max-w-[200px]">{coverFile.name}</p>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[13px]">
           <ReviewRow label="Title" value={title} />
           <ReviewRow label="Artist" value={artist} />
