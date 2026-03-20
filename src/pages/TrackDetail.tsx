@@ -425,7 +425,8 @@ export default function TrackDetail() {
                   </button>
                   <button
                     onClick={handlePlayPause}
-                    className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                    disabled={!track.previewUrl && !track.originalFileUrl && !isThisTrackPlaying}
+                    className={"w-10 h-10 rounded-full flex items-center justify-center transition-colors " + (!track.previewUrl && !track.originalFileUrl && !isThisTrackPlaying ? "bg-muted text-muted-foreground cursor-default" : "bg-primary text-primary-foreground hover:bg-primary/90")}
                   >
                     {isThisTrackPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
                   </button>

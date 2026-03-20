@@ -325,12 +325,15 @@ export default function Catalog() {
                         >
                           <td className="pl-5 pr-2 py-3">
                             <button
+                              disabled={!track.previewUrl && !track.originalFileUrl && !isPlaying}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (isPlaying) { togglePlay(); } else { setQueue(filteredTracks); playTrack(track); }
                               }}
                               className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                                isPlaying
+                                !track.previewUrl && !track.originalFileUrl && !isPlaying
+                                  ? "text-muted-foreground/20 cursor-default"
+                                  : isPlaying
                                   ? "btn-brand shadow-none"
                                   : "text-muted-foreground/40 group-hover/row:text-foreground"
                               }`}

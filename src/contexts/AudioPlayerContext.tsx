@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { TrackData } from "@/contexts/TrackContext";
 
 interface AudioPlayerState {
@@ -75,6 +77,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
     const onError = () => {
       console.error("Audio playback error:", audio.error);
+      toast.error("Audio playback error. The file may be unavailable.");
       setState((prev) => ({ ...prev, isPlaying: false }));
     };
 
@@ -99,21 +102,51 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     queueRef.current = queue;
   }, [queue]);
 
-  const playTrackInternal = useCallback((track: TrackData) => {
+  // Cache of signed URLs by storage path to avoid re-signing
+  const signedUrlCache = useRef<Record<string, { url: string; expires: number }>>({});
+
+  const resolveAudioUrl = useCallback(async (rawUrl: string): Promise<string | null> => {
+    // Already a full URL (signed or external)
+    if (rawUrl.startsWith("http")) {
+      // Check if it's a Supabase signed URL that might be expired
+      // Signed URLs contain a "token" param — just return as-is and let error handler deal with expiry
+      return rawUrl;
+    }
+
+    // Raw storage path — needs signing
+    const cached = signedUrlCache.current[rawUrl];
+    if (cached && cached.expires > Date.now()) {
+      return cached.url;
+    }
+
+    const { data, error } = await supabase.storage
+      .from("tracks")
+      .createSignedUrl(rawUrl, 3600);
+
+    if (error || !data?.signedUrl) {
+      console.error("Failed to sign audio URL:", error);
+      return null;
+    }
+
+    signedUrlCache.current[rawUrl] = {
+      url: data.signedUrl,
+      expires: Date.now() + 3500 * 1000, // slight buffer before actual expiry
+    };
+    return data.signedUrl;
+  }, []);
+
+  const playTrackInternal = useCallback(async (track: TrackData) => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    // Get audio URL — prefer previewUrl (Supabase signed URL), fallback to originalFileUrl
-    const audioUrl = track.previewUrl || track.originalFileUrl;
-    if (!audioUrl) {
-      console.warn("No audio URL for track:", track.title);
+    // Get audio URL — prefer previewUrl, fallback to originalFileUrl
+    const rawUrl = track.previewUrl || track.originalFileUrl;
+    if (!rawUrl) {
+      toast.error("No audio file available for this track.");
       return;
     }
 
-    audio.src = audioUrl;
-    audio.dataset.trackId = String(track.id);
-    audio.play().catch((err) => console.error("Play failed:", err));
-
+    // Set loading state immediately
     setState((prev) => ({
       ...prev,
       currentTrack: track,
@@ -122,7 +155,22 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       currentTime: 0,
       duration: 0,
     }));
-  }, []);
+
+    const signedUrl = await resolveAudioUrl(rawUrl);
+    if (!signedUrl) {
+      toast.error("Could not load audio. Please try again.");
+      setState((prev) => ({ ...prev, isPlaying: false }));
+      return;
+    }
+
+    audio.src = signedUrl;
+    audio.dataset.trackId = String(track.id);
+    audio.play().catch(function(err) {
+      console.error("Play failed:", err);
+      toast.error("Audio playback failed.");
+      setState((prev) => ({ ...prev, isPlaying: false }));
+    });
+  }, [resolveAudioUrl]);
 
   const playTrack = useCallback((track: TrackData) => {
     playTrackInternal(track);
