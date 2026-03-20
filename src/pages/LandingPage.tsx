@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Music, Rocket, Link2, BarChart3, Disc3, Building2, Users, ArrowRight } from "lucide-react";
+import { Music, Rocket, Link2, BarChart3, Disc3, Building2, Mic2, ArrowRight } from "lucide-react";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
 const fadeUp = {
@@ -109,9 +109,9 @@ const features = [
 ];
 
 const audiences = [
-  { icon: Disc3, label: "Producers" },
-  { icon: Building2, label: "Labels" },
-  { icon: Users, label: "A&R" },
+  { icon: Mic2, label: "Artists" },
+  { icon: Music, label: "Producers & Songwriters" },
+  { icon: Building2, label: "Labels & A&R" },
 ];
 
 export default function LandingPage() {
