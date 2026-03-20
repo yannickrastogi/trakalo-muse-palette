@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
-import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User } from "lucide-react";
+import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X } from "lucide-react";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
 interface SharedLinkData {
@@ -44,19 +44,32 @@ interface PlaylistData {
   cover_url: string | null;
 }
 
+interface TrackComment {
+  id: string;
+  track_id: string;
+  shared_link_id: string | null;
+  author_name: string;
+  author_email: string | null;
+  author_type: string;
+  timestamp_sec: number;
+  content: string;
+  created_at: string;
+}
+
 function formatDuration(seconds: number): string {
   var m = Math.floor(seconds / 60);
   var s = Math.floor(seconds % 60);
   return m + ":" + (s < 10 ? "0" : "") + s;
 }
 
-function WaveformBar({ peaks, progress, onSeek }: { peaks: number[]; progress: number; onSeek: (e: React.MouseEvent<HTMLDivElement>) => void }) {
+function WaveformBar({ peaks, progress, onSeek, onDoubleClick }: { peaks: number[]; progress: number; onSeek: (e: React.MouseEvent<HTMLDivElement>) => void; onDoubleClick?: (e: React.MouseEvent<HTMLDivElement>) => void }) {
   var barCount = peaks.length;
   return (
     <div
       className="w-full cursor-pointer flex items-end gap-[1px]"
       style={{ height: 48 }}
       onClick={onSeek}
+      onDoubleClick={onDoubleClick}
     >
       {peaks.map(function(peak, i) {
         var pct = (i / barCount) * 100;
@@ -71,6 +84,34 @@ function WaveformBar({ peaks, progress, onSeek }: { peaks: number[]; progress: n
               background: active ? "#f97316" : "rgba(255,255,255,0.15)",
             }}
           />
+        );
+      })}
+    </div>
+  );
+}
+
+function CommentMarkers({ comments, totalDuration }: { comments: TrackComment[]; totalDuration: number }) {
+  if (!totalDuration || comments.length === 0) return null;
+  return (
+    <div className="absolute inset-0 pointer-events-none" style={{ height: 48 }}>
+      {comments.map(function(c) {
+        var left = Math.min(100, (c.timestamp_sec / totalDuration) * 100);
+        return (
+          <div
+            key={c.id}
+            className="absolute top-0 bottom-0 group/marker pointer-events-auto"
+            style={{ left: left + "%" }}
+          >
+            <div className="w-px h-full bg-brand-pink/40" />
+            <div className="absolute -bottom-1 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-brand-pink border-2 border-card cursor-pointer hover:scale-150 transition-transform" />
+            <div className="absolute bottom-4 -translate-x-1/2 hidden group-hover/marker:block z-50">
+              <div className="bg-card border border-border rounded-lg shadow-lg px-3 py-2 text-[11px] whitespace-nowrap max-w-[200px]">
+                <p className="font-semibold text-foreground truncate">{c.author_name}</p>
+                <p className="text-muted-foreground">{formatDuration(c.timestamp_sec)}</p>
+                <p className="text-foreground/80 truncate mt-0.5">{c.content}</p>
+              </div>
+            </div>
+          </div>
         );
       })}
     </div>
@@ -114,6 +155,14 @@ export default function SharedLinkPage() {
   var [currentTime, setCurrentTime] = useState(0);
   var [duration, setDuration] = useState(0);
   var [volume, setVolume] = useState(0.8);
+
+  // Comments
+  var [comments, setComments] = useState<TrackComment[]>([]);
+  var [commentComposerOpen, setCommentComposerOpen] = useState(false);
+  var [commentTimestamp, setCommentTimestamp] = useState(0);
+  var [commentText, setCommentText] = useState("");
+  var [submittingComment, setSubmittingComment] = useState(false);
+  var commentInputRef = useRef<HTMLInputElement>(null);
 
   // Cache resolved audio URLs to avoid re-fetching
   var audioUrlCache = useRef<Record<string, string>>({});
@@ -439,6 +488,66 @@ export default function SharedLinkPage() {
     }).catch(function(err) { console.error("Failed to log event:", err); });
   };
 
+  // Fetch comments for the current track
+  var fetchComments = useCallback(function(trackId: string, linkId: string) {
+    anonSupabase
+      .from("track_comments")
+      .select("*")
+      .eq("track_id", trackId)
+      .eq("shared_link_id", linkId)
+      .order("timestamp_sec", { ascending: true })
+      .then(function(res) {
+        if (res.data) setComments(res.data as TrackComment[]);
+      });
+  }, []);
+
+  // Fetch comments when gate is completed and track data is available
+  useEffect(function() {
+    if (!gateCompleted || !linkData) return;
+    var tId = trackData?.id || (playingTrackId || null);
+    if (tId) fetchComments(tId, linkData.id);
+  }, [gateCompleted, linkData, trackData, playingTrackId, fetchComments]);
+
+  var handleWaveformDoubleClick = useCallback(function(e: React.MouseEvent<HTMLDivElement>) {
+    var audio = audioRef.current;
+    if (!audio || !audio.duration) return;
+    var rect = e.currentTarget.getBoundingClientRect();
+    var pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    var seconds = pct * audio.duration;
+    audio.currentTime = seconds;
+    setCommentTimestamp(seconds);
+    setCommentComposerOpen(true);
+    setCommentText("");
+    setTimeout(function() { commentInputRef.current?.focus(); }, 50);
+  }, []);
+
+  var handleSubmitComment = useCallback(function() {
+    var tId = trackData?.id || playingTrackId;
+    if (!tId || !linkData || !commentText.trim() || submittingComment) return;
+    setSubmittingComment(true);
+    anonSupabase
+      .from("track_comments")
+      .insert({
+        track_id: tId,
+        shared_link_id: linkData.id,
+        author_name: visitorName || "Anonymous",
+        author_email: visitorEmailRef.current || null,
+        author_type: "guest_recipient",
+        timestamp_sec: Math.round(commentTimestamp * 100) / 100,
+        content: commentText.trim(),
+      })
+      .select()
+      .single()
+      .then(function(res) {
+        setSubmittingComment(false);
+        if (res.data) {
+          setComments(function(prev) { return prev.concat([res.data as TrackComment]); });
+          setCommentComposerOpen(false);
+          setCommentText("");
+        }
+      });
+  }, [trackData, playingTrackId, linkData, commentText, commentTimestamp, submittingComment, visitorName]);
+
   var progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   var needsGate = linkData && !gateCompleted;
   var needsPassword = linkData && linkData.link_type === "secured" && !passwordVerified && gateCompleted;
@@ -723,21 +832,57 @@ export default function SharedLinkPage() {
                   )}
 
                   {/* Progress bar / Waveform */}
-                  {activeTrack && activeTrack.waveform_data ? (
-                    <WaveformBar peaks={activeTrack.waveform_data} progress={progress} onSeek={handleSeek} />
-                  ) : (
-                    <div
-                      className="h-2 bg-secondary rounded-full cursor-pointer group relative"
-                      onClick={handleSeek}
-                    >
+                  <div className="relative">
+                    {activeTrack && activeTrack.waveform_data ? (
+                      <WaveformBar peaks={activeTrack.waveform_data} progress={progress} onSeek={handleSeek} onDoubleClick={handleWaveformDoubleClick} />
+                    ) : (
                       <div
-                        className="h-full rounded-full transition-[width] duration-100 ease-linear"
-                        style={{ width: progress + "%", background: "var(--gradient-brand-horizontal)" }}
+                        className="h-2 bg-secondary rounded-full cursor-pointer group relative"
+                        onClick={handleSeek}
+                        onDoubleClick={handleWaveformDoubleClick}
+                      >
+                        <div
+                          className="h-full rounded-full transition-[width] duration-100 ease-linear"
+                          style={{ width: progress + "%", background: "var(--gradient-brand-horizontal)" }}
+                        />
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                          style={{ left: "calc(" + progress + "% - 6px)" }}
+                        />
+                      </div>
+                    )}
+                    <CommentMarkers comments={comments} totalDuration={duration} />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/40 text-center">Double-click waveform to leave a comment</p>
+
+                  {commentComposerOpen && (
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-secondary/80 border border-border">
+                      <span className="text-[11px] font-mono text-brand-pink whitespace-nowrap">{formatDuration(commentTimestamp)}</span>
+                      <input
+                        ref={commentInputRef}
+                        type="text"
+                        value={commentText}
+                        onChange={function(e) { setCommentText(e.target.value); }}
+                        onKeyDown={function(e) {
+                          if (e.key === "Enter" && commentText.trim()) handleSubmitComment();
+                          if (e.key === "Escape") { setCommentComposerOpen(false); setCommentText(""); }
+                        }}
+                        placeholder="Leave a comment..."
+                        className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
                       />
-                      <div
-                        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                        style={{ left: "calc(" + progress + "% - 6px)" }}
-                      />
+                      <button
+                        onClick={handleSubmitComment}
+                        disabled={!commentText.trim() || submittingComment}
+                        className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors disabled:opacity-40"
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={function() { setCommentComposerOpen(false); setCommentText(""); }}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   )}
 
@@ -922,23 +1067,60 @@ export default function SharedLinkPage() {
             {/* Player */}
             {(trackData.audio_url || slug) && (
               <div className="border-t border-border px-6 py-4 space-y-3">
-                {trackData.waveform_data ? (
-                  <WaveformBar peaks={trackData.waveform_data} progress={progress} onSeek={handleSeek} />
-                ) : (
-                  <div
-                    className="h-2 bg-secondary rounded-full cursor-pointer group relative"
-                    onClick={handleSeek}
-                  >
+                <div className="relative">
+                  {trackData.waveform_data ? (
+                    <WaveformBar peaks={trackData.waveform_data} progress={progress} onSeek={handleSeek} onDoubleClick={handleWaveformDoubleClick} />
+                  ) : (
                     <div
-                      className="h-full rounded-full transition-[width] duration-100 ease-linear"
-                      style={{ width: progress + "%", background: "var(--gradient-brand-horizontal)" }}
+                      className="h-2 bg-secondary rounded-full cursor-pointer group relative"
+                      onClick={handleSeek}
+                      onDoubleClick={handleWaveformDoubleClick}
+                    >
+                      <div
+                        className="h-full rounded-full transition-[width] duration-100 ease-linear"
+                        style={{ width: progress + "%", background: "var(--gradient-brand-horizontal)" }}
+                      />
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                        style={{ left: "calc(" + progress + "% - 6px)" }}
+                      />
+                    </div>
+                  )}
+                  <CommentMarkers comments={comments} totalDuration={duration} />
+                </div>
+                <p className="text-[10px] text-muted-foreground/40 text-center">Double-click waveform to leave a comment</p>
+
+                {commentComposerOpen && (
+                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-secondary/80 border border-border">
+                    <span className="text-[11px] font-mono text-brand-pink whitespace-nowrap">{formatDuration(commentTimestamp)}</span>
+                    <input
+                      ref={commentInputRef}
+                      type="text"
+                      value={commentText}
+                      onChange={function(e) { setCommentText(e.target.value); }}
+                      onKeyDown={function(e) {
+                        if (e.key === "Enter" && commentText.trim()) handleSubmitComment();
+                        if (e.key === "Escape") { setCommentComposerOpen(false); setCommentText(""); }
+                      }}
+                      placeholder="Leave a comment..."
+                      className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
                     />
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                      style={{ left: "calc(" + progress + "% - 6px)" }}
-                    />
+                    <button
+                      onClick={handleSubmitComment}
+                      disabled={!commentText.trim() || submittingComment}
+                      className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors disabled:opacity-40"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={function() { setCommentComposerOpen(false); setCommentText(""); }}
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 )}
+
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
                     {formatDuration(currentTime)}
