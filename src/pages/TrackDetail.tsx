@@ -289,13 +289,13 @@ export default function TrackDetail() {
             <motion.div variants={item} className="flex flex-col lg:flex-row gap-6">
               {/* Cover artwork */}
               <div className="w-full lg:w-64 shrink-0">
-                <div className="aspect-square rounded-xl bg-gradient-to-br from-brand-purple/30 via-brand-pink/20 to-brand-orange/30 border border-border flex items-center justify-center relative overflow-hidden group" style={{ boxShadow: "var(--shadow-card)" }}>
+                <div className="aspect-square rounded-2xl bg-gradient-to-br from-brand-purple/30 via-brand-pink/20 to-brand-orange/30 border border-border flex items-center justify-center relative overflow-hidden group" style={{ boxShadow: "var(--shadow-card)" }}>
                   {track.coverImage ? (
-                    <img src={track.coverImage} alt={track.title} className="absolute inset-0 w-full h-full object-cover" />
+                    <img src={track.coverImage} alt={track.title} className="absolute inset-0 w-full h-full object-cover rounded-2xl" />
                   ) : (
                     <>
-                      <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/10 via-transparent to-brand-orange/10 group-hover:opacity-70 transition-opacity" />
-                      <Disc3 className="w-20 h-20 text-foreground/20" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/15 via-brand-pink/5 to-brand-orange/15 group-hover:opacity-80 transition-opacity duration-300" />
+                      <Disc3 className="w-16 h-16 text-foreground/15" />
                     </>
                   )}
                   <input
@@ -323,7 +323,7 @@ export default function TrackDetail() {
                   />
                   <button
                     onClick={() => coverInputRef.current?.click()}
-                    className="absolute bottom-3 right-3 p-2 rounded-lg bg-card/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+                    className="absolute bottom-3 right-3 p-2 rounded-lg bg-card/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground transition-all duration-200 opacity-0 group-hover:opacity-100"
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -365,52 +365,55 @@ export default function TrackDetail() {
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex flex-wrap gap-2 pt-1">
+                <div className="flex flex-wrap items-center gap-2 pt-1">
                   {permissions.canEditOwnTracks && (
                     <button
                       onClick={() => setEditTrackModalOpen(true)}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors min-h-[44px]"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 min-h-[44px]"
                     >
                       <Edit3 className="w-4 h-4" /> Edit Track
                     </button>
                   )}
                   <button
+                    onClick={() => setShareTrackModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
+                  >
+                    <Music className="w-4 h-4" /> Share Track
+                  </button>
+                  <button
                     onClick={() => setDownloadModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
                   >
                     <Download className="w-4 h-4" /> Download
                   </button>
                   <button
                     onClick={() => setShareWithTeamOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
                   >
                     <Users className="w-4 h-4" /> Share with Team
                   </button>
                   <button
-                    onClick={() => setShareTrackModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
-                  >
-                    <Music className="w-4 h-4" /> Share Track
-                  </button>
-                  <button
                     onClick={() => setShareModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
                   >
                     <Layers className="w-4 h-4" /> Share Stems
                   </button>
                   <button
                     onClick={() => setSharePackModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
                   >
                     <Package className="w-4 h-4" /> Share Pack
                   </button>
                   {permissions.canEditOwnTracks && (
-                    <button
-                      onClick={() => setDeleteDialogOpen(true)}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-destructive/30 bg-card text-destructive hover:bg-destructive/10 transition-colors min-h-[44px]"
-                    >
-                      <Trash2 className="w-4 h-4" /> Delete
-                    </button>
+                    <>
+                      <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
+                      <button
+                        onClick={() => setDeleteDialogOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-destructive/30 bg-card text-destructive hover:bg-destructive/10 transition-all duration-200 min-h-[44px]"
+                      >
+                        <Trash2 className="w-4 h-4" /> Delete
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

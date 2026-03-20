@@ -109,7 +109,7 @@ export function PersistentPlayer() {
       </div>
 
       {/* Main player bar */}
-      <div className="glass border-t border-border/40 px-3 sm:px-5 py-2.5 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-4">
+      <div className="glass border-t border-border/60 px-3 sm:px-5 py-2.5 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-4" style={{ boxShadow: "0 -4px 24px hsl(0 0% 0% / 0.3)" }}>
         {/* Track info — left */}
         <button
           onClick={() => navigate("/track/" + currentTrack.uuid)}

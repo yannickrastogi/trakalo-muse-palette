@@ -404,8 +404,8 @@ export default function Catalog() {
                           <td className="px-4 py-3">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <button className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground opacity-0 group-hover/row:opacity-100" onClick={(e) => e.stopPropagation()}>
-                                  <MoreHorizontal className="w-3.5 h-3.5" />
+                                <button className="p-1.5 rounded-lg hover:bg-muted transition-all duration-200 text-muted-foreground hover:text-foreground opacity-0 group-hover/row:opacity-100" onClick={(e) => e.stopPropagation()}>
+                                  <MoreHorizontal className="w-4 h-4" />
                                 </button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-40">

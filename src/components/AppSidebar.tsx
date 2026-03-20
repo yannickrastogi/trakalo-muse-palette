@@ -7,6 +7,7 @@ import {
   ListMusic,
   Send,
   Users,
+  UserCog,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -15,7 +16,7 @@ import {
   Link2,
   BookUser,
   Bell,
-  ShieldCheck,
+  CheckCircle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -30,11 +31,11 @@ const navItems = [
   { titleKey: "nav.stems", icon: Layers, url: "/stems", permKey: null },
   { titleKey: "nav.playlists", icon: ListMusic, url: "/playlists", permKey: null },
   { titleKey: "nav.pitch", icon: Send, url: "/pitch", permKey: "canSendPitches" as const },
-  { titleKey: "nav.contacts", icon: BookUser, url: "/contacts", permKey: null },
+  { titleKey: "nav.contacts", icon: Users, url: "/contacts", permKey: null },
   { titleKey: "nav.sharedLinks", icon: Link2, url: "/shared-links", permKey: null },
-  { titleKey: "nav.team", icon: Users, url: "/team", permKey: null },
+  { titleKey: "nav.team", icon: UserCog, url: "/team", permKey: null },
   { titleKey: "nav.notifications", icon: Bell, url: "/notifications", permKey: null },
-  { titleKey: "nav.approvals", icon: ShieldCheck, url: "/approvals", permKey: "canManageTeam" as const },
+  { titleKey: "nav.approvals", icon: CheckCircle, url: "/approvals", permKey: "canManageTeam" as const },
   { titleKey: "nav.settings", icon: Settings, url: "/settings", permKey: "canAccessSettings" as const },
 ];
 
