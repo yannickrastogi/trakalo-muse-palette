@@ -68,6 +68,13 @@ import {
   ChevronUp,
   MessageSquare,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
@@ -99,6 +106,15 @@ const docStatusColors: Record<string, string> = {
   Pending: "bg-brand-orange/15 text-brand-orange",
   Draft: "bg-muted text-muted-foreground",
 };
+
+function isEmptyValue(val: unknown): boolean {
+  if (val === undefined || val === null || val === "" || val === 0) return true;
+  if (typeof val === "string") {
+    const lower = val.toLowerCase().trim();
+    if (lower === "n_a" || lower === "n/a") return true;
+  }
+  return false;
+}
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
@@ -350,13 +366,13 @@ export default function TrackDetail() {
 
                 {/* Quick metadata chips */}
                 <div className="flex flex-wrap gap-2">
-                  {track.type && <MetaChip icon={Music} label={track.type} />}
-                  {track.genre && <MetaChip icon={Disc3} label={track.genre} />}
-                  {track.bpm > 0 && <MetaChip icon={Activity} label={track.bpm + " BPM"} />}
-                  {track.key && <MetaChip icon={({ className }: { className?: string }) => <span className={className}>#</span>} label={track.key} />}
-                  {track.language && <MetaChip icon={Mic} label={track.language} />}
-                  {track.voice && <MetaChip icon={Mic} label={track.voice} />}
-                  {track.duration && <MetaChip icon={Clock} label={track.duration} />}
+                  {!isEmptyValue(track.type) && <MetaChip icon={Music} label={track.type} />}
+                  {!isEmptyValue(track.genre) && <MetaChip icon={Disc3} label={track.genre} />}
+                  {!isEmptyValue(track.bpm) && <MetaChip icon={Activity} label={track.bpm + " BPM"} />}
+                  {!isEmptyValue(track.key) && <MetaChip icon={({ className }: { className?: string }) => <span className={className}>#</span>} label={track.key} />}
+                  {!isEmptyValue(track.language) && <MetaChip icon={Mic} label={track.language} />}
+                  {!isEmptyValue(track.voice) && <MetaChip icon={Mic} label={track.voice} />}
+                  {!isEmptyValue(track.duration) && <MetaChip icon={Clock} label={track.duration} />}
                   {(track.mood || []).map((m) => (
                     <span key={m} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-accent/15 text-accent">
                       #{m}
@@ -378,7 +394,7 @@ export default function TrackDetail() {
                     onClick={() => setShareTrackModalOpen(true)}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
                   >
-                    <Music className="w-4 h-4" /> Share Track
+                    <Share2 className="w-4 h-4" /> Share Track
                   </button>
                   <button
                     onClick={() => setDownloadModalOpen(true)}
@@ -386,35 +402,32 @@ export default function TrackDetail() {
                   >
                     <Download className="w-4 h-4" /> Download
                   </button>
-                  <button
-                    onClick={() => setShareWithTeamOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
-                  >
-                    <Users className="w-4 h-4" /> Share with Team
-                  </button>
-                  <button
-                    onClick={() => setShareModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
-                  >
-                    <Layers className="w-4 h-4" /> Share Stems
-                  </button>
-                  <button
-                    onClick={() => setSharePackModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
-                  >
-                    <Package className="w-4 h-4" /> Share Pack
-                  </button>
-                  {permissions.canEditOwnTracks && (
-                    <>
-                      <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
-                      <button
-                        onClick={() => setDeleteDialogOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-destructive/30 bg-card text-destructive hover:bg-destructive/10 transition-all duration-200 min-h-[44px]"
-                      >
-                        <Trash2 className="w-4 h-4" /> Delete
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center justify-center w-10 h-10 rounded-lg border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200">
+                        <MoreHorizontal className="w-4 h-4" />
                       </button>
-                    </>
-                  )}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => setShareWithTeamOpen(true)}>
+                        <Users className="w-4 h-4 mr-2" /> Share with Team
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShareModalOpen(true)}>
+                        <Layers className="w-4 h-4 mr-2" /> Share Stems
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSharePackModalOpen(true)}>
+                        <Package className="w-4 h-4 mr-2" /> Share Pack
+                      </DropdownMenuItem>
+                      {permissions.canEditOwnTracks && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} className="text-destructive focus:text-destructive">
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </motion.div>
