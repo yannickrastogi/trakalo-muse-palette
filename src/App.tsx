@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PlaylistProvider } from "@/contexts/PlaylistContext";
@@ -38,8 +39,22 @@ import SharedLinkPage from "./pages/SharedLinkPage";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
+
+function HomeRoute() {
+  const { session, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+  if (session) return <Navigate to="/dashboard" replace />;
+  return <LandingPage />;
+}
 
 function ProtectedApp({ children }: { children: React.ReactNode }) {
   return (
@@ -89,7 +104,8 @@ const App = () => (
             <Route path="/invite/:token" element={<AcceptInvitation />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/" element={<ProtectedApp><Index /></ProtectedApp>} />
+            <Route path="/" element={<HomeRoute />} />
+            <Route path="/dashboard" element={<ProtectedApp><Index /></ProtectedApp>} />
             <Route path="/tracks" element={<ProtectedApp><Catalog /></ProtectedApp>} />
             <Route path="/track/:id" element={<ProtectedApp><TrackDetail /></ProtectedApp>} />
             <Route path="/tracks/:id" element={<ProtectedApp><TrackDetail /></ProtectedApp>} />

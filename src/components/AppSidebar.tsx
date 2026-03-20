@@ -26,7 +26,7 @@ import trakalogLogo from "@/assets/trakalog-logo.png";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 const navItems = [
-  { titleKey: "nav.dashboard", icon: LayoutDashboard, url: "/", permKey: null },
+  { titleKey: "nav.dashboard", icon: LayoutDashboard, url: "/dashboard", permKey: null },
   { titleKey: "nav.tracks", icon: Music, url: "/tracks", permKey: null },
   { titleKey: "nav.stems", icon: Layers, url: "/stems", permKey: null },
   { titleKey: "nav.playlists", icon: ListMusic, url: "/playlists", permKey: null },

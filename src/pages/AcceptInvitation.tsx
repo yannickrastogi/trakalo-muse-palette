@@ -172,7 +172,7 @@ export default function AcceptInvitation() {
             {"You've joined the workspace as " + invitation?.role + "."}
           </p>
           <button
-            onClick={function () { navigate("/"); }}
+            onClick={function () { navigate("/dashboard"); }}
             className="mt-4 inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-semibold btn-brand"
           >
             Go to Dashboard
