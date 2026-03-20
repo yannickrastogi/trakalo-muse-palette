@@ -176,9 +176,23 @@ export default function TrackDetail() {
 
   const trackData = getTrack(Number(id));
 
-  
+  const [dbTrack, setDbTrack] = useState<any>(null);
 
-  if (!trackData) {
+  useEffect(function() {
+    if (trackData || !id) return;
+    supabase
+      .from("tracks")
+      .select("*")
+      .eq("id", id)
+      .single()
+      .then(function(res) {
+        if (res.data) setDbTrack(res.data);
+      });
+  }, [id, trackData]);
+
+  const track = trackData || dbTrack;
+
+  if (!track) {
     return (
       <PageShell>
         <div className="p-8 text-center text-muted-foreground">Track not found.</div>
@@ -190,9 +204,9 @@ export default function TrackDetail() {
     if (currentTrack?.id === Number(id)) {
       togglePlay();
     } else {
-      globalPlayTrack(trackData);
+      globalPlayTrack(track);
     }
-  }, [trackData, currentTrack, id, togglePlay, globalPlayTrack]);
+  }, [track, currentTrack, id, togglePlay, globalPlayTrack]);
 
   const statusColorMap: Record<string, string> = {
     Available: "bg-emerald-500/15 text-emerald-400",
@@ -209,11 +223,11 @@ export default function TrackDetail() {
     const parts = dur.split(":").map(Number);
     return parts.length === 2 ? parts[0] * 60 + parts[1] : parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : 0;
   };
-  const totalDurationSeconds = parseDuration(trackData.duration);
+  const totalDurationSeconds = parseDuration(track.duration);
 
   const handleWaveformClick = (pct: number) => {
-    if (currentTrack?.id !== Number(id) && trackData) {
-      globalPlayTrack(trackData);
+    if (currentTrack?.id !== Number(id) && track) {
+      globalPlayTrack(track);
     }
     seek(pct);
   };
@@ -262,7 +276,7 @@ export default function TrackDetail() {
             <motion.div variants={item} className="flex items-center gap-2 text-sm text-muted-foreground">
               <Link to="/tracks" className="hover:text-foreground transition-colors">Tracks</Link>
               <ChevronRight className="w-3.5 h-3.5" />
-              <span className="text-foreground font-medium">{trackData.title}</span>
+              <span className="text-foreground font-medium">{track.title}</span>
             </motion.div>
 
             {/* Hero section: Cover + Info + Player */}
@@ -270,8 +284,8 @@ export default function TrackDetail() {
               {/* Cover artwork */}
               <div className="w-full lg:w-64 shrink-0">
                 <div className="aspect-square rounded-xl bg-gradient-to-br from-brand-purple/30 via-brand-pink/20 to-brand-orange/30 border border-border flex items-center justify-center relative overflow-hidden group" style={{ boxShadow: "var(--shadow-card)" }}>
-                  {trackData.coverImage ? (
-                    <img src={trackData.coverImage} alt={trackData.title} className="absolute inset-0 w-full h-full object-cover" />
+                  {track.coverImage ? (
+                    <img src={track.coverImage} alt={track.title} className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
                     <>
                       <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/10 via-transparent to-brand-orange/10 group-hover:opacity-70 transition-opacity" />
@@ -286,7 +300,7 @@ export default function TrackDetail() {
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      const path = activeWorkspace.id + "/" + trackData.uuid + ".jpg";
+                      const path = activeWorkspace.id + "/" + track.uuid + ".jpg";
                       const { error } = await supabase.storage
                         .from("covers")
                         .upload(path, file, { upsert: true, contentType: file.type });
@@ -297,7 +311,7 @@ export default function TrackDetail() {
                       const { data: urlData } = supabase.storage
                         .from("covers")
                         .getPublicUrl(path);
-                      updateTrack(trackData.id, { coverImage: urlData.publicUrl });
+                      updateTrack(track.id, { coverImage: urlData.publicUrl });
                       e.target.value = "";
                     }}
                   />
@@ -314,30 +328,30 @@ export default function TrackDetail() {
               <div className="flex-1 min-w-0 space-y-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <span className={"inline-flex px-2.5 py-1 rounded-full text-xs font-medium " + (statusColorMap[trackData.status] || "bg-emerald-500/15 text-emerald-400")}>
-                      {trackData.status}
+                    <span className={"inline-flex px-2.5 py-1 rounded-full text-xs font-medium " + (statusColorMap[track.status] || "bg-emerald-500/15 text-emerald-400")}>
+                      {track.status}
                     </span>
-                    {trackData.isrc && <span className="text-xs text-muted-foreground">{trackData.isrc}</span>}
+                    {track.isrc && <span className="text-xs text-muted-foreground">{track.isrc}</span>}
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{trackData.title}</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{track.title}</h1>
                   <p className="text-lg text-muted-foreground mt-1">
-                    {trackData.artist}
-                    {trackData.featuredArtists.length > 0 && (
-                      <span className="text-foreground/60"> feat. {trackData.featuredArtists.join(", ")}</span>
+                    {track.artist}
+                    {track.featuredArtists?.length > 0 && (
+                      <span className="text-foreground/60"> feat. {track.featuredArtists.join(", ")}</span>
                     )}
                   </p>
                 </div>
 
                 {/* Quick metadata chips */}
                 <div className="flex flex-wrap gap-2">
-                  {trackData.type && <MetaChip icon={Music} label={trackData.type} />}
-                  {trackData.genre && <MetaChip icon={Disc3} label={trackData.genre} />}
-                  {trackData.bpm > 0 && <MetaChip icon={Activity} label={trackData.bpm + " BPM"} />}
-                  {trackData.key && <MetaChip icon={({ className }: { className?: string }) => <span className={className}>#</span>} label={trackData.key} />}
-                  {trackData.language && <MetaChip icon={Mic} label={trackData.language} />}
-                  {trackData.voice && <MetaChip icon={Mic} label={trackData.voice} />}
-                  {trackData.duration && <MetaChip icon={Clock} label={trackData.duration} />}
-                  {trackData.mood.map((m) => (
+                  {track.type && <MetaChip icon={Music} label={track.type} />}
+                  {track.genre && <MetaChip icon={Disc3} label={track.genre} />}
+                  {track.bpm > 0 && <MetaChip icon={Activity} label={track.bpm + " BPM"} />}
+                  {track.key && <MetaChip icon={({ className }: { className?: string }) => <span className={className}>#</span>} label={track.key} />}
+                  {track.language && <MetaChip icon={Mic} label={track.language} />}
+                  {track.voice && <MetaChip icon={Mic} label={track.voice} />}
+                  {track.duration && <MetaChip icon={Clock} label={track.duration} />}
+                  {(track.mood || []).map((m) => (
                     <span key={m} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-accent/15 text-accent">
                       #{m}
                     </span>
@@ -407,7 +421,7 @@ export default function TrackDetail() {
                 </div>
                 <div className="flex-1 flex items-center justify-between text-[11px] text-muted-foreground font-mono">
                   <span>{formatTimestamp((currentProgress / 100) * totalDurationSeconds)}</span>
-                  <span>{trackData.duration}</span>
+                  <span>{track.duration}</span>
                 </div>
                 <div className="hidden sm:flex items-center gap-2">
                   <button onClick={() => { const v = volume > 0 ? 0 : 0.8; setVolume(v); }} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -418,12 +432,12 @@ export default function TrackDetail() {
               </div>
               <div className="relative">
                 <TrackWaveformPlayer
-                  seed={trackData.id}
-                  peaks={trackData.waveformData}
+                  seed={track.id}
+                  peaks={track.waveformData}
                   progress={currentProgress}
                   onSeek={handleWaveformClick}
                   onDoubleClick={handleWaveformDoubleClick}
-                  chapters={trackData.chapters || []}
+                  chapters={track.chapters || []}
                   isPlaying={isThisTrackPlaying}
                 />
                 <CommentMarkerLayer
@@ -492,33 +506,33 @@ export default function TrackDetail() {
         onClose={() => setShareModalOpen(false)}
         shareType="stems"
         trackId={Number(id)}
-        trackTitle={trackData?.title}
-        trackArtist={trackData?.artist}
-        trackCover={trackData?.coverImage}
-        stems={(trackData?.stems || []).map((s) => ({ id: s.id, fileName: s.fileName, type: s.type, fileSize: s.fileSize }))}
+        trackTitle={track?.title}
+        trackArtist={track?.artist}
+        trackCover={track?.coverImage}
+        stems={(track?.stems || []).map((s) => ({ id: s.id, fileName: s.fileName, type: s.type, fileSize: s.fileSize }))}
       />
       <ShareModal
         open={shareTrackModalOpen}
         onClose={() => setShareTrackModalOpen(false)}
         shareType="track"
         trackId={Number(id)}
-        trackTitle={trackData?.title}
-        trackArtist={trackData?.artist}
-        trackCover={trackData?.coverImage}
+        trackTitle={track?.title}
+        trackArtist={track?.artist}
+        trackCover={track?.coverImage}
       />
-      {trackData && (
+      {track && (
         <DownloadTrackModal
           open={downloadModalOpen}
           onClose={() => setDownloadModalOpen(false)}
-          trackData={trackData}
-          meta={buildMeta(trackData)}
+          trackData={track}
+          meta={buildMeta(track)}
         />
       )}
-      {trackData && (
+      {track && (
         <SharePackModal
           open={sharePackModalOpen}
           onClose={() => setSharePackModalOpen(false)}
-          trackData={trackData}
+          trackData={track}
         />
       )}
       <EditTrackModal
@@ -526,11 +540,11 @@ export default function TrackDetail() {
         onClose={() => setEditTrackModalOpen(false)}
         trackId={Number(id)}
       />
-      {trackData && (
+      {track && (
         <ShareWithTeamModal
           open={shareWithTeamOpen}
           onClose={() => setShareWithTeamOpen(false)}
-          trackTitle={trackData.title}
+          trackTitle={track.title}
         />
       )}
     </PageShell>
