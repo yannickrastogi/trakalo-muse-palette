@@ -74,7 +74,7 @@ export function PersistentPlayer() {
         >
           <img src={coverSrc} alt="" className="w-8 h-8 rounded-lg object-cover ring-1 ring-border/50" />
           <div className="flex items-center gap-1.5">
-            <MiniWaveform seed={currentTrack.id * 13 + 7} bars={12} />
+            <MiniWaveform seed={currentTrack.id * 13 + 7} bars={12} peaks={currentTrack.waveformData} progress={progress} />
             {isPlaying && <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
           </div>
           <ChevronUp className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />

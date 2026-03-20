@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 interface TrackWaveformPlayerProps {
   seed: number;
   bars?: number;
+  peaks?: number[];
   progress: number;
   onSeek: (percent: number) => void;
   onDoubleClick?: (percent: number) => void;
@@ -20,6 +21,7 @@ interface TrackWaveformPlayerProps {
 export function TrackWaveformPlayer({
   seed,
   bars = 120,
+  peaks,
   progress,
   onSeek,
   onDoubleClick,
@@ -31,6 +33,22 @@ export function TrackWaveformPlayer({
   const [hoverPercent, setHoverPercent] = useState<number | null>(null);
 
   const heights = useMemo(() => {
+    if (peaks && peaks.length > 0) {
+      // Downsample real peaks to target bar count
+      const result: number[] = [];
+      const step = peaks.length / bars;
+      for (let i = 0; i < bars; i++) {
+        const start = Math.floor(i * step);
+        const end = Math.floor((i + 1) * step);
+        let sum = 0;
+        for (let j = start; j < end; j++) {
+          sum += peaks[j] || 0;
+        }
+        result.push(Math.max(0.12, sum / (end - start)));
+      }
+      return result;
+    }
+    // Fallback: deterministic pseudo-random
     const result: number[] = [];
     let s = seed + 1;
     for (let i = 0; i < bars; i++) {
@@ -40,7 +58,7 @@ export function TrackWaveformPlayer({
       result.push(Math.max(0.12, normalized * envelope));
     }
     return result;
-  }, [seed, bars]);
+  }, [seed, bars, peaks]);
 
   const getChapterAt = useCallback(
     (percent: number) => chapters.find((c) => percent >= c.startPercent && percent < c.endPercent),

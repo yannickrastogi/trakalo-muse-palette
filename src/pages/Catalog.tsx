@@ -70,7 +70,7 @@ export default function Catalog() {
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [voiceFilter, setVoiceFilter] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const { currentTrack, isPlaying: globalIsPlaying, playTrack, togglePlay, isTrackPlaying, setQueue } = useAudioPlayer();
+  const { currentTrack, isPlaying: globalIsPlaying, playTrack, togglePlay, isTrackPlaying, setQueue, progress } = useAudioPlayer();
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [uploadOpen, setUploadOpen] = useState(false);
   const navigate = useNavigate();
@@ -333,7 +333,7 @@ export default function Catalog() {
                                 <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>
                               </div>
                               <div className={`hidden md:flex items-center gap-2 transition-opacity duration-300 ${isPlaying ? "opacity-100" : "opacity-20 group-hover/row:opacity-50"}`}>
-                                <MiniWaveform seed={track.id * 13 + 7} bars={22} />
+                                <MiniWaveform seed={track.id * 13 + 7} bars={40} peaks={track.waveformData} progress={isTrackPlaying(track.id) ? progress : undefined} />
                                 <span className="text-2xs text-muted-foreground font-mono tabular-nums w-8 text-right">{track.duration}</span>
                               </div>
                             </div>

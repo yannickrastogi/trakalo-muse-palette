@@ -419,6 +419,7 @@ export default function TrackDetail() {
               <div className="relative">
                 <TrackWaveformPlayer
                   seed={trackData.id}
+                  peaks={trackData.waveformData}
                   progress={currentProgress}
                   onSeek={handleWaveformClick}
                   onDoubleClick={handleWaveformDoubleClick}

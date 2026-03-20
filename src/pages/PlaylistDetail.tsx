@@ -80,7 +80,7 @@ export default function PlaylistDetail() {
   const { permissions } = useRole();
   const { tracks: allTracks } = useTrack();
   const { getTotalPlaysForTrack, getPlaylistEngagement } = useEngagement();
-  const { playTrack, togglePlay, isTrackPlaying, isPlaying: audioIsPlaying, currentTrack, setQueue } = useAudioPlayer();
+  const { playTrack, togglePlay, isTrackPlaying, isPlaying: audioIsPlaying, currentTrack, setQueue, progress } = useAudioPlayer();
   const { activeWorkspace } = useWorkspace();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const playlist = getPlaylist(id || "");
@@ -644,7 +644,7 @@ function SortableDesktopRow({
             <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>
           </div>
           <div className={`hidden md:flex items-center gap-2 transition-opacity duration-300 ${isPlaying ? "opacity-100" : "opacity-20 group-hover/row:opacity-50"}`}>
-            <MiniWaveform seed={track.id * 13 + 7} bars={22} />
+            <MiniWaveform seed={track.id * 13 + 7} bars={40} peaks={track.waveformData} progress={isTrackPlaying(track.id) ? progress : undefined} />
             <span className="text-2xs text-muted-foreground font-mono tabular-nums w-8 text-right">{track.duration}</span>
           </div>
         </div>
