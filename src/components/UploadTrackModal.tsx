@@ -131,7 +131,7 @@ function createTrackEntry(file: File): TrackEntry {
 }
 
 export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) {
-  const { tracks, addTrack } = useTrack();
+  const { tracks, addTrack, updateTrack } = useTrack();
   const { teams } = useTeams();
   const { activeWorkspace } = useWorkspace();
   const [isSaving, setIsSaving] = useState(false);
@@ -472,10 +472,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             .from("covers")
             .getPublicUrl(coverPath);
           if (urlData?.publicUrl) {
-            await supabase
-              .from("tracks")
-              .update({ cover_url: urlData.publicUrl })
-              .eq("id", savedTrack.id);
+            await updateTrack(savedTrack.id, { coverImage: urlData.publicUrl });
           }
         }
       }
