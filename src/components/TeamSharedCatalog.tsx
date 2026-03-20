@@ -232,7 +232,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
                         <tr
                           key={track.id}
                           className="border-b border-border/40 last:border-0 hover:bg-secondary/25 transition-all duration-200 group/row cursor-pointer"
-                          onClick={() => navigate(`/track/${track.id}`)}
+                          onClick={() => navigate(`/track/${track.uuid}`)}
                         >
                           <td className="pl-5 pr-2 py-3">
                             <button
@@ -321,7 +321,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
                       whileHover={{ y: -4 }}
                       transition={{ duration: 0.2 }}
                       className="card-premium overflow-hidden cursor-pointer group/card"
-                      onClick={() => navigate(`/track/${track.id}`)}
+                      onClick={() => navigate(`/track/${track.uuid}`)}
                     >
                       <div className="relative aspect-square overflow-hidden">
                         <img src={track.coverImage || covers[track.coverIdx % covers.length]} alt={track.title} className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105" />

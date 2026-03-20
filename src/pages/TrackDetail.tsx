@@ -145,8 +145,8 @@ export default function TrackDetail() {
   // Global audio player
   const { currentTrack, isPlaying: globalIsPlaying, progress: globalProgress, playTrack: globalPlayTrack, togglePlay, seek, volume, setVolume } = useAudioPlayer();
 
-  const isThisTrackPlaying = currentTrack?.id === Number(id) && globalIsPlaying;
-  const currentProgress = currentTrack?.id === Number(id) ? globalProgress : 0;
+  const isThisTrackPlaying = currentTrack?.uuid === id && globalIsPlaying;
+  const currentProgress = currentTrack?.uuid === id ? globalProgress : 0;
 
   const [activeTab, setActiveTab] = useState<string>(searchParams.get("tab") || "lyrics");
   const shouldAutoUpload = searchParams.get("upload") === "true";
@@ -162,7 +162,7 @@ export default function TrackDetail() {
 
   const { permissions } = useRole();
   const { activeWorkspace } = useWorkspace();
-  const { getTrack, updateTrack } = useTrack();
+  const { getTrackByUuid, updateTrack } = useTrack();
   const { getTrackEngagement } = useEngagement();
   const { getCommentsForTrack, getCommentCountForTrack, addComment } = useTrackReview();
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -174,7 +174,7 @@ export default function TrackDetail() {
   const [shareWithTeamOpen, setShareWithTeamOpen] = useState(false);
   const { teams } = useTeams();
 
-  const trackData = getTrack(Number(id));
+  const trackData = id ? getTrackByUuid(id) : undefined;
 
   const [dbTrack, setDbTrack] = useState<any>(null);
 
@@ -201,7 +201,7 @@ export default function TrackDetail() {
   }
   // Play/pause handler
   const handlePlayPause = useCallback(() => {
-    if (currentTrack?.id === Number(id)) {
+    if (currentTrack?.uuid === id) {
       togglePlay();
     } else {
       globalPlayTrack(track);
@@ -214,9 +214,10 @@ export default function TrackDetail() {
     Released: "bg-brand-purple/15 text-brand-purple",
   };
 
-  const engagement = getTrackEngagement(Number(id));
-  const commentCount = getCommentCountForTrack(Number(id));
-  const trackComments = getCommentsForTrack(Number(id));
+  const numericId = track?.id;
+  const engagement = numericId ? getTrackEngagement(numericId) : undefined;
+  const commentCount = numericId ? getCommentCountForTrack(numericId) : 0;
+  const trackComments = numericId ? getCommentsForTrack(numericId) : [];
 
   // Parse duration string to seconds
   const parseDuration = (dur: string): number => {
@@ -226,7 +227,7 @@ export default function TrackDetail() {
   const totalDurationSeconds = parseDuration(track.duration);
 
   const handleWaveformClick = (pct: number) => {
-    if (currentTrack?.id !== Number(id) && track) {
+    if (currentTrack?.uuid !== id && track) {
       globalPlayTrack(track);
     }
     seek(pct);
@@ -246,7 +247,7 @@ export default function TrackDetail() {
 
   const handleWaveformCommentSubmit = (text: string, timestampSeconds: number) => {
     addComment({
-      trackId: Number(id),
+      trackId: track.id,
       authorName: "Kira Nomura",
       authorType: "owner",
       commentText: text,
@@ -481,16 +482,16 @@ export default function TrackDetail() {
 
             {/* Tab content */}
             <motion.div variants={item}>
-              {activeTab === "lyrics" && <LyricsTab trackId={Number(id)} />}
-               {activeTab === "stems" && <StemsTab trackId={Number(id)} autoOpenUpload={shouldAutoUpload} />}
-               {activeTab === "splits" && <SplitsTab trackId={Number(id)} />}
-               {activeTab === "engagement" && <EngagementTab trackId={Number(id)} onSeek={handleCommentSeek} />}
-               {activeTab === "metadata" && <OverviewTab trackId={Number(id)} onEdit={() => setEditTrackModalOpen(true)} />}
+              {activeTab === "lyrics" && <LyricsTab trackId={track.id} />}
+               {activeTab === "stems" && <StemsTab trackId={track.id} autoOpenUpload={shouldAutoUpload} />}
+               {activeTab === "splits" && <SplitsTab trackId={track.id} />}
+               {activeTab === "engagement" && <EngagementTab trackId={track.id} onSeek={handleCommentSeek} />}
+               {activeTab === "metadata" && <OverviewTab trackId={track.id} onEdit={() => setEditTrackModalOpen(true)} />}
                {activeTab === "paperwork" && <PaperworkTab />}
-               {activeTab === "pitches" && <PitchHistoryTab trackId={Number(id)} />}
+               {activeTab === "pitches" && <PitchHistoryTab trackId={track.id} />}
                {activeTab === "review" && (
                  <TrackReviewPanel
-                   trackId={Number(id)}
+                   trackId={track.id}
                    currentUserName="Kira Nomura"
                    progress={currentProgress}
                    onSeek={handleCommentSeek}
@@ -498,14 +499,14 @@ export default function TrackDetail() {
                    isPlaying={isThisTrackPlaying}
                  />
                )}
-               {activeTab === "status" && <StatusTab trackId={Number(id)} />}
+               {activeTab === "status" && <StatusTab trackId={track.id} />}
              </motion.div>
           </motion.div>
       <ShareModal
         open={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
         shareType="stems"
-        trackId={Number(id)}
+        trackId={track.id}
         trackTitle={track?.title}
         trackArtist={track?.artist}
         trackCover={track?.coverImage}
@@ -515,7 +516,7 @@ export default function TrackDetail() {
         open={shareTrackModalOpen}
         onClose={() => setShareTrackModalOpen(false)}
         shareType="track"
-        trackId={Number(id)}
+        trackId={track.id}
         trackTitle={track?.title}
         trackArtist={track?.artist}
         trackCover={track?.coverImage}
@@ -538,7 +539,7 @@ export default function TrackDetail() {
       <EditTrackModal
         open={editTrackModalOpen}
         onClose={() => setEditTrackModalOpen(false)}
-        trackId={Number(id)}
+        trackId={track.id}
       />
       {track && (
         <ShareWithTeamModal

@@ -160,21 +160,23 @@ export function DashboardContent() {
 
   // Build per-recipient engagement data with simulated dates for plays/downloads
   const engagementEntries = useMemo(() => {
-    const entries: { trackId: number; trackTitle: string; trackArtist: string; recipientName: string; recipientCompany: string; plays: number; downloads: number; lastActivity: Date; coverIdx: number; coverImage?: string }[] = [];
+    const entries: { trackId: number; trackUuid: string; trackTitle: string; trackArtist: string; recipientName: string; recipientCompany: string; plays: number; downloads: number; lastActivity: Date; coverIdx: number; coverImage?: string }[] = [];
     trackEngagement.forEach((te) => {
       const track = allTracks.find((t) => t.id === te.trackId);
+      if (!track) return;
       te.recipients.forEach((r) => {
         entries.push({
           trackId: te.trackId,
-          trackTitle: track?.title || "Track " + te.trackId,
-          trackArtist: track?.artist || "Unknown",
+          trackUuid: track.uuid,
+          trackTitle: track.title || "Track " + te.trackId,
+          trackArtist: track.artist || "Unknown",
           recipientName: r.recipientName,
           recipientCompany: r.recipientCompany,
           plays: r.plays,
           downloads: r.downloads,
           lastActivity: new Date(r.lastActivity),
           coverIdx: (te.trackId - 1) % 5,
-          coverImage: track?.coverImage,
+          coverImage: track.coverImage,
         });
       });
     });
@@ -396,7 +398,7 @@ export function DashboardContent() {
                     <div
                       key={track.id}
                       className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
-                      onClick={() => navigate(`/track/${track.id}`)}
+                      onClick={() => navigate(`/track/${track.uuid}`)}
                     >
                       <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
                       <img
@@ -601,7 +603,7 @@ export function DashboardContent() {
                     <div
                       key={`${entry.trackId}-${entry.recipientName}-${idx}`}
                       className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
-                      onClick={() => navigate(`/track/${entry.trackId}`)}
+                      onClick={() => navigate(`/track/${entry.trackUuid}`)}
                     >
                       <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
                       <img src={entry.coverImage || covers[entry.coverIdx]} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
@@ -698,7 +700,7 @@ export function DashboardContent() {
                     <div
                       key={`${entry.trackId}-${entry.recipientName}-${idx}`}
                       className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
-                      onClick={() => navigate(`/track/${entry.trackId}`)}
+                      onClick={() => navigate(`/track/${entry.trackUuid}`)}
                     >
                       <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
                       <img src={entry.coverImage || covers[entry.coverIdx]} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />

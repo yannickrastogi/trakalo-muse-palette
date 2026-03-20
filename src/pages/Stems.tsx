@@ -21,6 +21,7 @@ import type { StemType } from "@/lib/constants";
 
 interface FlatStem extends TrackStem {
   trackId: number;
+  trackUuid: string;
   trackTitle: string;
   trackArtist: string;
   trackGenre: string;
@@ -106,6 +107,7 @@ export default function Stems() {
         uploadDate: track.stems[0]?.uploadDate || "",
         color: "text-brand-orange",
         trackId: track.id,
+        trackUuid: track.uuid,
         trackTitle: track.title,
         trackArtist: track.artist,
         trackGenre: track.genre,
@@ -121,6 +123,7 @@ export default function Stems() {
         result.push({
           ...stem,
           trackId: track.id,
+          trackUuid: track.uuid,
           trackTitle: track.title,
           trackArtist: track.artist,
           trackGenre: track.genre,
@@ -427,7 +430,7 @@ export default function Stems() {
                         {/* Track */}
                         <td className="px-4 py-3">
                           <button
-                            onClick={() => navigate(`/track/${stem.trackId}`)}
+                            onClick={() => navigate(`/track/${stem.trackUuid}`)}
                             className="text-xs text-foreground hover:text-primary transition-colors font-medium truncate max-w-[140px] block"
                           >
                             {stem.trackTitle}
@@ -469,7 +472,7 @@ export default function Stems() {
                               <Download className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              onClick={() => navigate(`/track/${stem.trackId}`)}
+                              onClick={() => navigate(`/track/${stem.trackUuid}`)}
                               className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
                               title="Open Track"
                             >

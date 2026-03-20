@@ -34,10 +34,10 @@ export function SelectTrackForStemsModal({ open, onClose }: Props) {
     );
   }, [tracks, search]);
 
-  const handleSelect = (trackId: number) => {
+  const handleSelect = (trackUuid: string) => {
     onClose();
     setSearch("");
-    navigate(`/track/${trackId}?tab=stems&upload=true`);
+    navigate(`/track/${trackUuid}?tab=stems&upload=true`);
   };
 
   if (!open) return null;
@@ -114,7 +114,7 @@ export function SelectTrackForStemsModal({ open, onClose }: Props) {
                     return (
                       <button
                         key={track.id}
-                        onClick={() => handleSelect(track.id)}
+                        onClick={() => handleSelect(track.uuid)}
                         className="w-full flex items-center gap-3 px-6 py-3 hover:bg-secondary/60 transition-colors text-left group"
                       >
                         <img

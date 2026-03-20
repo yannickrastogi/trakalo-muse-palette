@@ -221,6 +221,7 @@ interface TrackContextValue {
   tracks: TrackData[];
   loading: boolean;
   getTrack: (id: number) => TrackData | undefined;
+  getTrackByUuid: (uuid: string) => TrackData | undefined;
   addTrack: (track: Partial<TrackData> & { title: string; artist: string }) => Promise<TrackData | null>;
   updateTrack: (id: number, updates: Partial<TrackData>) => void;
   updateTrackStatus: (id: number, newStatus: string, note: string) => void;
@@ -326,6 +327,17 @@ export function TrackProvider({ children }: { children: ReactNode }) {
   const getTrack = useCallback(
     (id: number) => {
       const track = tracks.find((t) => t.id === id);
+      if (track && !track.chapters) {
+        return { ...track, chapters: detectChapters(track.type, track.bpm, track.id) };
+      }
+      return track;
+    },
+    [tracks]
+  );
+
+  const getTrackByUuid = useCallback(
+    (uuid: string) => {
+      const track = tracks.find((t) => t.uuid === uuid);
       if (track && !track.chapters) {
         return { ...track, chapters: detectChapters(track.type, track.bpm, track.id) };
       }
@@ -555,6 +567,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         tracks,
         loading,
         getTrack,
+        getTrackByUuid,
         addTrack,
         updateTrack,
         updateTrackStatus,
