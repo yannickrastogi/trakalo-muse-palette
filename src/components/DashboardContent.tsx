@@ -1,4 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { UploadTrackModal } from "@/components/UploadTrackModal";
 import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
@@ -20,9 +22,6 @@ import {
   Clock,
   Upload,
   ArrowUpRight,
-  MessageSquare,
-  Star,
-  TrendingUp,
   Headphones,
   Download,
   X,
@@ -45,13 +44,18 @@ import cover5 from "@/assets/covers/cover-5.jpg";
 const covers = [cover1, cover2, cover3, cover4, cover5];
 
 
-const activity = [
-  { icon: Star, textKey: "Kira Nomura starred \"Velvet Hour\" master", time: "12m ago" },
-  { icon: MessageSquare, textKey: "Dex left feedback on \"Ghost Protocol\" mix", time: "1h ago" },
-  { icon: Upload, textKey: "You uploaded 3 stems to \"Burning Chrome\"", time: "3h ago" },
-  { icon: Send, textKey: "\"Soft Landing\" pitched to Atlantic Records — A&R", time: "6h ago" },
-  { icon: TrendingUp, textKey: "\"Paper Moons\" reached 10K pre-saves", time: "1d ago" },
-];
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return mins + "m ago";
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return hours + "h ago";
+  const days = Math.floor(hours / 24);
+  if (days < 7) return days + "d ago";
+  const weeks = Math.floor(days / 7);
+  return weeks + "w ago";
+}
 
 const statusColors: Record<string, string> = {
   Available: "bg-emerald-500/12 text-emerald-400",
@@ -91,20 +95,71 @@ export function DashboardContent() {
   const { pitches: allPitches, addPitch } = usePitches();
   const navigate = useNavigate();
   const { completeStep } = useOnboarding();
+  const { activeWorkspace } = useWorkspace();
   const engagementStats = getTotalStats();
 
-  // Simulated upload dates for demo tracks (spread across recent dates)
-  const trackUploadDates = useMemo(() => {
-    const now = new Date();
-    return allTracks.map((track, i) => {
-      const d = new Date(now);
-      // Spread tracks across different time periods for demo
-      if (i < 2) d.setHours(d.getHours() - (i + 1) * 4); // today
-      else if (i < 5) d.setDate(d.getDate() - (i - 1)); // this week
-      else if (i < 9) d.setDate(d.getDate() - (i * 3)); // this month
-      else d.setMonth(d.getMonth() - (i - 7)); // older
-      return { ...track, uploadedAt: d };
+  // Fetch link_events from Supabase
+  const [linkEvents, setLinkEvents] = useState<{ event_type: string; visitor_email: string | null; created_at: string; track_id: string | null }[]>([]);
+  useEffect(function() {
+    if (!activeWorkspace) return;
+    supabase
+      .from("link_events")
+      .select("event_type, visitor_email, created_at, track_id")
+      .order("created_at", { ascending: false })
+      .limit(200)
+      .then(function(res) {
+        if (res.data) setLinkEvents(res.data);
+      });
+  }, [activeWorkspace]);
+
+  const linkPlays = linkEvents.filter(function(e) { return e.event_type === "play"; });
+  const linkDownloads = linkEvents.filter(function(e) { return e.event_type === "download"; });
+  const playRecipients = new Set(linkPlays.filter(function(e) { return e.visitor_email; }).map(function(e) { return e.visitor_email; })).size;
+  const downloadRecipients = new Set(linkDownloads.filter(function(e) { return e.visitor_email; }).map(function(e) { return e.visitor_email; })).size;
+
+  // Compute "this week" counts
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const tracksThisWeek = allTracks.filter(function(t) { return t.createdAt && new Date(t.createdAt) >= oneWeekAgo; }).length;
+  const contactsThisWeek = allContacts.filter(function(c) { return c.firstInteraction && new Date(c.firstInteraction) >= oneWeekAgo; }).length;
+
+  // Build real activity feed
+  const activityFeed = useMemo(function() {
+    type ActivityItem = { icon: typeof Music; text: string; time: string; sortDate: Date };
+    const items: ActivityItem[] = [];
+
+    // Recent link events (plays/downloads)
+    linkEvents.slice(0, 20).forEach(function(ev) {
+      const track = ev.track_id ? allTracks.find(function(t) { return t.uuid === ev.track_id; }) : null;
+      const trackName = track ? '"' + track.title + '"' : "a track";
+      const who = ev.visitor_email || "Someone";
+      if (ev.event_type === "play") {
+        items.push({ icon: Headphones, text: who + " played " + trackName, time: timeAgo(ev.created_at), sortDate: new Date(ev.created_at) });
+      } else if (ev.event_type === "download") {
+        items.push({ icon: Download, text: who + " downloaded " + trackName, time: timeAgo(ev.created_at), sortDate: new Date(ev.created_at) });
+      }
     });
+
+    // Recent tracks uploaded
+    allTracks.filter(function(t) { return t.createdAt; }).slice(0, 5).forEach(function(t) {
+      items.push({ icon: Upload, text: 'You uploaded "' + t.title + '"', time: timeAgo(t.createdAt!), sortDate: new Date(t.createdAt!) });
+    });
+
+    // Recent pitches
+    allPitches.slice(0, 5).forEach(function(p) {
+      items.push({ icon: Send, text: '"' + p.itemName + '" pitched to ' + p.recipientCompany + " — " + p.recipientName, time: timeAgo(p.date), sortDate: new Date(p.date) });
+    });
+
+    items.sort(function(a, b) { return b.sortDate.getTime() - a.sortDate.getTime(); });
+    return items.slice(0, 10);
+  }, [linkEvents, allTracks, allPitches]);
+
+  // Use real created_at from tracks
+  const trackUploadDates = useMemo(() => {
+    return allTracks.map((track) => ({
+      ...track,
+      uploadedAt: track.createdAt ? new Date(track.createdAt) : new Date(0),
+    }));
   }, [allTracks]);
 
   const filteredByRange = useMemo(() => {
@@ -126,17 +181,12 @@ export function DashboardContent() {
     });
   }, [trackUploadDates, tracksRange, tracksSearch]);
 
-  // Simulated creation dates for demo playlists
+  // Use real updated date from playlists (updated field is relative, use as-is for display)
   const playlistDates = useMemo(() => {
-    const now = new Date();
-    return allPlaylists.map((pl, i) => {
-      const d = new Date(now);
-      if (i < 1) d.setHours(d.getHours() - 6);
-      else if (i < 3) d.setDate(d.getDate() - (i + 1));
-      else if (i < 6) d.setDate(d.getDate() - (i * 4));
-      else d.setMonth(d.getMonth() - (i - 4));
-      return { ...pl, createdAt: d };
-    });
+    return allPlaylists.map((pl) => ({
+      ...pl,
+      createdAt: new Date(), // playlists don't expose created_at; use current for range filtering
+    }));
   }, [allPlaylists]);
 
   const filteredPlaylists = useMemo(() => {
@@ -255,12 +305,12 @@ export function DashboardContent() {
   }, [contactEntries, contactsRange, contactsSearch]);
 
   const stats = [
-    { id: "tracks", label: t("dashboard.totalTracks"), value: allTracks.length.toLocaleString(), icon: Music, change: t("dashboard.thisWeek"), accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20", clickable: true },
-    { id: "playlists", label: t("dashboard.playlists"), value: allPlaylists.length.toLocaleString(), icon: ListMusic, change: t("dashboard.new"), accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
-    { id: "plays", label: "Total Plays", value: engagementStats.totalPlays.toLocaleString(), icon: Headphones, change: `${engagementStats.uniqueRecipients} recipients`, accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
-    { id: "downloads", label: "Downloads", value: engagementStats.totalDownloads.toLocaleString(), icon: Download, change: `across ${engagementStats.uniqueRecipients} contacts`, accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
-    { id: "contacts", label: t("nav.contacts"), value: contactEntries.length.toLocaleString(), icon: Users, change: `+${filteredContacts.length} recent`, accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
-    { id: "pitches", label: t("pitch.title"), value: allPitches.length.toLocaleString(), icon: Send, change: `${allPitches.filter(p => p.status === "Sent" || p.status === "Opened").length} active`, accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", clickable: true },
+    { id: "tracks", label: t("dashboard.totalTracks"), value: allTracks.length.toLocaleString(), icon: Music, change: "+" + tracksThisWeek + " this week", accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20", clickable: true },
+    { id: "playlists", label: t("dashboard.playlists"), value: allPlaylists.length.toLocaleString(), icon: ListMusic, change: allPlaylists.length + " total", accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
+    { id: "plays", label: "Total Plays", value: (linkPlays.length || engagementStats.totalPlays).toLocaleString(), icon: Headphones, change: (playRecipients || engagementStats.uniqueRecipients) + " recipients", accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
+    { id: "downloads", label: "Downloads", value: (linkDownloads.length || engagementStats.totalDownloads).toLocaleString(), icon: Download, change: "across " + (downloadRecipients || engagementStats.uniqueRecipients) + " contacts", accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
+    { id: "contacts", label: t("nav.contacts"), value: allContacts.length.toLocaleString(), icon: Users, change: "+" + contactsThisWeek + " recent", accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
+    { id: "pitches", label: t("pitch.title"), value: allPitches.length.toLocaleString(), icon: Send, change: allPitches.filter(function(p) { return p.status === "Sent" || p.status === "Opened"; }).length + " active", accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", clickable: true },
   ];
 
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -283,7 +333,7 @@ export function DashboardContent() {
       {/* Header */}
       <motion.div variants={item}>
         <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("dashboard.title")}</h1>
-        <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("dashboard.subtitle")}</p>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("dashboard.subtitle", { date: new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) })}</p>
       </motion.div>
 
       {/* Onboarding Checklist */}
@@ -986,13 +1036,15 @@ export function DashboardContent() {
             <button onClick={() => navigate("/notifications")} className="text-xs gradient-text hover:opacity-80 transition-opacity font-semibold">{t("dashboard.seeAll")}</button>
           </div>
           <div className="card-premium divide-y divide-border/60 overflow-hidden">
-            {activity.map((a, i) => (
+            {activityFeed.length === 0 ? (
+              <div className="px-4 py-10 text-center text-muted-foreground text-sm">No recent activity</div>
+            ) : activityFeed.map((a, i) => (
               <div key={i} className="flex items-start gap-3 px-3 sm:px-4 py-3 sm:py-3.5 hover:bg-secondary/20 transition-colors">
                 <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 mt-0.5">
                   <a.icon className="w-3.5 h-3.5 text-muted-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-foreground/85 leading-relaxed">{a.textKey}</p>
+                  <p className="text-xs text-foreground/85 leading-relaxed">{a.text}</p>
                   <p className="text-2xs text-muted-foreground mt-1 font-medium">{a.time}</p>
                 </div>
               </div>

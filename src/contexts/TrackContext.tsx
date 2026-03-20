@@ -80,6 +80,7 @@ export interface TrackData extends WorkspaceScoped {
   lyrics?: string;
   waveformData?: number[];
   chapters?: TrackChapter[];
+  createdAt?: string;
   statusHistory: TrackStatusEntry[];
 }
 
@@ -162,6 +163,7 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     splits: (row.splits as TrackSplit[]) || [],
     lyrics: (row.lyrics as string) || undefined,
     waveformData: row.waveform_data ? (row.waveform_data as number[]) : undefined,
+    createdAt: (row.created_at as string) || undefined,
     statusHistory: [],
   };
 }

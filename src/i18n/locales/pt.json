@@ -24,7 +24,7 @@
   },
   "dashboard": {
     "title": "Painel",
-    "subtitle": "O seu catálogo num relance — 6 de março de 2026",
+    "subtitle": "O seu catálogo num relance — {{date}}",
     "totalTracks": "Total de faixas",
     "playlists": "Playlists",
     "collaborators": "Colaboradores",

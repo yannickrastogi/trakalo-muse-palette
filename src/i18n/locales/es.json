@@ -24,7 +24,7 @@
   },
   "dashboard": {
     "title": "Panel",
-    "subtitle": "Tu catálogo de un vistazo — 6 de marzo de 2026",
+    "subtitle": "Tu catálogo de un vistazo — {{date}}",
     "totalTracks": "Pistas totales",
     "playlists": "Playlists",
     "collaborators": "Colaboradores",

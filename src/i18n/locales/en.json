@@ -24,7 +24,7 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "subtitle": "Your catalog at a glance — March 6, 2026",
+    "subtitle": "Your catalog at a glance — {{date}}",
     "totalTracks": "Total Tracks",
     "playlists": "Playlists",
     "collaborators": "Collaborators",
