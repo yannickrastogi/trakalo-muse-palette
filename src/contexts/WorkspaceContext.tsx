@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Workspace, WorkspaceSettings } from "@/types/workspace";
@@ -19,16 +19,18 @@ interface WorkspaceContextValue {
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasFetchedRef = useRef(false);
 
   // Fetch workspaces the user belongs to
   useEffect(() => {
     if (!user) {
       // Don't reset if we already have workspaces (tab switch revalidation)
-      if (workspaces.length === 0) setLoading(false);
+      // Also stay in loading state if auth is still loading (initial page load)
+      if (!authLoading && hasFetchedRef.current) setLoading(false);
       return;
     }
 
@@ -98,6 +100,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         console.error("Unexpected error fetching workspaces:", err);
       } finally {
         setLoading(false);
+        hasFetchedRef.current = true;
       }
     };
 

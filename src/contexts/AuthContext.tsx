@@ -34,13 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      // Ignore all auth events until getSession has completed the initial load.
-      // This prevents a race where onAuthStateChange fires with null before
-      // the persisted session is read from storage.
       if (!initializedRef.current) return;
-
-      // During revalidation (tab switch), ignore transient null sessions.
-      // Only clear session on an explicit SIGNED_OUT event.
       if (!newSession && event !== "SIGNED_OUT") {
         return;
       }
