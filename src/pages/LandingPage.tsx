@@ -109,9 +109,9 @@ const features = [
 ];
 
 const audiences = [
-  { icon: Mic2, label: "Artists" },
-  { icon: Music, label: "Producers & Songwriters" },
-  { icon: Building2, label: "Labels, A&R & Managers" },
+  { key: "artists", icon: Mic2, label: "Artists" },
+  { key: "producers", icon: Music, label: "Producers & Songwriters" },
+  { key: "labels", icon: Building2, label: <>Labels, A&R<br />& Managers</> },
 ];
 
 export default function LandingPage() {
@@ -242,7 +242,7 @@ export default function LandingPage() {
           <motion.p variants={fadeUp} className="text-sm text-muted-foreground font-medium mb-8">Built for music professionals</motion.p>
           <motion.div variants={fadeUp} className="grid grid-cols-3 max-w-xl mx-auto">
             {audiences.map((a) => (
-              <div key={a.label} className="flex flex-col items-center gap-2.5">
+              <div key={a.key} className="flex flex-col items-center gap-2.5">
                 <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center">
                   <a.icon className="w-6 h-6 text-muted-foreground" />
                 </div>
