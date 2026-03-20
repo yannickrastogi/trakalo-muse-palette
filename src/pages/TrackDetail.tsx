@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTeams } from "@/contexts/TeamContext";
@@ -150,19 +150,21 @@ export default function TrackDetail() {
 
   const [activeTab, setActiveTab] = useState<string>(searchParams.get("tab") || "lyrics");
   const shouldAutoUpload = searchParams.get("upload") === "true";
+  const shouldAutoEdit = searchParams.get("edit") === "true";
   const [waveformComposerOpen, setWaveformComposerOpen] = useState(false);
   const [waveformComposerTimestamp, setWaveformComposerTimestamp] = useState(0);
 
   // Clear query params after consuming them
   useEffect(() => {
-    if (searchParams.has("tab") || searchParams.has("upload")) {
+    if (searchParams.has("tab") || searchParams.has("upload") || searchParams.has("edit")) {
       setSearchParams({}, { replace: true });
     }
   }, []);
 
   const { permissions } = useRole();
   const { activeWorkspace } = useWorkspace();
-  const { getTrackByUuid, updateTrack } = useTrack();
+  const navigate = useNavigate();
+  const { getTrackByUuid, updateTrack, deleteTrack } = useTrack();
   const { getTrackEngagement } = useEngagement();
   const { getCommentsForTrack, getCommentCountForTrack, addComment } = useTrackReview();
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -170,8 +172,10 @@ export default function TrackDetail() {
   const [shareTrackModalOpen, setShareTrackModalOpen] = useState(false);
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
   const [sharePackModalOpen, setSharePackModalOpen] = useState(false);
-  const [editTrackModalOpen, setEditTrackModalOpen] = useState(false);
+  const [editTrackModalOpen, setEditTrackModalOpen] = useState(shouldAutoEdit);
   const [shareWithTeamOpen, setShareWithTeamOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { teams } = useTeams();
 
   const trackData = id ? getTrackByUuid(id) : undefined;
@@ -400,6 +404,14 @@ export default function TrackDetail() {
                   >
                     <Package className="w-4 h-4" /> Share Pack
                   </button>
+                  {permissions.canEditOwnTracks && (
+                    <button
+                      onClick={() => setDeleteDialogOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-destructive/30 bg-card text-destructive hover:bg-destructive/10 transition-colors min-h-[44px]"
+                    >
+                      <Trash2 className="w-4 h-4" /> Delete
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -549,6 +561,35 @@ export default function TrackDetail() {
           trackTitle={track.title}
         />
       )}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Track</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{track.title}"? This will permanently remove the track, its stems, and all associated files. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async (e) => {
+                e.preventDefault();
+                setDeleting(true);
+                const ok = await deleteTrack(track.uuid);
+                setDeleting(false);
+                if (ok) {
+                  setDeleteDialogOpen(false);
+                  navigate("/tracks");
+                }
+              }}
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 }

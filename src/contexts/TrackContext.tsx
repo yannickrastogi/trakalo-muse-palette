@@ -228,6 +228,7 @@ interface TrackContextValue {
   updateTrackLyrics: (id: number, lyrics: string) => void;
   updateTrackStems: (id: number, stems: TrackStem[]) => void;
   updateTrackSplits: (id: number, splits: TrackSplit[]) => void;
+  deleteTrack: (uuid: string) => Promise<boolean>;
   refreshTracks: () => Promise<void>;
 }
 
@@ -561,6 +562,54 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     [tracks]
   );
 
+  const deleteTrack = useCallback(
+    async (uuid: string): Promise<boolean> => {
+      if (!activeWorkspace) return false;
+
+      // Delete stems from storage + DB
+      const { data: stemRows } = await supabase
+        .from("stems")
+        .select("id, storage_path")
+        .eq("track_id", uuid);
+
+      if (stemRows && stemRows.length > 0) {
+        const stemPaths = stemRows
+          .map((s: Record<string, unknown>) => s.storage_path as string)
+          .filter(Boolean);
+        if (stemPaths.length > 0) {
+          await supabase.storage.from("stems").remove(stemPaths);
+        }
+        await supabase.from("stems").delete().eq("track_id", uuid);
+      }
+
+      // Delete audio file from storage
+      const { data: trackRow } = await supabase
+        .from("tracks")
+        .select("storage_path")
+        .eq("id", uuid)
+        .single();
+
+      if (trackRow?.storage_path) {
+        await supabase.storage.from("tracks").remove([trackRow.storage_path]);
+      }
+
+      // Delete cover from storage
+      const coverPath = activeWorkspace.id + "/" + uuid + ".jpg";
+      await supabase.storage.from("covers").remove([coverPath]);
+
+      // Delete the track row
+      const { error } = await supabase.from("tracks").delete().eq("id", uuid);
+      if (error) {
+        console.error("Error deleting track:", error);
+        return false;
+      }
+
+      setTracks((prev) => prev.filter((t) => t.uuid !== uuid));
+      return true;
+    },
+    [activeWorkspace]
+  );
+
   return (
     <TrackContext.Provider
       value={{
@@ -574,6 +623,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         updateTrackLyrics,
         updateTrackStems,
         updateTrackSplits,
+        deleteTrack,
         refreshTracks: fetchTracks,
       }}
     >

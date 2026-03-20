@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { UploadTrackModal } from "@/components/UploadTrackModal";
 import { useRole } from "@/contexts/RoleContext";
 import { FirstUseTooltip } from "@/components/FirstUseTooltip";
-import { useTrack } from "@/contexts/TrackContext";
+import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { GENRES, KEYS, MOODS, LANGUAGES, GENDERS } from "@/lib/constants";
@@ -24,7 +24,25 @@ import {
   List,
   Headphones,
   Download,
+  Edit3,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { PageShell } from "@/components/PageShell";
 import { MiniWaveform } from "@/components/MiniWaveform";
 
@@ -56,7 +74,7 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 
 export default function Catalog() {
   const { t } = useTranslation();
-  const { tracks: allTracks } = useTrack();
+  const { tracks: allTracks, deleteTrack } = useTrack();
   const { getTotalPlaysForTrack, getTotalDownloadsForTrack } = useEngagement();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
@@ -75,6 +93,8 @@ export default function Catalog() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const navigate = useNavigate();
   const { permissions } = useRole();
+  const [deleteTarget, setDeleteTarget] = useState<TrackData | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Clear query param after consuming it
   useEffect(() => {
@@ -379,9 +399,23 @@ export default function Catalog() {
                              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
                           </td>
                           <td className="px-4 py-3">
-                            <button className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground opacity-0 group-hover/row:opacity-100" onClick={(e) => e.stopPropagation()}>
-                              <MoreHorizontal className="w-3.5 h-3.5" />
-                            </button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground opacity-0 group-hover/row:opacity-100" onClick={(e) => e.stopPropagation()}>
+                                  <MoreHorizontal className="w-3.5 h-3.5" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate("/track/" + track.uuid + "?edit=true"); }}>
+                                  <Edit3 className="w-3.5 h-3.5 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteTarget(track); }}>
+                                  <Trash2 className="w-3.5 h-3.5 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </td>
                         </tr>
                       );
@@ -493,6 +527,33 @@ export default function Catalog() {
         </motion.div>
       </motion.div>
       <UploadTrackModal open={uploadOpen} onOpenChange={setUploadOpen} />
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Track</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deleteTarget?.title}"? This will permanently remove the track, its stems, and all associated files. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!deleteTarget) return;
+                setDeleting(true);
+                await deleteTrack(deleteTarget.uuid);
+                setDeleting(false);
+                setDeleteTarget(null);
+              }}
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 }
