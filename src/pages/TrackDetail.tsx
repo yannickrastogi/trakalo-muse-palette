@@ -460,7 +460,7 @@ export default function TrackDetail() {
                           onClick={() => { setSharePackModalOpen(true); setShareExpanded(false); }}
                           className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
                         >
-                          <Package className="w-4 h-4" /> Share Pack
+                          <Package className="w-4 h-4" /> Share Trakalog Pack
                         </button>
                         <button
                           onClick={() => { setShareWithTeamOpen(true); setShareExpanded(false); }}
