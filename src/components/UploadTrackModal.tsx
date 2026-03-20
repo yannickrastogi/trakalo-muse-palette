@@ -421,6 +421,12 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       // ── Stage 4: Save track (85–100%) ──
       setUploadStage("Saving track...");
 
+      // Capture cover file before addTrack() — addTrack internally calls
+      // fetchTracks() which triggers setTracks/re-render, so any reference
+      // through currentTrack after that point could be stale in the closure.
+      const coverFileToUpload = currentTrack.coverFile;
+      const workspaceId = activeWorkspace?.id;
+
       const savedTrack = await addTrack({
         title: currentTrack.title.trim() || "Untitled",
         artist: currentTrack.artist.trim() || "Unknown Artist",
@@ -452,21 +458,19 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       });
       setUploadProgress(90);
 
-      // Upload cover art if provided — same logic as TrackDetail.tsx
-      if (savedTrack && currentTrack.coverFile && activeWorkspace) {
+      // Upload cover art if provided — same pattern as TrackDetail.tsx
+      if (savedTrack && coverFileToUpload && workspaceId) {
         setUploadStage("Uploading cover...");
-        const coverPath = activeWorkspace.id + "/" + savedTrack.uuid + ".jpg";
+        const coverPath = workspaceId + "/" + savedTrack.uuid + ".jpg";
         const { error: coverError } = await supabase.storage
           .from("covers")
-          .upload(coverPath, currentTrack.coverFile, { upsert: true, contentType: currentTrack.coverFile.type });
+          .upload(coverPath, coverFileToUpload, { upsert: true, contentType: coverFileToUpload.type });
         if (coverError) {
           console.error("Error uploading cover:", coverError);
         } else {
           const { data: urlData } = supabase.storage
             .from("covers")
             .getPublicUrl(coverPath);
-          // Update DB directly with uuid (same as TrackDetail.tsx),
-          // then refresh local state so UI reflects the change
           await supabase
             .from("tracks")
             .update({ cover_url: urlData.publicUrl })
