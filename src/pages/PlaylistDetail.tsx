@@ -54,7 +54,7 @@ import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePlaylists, covers } from "@/contexts/PlaylistContext";
 import { statusColors } from "./Catalog";
-import { useTrack, type TrackData } from "@/contexts/TrackContext";
+import { useTrack, mapRowToTrack, type TrackData } from "@/contexts/TrackContext";
 import { useRole } from "@/contexts/RoleContext";
 import {
   Dialog,
@@ -107,43 +107,8 @@ export default function PlaylistDetail() {
         res2.data.forEach(function(t: any) { map[t.id] = t; });
         var ordered = uuids.map(function(uid) { return map[uid]; }).filter(Boolean);
         setDbTracks(ordered.map(function(row: any, idx: number) {
-          var durationSec = row.duration_sec as number;
-          var dur = durationSec ? Math.floor(durationSec / 60) + ":" + String(durationSec % 60).padStart(2, "0") : "0:00";
-          var status = row.status === "on_hold" ? "On Hold" : row.status === "released" ? "Released" : "Available";
-          var trackType = row.track_type === "instrumental" ? "Instrumental" : row.track_type === "sample" ? "Sample" : row.track_type === "acapella" ? "Acapella" : "Song";
-          return {
-            id: idx + 10000,
-            uuid: row.id,
-            workspace_id: row.workspace_id || "",
-            title: row.title || "",
-            artist: row.artist || "",
-            featuredArtists: row.featuring ? String(row.featuring).split(",").map(function(s: string) { return s.trim(); }) : [],
-            album: "",
-            genre: row.genre || "",
-            bpm: row.bpm || 0,
-            key: row.key || "",
-            duration: dur,
-            mood: row.mood || [],
-            voice: row.gender || "",
-            status: status,
-            isrc: row.isrc || "",
-            upc: "",
-            releaseDate: row.released_at || "",
-            label: Array.isArray(row.labels) && row.labels.length > 0 ? row.labels[0] : "",
-            publisher: Array.isArray(row.publishers) && row.publishers.length > 0 ? row.publishers[0] : "",
-            writtenBy: [],
-            producedBy: [],
-            mixedBy: "",
-            masteredBy: "",
-            copyright: "",
-            language: row.language || "",
-            explicit: false,
-            type: trackType,
-            coverIdx: 0,
-            coverImage: row.cover_url || undefined,
-            previewUrl: row.audio_url || undefined,
-          } as Track;
-        }));
+          return mapRowToTrack(row as Record<string, unknown>, idx);
+        }) as Track[]);
       });
     });
   }, [id]);

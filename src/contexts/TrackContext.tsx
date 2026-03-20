@@ -114,7 +114,7 @@ function mapStemRow(row: Record<string, unknown>): TrackStem {
 }
 
 // Helper: convert Supabase row to TrackData
-function mapRowToTrack(row: Record<string, unknown>, index: number, stems: TrackStem[]): TrackData {
+export function mapRowToTrack(row: Record<string, unknown>, index: number, stems: TrackStem[] = []): TrackData {
   return {
     id: index + 1, // numeric id for frontend compatibility
     uuid: row.id as string,
