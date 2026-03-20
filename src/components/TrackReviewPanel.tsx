@@ -28,11 +28,14 @@ interface TrackReviewPanelProps {
   totalDurationSeconds: number;
   isPlaying?: boolean;
   filterAuthor?: string | null;
+  filterSharedLink?: string | null;
 }
 
-interface AuthorGroup {
-  authorName: string;
-  authorType: AuthorType;
+interface CommentGroup {
+  key: string;
+  label: string;
+  sublabel?: string;
+  badgeType: AuthorType;
   comments: TimecodedComment[];
   latestDate: string;
 }
@@ -44,6 +47,7 @@ export function TrackReviewPanel({
   onSeek,
   totalDurationSeconds,
   filterAuthor,
+  filterSharedLink,
 }: TrackReviewPanelProps) {
   const { getCommentsForTrack, getSortedComments, editComment, deleteComment, addComment } = useTrackReview();
   const [sort, setSort] = useState<CommentSort>("timecode");
@@ -63,41 +67,49 @@ export function TrackReviewPanel({
     if (filterAuthor) {
       result = result.filter((c) => c.authorName === filterAuthor);
     }
+    if (filterSharedLink) {
+      if (filterSharedLink === "__direct__") {
+        result = result.filter((c) => !c.sharedLinkId);
+      } else {
+        result = result.filter((c) => c.sharedLinkId === filterSharedLink);
+      }
+    }
     if (search) {
       const q = search.toLowerCase();
       result = result.filter((c) => c.commentText.toLowerCase().includes(q) || c.authorName.toLowerCase().includes(q));
     }
     return result;
-  }, [allComments, filterAuthor, search]);
+  }, [allComments, filterAuthor, filterSharedLink, search]);
 
   const sorted = useMemo(() => getSortedComments(filtered, sort), [filtered, sort, getSortedComments]);
 
-  // Group by author
-  const authorGroups = useMemo(() => {
-    const map = new Map<string, AuthorGroup>();
+  // Group by shared link (for owner view), with "Direct comments" for non-link comments
+  const commentGroups = useMemo(() => {
+    const map = new Map<string, CommentGroup>();
     sorted.forEach((c) => {
-      const key = c.authorName;
+      const key = c.sharedLinkId || "__direct__";
       const existing = map.get(key);
       if (existing) {
         existing.comments.push(c);
         if (c.createdAt > existing.latestDate) existing.latestDate = c.createdAt;
       } else {
+        const isDirectComment = !c.sharedLinkId;
         map.set(key, {
-          authorName: c.authorName,
-          authorType: c.authorType,
+          key,
+          label: isDirectComment ? "Direct comments" : ("Shared Link: " + (c.sharedLinkName || c.sharedLinkId || "Unknown")),
+          sublabel: isDirectComment ? undefined : c.sharedLinkName,
+          badgeType: isDirectComment ? (c.authorType) : "guest_recipient",
           comments: [c],
           latestDate: c.createdAt,
         });
       }
     });
 
-    // Owner/team first, then guests
+    // Direct/owner first, then shared links by most recent
     const groups = Array.from(map.values());
     groups.sort((a, b) => {
-      const aIsInternal = a.authorType === "owner" || a.authorType === "team_member";
-      const bIsInternal = b.authorType === "owner" || b.authorType === "team_member";
-      if (aIsInternal && !bIsInternal) return -1;
-      if (!aIsInternal && bIsInternal) return 1;
+      if (a.key === "__direct__") return -1;
+      if (b.key === "__direct__") return 1;
       return new Date(b.latestDate).getTime() - new Date(a.latestDate).getTime();
     });
     return groups;
@@ -216,7 +228,7 @@ export function TrackReviewPanel({
 
         {/* Grouped comments */}
         <div className="max-h-[600px] overflow-y-auto">
-          {authorGroups.length === 0 ? (
+          {commentGroups.length === 0 ? (
             <div className="text-center py-12">
               <MessageSquare className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
               <p className="text-sm font-medium text-muted-foreground">No comments yet</p>
@@ -224,20 +236,20 @@ export function TrackReviewPanel({
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {authorGroups.map((group) => {
-                const badge = authorTypeBadge[group.authorType];
-                const isCollapsed = collapsedGroups.has(group.authorName);
+              {commentGroups.map((group) => {
+                const badge = authorTypeBadge[group.badgeType];
+                const isCollapsed = collapsedGroups.has(group.key);
                 const dateStr = new Date(group.latestDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
                 return (
-                  <div key={group.authorName}>
+                  <div key={group.key}>
                     {/* Group header */}
                     <button
-                      onClick={() => toggleGroup(group.authorName)}
+                      onClick={() => toggleGroup(group.key)}
                       className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-secondary/30 transition-colors"
                     >
                       {isCollapsed ? <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
-                      <span className="text-sm font-semibold text-foreground">{group.authorName}</span>
+                      <span className="text-sm font-semibold text-foreground">{group.label}</span>
                       <span className={"inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider " + badge.className}>
                         {badge.label}
                       </span>
@@ -277,11 +289,12 @@ export function TrackReviewPanel({
 
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-[13px] font-semibold text-foreground">{comment.authorName}</span>
+                                        <span className={"inline-flex px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider " + authorTypeBadge[comment.authorType].className}>
+                                          {authorTypeBadge[comment.authorType].label}
+                                        </span>
                                         {comment.isEdited && (
                                           <span className="text-[9px] text-muted-foreground/60 italic">Edited</span>
-                                        )}
-                                        {comment.authorEmail && (
-                                          <span className="text-[10px] text-muted-foreground/50">{comment.authorEmail}</span>
                                         )}
                                         <span className="text-[10px] text-muted-foreground/50 ml-auto">
                                           {new Date(comment.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}

@@ -30,6 +30,7 @@ interface CommentMarkerLayerProps {
   onMarkerClick: (seconds: number) => void;
   height?: number;
   filterAuthor?: string | null;
+  filterSharedLink?: string | null;
 }
 
 export function CommentMarkerLayer({
@@ -38,15 +39,24 @@ export function CommentMarkerLayer({
   onMarkerClick,
   height = 56,
   filterAuthor,
+  filterSharedLink,
 }: CommentMarkerLayerProps) {
   const [openMarkerId, setOpenMarkerId] = useState<number | null>(null);
 
   const markers = useMemo(() => {
     if (!totalDurationSeconds || totalDurationSeconds <= 0) return [];
 
-    const filtered = filterAuthor
-      ? comments.filter((c) => c.authorName === filterAuthor)
-      : comments;
+    let filtered = comments;
+    if (filterAuthor) {
+      filtered = filtered.filter((c) => c.authorName === filterAuthor);
+    }
+    if (filterSharedLink) {
+      if (filterSharedLink === "__direct__") {
+        filtered = filtered.filter((c) => !c.sharedLinkId);
+      } else {
+        filtered = filtered.filter((c) => c.sharedLinkId === filterSharedLink);
+      }
+    }
 
     const groups: { percent: number; comments: TimecodedComment[] }[] = [];
     const sorted = [...filtered].sort((a, b) => a.timestampSeconds - b.timestampSeconds);
@@ -61,7 +71,7 @@ export function CommentMarkerLayer({
       }
     });
     return groups;
-  }, [comments, totalDurationSeconds, filterAuthor]);
+  }, [comments, totalDurationSeconds, filterAuthor, filterSharedLink]);
 
   if (markers.length === 0) return null;
 

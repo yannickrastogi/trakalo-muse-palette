@@ -22,6 +22,8 @@ export interface TimecodedComment {
   deletedAt?: string;
   isEdited: boolean;
   sourceContext: SourceContext;
+  sharedLinkId?: string;
+  sharedLinkName?: string;
   // future-ready
   parentId?: string;
   status?: "open" | "resolved" | "to_fix";
@@ -127,7 +129,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
     if (trackUuids.length > 0) {
       const { data: dbComments } = await supabase
         .from("track_comments")
-        .select("*")
+        .select("*, shared_links:shared_link_id(link_name, link_slug)")
         .in("track_id", trackUuids)
         .order("created_at", { ascending: true });
 
@@ -137,6 +139,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
           if (!numId) continue;
           // Skip if already exists (by id)
           if (allComments.some((existing) => existing.id === c.id)) continue;
+          const linkInfo = c.shared_links as { link_name: string; link_slug: string } | null;
           allComments.push({
             id: c.id,
             trackId: numId,
@@ -150,6 +153,8 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
             updatedAt: c.created_at,
             isEdited: false,
             sourceContext: "shared_link_review" as SourceContext,
+            sharedLinkId: c.shared_link_id || undefined,
+            sharedLinkName: linkInfo ? (linkInfo.link_name || linkInfo.link_slug) : undefined,
           });
         }
       }
