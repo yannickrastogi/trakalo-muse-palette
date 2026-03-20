@@ -207,38 +207,44 @@ export default function TrackDetail() {
 
   const trackData = id ? getTrackByUuid(id) : undefined;
 
-  const [dbTrack, setDbTrack] = useState<any>(null);
-  const dbFetchedRef = useRef<string | null>(null);
+  // Persistent fallback: survives context resets (tab switch, auth revalidation)
+  const dbTrackRef = useRef<any>(null);
+  const dbFetchedIdRef = useRef<string | null>(null);
+
+  // Reset refs only when navigating to a different track
+  if (id && dbFetchedIdRef.current && dbFetchedIdRef.current !== id) {
+    dbFetchedIdRef.current = null;
+    dbTrackRef.current = null;
+  }
 
   useEffect(function() {
-    if (!id) return;
-    // Already fetched for this id, or context has the track
-    if (dbFetchedRef.current === id) return;
+    if (!id || dbFetchedIdRef.current === id) return;
     if (trackData) {
-      dbFetchedRef.current = id;
+      dbFetchedIdRef.current = id;
       return;
     }
-    // Fetch from DB as fallback
-    dbFetchedRef.current = id;
+    dbFetchedIdRef.current = id;
     supabase
       .from("tracks")
       .select("*")
       .eq("id", id)
       .single()
       .then(function(res) {
-        if (res.data) setDbTrack(mapRowToTrack(res.data as Record<string, unknown>, 0));
+        if (res.data) {
+          dbTrackRef.current = mapRowToTrack(res.data as Record<string, unknown>, 0);
+          // Force re-render
+          setForceUpdate((n) => n + 1);
+        }
       });
   }, [id, trackData]);
 
-  // Reset when navigating to a different track
-  useEffect(function() {
-    return function() {
-      dbFetchedRef.current = null;
-      setDbTrack(null);
-    };
-  }, [id]);
+  // Dummy state to force re-render when dbTrackRef is set
+  const [, setForceUpdate] = useState(0);
 
-  const track = trackData || dbTrack;
+  const track = trackData || dbTrackRef.current;
+  // Remember if we ever had a track, to show loading instead of "not found" during context resets
+  const hadTrackRef = useRef(false);
+  if (track) hadTrackRef.current = true;
 
   // Play/pause handler — must be before early return to respect Rules of Hooks
   const handlePlayPause = useCallback(() => {
@@ -252,7 +258,14 @@ export default function TrackDetail() {
   if (!track) {
     return (
       <PageShell>
-        <div className="p-8 text-center text-muted-foreground">Track not found.</div>
+        {hadTrackRef.current ? (
+          <div className="p-8 flex items-center justify-center gap-3 text-muted-foreground">
+            <Disc3 className="w-5 h-5 animate-spin" />
+            <span className="text-sm">Loading track...</span>
+          </div>
+        ) : (
+          <div className="p-8 text-center text-muted-foreground">Track not found.</div>
+        )}
       </PageShell>
     );
   }

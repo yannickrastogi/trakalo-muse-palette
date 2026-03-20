@@ -83,7 +83,12 @@ export default function PlaylistDetail() {
   const { playTrack, togglePlay, isTrackPlaying, isPlaying: audioIsPlaying, currentTrack, setQueue, progress } = useAudioPlayer();
   const { activeWorkspace } = useWorkspace();
   const coverInputRef = useRef<HTMLInputElement>(null);
-  const playlist = getPlaylist(id || "");
+  const playlistData = getPlaylist(id || "");
+  const playlistRef = useRef(playlistData);
+  if (playlistData) playlistRef.current = playlistData;
+  const playlist = playlistData || playlistRef.current;
+  const hadPlaylistRef = useRef(false);
+  if (playlist) hadPlaylistRef.current = true;
   const plEngagement = getPlaylistEngagement(id || "");
 
   const [tracks, setTracks] = useState<Track[]>(() => {
@@ -198,14 +203,21 @@ export default function PlaylistDetail() {
   if (!playlist) {
     return (
       <PageShell>
-        <div className="flex flex-col items-center justify-center py-32 text-center px-4">
-          <ListMusic className="w-12 h-12 text-muted-foreground/15 mb-4" />
-          <h2 className="text-lg font-semibold text-foreground">Playlist not found</h2>
-          <p className="text-sm text-muted-foreground mt-1">This playlist may have been removed.</p>
-          <Link to="/playlists" className="mt-4 text-sm gradient-text font-semibold hover:opacity-80 transition-opacity">
-            ← Back to Playlists
-          </Link>
-        </div>
+        {hadPlaylistRef.current ? (
+          <div className="p-8 flex items-center justify-center gap-3 text-muted-foreground">
+            <ListMusic className="w-5 h-5 animate-pulse" />
+            <span className="text-sm">Loading playlist...</span>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-32 text-center px-4">
+            <ListMusic className="w-12 h-12 text-muted-foreground/15 mb-4" />
+            <h2 className="text-lg font-semibold text-foreground">Playlist not found</h2>
+            <p className="text-sm text-muted-foreground mt-1">This playlist may have been removed.</p>
+            <Link to="/playlists" className="mt-4 text-sm gradient-text font-semibold hover:opacity-80 transition-opacity">
+              ← Back to Playlists
+            </Link>
+          </div>
+        )}
       </PageShell>
     );
   }
