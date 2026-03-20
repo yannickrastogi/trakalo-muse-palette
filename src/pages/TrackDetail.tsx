@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -201,6 +201,7 @@ export default function TrackDetail() {
   const [deleting, setDeleting] = useState(false);
   const [shareExpanded, setShareExpanded] = useState(false);
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
+  const [commentFilterAuthor, setCommentFilterAuthor] = useState<string | null>(null);
   const { teams } = useTeams();
 
   const trackData = id ? getTrackByUuid(id) : undefined;
@@ -248,6 +249,17 @@ export default function TrackDetail() {
   const engagement = numericId ? getTrackEngagement(numericId) : undefined;
   const trackComments = numericId ? getCommentsForTrack(numericId) : [];
   const commentCount = trackComments.length;
+
+  // Unique comment authors for the filter dropdown
+  const commentAuthors = useMemo(() => {
+    const map = new Map<string, { name: string; count: number }>();
+    trackComments.forEach((c) => {
+      const existing = map.get(c.authorName);
+      if (existing) existing.count++;
+      else map.set(c.authorName, { name: c.authorName, count: 1 });
+    });
+    return Array.from(map.values());
+  }, [trackComments]);
 
   // Parse duration string to seconds
   const parseDuration = (dur: string): number => {
@@ -529,6 +541,22 @@ export default function TrackDetail() {
                   <input type="range" min="0" max="1" step="0.05" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="w-20 h-1.5 accent-primary cursor-pointer" />
                 </div>
               </div>
+              {commentAuthors.length > 1 && (
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] text-muted-foreground/60">Comments:</span>
+                  <select
+                    value={commentFilterAuthor || ""}
+                    onChange={(e) => setCommentFilterAuthor(e.target.value || null)}
+                    className="h-7 px-2 pr-6 rounded-lg bg-secondary border border-border text-[11px] text-foreground outline-none cursor-pointer appearance-none"
+                    style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center" }}
+                  >
+                    <option value="">{"All (" + commentCount + ")"}</option>
+                    {commentAuthors.map((a) => (
+                      <option key={a.name} value={a.name}>{a.name + " (" + a.count + ")"}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="relative">
                 <TrackWaveformPlayer
                   seed={track.id}
@@ -543,6 +571,7 @@ export default function TrackDetail() {
                   comments={trackComments}
                   totalDurationSeconds={totalDurationSeconds}
                   onMarkerClick={(seconds) => handleCommentSeek(seconds, totalDurationSeconds)}
+                  filterAuthor={commentFilterAuthor}
                 />
               </div>
               <p className="text-[10px] text-muted-foreground/40 mt-2 text-center">Double-click waveform to leave a timecoded comment</p>
@@ -630,6 +659,7 @@ export default function TrackDetail() {
                    onSeek={handleCommentSeek}
                    totalDurationSeconds={totalDurationSeconds}
                    isPlaying={isThisTrackPlaying}
+                   filterAuthor={commentFilterAuthor}
                  />
                )}
              </motion.div>
