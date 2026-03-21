@@ -836,21 +836,19 @@ export default function SharedLinkPage() {
                   return (
                     <div
                       key={track.id}
-                      className={"flex items-center gap-3 px-6 py-3 border-b border-border/40 last:border-0 hover:bg-secondary/30 transition-colors " + (isActive ? "bg-primary/5" : "")}
+                      onClick={function() { handlePlayTrack(track); }}
+                      className={"flex items-center gap-3 px-6 py-3 border-b border-border/40 last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer select-none " + (isActive ? "bg-primary/5" : "")}
                     >
                       {/* Play button / track number */}
-                      <button
-                        onClick={function() { handlePlayTrack(track); }}
-                        className={"w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all " + (isAudioPlaying ? "btn-brand" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}
-                        disabled={!track.audio_url && !slug}
+                      <div
+                        className={"w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all " + (isAudioPlaying ? "btn-brand" : "bg-secondary/80 text-foreground hover:bg-primary/15 hover:text-primary")}
                       >
                         {isAudioPlaying ? (
                           <Pause className="w-3.5 h-3.5 text-primary-foreground" />
                         ) : (
-                          <span className="text-xs font-mono">{(track.audio_url || slug) ? "" : (idx + 1)}</span>
+                          <Play className="w-3.5 h-3.5 ml-0.5" />
                         )}
-                        {!isAudioPlaying && (track.audio_url || slug) && <Play className="w-3.5 h-3.5 ml-0.5" />}
-                      </button>
+                      </div>
 
                       {/* Cover */}
                       <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-secondary border border-border/50">
@@ -876,7 +874,15 @@ export default function SharedLinkPage() {
               </div>
             )}
 
-            {/* Player bar for active track */}
+            {/* Player bar — prompt or active */}
+            {!playingTrackId && playlistTracks.length > 0 && (
+              <div className="border-t border-border px-6 py-4 bg-secondary/20">
+                <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                  <Play className="w-4 h-4" />
+                  <span className="text-xs font-medium">Select a track to start playback</span>
+                </div>
+              </div>
+            )}
             {playingTrackId && (function() {
               var activeTrack = playlistTracks.find(function(t) { return t.id === playingTrackId; });
               var activeIdx = playlistTracks.findIndex(function(t) { return t.id === playingTrackId; });
