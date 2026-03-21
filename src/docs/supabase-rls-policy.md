@@ -359,7 +359,16 @@ using (
   created_by = auth.uid()
   and public.is_workspace_member(auth.uid(), workspace_id)
 );
+
+-- ANON SELECT : accès public aux liens actifs (page /share/:slug)
+create policy "anon_read_shared_links"
+on public.shared_links for select to anon
+using (status = 'active');
 ```
+
+> **Note** : Des policies anon existent aussi sur `tracks`, `playlists`, `playlist_tracks` et `track_comments`
+> pour permettre l'accès en lecture aux données via les shared links actifs.
+> Voir `supabase/migrations/20260315_shared_link_anon_rls.sql` pour le détail.
 
 ---
 

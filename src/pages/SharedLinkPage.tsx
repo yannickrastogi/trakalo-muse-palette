@@ -358,7 +358,10 @@ export default function SharedLinkPage() {
       setLoading(false);
     }
 
-    fetchLink();
+    fetchLink().catch(function() {
+      setError("Failed to load this link. Please try again.");
+      setLoading(false);
+    });
   }, [slug]);
 
   // Setup audio element (single instance for lifetime of page)

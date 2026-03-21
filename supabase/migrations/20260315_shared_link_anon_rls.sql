@@ -40,3 +40,21 @@ CREATE POLICY "anon_read_playlist_tracks_via_shared_link"
   USING (
     playlist_id IN (SELECT playlist_id FROM shared_links WHERE status = 'active' AND playlist_id IS NOT NULL)
   );
+
+-- Allow anon to read comments on tracks via active shared links
+CREATE POLICY "anon_read_comments_via_shared_link"
+  ON track_comments
+  FOR SELECT
+  TO anon
+  USING (
+    shared_link_id IN (SELECT id FROM shared_links WHERE status = 'active')
+  );
+
+-- Allow anon to insert comments on tracks via active shared links
+CREATE POLICY "anon_insert_comments_via_shared_link"
+  ON track_comments
+  FOR INSERT
+  TO anon
+  WITH CHECK (
+    shared_link_id IN (SELECT id FROM shared_links WHERE status = 'active')
+  );
