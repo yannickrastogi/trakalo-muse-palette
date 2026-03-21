@@ -700,7 +700,7 @@ export default function SmartAR() {
                   )}
                   <div
                     className={
-                      "max-w-[85%] rounded-2xl px-4 py-3 text-sm " +
+                      "max-w-[85%] rounded-2xl px-4 py-3 text-sm break-words min-w-0 " +
                       (isBot
                         ? "bg-card border border-border text-foreground"
                         : "bg-primary text-primary-foreground")
