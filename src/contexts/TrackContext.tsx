@@ -229,7 +229,7 @@ interface TrackContextValue {
   addTrack: (track: Partial<TrackData> & { title: string; artist: string }) => Promise<TrackData | null>;
   updateTrack: (id: number, updates: Partial<TrackData>) => void;
   updateTrackStatus: (id: number, newStatus: string, note: string) => void;
-  updateTrackLyrics: (id: number, lyrics: string) => void;
+  updateTrackLyrics: (id: number, lyrics: string, lyricsSegments?: { start: number; end: number; text: string }[]) => void;
   updateTrackStems: (id: number, stems: TrackStem[]) => void;
   updateTrackSplits: (id: number, splits: TrackSplit[]) => void;
   deleteTrack: (uuid: string) => Promise<boolean>;
@@ -482,15 +482,20 @@ export function TrackProvider({ children }: { children: ReactNode }) {
   );
 
   const updateTrackLyrics = useCallback(
-    async (id: number, lyrics: string) => {
+    async (id: number, lyrics: string, lyricsSegments?: { start: number; end: number; text: string }[]) => {
       const track = tracks.find((t) => t.id === id);
       if (!track) return;
 
-      setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, lyrics } : t)));
+      setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, lyrics, lyricsSegments: lyricsSegments ?? t.lyricsSegments } : t)));
+
+      const updatePayload: Record<string, unknown> = { lyrics };
+      if (lyricsSegments !== undefined) {
+        updatePayload.lyrics_segments = lyricsSegments;
+      }
 
       const { error } = await supabase
         .from("tracks")
-        .update({ lyrics })
+        .update(updatePayload)
         .eq("id", track.uuid);
 
       if (error) {

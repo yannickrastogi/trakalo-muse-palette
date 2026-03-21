@@ -1070,6 +1070,8 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editValue, setEditValue] = useState("");
+  const [editLines, setEditLines] = useState<{ start: number; end: number; text: string }[]>([]);
+  const [syncedEditMode, setSyncedEditMode] = useState(false);
   const [localLyrics, setLocalLyrics] = useState<string | undefined>(undefined);
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
   const activeLineRef = useRef<HTMLDivElement>(null);
@@ -1148,20 +1150,37 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
   const hasLyrics = !!rawLyrics.trim();
 
   const handleSave = async () => {
-    if (contextTrack) {
-      updateTrackLyrics(trackId, editValue);
+    if (syncedEditMode) {
+      const newSegments = editLines.filter((l) => l.text.trim() !== "");
+      const prefix = isAutoTranscribed ? "[auto-transcribed]\n" : "";
+      const newLyrics = prefix + newSegments.map((s) => s.text).join("\n");
+      if (contextTrack) {
+        updateTrackLyrics(trackId, newLyrics, newSegments);
+      } else {
+        await supabase.from("tracks").update({ lyrics: newLyrics, lyrics_segments: newSegments }).eq("id", trackUuid);
+        setLocalLyrics(newLyrics);
+        setDbLyrics(newLyrics);
+        setDbSegments(newSegments);
+        refreshTracks();
+      }
     } else {
-      // Fallback: update DB directly when context isn't loaded yet
-      await supabase.from("tracks").update({ lyrics: editValue }).eq("id", trackUuid);
-      setLocalLyrics(editValue);
-      setDbLyrics(editValue);
-      refreshTracks();
+      if (contextTrack) {
+        updateTrackLyrics(trackId, editValue);
+      } else {
+        await supabase.from("tracks").update({ lyrics: editValue }).eq("id", trackUuid);
+        setLocalLyrics(editValue);
+        setDbLyrics(editValue);
+        refreshTracks();
+      }
     }
     setIsEditing(false);
+    setSyncedEditMode(false);
   };
 
   const handleCancel = () => {
     setEditValue(rawLyrics);
+    setEditLines([]);
+    setSyncedEditMode(false);
     setIsEditing(false);
   };
 
@@ -1239,7 +1258,16 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
                 <Download className="w-3.5 h-3.5" /> Download PDF
               </button>
               <button
-                onClick={() => { setEditValue(rawLyrics); setIsEditing(true); }}
+                onClick={() => {
+                  if (segments && segments.length > 0) {
+                    setEditLines(segments.map((s) => ({ ...s })));
+                    setSyncedEditMode(true);
+                  } else {
+                    setEditValue(rawLyrics);
+                    setSyncedEditMode(false);
+                  }
+                  setIsEditing(true);
+                }}
                 className="flex items-center gap-1.5 text-xs text-primary hover:underline"
               >
                 <Edit3 className="w-3.5 h-3.5" /> Edit
@@ -1275,12 +1303,75 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
       <div className="p-5">
         {isEditing ? (
           <div className="space-y-4">
-            <Textarea
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              placeholder="Type or paste your lyrics here…\n\n[Verse 1]\nYour lyrics...\n\n[Chorus]\n..."
-              className="min-h-[400px] bg-secondary border-border font-mono text-sm leading-relaxed resize-y"
-            />
+            {syncedEditMode ? (
+              <div className="space-y-0.5">
+                {/* Add line at beginning */}
+                <div className="flex justify-center py-0.5">
+                  <button
+                    onClick={() => {
+                      const firstStart = editLines.length > 0 ? editLines[0].start : 0;
+                      const newStart = Math.max(0, firstStart - 1);
+                      setEditLines([{ start: newStart, end: firstStart, text: "" }, ...editLines]);
+                    }}
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
+                    title="Add line at beginning"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                {editLines.map((line, i) => (
+                  <div key={i} className="group/line">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground/50 w-10 text-right tabular-nums flex-shrink-0">
+                        {Math.floor(line.start / 60) + ":" + String(Math.floor(line.start % 60)).padStart(2, "0")}
+                      </span>
+                      <input
+                        type="text"
+                        value={line.text}
+                        onChange={(e) => {
+                          const updated = [...editLines];
+                          updated[i] = { ...updated[i], text: e.target.value };
+                          setEditLines(updated);
+                        }}
+                        className="flex-1 bg-secondary/50 border border-transparent focus:border-border rounded px-2 py-1 text-sm leading-relaxed outline-none transition-colors"
+                        placeholder="Enter lyrics…"
+                      />
+                      <button
+                        onClick={() => setEditLines(editLines.filter((_, j) => j !== i))}
+                        className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover/line:opacity-100"
+                        title="Remove line"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    {/* Add line between */}
+                    <div className="flex justify-center py-0.5 opacity-0 group-hover/line:opacity-100 hover:!opacity-100 transition-opacity">
+                      <button
+                        onClick={() => {
+                          const currEnd = editLines[i].end;
+                          const nextStart = i + 1 < editLines.length ? editLines[i + 1].start : currEnd + 1;
+                          const interpolated = (currEnd + nextStart) / 2;
+                          const newLines = [...editLines];
+                          newLines.splice(i + 1, 0, { start: interpolated, end: nextStart, text: "" });
+                          setEditLines(newLines);
+                        }}
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
+                        title="Add line"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Textarea
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                placeholder="Type or paste your lyrics here…\n\n[Verse 1]\nYour lyrics...\n\n[Chorus]\n..."
+                className="min-h-[400px] bg-secondary border-border font-mono text-sm leading-relaxed resize-y"
+              />
+            )}
             <div className="flex items-center justify-end gap-2">
               <button
                 onClick={handleCancel}
