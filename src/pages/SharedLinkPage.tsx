@@ -359,7 +359,7 @@ export default function SharedLinkPage() {
     setPlayingTrackId(track.id);
     setCurrentTime(0);
     setDuration(0);
-    fetchAudioUrl(track.id).then(function(url) {
+    fetchAudioUrl(track.id, "preview").then(function(url) {
       if (!url) {
         console.error("No audio URL returned for track", track.id);
         loadedTrackIdRef.current = null;

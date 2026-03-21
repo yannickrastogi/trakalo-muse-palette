@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import { encodeToMp3 } from "@/lib/mp3Encoder";
+import { toast } from "sonner";
 import { useTeams } from "@/contexts/TeamContext";
 import { analyzeAudio, type AudioAnalysisResult } from "@/lib/audio-analysis";
 import { generateWaveform } from "@/lib/waveformGenerator";
@@ -484,17 +486,31 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       setUploadStage("Track uploaded!");
       setUploadComplete(true);
 
-      // Fire-and-forget: compress audio to MP3 preview in background
-      if (savedTrack && audioUrl) {
-        fetch(SUPABASE_URL + "/functions/v1/compress-audio", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
-            "apikey": SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ track_id: savedTrack.uuid, audio_path: audioUrl }),
-        }).catch((err) => console.error("Background audio compression failed:", err));
+      // Fire-and-forget: compress audio to MP3 128kbps client-side in background
+      if (savedTrack && audioUrl && currentTrack.file) {
+        const bgFile = currentTrack.file;
+        const bgTrackUuid = savedTrack.uuid;
+        const bgAudioPath = audioUrl;
+        const bgWorkspaceId = workspaceId;
+        (async () => {
+          try {
+            toast.info("Compressing MP3 preview...");
+            const mp3Blob = await encodeToMp3(bgFile);
+            const previewPath = bgAudioPath.replace(/\.[^.]+$/, "_preview.mp3");
+            const { error: upErr } = await supabase.storage
+              .from("tracks")
+              .upload(previewPath, mp3Blob, { contentType: "audio/mp3", upsert: true });
+            if (upErr) throw upErr;
+            await supabase
+              .from("tracks")
+              .update({ audio_preview_url: previewPath })
+              .eq("id", bgTrackUuid);
+            toast.success("MP3 preview ready");
+          } catch (err) {
+            console.error("Background MP3 compression failed:", err);
+            toast.warning("MP3 preview failed — track is still available");
+          }
+        })();
       }
 
       // Show success for 1.5s then proceed
