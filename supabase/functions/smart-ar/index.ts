@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
 
     const { data: tracks, error: tracksError } = await supabase
       .from("tracks")
-      .select("id, title, artist, genre, bpm, key, mood, voice, duration_sec, status, featuring, language")
+      .select("id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language")
       .eq("workspace_id", workspace_id);
 
     if (tracksError) {
@@ -37,6 +37,8 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("smart-ar: workspace_id=" + workspace_id + " tracks_found=" + (tracks?.length || 0));
 
     if (!tracks || tracks.length === 0) {
       return new Response(
@@ -63,8 +65,8 @@ Deno.serve(async (req) => {
           (t.key || "N/A") +
           " | mood: " +
           (t.mood || "N/A") +
-          " | voice: " +
-          (t.voice || "N/A") +
+          " | voice/gender: " +
+          (t.gender || "N/A") +
           " | duration: " +
           (t.duration_sec || "N/A") +
           "s | status: " +

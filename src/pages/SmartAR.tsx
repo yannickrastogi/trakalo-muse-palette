@@ -114,10 +114,17 @@ export default function SmartAR() {
       }),
     })
       .then(function (res) {
-        if (!res.ok) throw new Error("Edge function error: " + res.status);
-        return res.json();
+        return res.json().then(function (json) {
+          if (!res.ok) {
+            throw new Error(json.error || "Edge function error: " + res.status);
+          }
+          return json;
+        });
       })
       .then(function (data) {
+        if (data.error) {
+          throw new Error(data.error);
+        }
         if (!data.tracks || data.tracks.length === 0) {
           setMessages(function (prev) {
             return prev
