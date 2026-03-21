@@ -1261,9 +1261,9 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
                 <Mic className="w-3 h-3" /> Auto-transcribed
               </span>
             )}
-            <pre className="whitespace-pre-wrap font-mono text-sm text-foreground/90 leading-relaxed">
+            <div className="whitespace-pre-wrap text-sm text-foreground/90 leading-relaxed">
               {rawLyrics}
-            </pre>
+            </div>
           </div>
         ) : (
           <div className="text-center py-12 space-y-4">
