@@ -1114,11 +1114,11 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
   const isThisTrackPlaying = currentTrack?.uuid === trackData.uuid;
   const hasSyncedLyrics = !!segments && segments.length > 0 && !isEditing;
 
-  // Find the active segment index based on current playback time
+  // Find the active segment index based on current playback time (respects end time)
   const activeSegmentIndex = useMemo(() => {
     if (!hasSyncedLyrics || !isThisTrackPlaying) return -1;
     for (let i = segments.length - 1; i >= 0; i--) {
-      if (currentTime >= segments[i].start) return i;
+      if (currentTime >= segments[i].start && currentTime < segments[i].end) return i;
     }
     return -1;
   }, [hasSyncedLyrics, isThisTrackPlaying, currentTime, segments]);
@@ -1400,9 +1400,9 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
                 className="max-h-[500px] overflow-y-auto space-y-1 scroll-smooth"
               >
                 {segments.map((seg, i) => {
-                  const isPast = isThisTrackPlaying && i < activeSegmentIndex;
-                  const isActive = isThisTrackPlaying && i === activeSegmentIndex;
-                  const isFuture = !isThisTrackPlaying || i > activeSegmentIndex;
+                  const isActive = isThisTrackPlaying && currentTime >= seg.start && currentTime < seg.end;
+                  const isPast = isThisTrackPlaying && !isActive && currentTime >= seg.end;
+                  const isFuture = !isThisTrackPlaying || (!isActive && !isPast);
                   return (
                     <div
                       key={i}
