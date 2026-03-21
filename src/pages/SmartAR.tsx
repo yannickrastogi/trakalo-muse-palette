@@ -9,10 +9,11 @@ import { CreatePitchModal, type PitchEntry } from "@/components/CreatePitchModal
 import { ShareModal } from "@/components/ShareModal";
 import type { NewPlaylistData } from "@/components/CreatePlaylistModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, supabase } from "@/integrations/supabase/client";
 import { DEFAULT_COVER } from "@/lib/constants";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Send, Loader2, Music, ListMusic, Pencil, Link2, Eye } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Sparkles, Send, Loader2, Music, ListMusic, Pencil, Link2, Eye, Play, Pause } from "lucide-react";
 
 type Message = {
   id: string;
@@ -36,8 +37,10 @@ export default function SmartAR() {
   var { addPitch } = usePitches();
   var { user } = useAuth();
   var navigate = useNavigate();
+  var { toast } = useToast();
 
   var chatEndRef = useRef<HTMLDivElement>(null);
+  var audioRef = useRef<HTMLAudioElement | null>(null);
 
   var [messages, setMessages] = useState<Message[]>([
     {
@@ -53,13 +56,102 @@ export default function SmartAR() {
   var [results, setResults] = useState<any>(null);
   var [playlistName, setPlaylistName] = useState("");
   var [createdPlaylistId, setCreatedPlaylistId] = useState<string | null>(null);
+  var [isCreating, setIsCreating] = useState(false);
+  var [refineText, setRefineText] = useState("");
 
   var [pitchOpen, setPitchOpen] = useState(false);
   var [shareOpen, setShareOpen] = useState(false);
 
+  var [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+  var [audioProgress, setAudioProgress] = useState(0);
+  var [audioDuration, setAudioDuration] = useState(0);
+  var [loadingAudioId, setLoadingAudioId] = useState<string | null>(null);
+
   useEffect(function () {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(function () {
+    return function () {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  var handlePlayTrack = useCallback(function (trackId: string, trackData: any) {
+    if (playingTrackId === trackId) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setPlayingTrackId(null);
+      setAudioProgress(0);
+      setAudioDuration(0);
+      return;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+    }
+
+    setPlayingTrackId(null);
+    setAudioProgress(0);
+    setAudioDuration(0);
+    setLoadingAudioId(trackId);
+
+    var audioPath = trackData.previewFileUrl || trackData.originalFileUrl;
+    if (!audioPath) {
+      setLoadingAudioId(null);
+      toast({ title: "No audio file available for this track" });
+      return;
+    }
+
+    supabase.storage
+      .from("tracks")
+      .createSignedUrl(audioPath, 3600)
+      .then(function (result) {
+        if (result.error || !result.data?.signedUrl) {
+          setLoadingAudioId(null);
+          toast({ title: "Could not load audio preview" });
+          return;
+        }
+
+        var audio = new Audio(result.data.signedUrl);
+        audioRef.current = audio;
+
+        audio.addEventListener("loadedmetadata", function () {
+          setAudioDuration(audio.duration);
+        });
+
+        audio.addEventListener("timeupdate", function () {
+          setAudioProgress(audio.currentTime);
+        });
+
+        audio.addEventListener("ended", function () {
+          setPlayingTrackId(null);
+          setAudioProgress(0);
+          setAudioDuration(0);
+        });
+
+        audio.addEventListener("error", function () {
+          setPlayingTrackId(null);
+          setLoadingAudioId(null);
+          setAudioProgress(0);
+          toast({ title: "Error playing audio" });
+        });
+
+        audio.play().then(function () {
+          setPlayingTrackId(trackId);
+          setLoadingAudioId(null);
+        }).catch(function () {
+          setLoadingAudioId(null);
+          toast({ title: "Could not play audio" });
+        });
+      });
+  }, [playingTrackId, toast]);
 
   var handleSubmitBrief = useCallback(function () {
     if (!brief.trim()) return;
@@ -86,20 +178,7 @@ export default function SmartAR() {
     setStep("count");
   }, [brief, tracks.length]);
 
-  var handleSelectCount = useCallback(function (count: number | "all") {
-    setTrackCount(count);
-    var label = count === "all" ? "All matching tracks" : count + " tracks";
-    var loadingId = makeId();
-
-    setMessages(function (prev) {
-      return [
-        ...prev,
-        { id: makeId(), role: "user", content: label, type: "text" },
-        { id: loadingId, role: "bot", content: "Searching your catalog...", type: "loading" },
-      ];
-    });
-    setStep("loading");
-
+  var callSmartAR = useCallback(function (fullBrief: string, count: number | "all", loadingId: string) {
     fetch(SUPABASE_URL + "/functions/v1/smart-ar", {
       method: "POST",
       headers: {
@@ -108,7 +187,7 @@ export default function SmartAR() {
         "apikey": SUPABASE_PUBLISHABLE_KEY,
       },
       body: JSON.stringify({
-        brief: brief,
+        brief: fullBrief,
         track_count: count,
         workspace_id: activeWorkspace?.id,
       }),
@@ -166,7 +245,7 @@ export default function SmartAR() {
         }
 
         var resultData = {
-          playlist_name: data.playlist_name || "Smart A&R — " + brief.substring(0, 40),
+          playlist_name: data.playlist_name || "Smart A&R \u2014 " + fullBrief.substring(0, 40),
           criteria: data.criteria || [],
           tracks: matchedTracks,
         };
@@ -201,62 +280,132 @@ export default function SmartAR() {
         });
         setStep("brief");
       });
-  }, [brief, tracks, activeWorkspace]);
+  }, [tracks, activeWorkspace]);
+
+  var handleSelectCount = useCallback(function (count: number | "all") {
+    setTrackCount(count);
+    var label = count === "all" ? "All matching tracks" : count + " tracks";
+    var loadingId = makeId();
+
+    setMessages(function (prev) {
+      return [
+        ...prev,
+        { id: makeId(), role: "user", content: label, type: "text" },
+        { id: loadingId, role: "bot", content: "Searching your catalog...", type: "loading" },
+      ];
+    });
+    setStep("loading");
+
+    callSmartAR(brief, count, loadingId);
+  }, [brief, callSmartAR]);
 
   var handleCreatePlaylist = useCallback(async function () {
-    if (!results || !results.tracks || results.tracks.length === 0) return;
+    if (!results || !results.tracks || results.tracks.length === 0 || isCreating) return;
 
-    var matchedTracks = results.tracks;
+    setIsCreating(true);
 
-    var playlistData: NewPlaylistData = {
-      id: crypto.randomUUID(),
-      name: playlistName,
-      description: "Created by Smart A&R from brief: " + brief.substring(0, 100),
-      tracks: matchedTracks.length,
-      duration: "0:00",
-      updated: new Date().toISOString(),
-      mood: "",
-      coverIdxs: [],
-      color: "",
-      trackIds: matchedTracks.map(function (t: any) { return t.trackData.id; }),
-      coverImage: matchedTracks[0]?.trackData.coverImage || undefined,
-    };
+    try {
+      var matchedTracks = results.tracks;
 
-    var createdId = await addPlaylist(playlistData);
-    setCreatedPlaylistId(createdId || null);
+      var playlistData: NewPlaylistData = {
+        id: crypto.randomUUID(),
+        name: playlistName,
+        description: "Created by Smart A&R from brief: " + brief.substring(0, 100),
+        tracks: matchedTracks.length,
+        duration: "0:00",
+        updated: new Date().toISOString(),
+        mood: "",
+        coverIdxs: [],
+        color: "",
+        trackIds: matchedTracks.map(function (t: any) { return t.trackData.id; }),
+        coverImage: matchedTracks[0]?.trackData.coverImage || undefined,
+      };
 
-    setMessages(function (prev) {
-      return [
-        ...prev,
-        {
-          id: makeId(),
-          role: "bot",
-          content: "Playlist \"" + playlistName + "\" created with " + matchedTracks.length + " tracks! What would you like to do next?",
-          type: "created",
-        },
-      ];
-    });
-    setStep("created");
-  }, [results, playlistName, brief, addPlaylist]);
+      var createdId = await addPlaylist(playlistData);
+
+      if (!createdId) {
+        throw new Error("Failed to create playlist");
+      }
+
+      setCreatedPlaylistId(createdId);
+
+      if (audioRef.current) {
+        audioRef.current.pause();
+        setPlayingTrackId(null);
+        setAudioProgress(0);
+      }
+
+      toast({ title: "Playlist created!" });
+
+      setMessages(function (prev) {
+        return [
+          ...prev,
+          {
+            id: makeId(),
+            role: "bot",
+            content: "Playlist \"" + playlistName + "\" created with " + matchedTracks.length + " tracks! What would you like to do next?",
+            type: "created",
+          },
+        ];
+      });
+      setStep("created");
+    } catch (err: any) {
+      console.error("Create playlist error:", err);
+      toast({ title: "Error creating playlist: " + (err.message || "Unknown error") });
+    } finally {
+      setIsCreating(false);
+    }
+  }, [results, playlistName, brief, addPlaylist, isCreating, toast]);
 
   var handleRefine = useCallback(function () {
-    setStep("brief");
-    setBrief("");
-    setResults(null);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setPlayingTrackId(null);
+      setAudioProgress(0);
+    }
+
+    setRefineText("");
+
     setMessages(function (prev) {
       return [
         ...prev,
         {
           id: makeId(),
           role: "bot",
-          content: "No problem! Describe what you're looking for and I'll search again.",
-          type: "text",
+          content: "Sure! What adjustments would you like? (e.g. more upbeat, fewer vocals, different genre...)",
+          type: "refine-input",
         },
       ];
     });
+    setStep("brief");
   }, []);
 
+  var handleSubmitRefine = useCallback(function () {
+    if (!refineText.trim()) return;
+
+    var loadingId = makeId();
+    var combinedBrief = brief + "\n\nRefinement: " + refineText;
+
+    setMessages(function (prev) {
+      return [
+        ...prev,
+        { id: makeId(), role: "user", content: refineText, type: "text" },
+        { id: loadingId, role: "bot", content: "Refining results...", type: "loading" },
+      ];
+    });
+    setStep("loading");
+    setRefineText("");
+
+    callSmartAR(combinedBrief, trackCount, loadingId);
+  }, [refineText, brief, trackCount, callSmartAR]);
+
   var handleStartOver = useCallback(function () {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setPlayingTrackId(null);
+      setAudioProgress(0);
+    }
+
     setStep("brief");
     setBrief("");
     setResults(null);
@@ -314,6 +463,36 @@ export default function SmartAR() {
       );
     }
 
+    if (msg.type === "refine-input") {
+      return (
+        <div>
+          <p className="mb-3">{msg.content}</p>
+          <div className="flex items-end gap-2">
+            <textarea
+              value={refineText}
+              onChange={function (e) { setRefineText(e.target.value); }}
+              onKeyDown={function (e) {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmitRefine();
+                }
+              }}
+              placeholder="e.g. More energy, less acoustic..."
+              rows={2}
+              className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+            />
+            <button
+              onClick={handleSubmitRefine}
+              disabled={!refineText.trim()}
+              className="btn-brand p-2.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+            >
+              <Send className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     if (msg.type === "results" && msg.data) {
       var d = msg.data;
       return (
@@ -349,28 +528,55 @@ export default function SmartAR() {
             {d.tracks.map(function (t: any) {
               var td = t.trackData;
               var scorePercent = Math.round((t.score || 0) * 100);
+              var isPlaying = playingTrackId === t.id;
+              var isLoadingAudio = loadingAudioId === t.id;
+              var progressPercent = isPlaying && audioDuration > 0 ? (audioProgress / audioDuration) * 100 : 0;
               return (
                 <motion.div
                   key={t.id}
                   variants={item}
-                  className="flex items-center gap-3 p-2 rounded-lg bg-card/50 border border-border/50"
+                  className="relative rounded-lg bg-card/50 border border-border/50 overflow-hidden"
                 >
-                  <img
-                    src={td.coverImage || DEFAULT_COVER}
-                    alt={td.title}
-                    className="w-8 h-8 rounded object-cover flex-shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{td.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">{td.artist}</p>
-                  </div>
-                  <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-semibold flex-shrink-0">
-                    {scorePercent}%
-                  </span>
-                  {t.reason && (
-                    <span className="text-xs text-muted-foreground hidden sm:block max-w-[160px] truncate">
-                      {t.reason}
+                  <div className="flex items-center gap-3 p-2">
+                    <button
+                      onClick={function () { handlePlayTrack(t.id, td); }}
+                      className="relative w-8 h-8 rounded flex-shrink-0 group"
+                    >
+                      <img
+                        src={td.coverImage || DEFAULT_COVER}
+                        alt={td.title}
+                        className={"w-8 h-8 rounded object-cover transition-opacity " + (isPlaying || isLoadingAudio ? "opacity-40" : "group-hover:opacity-60")}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        {isLoadingAudio ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        ) : isPlaying ? (
+                          <Pause className="w-4 h-4 text-white" />
+                        ) : (
+                          <Play className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
+                      </div>
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{td.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{td.artist}</p>
+                    </div>
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-semibold flex-shrink-0">
+                      {scorePercent}%
                     </span>
+                    {t.reason && (
+                      <span className="text-xs text-muted-foreground hidden sm:block max-w-[160px] truncate">
+                        {t.reason}
+                      </span>
+                    )}
+                  </div>
+                  {isPlaying && audioDuration > 0 && (
+                    <div className="h-0.5 bg-border/30">
+                      <div
+                        className="h-full bg-primary transition-all duration-200"
+                        style={{ width: progressPercent + "%" }}
+                      />
+                    </div>
                   )}
                 </motion.div>
               );
@@ -380,10 +586,15 @@ export default function SmartAR() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={handleCreatePlaylist}
-              className="btn-brand px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+              disabled={isCreating}
+              className="btn-brand px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ListMusic className="w-4 h-4" />
-              Create Playlist
+              {isCreating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <ListMusic className="w-4 h-4" />
+              )}
+              {isCreating ? "Creating..." : "Create Playlist"}
             </button>
             <button
               onClick={handleRefine}
