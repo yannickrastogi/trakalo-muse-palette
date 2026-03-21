@@ -760,7 +760,7 @@ export default function TrackDetail() {
 
             {/* Tab content */}
             <motion.div variants={item}>
-              {activeTab === "lyrics" && <LyricsTab trackId={track.id} />}
+              {activeTab === "lyrics" && <LyricsTab trackId={track.id} trackUuid={track.uuid} fallbackTrack={track} />}
                {activeTab === "stems" && <StemsTab trackId={track.id} autoOpenUpload={shouldAutoUpload} />}
                {activeTab === "details" && (
                  <div className="space-y-10">
@@ -1091,21 +1091,59 @@ function CreditsTab({ trackId, onEdit }: { trackId: number; onEdit: () => void }
   );
 }
 
-function LyricsTab({ trackId }: { trackId: number }) {
-  const { getTrack, updateTrackLyrics } = useTrack();
-  const trackData = getTrack(trackId);
+function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; trackUuid: string; fallbackTrack?: TrackData }) {
+  const { getTrack, updateTrackLyrics, refreshTracks } = useTrack();
+  const contextTrack = getTrack(trackId);
+  const trackData = contextTrack || fallbackTrack;
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editValue, setEditValue] = useState("");
+  const [localLyrics, setLocalLyrics] = useState<string | undefined>(undefined);
+
+  // When using fallback, we need to fetch fresh lyrics from DB
+  const [dbLyrics, setDbLyrics] = useState<string | undefined>(undefined);
+  const dbFetchedRef = useRef<string | null>(null);
+
+  useEffect(function() {
+    if (contextTrack || dbFetchedRef.current === trackUuid) return;
+    dbFetchedRef.current = trackUuid;
+    supabase
+      .from("tracks")
+      .select("lyrics")
+      .eq("id", trackUuid)
+      .single()
+      .then(function(res) {
+        if (res.data?.lyrics) {
+          setDbLyrics(res.data.lyrics as string);
+        }
+      });
+  }, [trackUuid, contextTrack]);
 
   if (!trackData) return null;
 
-  const isAutoTranscribed = trackData.lyrics?.startsWith("[auto-transcribed]\n") || false;
-  const rawLyrics = isAutoTranscribed ? trackData.lyrics!.replace("[auto-transcribed]\n", "") : (trackData.lyrics || "");
+  // Use the most up-to-date lyrics source: local edit > context > DB fetch > fallback
+  const effectiveTrackData = localLyrics !== undefined
+    ? { ...trackData, lyrics: localLyrics }
+    : contextTrack
+      ? trackData
+      : dbLyrics !== undefined
+        ? { ...trackData, lyrics: dbLyrics }
+        : trackData;
+
+  const isAutoTranscribed = effectiveTrackData.lyrics?.startsWith("[auto-transcribed]\n") || false;
+  const rawLyrics = isAutoTranscribed ? effectiveTrackData.lyrics!.replace("[auto-transcribed]\n", "") : (effectiveTrackData.lyrics || "");
   const hasLyrics = !!rawLyrics.trim();
 
-  const handleSave = () => {
-    updateTrackLyrics(trackId, editValue);
+  const handleSave = async () => {
+    if (contextTrack) {
+      updateTrackLyrics(trackId, editValue);
+    } else {
+      // Fallback: update DB directly when context isn't loaded yet
+      await supabase.from("tracks").update({ lyrics: editValue }).eq("id", trackUuid);
+      setLocalLyrics(editValue);
+      setDbLyrics(editValue);
+      refreshTracks();
+    }
     setIsEditing(false);
   };
 
@@ -1137,8 +1175,8 @@ function LyricsTab({ trackId }: { trackId: number }) {
   };
 
   const handleDownloadPdf = () => {
-    if (!trackData.lyrics) return;
-    generateLyricsPdf(trackData.title, trackData.artist, trackData.lyrics);
+    if (!effectiveTrackData.lyrics) return;
+    generateLyricsPdf(effectiveTrackData.title, effectiveTrackData.artist, effectiveTrackData.lyrics);
   };
 
   return (
