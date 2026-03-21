@@ -2,14 +2,13 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { PageShell } from "@/components/PageShell";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack } from "@/contexts/TrackContext";
-import { usePlaylists } from "@/contexts/PlaylistContext";
-import { usePitches } from "@/contexts/PitchContext";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { CreatePitchModal, type PitchEntry } from "@/components/CreatePitchModal";
 import { ShareModal } from "@/components/ShareModal";
-import type { NewPlaylistData } from "@/components/CreatePlaylistModal";
+
 import { motion, AnimatePresence } from "framer-motion";
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, supabase } from "@/integrations/supabase/client";
 import { DEFAULT_COVER } from "@/lib/constants";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -33,8 +32,6 @@ function makeId() {
 export default function SmartAR() {
   var { activeWorkspace } = useWorkspace();
   var { tracks } = useTrack();
-  var { addPlaylist } = usePlaylists();
-  var { addPitch } = usePitches();
   var { user } = useAuth();
   var navigate = useNavigate();
   var { toast } = useToast();
@@ -315,33 +312,52 @@ export default function SmartAR() {
 
   var handleCreatePlaylist = useCallback(async function () {
     if (!results || !results.tracks || results.tracks.length === 0 || isCreating) return;
+    if (!activeWorkspace || !user) {
+      toast({ title: "No active workspace or user session" });
+      return;
+    }
 
     setIsCreating(true);
 
     try {
       var matchedTracks = results.tracks;
 
-      var playlistData: NewPlaylistData = {
-        id: crypto.randomUUID(),
-        name: playlistName,
-        description: "Created by Smart A&R from brief: " + brief.substring(0, 100),
-        tracks: matchedTracks.length,
-        duration: "0:00",
-        updated: new Date().toISOString(),
-        mood: "",
-        coverIdxs: [],
-        color: "",
-        trackIds: matchedTracks.map(function (t: any) { return t.trackData.id; }),
-        coverImage: matchedTracks[0]?.trackData.coverImage || undefined,
-      };
+      var { data: playlist, error: plError } = await supabase
+        .from("playlists")
+        .insert({
+          workspace_id: activeWorkspace.id,
+          created_by: user.id,
+          name: playlistName,
+          description: "Created by Smart A&R from brief: " + brief.substring(0, 100),
+          cover_url: matchedTracks[0]?.trackData.coverImage || null,
+        })
+        .select()
+        .single();
 
-      var createdId = await addPlaylist(playlistData);
-
-      if (!createdId) {
-        throw new Error("Failed to create playlist");
+      if (plError || !playlist) {
+        throw new Error(plError?.message || "Failed to create playlist");
       }
 
-      setCreatedPlaylistId(createdId);
+      var ptInserts = matchedTracks.map(function (t: any, idx: number) {
+        return {
+          playlist_id: playlist.id,
+          track_id: t.id,
+          position: idx,
+          added_by: user.id,
+        };
+      });
+
+      if (ptInserts.length > 0) {
+        var { error: ptError } = await supabase
+          .from("playlist_tracks")
+          .insert(ptInserts);
+
+        if (ptError) {
+          throw new Error("Playlist created but tracks failed: " + ptError.message);
+        }
+      }
+
+      setCreatedPlaylistId(playlist.id);
 
       if (audioRef.current) {
         audioRef.current.pause();
@@ -364,12 +380,11 @@ export default function SmartAR() {
       });
       setStep("created");
     } catch (err: any) {
-      console.error("Create playlist error:", err);
-      toast({ title: "Error creating playlist: " + (err.message || "Unknown error") });
+      toast({ title: "Error: " + (err.message || "Unknown error") });
     } finally {
       setIsCreating(false);
     }
-  }, [results, playlistName, brief, addPlaylist, isCreating, toast]);
+  }, [results, playlistName, brief, activeWorkspace, user, isCreating, toast]);
 
   var handleRefine = useCallback(function () {
     if (audioRef.current) {
