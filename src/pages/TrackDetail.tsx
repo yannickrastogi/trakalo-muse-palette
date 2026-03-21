@@ -1096,13 +1096,13 @@ function LyricsTab({ trackId }: { trackId: number }) {
   const trackData = getTrack(trackId);
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [editValue, setEditValue] = useState("");
 
   if (!trackData) return null;
 
   const isAutoTranscribed = trackData.lyrics?.startsWith("[auto-transcribed]\n") || false;
   const rawLyrics = isAutoTranscribed ? trackData.lyrics!.replace("[auto-transcribed]\n", "") : (trackData.lyrics || "");
   const hasLyrics = !!rawLyrics.trim();
-  const [editValue, setEditValue] = useState(rawLyrics);
 
   const handleSave = () => {
     updateTrackLyrics(trackId, editValue);
