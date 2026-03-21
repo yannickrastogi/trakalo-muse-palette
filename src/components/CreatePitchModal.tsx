@@ -68,9 +68,10 @@ interface CreatePitchModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreate: (pitch: PitchEntry) => void;
+  initialPlaylistId?: string;
 }
 
-export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchModalProps) {
+export function CreatePitchModal({ open, onOpenChange, onCreate, initialPlaylistId }: CreatePitchModalProps) {
   const [step, setStep] = useState<"select" | "compose">("select");
   const [pitchType, setPitchType] = useState<"track" | "playlist">("track");
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
@@ -88,6 +89,25 @@ export function CreatePitchModal({ open, onOpenChange, onCreate }: CreatePitchMo
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const { playlists } = usePlaylists();
+
+  // Auto-select playlist when initialPlaylistId is provided
+  useEffect(() => {
+    if (open && initialPlaylistId && playlists.length > 0) {
+      const pl = playlists.find((p) => p.id === initialPlaylistId);
+      if (pl) {
+        setPitchType("playlist");
+        setSelectedItem({
+          name: pl.name,
+          artist: "Various",
+          coverIdx: pl.coverIdxs[0],
+          coverImage: pl.coverImage,
+          trackCount: pl.tracks,
+          playlistUuid: pl.id,
+        });
+        setStep("compose");
+      }
+    }
+  }, [open, initialPlaylistId, playlists]);
 
   const savedContacts = useMemo(() => getSavedContacts(), [open]);
 

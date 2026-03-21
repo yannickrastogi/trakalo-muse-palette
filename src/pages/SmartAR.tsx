@@ -750,6 +750,7 @@ export default function SmartAR() {
         open={pitchOpen}
         onOpenChange={setPitchOpen}
         onCreate={function (p: PitchEntry) { setPitchOpen(false); }}
+        initialPlaylistId={createdPlaylistId || undefined}
       />
 
       <ShareModal
@@ -758,6 +759,10 @@ export default function SmartAR() {
         shareType="playlist"
         playlistId={createdPlaylistId || undefined}
         playlistName={playlistName}
+        playlistTracks={results ? results.tracks.map(function (t: any) {
+          var td = t.trackData;
+          return { id: td.id, title: td.title, artist: td.artist, duration: td.duration, genre: td.genre, coverImage: td.coverImage };
+        }) : undefined}
       />
     </PageShell>
   );
