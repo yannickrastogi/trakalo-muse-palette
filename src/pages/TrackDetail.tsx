@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTeams } from "@/contexts/TeamContext";
 import { useTrack, mapRowToTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
@@ -567,6 +567,35 @@ export default function TrackDetail() {
                               }}>
                                 <Activity className="w-4 h-4 mr-2" /> Re-analyze Audio
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={async () => {
+                                if (track.lyrics?.trim() && !confirm("Existing lyrics will be replaced. Continue?")) return;
+                                try {
+                                  toast.info("Transcribing lyrics...");
+                                  const res = await fetch(SUPABASE_URL + "/functions/v1/transcribe-lyrics", {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+                                      "apikey": SUPABASE_PUBLISHABLE_KEY,
+                                    },
+                                    body: JSON.stringify({ track_id: track.uuid }),
+                                  });
+                                  const json = await res.json();
+                                  if (json.empty) {
+                                    toast.info("No vocals detected in this track");
+                                  } else if (json.success) {
+                                    refreshTracks();
+                                    toast.success("Lyrics transcribed!");
+                                  } else {
+                                    throw new Error(json.error || "Transcription failed");
+                                  }
+                                } catch (err) {
+                                  console.error("Transcription failed:", err);
+                                  toast.warning("Lyrics transcription failed");
+                                }
+                              }}>
+                                <Mic className="w-4 h-4 mr-2" /> Transcribe Lyrics
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} className="text-destructive focus:text-destructive">
                                 <Trash2 className="w-4 h-4 mr-2" /> Delete
@@ -1067,12 +1096,14 @@ function LyricsTab({ trackId }: { trackId: number }) {
   const { getTrack, updateTrackLyrics } = useTrack();
   const trackData = getTrack(trackId);
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(trackData?.lyrics || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!trackData) return null;
 
-  const hasLyrics = !!trackData.lyrics?.trim();
+  const isAutoTranscribed = trackData.lyrics?.startsWith("[auto-transcribed]\n") || false;
+  const rawLyrics = isAutoTranscribed ? trackData.lyrics!.replace("[auto-transcribed]\n", "") : (trackData.lyrics || "");
+  const hasLyrics = !!rawLyrics.trim();
+  const [editValue, setEditValue] = useState(rawLyrics);
 
   const handleSave = () => {
     updateTrackLyrics(trackId, editValue);
@@ -1080,7 +1111,7 @@ function LyricsTab({ trackId }: { trackId: number }) {
   };
 
   const handleCancel = () => {
-    setEditValue(trackData.lyrics || "");
+    setEditValue(rawLyrics);
     setIsEditing(false);
   };
 
@@ -1126,7 +1157,7 @@ function LyricsTab({ trackId }: { trackId: number }) {
                 <Download className="w-3.5 h-3.5" /> Download PDF
               </button>
               <button
-                onClick={() => { setEditValue(trackData.lyrics || ""); setIsEditing(true); }}
+                onClick={() => { setEditValue(rawLyrics); setIsEditing(true); }}
                 className="flex items-center gap-1.5 text-xs text-primary hover:underline"
               >
                 <Edit3 className="w-3.5 h-3.5" /> Edit
@@ -1178,9 +1209,16 @@ function LyricsTab({ trackId }: { trackId: number }) {
             </div>
           </div>
         ) : hasLyrics ? (
-          <pre className="whitespace-pre-wrap font-mono text-sm text-foreground/90 leading-relaxed">
-            {trackData.lyrics}
-          </pre>
+          <div>
+            {isAutoTranscribed && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium bg-primary/10 text-primary mb-3">
+                <Mic className="w-3 h-3" /> Auto-transcribed
+              </span>
+            )}
+            <pre className="whitespace-pre-wrap font-mono text-sm text-foreground/90 leading-relaxed">
+              {rawLyrics}
+            </pre>
+          </div>
         ) : (
           <div className="text-center py-12 space-y-4">
             <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center mx-auto">

@@ -500,13 +500,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       setUploadStage("Track uploaded!");
       setUploadComplete(true);
 
-      // Fire-and-forget: compress audio to MP3 128kbps client-side in background
+      // Fire-and-forget: compress audio to MP3 128kbps client-side, then transcribe lyrics
       if (savedTrack && audioUrl && currentTrack.file) {
         const bgFile = currentTrack.file;
         const bgTrackUuid = savedTrack.uuid;
         const bgAudioPath = audioUrl;
-        const bgWorkspaceId = workspaceId;
         (async () => {
+          // Step 1: MP3 compression
           try {
             toast.info("Compressing MP3 preview...");
             const mp3Blob = await encodeToMp3(bgFile);
@@ -523,6 +523,29 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           } catch (err) {
             console.error("Background MP3 compression failed:", err);
             toast.warning("MP3 preview failed — track is still available");
+          }
+
+          // Step 2: Lyrics transcription (fire-and-forget)
+          try {
+            toast.info("Transcribing lyrics...");
+            const res = await fetch(SUPABASE_URL + "/functions/v1/transcribe-lyrics", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+                "apikey": SUPABASE_PUBLISHABLE_KEY,
+              },
+              body: JSON.stringify({ track_id: bgTrackUuid }),
+            });
+            const json = await res.json();
+            if (json.empty) {
+              toast.info("No vocals detected");
+            } else if (json.success) {
+              toast.success("Lyrics transcribed!");
+              refreshTracks();
+            }
+          } catch (err) {
+            console.error("Lyrics transcription failed:", err);
           }
         })();
       }
