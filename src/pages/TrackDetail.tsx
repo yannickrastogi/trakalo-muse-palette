@@ -591,7 +591,7 @@ export default function TrackDetail() {
                                   toast.warning("Lyrics transcription failed");
                                 }
                               }}>
-                                <Mic className="w-4 h-4 mr-2" /> Transcribe Lyrics
+                                <Mic className="w-4 h-4 mr-2" /> {track.lyrics?.trim() ? "Re-transcribe Lyrics" : "Transcribe Lyrics"}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} className="text-destructive focus:text-destructive">
