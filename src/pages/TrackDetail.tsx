@@ -82,6 +82,8 @@ import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
 import { StemsTab } from "@/components/StemsTab";
 import { STEM_TYPES, DEFAULT_COVER } from "@/lib/constants";
+import { encodeToMp3 } from "@/lib/mp3Encoder";
+import { toast } from "sonner";
 import type { StemType } from "@/lib/constants";
 
 interface StemFile {
@@ -187,7 +189,7 @@ export default function TrackDetail() {
   const { permissions } = useRole();
   const { activeWorkspace } = useWorkspace();
   const navigate = useNavigate();
-  const { getTrackByUuid, getTrack, updateTrack, updateTrackStatus, deleteTrack } = useTrack();
+  const { getTrackByUuid, getTrack, updateTrack, updateTrackStatus, deleteTrack, refreshTracks } = useTrack();
   const { getTrackEngagement } = useEngagement();
   const { getCommentsForTrack, addComment } = useTrackReview();
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -494,6 +496,43 @@ export default function TrackDetail() {
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
+                              {!track.previewFileUrl && (
+                                <DropdownMenuItem onClick={async () => {
+                                  try {
+                                    toast.info("Compressing MP3 preview...");
+                                    // Fetch the raw audio_url path from DB (track.originalFileUrl may be signed)
+                                    const { data: row, error: fetchErr } = await supabase
+                                      .from("tracks")
+                                      .select("audio_url")
+                                      .eq("id", track.uuid)
+                                      .single();
+                                    if (fetchErr || !row?.audio_url) throw new Error("No audio file for this track");
+                                    const storagePath = row.audio_url as string;
+                                    const { data: fileData, error: dlErr } = await supabase.storage
+                                      .from("tracks")
+                                      .download(storagePath);
+                                    if (dlErr || !fileData) throw new Error("Failed to download audio");
+                                    const audioFile = new File([fileData], "audio.wav", { type: fileData.type });
+                                    const mp3Blob = await encodeToMp3(audioFile);
+                                    const previewPath = storagePath.replace(/\.[^.]+$/, "_preview.mp3");
+                                    const { error: upErr } = await supabase.storage
+                                      .from("tracks")
+                                      .upload(previewPath, mp3Blob, { contentType: "audio/mp3", upsert: true });
+                                    if (upErr) throw upErr;
+                                    await supabase
+                                      .from("tracks")
+                                      .update({ audio_preview_url: previewPath })
+                                      .eq("id", track.uuid);
+                                    refreshTracks();
+                                    toast.success("MP3 preview ready");
+                                  } catch (err) {
+                                    console.error("MP3 generation failed:", err);
+                                    toast.warning("MP3 preview generation failed");
+                                  }
+                                }}>
+                                  <Music className="w-4 h-4 mr-2" /> Generate MP3 Preview
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} className="text-destructive focus:text-destructive">
                                 <Trash2 className="w-4 h-4 mr-2" /> Delete
                               </DropdownMenuItem>

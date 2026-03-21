@@ -154,7 +154,7 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     type: mapTrackType(row.track_type as string),
     coverIdx: 0,
     coverImage: (row.cover_url as string) || undefined,
-    previewUrl: (row.audio_url as string) || undefined,
+    previewUrl: (row.audio_preview_url as string) || (row.audio_url as string) || undefined,
     previewFileUrl: (row.audio_preview_url as string) || undefined,
     originalFileUrl: (row.audio_url as string) || undefined,
     notes: (row.notes as string) || "",
@@ -283,15 +283,16 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           return mapRowToTrack(r, i, trackStems);
         });
 
-        // Resolve storage paths to signed URLs for audio
-        const tracksNeedingUrls = mapped.filter(
-          (t) => t.previewUrl && !t.previewUrl.startsWith("http")
-        );
-        if (tracksNeedingUrls.length > 0) {
-          const paths = tracksNeedingUrls.map((t) => t.previewUrl as string);
+        // Resolve storage paths to signed URLs for audio (preview + original)
+        const pathsToSign = new Set<string>();
+        mapped.forEach((t) => {
+          if (t.previewUrl && !t.previewUrl.startsWith("http")) pathsToSign.add(t.previewUrl);
+          if (t.originalFileUrl && !t.originalFileUrl.startsWith("http")) pathsToSign.add(t.originalFileUrl);
+        });
+        if (pathsToSign.size > 0) {
           const { data: signedUrls } = await supabase.storage
             .from("tracks")
-            .createSignedUrls(paths, 3600);
+            .createSignedUrls(Array.from(pathsToSign), 3600);
 
           if (signedUrls) {
             const urlMap: Record<string, string> = {};
@@ -301,12 +302,11 @@ export function TrackProvider({ children }: { children: ReactNode }) {
               }
             });
             mapped.forEach((t) => {
-              if (t.previewUrl && !t.previewUrl.startsWith("http")) {
-                var signed = urlMap[t.previewUrl];
-                if (signed) {
-                  t.previewUrl = signed;
-                  t.originalFileUrl = signed;
-                }
+              if (t.previewUrl && !t.previewUrl.startsWith("http") && urlMap[t.previewUrl]) {
+                t.previewUrl = urlMap[t.previewUrl];
+              }
+              if (t.originalFileUrl && !t.originalFileUrl.startsWith("http") && urlMap[t.originalFileUrl]) {
+                t.originalFileUrl = urlMap[t.originalFileUrl];
               }
             });
           }
