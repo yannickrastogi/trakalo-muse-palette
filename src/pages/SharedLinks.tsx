@@ -38,8 +38,8 @@ export default function SharedLinks() {
     return link.status;
   };
 
-  const copyLink = (id: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}/shared/${id}`);
+  const copyLink = (slug: string) => {
+    navigator.clipboard.writeText(window.location.origin + "/share/" + slug);
     toast.success("Link copied!");
   };
 
@@ -150,7 +150,7 @@ export default function SharedLinks() {
                         </td>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => copyLink(link.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Copy Link">
+                            <button onClick={() => copyLink(link.linkSlug || link.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Copy Link">
                               <Copy className="w-3.5 h-3.5" />
                             </button>
                             <button
