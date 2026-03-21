@@ -75,7 +75,6 @@ serve(async (req) => {
     formData.append("file", new File([fileData], fileName, { type: "audio/mpeg" }));
     formData.append("model", "whisper-large-v3");
     formData.append("response_format", "verbose_json");
-    formData.append("prompt", "These are song lyrics. Transcribe the sung vocals accurately, including ad-libs and background vocals.");
 
     const groqRes = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
       method: "POST",
