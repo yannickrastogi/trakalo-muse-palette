@@ -7,6 +7,7 @@
     "pitch": "Pitch",
     "team": "Equipa",
     "settings": "Definições",
+    "smartAr": "Smart A&R",
     "contacts": "Contactos",
     "sharedLinks": "Links Partilhados",
     "notifications": "Notificações",
@@ -296,7 +297,8 @@
     "stemCount": "{{count}} stem",
     "ofTotal": "de {{total}} no total"
   },
-  "contacts": {
+  "smartAr": "Smart A&R",
+    "contacts": {
     "title": "Contactos",
     "subtitle": "{{count}} contactos recolhidos de links partilhados",
     "exportList": "Exportar lista",

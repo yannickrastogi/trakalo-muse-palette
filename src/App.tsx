@@ -39,6 +39,7 @@ import SharedLinkPage from "./pages/SharedLinkPage";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import SmartAR from "./pages/SmartAR";
 import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
@@ -113,6 +114,7 @@ const App = () => (
             <Route path="/playlist/:id" element={<ProtectedApp><PlaylistDetail /></ProtectedApp>} />
             <Route path="/stems" element={<ProtectedApp><Stems /></ProtectedApp>} />
             <Route path="/pitch" element={<ProtectedApp><Pitch /></ProtectedApp>} />
+            <Route path="/smart-ar" element={<ProtectedApp><SmartAR /></ProtectedApp>} />
             <Route path="/team" element={<ProtectedApp><Team /></ProtectedApp>} />
             <Route path="/contacts" element={<ProtectedApp><Contacts /></ProtectedApp>} />
             <Route path="/shared-links" element={<ProtectedApp><SharedLinks /></ProtectedApp>} />

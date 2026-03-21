@@ -68,7 +68,7 @@ function mapRowToPlaylist(
 
 interface PlaylistContextType {
   playlists: PlaylistItem[];
-  addPlaylist: (pl: NewPlaylistData) => void;
+  addPlaylist: (pl: NewPlaylistData) => Promise<string | undefined>;
   getPlaylist: (id: string) => PlaylistItem | undefined;
   updatePlaylist: (id: string, updates: Partial<PlaylistItem>) => void;
   deletePlaylist: (id: string) => Promise<void>;
@@ -146,8 +146,8 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   }, [fetchPlaylists, tracks, activeWorkspace]);
 
   const addPlaylist = useCallback(
-    async (pl: NewPlaylistData) => {
-      if (!activeWorkspace || !user) return;
+    async (pl: NewPlaylistData): Promise<string | undefined> => {
+      if (!activeWorkspace || !user) return undefined;
 
       const { data, error } = await supabase
         .from("playlists")
@@ -163,7 +163,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error("Error adding playlist:", error);
-        return;
+        return undefined;
       }
 
       // Insert track associations if any — map numeric IDs to UUIDs
@@ -193,6 +193,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
       }
 
       await fetchPlaylists();
+      return data?.id;
     },
     [activeWorkspace, user, tracks, fetchPlaylists]
   );

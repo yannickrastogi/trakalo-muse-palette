@@ -17,6 +17,7 @@ import {
   BookUser,
   Bell,
   CheckCircle,
+  Sparkles,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -31,6 +32,7 @@ const navItems = [
   { titleKey: "nav.stems", icon: Layers, url: "/stems", permKey: null },
   { titleKey: "nav.playlists", icon: ListMusic, url: "/playlists", permKey: null },
   { titleKey: "nav.pitch", icon: Send, url: "/pitch", permKey: "canSendPitches" as const },
+  { titleKey: "nav.smartAr", icon: Sparkles, url: "/smart-ar", permKey: null },
   { titleKey: "nav.contacts", icon: Users, url: "/contacts", permKey: null },
   { titleKey: "nav.sharedLinks", icon: Link2, url: "/shared-links", permKey: null },
   { titleKey: "nav.team", icon: UserCog, url: "/team", permKey: null },
