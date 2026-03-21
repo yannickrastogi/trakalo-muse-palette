@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
-import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X } from "lucide-react";
+import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { DEFAULT_COVER } from "@/lib/constants";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
@@ -36,6 +36,8 @@ interface TrackData {
   audio_url: string | null;
   mood: string[] | null;
   waveform_data: number[] | null;
+  lyrics: string | null;
+  lyrics_segments: { start: number; end: number; text: string }[] | null;
 }
 
 interface PlaylistData {
@@ -115,6 +117,87 @@ function CommentMarkers({ comments, totalDuration }: { comments: TrackComment[];
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function KaraokeLyrics({ segments, currentTime, isPlaying, onSeek, className }: {
+  segments: { start: number; end: number; text: string }[];
+  currentTime: number;
+  isPlaying: boolean;
+  onSeek: (time: number) => void;
+  className?: string;
+}) {
+  var [expanded, setExpanded] = useState(true);
+  var containerRef = useRef<HTMLDivElement>(null);
+  var activeLineRef = useRef<HTMLDivElement>(null);
+
+  var activeSegmentIndex = useMemo(function() {
+    if (!isPlaying) return -1;
+    for (var i = segments.length - 1; i >= 0; i--) {
+      if (currentTime >= segments[i].start && currentTime < segments[i].end) return i;
+    }
+    return -1;
+  }, [isPlaying, currentTime, segments]);
+
+  useEffect(function() {
+    if (activeSegmentIndex >= 0 && activeLineRef.current && containerRef.current) {
+      var container = containerRef.current;
+      var activeLine = activeLineRef.current;
+      var containerRect = container.getBoundingClientRect();
+      var lineRect = activeLine.getBoundingClientRect();
+      var offset = lineRect.top - containerRect.top - containerRect.height / 3;
+      container.scrollBy({ top: offset, behavior: "smooth" });
+    }
+  }, [activeSegmentIndex]);
+
+  return (
+    <div className={className}>
+      <button
+        onClick={function() { setExpanded(!expanded); }}
+        className="w-full flex items-center justify-between py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <FileText className="w-4 h-4" />
+          Lyrics
+        </span>
+        {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </button>
+      {expanded && (
+        <div
+          ref={containerRef}
+          className="max-h-[400px] overflow-y-auto space-y-1 pb-4 scroll-smooth"
+        >
+          {segments.map(function(seg, i) {
+            var isActive = isPlaying && currentTime >= seg.start && currentTime < seg.end;
+            var isPast = isPlaying && !isActive && currentTime >= seg.end;
+            var isFuture = !isPlaying || (!isActive && !isPast);
+            return (
+              <div
+                key={i}
+                ref={isActive ? activeLineRef : undefined}
+                onClick={function() { onSeek(seg.start); }}
+                className={
+                  "py-1.5 px-2 rounded-md cursor-pointer text-sm leading-relaxed transition-all duration-300 " +
+                  (isActive
+                    ? "bg-brand-orange/10 font-semibold scale-[1.02] origin-left"
+                    : "hover:bg-secondary/50") +
+                  (isPast ? " text-foreground" : "") +
+                  (isFuture && !isActive ? " text-muted-foreground" : "")
+                }
+              >
+                {isActive ? (
+                  <span className="bg-gradient-to-r from-brand-purple via-brand-pink to-brand-orange bg-clip-text text-transparent drop-shadow-[0_0_8px_hsl(var(--brand-orange)/0.4)]">
+                    {seg.text}
+                  </span>
+                ) : (
+                  seg.text
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -246,7 +329,7 @@ export default function SharedLinkPage() {
           var trackIds = ptRows.map(function(r) { return r.track_id; });
           var { data: tracks } = await anonSupabase
             .from("tracks")
-            .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood, waveform_data")
+            .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood, waveform_data, lyrics, lyrics_segments")
             .in("id", trackIds);
 
           if (tracks) {
@@ -263,7 +346,7 @@ export default function SharedLinkPage() {
         // Single track
         var { data: track } = await anonSupabase
           .from("tracks")
-          .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood, waveform_data")
+          .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood, waveform_data, lyrics, lyrics_segments")
           .eq("id", link.track_id)
           .single();
 
@@ -925,6 +1008,16 @@ export default function SharedLinkPage() {
                       </span>
                     </div>
                   </div>
+
+                  {activeTrack && activeTrack.lyrics_segments && activeTrack.lyrics_segments.length > 0 && (
+                    <KaraokeLyrics
+                      segments={activeTrack.lyrics_segments}
+                      currentTime={currentTime}
+                      isPlaying={isPlaying}
+                      onSeek={function(time) { if (audioRef.current) { audioRef.current.currentTime = time; } }}
+                      className="border-t border-border -mx-6 px-6 mt-2"
+                    />
+                  )}
                 </div>
               );
             })()}
@@ -1134,6 +1227,16 @@ export default function SharedLinkPage() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {trackData.lyrics_segments && trackData.lyrics_segments.length > 0 && playingTrackId === trackData.id && (
+              <KaraokeLyrics
+                segments={trackData.lyrics_segments}
+                currentTime={currentTime}
+                isPlaying={isPlaying}
+                onSeek={function(time) { if (audioRef.current) { audioRef.current.currentTime = time; } }}
+                className="border-t border-border px-6"
+              />
             )}
 
             {linkData?.allow_download && (trackData.audio_url || slug) && (
