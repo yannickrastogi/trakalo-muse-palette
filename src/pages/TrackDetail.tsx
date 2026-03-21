@@ -564,35 +564,6 @@ export default function TrackDetail() {
                               }}>
                                 <Activity className="w-4 h-4 mr-2" /> Re-analyze Audio
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={async () => {
-                                if (track.lyrics?.trim() && !confirm("Existing lyrics will be replaced. Continue?")) return;
-                                try {
-                                  toast.info("Transcribing lyrics...");
-                                  const res = await fetch(SUPABASE_URL + "/functions/v1/transcribe-lyrics", {
-                                    method: "POST",
-                                    headers: {
-                                      "Content-Type": "application/json",
-                                      "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
-                                      "apikey": SUPABASE_PUBLISHABLE_KEY,
-                                    },
-                                    body: JSON.stringify({ track_id: track.uuid }),
-                                  });
-                                  const json = await res.json();
-                                  if (json.empty) {
-                                    toast.info("No vocals detected in this track");
-                                  } else if (json.success) {
-                                    refreshTracks();
-                                    toast.success("Lyrics transcribed!");
-                                  } else {
-                                    throw new Error(json.error || "Transcription failed");
-                                  }
-                                } catch (err) {
-                                  console.error("Transcription failed:", err);
-                                  toast.warning("Lyrics transcription failed");
-                                }
-                              }}>
-                                <Mic className="w-4 h-4 mr-2" /> {track.lyrics?.trim() ? "Re-transcribe Lyrics" : "Transcribe Lyrics"}
-                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} className="text-destructive focus:text-destructive">
                                 <Trash2 className="w-4 h-4 mr-2" /> Delete
@@ -1179,6 +1150,38 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
     generateLyricsPdf(effectiveTrackData.title, effectiveTrackData.artist, effectiveTrackData.lyrics);
   };
 
+  const handleTranscribe = async () => {
+    if (hasLyrics && !confirm("Existing lyrics will be replaced. Continue?")) return;
+    try {
+      toast.info("Transcribing lyrics...");
+      const res = await fetch(SUPABASE_URL + "/functions/v1/transcribe-lyrics", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ track_id: trackUuid }),
+      });
+      const json = await res.json();
+      if (json.empty) {
+        toast.info("No vocals detected in this track");
+      } else if (json.success) {
+        // Refresh lyrics from DB
+        dbFetchedRef.current = null;
+        setDbLyrics(undefined);
+        setLocalLyrics(undefined);
+        refreshTracks();
+        toast.success("Lyrics transcribed!");
+      } else {
+        throw new Error(json.error || "Transcription failed");
+      }
+    } catch (err) {
+      console.error("Transcription failed:", err);
+      toast.warning("Lyrics transcription failed");
+    }
+  };
+
   return (
     <SectionCard
       title="Lyrics"
@@ -1198,6 +1201,12 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
                 className="flex items-center gap-1.5 text-xs text-primary hover:underline"
               >
                 <Edit3 className="w-3.5 h-3.5" /> Edit
+              </button>
+              <button
+                onClick={handleTranscribe}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                <Mic className="w-3.5 h-3.5" /> Re-transcribe
               </button>
             </>
           )}
@@ -1277,6 +1286,12 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-secondary transition-colors"
               >
                 <Upload className="w-3.5 h-3.5" /> Import File
+              </button>
+              <button
+                onClick={handleTranscribe}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-secondary transition-colors"
+              >
+                <Mic className="w-3.5 h-3.5" /> Transcribe Lyrics
               </button>
               <input
                 ref={fileInputRef}
