@@ -31,8 +31,8 @@ Deno.serve(async (req) => {
   try {
     const { slug, track_id, quality } = await req.json();
 
-    if (!slug || !track_id) {
-      return new Response(JSON.stringify({ error: "Missing slug or track_id" }), {
+    if (!track_id) {
+      return new Response(JSON.stringify({ error: "Missing track_id" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -44,57 +44,60 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // 1. Verify the shared link exists and is active
-    const { data: link, error: linkErr } = await supabaseAdmin
-      .from("shared_links")
-      .select("id, share_type, track_id, playlist_id, status, expires_at")
-      .eq("link_slug", slug)
-      .single();
+    // If slug is provided, validate the shared link (public access flow)
+    if (slug) {
+      // 1. Verify the shared link exists and is active
+      const { data: link, error: linkErr } = await supabaseAdmin
+        .from("shared_links")
+        .select("id, share_type, track_id, playlist_id, status, expires_at")
+        .eq("link_slug", slug)
+        .single();
 
-    if (linkErr || !link) {
-      return new Response(JSON.stringify({ error: "Link not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (linkErr || !link) {
+        return new Response(JSON.stringify({ error: "Link not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (link.status !== "active") {
+        return new Response(JSON.stringify({ error: "Link is not active" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (link.expires_at && new Date(link.expires_at) < new Date()) {
+        return new Response(JSON.stringify({ error: "Link has expired" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // 2. Verify the track_id is associated with this shared link
+      let trackAllowed = false;
+
+      if (link.share_type === "playlist" && link.playlist_id) {
+        const { data: ptRow } = await supabaseAdmin
+          .from("playlist_tracks")
+          .select("id")
+          .eq("playlist_id", link.playlist_id)
+          .eq("track_id", track_id)
+          .maybeSingle();
+
+        trackAllowed = !!ptRow;
+      } else if (link.track_id === track_id) {
+        trackAllowed = true;
+      }
+
+      if (!trackAllowed) {
+        return new Response(JSON.stringify({ error: "Track not associated with this link" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
-
-    if (link.status !== "active") {
-      return new Response(JSON.stringify({ error: "Link is not active" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (link.expires_at && new Date(link.expires_at) < new Date()) {
-      return new Response(JSON.stringify({ error: "Link has expired" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // 2. Verify the track_id is associated with this shared link
-    let trackAllowed = false;
-
-    if (link.share_type === "playlist" && link.playlist_id) {
-      // Check if track is in the playlist
-      const { data: ptRow } = await supabaseAdmin
-        .from("playlist_tracks")
-        .select("id")
-        .eq("playlist_id", link.playlist_id)
-        .eq("track_id", track_id)
-        .maybeSingle();
-
-      trackAllowed = !!ptRow;
-    } else if (link.track_id === track_id) {
-      trackAllowed = true;
-    }
-
-    if (!trackAllowed) {
-      return new Response(JSON.stringify({ error: "Track not associated with this link" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // No slug: authenticated user flow (Smart A&R, catalog preview, etc.)
 
     // 3. Get the audio_url (storage path) from the tracks table
     const { data: track, error: trackErr } = await supabaseAdmin

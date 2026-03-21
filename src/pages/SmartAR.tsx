@@ -9,7 +9,7 @@ import { CreatePitchModal, type PitchEntry } from "@/components/CreatePitchModal
 import { ShareModal } from "@/components/ShareModal";
 import type { NewPlaylistData } from "@/components/CreatePlaylistModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, supabase } from "@/integrations/supabase/client";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { DEFAULT_COVER } from "@/lib/constants";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -81,7 +81,7 @@ export default function SmartAR() {
     };
   }, []);
 
-  var handlePlayTrack = useCallback(function (trackId: string, trackData: any) {
+  var handlePlayTrack = useCallback(function (trackId: string) {
     if (playingTrackId === trackId) {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -102,24 +102,31 @@ export default function SmartAR() {
     setAudioDuration(0);
     setLoadingAudioId(trackId);
 
-    var audioPath = trackData.previewFileUrl || trackData.originalFileUrl;
-    if (!audioPath) {
-      setLoadingAudioId(null);
-      toast({ title: "No audio file available for this track" });
-      return;
-    }
-
-    supabase.storage
-      .from("tracks")
-      .createSignedUrl(audioPath, 3600)
-      .then(function (result) {
-        if (result.error || !result.data?.signedUrl) {
+    fetch(SUPABASE_URL + "/functions/v1/get-audio-url", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({ track_id: trackId, quality: "preview" }),
+    })
+      .then(function (res) {
+        return res.json().then(function (json) {
+          if (!res.ok || json.error) {
+            throw new Error(json.error || "Failed to get audio URL");
+          }
+          return json;
+        });
+      })
+      .then(function (data) {
+        if (!data.url) {
           setLoadingAudioId(null);
           toast({ title: "Could not load audio preview" });
           return;
         }
 
-        var audio = new Audio(result.data.signedUrl);
+        var audio = new Audio(data.url);
         audioRef.current = audio;
 
         audio.addEventListener("loadedmetadata", function () {
@@ -150,6 +157,10 @@ export default function SmartAR() {
           setLoadingAudioId(null);
           toast({ title: "Could not play audio" });
         });
+      })
+      .catch(function (err) {
+        setLoadingAudioId(null);
+        toast({ title: "Could not load audio preview" });
       });
   }, [playingTrackId, toast]);
 
@@ -539,7 +550,7 @@ export default function SmartAR() {
                 >
                   <div className="flex items-center gap-3 p-2">
                     <button
-                      onClick={function () { handlePlayTrack(t.id, td); }}
+                      onClick={function () { handlePlayTrack(t.id); }}
                       className="relative w-8 h-8 rounded flex-shrink-0 group"
                     >
                       <img
