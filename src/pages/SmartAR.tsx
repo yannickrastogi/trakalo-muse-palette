@@ -94,7 +94,7 @@ export default function SmartAR() {
 
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.src = "";
+      audioRef.current = null;
     }
 
     setPlayingTrackId(null);
@@ -144,6 +144,7 @@ export default function SmartAR() {
         });
 
         audio.addEventListener("error", function () {
+          if (audioRef.current !== audio) return;
           setPlayingTrackId(null);
           setLoadingAudioId(null);
           setAudioProgress(0);
@@ -151,9 +152,11 @@ export default function SmartAR() {
         });
 
         audio.play().then(function () {
+          if (audioRef.current !== audio) return;
           setPlayingTrackId(trackId);
           setLoadingAudioId(null);
         }).catch(function () {
+          if (audioRef.current !== audio) return;
           setLoadingAudioId(null);
           toast({ title: "Could not play audio" });
         });
@@ -576,7 +579,7 @@ export default function SmartAR() {
                       {scorePercent}%
                     </span>
                     {t.reason && (
-                      <span className="text-xs text-muted-foreground hidden sm:block max-w-[160px] truncate">
+                      <span className="text-xs text-muted-foreground hidden sm:block">
                         {t.reason}
                       </span>
                     )}
