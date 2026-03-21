@@ -48,21 +48,45 @@ serve(async (req) => {
       });
     }
 
-    // Prefer MP3 preview (smaller), fallback to original
-    const audioPath = (track.audio_preview_url as string) || (track.audio_url as string);
-    if (!audioPath) {
+    // Prefer original audio (WAV) for better transcription quality, fallback to MP3 preview
+    const originalPath = track.audio_url as string;
+    const previewPath = track.audio_preview_url as string;
+
+    if (!originalPath && !previewPath) {
       return new Response(JSON.stringify({ error: "No audio file available" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 2. Download audio from storage
-    const { data: fileData, error: dlError } = await supabaseAdmin.storage
-      .from("tracks")
-      .download(audioPath);
+    // 2. Download audio from storage — try original first, fallback to preview if too large
+    let audioPath = originalPath || previewPath;
+    let fileData: Blob | null = null;
 
-    if (dlError || !fileData) {
+    if (originalPath) {
+      const { data, error } = await supabaseAdmin.storage
+        .from("tracks")
+        .download(originalPath);
+
+      if (!error && data && data.size <= 25 * 1024 * 1024) {
+        fileData = data;
+        audioPath = originalPath;
+      }
+    }
+
+    // Fallback to MP3 preview if original unavailable or > 25MB
+    if (!fileData && previewPath) {
+      const { data, error } = await supabaseAdmin.storage
+        .from("tracks")
+        .download(previewPath);
+
+      if (!error && data) {
+        fileData = data;
+        audioPath = previewPath;
+      }
+    }
+
+    if (!fileData) {
       return new Response(JSON.stringify({ error: "Failed to download audio file" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -71,10 +95,13 @@ serve(async (req) => {
 
     // 3. Send to Groq Whisper API
     const fileName = audioPath.split("/").pop() || "audio.mp3";
+    const isWav = fileName.toLowerCase().endsWith(".wav");
+    const mimeType = isWav ? "audio/wav" : "audio/mpeg";
     const formData = new FormData();
-    formData.append("file", new File([fileData], fileName, { type: "audio/mpeg" }));
+    formData.append("file", new File([fileData], fileName, { type: mimeType }));
     formData.append("model", "whisper-large-v3");
     formData.append("response_format", "verbose_json");
+    formData.append("temperature", "0.0");
 
     const groqRes = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
       method: "POST",
