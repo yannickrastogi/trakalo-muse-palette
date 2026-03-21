@@ -85,20 +85,29 @@ export default function PlaylistDetail() {
   const { activeWorkspace } = useWorkspace();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const playlistData = getPlaylist(id || "");
-  const playlistRef = useRef(playlistData);
-  if (playlistData) playlistRef.current = playlistData;
 
-  // DB fallback for playlist metadata (survives refresh when context is empty)
-  const [dbPlaylist, setDbPlaylist] = useState<PlaylistItem | null>(null);
+  // Persistent DB fallback — survives context resets, tab switch, refresh
+  const dbPlaylistRef = useRef<PlaylistItem | null>(null);
   const dbFetchedRef = useRef<string | null>(null);
+  const [, setForceUpdate] = useState(0);
+
+  // Reset refs when navigating to a different playlist
+  if (id && dbFetchedRef.current && dbFetchedRef.current !== id) {
+    dbFetchedRef.current = null;
+    dbPlaylistRef.current = null;
+  }
 
   useEffect(function() {
-    if (playlistData || !id || dbFetchedRef.current === id) return;
+    if (!id || dbFetchedRef.current === id) return;
+    if (playlistData) {
+      dbFetchedRef.current = id;
+      return;
+    }
     dbFetchedRef.current = id;
     supabase.from("playlists").select("*").eq("id", id).single().then(function(res) {
       if (!res.data) return;
       var row = res.data as Record<string, any>;
-      setDbPlaylist({
+      dbPlaylistRef.current = {
         id: row.id,
         name: row.name || "Untitled",
         description: row.description || "",
@@ -110,11 +119,14 @@ export default function PlaylistDetail() {
         color: "from-brand-purple/20 to-brand-orange/20",
         coverImage: row.cover_url || undefined,
         workspace_id: row.workspace_id,
-      } as PlaylistItem);
+      } as PlaylistItem;
+      setForceUpdate(function(n) { return n + 1; });
     });
   }, [id, playlistData]);
 
-  const playlist = playlistData || playlistRef.current || dbPlaylist;
+  const playlist = playlistData || dbPlaylistRef.current;
+  const hadPlaylistRef = useRef(false);
+  if (playlist) hadPlaylistRef.current = true;
 
   const plEngagement = getPlaylistEngagement(id || "");
 
@@ -236,19 +248,26 @@ export default function PlaylistDetail() {
     setTimeout(() => setDuplicateToast(false), 2500);
   };
 
-  if (!playlist) {
-    return (
-      <PageShell>
-        <div className="p-8 flex items-center justify-center gap-3 text-muted-foreground">
-          <ListMusic className="w-5 h-5 animate-pulse" />
-          <span className="text-sm">Loading playlist...</span>
-        </div>
-      </PageShell>
-    );
-  }
-
   return (
     <PageShell>
+      {!playlist ? (
+        hadPlaylistRef.current ? (
+          <div className="p-8 flex items-center justify-center gap-3 text-muted-foreground">
+            <ListMusic className="w-5 h-5 animate-pulse" />
+            <span className="text-sm">Loading playlist...</span>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-32 text-center px-4">
+            <ListMusic className="w-12 h-12 text-muted-foreground/15 mb-4" />
+            <h2 className="text-lg font-semibold text-foreground">Playlist not found</h2>
+            <p className="text-sm text-muted-foreground mt-1">This playlist may have been removed.</p>
+            <Link to="/playlists" className="mt-4 text-sm gradient-text font-semibold hover:opacity-80 transition-opacity">
+              ← Back to Playlists
+            </Link>
+          </div>
+        )
+      ) : (
+      <>
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -574,6 +593,8 @@ export default function PlaylistDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </>
+      )}
     </PageShell>
   );
 }
