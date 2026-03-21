@@ -6,6 +6,7 @@ import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { toast } from "sonner";
 import { useTeams } from "@/contexts/TeamContext";
 import { analyzeAudio, type AudioAnalysisResult } from "@/lib/audio-analysis";
+import { analyzeWithEssentia } from "@/lib/audioAnalyzer";
 import { generateWaveform } from "@/lib/waveformGenerator";
 import { compressAudio, type CompressedAudio } from "@/lib/audio-compression";
 import { motion, AnimatePresence } from "framer-motion";
@@ -172,20 +173,33 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
     // Run analysis + compression in parallel for each file
     for (const entry of entries) {
-      // Analysis
+      // Analysis: run basic + Essentia in parallel
       setQueue((prev) => prev.map((e) => e.id === entry.id ? { ...e, analyzing: true } : e));
 
-      // Analysis
-      analyzeAudio(entry.file)
-        .then((result) => {
-          setQueue((prev) => prev.map((e) => e.id === entry.id ? {
-            ...e,
-            analyzing: false,
-            analysisResult: result,
-            analysisDuration: result.duration,
-            bpm: String(result.bpm),
-            trackKey: result.key,
-          } : e));
+      const basicPromise = analyzeAudio(entry.file).catch(() => null);
+      const essentiaPromise = analyzeWithEssentia(entry.file).catch(() => null);
+
+      Promise.all([basicPromise, essentiaPromise])
+        .then(([basic, ess]) => {
+          setQueue((prev) => prev.map((e) => {
+            if (e.id !== entry.id) return e;
+            const updates: Partial<TrackEntry> = { analyzing: false };
+            if (basic) {
+              updates.analysisResult = basic;
+              updates.analysisDuration = basic.duration;
+              updates.bpm = String(basic.bpm);
+              updates.trackKey = basic.key;
+            }
+            // Essentia overrides BPM/key with better accuracy, adds genre/mood
+            if (ess) {
+              if (ess.bpm > 0) updates.bpm = String(ess.bpm);
+              if (ess.key) updates.trackKey = ess.key;
+              if (ess.genre) updates.genre = ess.genre;
+              if (ess.mood && ess.mood.length > 0) updates.mood = ess.mood;
+            }
+            if (!basic && !ess) updates.analysisError = true;
+            return { ...e, ...updates };
+          }));
         })
         .catch(() => {
           setQueue((prev) => prev.map((e) => e.id === entry.id ? { ...e, analyzing: false, analysisError: true } : e));

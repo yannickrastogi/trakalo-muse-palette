@@ -84,6 +84,7 @@ import { StemsTab } from "@/components/StemsTab";
 import { STEM_TYPES, DEFAULT_COVER } from "@/lib/constants";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { toast } from "sonner";
+import { analyzeWithEssentia } from "@/lib/audioAnalyzer";
 import type { StemType } from "@/lib/constants";
 
 interface StemFile {
@@ -533,6 +534,40 @@ export default function TrackDetail() {
                                   <Music className="w-4 h-4 mr-2" /> Generate MP3 Preview
                                 </DropdownMenuItem>
                               )}
+                              <DropdownMenuItem onClick={async () => {
+                                try {
+                                  toast.info("Analyzing audio...");
+                                  const { data: row } = await supabase
+                                    .from("tracks")
+                                    .select("audio_url")
+                                    .eq("id", track.uuid)
+                                    .single();
+                                  if (!row?.audio_url) throw new Error("No audio file");
+                                  const { data: fileData, error: dlErr } = await supabase.storage
+                                    .from("tracks")
+                                    .download(row.audio_url as string);
+                                  if (dlErr || !fileData) throw new Error("Failed to download audio");
+                                  const audioFile = new File([fileData], "audio.wav", { type: fileData.type });
+                                  const features = await analyzeWithEssentia(audioFile);
+                                  await supabase
+                                    .from("tracks")
+                                    .update({
+                                      bpm: features.bpm,
+                                      key: features.key,
+                                      genre: features.genre,
+                                      mood: features.mood,
+                                    })
+                                    .eq("id", track.uuid);
+                                  refreshTracks();
+                                  toast.success("Analysis complete: " + features.bpm + " BPM, " + features.key);
+                                } catch (err) {
+                                  console.error("Re-analyze failed:", err);
+                                  toast.warning("Audio analysis failed");
+                                }
+                              }}>
+                                <Activity className="w-4 h-4 mr-2" /> Re-analyze Audio
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} className="text-destructive focus:text-destructive">
                                 <Trash2 className="w-4 h-4 mr-2" /> Delete
                               </DropdownMenuItem>
