@@ -75,6 +75,7 @@ serve(async (req) => {
     formData.append("file", new File([fileData], fileName, { type: "audio/mpeg" }));
     formData.append("model", "whisper-large-v3");
     formData.append("response_format", "verbose_json");
+    formData.append("prompt", "These are song lyrics. Transcribe the sung vocals accurately, including ad-libs and background vocals.");
 
     const groqRes = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
       method: "POST",
@@ -93,7 +94,33 @@ serve(async (req) => {
     }
 
     const result = await groqRes.json();
-    const transcribedText = (result.text || "").trim();
+
+    // Format lyrics using segments with timestamps
+    let formattedLyrics = "";
+    if (result.segments && result.segments.length > 0) {
+      const lines: string[] = [];
+      for (let i = 0; i < result.segments.length; i++) {
+        const segment = result.segments[i];
+        const text = (segment.text || "").trim();
+        if (!text) continue;
+
+        // Add blank line if gap > 2s between segments (verse/chorus separation)
+        if (i > 0 && lines.length > 0) {
+          const prevEnd = result.segments[i - 1].end || 0;
+          const currStart = segment.start || 0;
+          if (currStart - prevEnd > 2) {
+            lines.push("");
+          }
+        }
+
+        lines.push(text);
+      }
+      formattedLyrics = lines.join("\n");
+    } else {
+      formattedLyrics = (result.text || "").trim();
+    }
+
+    const transcribedText = formattedLyrics;
 
     // 4. Check if meaningful text was transcribed
     if (!transcribedText || transcribedText.length < 10) {
