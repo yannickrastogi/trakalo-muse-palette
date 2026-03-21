@@ -52,7 +52,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { PageShell } from "@/components/PageShell";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { usePlaylists } from "@/contexts/PlaylistContext";
+import { usePlaylists, type PlaylistItem } from "@/contexts/PlaylistContext";
 import { DEFAULT_COVER } from "@/lib/constants";
 import { statusColors } from "./Catalog";
 import { useTrack, mapRowToTrack, type TrackData } from "@/contexts/TrackContext";
@@ -87,9 +87,35 @@ export default function PlaylistDetail() {
   const playlistData = getPlaylist(id || "");
   const playlistRef = useRef(playlistData);
   if (playlistData) playlistRef.current = playlistData;
-  const playlist = playlistData || playlistRef.current;
-  const hadPlaylistRef = useRef(false);
-  if (playlist) hadPlaylistRef.current = true;
+
+  // DB fallback for playlist metadata (survives refresh when context is empty)
+  const [dbPlaylist, setDbPlaylist] = useState<PlaylistItem | null>(null);
+  const dbFetchedRef = useRef<string | null>(null);
+
+  useEffect(function() {
+    if (playlistData || !id || dbFetchedRef.current === id) return;
+    dbFetchedRef.current = id;
+    supabase.from("playlists").select("*").eq("id", id).single().then(function(res) {
+      if (!res.data) return;
+      var row = res.data as Record<string, any>;
+      setDbPlaylist({
+        id: row.id,
+        name: row.name || "Untitled",
+        description: row.description || "",
+        tracks: 0,
+        duration: "",
+        updated: row.updated_at ? new Date(row.updated_at).toLocaleDateString() : "",
+        mood: row.mood || "",
+        coverIdxs: [0, 1, 2, 3],
+        color: "from-brand-purple/20 to-brand-orange/20",
+        coverImage: row.cover_url || undefined,
+        workspace_id: row.workspace_id,
+      } as PlaylistItem);
+    });
+  }, [id, playlistData]);
+
+  const playlist = playlistData || playlistRef.current || dbPlaylist;
+
   const plEngagement = getPlaylistEngagement(id || "");
 
   const [tracks, setTracks] = useState<Track[]>(() => {
@@ -149,6 +175,15 @@ export default function PlaylistDetail() {
   const [shareOpen, setShareOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
+  // Sync name/description when playlist loads from DB fallback
+  useEffect(function() {
+    if (playlist && !playlistName) {
+      setPlaylistName(playlist.name);
+      setRenameValue(playlist.name);
+      setDescValue(playlist.description || "");
+    }
+  }, [playlist, playlistName]);
+
   // Sync changes back to context
   const syncToContext = useCallback((updatedTracks: Track[], updatedName?: string) => {
     if (!id) return;
@@ -204,21 +239,10 @@ export default function PlaylistDetail() {
   if (!playlist) {
     return (
       <PageShell>
-        {hadPlaylistRef.current ? (
-          <div className="p-8 flex items-center justify-center gap-3 text-muted-foreground">
-            <ListMusic className="w-5 h-5 animate-pulse" />
-            <span className="text-sm">Loading playlist...</span>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-32 text-center px-4">
-            <ListMusic className="w-12 h-12 text-muted-foreground/15 mb-4" />
-            <h2 className="text-lg font-semibold text-foreground">Playlist not found</h2>
-            <p className="text-sm text-muted-foreground mt-1">This playlist may have been removed.</p>
-            <Link to="/playlists" className="mt-4 text-sm gradient-text font-semibold hover:opacity-80 transition-opacity">
-              ← Back to Playlists
-            </Link>
-          </div>
-        )}
+        <div className="p-8 flex items-center justify-center gap-3 text-muted-foreground">
+          <ListMusic className="w-5 h-5 animate-pulse" />
+          <span className="text-sm">Loading playlist...</span>
+        </div>
       </PageShell>
     );
   }
