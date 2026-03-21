@@ -1,4 +1,4 @@
-import lamejs from "lamejs";
+import { Mp3Encoder } from "@breezystack/lamejs";
 
 /**
  * Encode an audio file to MP3 128kbps using lamejs (client-side).
@@ -31,7 +31,7 @@ export async function encodeToMp3(audioFile: File): Promise<Blob> {
   const left = floatTo16Bit(decoded.getChannelData(0));
   const right = channels >= 2 ? floatTo16Bit(decoded.getChannelData(1)) : undefined;
 
-  const encoder = new lamejs.Mp3Encoder(right ? 2 : 1, sampleRate, kbps);
+  const encoder = new Mp3Encoder(right ? 2 : 1, sampleRate, kbps);
 
   const mp3Parts: Int8Array[] = [];
   const blockSize = 1152;
