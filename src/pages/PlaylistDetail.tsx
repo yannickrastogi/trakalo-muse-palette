@@ -85,7 +85,6 @@ export default function PlaylistDetail() {
   const { activeWorkspace } = useWorkspace();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const playlistData = getPlaylist(id || "");
-
   // Persistent DB fallback — survives context resets, tab switch, refresh
   const dbPlaylistRef = useRef<PlaylistItem | null>(null);
   const dbFetchedRef = useRef<string | null>(null);
@@ -99,10 +98,6 @@ export default function PlaylistDetail() {
 
   useEffect(function() {
     if (!id || dbFetchedRef.current === id) return;
-    if (playlistData) {
-      dbFetchedRef.current = id;
-      return;
-    }
     dbFetchedRef.current = id;
     supabase.from("playlists").select("*").eq("id", id).single().then(function(res) {
       if (!res.data) return;
@@ -122,7 +117,7 @@ export default function PlaylistDetail() {
       } as PlaylistItem;
       setForceUpdate(function(n) { return n + 1; });
     });
-  }, [id, playlistData]);
+  }, [id]);
 
   const playlist = playlistData || dbPlaylistRef.current;
   const hadPlaylistRef = useRef(false);
@@ -613,6 +608,7 @@ function SortableDesktopRow({
   setPlayingTrackId: (id: number | null) => void;
   removeTrack: (id: number) => void;
 }) {
+  const { isTrackPlaying, progress } = useAudioPlayer();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: track.id });
 
   const style = {
