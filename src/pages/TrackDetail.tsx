@@ -285,21 +285,6 @@ export default function TrackDetail() {
     return Array.from(map.values());
   }, [trackComments]);
 
-  if (!track) {
-    return (
-      <PageShell>
-        {hadTrackRef.current ? (
-          <div className="p-8 flex items-center justify-center gap-3 text-muted-foreground">
-            <Disc3 className="w-5 h-5 animate-spin" />
-            <span className="text-sm">Loading track...</span>
-          </div>
-        ) : (
-          <div className="p-8 text-center text-muted-foreground">Track not found.</div>
-        )}
-      </PageShell>
-    );
-  }
-
   const statusColorMap: Record<string, string> = {
     Available: "bg-emerald-500/15 text-emerald-400",
     "On Hold": "bg-brand-orange/15 text-brand-orange",
@@ -311,7 +296,7 @@ export default function TrackDetail() {
     const parts = dur.split(":").map(Number);
     return parts.length === 2 ? parts[0] * 60 + parts[1] : parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : 0;
   };
-  const totalDurationSeconds = parseDuration(track.duration);
+  const totalDurationSeconds = track ? parseDuration(track.duration) : 0;
 
   const handleWaveformClick = (pct: number) => {
     if (currentTrack?.uuid !== id && track) {
@@ -333,6 +318,7 @@ export default function TrackDetail() {
   };
 
   const handleWaveformCommentSubmit = (text: string, timestampSeconds: number) => {
+    if (!track) return;
     addComment({
       trackId: track.id,
       authorName: "Kira Nomura",
@@ -355,6 +341,17 @@ export default function TrackDetail() {
 
   return (
     <PageShell>
+      {!track ? (
+        hadTrackRef.current ? (
+          <div className="p-8 flex items-center justify-center gap-3 text-muted-foreground">
+            <Disc3 className="w-5 h-5 animate-spin" />
+            <span className="text-sm">Loading track...</span>
+          </div>
+        ) : (
+          <div className="p-8 text-center text-muted-foreground">Track not found.</div>
+        )
+      ) : (
+        <>
           <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
             {/* Breadcrumb */}
             <motion.div variants={item} className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -894,6 +891,8 @@ export default function TrackDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        </>
+      )}
     </PageShell>
   );
 }
