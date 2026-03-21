@@ -1064,15 +1064,19 @@ function CreditsTab({ trackId, onEdit }: { trackId: number; onEdit: () => void }
 
 function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; trackUuid: string; fallbackTrack?: TrackData }) {
   const { getTrack, updateTrackLyrics, refreshTracks } = useTrack();
+  const { currentTrack, currentTime, isPlaying, seekToTime, playTrack } = useAudioPlayer();
   const contextTrack = getTrack(trackId);
   const trackData = contextTrack || fallbackTrack;
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editValue, setEditValue] = useState("");
   const [localLyrics, setLocalLyrics] = useState<string | undefined>(undefined);
+  const lyricsContainerRef = useRef<HTMLDivElement>(null);
+  const activeLineRef = useRef<HTMLDivElement>(null);
 
   // When using fallback, we need to fetch fresh lyrics from DB
   const [dbLyrics, setDbLyrics] = useState<string | undefined>(undefined);
+  const [dbSegments, setDbSegments] = useState<{ start: number; end: number; text: string }[] | undefined>(undefined);
   const dbFetchedRef = useRef<string | null>(null);
 
   useEffect(function() {
@@ -1080,12 +1084,15 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
     dbFetchedRef.current = trackUuid;
     supabase
       .from("tracks")
-      .select("lyrics")
+      .select("lyrics, lyrics_segments")
       .eq("id", trackUuid)
       .single()
       .then(function(res) {
         if (res.data?.lyrics) {
           setDbLyrics(res.data.lyrics as string);
+        }
+        if (res.data?.lyrics_segments) {
+          setDbSegments(res.data.lyrics_segments as { start: number; end: number; text: string }[]);
         }
       });
   }, [trackUuid, contextTrack]);
@@ -1098,8 +1105,43 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
     : contextTrack
       ? trackData
       : dbLyrics !== undefined
-        ? { ...trackData, lyrics: dbLyrics }
+        ? { ...trackData, lyrics: dbLyrics, lyricsSegments: dbSegments }
         : trackData;
+
+  const segments = effectiveTrackData.lyricsSegments;
+  const isThisTrackPlaying = currentTrack?.uuid === trackData.uuid;
+  const hasSyncedLyrics = !!segments && segments.length > 0 && !isEditing;
+
+  // Find the active segment index based on current playback time
+  const activeSegmentIndex = useMemo(() => {
+    if (!hasSyncedLyrics || !isThisTrackPlaying) return -1;
+    for (let i = segments.length - 1; i >= 0; i--) {
+      if (currentTime >= segments[i].start) return i;
+    }
+    return -1;
+  }, [hasSyncedLyrics, isThisTrackPlaying, currentTime, segments]);
+
+  // Auto-scroll to the active line
+  useEffect(() => {
+    if (activeSegmentIndex >= 0 && activeLineRef.current && lyricsContainerRef.current) {
+      const container = lyricsContainerRef.current;
+      const activeLine = activeLineRef.current;
+      const containerRect = container.getBoundingClientRect();
+      const lineRect = activeLine.getBoundingClientRect();
+      const offset = lineRect.top - containerRect.top - containerRect.height / 3;
+      container.scrollBy({ top: offset, behavior: "smooth" });
+    }
+  }, [activeSegmentIndex]);
+
+  const handleSegmentClick = (segment: { start: number; end: number; text: string }) => {
+    if (isThisTrackPlaying) {
+      seekToTime(segment.start);
+    } else if (trackData) {
+      playTrack(trackData);
+      // Small delay to let audio load, then seek
+      setTimeout(() => seekToTime(segment.start), 300);
+    }
+  };
 
   const isAutoTranscribed = effectiveTrackData.lyrics?.startsWith("[auto-transcribed]\n") || false;
   const rawLyrics = isAutoTranscribed ? effectiveTrackData.lyrics!.replace("[auto-transcribed]\n", "") : (effectiveTrackData.lyrics || "");
@@ -1261,9 +1303,45 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
                 <Mic className="w-3 h-3" /> Auto-transcribed
               </span>
             )}
-            <div className="whitespace-pre-wrap text-sm text-foreground/90 leading-relaxed">
-              {rawLyrics}
-            </div>
+            {hasSyncedLyrics ? (
+              <div
+                ref={lyricsContainerRef}
+                className="max-h-[500px] overflow-y-auto space-y-1 scroll-smooth"
+              >
+                {segments.map((seg, i) => {
+                  const isPast = isThisTrackPlaying && i < activeSegmentIndex;
+                  const isActive = isThisTrackPlaying && i === activeSegmentIndex;
+                  const isFuture = !isThisTrackPlaying || i > activeSegmentIndex;
+                  return (
+                    <div
+                      key={i}
+                      ref={isActive ? activeLineRef : undefined}
+                      onClick={() => handleSegmentClick(seg)}
+                      className={
+                        "py-1.5 px-2 rounded-md cursor-pointer text-sm leading-relaxed transition-all duration-300 " +
+                        (isActive
+                          ? "bg-brand-orange/10 font-semibold scale-[1.02] origin-left"
+                          : "hover:bg-secondary/50") +
+                        (isPast ? " text-foreground" : "") +
+                        (isFuture && !isActive ? " text-muted-foreground" : "")
+                      }
+                    >
+                      {isActive ? (
+                        <span className="bg-gradient-to-r from-brand-purple via-brand-pink to-brand-orange bg-clip-text text-transparent drop-shadow-[0_0_8px_hsl(var(--brand-orange)/0.4)]">
+                          {seg.text}
+                        </span>
+                      ) : (
+                        seg.text
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="whitespace-pre-wrap text-sm text-foreground/90 leading-relaxed">
+                {rawLyrics}
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-12 space-y-4">

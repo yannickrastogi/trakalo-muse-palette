@@ -123,12 +123,20 @@ serve(async (req) => {
 
     // Format lyrics using segments with timestamps
     let formattedLyrics = "";
+    const lyricsSegments: { start: number; end: number; text: string }[] = [];
     if (result.segments && result.segments.length > 0) {
       const lines: string[] = [];
       for (let i = 0; i < result.segments.length; i++) {
         const segment = result.segments[i];
         const text = (segment.text || "").trim();
         if (!text) continue;
+
+        // Save segment with timestamps for synchronized lyrics
+        lyricsSegments.push({
+          start: segment.start || 0,
+          end: segment.end || 0,
+          text,
+        });
 
         // Add blank line if gap > 2s between segments (verse/chorus separation)
         if (i > 0 && lines.length > 0) {
@@ -159,9 +167,14 @@ serve(async (req) => {
     // 5. Update lyrics in DB with auto-transcribed marker
     const lyricsWithMarker = "[auto-transcribed]\n" + transcribedText;
 
+    const updatePayload: Record<string, unknown> = { lyrics: lyricsWithMarker };
+    if (lyricsSegments.length > 0) {
+      updatePayload.lyrics_segments = lyricsSegments;
+    }
+
     const { error: updateError } = await supabaseAdmin
       .from("tracks")
-      .update({ lyrics: lyricsWithMarker })
+      .update(updatePayload)
       .eq("id", track_id);
 
     if (updateError) {

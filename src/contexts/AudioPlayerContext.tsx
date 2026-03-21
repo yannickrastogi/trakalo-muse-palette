@@ -17,6 +17,7 @@ interface AudioPlayerContextValue extends AudioPlayerState {
   togglePlay: () => void;
   pause: () => void;
   seek: (percent: number) => void;
+  seekToTime: (seconds: number) => void;
   setVolume: (vol: number) => void;
   nextTrack: () => void;
   prevTrack: () => void;
@@ -205,6 +206,18 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const seekToTime = useCallback((seconds: number) => {
+    const audio = audioRef.current;
+    if (!audio || !audio.duration) return;
+    const clamped = Math.max(0, Math.min(seconds, audio.duration));
+    audio.currentTime = clamped;
+    setState((prev) => ({
+      ...prev,
+      currentTime: clamped,
+      progress: (clamped / audio.duration) * 100,
+    }));
+  }, []);
+
   const setVolume = useCallback((vol: number) => {
     const clamped = Math.max(0, Math.min(1, vol));
     if (audioRef.current) audioRef.current.volume = clamped;
@@ -243,6 +256,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       togglePlay,
       pause,
       seek,
+      seekToTime,
       setVolume,
       nextTrack,
       prevTrack,
