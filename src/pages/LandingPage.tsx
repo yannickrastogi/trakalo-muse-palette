@@ -1,11 +1,83 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Music, Rocket, Link2, BarChart3, Disc3, Building2, Mic2, ArrowRight } from "lucide-react";
+import { Music, Rocket, Link2, BarChart3, Disc3, Building2, Mic2, ArrowRight, ChevronDown } from "lucide-react";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import { useTranslation } from "react-i18next";
+
+const LANDING_LANGUAGES = [
+  { code: "en", label: "EN", flag: "🇬🇧" },
+  { code: "fr", label: "FR", flag: "🇫🇷" },
+  { code: "es", label: "ES", flag: "🇪🇸" },
+  { code: "pt", label: "PT", flag: "🇧🇷" },
+  { code: "it", label: "IT", flag: "🇮🇹" },
+  { code: "de", label: "DE", flag: "🇩🇪" },
+  { code: "ko", label: "KO", flag: "🇰🇷" },
+  { code: "ja", label: "JA", flag: "🇯🇵" },
+];
+
+const LANDING_VISITED_KEY = "trakalog_landing_visited";
+
+function LanguageSwitcher() {
+  const { i18n } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const current = LANDING_LANGUAGES.find((l) => l.code === i18n.language) || LANDING_LANGUAGES[0];
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectLanguage = (code: string) => {
+    i18n.changeLanguage(code);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all min-h-[44px]"
+      >
+        <span>{current.flag}</span>
+        <span className="hidden sm:inline">{current.label}</span>
+        <ChevronDown className={"w-3 h-3 transition-transform " + (open ? "rotate-180" : "")} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-full mt-1 py-1 rounded-lg border border-border bg-card shadow-lg z-50 min-w-[120px]"
+          >
+            {LANDING_LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => selectLanguage(lang.code)}
+                className={"w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors min-h-[44px] "
+                  + (lang.code === current.code
+                    ? "text-brand-orange bg-brand-orange/5 font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/60")}
+              >
+                <span>{lang.flag}</span>
+                <span>{lang.label}</span>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -93,7 +165,16 @@ const audienceKeys = [
 ];
 
 export default function LandingPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  // Force English on first landing visit — does not affect logged-in app language
+  useEffect(() => {
+    const visited = sessionStorage.getItem(LANDING_VISITED_KEY);
+    if (!visited) {
+      i18n.changeLanguage("en");
+      sessionStorage.setItem(LANDING_VISITED_KEY, "1");
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -110,6 +191,7 @@ export default function LandingPage() {
             <a href="mailto:contact@trakalog.com" className="hover:text-foreground transition-colors">{t("landing.contact")}</a>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-3">
+            <LanguageSwitcher />
             <Link
               to="/auth"
               className="inline-flex px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold min-h-[44px] items-center border border-brand-orange/30 text-brand-orange hover:bg-brand-orange/10 transition-all duration-200 whitespace-nowrap"
