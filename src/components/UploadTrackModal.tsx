@@ -802,7 +802,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               {phase === "upload" ? (
                 <>
                   <span className="text-2xs text-muted-foreground">
-                    {queue.length} / {MAX_TRACKS} tracks
+                    {queue.length} / {MAX_TRACKS} {t("common.tracks")}
                   </span>
                   <button
                     onClick={startEditing}
@@ -1326,7 +1326,7 @@ function StepStems({
               </button>
             </div>
           ))}
-          <p className="text-2xs text-muted-foreground pt-1">{stems.length} stem{stems.length !== 1 ? "s" : ""} added</p>
+          <p className="text-2xs text-muted-foreground pt-1">{t("uploadTrack.stemsAdded", { count: stems.length, defaultValue: stems.length + " stem(s) added" })}</p>
         </div>
       )}
     </div>
@@ -1405,7 +1405,7 @@ function StepSplits({
         onClick={onAdd}
         className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-border hover:border-brand-orange/30 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-all w-full justify-center"
       >
-        <Plus className="w-3.5 h-3.5" /> Add Contributor
+        <Plus className="w-3.5 h-3.5" /> {t("editTrack.addCollaborator")}
       </button>
     </div>
   );
@@ -1420,6 +1420,7 @@ function StepLyrics({
   onUpdate: (v: string) => void;
   fileInputRef: React.RefObject<HTMLInputElement>;
 }) {
+  const { t } = useTranslation();
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1447,8 +1448,8 @@ function StepLyrics({
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-sm font-semibold text-foreground mb-1">Lyrics</h3>
-        <p className="text-2xs text-muted-foreground">Type your lyrics directly or import from a .pdf / .txt file</p>
+        <h3 className="text-sm font-semibold text-foreground mb-1">{t("uploadTrack.lyrics")}</h3>
+        <p className="text-2xs text-muted-foreground">{t("uploadTrack.lyricsDesc", "Type your lyrics directly or import from a .pdf / .txt file")}</p>
       </div>
 
       <div className="flex items-center gap-2">
@@ -1463,7 +1464,7 @@ function StepLyrics({
           onClick={() => fileInputRef.current?.click()}
           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-dashed border-border hover:border-brand-orange/30 text-muted-foreground hover:text-foreground transition-all"
         >
-          <Upload className="w-3.5 h-3.5" /> Import .pdf or .txt
+          <Upload className="w-3.5 h-3.5" /> {t("uploadTrack.importFile", "Import .pdf or .txt")}
         </button>
       </div>
 
@@ -1490,6 +1491,7 @@ function StepReview({
   lyrics?: string;
   coverFile?: File | null;
 }) {
+  const { t } = useTranslation();
   const ALL_DETAIL_FIELDS = [
     { key: "producers", label: "Producer(s)" },
     { key: "songwriters", label: "Songwriter(s)" },
@@ -1513,34 +1515,34 @@ function StepReview({
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-sm font-semibold text-foreground mb-1">Review & Save</h3>
-        <p className="text-2xs text-muted-foreground">Review your track details before adding to catalog</p>
+        <h3 className="text-sm font-semibold text-foreground mb-1">{t("uploadTrack.reviewAndSave", "Review & Save")}</h3>
+        <p className="text-2xs text-muted-foreground">{t("uploadTrack.reviewDesc", "Review your track details before adding to catalog")}</p>
       </div>
 
       {/* Info */}
       <div className="rounded-xl bg-secondary/50 border border-border p-4 space-y-2">
-        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Info</p>
+        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">{t("uploadTrack.info")}</p>
         {coverFile && (
           <div className="flex items-center gap-3 pb-2">
             <img src={URL.createObjectURL(coverFile)} alt="Cover" className="w-16 h-16 rounded-lg object-cover" />
             <div>
-              <p className="text-2xs text-muted-foreground font-medium">Cover Art</p>
+              <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.coverArt", "Cover Art")}</p>
               <p className="text-[13px] font-medium text-foreground truncate max-w-[200px]">{coverFile.name}</p>
             </div>
           </div>
         )}
         <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[13px]">
-          <ReviewRow label="Title" value={title} />
-          <ReviewRow label="Artist" value={artist} />
-          <ReviewRow label="BPM" value={bpm || "—"} />
-          <ReviewRow label="Key" value={trackKey || "—"} />
-          <ReviewRow label="Genre" value={genre || "—"} />
-          <ReviewRow label="Gender" value={voice || "—"} />
-          <ReviewRow label="Language" value={language || "—"} />
+          <ReviewRow label={t("uploadTrack.trackTitle")} value={title} />
+          <ReviewRow label={t("uploadTrack.artist")} value={artist} />
+          <ReviewRow label={t("uploadTrack.bpm")} value={bpm || "—"} />
+          <ReviewRow label={t("uploadTrack.key")} value={trackKey || "—"} />
+          <ReviewRow label={t("uploadTrack.genre")} value={genre || "—"} />
+          <ReviewRow label={t("editTrack.gender", "Gender")} value={voice || "—"} />
+          <ReviewRow label={t("uploadTrack.language")} value={language || "—"} />
         </div>
         {mood.length > 0 && (
           <div className="flex items-center gap-1.5 pt-1 flex-wrap">
-            <span className="text-2xs text-muted-foreground font-medium">Mood:</span>
+            <span className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.mood")}:</span>
             {mood.map((m) => (
               <span key={m} className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70">#{m}</span>
             ))}
@@ -1552,7 +1554,7 @@ function StepReview({
       {/* Credits */}
       {filledDetails.length > 0 && (
         <div className="rounded-xl bg-secondary/50 border border-border p-4 space-y-2">
-          <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Credits & Details</p>
+          <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">{t("uploadTrack.creditsAndDetails", "Credits & Details")}</p>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[13px]">
             {filledDetails.map((f) => (
               <ReviewRow key={f.key} label={f.label} value={details[f.key].filter((v) => v.trim()).join(", ")} />
@@ -1563,7 +1565,7 @@ function StepReview({
 
       {/* Audio */}
       <div className="rounded-xl bg-secondary/50 border border-border p-4">
-        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Audio</p>
+        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">{t("uploadTrack.audio")}</p>
         {audioFile ? (
           <div className="flex items-center gap-2">
             <FileAudio className="w-3.5 h-3.5 text-brand-orange" />
@@ -1571,13 +1573,13 @@ function StepReview({
             <span className="text-2xs text-muted-foreground">({formatFileSize(audioFile.size)})</span>
           </div>
         ) : (
-          <p className="text-2xs text-muted-foreground italic">No audio file uploaded</p>
+          <p className="text-2xs text-muted-foreground italic">{t("uploadTrack.noAudioFile", "No audio file uploaded")}</p>
         )}
       </div>
 
       {/* Stems */}
       <div className="rounded-xl bg-secondary/50 border border-border p-4">
-        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Stems ({stems.length})</p>
+        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">{t("uploadTrack.stems")} ({stems.length})</p>
         {stems.length > 0 ? (
           <div className="space-y-1">
             {stems.map((s) => (
@@ -1589,26 +1591,26 @@ function StepReview({
             ))}
           </div>
         ) : (
-          <p className="text-2xs text-muted-foreground italic">No stems uploaded</p>
+          <p className="text-2xs text-muted-foreground italic">{t("uploadTrack.noStems", "No stems uploaded")}</p>
         )}
       </div>
 
       {/* Lyrics */}
       <div className="rounded-xl bg-secondary/50 border border-border p-4">
-        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Lyrics</p>
+        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">{t("uploadTrack.lyrics")}</p>
         {lyrics?.trim() ? (
           <pre className="whitespace-pre-wrap text-xs text-foreground/80 font-mono leading-relaxed max-h-32 overflow-y-auto">
             {lyrics}
           </pre>
         ) : (
-          <p className="text-2xs text-muted-foreground italic">No lyrics added</p>
+          <p className="text-2xs text-muted-foreground italic">{t("uploadTrack.noLyrics", "No lyrics added")}</p>
         )}
       </div>
 
       {/* Splits */}
       <div className="rounded-xl bg-secondary/50 border border-border p-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">Splits ({splits.length})</p>
+          <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">{t("uploadTrack.splits")} ({splits.length})</p>
           <span className={`text-xs font-bold tabular-nums ${totalSplit === 100 ? "text-emerald-400" : "text-brand-orange"}`}>{totalSplit}%</span>
         </div>
         {splits.filter((s) => s.name).length > 0 ? (
@@ -1625,7 +1627,7 @@ function StepReview({
             ))}
           </div>
         ) : (
-          <p className="text-2xs text-muted-foreground italic">No contributors added</p>
+          <p className="text-2xs text-muted-foreground italic">{t("uploadTrack.noContributors", "No contributors added")}</p>
         )}
       </div>
     </div>
@@ -1643,20 +1645,21 @@ function StepTeams({
   selectedTeams: string[];
   onToggle: (teamId: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-sm font-semibold text-foreground mb-1">Share with Teams</h3>
+        <h3 className="text-sm font-semibold text-foreground mb-1">{t("uploadTrack.shareWithTeams", "Share with Teams")}</h3>
         <p className="text-2xs text-muted-foreground">
-          Select which teams should have access to this track. You can skip this step.
+          {t("uploadTrack.shareWithTeamsDesc", "Select which teams should have access to this track. You can skip this step.")}
         </p>
       </div>
 
       {teams.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Users className="w-10 h-10 text-muted-foreground/30 mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">No teams yet</p>
-          <p className="text-2xs text-muted-foreground/60 mt-1">Create a team in the Team section to start collaborating</p>
+          <p className="text-sm font-medium text-muted-foreground">{t("uploadTrack.noTeamsYet", "No teams yet")}</p>
+          <p className="text-2xs text-muted-foreground/60 mt-1">{t("uploadTrack.noTeamsDesc", "Create a team in the Team section to start collaborating")}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -1679,7 +1682,7 @@ function StepTeams({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">{team.name}</p>
-                  <p className="text-2xs text-muted-foreground">{team.members.length} members</p>
+                  <p className="text-2xs text-muted-foreground">{team.members.length} {t("uploadTrack.members", "members")}</p>
                 </div>
                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
                   isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
@@ -1694,7 +1697,7 @@ function StepTeams({
 
       {selectedTeams.length > 0 && (
         <p className="text-2xs text-muted-foreground">
-          {selectedTeams.length} team{selectedTeams.length > 1 ? "s" : ""} selected
+          {t("uploadTrack.teamsSelected", { count: selectedTeams.length, defaultValue: selectedTeams.length + " team(s) selected" })}
         </p>
       )}
     </div>
