@@ -1531,6 +1531,11 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
       .eq("track_id", trackUuid)
       .order("created_at", { ascending: false })
       .then(function (res) {
+        if (res.error) {
+          // Table may not exist yet — silently fail
+          setLoadingSubs(false);
+          return;
+        }
         if (res.data) setSubmissions(res.data as StudioSubmission[]);
         setLoadingSubs(false);
       });
@@ -1773,15 +1778,15 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         </div>
       </SectionCard>
 
-      {/* Studio Submissions */}
-      {submissions.length > 0 && (
+      {/* Studio Submissions — always visible when trackUuid exists */}
+      {trackUuid && (
         <SectionCard
           title={t("studioQr.pendingSubmissions")}
           icon={Users}
           action={
             pendingSubs.length > 0 ? (
               <span className="text-xs text-muted-foreground">
-                {t("studioQr.proposed")}: {proposedTotal}% · Current: {totalShares}%
+                {pendingSubs.length + " pending · Current: " + totalShares + "%"}
               </span>
             ) : undefined
           }
@@ -1907,6 +1912,15 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
           {loadingSubs && (
             <div className="px-5 py-6 text-center">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!loadingSubs && submissions.length === 0 && (
+            <div className="px-5 py-8 text-center">
+              <Users className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">{t("studioQr.noSubmissions")}</p>
+              <p className="text-[11px] text-muted-foreground/60 mt-1">Share the Studio QR code to collect contributions</p>
             </div>
           )}
         </SectionCard>

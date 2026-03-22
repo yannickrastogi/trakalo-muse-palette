@@ -36,7 +36,7 @@ export default function StudioSession() {
   var [error, setError] = useState<string | null>(null);
   var [trackData, setTrackData] = useState<{ id: string; title: string; artist: string; cover_url: string | null } | null>(null);
   var [mode, setMode] = useState<"welcome" | "form" | "success">("welcome");
-  var [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  var [step, setStep] = useState<1 | 2 | 3>(1);
   var [fullName, setFullName] = useState("");
   var [email, setEmail] = useState("");
   var [artistName, setArtistName] = useState("");
@@ -44,8 +44,7 @@ export default function StudioSession() {
   var [proName, setProName] = useState("");
   var [ipiNumber, setIpiNumber] = useState("");
   var [publisherName, setPublisherName] = useState("");
-  var [proposedSplit, setProposedSplit] = useState(10);
-  var [justification, setJustification] = useState("");
+  // Split is calculated automatically by admin — guest doesn't choose
   var [confirmed, setConfirmed] = useState(false);
   var [submitting, setSubmitting] = useState(false);
   var [submitError, setSubmitError] = useState<string | null>(null);
@@ -119,8 +118,8 @@ export default function StudioSession() {
         pro_name: proName.trim() || null,
         ipi_number: ipiNumber.trim() || null,
         publisher_name: publisherName.trim() || null,
-        proposed_split: proposedSplit,
-        justification: justification.trim() || null,
+        proposed_split: 0,
+        justification: null,
       })
       .then(function (res) {
         setSubmitting(false);
@@ -140,7 +139,6 @@ export default function StudioSession() {
     return [
       t("studioQr.stepIdentity"),
       t("studioQr.stepRole"),
-      t("studioQr.stepSplit"),
       t("studioQr.stepConfirm"),
     ];
   }, [t]);
@@ -437,51 +435,8 @@ export default function StudioSession() {
           </motion.div>
         )}
 
-        {/* Step 3: Split */}
+        {/* Step 3: Confirm */}
         {step === 3 && (
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-            <p className="text-foreground font-medium">{t("studioQr.splitQuestion")}</p>
-            <div className="flex items-center gap-4">
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={proposedSplit}
-                onChange={function (e) { setProposedSplit(Number(e.target.value)); }}
-                className="flex-1 accent-brand-orange"
-              />
-              <span className="text-2xl font-bold text-foreground min-w-[60px] text-right">
-                {proposedSplit + "%"}
-              </span>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">{t("studioQr.justification")}</label>
-              <textarea
-                className={inputClass + " h-24 py-3 resize-none"}
-                value={justification}
-                onChange={function (e) { setJustification(e.target.value); }}
-                placeholder={t("studioQr.justificationPlaceholder")}
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                className="flex-1 min-h-[44px] rounded-xl border border-border text-muted-foreground font-semibold flex items-center justify-center gap-2 hover:bg-secondary transition-colors"
-                onClick={function () { setStep(2); }}
-              >
-                <ArrowLeft className="h-4 w-4" /> {t("studioQr.back")}
-              </button>
-              <button
-                className="flex-1 btn-brand min-h-[44px] rounded-xl font-semibold flex items-center justify-center gap-2"
-                onClick={function () { setStep(4); }}
-              >
-                {t("studioQr.next")} <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Step 4: Confirm */}
-        {step === 4 && (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
             <h3 className="text-lg font-bold text-foreground">{t("studioQr.review")}</h3>
             <div className="card-premium p-4 space-y-3 rounded-xl">
@@ -523,16 +478,6 @@ export default function StudioSession() {
                   <span className="text-foreground font-medium">{publisherName}</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t("studioQr.splitProposed")}</span>
-                <span className="text-foreground font-bold text-brand-orange">{proposedSplit + "%"}</span>
-              </div>
-              {justification && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground block mb-1">{t("studioQr.justification")}</span>
-                  <span className="text-foreground">{justification}</span>
-                </div>
-              )}
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer min-h-[44px]">
@@ -552,7 +497,7 @@ export default function StudioSession() {
             <div className="flex gap-2">
               <button
                 className="flex-1 min-h-[44px] rounded-xl border border-border text-muted-foreground font-semibold flex items-center justify-center gap-2 hover:bg-secondary transition-colors"
-                onClick={function () { setStep(3); }}
+                onClick={function () { setStep(2); }}
               >
                 <ArrowLeft className="h-4 w-4" /> {t("studioQr.back")}
               </button>
