@@ -21,6 +21,7 @@ import { StudioQRModal } from "@/components/StudioQRModal";
 import { usePitches } from "@/contexts/PitchContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -743,7 +744,7 @@ export default function TrackDetail() {
                  <div className="space-y-10">
                    <section>
                      <h3 className="text-lg font-semibold text-foreground mb-4">Splits</h3>
-                     <SplitsTab trackId={track.id} />
+                     <SplitsTab trackId={track.id} trackUuid={track.uuid} />
                    </section>
                    <div className="border-t border-border" />
                    <section>
@@ -1491,13 +1492,93 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
 }
 
 
-function SplitsTab({ trackId }: { trackId: number }) {
+interface StudioSubmission {
+  id: string;
+  full_name: string;
+  email: string;
+  artist_name: string | null;
+  roles: string[];
+  pro_name: string | null;
+  ipi_number: string | null;
+  publisher_name: string | null;
+  proposed_split: number;
+  justification: string | null;
+  status: string;
+  created_at: string;
+}
+
+function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string }) {
+  const { t } = useTranslation();
   const { getTrack, updateTrackSplits } = useTrack();
   const trackData = getTrack(trackId);
   const splits = trackData?.splits || [];
   const totalShares = splits.reduce((sum, s) => sum + s.share, 0);
   const [editing, setEditing] = useState(false);
   const [editSplits, setEditSplits] = useState<TrackSplit[]>([]);
+
+  // Studio submissions
+  const [submissions, setSubmissions] = useState<StudioSubmission[]>([]);
+  const [loadingSubs, setLoadingSubs] = useState(false);
+  const [modifyingId, setModifyingId] = useState<string | null>(null);
+  const [modifyValue, setModifyValue] = useState(0);
+
+  const fetchSubmissions = useCallback(function () {
+    if (!trackUuid) return;
+    setLoadingSubs(true);
+    supabase
+      .from("studio_submissions")
+      .select("*")
+      .eq("track_id", trackUuid)
+      .order("created_at", { ascending: false })
+      .then(function (res) {
+        if (res.data) setSubmissions(res.data as StudioSubmission[]);
+        setLoadingSubs(false);
+      });
+  }, [trackUuid]);
+
+  useEffect(function () {
+    fetchSubmissions();
+  }, [fetchSubmissions]);
+
+  var handleAcceptSubmission = useCallback(function (sub: StudioSubmission, overrideSplit?: number) {
+    var splitValue = overrideSplit !== undefined ? overrideSplit : sub.proposed_split;
+    // Add to track splits
+    var newSplit: TrackSplit = {
+      id: crypto.randomUUID(),
+      name: sub.full_name,
+      role: sub.roles.join(", "),
+      share: splitValue,
+      pro: sub.pro_name || "",
+      ipi: sub.ipi_number || "",
+      publisher: sub.publisher_name || "",
+    };
+    var updatedSplits = [...splits, newSplit];
+    updateTrackSplits(trackId, updatedSplits);
+
+    // Update submission status
+    supabase
+      .from("studio_submissions")
+      .update({ status: "accepted" })
+      .eq("id", sub.id)
+      .then(function () {
+        fetchSubmissions();
+        setModifyingId(null);
+      });
+  }, [splits, trackId, updateTrackSplits, fetchSubmissions]);
+
+  var handleRejectSubmission = useCallback(function (subId: string) {
+    supabase
+      .from("studio_submissions")
+      .update({ status: "rejected" })
+      .eq("id", subId)
+      .then(function () {
+        fetchSubmissions();
+      });
+  }, [fetchSubmissions]);
+
+  var pendingSubs = submissions.filter(function (s) { return s.status === "pending"; });
+  var processedSubs = submissions.filter(function (s) { return s.status !== "pending"; });
+  var proposedTotal = pendingSubs.reduce(function (sum, s) { return sum + s.proposed_split; }, 0);
 
   const startEditing = () => {
     setEditSplits(splits.length ? splits.map(s => ({ ...s })) : [{ id: "1", name: "", role: "", share: 100, pro: "", ipi: "", publisher: "" }]);
@@ -1647,49 +1728,190 @@ function SplitsTab({ trackId }: { trackId: number }) {
 
   // Display mode
   return (
-    <SectionCard
-      title="Publishing & Ownership Splits"
-      icon={PieChart}
-      action={
-        <div className="flex items-center gap-2">
-          <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:underline">
-            <Download className="w-3.5 h-3.5" /> Download PDF
-          </button>
-          <button onClick={startEditing} className="text-xs text-primary hover:underline">Edit Splits</button>
+    <div className="space-y-4">
+      <SectionCard
+        title="Publishing & Ownership Splits"
+        icon={PieChart}
+        action={
+          <div className="flex items-center gap-2">
+            <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:underline">
+              <Download className="w-3.5 h-3.5" /> Download PDF
+            </button>
+            <button onClick={startEditing} className="text-xs text-primary hover:underline">Edit Splits</button>
+          </div>
+        }
+      >
+        {/* Visual bar */}
+        <div className="px-5 pt-4 pb-2">
+          <div className="flex h-3 rounded-full overflow-hidden gap-0.5">
+            {splits.map((s, i) => {
+              const colors = ["bg-primary", "bg-brand-pink", "bg-brand-purple", "bg-brand-orange"];
+              return <div key={s.name + i} className={colors[i % colors.length] + " rounded-full"} style={{ width: s.share + "%" }} />;
+            })}
+          </div>
         </div>
-      }
-    >
-      {/* Visual bar */}
-      <div className="px-5 pt-4 pb-2">
-        <div className="flex h-3 rounded-full overflow-hidden gap-0.5">
+        <div className="divide-y divide-border">
           {splits.map((s, i) => {
-            const colors = ["bg-primary", "bg-brand-pink", "bg-brand-purple", "bg-brand-orange"];
-            return <div key={s.name + i} className={`${colors[i % colors.length]} rounded-full`} style={{ width: `${s.share}%` }} />;
+            const dotColors = ["bg-primary", "bg-brand-pink", "bg-brand-purple", "bg-brand-orange"];
+            return (
+              <div key={s.name + i} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={"w-2.5 h-2.5 rounded-full " + dotColors[i % dotColors.length]} />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{s.name}</p>
+                    <p className="text-[11px] text-muted-foreground">{s.role} · {s.pro || "—"} · IPI: {s.ipi || "—"}</p>
+                  </div>
+                </div>
+                <span className="text-sm font-bold text-foreground">{s.share}%</span>
+              </div>
+            );
           })}
         </div>
-      </div>
-      <div className="divide-y divide-border">
-        {splits.map((s, i) => {
-          const dotColors = ["bg-primary", "bg-brand-pink", "bg-brand-purple", "bg-brand-orange"];
-          return (
-            <div key={s.name + i} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className={`w-2.5 h-2.5 rounded-full ${dotColors[i % dotColors.length]}`} />
-                <div>
-                  <p className="text-sm font-medium text-foreground">{s.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{s.role} · {s.pro || "—"} · IPI: {s.ipi || "—"}</p>
-                </div>
-              </div>
-              <span className="text-sm font-bold text-foreground">{s.share}%</span>
+        <div className="px-5 py-3 border-t border-border flex justify-between text-xs">
+          <span className="text-muted-foreground">Total</span>
+          <span className={"font-bold " + (totalShares === 100 ? "text-emerald-400" : "text-destructive")}>{totalShares}%</span>
+        </div>
+      </SectionCard>
+
+      {/* Studio Submissions */}
+      {submissions.length > 0 && (
+        <SectionCard
+          title={t("studioQr.pendingSubmissions")}
+          icon={Users}
+          action={
+            pendingSubs.length > 0 ? (
+              <span className="text-xs text-muted-foreground">
+                {t("studioQr.proposed")}: {proposedTotal}% · Current: {totalShares}%
+              </span>
+            ) : undefined
+          }
+        >
+          {/* Pending submissions */}
+          {pendingSubs.length > 0 && (
+            <div className="divide-y divide-border">
+              {pendingSubs.map(function (sub) {
+                return (
+                  <div key={sub.id} className="px-5 py-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">{sub.full_name}</p>
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-orange/12 text-brand-orange">
+                            {sub.proposed_split}% {t("studioQr.proposed")}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{sub.email}</p>
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {sub.roles.map(function (role) {
+                            return (
+                              <span key={role} className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary text-foreground/70">
+                                {role}
+                              </span>
+                            );
+                          })}
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-muted-foreground">
+                          {sub.pro_name && <span>PRO: {sub.pro_name}</span>}
+                          {sub.ipi_number && <span>IPI: {sub.ipi_number}</span>}
+                          {sub.publisher_name && <span>Publisher: {sub.publisher_name}</span>}
+                        </div>
+                        {sub.justification && (
+                          <p className="text-[11px] text-muted-foreground/70 mt-2 italic">"{sub.justification}"</p>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground shrink-0">{new Date(sub.created_at).toLocaleDateString()}</p>
+                    </div>
+
+                    {/* Actions */}
+                    {modifyingId === sub.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.01}
+                          value={modifyValue}
+                          onChange={function (e) { setModifyValue(parseFloat(e.target.value) || 0); }}
+                          className="h-8 w-24 px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 font-mono"
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                        <button
+                          onClick={function () { handleAcceptSubmission(sub, modifyValue); }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand"
+                        >
+                          {t("studioQr.accept")}
+                        </button>
+                        <button
+                          onClick={function () { setModifyingId(null); }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors"
+                        >
+                          {t("common.cancel")}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={function () { handleAcceptSubmission(sub); }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                        >
+                          <CheckCircle2 className="w-3 h-3 inline mr-1" />
+                          {t("studioQr.accept")}
+                        </button>
+                        <button
+                          onClick={function () { setModifyingId(sub.id); setModifyValue(sub.proposed_split); }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors"
+                        >
+                          <Edit3 className="w-3 h-3 inline mr-1" />
+                          Modify
+                        </button>
+                        <button
+                          onClick={function () { handleRejectSubmission(sub.id); }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          {t("studioQr.reject")}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
-      <div className="px-5 py-3 border-t border-border flex justify-between text-xs">
-        <span className="text-muted-foreground">Total</span>
-        <span className={`font-bold ${totalShares === 100 ? "text-emerald-400" : "text-destructive"}`}>{totalShares}%</span>
-      </div>
-    </SectionCard>
+          )}
+
+          {/* Processed submissions */}
+          {processedSubs.length > 0 && (
+            <div className="divide-y divide-border border-t border-border">
+              {processedSubs.map(function (sub) {
+                var isAccepted = sub.status === "accepted";
+                return (
+                  <div key={sub.id} className={"px-5 py-3.5 " + (isAccepted ? "opacity-60" : "opacity-40")}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={"w-2 h-2 rounded-full " + (isAccepted ? "bg-emerald-400" : "bg-destructive")} />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{sub.full_name}</p>
+                          <p className="text-[11px] text-muted-foreground">{sub.roles.join(", ")} · {sub.proposed_split}%</p>
+                        </div>
+                      </div>
+                      <span className={"inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold " + (isAccepted ? "bg-emerald-500/12 text-emerald-400" : "bg-destructive/12 text-destructive")}>
+                        {isAccepted ? "Accepted" : "Rejected"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Loading state */}
+          {loadingSubs && (
+            <div className="px-5 py-6 text-center">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+            </div>
+          )}
+        </SectionCard>
+      )}
+    </div>
   );
 }
 
