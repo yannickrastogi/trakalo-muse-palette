@@ -1519,8 +1519,6 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   // Studio submissions
   const [submissions, setSubmissions] = useState<StudioSubmission[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
-  const [modifyingId, setModifyingId] = useState<string | null>(null);
-  const [modifyValue, setModifyValue] = useState(0);
 
   const fetchSubmissions = useCallback(function () {
     if (!trackUuid) return;
@@ -1545,31 +1543,68 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
     fetchSubmissions();
   }, [fetchSubmissions]);
 
-  var handleAcceptSubmission = useCallback(function (sub: StudioSubmission, overrideSplit?: number) {
-    var splitValue = overrideSplit !== undefined ? overrideSplit : sub.proposed_split;
-    // Add to track splits
+  // Auto-balance: distribute 100% equally among all collaborators
+  var equalBalance = function (allSplits: TrackSplit[]): TrackSplit[] {
+    var count = allSplits.length;
+    if (count === 0) return allSplits;
+    var each = parseFloat((100 / count).toFixed(2));
+    var total = parseFloat((each * count).toFixed(2));
+    var diff = parseFloat((100 - total).toFixed(2));
+    return allSplits.map(function (s, i) {
+      return { ...s, share: i === 0 ? parseFloat((each + diff).toFixed(2)) : each };
+    });
+  };
+
+  var handleAcceptSubmission = useCallback(function (sub: StudioSubmission) {
+    // Create new split from submission
     var newSplit: TrackSplit = {
       id: crypto.randomUUID(),
       name: sub.full_name,
       role: sub.roles.join(", "),
-      share: splitValue,
+      share: 0,
       pro: sub.pro_name || "",
       ipi: sub.ipi_number || "",
       publisher: sub.publisher_name || "",
     };
-    var updatedSplits = [...splits, newSplit];
-    updateTrackSplits(trackId, updatedSplits);
+    // Auto-balance ALL splits equally (existing + new)
+    var balanced = equalBalance([...splits, newSplit]);
+    updateTrackSplits(trackId, balanced);
 
-    // Update submission status
     supabase
       .from("studio_submissions")
       .update({ status: "accepted" })
       .eq("id", sub.id)
       .then(function () {
         fetchSubmissions();
-        setModifyingId(null);
       });
   }, [splits, trackId, updateTrackSplits, fetchSubmissions]);
+
+  var handleAcceptAll = useCallback(function () {
+    // Accept all pending submissions at once with equal balance
+    var newSplits = pendingSubs.map(function (sub) {
+      return {
+        id: crypto.randomUUID(),
+        name: sub.full_name,
+        role: sub.roles.join(", "),
+        share: 0,
+        pro: sub.pro_name || "",
+        ipi: sub.ipi_number || "",
+        publisher: sub.publisher_name || "",
+      } as TrackSplit;
+    });
+    var balanced = equalBalance([...splits, ...newSplits]);
+    updateTrackSplits(trackId, balanced);
+
+    // Mark all pending as accepted
+    var ids = pendingSubs.map(function (s) { return s.id; });
+    supabase
+      .from("studio_submissions")
+      .update({ status: "accepted" })
+      .in("id", ids)
+      .then(function () {
+        fetchSubmissions();
+      });
+  }, [splits, pendingSubs, trackId, updateTrackSplits, fetchSubmissions]);
 
   var handleRejectSubmission = useCallback(function (subId: string) {
     supabase
@@ -1589,12 +1624,23 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
     if (!trackUuid) return null;
     return (
       <div className="mt-6">
-        <div className="flex items-center gap-2 mb-3">
-          <h4 className="text-base font-bold text-foreground">{t("studioQr.pendingSubmissions")}</h4>
-          {submissions.length > 0 && (
-            <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-orange/15 text-brand-orange">
-              {submissions.length}
-            </span>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <h4 className="text-base font-bold text-foreground">{t("studioQr.pendingSubmissions")}</h4>
+            {pendingSubs.length > 0 && (
+              <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-orange/15 text-brand-orange">
+                {pendingSubs.length + " pending"}
+              </span>
+            )}
+          </div>
+          {pendingSubs.length > 1 && (
+            <button
+              onClick={handleAcceptAll}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5"
+            >
+              <CheckCircle2 className="w-3 h-3" />
+              Accept All (Equal Split)
+            </button>
           )}
         </div>
         <div className="bg-card border border-border rounded-xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
@@ -1624,20 +1670,10 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
                       </div>
                       <p className="text-[10px] text-muted-foreground shrink-0">{new Date(sub.created_at).toLocaleDateString()}</p>
                     </div>
-                    {modifyingId === sub.id ? (
-                      <div className="flex items-center gap-2">
-                        <input type="number" min={0} max={100} step={0.01} value={modifyValue} onChange={function (e) { setModifyValue(parseFloat(e.target.value) || 0); }} className="h-8 w-24 px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 font-mono" />
-                        <span className="text-xs text-muted-foreground">%</span>
-                        <button onClick={function () { handleAcceptSubmission(sub, modifyValue); }} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand">{t("studioQr.accept")}</button>
-                        <button onClick={function () { setModifyingId(null); }} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">{t("common.cancel")}</button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <button onClick={function () { handleAcceptSubmission(sub); }} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"><CheckCircle2 className="w-3 h-3 inline mr-1" />{t("studioQr.accept")}</button>
-                        <button onClick={function () { setModifyingId(sub.id); setModifyValue(sub.proposed_split); }} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors"><Edit3 className="w-3 h-3 inline mr-1" />Modify</button>
-                        <button onClick={function () { handleRejectSubmission(sub.id); }} className="px-3 py-1.5 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors">{t("studioQr.reject")}</button>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <button onClick={function () { handleAcceptSubmission(sub); }} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"><CheckCircle2 className="w-3 h-3 inline mr-1" />{t("studioQr.accept")} (Equal Split)</button>
+                      <button onClick={function () { handleRejectSubmission(sub.id); }} className="px-3 py-1.5 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors">{t("studioQr.reject")}</button>
+                    </div>
                   </div>
                 );
               })}
@@ -1728,7 +1764,14 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   };
 
   const saveSplits = () => {
-    updateTrackSplits(trackId, editSplits.filter(s => s.name.trim()));
+    var filtered = editSplits.filter(function (s) { return s.name.trim(); });
+    var total = filtered.reduce(function (sum, s) { return sum + (Number(s.share) || 0); }, 0);
+    var roundedTotal = parseFloat(total.toFixed(2));
+    if (roundedTotal !== 100 && filtered.length > 0) {
+      toast.error("Total splits must equal 100% (currently " + roundedTotal + "%)");
+      return;
+    }
+    updateTrackSplits(trackId, filtered);
     setEditing(false);
   };
 
@@ -1747,14 +1790,19 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         action={
           <div className="flex items-center gap-2">
             <button onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">Cancel</button>
-            <button onClick={saveSplits} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3" /> Save</button>
+            <button onClick={saveSplits} disabled={parseFloat(editTotalShares.toFixed(2)) !== 100 && editSplits.filter(function (s) { return s.name.trim(); }).length > 0} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"><CheckCircle2 className="w-3 h-3" /> Save</button>
           </div>
         }
       >
         <div className="p-5 space-y-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-2xs text-muted-foreground">Add collaborators and assign ownership splits</p>
-            <span className={`text-xs font-bold tabular-nums ${editTotalShares === 100 ? "text-emerald-400" : editTotalShares > 100 ? "text-destructive" : "text-brand-orange"}`}>{editTotalShares}%</span>
+            <div className="text-right">
+              <span className={"text-xs font-bold tabular-nums " + (editTotalShares === 100 ? "text-emerald-400" : editTotalShares > 100 ? "text-destructive" : "text-brand-orange")}>{parseFloat(editTotalShares.toFixed(2))}%</span>
+              {parseFloat(editTotalShares.toFixed(2)) !== 100 && editSplits.filter(function (s) { return s.name.trim(); }).length > 0 && (
+                <p className="text-[10px] text-destructive mt-0.5">Total must equal 100%</p>
+              )}
+            </div>
           </div>
           {editSplits.map((split, idx) => (
             <div key={split.id} className="rounded-xl bg-secondary/50 border border-border p-4 space-y-3">
