@@ -9,17 +9,19 @@ import {
 import { Music, Users, ListMusic, Send, Layers } from "lucide-react";
 import { motion } from "framer-motion";
 import logo from "@/assets/trakalog-logo.png";
-
-const features = [
-  { icon: Music, label: "Organize tracks & metadata" },
-  { icon: Users, label: "Collaborate with your team" },
-  { icon: ListMusic, label: "Build playlists & pitches" },
-  { icon: Send, label: "Share & pitch your music" },
-  { icon: Layers, label: "Manage stems & splits" },
-];
+import { useTranslation } from "react-i18next";
 
 export function WelcomeModal() {
+  const { t } = useTranslation();
   const { isFirstVisit, dismissWelcome } = useOnboarding();
+
+  const features = [
+    { icon: Music, label: t("onboarding.organizeTracks") },
+    { icon: Users, label: t("onboarding.collaborate") },
+    { icon: ListMusic, label: t("onboarding.buildPlaylists") },
+    { icon: Send, label: t("onboarding.sharePitch") },
+    { icon: Layers, label: t("onboarding.manageStems") },
+  ];
 
   return (
     <Dialog open={isFirstVisit} onOpenChange={(open) => !open && dismissWelcome()}>
@@ -33,10 +35,10 @@ export function WelcomeModal() {
               <img src={logo} alt="Trakalog" className="h-8 w-auto" />
             </div>
             <DialogTitle className="text-xl font-bold text-foreground tracking-tight">
-              Welcome to TRAKALOG
+              {t("onboarding.welcomeTitle")}
             </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
-              Your music catalog, organized. Manage tracks, collaborate with your team, and pitch your music — all in one place.
+              {t("onboarding.welcomeDesc")}
             </DialogDescription>
           </DialogHeader>
 
@@ -65,13 +67,13 @@ export function WelcomeModal() {
             onClick={dismissWelcome}
             className="btn-brand w-full py-3 rounded-xl text-[13px] font-semibold"
           >
-            Get Started
+            {t("onboarding.getStarted")}
           </button>
           <button
             onClick={dismissWelcome}
             className="w-full py-2.5 rounded-xl text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
           >
-            Skip for now
+            {t("onboarding.skipForNow")}
           </button>
         </div>
       </DialogContent>

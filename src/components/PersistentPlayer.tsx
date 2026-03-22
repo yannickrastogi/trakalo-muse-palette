@@ -5,6 +5,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ChevronUp, ChevronDown, X } from "lucide-react";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 import { DEFAULT_COVER } from "@/lib/constants";
 
@@ -15,6 +16,7 @@ function formatTime(seconds: number): string {
 }
 
 export function PersistentPlayer() {
+  const { t } = useTranslation();
   const {
     currentTrack,
     isPlaying,
@@ -94,7 +96,7 @@ export function PersistentPlayer() {
           <button onClick={() => setExpanded(false)} className="p-2 rounded-lg text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center">
             <ChevronDown className="w-5 h-5" />
           </button>
-          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Now Playing</span>
+          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{t("player.nowPlaying")}</span>
           <div className="w-11" />
         </div>
 
@@ -291,7 +293,7 @@ export function PersistentPlayer() {
           <button
             onClick={() => setMinimized(true)}
             className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
-            title="Minimize"
+            title={t("player.minimize")}
           >
             <ChevronDown className="w-4 h-4" />
           </button>

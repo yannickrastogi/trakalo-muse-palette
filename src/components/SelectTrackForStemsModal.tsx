@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, Music, ChevronRight } from "lucide-react";
 import { useTrack } from "@/contexts/TrackContext";
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function SelectTrackForStemsModal({ open, onClose }: Props) {
+  const { t } = useTranslation();
   const { tracks } = useTrack();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
@@ -59,9 +61,9 @@ export function SelectTrackForStemsModal({ open, onClose }: Props) {
             {/* Header */}
             <div className="px-6 py-4 border-b border-border flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-foreground">Select a Track</h2>
+                <h2 className="text-sm font-semibold text-foreground">{t("selectTrackForStems.title")}</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Choose which track to upload stems to
+                  {t("selectTrackForStems.description")}
                 </p>
               </div>
               <button
@@ -80,7 +82,7 @@ export function SelectTrackForStemsModal({ open, onClose }: Props) {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by title, artist, or genre…"
+                  placeholder={t("selectTrackForStems.searchPlaceholder")}
                   className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
                   autoFocus
                 />
@@ -97,7 +99,7 @@ export function SelectTrackForStemsModal({ open, onClose }: Props) {
               {filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Music className="w-8 h-8 mb-2 opacity-40" />
-                  <p className="text-sm">No tracks found</p>
+                  <p className="text-sm">{t("selectTrackForStems.noTracks")}</p>
                 </div>
               ) : (
                 <div className="py-1">

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
@@ -134,6 +135,7 @@ function createTrackEntry(file: File): TrackEntry {
 }
 
 export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) {
+  const { t } = useTranslation();
   const { tracks, addTrack, updateTrack, refreshTracks } = useTrack();
   const { teams } = useTeams();
   const { activeWorkspace } = useWorkspace();
@@ -154,7 +156,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const stemsInputRef = useRef<HTMLInputElement>(null);
   const lyricsFileInputRef = useRef<HTMLInputElement>(null);
 
-  const EDIT_STEPS = ["Info", "Stems", "Lyrics", "Splits", "Review", "Teams"];
+  const EDIT_STEPS = [t("uploadTrack.info"), t("uploadTrack.stems"), t("uploadTrack.lyrics"), t("uploadTrack.splits"), t("uploadTrack.review"), t("uploadTrack.teams")];
 
   const currentTrack = queue[currentIdx] || null;
 
@@ -397,7 +399,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     if (!currentTrack || isSaving) return;
     setIsSaving(true);
     setUploadProgress(0);
-    setUploadStage("Uploading audio...");
+    setUploadStage(t("uploadTrack.uploadingAudio", "Uploading audio..."));
     setUploadComplete(false);
 
     try {
@@ -425,7 +427,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       setUploadProgress(60);
 
       // ── Stage 2: Generate waveform (60–85%) ──
-      setUploadStage("Generating waveform...");
+      setUploadStage(t("uploadTrack.generatingWaveform", "Generating waveform..."));
       setUploadProgress(65);
       if (audioUrl && currentTrack.file) {
         try {
@@ -435,7 +437,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       setUploadProgress(85);
 
       // ── Stage 4: Save track (85–100%) ──
-      setUploadStage("Saving track...");
+      setUploadStage(t("uploadTrack.savingTrack", "Saving track..."));
 
       // Capture cover file before addTrack() — addTrack internally calls
       // fetchTracks() which triggers setTracks/re-render, so any reference
@@ -476,7 +478,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
       // Upload cover art if provided — same pattern as TrackDetail.tsx
       if (savedTrack && coverFileToUpload && workspaceId) {
-        setUploadStage("Uploading cover...");
+        setUploadStage(t("uploadTrack.uploadingCover", "Uploading cover..."));
         const coverPath = workspaceId + "/" + savedTrack.uuid + ".jpg";
         const { error: coverError } = await supabase.storage
           .from("covers")
@@ -497,7 +499,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       }
 
       setUploadProgress(100);
-      setUploadStage("Track uploaded!");
+      setUploadStage(t("uploadTrack.trackUploaded", "Track uploaded!"));
       setUploadComplete(true);
 
       // Fire-and-forget: compress audio to MP3 128kbps client-side, then transcribe lyrics
@@ -508,7 +510,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         (async () => {
           // Step 1: MP3 compression
           try {
-            toast.info("Compressing MP3 preview...");
+            toast.info(t("uploadTrack.compressingPreview", "Compressing MP3 preview..."));
             const mp3Blob = await encodeToMp3(bgFile);
             const previewPath = bgAudioPath.replace(/\.[^.]+$/, "_preview.mp3");
             const { error: upErr } = await supabase.storage
@@ -519,15 +521,15 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               .from("tracks")
               .update({ audio_preview_url: previewPath })
               .eq("id", bgTrackUuid);
-            toast.success("MP3 preview ready");
+            toast.success(t("uploadTrack.mp3PreviewReady", "MP3 preview ready"));
           } catch (err) {
             console.error("Background MP3 compression failed:", err);
-            toast.warning("MP3 preview failed — track is still available");
+            toast.warning(t("uploadTrack.mp3PreviewFailed", "MP3 preview failed — track is still available"));
           }
 
           // Step 2: Lyrics transcription (fire-and-forget)
           try {
-            toast.info("Transcribing lyrics...");
+            toast.info(t("uploadTrack.transcribingLyrics", "Transcribing lyrics..."));
             const res = await fetch(SUPABASE_URL + "/functions/v1/transcribe-lyrics", {
               method: "POST",
               headers: {
@@ -539,9 +541,9 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             });
             const json = await res.json();
             if (json.empty) {
-              toast.info("No vocals detected");
+              toast.info(t("uploadTrack.noVocalsDetected", "No vocals detected"));
             } else if (json.success) {
-              toast.success("Lyrics transcribed!");
+              toast.success(t("uploadTrack.lyricsTranscribed", "Lyrics transcribed!"));
               refreshTracks();
             }
           } catch (err) {
@@ -612,8 +614,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border space-y-3">
           <DialogTitle className="text-lg font-bold text-foreground tracking-tight">
             {phase === "upload"
-              ? "Upload Tracks"
-              : `Track ${currentIdx + 1} of ${queue.length}`
+              ? t("uploadTrack.uploadTracks")
+              : t("uploadTrack.trackOf", { current: currentIdx + 1, total: queue.length })
             }
           </DialogTitle>
 
@@ -808,9 +810,9 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                     className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {allProcessing ? (
-                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing…</>
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("uploadTrack.processing", "Processing...")}</>
                     ) : (
-                      <>Continue <ChevronRight className="w-3.5 h-3.5" /></>
+                      <>{t("uploadTrack.continue", "Continue")} <ChevronRight className="w-3.5 h-3.5" /></>
                     )}
                   </button>
                 </>
@@ -828,7 +830,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                     }}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <ChevronLeft className="w-3.5 h-3.5" /> Back
+                    <ChevronLeft className="w-3.5 h-3.5" /> {t("uploadTrack.back")}
                   </button>
                   {editStep < EDIT_STEPS.length - 1 ? (
                     <div className="flex items-center gap-2">
@@ -836,13 +838,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                         onClick={() => setEditStep(editStep + 1)}
                         className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors border border-border hover:border-border/80"
                       >
-                        Skip
+                        {t("uploadTrack.skip", "Skip")}
                       </button>
                       <button
                         onClick={() => setEditStep(editStep + 1)}
                         className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold"
                       >
-                        Next <ChevronRight className="w-3.5 h-3.5" />
+                        {t("uploadTrack.next")} <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ) : (
@@ -852,10 +854,10 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                     >
                       <Check className="w-3.5 h-3.5" />
                       {currentIdx < queue.length - 1
-                        ? `Save & Next (${currentIdx + 2}/${queue.length})`
+                        ? t("uploadTrack.saveAndNext", "Save & Next") + " (" + (currentIdx + 2) + "/" + queue.length + ")"
                         : queue.length > 1
-                        ? "Save All to Catalog"
-                        : "Save Track to Catalog"
+                        ? t("uploadTrack.saveAllToCatalog", "Save All to Catalog")
+                        : t("uploadTrack.saveToCatalog")
                       }
                     </button>
                   )}
@@ -917,12 +919,13 @@ function StepBulkUpload({
   onAddFiles: (files: File[]) => void;
   onRemove: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-sm font-semibold text-foreground mb-1">Upload Audio Files</h3>
+        <h3 className="text-sm font-semibold text-foreground mb-1">{t("uploadTrack.uploadAudioFiles", "Upload Audio Files")}</h3>
         <p className="text-2xs text-muted-foreground">
-          Drag & drop up to {MAX_TRACKS} tracks, or click to browse. Each track will be analyzed automatically.
+          {t("uploadTrack.dragDropDesc", "Drag & drop up to " + MAX_TRACKS + " tracks, or click to browse. Each track will be analyzed automatically.")}
         </p>
       </div>
 
@@ -949,10 +952,10 @@ function StepBulkUpload({
         </div>
         <div className="text-center">
           <p className="text-sm font-semibold text-foreground">
-            {isDragOver ? "Drop files here" : "Drag & drop audio files"}
+            {isDragOver ? t("uploadTrack.dropFilesHere", "Drop files here") : t("uploadTrack.dragDropAudio", "Drag & drop audio files")}
           </p>
           <p className="text-2xs text-muted-foreground mt-1">
-            or click to browse · WAV, MP3, FLAC, AIFF · up to {MAX_TRACKS} tracks
+            {t("uploadTrack.orClickToBrowse", "or click to browse") + " · WAV, MP3, FLAC, AIFF · " + t("uploadTrack.upTo", "up to") + " " + MAX_TRACKS + " " + t("common.tracks")}
           </p>
         </div>
         <input
@@ -975,10 +978,10 @@ function StepBulkUpload({
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">
-              Upload Queue ({queue.length})
+              {t("uploadTrack.uploadQueue", "Upload Queue")} ({queue.length})
             </p>
             {queue.length >= MAX_TRACKS && (
-              <span className="text-2xs text-brand-orange font-semibold">Maximum reached</span>
+              <span className="text-2xs text-brand-orange font-semibold">{t("uploadTrack.maximumReached", "Maximum reached")}</span>
             )}
           </div>
           <div className="space-y-1 max-h-[280px] overflow-y-auto pr-1">
@@ -993,7 +996,7 @@ function StepBulkUpload({
                     <span>{entry.fileSize}</span>
                     {entry.analyzing && (
                       <span className="flex items-center gap-1 text-brand-purple">
-                        <Loader2 className="w-2.5 h-2.5 animate-spin" /> Analyzing…
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" /> {t("uploadTrack.analyzing", "Analyzing...")}
                       </span>
                     )}
                     {entry.analysisResult && !entry.analyzing && (
@@ -1003,7 +1006,7 @@ function StepBulkUpload({
                     )}
                     {entry.analysisError && (
                       <span className="flex items-center gap-1 text-destructive">
-                        <AlertCircle className="w-2.5 h-2.5" /> Analysis failed
+                        <AlertCircle className="w-2.5 h-2.5" /> {t("uploadTrack.analysisFailed", "Analysis failed")}
                       </span>
                     )}
                   </div>
@@ -1051,6 +1054,7 @@ function StepInfo({
   coverFile: File | null;
   setCoverFile: (f: File | null) => void;
 }) {
+  const { t } = useTranslation();
   const [showDetails, setShowDetails] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const coverPreviewUrl = coverFile ? URL.createObjectURL(coverFile) : null;

@@ -4,25 +4,27 @@ import { Check, X, Users, Upload, FileText, UserPlus, ListMusic, Send, ChevronDo
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
+import { useTranslation } from "react-i18next";
 
 interface ChecklistItem {
   step: OnboardingStep;
-  label: string;
-  description: string;
+  labelKey: string;
+  descKey: string;
   icon: React.ElementType;
   route: string;
 }
 
 const items: ChecklistItem[] = [
-  { step: "create_team", label: "Create your first team", description: "Set up a workspace for your collaborators", icon: Users, route: "/team" },
-  { step: "upload_track", label: "Upload your first track", description: "Add a track to your catalog", icon: Upload, route: "/tracks" },
-  { step: "complete_metadata", label: "Complete track metadata", description: "Add genre, BPM, key, and more", icon: FileText, route: "/tracks" },
-  { step: "add_credits", label: "Add collaborators & credits", description: "Set up splits and credit roles", icon: UserPlus, route: "/tracks" },
-  { step: "create_playlist", label: "Create your first playlist", description: "Organize tracks into collections", icon: ListMusic, route: "/playlists" },
-  { step: "share_or_pitch", label: "Share or pitch a track", description: "Send your music to the world", icon: Send, route: "/pitch" },
+  { step: "create_team", labelKey: "onboarding.createTeam", descKey: "onboarding.createTeamDesc", icon: Users, route: "/team" },
+  { step: "upload_track", labelKey: "onboarding.uploadTrack", descKey: "onboarding.uploadTrackDesc", icon: Upload, route: "/tracks" },
+  { step: "complete_metadata", labelKey: "onboarding.completeMetadata", descKey: "onboarding.completeMetadataDesc", icon: FileText, route: "/tracks" },
+  { step: "add_credits", labelKey: "onboarding.addCredits", descKey: "onboarding.addCreditsDesc", icon: UserPlus, route: "/tracks" },
+  { step: "create_playlist", labelKey: "onboarding.createPlaylist", descKey: "onboarding.createPlaylistDesc", icon: ListMusic, route: "/playlists" },
+  { step: "share_or_pitch", labelKey: "onboarding.sharePitchStep", descKey: "onboarding.sharePitchStepDesc", icon: Send, route: "/pitch" },
 ];
 
 export function OnboardingChecklist() {
+  const { t } = useTranslation();
   const { state, isStepCompleted, dismissChecklist, completionPercent, allStepsCompleted } = useOnboarding();
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
@@ -43,9 +45,9 @@ export function OnboardingChecklist() {
             <Sparkles className="w-4 h-4 text-primary" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-sm font-bold text-foreground tracking-tight">Getting Started</h3>
+            <h3 className="text-sm font-bold text-foreground tracking-tight">{t("onboarding.gettingStarted")}</h3>
             <p className="text-2xs text-muted-foreground mt-0.5">
-              {allStepsCompleted ? "All done! 🎉" : `${state.completedSteps.length} of ${items.length} completed`}
+              {allStepsCompleted ? t("onboarding.allDone") : t("onboarding.completed", { done: state.completedSteps.length, total: items.length })}
             </p>
           </div>
         </div>
@@ -87,17 +89,17 @@ export function OnboardingChecklist() {
                   <button
                     key={item.step}
                     onClick={() => !done && navigate(item.route)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors group ${
-                      done ? "opacity-60" : "hover:bg-secondary/50"
-                    }`}
+                    className={"w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors group " +
+                      (done ? "opacity-60" : "hover:bg-secondary/50")
+                    }
                     disabled={done}
                   >
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border transition-all ${
-                        done
+                      className={"w-6 h-6 rounded-full flex items-center justify-center shrink-0 border transition-all " +
+                        (done
                           ? "border-emerald-500/40 bg-emerald-500/15"
-                          : "border-border group-hover:border-primary/40"
-                      }`}
+                          : "border-border group-hover:border-primary/40")
+                      }
                     >
                       {done ? (
                         <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -106,10 +108,10 @@ export function OnboardingChecklist() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className={`text-[13px] font-medium ${done ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                        {item.label}
+                      <p className={"text-[13px] font-medium " + (done ? "line-through text-muted-foreground" : "text-foreground")}>
+                        {t(item.labelKey)}
                       </p>
-                      <p className="text-2xs text-muted-foreground/70 mt-0.5">{item.description}</p>
+                      <p className="text-2xs text-muted-foreground/70 mt-0.5">{t(item.descKey)}</p>
                     </div>
                   </button>
                 );

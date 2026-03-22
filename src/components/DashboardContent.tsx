@@ -299,12 +299,12 @@ export function DashboardContent() {
   }, [contactEntries, contactsRange, contactsSearch]);
 
   const stats = [
-    { id: "tracks", label: t("dashboard.totalTracks"), value: allTracks.length.toLocaleString(), icon: Music, change: "+" + tracksThisWeek + " this week", accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20", clickable: true },
+    { id: "tracks", label: t("dashboard.totalTracks"), value: allTracks.length.toLocaleString(), icon: Music, change: "+" + tracksThisWeek + " " + t("common.thisWeek").toLowerCase(), accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20", clickable: true },
     { id: "playlists", label: t("dashboard.playlists"), value: allPlaylists.length.toLocaleString(), icon: ListMusic, change: allPlaylists.length + " total", accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
-    { id: "plays", label: "Total Plays", value: (linkPlays.length || engagementStats.totalPlays).toLocaleString(), icon: Headphones, change: (playRecipients || engagementStats.uniqueRecipients) + " recipients", accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
-    { id: "downloads", label: "Downloads", value: (linkDownloads.length || engagementStats.totalDownloads).toLocaleString(), icon: Download, change: "across " + (downloadRecipients || engagementStats.uniqueRecipients) + " contacts", accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
-    { id: "contacts", label: t("nav.contacts"), value: allContacts.length.toLocaleString(), icon: Users, change: "+" + contactsThisWeek + " recent", accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
-    { id: "pitches", label: t("pitch.title"), value: allPitches.length.toLocaleString(), icon: Send, change: allPitches.filter(function(p) { return p.status === "Sent" || p.status === "Opened"; }).length + " active", accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", clickable: true },
+    { id: "plays", label: t("dashboard.totalPlays"), value: (linkPlays.length || engagementStats.totalPlays).toLocaleString(), icon: Headphones, change: t("dashboard.recipients", { count: playRecipients || engagementStats.uniqueRecipients }), accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
+    { id: "downloads", label: t("dashboard.downloads"), value: (linkDownloads.length || engagementStats.totalDownloads).toLocaleString(), icon: Download, change: t("dashboard.acrossContacts", { count: downloadRecipients || engagementStats.uniqueRecipients }), accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
+    { id: "contacts", label: t("nav.contacts"), value: allContacts.length.toLocaleString(), icon: Users, change: t("dashboard.recent", { count: contactsThisWeek }), accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
+    { id: "pitches", label: t("pitch.title"), value: allPitches.length.toLocaleString(), icon: Send, change: t("pitch.active", { count: allPitches.filter(function(p) { return p.status === "Sent" || p.status === "Opened"; }).length }), accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", clickable: true },
   ];
 
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -318,7 +318,7 @@ export function DashboardContent() {
     { label: t("dashboard.uploadTrack"), icon: Upload, primary: true, visible: permissions.canUploadTracks, onClick: () => setShowUploadModal(true) },
     { label: t("dashboard.newPlaylist"), icon: ListMusic, visible: permissions.canCreatePlaylists, onClick: () => setShowPlaylistModal(true) },
     { label: t("dashboard.inviteMember"), icon: Users, visible: permissions.canInviteMembers, onClick: () => setShowInviteModal(true) },
-    { label: "Create Team", icon: Users, visible: permissions.canInviteMembers, onClick: () => setShowCreateTeamModal(true) },
+    { label: t("dashboard.createTeam"), icon: Users, visible: permissions.canInviteMembers, onClick: () => setShowCreateTeamModal(true) },
     { label: t("dashboard.newPitch"), icon: Send, visible: permissions.canSendPitches, onClick: () => setShowPitchModal(true) },
   ].filter((a) => a.visible);
 
@@ -388,7 +388,7 @@ export function DashboardContent() {
                   <div className="flex items-center gap-2">
                     <Music className="w-4 h-4 text-brand-orange" />
                     <h3 className="text-sm font-bold text-foreground">
-                      Catalog Tracks
+                      {t("catalog.title")}
                       <span className="ml-2 text-muted-foreground font-normal">· {allTracks.length} total</span>
                     </h3>
                   </div>
@@ -422,7 +422,7 @@ export function DashboardContent() {
                     type="text"
                     value={tracksSearch}
                     onChange={(e) => setTracksSearch(e.target.value)}
-                    placeholder="Search by title or artist…"
+                    placeholder={t("common.search") + "..."}
                     className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   />
                 </div>
@@ -492,7 +492,7 @@ export function DashboardContent() {
                   <div className="flex items-center gap-2">
                     <ListMusic className="w-4 h-4 text-brand-pink" />
                     <h3 className="text-sm font-bold text-foreground">
-                      Playlists
+                      {t("dashboard.playlists")}
                       <span className="ml-2 text-muted-foreground font-normal">· {allPlaylists.length} total</span>
                     </h3>
                   </div>
@@ -526,7 +526,7 @@ export function DashboardContent() {
                     type="text"
                     value={playlistsSearch}
                     onChange={(e) => setPlaylistsSearch(e.target.value)}
-                    placeholder="Search by name or description…"
+                    placeholder={t("common.search") + "..."}
                     className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   />
                 </div>
@@ -598,7 +598,7 @@ export function DashboardContent() {
                   <div className="flex items-center gap-2">
                     <Headphones className="w-4 h-4 text-brand-pink" />
                     <h3 className="text-sm font-bold text-foreground">
-                      Total Plays
+                      {t("dashboard.totalPlays")}
                       <span className="ml-2 text-muted-foreground font-normal">· {engagementStats.totalPlays} total</span>
                     </h3>
                   </div>
@@ -629,7 +629,7 @@ export function DashboardContent() {
                     type="text"
                     value={playsSearch}
                     onChange={(e) => setPlaysSearch(e.target.value)}
-                    placeholder="Search by track, artist, or recipient…"
+                    placeholder={t("common.search") + "..."}
                     className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   />
                 </div>
@@ -695,7 +695,7 @@ export function DashboardContent() {
                   <div className="flex items-center gap-2">
                     <Download className="w-4 h-4 text-brand-purple" />
                     <h3 className="text-sm font-bold text-foreground">
-                      Downloads
+                      {t("dashboard.downloads")}
                       <span className="ml-2 text-muted-foreground font-normal">· {engagementStats.totalDownloads} total</span>
                     </h3>
                   </div>

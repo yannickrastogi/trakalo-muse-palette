@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Send, Clock, Edit3, Trash2, MoreHorizontal, X
@@ -27,6 +28,7 @@ export function RecipientReviewPlayer({
   totalDurationSeconds,
   onSeek,
 }: RecipientReviewPlayerProps) {
+  const { t } = useTranslation();
   const { getCommentsForTrack, addComment, editComment, deleteComment } = useTrackReview();
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerTimestamp, setComposerTimestamp] = useState<number | undefined>();
@@ -74,7 +76,7 @@ export function RecipientReviewPlayer({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Your Feedback</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t("recipientReview.title")}</h3>
           {allComments.length > 0 && (
             <span className="text-2xs text-muted-foreground">({allComments.length})</span>
           )}
@@ -83,7 +85,7 @@ export function RecipientReviewPlayer({
           onClick={() => handleOpenComposer()}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand"
         >
-          <MessageSquare className="w-3 h-3" /> Add Comment
+          <MessageSquare className="w-3 h-3" /> {t("recipientReview.addComment")}
         </button>
       </div>
 
@@ -97,7 +99,7 @@ export function RecipientReviewPlayer({
               onSubmit={handleSubmit}
               onCancel={() => setComposerOpen(false)}
               compact
-              placeholder="Share your feedback on this moment…"
+              placeholder={t("recipientReview.placeholder")}
             />
           </motion.div>
         )}
@@ -107,8 +109,8 @@ export function RecipientReviewPlayer({
       {allComments.length === 0 && !composerOpen ? (
         <div className="bg-card border border-border rounded-xl p-8 text-center" style={{ boxShadow: "var(--shadow-card)" }}>
           <MessageSquare className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">No feedback yet</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">Click the waveform or use the button above to leave timecoded feedback</p>
+          <p className="text-sm font-medium text-muted-foreground">{t("recipientReview.noFeedback")}</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">{t("recipientReview.noFeedbackDesc")}</p>
         </div>
       ) : (
         <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border/50" style={{ boxShadow: "var(--shadow-card)" }}>
@@ -133,8 +135,8 @@ export function RecipientReviewPlayer({
                           autoFocus
                         />
                         <div className="flex gap-2">
-                          <button onClick={() => { editComment(comment.id, editText.trim()); setEditingId(null); }} className="px-3 py-1 rounded-lg text-xs font-semibold btn-brand">Save</button>
-                          <button onClick={() => setEditingId(null)} className="px-3 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+                          <button onClick={() => { editComment(comment.id, editText.trim()); setEditingId(null); }} className="px-3 py-1 rounded-lg text-xs font-semibold btn-brand">{t("recipientReview.save")}</button>
+                          <button onClick={() => setEditingId(null)} className="px-3 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors">{t("recipientReview.cancel")}</button>
                         </div>
                       </div>
                     ) : (
@@ -144,7 +146,7 @@ export function RecipientReviewPlayer({
                           <span className="text-[10px] text-muted-foreground/50">
                             {new Date(comment.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                           </span>
-                          {comment.isEdited && <span className="text-[9px] text-muted-foreground/40 italic">Edited</span>}
+                          {comment.isEdited && <span className="text-[9px] text-muted-foreground/40 italic">{t("trackReview.edited")}</span>}
                         </div>
                       </>
                     )}
@@ -161,11 +163,11 @@ export function RecipientReviewPlayer({
                         <div className="absolute right-0 top-7 z-20 w-28 bg-popover border border-border rounded-lg shadow-lg py-1" style={{ boxShadow: "var(--shadow-elevated)" }}>
                           <button onClick={() => { setEditingId(comment.id); setEditText(comment.commentText); setOpenMenuId(null); }}
                             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-secondary transition-colors">
-                            <Edit3 className="w-3 h-3" /> Edit
+                            <Edit3 className="w-3 h-3" /> {t("recipientReview.edit")}
                           </button>
                           <button onClick={() => { setDeleteConfirmId(comment.id); setOpenMenuId(null); }}
                             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors">
-                            <Trash2 className="w-3 h-3" /> Delete
+                            <Trash2 className="w-3 h-3" /> {t("recipientReview.delete")}
                           </button>
                         </div>
                       )}
@@ -181,12 +183,12 @@ export function RecipientReviewPlayer({
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Comment</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure? This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogTitle>{t("recipientReview.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("recipientReview.deleteConfirm")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogCancel>{t("recipientReview.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("recipientReview.delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

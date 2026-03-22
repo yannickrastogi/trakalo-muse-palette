@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import type { TimecodedComment, AuthorType } from "@/contexts/TrackReviewContext";
 import { formatTimestamp } from "@/contexts/TrackReviewContext";
@@ -17,11 +18,11 @@ const badgeStyle: Record<AuthorType, string> = {
   guest_recipient: "bg-brand-pink/15 text-brand-pink",
 };
 
-const badgeLabel: Record<AuthorType, string> = {
-  owner: "Owner",
-  team_member: "Team",
-  recipient: "Recipient",
-  guest_recipient: "Guest",
+const badgeLabelKey: Record<AuthorType, string> = {
+  owner: "trackReview.owner",
+  team_member: "trackReview.team",
+  recipient: "trackReview.recipient",
+  guest_recipient: "trackReview.guest",
 };
 
 interface CommentMarkerLayerProps {
@@ -41,6 +42,7 @@ export function CommentMarkerLayer({
   filterAuthor,
   filterSharedLink,
 }: CommentMarkerLayerProps) {
+  const { t } = useTranslation();
   const [openMarkerId, setOpenMarkerId] = useState<number | null>(null);
 
   const markers = useMemo(() => {
@@ -131,7 +133,7 @@ export function CommentMarkerLayer({
                       <span className="text-[11px] font-mono font-bold text-primary">{formatTimestamp(c.timestampSeconds)}</span>
                       <span className="text-xs font-semibold text-foreground">{c.authorName}</span>
                       <span className={"inline-flex px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider " + badgeStyle[c.authorType]}>
-                        {badgeLabel[c.authorType]}
+                        {t(badgeLabelKey[c.authorType])}
                       </span>
                     </div>
                     <p className="text-xs text-foreground/70 line-clamp-2">{c.commentText}</p>

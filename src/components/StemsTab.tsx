@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack } from "@/contexts/TrackContext";
@@ -95,6 +96,7 @@ function stemTypeIcon(type: StemType) {
 }
 
 export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
+  const { t } = useTranslation();
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
   const { getTrack } = useTrack();
@@ -349,15 +351,15 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
       {/* Header row */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">{stems.length} Stems</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Manage audio stems for this track</p>
+          <h3 className="text-sm font-semibold text-foreground">{t("stemsTab.title", { count: stems.length })}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("stemsTab.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowUploadModal(true)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold btn-brand"
           >
-            <Upload className="w-3.5 h-3.5" /> Upload Stems
+            <Upload className="w-3.5 h-3.5" /> {t("stemsTab.uploadStems")}
           </button>
         </div>
       </div>
@@ -380,8 +382,8 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
               style={{ background: "var(--gradient-brand-soft)" }}
             >
               <Upload className="w-8 h-8 text-primary mb-2" />
-              <p className="text-sm font-semibold text-foreground">Drop audio files here</p>
-              <p className="text-xs text-muted-foreground mt-0.5">WAV, MP3, AIFF, FLAC, OGG, M4A</p>
+              <p className="text-sm font-semibold text-foreground">{t("stemsTab.dropHere")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("stemsTab.fileFormats")}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -395,19 +397,19 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
               <Layers className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">No stems uploaded yet</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Drag & drop audio files or click to browse</p>
+              <p className="text-sm font-semibold text-foreground">{t("stemsTab.noStems")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("stemsTab.dragDrop")}</p>
             </div>
           </button>
         ) : (
           <div className="bg-card rounded-xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
             {/* Table header */}
             <div className="grid grid-cols-[1fr_120px_80px_100px_110px] gap-3 px-5 py-3 border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
-              <span>File</span>
-              <span>Type</span>
-              <span>Size</span>
-              <span>Uploaded</span>
-              <span className="text-right">Actions</span>
+              <span>{t("stemsTab.file")}</span>
+              <span>{t("stemsTab.type")}</span>
+              <span>{t("stemsTab.size")}</span>
+              <span>{t("stemsTab.uploaded")}</span>
+              <span className="text-right">{t("stemsTab.actions")}</span>
             </div>
 
             {/* Stem rows */}
@@ -475,14 +477,14 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
                         <button
                           onClick={() => handlePlayStem(stem)}
                           className={"p-1.5 rounded-lg transition-colors " + (playing ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted")}
-                          title="Play preview"
+                          title={t("stemsTab.playPreview")}
                         >
                           {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                         </button>
                         <button
                           onClick={() => setDeleteConfirmId(stem.id)}
                           className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
-                          title="Delete"
+                          title={t("stemsTab.delete")}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -499,7 +501,7 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
               className="w-full py-3 flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground border-t border-border hover:bg-secondary/30 transition-colors"
             >
               <Upload className="w-3.5 h-3.5" />
-              Drag & drop files here or click to upload more
+              {t("stemsTab.uploadMore")}
             </button>
           </div>
         )}
@@ -525,8 +527,8 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
               {/* Header */}
               <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground">Upload Stems</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Upload multiple stems at once</p>
+                  <h3 className="text-sm font-semibold text-foreground">{t("stemsTab.uploadModalTitle")}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("stemsTab.uploadModalDesc")}</p>
                 </div>
                 <button onClick={() => { setShowUploadModal(false); setPendingFiles([]); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                   <X className="w-4 h-4" />
@@ -550,9 +552,9 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
                     <Upload className={"w-5 h-5 " + (modalDragOver ? "text-primary" : "text-muted-foreground")} />
                   </div>
                   <p className="text-sm font-medium text-foreground">
-                    {modalDragOver ? "Drop files here" : "Drag & drop stems here"}
+                    {modalDragOver ? t("stemsTab.dropFilesHere") : t("stemsTab.dropStemsHere")}
                   </p>
-                  <p className="text-xs text-muted-foreground">or click to browse</p>
+                  <p className="text-xs text-muted-foreground">{t("stemsTab.orClickBrowse")}</p>
                 </div>
                 <input
                   ref={modalFileInputRef}
@@ -574,7 +576,7 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
                 <>
                   <div className="px-6 pt-2 pb-1">
                     <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
-                      {pendingFiles.length} file{pendingFiles.length !== 1 ? "s" : ""} ready
+                      {t("stemsTab.filesReady", { count: pendingFiles.length })}
                     </p>
                   </div>
                   <div className="max-h-56 overflow-y-auto divide-y divide-border mx-2">
@@ -621,7 +623,7 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
                   onClick={() => { setShowUploadModal(false); setPendingFiles([]); }}
                   className="px-4 py-2 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors"
                 >
-                  Cancel
+                  {t("stemsTab.cancel")}
                 </button>
                 <button
                   onClick={confirmUpload}
@@ -629,9 +631,9 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
                   className="px-4 py-2 rounded-lg text-xs font-semibold btn-brand disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
                 >
                   {uploading ? (
-                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...</>
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("stemsTab.uploading")}</>
                   ) : (
-                    <><Upload className="w-3.5 h-3.5" /> Upload {pendingFiles.length > 0 ? pendingFiles.length + " Stem" + (pendingFiles.length !== 1 ? "s" : "") : "Stems"}</>
+                    <><Upload className="w-3.5 h-3.5" /> {pendingFiles.length > 0 ? t("stemsTab.uploadCount", { count: pendingFiles.length }) : t("stemsTab.uploadStems")}</>
                   )}
                 </button>
               </div>
@@ -644,12 +646,12 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this stem?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogTitle>{t("stemsTab.deleteConfirm")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("stemsTab.deleteWarning")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t("stemsTab.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>{t("stemsTab.delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

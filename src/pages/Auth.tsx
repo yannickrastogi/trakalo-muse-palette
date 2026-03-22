@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import trakalogLogo from "@/assets/trakalog-logo.png";
+import { useTranslation } from "react-i18next";
 
 export default function Auth() {
+  const { t } = useTranslation();
   const { session, loading, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,7 +41,7 @@ export default function Auth() {
     if (error) {
       toast.error(error.message);
     } else if (needsConfirmation) {
-      toast.success("Check your email to confirm your account.");
+      toast.success(t("auth.checkEmail"));
     }
     setSubmitting(false);
   };
@@ -70,7 +72,7 @@ export default function Auth() {
             TRAKALOG
           </h1>
           <p className="text-[11px] text-muted-foreground tracking-widest uppercase font-medium">
-            Smart Catalog Manager
+            {t("auth.smartCatalogManager")}
           </p>
         </div>
 
@@ -78,8 +80,8 @@ export default function Auth() {
         <div className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-elevated)]">
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="w-full mb-6">
-              <TabsTrigger value="login" className="flex-1">Login</TabsTrigger>
-              <TabsTrigger value="register" className="flex-1">Register</TabsTrigger>
+              <TabsTrigger value="login" className="flex-1">{t("auth.login")}</TabsTrigger>
+              <TabsTrigger value="register" className="flex-1">{t("auth.register")}</TabsTrigger>
             </TabsList>
 
             {/* ── Google ── */}
@@ -96,27 +98,27 @@ export default function Auth() {
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
-              Continue with Google
+              {t("auth.continueWithGoogle")}
             </Button>
 
             <div className="relative mb-4">
               <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-              <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">or</span></div>
+              <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">{t("auth.or")}</span></div>
             </div>
 
             {/* ── Login tab ── */}
             <TabsContent value="login" className="mt-0">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="login-email">{t("auth.email")}</Label>
                   <Input id="login-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
+                  <Label htmlFor="login-password">{t("auth.password")}</Label>
                   <Input id="login-password" type="password" placeholder="••••••••" value={email ? password : ""} onChange={(e) => setPassword(e.target.value)} required />
                 </div>
                 <Button type="submit" className="w-full h-11" disabled={submitting}>
-                  {submitting ? "Signing in…" : "Sign in"}
+                  {submitting ? t("auth.signingIn") : t("auth.signIn")}
                 </Button>
               </form>
             </TabsContent>
@@ -125,15 +127,15 @@ export default function Auth() {
             <TabsContent value="register" className="mt-0">
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="reg-email">Email</Label>
+                  <Label htmlFor="reg-email">{t("auth.email")}</Label>
                   <Input id="reg-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="reg-password">Password</Label>
-                  <Input id="reg-password" type="password" placeholder="Min. 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+                  <Label htmlFor="reg-password">{t("auth.password")}</Label>
+                  <Input id="reg-password" type="password" placeholder={t("auth.minChars")} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
                 </div>
                 <Button type="submit" className="w-full h-11" disabled={submitting}>
-                  {submitting ? "Creating account…" : "Create account"}
+                  {submitting ? t("auth.creatingAccount") : t("auth.createAccount")}
                 </Button>
               </form>
             </TabsContent>
@@ -141,7 +143,7 @@ export default function Auth() {
         </div>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          By continuing, you agree to our Terms of Service.
+          {t("auth.termsAgree")}
         </p>
       </div>
     </div>

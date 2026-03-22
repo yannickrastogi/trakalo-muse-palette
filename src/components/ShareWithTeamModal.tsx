@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useTeams } from "@/contexts/TeamContext";
 import { Users, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ interface ShareWithTeamModalProps {
 }
 
 export function ShareWithTeamModal({ open, onClose, trackTitle }: ShareWithTeamModalProps) {
+  const { t } = useTranslation();
   const { teams } = useTeams();
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -28,8 +30,8 @@ export function ShareWithTeamModal({ open, onClose, trackTitle }: ShareWithTeamM
   };
 
   const handleShare = () => {
-    const names = teams.filter((t) => selected.includes(t.id)).map((t) => t.name);
-    toast.success(`"${trackTitle}" shared with ${names.join(", ")}`);
+    const names = teams.filter((tm) => selected.includes(tm.id)).map((tm) => tm.name);
+    toast.success("\"" + trackTitle + "\" shared with " + names.join(", "));
     setSelected([]);
     onClose();
   };
@@ -43,18 +45,18 @@ export function ShareWithTeamModal({ open, onClose, trackTitle }: ShareWithTeamM
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Share with Team</DialogTitle>
+          <DialogTitle>{t("shareWithTeam.title")}</DialogTitle>
           <DialogDescription>
-            Select which team(s) should have access to "{trackTitle}"
+            {t("shareWithTeam.selectTeams", { title: trackTitle })}
           </DialogDescription>
         </DialogHeader>
 
         {teams.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <Users className="w-10 h-10 text-muted-foreground/30 mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">No teams yet</p>
+            <p className="text-sm font-medium text-muted-foreground">{t("shareWithTeam.noTeams")}</p>
             <p className="text-xs text-muted-foreground/60 mt-1">
-              Create a team in the Team section to start collaborating
+              {t("shareWithTeam.noTeamsDesc")}
             </p>
           </div>
         ) : (
@@ -65,18 +67,18 @@ export function ShareWithTeamModal({ open, onClose, trackTitle }: ShareWithTeamM
                 <button
                   key={team.id}
                   onClick={() => toggle(team.id)}
-                  className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${
+                  className={"w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left " + (
                     isSelected
                       ? "border-primary/40 bg-primary/5"
                       : "border-border bg-secondary/50 hover:border-border/80"
-                  }`}
+                  )}
                 >
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
+                    className={"w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all " + (
                       isSelected
                         ? "bg-primary/15 text-primary"
                         : "bg-secondary text-muted-foreground"
-                    }`}
+                    )}
                   >
                     <Users className="w-4 h-4" />
                   </div>
@@ -85,15 +87,15 @@ export function ShareWithTeamModal({ open, onClose, trackTitle }: ShareWithTeamM
                       {team.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {team.members.length} members
+                      {t("shareWithTeam.members", { count: team.members.length })}
                     </p>
                   </div>
                   <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                    className={"w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 " + (
                       isSelected
                         ? "border-primary bg-primary"
                         : "border-muted-foreground/30"
-                    }`}
+                    )}
                   >
                     {isSelected && (
                       <Check className="w-3 h-3 text-primary-foreground" />
@@ -107,13 +109,13 @@ export function ShareWithTeamModal({ open, onClose, trackTitle }: ShareWithTeamM
 
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="outline" onClick={handleClose}>
-            Cancel
+            {t("shareWithTeam.cancel")}
           </Button>
           <Button
             onClick={handleShare}
             disabled={selected.length === 0}
           >
-            Share with {selected.length || ""} Team{selected.length !== 1 ? "s" : ""}
+            {t("shareWithTeam.share", { count: selected.length })}
           </Button>
         </div>
       </DialogContent>

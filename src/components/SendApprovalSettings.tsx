@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Shield, ShieldCheck, ShieldAlert, Users, Lock, Unlock, Info } from "lucide-react";
 import { useApprovals, type ApprovalMode, type MemberApprovalRule } from "@/contexts/ApprovalContext";
@@ -8,23 +9,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
-const modeConfig: Record<ApprovalMode, { icon: typeof Shield; label: string; description: string; color: string }> = {
+const modeIcons: Record<ApprovalMode, { icon: typeof Shield; color: string }> = {
   everyone_requires_approval: {
     icon: ShieldAlert,
-    label: "Everyone Requires Approval",
-    description: "Every outbound send must be approved by an admin before delivery.",
     color: "border-brand-orange/40 bg-brand-orange/5",
   },
   everyone_auto_approved: {
     icon: ShieldCheck,
-    label: "Everyone Auto-Approved",
-    description: "Outbound sends are approved automatically for users who already have send permissions.",
     color: "border-emerald-500/40 bg-emerald-500/5",
   },
   custom_by_user: {
     icon: Users,
-    label: "Custom by User",
-    description: "Decide which team members require approval and which can send directly.",
     color: "border-brand-purple/40 bg-brand-purple/5",
   },
 };
@@ -52,18 +47,34 @@ interface Props {
 }
 
 export function SendApprovalSettings({ teamId }: Props) {
+  const { t } = useTranslation();
   const { getTeamSettings, setTeamApprovalMode, getMemberRule, setMemberRule } = useApprovals();
   const { teams } = useTeams();
   const team = teams.find(t => t.id === teamId);
   const settings = getTeamSettings(teamId);
   const [mode, setMode] = useState<ApprovalMode>(settings.approvalMode);
 
+  const modeConfig: Record<ApprovalMode, { label: string; description: string }> = {
+    everyone_requires_approval: {
+      label: t("sendApproval.everyoneRequires"),
+      description: t("sendApproval.everyoneRequiresDesc"),
+    },
+    everyone_auto_approved: {
+      label: t("sendApproval.everyoneAuto"),
+      description: t("sendApproval.everyoneAutoDesc"),
+    },
+    custom_by_user: {
+      label: t("sendApproval.customByUser"),
+      description: t("sendApproval.customByUserDesc"),
+    },
+  };
+
   if (!team) return null;
 
   const handleModeChange = (newMode: ApprovalMode) => {
     setMode(newMode);
     setTeamApprovalMode(teamId, newMode);
-    toast.success(`Approval mode updated to "${modeConfig[newMode].label}"`);
+    toast.success("Approval mode updated to \"" + modeConfig[newMode].label + "\"");
   };
 
   const handleMemberRuleChange = (userId: string, rule: MemberApprovalRule) => {
@@ -81,8 +92,8 @@ export function SendApprovalSettings({ teamId }: Props) {
           <Shield className="w-5 h-5 text-brand-orange" />
         </div>
         <div>
-          <h3 className="text-[15px] font-bold text-foreground">Send Approvals</h3>
-          <p className="text-xs text-muted-foreground">Control whether outbound sends require admin approval before delivery.</p>
+          <h3 className="text-[15px] font-bold text-foreground">{t("sendApproval.title")}</h3>
+          <p className="text-xs text-muted-foreground">{t("sendApproval.description")}</p>
         </div>
       </div>
 
@@ -90,23 +101,23 @@ export function SendApprovalSettings({ teamId }: Props) {
       <div className="flex items-start gap-2.5 px-4 py-3 rounded-lg bg-secondary/60 border border-border">
         <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Auto-approved does <span className="font-semibold text-foreground">not</span> grant send permissions. Users must already have permission to send. Approval rules only decide whether a send needs manual review before delivery.
+          {t("sendApproval.note")}
         </p>
       </div>
 
       {/* Mode Selector */}
       <div className="grid gap-3">
-        {(Object.keys(modeConfig) as ApprovalMode[]).map((key) => {
-          const cfg = modeConfig[key];
-          const Icon = cfg.icon;
+        {(Object.keys(modeIcons) as ApprovalMode[]).map((key) => {
+          const iconCfg = modeIcons[key];
+          const textCfg = modeConfig[key];
+          const Icon = iconCfg.icon;
           const isActive = mode === key;
           return (
             <button
               key={key}
               onClick={() => handleModeChange(key)}
-              className={`relative w-full text-left p-4 rounded-xl border-2 transition-all ${
-                isActive ? cfg.color : "border-border bg-card hover:border-muted-foreground/20"
-              }`}
+              className={"relative w-full text-left p-4 rounded-xl border-2 transition-all " +
+                (isActive ? iconCfg.color : "border-border bg-card hover:border-muted-foreground/20")}
             >
               <div className="flex items-start gap-3">
                 <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${
@@ -117,10 +128,10 @@ export function SendApprovalSettings({ teamId }: Props) {
                     : "text-muted-foreground"
                 }`} />
                 <div className="min-w-0">
-                  <p className={`text-sm font-semibold ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
-                    {cfg.label}
+                  <p className={"text-sm font-semibold " + (isActive ? "text-foreground" : "text-muted-foreground")}>
+                    {textCfg.label}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{cfg.description}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{textCfg.description}</p>
                 </div>
                 {isActive && (
                   <div className="ml-auto shrink-0">
@@ -148,14 +159,14 @@ export function SendApprovalSettings({ teamId }: Props) {
           className="space-y-3"
         >
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-foreground">Per-Member Rules</h4>
-            <Badge variant="outline" className="text-2xs">{nonOwnerMembers.length} members</Badge>
+            <h4 className="text-sm font-semibold text-foreground">{t("sendApproval.perMemberRules")}</h4>
+            <Badge variant="outline" className="text-2xs">{t("sendApproval.membersCount", { count: nonOwnerMembers.length })}</Badge>
           </div>
 
           {nonOwnerMembers.length === 0 ? (
             <div className="card-premium p-8 text-center">
               <Users className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No team members to configure</p>
+              <p className="text-sm text-muted-foreground">{t("sendApproval.noMembers")}</p>
             </div>
           ) : (
             <div className="card-premium divide-y divide-border/60 overflow-hidden">
@@ -180,7 +191,7 @@ export function SendApprovalSettings({ teamId }: Props) {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className={`text-2xs font-semibold ${isAutoApproved ? "text-emerald-400" : "text-brand-orange"}`}>
-                        {isAutoApproved ? "Auto" : "Review"}
+                        {isAutoApproved ? t("sendApproval.auto") : t("sendApproval.review")}
                       </span>
                       <Switch
                         checked={isAutoApproved}
@@ -196,13 +207,13 @@ export function SendApprovalSettings({ teamId }: Props) {
           <div className="flex items-start gap-2.5 px-4 py-3 rounded-lg bg-secondary/40 border border-border/60">
             <Lock className="w-3.5 h-3.5 text-brand-orange shrink-0 mt-0.5" />
             <p className="text-2xs text-muted-foreground">
-              <span className="font-semibold text-brand-orange">Requires Approval</span> — sends must be reviewed before delivery.
+              {t("sendApproval.requiresApproval")}
             </p>
           </div>
           <div className="flex items-start gap-2.5 px-4 py-3 rounded-lg bg-secondary/40 border border-border/60">
             <Unlock className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
             <p className="text-2xs text-muted-foreground">
-              <span className="font-semibold text-emerald-400">Auto-Approved</span> — sends are delivered immediately if the user has send permissions.
+              {t("sendApproval.autoApproved")}
             </p>
           </div>
         </motion.div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -28,19 +29,30 @@ interface SharePackModalProps {
   trackData: TrackData;
 }
 
+const packItemKeys: Record<string, string> = {
+  track: "downloadTrack.track",
+  cover: "downloadTrack.coverArt",
+  lyrics: "downloadTrack.lyrics",
+  stems: "downloadTrack.stems",
+  credits: "downloadTrack.credits",
+  metadata: "downloadTrack.metadata",
+  paperwork: "downloadTrack.paperwork",
+};
+
 const packItems = [
-  { id: "track", label: "Track", description: "Original audio file", icon: Music },
-  { id: "cover", label: "Cover Art", description: "3000×3000 JPEG artwork", icon: Image },
-  { id: "lyrics", label: "Lyrics", description: "Branded PDF document", icon: FileText },
-  { id: "stems", label: "Stems", description: "All stem files (original format)", icon: Layers },
-  { id: "credits", label: "Credits", description: "Branded PDF with all credits", icon: Users },
-  { id: "metadata", label: "Metadata", description: "Branded PDF with all track info", icon: PieChart },
-  { id: "paperwork", label: "Paperwork", description: "All documents with watermark", icon: Paperclip },
+  { id: "track", description: "Original audio file", icon: Music },
+  { id: "cover", description: "3000x3000 JPEG artwork", icon: Image },
+  { id: "lyrics", description: "Branded PDF document", icon: FileText },
+  { id: "stems", description: "All stem files (original format)", icon: Layers },
+  { id: "credits", description: "Branded PDF with all credits", icon: Users },
+  { id: "metadata", description: "Branded PDF with all track info", icon: PieChart },
+  { id: "paperwork", description: "All documents with watermark", icon: Paperclip },
 ] as const;
 
 type PackItemId = typeof packItems[number]["id"];
 
 export function SharePackModal({ open, onClose, trackData }: SharePackModalProps) {
+  const { t } = useTranslation();
   const [selectedItems, setSelectedItems] = useState<Set<PackItemId>>(
     new Set(["track", "cover", "lyrics", "stems", "credits", "metadata", "paperwork"])
   );
@@ -87,7 +99,7 @@ export function SharePackModal({ open, onClose, trackData }: SharePackModalProps
           <DialogHeader>
             <DialogTitle className="text-foreground flex items-center gap-2">
               <Package className="w-5 h-5 text-primary" />
-              Share Trakalog Pack
+              {t("sharePack.title")}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
               {trackData.title} — {trackData.artist}
@@ -96,7 +108,7 @@ export function SharePackModal({ open, onClose, trackData }: SharePackModalProps
 
           <div className="space-y-1 pt-2">
             <p className="text-xs text-muted-foreground mb-2">
-              Select what to include in the shared pack
+              {t("sharePack.selectItems")}
             </p>
 
             {packItems.map((item) => {
@@ -107,11 +119,11 @@ export function SharePackModal({ open, onClose, trackData }: SharePackModalProps
                   key={item.id}
                   onClick={() => toggleItem(item.id)}
                   whileTap={{ scale: 0.98 }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors text-left ${
+                  className={"w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors text-left " + (
                     checked
                       ? "border-primary/30 bg-primary/5"
                       : "border-transparent hover:bg-secondary/40"
-                  }`}
+                  )}
                 >
                   <Checkbox
                     checked={checked}
@@ -122,7 +134,7 @@ export function SharePackModal({ open, onClose, trackData }: SharePackModalProps
                     <ItemIcon className="w-3.5 h-3.5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">{item.label}</p>
+                    <p className="text-sm font-medium text-foreground">{t(packItemKeys[item.id])}</p>
                     <p className="text-[11px] text-muted-foreground">{item.description}</p>
                   </div>
                 </motion.button>
@@ -139,7 +151,7 @@ export function SharePackModal({ open, onClose, trackData }: SharePackModalProps
               }}
             >
               <Send className="w-4 h-4" />
-              Share Pack ({selectedItems.size} items)
+              {t("sharePack.sharePack", { count: selectedItems.size })}
             </button>
           </div>
         </DialogContent>
@@ -150,18 +162,14 @@ export function SharePackModal({ open, onClose, trackData }: SharePackModalProps
         <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground">
-              Send Trakalog Pack?
+              {t("sharePack.confirmTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
-              You are about to share a Trakalog Pack for{" "}
-              <span className="font-medium text-foreground">
-                {trackData.title}
-              </span>{" "}
-              containing {selectedItems.size} item
-              {selectedItems.size !== 1 ? "s" : ""}:{" "}
+              {t("sharePack.confirmDesc", { title: trackData.title, artist: trackData.artist, count: selectedItems.size })}
+              {" "}
               <span className="text-foreground/80">
                 {Array.from(selectedItems)
-                  .map((id) => packItems.find((p) => p.id === id)?.label)
+                  .map((id) => t(packItemKeys[id]))
                   .join(", ")}
               </span>
               .
@@ -169,7 +177,7 @@ export function SharePackModal({ open, onClose, trackData }: SharePackModalProps
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="border-border text-foreground">
-              Cancel
+              {t("sharePack.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirm}
@@ -179,7 +187,7 @@ export function SharePackModal({ open, onClose, trackData }: SharePackModalProps
                   "linear-gradient(135deg, hsl(24, 100%, 55%), hsl(330, 80%, 60%), hsl(270, 70%, 55%))",
               }}
             >
-              Yes, share pack
+              {t("sharePack.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

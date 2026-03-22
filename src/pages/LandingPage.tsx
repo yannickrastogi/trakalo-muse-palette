@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Music, Rocket, Link2, BarChart3, Disc3, Building2, Mic2, ArrowRight } from "lucide-react";
 import trakalogLogo from "@/assets/trakalog-logo.png";
+import { useTranslation } from "react-i18next";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -17,6 +18,7 @@ const stagger = {
 };
 
 function WaitlistForm({ id }: { id?: string }) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -34,15 +36,15 @@ function WaitlistForm({ id }: { id?: string }) {
 
     if (error) {
       if (error.code === "23505") {
-        toast.success("You're already on the waitlist!");
+        toast.success(t("landing.alreadyOnWaitlist"));
         setSubmitted(true);
       } else {
-        toast.error("Something went wrong. Please try again.");
+        toast.error(t("landing.somethingWentWrong"));
       }
       return;
     }
 
-    toast.success("You're on the list! We'll be in touch.");
+    toast.success(t("landing.onTheList"));
     setSubmitted(true);
   };
 
@@ -50,7 +52,7 @@ function WaitlistForm({ id }: { id?: string }) {
     return (
       <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
         <Disc3 className="w-4 h-4" />
-        You're on the waitlist. We'll reach out soon.
+        {t("landing.onWaitlist")}
       </div>
     );
   }
@@ -70,51 +72,29 @@ function WaitlistForm({ id }: { id?: string }) {
         disabled={submitting}
         className="h-12 px-6 rounded-xl btn-brand text-sm font-semibold whitespace-nowrap flex items-center gap-2 justify-center w-full sm:w-auto min-h-[44px]"
       >
-        {submitting ? "Joining..." : "Get Early Access"}
+        {submitting ? t("landing.joining") : t("landing.getEarlyAccess")}
         {!submitting && <ArrowRight className="w-4 h-4" />}
       </button>
     </form>
   );
 }
 
-const features = [
-  {
-    icon: Music,
-    title: "Catalog Management",
-    description: "Organize your unreleased tracks with metadata, stems, splits, and waveforms. Everything in one place.",
-    color: "text-brand-orange",
-    bg: "bg-brand-orange/10",
-  },
-  {
-    icon: Rocket,
-    title: "Professional Pitches",
-    description: "Send polished pitch emails with secure listening links. Track who plays and downloads your music.",
-    color: "text-brand-pink",
-    bg: "bg-brand-pink/10",
-  },
-  {
-    icon: Link2,
-    title: "Secure Sharing",
-    description: "Create password-protected links with expiration dates. Control access to your music.",
-    color: "text-brand-purple",
-    bg: "bg-brand-purple/10",
-  },
-  {
-    icon: BarChart3,
-    title: "Engagement Analytics",
-    description: "See who's listening, downloading, and engaging with your tracks in real-time.",
-    color: "text-primary",
-    bg: "bg-primary/10",
-  },
+const featureKeys = [
+  { icon: Music, titleKey: "landing.catalogManagement", descKey: "landing.catalogManagementDesc", color: "text-brand-orange", bg: "bg-brand-orange/10" },
+  { icon: Rocket, titleKey: "landing.professionalPitches", descKey: "landing.professionalPitchesDesc", color: "text-brand-pink", bg: "bg-brand-pink/10" },
+  { icon: Link2, titleKey: "landing.secureSharing", descKey: "landing.secureSharingDesc", color: "text-brand-purple", bg: "bg-brand-purple/10" },
+  { icon: BarChart3, titleKey: "landing.engagementAnalytics", descKey: "landing.engagementAnalyticsDesc", color: "text-primary", bg: "bg-primary/10" },
 ];
 
-const audiences = [
-  { key: "artists", icon: Mic2, label: "Artists", color: "text-brand-pink", bg: "bg-brand-pink/10" },
-  { key: "producers", icon: Music, label: "Producers & Songwriters", color: "text-brand-orange", bg: "bg-brand-orange/10" },
-  { key: "labels", icon: Building2, label: <>Labels, A&R<br />& Managers</>, color: "text-brand-purple", bg: "bg-brand-purple/10" },
+const audienceKeys = [
+  { key: "artists", icon: Mic2, labelKey: "landing.artists", color: "text-brand-pink", bg: "bg-brand-pink/10" },
+  { key: "producers", icon: Music, labelKey: "landing.producers", color: "text-brand-orange", bg: "bg-brand-orange/10" },
+  { key: "labels", icon: Building2, labelKey: "landing.labels", color: "text-brand-purple", bg: "bg-brand-purple/10" },
 ];
 
 export default function LandingPage() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Navbar */}
@@ -125,22 +105,22 @@ export default function LandingPage() {
             <span className="text-sm sm:text-lg font-bold tracking-tight gradient-text">TRAKALOG</span>
           </Link>
           <div className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-            <a href="#cta" className="hover:text-foreground transition-colors">Pricing</a>
-            <a href="mailto:contact@trakalog.com" className="hover:text-foreground transition-colors">Contact</a>
+            <a href="#features" className="hover:text-foreground transition-colors">{t("landing.features")}</a>
+            <a href="#cta" className="hover:text-foreground transition-colors">{t("landing.pricing")}</a>
+            <a href="mailto:contact@trakalog.com" className="hover:text-foreground transition-colors">{t("landing.contact")}</a>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-3">
             <Link
               to="/auth"
               className="inline-flex px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold min-h-[44px] items-center border border-brand-orange/30 text-brand-orange hover:bg-brand-orange/10 transition-all duration-200 whitespace-nowrap"
             >
-              Sign In
+              {t("landing.signIn")}
             </Link>
             <a
               href="#hero-form"
               className="px-2.5 sm:px-4 py-2 rounded-lg btn-brand text-xs sm:text-sm font-semibold min-h-[44px] inline-flex items-center whitespace-nowrap"
             >
-              Get Early Access
+              {t("landing.getEarlyAccess")}
             </a>
           </div>
         </div>
@@ -158,14 +138,14 @@ export default function LandingPage() {
             variants={fadeUp}
             className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1]"
           >
-            Your Music Catalog,{" "}
-            <span className="gradient-text">Organized & Pitch-Ready</span>
+            {t("landing.heroTitle")}{" "}
+            <span className="gradient-text">{t("landing.heroHighlight")}</span>
           </motion.h1>
           <motion.p
             variants={fadeUp}
             className="mt-5 sm:mt-6 text-base sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto sm:mx-0"
           >
-            Trakalog is the all-in-one platform for music producers and labels to manage unreleased tracks, send professional pitches, and share music securely.
+            {t("landing.heroDesc")}
           </motion.p>
           <motion.div variants={fadeUp} className="mt-6 sm:mt-8 flex justify-center sm:justify-start">
             <WaitlistForm id="hero-form" />
@@ -201,8 +181,8 @@ export default function LandingPage() {
             variants={stagger}
             className="text-center mb-14"
           >
-            <motion.p variants={fadeUp} className="text-sm font-semibold gradient-text uppercase tracking-widest mb-3">Features</motion.p>
-            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold tracking-tight">Everything you need to manage your catalog</motion.h2>
+            <motion.p variants={fadeUp} className="text-sm font-semibold gradient-text uppercase tracking-widest mb-3">{t("landing.features")}</motion.p>
+            <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold tracking-tight">{t("landing.featuresTitle")}</motion.h2>
           </motion.div>
 
           <motion.div
@@ -212,17 +192,17 @@ export default function LandingPage() {
             variants={stagger}
             className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5"
           >
-            {features.map((f) => (
+            {featureKeys.map((f) => (
               <motion.div
-                key={f.title}
+                key={f.titleKey}
                 variants={fadeUp}
                 className="card-premium p-6 sm:p-8 group"
               >
                 <div className={"w-12 h-12 rounded-xl " + f.bg + " flex items-center justify-center mb-5"}>
                   <f.icon className={"w-6 h-6 " + f.color} />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
+                <h3 className="text-lg font-semibold text-foreground mb-2">{t(f.titleKey)}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{t(f.descKey)}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -238,14 +218,14 @@ export default function LandingPage() {
           variants={stagger}
           className="text-center"
         >
-          <motion.p variants={fadeUp} className="text-sm text-muted-foreground font-medium mb-8">Built for music professionals</motion.p>
+          <motion.p variants={fadeUp} className="text-sm text-muted-foreground font-medium mb-8">{t("landing.builtFor")}</motion.p>
           <motion.div variants={fadeUp} className="grid grid-cols-3 max-w-xl mx-auto">
-            {audiences.map((a) => (
+            {audienceKeys.map((a) => (
               <div key={a.key} className="flex flex-col items-center gap-2.5">
                 <div className={"w-14 h-14 rounded-2xl flex items-center justify-center " + a.bg}>
                   <a.icon className={"w-6 h-6 " + a.color} />
                 </div>
-                <span className="text-sm font-medium text-foreground text-center">{a.label}</span>
+                <span className="text-sm font-medium text-foreground text-center">{t(a.labelKey)}</span>
               </div>
             ))}
           </motion.div>
@@ -263,10 +243,10 @@ export default function LandingPage() {
             className="text-center flex flex-col items-center"
           >
             <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Ready to organize your catalog?
+              {t("landing.ctaTitle")}
             </motion.h2>
             <motion.p variants={fadeUp} className="text-muted-foreground mb-8 max-w-md">
-              Join the waitlist and be the first to try Trakalog when we launch.
+              {t("landing.ctaDesc")}
             </motion.p>
             <motion.div variants={fadeUp}>
               <WaitlistForm />
@@ -283,11 +263,11 @@ export default function LandingPage() {
             <span className="text-sm font-semibold gradient-text">TRAKALOG</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-muted-foreground">
-            <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
-            <a href="mailto:contact@trakalog.com" className="hover:text-foreground transition-colors">Contact</a>
+            <Link to="/privacy" className="hover:text-foreground transition-colors">{t("landing.privacyPolicy")}</Link>
+            <Link to="/terms" className="hover:text-foreground transition-colors">{t("landing.termsOfService")}</Link>
+            <a href="mailto:contact@trakalog.com" className="hover:text-foreground transition-colors">{t("landing.contact")}</a>
           </div>
-          <p className="text-xs text-muted-foreground/60">&copy; 2026 Trakalog. All rights reserved.</p>
+          <p className="text-xs text-muted-foreground/60">{t("landing.copyright")}</p>
         </div>
       </footer>
     </div>

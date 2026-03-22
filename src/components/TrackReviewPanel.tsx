@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, Search, Clock, ArrowUpDown, MoreHorizontal,
@@ -13,11 +14,18 @@ import {
 
 type CommentSort = "timecode" | "latest";
 
-const authorTypeBadge: Record<AuthorType, { label: string; className: string }> = {
-  owner: { label: "Owner", className: "bg-brand-orange/15 text-brand-orange" },
-  team_member: { label: "Team", className: "bg-brand-purple/15 text-brand-purple" },
-  recipient: { label: "Recipient", className: "bg-brand-pink/15 text-brand-pink" },
-  guest_recipient: { label: "Guest", className: "bg-brand-pink/15 text-brand-pink" },
+const authorTypeBadgeClass: Record<AuthorType, string> = {
+  owner: "bg-brand-orange/15 text-brand-orange",
+  team_member: "bg-brand-purple/15 text-brand-purple",
+  recipient: "bg-brand-pink/15 text-brand-pink",
+  guest_recipient: "bg-brand-pink/15 text-brand-pink",
+};
+
+const authorTypeBadgeKey: Record<AuthorType, string> = {
+  owner: "trackReview.owner",
+  team_member: "trackReview.team",
+  recipient: "trackReview.recipient",
+  guest_recipient: "trackReview.guest",
 };
 
 interface TrackReviewPanelProps {
@@ -49,6 +57,7 @@ export function TrackReviewPanel({
   filterAuthor,
   filterSharedLink,
 }: TrackReviewPanelProps) {
+  const { t } = useTranslation();
   const { getCommentsForTrack, getSortedComments, editComment, deleteComment, addComment } = useTrackReview();
   const [sort, setSort] = useState<CommentSort>("timecode");
   const [search, setSearch] = useState("");
@@ -96,7 +105,7 @@ export function TrackReviewPanel({
         const isDirectComment = !c.sharedLinkId;
         map.set(key, {
           key,
-          label: isDirectComment ? "Direct comments" : ("Shared Link: " + (c.sharedLinkName || c.sharedLinkId || "Unknown")),
+          label: isDirectComment ? t("trackReview.directComments") : ("Shared Link: " + (c.sharedLinkName || c.sharedLinkId || "Unknown")),
           sublabel: isDirectComment ? undefined : c.sharedLinkName,
           badgeType: isDirectComment ? (c.authorType) : "guest_recipient",
           comments: [c],
@@ -172,14 +181,14 @@ export function TrackReviewPanel({
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2.5">
             <MessageSquare className="w-4.5 h-4.5 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground">Track Review</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("trackReview.title")}</h3>
             <span className="text-2xs text-muted-foreground font-medium">({sorted.length})</span>
           </div>
           <button
             onClick={() => setShowComposer(!showComposer)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand"
           >
-            <MessageSquare className="w-3.5 h-3.5" /> Add Note
+            <MessageSquare className="w-3.5 h-3.5" /> {t("trackReview.addNote")}
           </button>
         </div>
 
@@ -212,7 +221,7 @@ export function TrackReviewPanel({
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search comments or authors..."
+                placeholder={t("trackReview.searchPlaceholder")}
                 className="w-full h-8 pl-9 pr-3 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary/30 transition-all"
               />
             </div>
@@ -221,7 +230,7 @@ export function TrackReviewPanel({
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-2xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border"
             >
               {sort === "timecode" ? <Clock className="w-3 h-3" /> : <ArrowUpDown className="w-3 h-3" />}
-              {sort === "timecode" ? "By time" : "Latest"}
+              {sort === "timecode" ? t("trackReview.byTime") : t("trackReview.latest")}
             </button>
           </div>
         </div>
@@ -231,13 +240,14 @@ export function TrackReviewPanel({
           {commentGroups.length === 0 ? (
             <div className="text-center py-12">
               <MessageSquare className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-sm font-medium text-muted-foreground">No comments yet</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Click the waveform or use the button above to leave a note</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("trackReview.noComments")}</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">{t("trackReview.noCommentsDesc")}</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
               {commentGroups.map((group) => {
-                const badge = authorTypeBadge[group.badgeType];
+                const badgeClass = authorTypeBadgeClass[group.badgeType];
+                const badgeKey = authorTypeBadgeKey[group.badgeType];
                 const isCollapsed = collapsedGroups.has(group.key);
                 const dateStr = new Date(group.latestDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
@@ -250,10 +260,10 @@ export function TrackReviewPanel({
                     >
                       {isCollapsed ? <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
                       <span className="text-sm font-semibold text-foreground">{group.label}</span>
-                      <span className={"inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider " + badge.className}>
-                        {badge.label}
+                      <span className={"inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider " + badgeClass}>
+                        {t(badgeKey)}
                       </span>
-                      <span className="text-2xs text-muted-foreground">{group.comments.length + " comment" + (group.comments.length > 1 ? "s" : "")}</span>
+                      <span className="text-2xs text-muted-foreground">{group.comments.length === 1 ? t("trackReview.comments", { count: group.comments.length }) : t("trackReview.commentsPlural", { count: group.comments.length })}</span>
                       <span className="text-2xs text-muted-foreground/50 ml-auto">{dateStr}</span>
                     </button>
 
@@ -290,11 +300,11 @@ export function TrackReviewPanel({
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2 mb-1">
                                         <span className="text-[13px] font-semibold text-foreground">{comment.authorName}</span>
-                                        <span className={"inline-flex px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider " + authorTypeBadge[comment.authorType].className}>
-                                          {authorTypeBadge[comment.authorType].label}
+                                        <span className={"inline-flex px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider " + authorTypeBadgeClass[comment.authorType]}>
+                                          {t(authorTypeBadgeKey[comment.authorType])}
                                         </span>
                                         {comment.isEdited && (
-                                          <span className="text-[9px] text-muted-foreground/60 italic">Edited</span>
+                                          <span className="text-[9px] text-muted-foreground/60 italic">{t("trackReview.edited")}</span>
                                         )}
                                         <span className="text-[10px] text-muted-foreground/50 ml-auto">
                                           {new Date(comment.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
@@ -310,11 +320,11 @@ export function TrackReviewPanel({
                                             autoFocus
                                           />
                                           <div className="flex gap-2">
-                                            <button onClick={handleSaveEdit} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand">Save</button>
+                                            <button onClick={handleSaveEdit} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand">{t("trackReview.save")}</button>
                                             <button
                                               onClick={() => { setEditingId(null); setEditText(""); }}
                                               className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border text-muted-foreground hover:text-foreground transition-colors"
-                                            >Cancel</button>
+                                            >{t("trackReview.cancel")}</button>
                                           </div>
                                         </div>
                                       ) : (
@@ -337,13 +347,13 @@ export function TrackReviewPanel({
                                               onClick={() => handleEdit(comment)}
                                               className="w-full flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-secondary transition-colors"
                                             >
-                                              <Edit3 className="w-3 h-3" /> Edit
+                                              <Edit3 className="w-3 h-3" /> {t("trackReview.edit")}
                                             </button>
                                             <button
                                               onClick={() => { setDeleteConfirmId(comment.id); setOpenMenuId(null); }}
                                               className="w-full flex items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 transition-colors"
                                             >
-                                              <Trash2 className="w-3 h-3" /> Delete
+                                              <Trash2 className="w-3 h-3" /> {t("trackReview.deleteBtn")}
                                             </button>
                                           </div>
                                         )}
@@ -369,15 +379,15 @@ export function TrackReviewPanel({
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+            <AlertDialogTitle>{t("trackReview.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this comment? This action cannot be undone.
+              {t("trackReview.deleteConfirm")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("trackReview.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              {t("trackReview.deleteBtn")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

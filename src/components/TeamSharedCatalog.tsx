@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useTrack } from "@/contexts/TrackContext";
 import { GENRES, KEYS, MOODS, LANGUAGES, GENDERS, DEFAULT_COVER } from "@/lib/constants";
@@ -34,6 +35,7 @@ interface TeamSharedCatalogProps {
 }
 
 export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamSharedCatalogProps) {
+  const { t } = useTranslation();
   const { tracks: allTracks } = useTrack();
   const navigate = useNavigate();
 
@@ -88,9 +90,9 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{teamName}'s Catalog</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("teamCatalog.catalog", { name: teamName })}</h2>
             <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
-              {sharedTracks.length} tracks in {teamName}'s catalog
+              {t("teamCatalog.trackCount", { count: sharedTracks.length, name: teamName })}
             </p>
           </div>
         </div>
@@ -102,7 +104,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
           <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             type="text"
-            placeholder="Search catalog…"
+            placeholder={t("teamCatalog.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
@@ -131,7 +133,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
-            Filters
+            {t("teamCatalog.filters")}
             {activeFilterCount > 0 && (
               <span className="ml-1 w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold btn-brand" style={{ boxShadow: "none" }}>
                 {activeFilterCount}
@@ -164,7 +166,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
             <FilterSelect label="Status" value={statusFilter} options={statuses} onChange={setStatusFilter} />
             {activeFilterCount > 0 && (
               <button onClick={clearFilters} className="h-9 px-4 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
-                Clear all
+                {t("teamCatalog.clearAll")}
               </button>
             )}
           </div>
@@ -174,7 +176,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
       {/* Active filter tags */}
       {activeFilterCount > 0 && !showFilters && (
         <motion.div variants={item} className="flex flex-wrap gap-1.5 items-center">
-          <span className="text-xs text-muted-foreground mr-1 font-medium">Filters:</span>
+          <span className="text-xs text-muted-foreground mr-1 font-medium">{t("teamCatalog.activeFilters")}</span>
           {typeFilter && <FilterTag label={`Type: ${typeFilter}`} onRemove={() => setTypeFilter(null)} />}
           {genreFilter && <FilterTag label={`Genre: ${genreFilter}`} onRemove={() => setGenreFilter(null)} />}
           {keyFilter && <FilterTag label={`Key: ${keyFilter}`} onRemove={() => setKeyFilter(null)} />}
@@ -196,15 +198,15 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left pl-5 pr-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-8">#</th>
-                    <th className="text-left px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Track</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Type</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Genre</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">BPM</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Mood</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Gender</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
+                    <th className="text-left px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("teamCatalog.track")}</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">{t("teamCatalog.type")}</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("teamCatalog.genre")}</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">{t("teamCatalog.bpm")}</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">{t("teamCatalog.key")}</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("teamCatalog.mood")}</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("teamCatalog.language")}</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("teamCatalog.gender")}</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("teamCatalog.status")}</th>
                     <th className="px-4 py-3 w-10"></th>
                   </tr>
                 </thead>
@@ -213,8 +215,8 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
                     <tr>
                       <td colSpan={11} className="px-5 py-20 text-center text-muted-foreground">
                         <Music className="w-10 h-10 mx-auto mb-4 opacity-15" />
-                        <p className="text-sm font-semibold">No tracks found</p>
-                        <p className="text-xs mt-1.5 text-muted-foreground/70">Try adjusting your search or filters</p>
+                        <p className="text-sm font-semibold">{t("teamCatalog.noTracks")}</p>
+                        <p className="text-xs mt-1.5 text-muted-foreground/70">{t("teamCatalog.adjustFilters")}</p>
                       </td>
                     </tr>
                   ) : (
@@ -291,7 +293,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
               </table>
             </div>
             <div className="flex items-center justify-between px-5 py-3 text-xs text-muted-foreground font-medium" style={{ borderTop: "1px solid transparent", borderImage: "linear-gradient(90deg, hsl(24 100% 55% / 0.1), hsl(330 80% 60% / 0.06), transparent) 1" }}>
-              <span>Showing {filteredTracks.length} of {sharedTracks.length} tracks</span>
+              <span>{t("teamCatalog.showing", { shown: filteredTracks.length, total: sharedTracks.length })}</span>
               <span className="text-2xs text-muted-foreground/50">{teamName}</span>
             </div>
           </div>
@@ -344,7 +346,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
               </div>
             )}
             <div className="flex items-center justify-between mt-4 px-1 text-xs text-muted-foreground font-medium">
-              <span>Showing {filteredTracks.length} of {sharedTracks.length} tracks</span>
+              <span>{t("teamCatalog.showing", { shown: filteredTracks.length, total: sharedTracks.length })}</span>
               <span className="text-2xs text-muted-foreground/50">{teamName}</span>
             </div>
           </div>

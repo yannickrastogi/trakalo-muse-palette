@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -65,6 +66,7 @@ const gradientColors = [
 ];
 
 export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlaylistModalProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<"details" | "tracks">("details");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -157,11 +159,11 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
           <DialogHeader>
-            <DialogTitle className="text-foreground text-lg tracking-tight">Create Playlist</DialogTitle>
+            <DialogTitle className="text-foreground text-lg tracking-tight">{t("createPlaylist.title")}</DialogTitle>
             <DialogDescription className="text-muted-foreground/70 text-xs mt-1">
               {step === "details"
-                ? "Set up your playlist details, cover, genre and mood."
-                : `Add tracks from your catalog. ${selectedTracks.length} selected.`}
+                ? t("createPlaylist.detailsDesc")
+                : t("createPlaylist.tracksDesc", { count: selectedTracks.length })}
             </DialogDescription>
           </DialogHeader>
           {/* Step indicator */}
@@ -177,7 +179,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
               }`}>
                 {step === "tracks" && canProceed ? <Check className="w-3 h-3" /> : "1"}
               </span>
-              Details
+              {t("createPlaylist.details")}
             </button>
             <div className="w-6 h-px bg-border" />
             <button
@@ -192,7 +194,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
               <span className={`w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold ${
                 step === "tracks" ? "btn-brand" : "bg-secondary text-muted-foreground"
               }`}>2</span>
-              Tracks
+              {t("createPlaylist.tracks")}
             </button>
           </div>
         </div>
@@ -214,7 +216,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                   {/* Cover Upload */}
                   <div className="shrink-0">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest block mb-2">
-                      Cover
+                      {t("createPlaylist.cover")}
                     </label>
                     <button
                       type="button"

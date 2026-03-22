@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Link2, Lock, Copy, Check, Music, ListMusic, Download, ShieldOff } from "lucide-react";
 import { useSharedLinks, type SharedLink, type ShareType } from "@/contexts/SharedLinksContext";
@@ -24,13 +25,6 @@ interface ShareModalProps {
   packItems?: string[];
 }
 
-const shareTypeLabels: Record<ShareType, string> = {
-  stems: "Share Stems",
-  track: "Share Track",
-  playlist: "Share Playlist",
-  pack: "Share Trakalog Pack",
-};
-
 const shareTypeItemLabel: Record<ShareType, string> = {
   stems: "stems",
   track: "track",
@@ -44,6 +38,7 @@ export function ShareModal({
   playlistId, playlistName, playlistCover, playlistTracks,
   packItems,
 }: ShareModalProps) {
+  const { t } = useTranslation();
   const { createSharedLink } = useSharedLinks();
 
   const [linkType, setLinkType] = useState<"public" | "secured">("public");
@@ -56,12 +51,19 @@ export function ShareModal({
   const [copied, setCopied] = useState(false);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
 
+  const shareTypeLabels: Record<ShareType, string> = {
+    stems: t("shareModal.shareStems"),
+    track: t("shareModal.shareTrack"),
+    playlist: t("shareModal.sharePlaylist"),
+    pack: t("shareModal.sharePack"),
+  };
+
   const title = shareType === "playlist" ? playlistName || "Playlist" : trackTitle || "Track";
   const subtitle = shareType === "playlist"
-    ? `${playlistTracks?.length || 0} tracks`
+    ? (playlistTracks?.length || 0) + " tracks"
     : shareType === "pack"
-    ? `${packItems?.length || 0} items in pack`
-    : `${trackArtist || ""}`;
+    ? (packItems?.length || 0) + " items in pack"
+    : (trackArtist || "");
 
   const itemCount = shareType === "stems"
     ? stems?.length || 0
@@ -72,18 +74,18 @@ export function ShareModal({
     : playlistTracks?.length || 0;
 
   const defaultLinkName = shareType === "playlist"
-    ? `${playlistName}`
+    ? "" + playlistName
     : shareType === "stems"
-    ? `${trackTitle} — Stems`
+    ? trackTitle + " — Stems"
     : shareType === "pack"
-    ? `${trackTitle} — Trakalog Pack`
-    : `${trackTitle}`;
+    ? trackTitle + " — Trakalog Pack"
+    : "" + trackTitle;
 
   const [creating, setCreating] = useState(false);
 
   const handleCreate = async () => {
     if (linkType === "secured" && !password.trim()) {
-      toast.error("Please set a password for the secured link");
+      toast.error(t("shareModal.passwordRequired"));
       return;
     }
 
@@ -121,9 +123,9 @@ export function ShareModal({
     if (created && created.linkSlug) {
       const url = window.location.origin + "/share/" + created.linkSlug;
       setCreatedLink(url);
-      toast.success("Share link created!");
+      toast.success(t("shareModal.linkCreatedToast"));
     } else {
-      toast.error("Failed to create share link");
+      toast.error(t("shareModal.createFailed"));
     }
   };
 
@@ -184,8 +186,8 @@ export function ShareModal({
                   <div className="w-12 h-12 rounded-2xl icon-brand flex items-center justify-center mx-auto mb-3">
                     <Check className="w-6 h-6 text-primary" />
                   </div>
-                  <h4 className="text-sm font-semibold text-foreground">Link Created!</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Share this link with your recipient</p>
+                  <h4 className="text-sm font-semibold text-foreground">{t("shareModal.linkCreated")}</h4>
+                  <p className="text-xs text-muted-foreground mt-1">{t("shareModal.linkCreatedDesc")}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 px-3 py-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground font-mono truncate">
@@ -193,16 +195,16 @@ export function ShareModal({
                   </div>
                   <button onClick={handleCopy} className="shrink-0 px-3 py-2.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5">
                     {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copied ? "Copied" : "Copy"}
+                    {copied ? t("shareModal.copied") : t("shareModal.copy")}
                   </button>
                 </div>
                 {linkType === "secured" && (
                   <p className="text-xs text-muted-foreground text-center">
-                    Password: <span className="text-foreground font-mono">{password}</span>
+                    {t("shareModal.password")}: <span className="text-foreground font-mono">{password}</span>
                   </p>
                 )}
                 <button onClick={handleClose} className="w-full px-4 py-2.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">
-                  Done
+                  {t("shareModal.done")}
                 </button>
               </div>
             ) : (
@@ -211,34 +213,34 @@ export function ShareModal({
               <div className="flex-1 overflow-y-auto min-h-0 px-6 pt-6 pb-4 space-y-5">
                 {/* Link Type */}
                 <div>
-                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-2">Link Type</label>
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-2">{t("shareModal.linkType")}</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setLinkType("public")}
-                      className={`flex items-center gap-2.5 p-3.5 rounded-xl border transition-all ${
+                      className={"flex items-center gap-2.5 p-3.5 rounded-xl border transition-all " + (
                         linkType === "public"
                           ? "border-primary bg-primary/5"
                           : "border-border bg-card hover:bg-secondary"
-                      }`}
+                      )}
                     >
-                      <Link2 className={`w-4 h-4 ${linkType === "public" ? "text-primary" : "text-muted-foreground"}`} />
+                      <Link2 className={"w-4 h-4 " + (linkType === "public" ? "text-primary" : "text-muted-foreground")} />
                       <div className="text-left">
-                        <p className="text-xs font-semibold text-foreground">Public</p>
-                        <p className="text-[10px] text-muted-foreground">Anyone can access</p>
+                        <p className="text-xs font-semibold text-foreground">{t("shareModal.public")}</p>
+                        <p className="text-[10px] text-muted-foreground">{t("shareModal.publicDesc")}</p>
                       </div>
                     </button>
                     <button
                       onClick={() => setLinkType("secured")}
-                      className={`flex items-center gap-2.5 p-3.5 rounded-xl border transition-all ${
+                      className={"flex items-center gap-2.5 p-3.5 rounded-xl border transition-all " + (
                         linkType === "secured"
                           ? "border-primary bg-primary/5"
                           : "border-border bg-card hover:bg-secondary"
-                      }`}
+                      )}
                     >
-                      <Lock className={`w-4 h-4 ${linkType === "secured" ? "text-primary" : "text-muted-foreground"}`} />
+                      <Lock className={"w-4 h-4 " + (linkType === "secured" ? "text-primary" : "text-muted-foreground")} />
                       <div className="text-left">
-                        <p className="text-xs font-semibold text-foreground">Secured</p>
-                        <p className="text-[10px] text-muted-foreground">Password protected</p>
+                        <p className="text-xs font-semibold text-foreground">{t("shareModal.secured")}</p>
+                        <p className="text-[10px] text-muted-foreground">{t("shareModal.securedDesc")}</p>
                       </div>
                     </button>
                   </div>
@@ -248,12 +250,12 @@ export function ShareModal({
                 <AnimatePresence>
                   {linkType === "secured" && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-                      <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">Password</label>
+                      <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">{t("shareModal.password")}</label>
                       <input
                         type="text"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Set a password"
+                        placeholder={t("shareModal.setPassword")}
                         className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-all"
                       />
                     </motion.div>
@@ -262,7 +264,7 @@ export function ShareModal({
 
                 {/* Link Name */}
                 <div>
-                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">Link Name</label>
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">{t("shareModal.linkName")}</label>
                   <input
                     type="text"
                     value={linkName}
@@ -274,7 +276,7 @@ export function ShareModal({
 
                 {/* Expiration */}
                 <div>
-                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">Expiration Date (Optional)</label>
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">{t("shareModal.expirationDate")}</label>
                   <input
                     type="date"
                     value={expirationDate}
@@ -285,11 +287,11 @@ export function ShareModal({
 
                 {/* Message */}
                 <div>
-                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">Message (Optional)</label>
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">{t("shareModal.message")}</label>
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Add a note for the recipient…"
+                    placeholder={t("shareModal.messagePlaceholder")}
                     rows={3}
                     className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-all resize-none"
                   />
@@ -297,8 +299,8 @@ export function ShareModal({
 
                 {/* Download Permissions */}
                 <div className="space-y-3">
-                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">Download Permission</label>
-                  <div className={`rounded-xl border transition-all ${allowDownload ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/30"} p-3.5`}>
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">{t("shareModal.downloadPermission")}</label>
+                  <div className={"rounded-xl border transition-all " + (allowDownload ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/30") + " p-3.5"}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         {allowDownload ? (
@@ -307,8 +309,8 @@ export function ShareModal({
                           <ShieldOff className="w-4 h-4 text-muted-foreground" />
                         )}
                         <div>
-                          <p className="text-xs font-semibold text-foreground">{allowDownload ? "Download Enabled" : "Download Disabled"}</p>
-                          <p className="text-[10px] text-muted-foreground">{allowDownload ? "Recipient can download files" : "Recipient can only view & play"}</p>
+                          <p className="text-xs font-semibold text-foreground">{allowDownload ? t("shareModal.downloadEnabled") : t("shareModal.downloadDisabled")}</p>
+                          <p className="text-[10px] text-muted-foreground">{allowDownload ? t("shareModal.downloadEnabledDesc") : t("shareModal.downloadDisabledDesc")}</p>
                         </div>
                       </div>
                       <Switch checked={allowDownload} onCheckedChange={setAllowDownload} />
@@ -320,25 +322,25 @@ export function ShareModal({
                           <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-border/50">
                             <button
                               onClick={() => setDownloadQuality("low-res")}
-                              className={`p-2.5 rounded-lg border text-center transition-all ${
+                              className={"p-2.5 rounded-lg border text-center transition-all " + (
                                 downloadQuality === "low-res"
                                   ? "border-primary bg-primary/10"
                                   : "border-border hover:bg-secondary"
-                              }`}
+                              )}
                             >
-                              <p className="text-xs font-semibold text-foreground">Low-Res</p>
-                              <p className="text-[10px] text-muted-foreground">Compressed MP3</p>
+                              <p className="text-xs font-semibold text-foreground">{t("shareModal.lowRes")}</p>
+                              <p className="text-[10px] text-muted-foreground">{t("shareModal.lowResDesc")}</p>
                             </button>
                             <button
                               onClick={() => setDownloadQuality("hi-res")}
-                              className={`p-2.5 rounded-lg border text-center transition-all ${
+                              className={"p-2.5 rounded-lg border text-center transition-all " + (
                                 downloadQuality === "hi-res"
                                   ? "border-primary bg-primary/10"
                                   : "border-border hover:bg-secondary"
-                              }`}
+                              )}
                             >
-                              <p className="text-xs font-semibold text-foreground">Hi-Res</p>
-                              <p className="text-[10px] text-muted-foreground">Original WAV/FLAC</p>
+                              <p className="text-xs font-semibold text-foreground">{t("shareModal.hiRes")}</p>
+                              <p className="text-[10px] text-muted-foreground">{t("shareModal.hiResDesc")}</p>
                             </button>
                           </div>
                         </motion.div>
@@ -349,11 +351,11 @@ export function ShareModal({
 
                 {/* Item count */}
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 border border-border">
-                  <span className="text-xs text-muted-foreground">Sharing</span>
+                  <span className="text-xs text-muted-foreground">{t("shareModal.sharing")}</span>
                   <span className="text-xs font-semibold text-foreground">
                     {shareType === "track"
-                      ? "1 track"
-                      : `${itemCount} ${shareTypeItemLabel[shareType]}`}
+                      ? t("shareModal.oneTrack")
+                      : itemCount + " " + shareTypeItemLabel[shareType]}
                   </span>
                 </div>
               </div>
@@ -361,14 +363,14 @@ export function ShareModal({
               {/* Actions — fixed at bottom */}
               <div className="shrink-0 px-6 py-3 border-t border-border flex items-center justify-between">
                 <button onClick={handleClose} className="px-4 py-2.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">
-                  Cancel
+                  {t("shareModal.cancel")}
                 </button>
                 <button
                   onClick={handleCreate}
                   disabled={(itemCount === 0 && shareType !== "track") || creating}
                   className="px-5 py-2.5 rounded-lg text-xs font-semibold btn-brand disabled:opacity-40 disabled:pointer-events-none"
                 >
-                  {creating ? "Creating…" : "Create Link"}
+                  {creating ? t("shareModal.creating") : t("shareModal.createLink")}
                 </button>
               </div>
               </>

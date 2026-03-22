@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -71,6 +72,7 @@ function FieldSelect({ value, onChange, options, placeholder }: { value: string;
 
 export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) {
   const { getTrack, updateTrack, updateTrackSplits } = useTrack();
+  const { t } = useTranslation();
   const trackData = getTrack(trackId);
 
   const [title, setTitle] = useState("");
@@ -194,7 +196,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
 
   const handleSave = () => {
     if (!title.trim() || !artist.trim()) {
-      toast.error("Title and Artist are required");
+      toast.error(t("editTrack.titleRequired"));
       return;
     }
 
@@ -223,7 +225,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
 
     updateTrack(trackId, updates);
     updateTrackSplits(trackId, splits.filter(s => s.name.trim()));
-    toast.success("Track updated successfully");
+    toast.success(t("editTrack.trackUpdated"));
     onClose();
   };
 
@@ -250,7 +252,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
             <div className="px-6 py-4 border-b border-border shrink-0">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground">Edit Track</h3>
+                  <h3 className="text-sm font-semibold text-foreground">{t("editTrack.title")}</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">{trackData.title} — {trackData.artist}</p>
                 </div>
                 <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
@@ -264,11 +266,11 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
               {/* Title & Artist */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <FieldLabel>Track Title *</FieldLabel>
+                  <FieldLabel>{t("editTrack.trackTitle") + " *"}</FieldLabel>
                   <FieldInput value={title} onChange={setTitle} placeholder="e.g. Velvet Hour" />
                 </div>
                 <div className="space-y-1.5">
-                  <FieldLabel>Artist *</FieldLabel>
+                  <FieldLabel>{t("editTrack.artist") + " *"}</FieldLabel>
                   <FieldInput value={artist} onChange={setArtist} placeholder="e.g. Kira Nomura" />
                 </div>
               </div>
@@ -276,11 +278,11 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
               {/* Featured Artists & Album */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <FieldLabel>Featured Artists</FieldLabel>
-                  <FieldInput value={featuredArtists} onChange={setFeaturedArtists} placeholder="Comma separated" />
+                  <FieldLabel>{t("editTrack.featuredArtists")}</FieldLabel>
+                  <FieldInput value={featuredArtists} onChange={setFeaturedArtists} placeholder={t("editTrack.commaSeparated")} />
                 </div>
                 <div className="space-y-1.5">
-                  <FieldLabel>Album / EP</FieldLabel>
+                  <FieldLabel>{t("editTrack.albumEp")}</FieldLabel>
                   <FieldInput value={album} onChange={setAlbum} placeholder="e.g. Late Bloom EP" />
                 </div>
               </div>
@@ -288,22 +290,22 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
               {/* BPM, Key, Genre */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <FieldLabel>BPM</FieldLabel>
+                  <FieldLabel>{t("editTrack.bpm")}</FieldLabel>
                   <FieldInput value={bpm} onChange={setBpm} placeholder="120" type="number" />
                 </div>
                 <div className="space-y-1.5">
-                  <FieldLabel>Key</FieldLabel>
-                  <FieldSelect value={trackKey} onChange={setTrackKey} options={KEYS} placeholder="Select key" />
+                  <FieldLabel>{t("editTrack.key")}</FieldLabel>
+                  <FieldSelect value={trackKey} onChange={setTrackKey} options={KEYS} placeholder={t("editTrack.selectKey")} />
                 </div>
                 <div className="space-y-1.5">
-                  <FieldLabel>Genre</FieldLabel>
+                  <FieldLabel>{t("editTrack.genre")}</FieldLabel>
                   {genre === "__other__" || (!(GENRES as readonly string[]).includes(genre) && genre !== "") ? (
                     <div className="flex gap-1.5">
                       <input
                         type="text"
                         value={genre === "__other__" ? "" : genre}
                         onChange={(e) => setGenre(e.target.value)}
-                        placeholder="Enter custom genre"
+                        placeholder={t("editTrack.customGenre")}
                         autoFocus
                         className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
                       />
@@ -320,9 +322,9 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                       onChange={(e) => setGenre(e.target.value)}
                       className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none font-medium"
                     >
-                      <option value="">Select genre</option>
+                      <option value="">{t("editTrack.selectGenre")}</option>
                       {GENRES.map((o) => <option key={o} value={o}>{o}</option>)}
-                      <option value="__other__">Other…</option>
+                      <option value="__other__">{t("editTrack.other")}</option>
                     </select>
                   )}
                 </div>
@@ -331,22 +333,22 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
               {/* Type, Gender & Language */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <FieldLabel>Type</FieldLabel>
-                  <FieldSelect value={trackType} onChange={setTrackType} options={TYPES} placeholder="Select type" />
+                  <FieldLabel>{t("editTrack.type")}</FieldLabel>
+                  <FieldSelect value={trackType} onChange={setTrackType} options={TYPES} placeholder={t("editTrack.selectType")} />
                 </div>
                 <div className="space-y-1.5">
-                  <FieldLabel>Gender</FieldLabel>
-                  <FieldSelect value={voice} onChange={setVoice} options={["Male", "Female", "Duet", "N/A"]} placeholder="Select gender" />
+                  <FieldLabel>{t("editTrack.gender")}</FieldLabel>
+                  <FieldSelect value={voice} onChange={setVoice} options={["Male", "Female", "Duet", "N/A"]} placeholder={t("editTrack.selectGender")} />
                 </div>
                 <div className="space-y-1.5">
-                  <FieldLabel>Language</FieldLabel>
-                  <FieldSelect value={language} onChange={setLanguage} options={LANGUAGES} placeholder="Select language" />
+                  <FieldLabel>{t("editTrack.language")}</FieldLabel>
+                  <FieldSelect value={language} onChange={setLanguage} options={LANGUAGES} placeholder={t("editTrack.selectLanguage")} />
                 </div>
               </div>
 
               {/* Mood Tags */}
               <div className="space-y-1.5">
-                <FieldLabel>Mood</FieldLabel>
+                <FieldLabel>{t("editTrack.mood")}</FieldLabel>
                 <div className="flex flex-wrap gap-1.5">
                   {MOODS.map((m) => (
                     <button
@@ -367,15 +369,15 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
               {/* ISRC, UPC, Release Date */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <FieldLabel>ISRC</FieldLabel>
+                  <FieldLabel>{t("editTrack.isrc")}</FieldLabel>
                   <FieldInput value={isrc} onChange={setIsrc} placeholder="e.g. USRC12600001" />
                 </div>
                 <div className="space-y-1.5">
-                  <FieldLabel>UPC</FieldLabel>
+                  <FieldLabel>{t("editTrack.upc")}</FieldLabel>
                   <FieldInput value={upc} onChange={setUpc} placeholder="e.g. 0850123456789" />
                 </div>
                 <div className="space-y-1.5">
-                  <FieldLabel>Release Date</FieldLabel>
+                  <FieldLabel>{t("editTrack.releaseDate")}</FieldLabel>
                   <input
                     type="date"
                     value={releaseDate}
@@ -388,16 +390,16 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
               {/* Label, Publisher, Copyright */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <FieldLabel>Label</FieldLabel>
+                  <FieldLabel>{t("editTrack.label")}</FieldLabel>
                   <FieldInput value={label} onChange={setLabel} placeholder="e.g. Nightfall Records" />
                 </div>
                 <div className="space-y-1.5">
-                  <FieldLabel>Publisher</FieldLabel>
+                  <FieldLabel>{t("editTrack.publisher")}</FieldLabel>
                   <FieldInput value={publisher} onChange={setPublisher} placeholder="e.g. Nomura Publishing" />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <FieldLabel>Copyright</FieldLabel>
+                <FieldLabel>{t("editTrack.copyright")}</FieldLabel>
                 <FieldInput value={copyright} onChange={setCopyright} placeholder="e.g. © 2026 Nightfall Records" />
               </div>
 
@@ -415,12 +417,12 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                     }`}
                   />
                 </button>
-                <span className="text-xs font-medium text-foreground">Explicit Content</span>
+                <span className="text-xs font-medium text-foreground">{t("editTrack.explicit")}</span>
               </div>
 
               {/* Notes */}
               <div className="space-y-1.5">
-                <FieldLabel>Notes</FieldLabel>
+                <FieldLabel>{t("editTrack.notes")}</FieldLabel>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
@@ -459,27 +461,27 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         <div className="space-y-1">
-                          <label className="text-2xs text-muted-foreground font-medium">Name</label>
+                          <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.name")}</label>
                           <input value={split.name} onChange={(e) => updateSplit(split.id, "name", e.target.value)} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-2xs text-muted-foreground font-medium">Role</label>
+                          <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.role")}</label>
                           <input value={split.role} onChange={(e) => updateSplit(split.id, "role", e.target.value)} placeholder="e.g. Producer" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-2xs text-muted-foreground font-medium">Split %</label>
+                          <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.share")}</label>
                           <input type="number" min={0} max={100} step={0.01} value={split.share} onChange={(e) => updateSplit(split.id, "share", parseFloat(e.target.value) || 0)} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-2xs text-muted-foreground font-medium">PRO</label>
+                          <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.pro")}</label>
                           <input value={split.pro} onChange={(e) => updateSplit(split.id, "pro", e.target.value)} placeholder="e.g. ASCAP" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-2xs text-muted-foreground font-medium">IPI</label>
+                          <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.ipi")}</label>
                           <input value={split.ipi} onChange={(e) => updateSplit(split.id, "ipi", e.target.value)} placeholder="IPI number" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-2xs text-muted-foreground font-medium">Publisher</label>
+                          <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.publisher")}</label>
                           <input value={split.publisher} onChange={(e) => updateSplit(split.id, "publisher", e.target.value)} placeholder="Publisher name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
                         </div>
                       </div>
@@ -490,7 +492,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                   onClick={addSplit}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-border hover:border-brand-orange/30 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-all w-full justify-center"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Add Contributor
+                  <Plus className="w-3.5 h-3.5" /> {t("editTrack.addCollaborator")}
                 </button>
               </div>
 
@@ -566,7 +568,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 onClick={handleSave}
                 className="px-5 py-2.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-2"
               >
-                <Save className="w-3.5 h-3.5" /> Save Changes
+                <Save className="w-3.5 h-3.5" /> {t("editTrack.saveChanges")}
               </button>
             </div>
           </motion.div>

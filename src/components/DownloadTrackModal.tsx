@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import JSZip from "jszip";
 import { jsPDF } from "jspdf";
 import { ID3Writer } from "browser-id3-writer";
@@ -30,18 +31,19 @@ interface DownloadTrackModalProps {
 
 type Step = "choose" | "quality" | "pack";
 
-const packItems = [
-  { id: "track", label: "Track", description: "Original audio file", icon: Music },
-  { id: "cover", label: "Cover Art", description: "3000×3000 JPEG artwork", icon: Image },
-  { id: "lyrics", label: "Lyrics", description: "Branded PDF document", icon: FileText },
-  { id: "stems", label: "Stems", description: "All stem files (original format)", icon: Layers },
-  { id: "metadata", label: "Metadata", description: "Branded PDF with all track info", icon: PieChart },
-  { id: "paperwork", label: "Paperwork", description: "All documents with watermark", icon: Paperclip },
+const packItemDefs = [
+  { id: "track", labelKey: "downloadTrack.track", description: "Original audio file", icon: Music },
+  { id: "cover", labelKey: "downloadTrack.coverArt", description: "3000×3000 JPEG artwork", icon: Image },
+  { id: "lyrics", labelKey: "downloadTrack.lyrics", description: "Branded PDF document", icon: FileText },
+  { id: "stems", labelKey: "downloadTrack.stems", description: "All stem files (original format)", icon: Layers },
+  { id: "metadata", labelKey: "downloadTrack.metadata", description: "Branded PDF with all track info", icon: PieChart },
+  { id: "paperwork", labelKey: "downloadTrack.paperwork", description: "All documents with watermark", icon: Paperclip },
 ] as const;
 
-type PackItemId = typeof packItems[number]["id"];
+type PackItemId = typeof packItemDefs[number]["id"];
 
 export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadTrackModalProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>("choose");
   const [quality, setQuality] = useState<"hires" | "lowres">("hires");
   const [selectedItems, setSelectedItems] = useState<Set<PackItemId>>(new Set(["track", "cover", "lyrics", "stems", "metadata", "paperwork"]));
@@ -194,14 +196,14 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
                 <ArrowLeft className="w-4 h-4" />
               </button>
             )}
-            {step === "choose" && "Download"}
-            {step === "quality" && "Download Track"}
-            {step === "pack" && "Trakalog Pack"}
+            {step === "choose" && t("downloadTrack.title")}
+            {step === "quality" && t("downloadTrack.downloadTrack")}
+            {step === "pack" && t("downloadTrack.trakalogPack")}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
             {step === "choose" && `${trackData.title} — ${trackData.artist}`}
-            {step === "quality" && "Choose audio quality"}
-            {step === "pack" && "Select what to include in your pack"}
+            {step === "quality" && t("downloadTrack.chooseQuality")}
+            {step === "pack" && t("downloadTrack.selectPackItems")}
           </DialogDescription>
         </DialogHeader>
 
@@ -223,8 +225,8 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
                   <Download className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Download Track</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Hi-res or low-res audio file</p>
+                  <p className="text-sm font-semibold text-foreground">{t("downloadTrack.downloadTrack")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("downloadTrack.trackDesc")}</p>
                 </div>
               </button>
 
@@ -238,8 +240,8 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
                   <Package className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Trakalog Pack</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">ZIP with branded files, stems & documents</p>
+                  <p className="text-sm font-semibold text-foreground">{t("downloadTrack.trakalogPack")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("downloadTrack.packDesc")}</p>
                 </div>
               </button>
             </motion.div>
@@ -268,8 +270,8 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
                   {quality === "hires" && <div className="w-2 h-2 rounded-full bg-primary" />}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Hi-Res</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Original quality WAV / FLAC</p>
+                  <p className="text-sm font-semibold text-foreground">{t("downloadTrack.hiRes")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("downloadTrack.hiResDesc")}</p>
                 </div>
               </button>
 
@@ -287,8 +289,8 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
                   {quality === "lowres" && <div className="w-2 h-2 rounded-full bg-primary" />}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Low-Res</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Compressed MP3 (320kbps)</p>
+                  <p className="text-sm font-semibold text-foreground">{t("downloadTrack.lowRes")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("downloadTrack.lowResDesc")}</p>
                 </div>
               </button>
 
@@ -298,7 +300,7 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
                 style={{ background: "linear-gradient(135deg, hsl(24, 100%, 55%), hsl(330, 80%, 60%), hsl(270, 70%, 55%))" }}
               >
                 <Download className="w-4 h-4 inline mr-2" />
-                Download {quality === "hires" ? "Hi-Res" : "Low-Res"}
+                {quality === "hires" ? t("downloadTrack.downloadHiRes") : t("downloadTrack.downloadLowRes")}
               </button>
             </motion.div>
           )}
@@ -312,7 +314,7 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
               transition={{ duration: 0.15 }}
               className="space-y-1 pt-2"
             >
-              {packItems.map(item => {
+              {packItemDefs.map(item => {
                 const checked = selectedItems.has(item.id);
                 const ItemIcon = item.icon;
                 return (
@@ -334,7 +336,7 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
                       <ItemIcon className="w-3.5 h-3.5 text-muted-foreground" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground">{item.label}</p>
+                      <p className="text-sm font-medium text-foreground">{t(item.labelKey)}</p>
                       <p className="text-[11px] text-muted-foreground">{item.description}</p>
                     </div>
                   </button>
@@ -350,12 +352,12 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
                 {isGenerating ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating Pack…
+                    {t("downloadTrack.generatingPack")}
                   </>
                 ) : (
                   <>
                     <Package className="w-4 h-4" />
-                    Download Trakalog Pack ({selectedItems.size} items)
+                    {t("downloadTrack.downloadPack", { count: selectedItems.size })}
                   </>
                 )}
               </button>
