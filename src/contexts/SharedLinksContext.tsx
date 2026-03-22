@@ -76,9 +76,11 @@ const SharedLinksContext = createContext<SharedLinksContextValue | null>(null);
 
 function generateSlug(): string {
   var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  var bytes = new Uint8Array(12);
+  crypto.getRandomValues(bytes);
   var slug = "";
   for (var i = 0; i < 12; i++) {
-    slug += chars.charAt(Math.floor(Math.random() * chars.length));
+    slug += chars.charAt(bytes[i] % chars.length);
   }
   return slug;
 }

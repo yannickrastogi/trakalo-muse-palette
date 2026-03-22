@@ -53,6 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(initSession);
       setLoading(false);
       initializedRef.current = true;
+    }).catch(function (err) {
+      console.error("Error getting session:", err);
+      setLoading(false);
+      initializedRef.current = true;
     });
 
     return () => subscription.unsubscribe();

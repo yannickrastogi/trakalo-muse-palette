@@ -247,7 +247,7 @@ export default function TrackDetail() {
           // Force re-render
           setForceUpdate((n) => n + 1);
         }
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [id, trackData]);
 
   // Dummy state to force re-render when dbTrackRef is set
@@ -1115,7 +1115,7 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
         if (res.data?.lyrics_segments) {
           setDbSegments(res.data.lyrics_segments as { start: number; end: number; text: string }[]);
         }
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [trackUuid, contextTrack]);
 
   if (!trackData) return null;
@@ -1560,7 +1560,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         }
         if (res.data) setSubmissions(res.data as StudioSubmission[]);
         setLoadingSubs(false);
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [trackUuid]);
 
   var fetchSignatures = useCallback(function () {
@@ -1581,7 +1581,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
           }
         });
         setSignatureStatuses(Object.values(best));
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [trackUuid]);
 
   useEffect(function () {
@@ -1639,7 +1639,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
       .eq("id", sub.id)
       .then(function () {
         fetchSubmissions();
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [splits, trackId, updateTrackSplits, fetchSubmissions]);
 
   var handleAcceptAll = useCallback(function () {
@@ -1667,7 +1667,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
       .in("id", ids)
       .then(function () {
         fetchSubmissions();
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [splits, pendingSubs, trackId, updateTrackSplits, fetchSubmissions]);
 
   var handleRejectSubmission = useCallback(function (subId: string) {
@@ -1677,7 +1677,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
       .eq("id", subId)
       .then(function () {
         fetchSubmissions();
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [fetchSubmissions]);
 
   var allSplitsHaveEmail = splits.length > 0 && splits.every(function (s) { return s.email && s.email.indexOf("@") > 0; });
@@ -1722,7 +1722,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         var sentCount = (res.data && res.data.sent) || splitsPayload.length;
         toast.success(t("signature.signaturesSent", { count: sentCount }));
         fetchSignatures();
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [trackUuid, splits, totalShares, allSplitsHaveEmail, t, fetchSignatures]);
 
   var handleSendExecutedCopies = useCallback(function () {
@@ -1768,7 +1768,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         var sentCount = (res.data && res.data.sent) || 0;
         toast.success(t("signature.executedSent", { count: sentCount }));
         setExecutedSent(true);
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [trackUuid, t, signatureStatuses, splits, trackData]);
 
   var pendingSubs = submissions.filter(function (s) { return s.status === "pending"; });
@@ -2184,7 +2184,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
                         });
                         import("@/lib/pdf-generators").then(function (mod) {
                           mod.generateSignedAgreementPdf(trackData?.title || "", trackData?.artist || "", entries);
-                        });
+                        }).catch(function (err) { console.error("Error:", err); });
                       }}
                       disabled={!allSigned}
                       className="flex items-center gap-1.5 text-xs text-emerald-400 hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
@@ -2532,7 +2532,7 @@ function EngagementTab({ trackId, onSeek }: { trackId: number; onSeek?: (seconds
       .limit(50)
       .then(function(res) {
         if (res.data) setLinkEvents(res.data);
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [trackUuid]);
 
   var linkPlays = linkEvents.filter(function(e) { return e.event_type === "play"; }).length;

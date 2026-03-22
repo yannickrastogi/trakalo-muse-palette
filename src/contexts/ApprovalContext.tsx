@@ -294,7 +294,7 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
             // Update local id with Supabase id
             setSends(prev => prev.map(s => s.id === localId ? { ...s, id: data.id } : s));
           }
-        });
+        }).catch(function (err) { console.error("Error:", err); });
     }
 
     if (requiresApproval) {
@@ -347,7 +347,7 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
       .eq("id", sendId)
       .then(({ error }) => {
         if (error) console.error("Error approving:", error);
-      });
+      }).catch(function (err) { console.error("Error:", err); });
 
     // Update changes jsonb with approval info
     supabase
@@ -370,9 +370,9 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
             .eq("id", sendId)
             .then(({ error }) => {
               if (error) console.error("Error updating approval changes:", error);
-            });
+            }).catch(function (err) { console.error("Error:", err); });
         }
-      });
+      }).catch(function (err) { console.error("Error:", err); });
 
     setAuditTrail(prev => [...prev,
       { id: "ae-" + (++nextLocalId), sendId, eventType: "manually_approved", actorName: approverName, note, createdAt: now },
@@ -423,8 +423,8 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
           .eq("id", sendId)
           .then(({ error }) => {
             if (error) console.error("Error rejecting:", error);
-          });
-      });
+          }).catch(function (err) { console.error("Error:", err); });
+      }).catch(function (err) { console.error("Error:", err); });
 
     setAuditTrail(prev => [...prev,
       { id: "ae-" + (++nextLocalId), sendId, eventType: "rejected", actorName: rejectorName, note: reason, createdAt: now },

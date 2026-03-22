@@ -116,7 +116,7 @@ export default function PlaylistDetail() {
         workspace_id: row.workspace_id,
       } as PlaylistItem;
       setForceUpdate(function(n) { return n + 1; });
-    });
+    }).catch(function (err) { console.error("Error:", err); });
   }, [id]);
 
   const playlist = playlistData || dbPlaylistRef.current;
@@ -148,8 +148,8 @@ export default function PlaylistDetail() {
         setDbTracks(ordered.map(function(row: any, idx: number) {
           return mapRowToTrack(row as Record<string, unknown>, idx);
         }) as Track[]);
-      });
-    });
+      }).catch(function (err) { console.error("Error:", err); });
+    }).catch(function (err) { console.error("Error:", err); });
   }, [id]);
 
   var displayTracks = tracks.length > 0 ? tracks : dbTracks;

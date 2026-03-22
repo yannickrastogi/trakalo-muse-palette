@@ -454,7 +454,7 @@ export default function SharedLinkPage() {
       }
       audio.src = url;
       audio.play().catch(function(err) { console.error("Play error:", err); });
-    });
+    }).catch(function (err) { console.error("Error:", err); });
   }, [fetchAudioUrl]);
 
   // Keep ref in sync so onEnded can call it without stale closure
@@ -585,7 +585,7 @@ export default function SharedLinkPage() {
       .order("timestamp_sec", { ascending: true })
       .then(function(res) {
         if (res.data) setComments(res.data as TrackComment[]);
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, []);
 
   // Fetch comments when gate is completed and track data is available
@@ -632,7 +632,7 @@ export default function SharedLinkPage() {
           setCommentComposerOpen(false);
           setCommentText("");
         }
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [trackData, playingTrackId, linkData, commentText, commentTimestamp, submittingComment, visitorName]);
 
   var progress = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -1053,8 +1053,8 @@ export default function SharedLinkPage() {
                             a.click();
                             document.body.removeChild(a);
                             URL.revokeObjectURL(blobUrl);
-                          });
-                        });
+                          }).catch(function (err) { console.error("Error:", err); });
+                        }).catch(function (err) { console.error("Error:", err); });
                       }}
                       className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs border border-border bg-card hover:bg-secondary transition-colors"
                     >
@@ -1264,8 +1264,8 @@ export default function SharedLinkPage() {
                         a.click();
                         document.body.removeChild(a);
                         URL.revokeObjectURL(blobUrl);
-                      });
-                    });
+                      }).catch(function (err) { console.error("Error:", err); });
+                    }).catch(function (err) { console.error("Error:", err); });
                   }}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold btn-brand"
                 >

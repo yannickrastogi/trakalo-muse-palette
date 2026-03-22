@@ -229,7 +229,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
           const trackComments = updated.filter((c) => c.trackId === data.trackId);
           persistCommentsForTrack(uuid, trackComments);
         }
-      });
+      }).catch(function (err) { console.error("Error:", err); });
 
       return updated;
     });
@@ -246,7 +246,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
         content: data.commentText,
       }).then(({ error: insertErr }) => {
         if (insertErr) console.error("Error inserting to track_comments:", insertErr);
-      });
+      }).catch(function (err) { console.error("Error:", err); });
     }
 
     // Generate notification for non-owner comments
@@ -280,7 +280,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
           if (uuid) {
             persistCommentsForTrack(uuid, updated.filter((c) => c.trackId === target.trackId));
           }
-        });
+        }).catch(function (err) { console.error("Error:", err); });
       }
 
       return updated;
@@ -299,7 +299,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
           if (uuid) {
             persistCommentsForTrack(uuid, updated.filter((c) => c.trackId === target.trackId));
           }
-        });
+        }).catch(function (err) { console.error("Error:", err); });
       }
 
       return updated;
@@ -309,7 +309,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
     supabase.from("track_comments").delete().eq("id", commentId)
       .then(({ error: delErr }) => {
         if (delErr) console.error("Error deleting from track_comments:", delErr);
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [getTrackUuid, persistCommentsForTrack]);
 
   const getFilteredComments = useCallback(

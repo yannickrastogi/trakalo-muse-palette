@@ -97,7 +97,20 @@ export default function SignAgreement() {
           .order("split_share", { ascending: false });
 
         if (splitsData) {
-          setAllSplits(splitsData as AllSplit[]);
+          // Mask IPI/PRO/publisher of other collaborators — only show the current signer's own data
+          var masked = (splitsData as AllSplit[]).map(function (s) {
+            if (s.collaborator_email === req.collaborator_email) return s;
+            return {
+              collaborator_name: s.collaborator_name,
+              role: s.role,
+              split_share: s.split_share,
+              pro: "",
+              ipi: "",
+              publisher: "",
+              collaborator_email: "",
+            };
+          });
+          setAllSplits(masked);
         }
       } catch (e) {
         setError(t("signature.invalidToken"));

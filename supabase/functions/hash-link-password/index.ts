@@ -1,9 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -21,9 +17,9 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const corsRes = handleCors(req);
+  if (corsRes) return corsRes;
+  const corsHeaders = getCorsHeaders(req);
   try {
     const { password } = await req.json();
     if (!password || typeof password !== "string") {

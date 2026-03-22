@@ -1,15 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const corsRes = handleCors(req);
+  if (corsRes) return corsRes;
+  const corsHeaders = getCorsHeaders(req);
 
   try {
     const { workspace_id, email, first_name, last_name, role, company } = await req.json();
@@ -24,6 +20,20 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Validate that workspace_id is a real workspace
+    const { data: ws, error: wsError } = await supabase
+      .from("workspaces")
+      .select("id")
+      .eq("id", workspace_id)
+      .single();
+
+    if (wsError || !ws) {
+      return new Response(JSON.stringify({ error: "Invalid workspace" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Check if contact with this email already exists in this workspace
     const { data: existing } = await supabase

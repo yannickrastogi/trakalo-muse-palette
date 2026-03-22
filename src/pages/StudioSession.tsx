@@ -80,8 +80,8 @@ export default function StudioSession() {
               setExistingSubmissions(subRes.data);
             }
             setLoading(false);
-          });
-      });
+          }).catch(function (err) { console.error("Error:", err); });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [token]);
 
   function toggleRole(value: string) {
@@ -146,7 +146,7 @@ export default function StudioSession() {
           },
         });
         setMode("success");
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }
 
   var stepLabels = useMemo(function () {

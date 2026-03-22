@@ -259,7 +259,7 @@ export default function SharedStemAccess() {
       .order("timestamp_sec", { ascending: true })
       .then(function(res) {
         if (res.data) setComments(res.data as CommentRow[]);
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   }, [formCompleted, link, trackData]);
 
   var handlePasswordSubmit = async function(e: React.FormEvent) {
@@ -863,7 +863,7 @@ function AutonomousReviewPanel({
           setComposerOpen(false);
           setCommentText("");
         }
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   };
 
   var handleEdit = function(commentId: string, newText: string) {
@@ -879,7 +879,7 @@ function AutonomousReviewPanel({
           });
         });
         setEditingId(null);
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   };
 
   var handleDelete = function() {
@@ -892,7 +892,7 @@ function AutonomousReviewPanel({
       .then(function() {
         setComments(function(prev) { return prev.filter(function(c) { return c.id !== id; }); });
         setDeleteConfirmId(null);
-      });
+      }).catch(function (err) { console.error("Error:", err); });
   };
 
   return (
