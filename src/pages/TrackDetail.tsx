@@ -17,6 +17,7 @@ import { TrackReviewPanel } from "@/components/TrackReviewPanel";
 import { TimecodedCommentComposer } from "@/components/TimecodedCommentComposer";
 import { ShareModal } from "@/components/ShareModal";
 import { ShareWithTeamModal } from "@/components/ShareWithTeamModal";
+import { StudioQRModal } from "@/components/StudioQRModal";
 import { usePitches } from "@/contexts/PitchContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -68,6 +69,7 @@ import {
   ChevronUp,
   MessageSquare,
   X,
+  QrCode,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -200,6 +202,7 @@ export default function TrackDetail() {
   const [sharePackModalOpen, setSharePackModalOpen] = useState(false);
   const [editTrackModalOpen, setEditTrackModalOpen] = useState(shouldAutoEdit);
   const [shareWithTeamOpen, setShareWithTeamOpen] = useState(false);
+  const [studioQrOpen, setStudioQrOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [shareExpanded, setShareExpanded] = useState(false);
@@ -564,6 +567,9 @@ export default function TrackDetail() {
                               }}>
                                 <Activity className="w-4 h-4 mr-2" /> Re-analyze Audio
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setStudioQrOpen(true)}>
+                                <QrCode className="w-4 h-4 mr-2" /> Studio QR
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} className="text-destructive focus:text-destructive">
                                 <Trash2 className="w-4 h-4 mr-2" /> Delete
@@ -833,6 +839,13 @@ export default function TrackDetail() {
           trackTitle={track.title}
         />
       )}
+      <StudioQRModal
+        open={studioQrOpen}
+        onClose={() => setStudioQrOpen(false)}
+        trackId={track.uuid}
+        trackTitle={track.title}
+        trackArtist={track.artist}
+      />
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
