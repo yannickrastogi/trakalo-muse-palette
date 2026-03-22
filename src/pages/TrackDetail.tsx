@@ -71,6 +71,8 @@ import {
   MessageSquare,
   X,
   QrCode,
+  FileSignature,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -1492,6 +1494,16 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
 }
 
 
+interface SignatureStatus {
+  id: string;
+  collaborator_name: string;
+  collaborator_email: string;
+  status: string;
+  signed_at: string | null;
+  signature_data: string | null;
+  split_share: number;
+}
+
 interface StudioSubmission {
   id: string;
   full_name: string;
@@ -1520,6 +1532,11 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   const [submissions, setSubmissions] = useState<StudioSubmission[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
 
+  // Signature requests
+  const [signatureStatuses, setSignatureStatuses] = useState<SignatureStatus[]>([]);
+  const [sendingSignatures, setSendingSignatures] = useState(false);
+  const [viewSignature, setViewSignature] = useState<string | null>(null);
+
   const fetchSubmissions = useCallback(function () {
     if (!trackUuid) return;
     setLoadingSubs(true);
@@ -1539,9 +1556,21 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
       });
   }, [trackUuid]);
 
+  var fetchSignatures = useCallback(function () {
+    if (!trackUuid) return;
+    supabase
+      .from("signature_requests")
+      .select("id, collaborator_name, collaborator_email, status, signed_at, signature_data, split_share")
+      .eq("track_id", trackUuid)
+      .then(function (res) {
+        if (res.data) setSignatureStatuses(res.data as SignatureStatus[]);
+      });
+  }, [trackUuid]);
+
   useEffect(function () {
     fetchSubmissions();
-  }, [fetchSubmissions]);
+    fetchSignatures();
+  }, [fetchSubmissions, fetchSignatures]);
 
   // Auto-balance: distribute 100% equally among all collaborators
   var equalBalance = function (allSplits: TrackSplit[]): TrackSplit[] {
@@ -1615,6 +1644,49 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         fetchSubmissions();
       });
   }, [fetchSubmissions]);
+
+  var handleSendForSignature = useCallback(function () {
+    if (!trackUuid || splits.length < 2 || totalShares !== 100) return;
+    setSendingSignatures(true);
+
+    // Create signature_requests for each collaborator
+    var requests = splits.map(function (s) {
+      return {
+        track_id: trackUuid,
+        collaborator_name: s.name,
+        collaborator_email: "",
+        role: s.role,
+        split_share: s.share,
+        pro: s.pro || "",
+        ipi: s.ipi || "",
+        publisher: s.publisher || "",
+        token: crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").substring(0, 8),
+        status: "pending",
+      };
+    });
+
+    // Try to find emails from studio_submissions
+    var acceptedSubs = submissions.filter(function (s) { return s.status === "accepted"; });
+    requests.forEach(function (req) {
+      var matchingSub = acceptedSubs.find(function (s) { return s.full_name === req.collaborator_name; });
+      if (matchingSub) {
+        req.collaborator_email = matchingSub.email;
+      }
+    });
+
+    supabase
+      .from("signature_requests")
+      .insert(requests)
+      .then(function (res) {
+        setSendingSignatures(false);
+        if (res.error) {
+          toast.error(t("signature.signaturesSentError"));
+          return;
+        }
+        toast.success(t("signature.signaturesSent", { count: requests.length }));
+        fetchSignatures();
+      });
+  }, [trackUuid, splits, totalShares, submissions, t, fetchSignatures]);
 
   var pendingSubs = submissions.filter(function (s) { return s.status === "pending"; });
   var processedSubs = submissions.filter(function (s) { return s.status !== "pending"; });
@@ -1904,28 +1976,101 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
             })}
           </div>
         </div>
+        {/* All signed badge + download */}
+        {signatureStatuses.length > 0 && signatureStatuses.every(function (s) { return s.status === "signed"; }) && (
+          <div className="px-5 py-2.5 bg-emerald-500/8 border-b border-emerald-500/20 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span className="text-xs font-semibold text-emerald-400">{t("signature.allSigned")}</span>
+            </div>
+            <button
+              onClick={function () {
+                var entries = signatureStatuses.map(function (sig) {
+                  var matchingSplit = splits.find(function (s) { return s.name === sig.collaborator_name; });
+                  return {
+                    name: sig.collaborator_name,
+                    role: matchingSplit ? matchingSplit.role : "",
+                    share: sig.split_share,
+                    pro: matchingSplit ? matchingSplit.pro : "",
+                    ipi: matchingSplit ? matchingSplit.ipi : "",
+                    publisher: matchingSplit ? matchingSplit.publisher : "",
+                    signatureData: sig.signature_data,
+                    signedAt: sig.signed_at,
+                  };
+                });
+                import("@/lib/pdf-generators").then(function (mod) {
+                  mod.generateSignedAgreementPdf(trackData?.title || "", trackData?.artist || "", entries);
+                });
+              }}
+              className="flex items-center gap-1.5 text-xs text-emerald-400 hover:underline font-medium"
+            >
+              <Download className="w-3.5 h-3.5" />
+              {t("signature.downloadAgreement")}
+            </button>
+          </div>
+        )}
         <div className="divide-y divide-border">
-          {splits.map((s, i) => {
-            const dotColors = ["bg-primary", "bg-brand-pink", "bg-brand-purple", "bg-brand-orange"];
+          {splits.map(function (s, i) {
+            var dotColors = ["bg-primary", "bg-brand-pink", "bg-brand-purple", "bg-brand-orange"];
+            var sigStatus = signatureStatuses.find(function (sig) { return sig.collaborator_name === s.name; });
             return (
               <div key={s.name + i} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className={"w-2.5 h-2.5 rounded-full " + dotColors[i % dotColors.length]} />
-                  <div>
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className={"w-2.5 h-2.5 rounded-full shrink-0 " + dotColors[i % dotColors.length]} />
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground">{s.name}</p>
                     <p className="text-[11px] text-muted-foreground">{s.role} · {s.pro || "—"} · IPI: {s.ipi || "—"}</p>
+                    {sigStatus && (
+                      sigStatus.status === "signed" ? (
+                        <button
+                          onClick={function () { setViewSignature(sigStatus.signature_data); }}
+                          className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400 mt-1 hover:underline"
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          {t("signature.signedOn", { date: new Date(sigStatus.signed_at || "").toLocaleDateString() })}
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-brand-orange mt-1">
+                          <Clock className="w-3 h-3" />
+                          {t("signature.pendingSignature")}
+                        </span>
+                      )
+                    )}
                   </div>
                 </div>
-                <span className="text-sm font-bold text-foreground">{s.share}%</span>
+                <span className="text-sm font-bold text-foreground shrink-0">{s.share}%</span>
               </div>
             );
           })}
         </div>
-        <div className="px-5 py-3 border-t border-border flex justify-between text-xs">
+        <div className="px-5 py-3 border-t border-border flex items-center justify-between text-xs">
           <span className="text-muted-foreground">Total</span>
-          <span className={"font-bold " + (totalShares === 100 ? "text-emerald-400" : "text-destructive")}>{totalShares}%</span>
+          <div className="flex items-center gap-3">
+            <span className={"font-bold " + (totalShares === 100 ? "text-emerald-400" : "text-destructive")}>{totalShares}%</span>
+            {totalShares === 100 && splits.length >= 2 && signatureStatuses.length === 0 && (
+              <button
+                onClick={handleSendForSignature}
+                disabled={sendingSignatures}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {sendingSignatures ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSignature className="w-3 h-3" />}
+                {sendingSignatures ? t("signature.sendingSignatures") : t("signature.sendForSignature")}
+              </button>
+            )}
+          </div>
         </div>
       </SectionCard>
+
+      {/* Signature preview popover */}
+      {viewSignature && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={function () { setViewSignature(null); }}>
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+          <div className="relative z-10 bg-card border border-border rounded-2xl p-6 max-w-sm" onClick={function (e) { e.stopPropagation(); }}>
+            <img src={viewSignature} alt="Signature" className="w-full rounded-lg bg-white" />
+            <button onClick={function () { setViewSignature(null); }} className="mt-3 w-full px-4 py-2 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">{t("common.close")}</button>
+          </div>
+        </div>
+      )}
 
       {renderStudioSubmissions()}
     </div>

@@ -42,6 +42,7 @@ import TermsOfService from "./pages/TermsOfService";
 import SmartAR from "./pages/SmartAR";
 import RadioPage from "./pages/Radio";
 import StudioSession from "./pages/StudioSession";
+import SignAgreement from "./pages/SignAgreement";
 import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
@@ -106,6 +107,7 @@ const App = () => (
             <Route path="/shared/:linkId" element={<SharedStemAccess />} />
             <Route path="/invite/:token" element={<AcceptInvitation />} />
             <Route path="/studio/:token" element={<StudioSession />} />
+            <Route path="/sign/:token" element={<SignAgreement />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/" element={<HomeRoute />} />
