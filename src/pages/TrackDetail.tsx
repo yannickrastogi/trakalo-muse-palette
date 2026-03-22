@@ -84,6 +84,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { PageShell } from "@/components/PageShell";
 import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
@@ -1680,6 +1681,14 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   }, [fetchSubmissions]);
 
   var allSplitsHaveEmail = splits.length > 0 && splits.every(function (s) { return s.email && s.email.indexOf("@") > 0; });
+  var allSigned = signatureStatuses.length > 0 && signatureStatuses.every(function (s) { return s.status === "signed"; });
+
+  // Detect if splits have changed since signatures were sent (compare shares)
+  var splitsMatchSignatures = allSigned && signatureStatuses.every(function (sig) {
+    var matchingSplit = splits.find(function (s) { return (s.email && s.email === sig.collaborator_email) || s.name === sig.collaborator_name; });
+    return matchingSplit && matchingSplit.share === sig.split_share;
+  });
+  var effectiveExecutedSent = executedSent && splitsMatchSignatures;
 
   var handleSendForSignature = useCallback(function () {
     if (!trackUuid || splits.length < 2 || totalShares !== 100) return;
@@ -2050,9 +2059,9 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         action={
           <div className="flex items-center gap-2">
             <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:underline">
-              <Download className="w-3.5 h-3.5" /> Download PDF
+              <Download className="w-3.5 h-3.5" /> {t("signature.downloadUnsignedPdf")}
             </button>
-            <button onClick={startEditing} className="text-xs text-primary hover:underline">Edit Splits</button>
+            <button onClick={startEditing} className="text-xs text-primary hover:underline">{t("signature.editSplits")}</button>
           </div>
         }
       >
@@ -2065,49 +2074,11 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
             })}
           </div>
         </div>
-        {/* All signed badge + download */}
-        {signatureStatuses.length > 0 && signatureStatuses.every(function (s) { return s.status === "signed"; }) && (
-          <div className="px-5 py-2.5 bg-emerald-500/8 border-b border-emerald-500/20 flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-semibold text-emerald-400">{t("signature.allSigned")}</span>
-              </div>
-              <button
-                onClick={function () {
-                  var entries = signatureStatuses.map(function (sig) {
-                    var matchingSplit = splits.find(function (s) { return (s.email && s.email === sig.collaborator_email) || s.name === sig.collaborator_name; });
-                    return {
-                      name: sig.collaborator_name,
-                      role: matchingSplit ? matchingSplit.role : "",
-                      share: sig.split_share,
-                      pro: matchingSplit ? matchingSplit.pro : "",
-                      ipi: matchingSplit ? matchingSplit.ipi : "",
-                      publisher: matchingSplit ? matchingSplit.publisher : "",
-                      signatureData: sig.signature_data,
-                      signedAt: sig.signed_at,
-                    };
-                  });
-                  import("@/lib/pdf-generators").then(function (mod) {
-                    mod.generateSignedAgreementPdf(trackData?.title || "", trackData?.artist || "", entries);
-                  });
-                }}
-                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:underline font-medium"
-              >
-                <Download className="w-3.5 h-3.5" />
-                {t("signature.downloadAgreement")}
-              </button>
-            </div>
-            <div className="flex items-center justify-end">
-              <button
-                onClick={handleSendExecutedCopies}
-                disabled={sendingExecuted || executedSent}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand disabled:opacity-50"
-              >
-                {sendingExecuted ? <Loader2 className="w-3 h-3 animate-spin" /> : executedSent ? <CheckCircle2 className="w-3 h-3" /> : <Send className="w-3 h-3" />}
-                {sendingExecuted ? t("signature.sendingExecuted") : executedSent ? t("signature.executedSentLabel") : t("signature.sendExecutedCopies")}
-              </button>
-            </div>
+        {/* All signed badge */}
+        {allSigned && (
+          <div className="px-5 py-2.5 bg-emerald-500/8 border-b border-emerald-500/20 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-semibold text-emerald-400">{t("signature.allSigned")}</span>
           </div>
         )}
         <div className="divide-y divide-border">
@@ -2187,20 +2158,95 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         )}
         <div className="px-5 py-3 border-t border-border flex items-center justify-between text-xs">
           <span className="text-muted-foreground">Total</span>
-          <div className="flex items-center gap-3">
-            <span className={"font-bold " + (totalShares === 100 ? "text-emerald-400" : "text-destructive")}>{totalShares}%</span>
-            {totalShares === 100 && splits.length >= 2 && (
-              <button
-                onClick={handleSendForSignature}
-                disabled={sendingSignatures || !allSplitsHaveEmail}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5 disabled:opacity-50"
-              >
-                {sendingSignatures ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSignature className="w-3 h-3" />}
-                {sendingSignatures ? t("signature.sendingSignatures") : t("signature.sendForSignature")}
-              </button>
-            )}
-          </div>
+          <span className={"font-bold " + (totalShares === 100 ? "text-emerald-400" : "text-destructive")}>{totalShares}%</span>
         </div>
+        {totalShares === 100 && splits.length >= 2 && (
+          <TooltipProvider delayDuration={200}>
+            <div className="px-5 py-3 border-t border-border flex flex-wrap items-center gap-2">
+              {/* Download Signed Splits PDF */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <button
+                      onClick={function () {
+                        var entries = signatureStatuses.map(function (sig) {
+                          var matchingSplit = splits.find(function (s) { return (s.email && s.email === sig.collaborator_email) || s.name === sig.collaborator_name; });
+                          return {
+                            name: sig.collaborator_name,
+                            role: matchingSplit ? matchingSplit.role : "",
+                            share: sig.split_share,
+                            pro: matchingSplit ? matchingSplit.pro : "",
+                            ipi: matchingSplit ? matchingSplit.ipi : "",
+                            publisher: matchingSplit ? matchingSplit.publisher : "",
+                            signatureData: sig.signature_data,
+                            signedAt: sig.signed_at,
+                          };
+                        });
+                        import("@/lib/pdf-generators").then(function (mod) {
+                          mod.generateSignedAgreementPdf(trackData?.title || "", trackData?.artist || "", entries);
+                        });
+                      }}
+                      disabled={!allSigned}
+                      className="flex items-center gap-1.5 text-xs text-emerald-400 hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {t("signature.downloadSignedPdf")}
+                    </button>
+                  </span>
+                </TooltipTrigger>
+                {!allSigned && (
+                  <TooltipContent side="top">
+                    <p className="text-xs">{t("signature.allMustSignToDownload")}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+
+              <span className="text-border">|</span>
+
+              {/* Send for Signature */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <button
+                      onClick={handleSendForSignature}
+                      disabled={sendingSignatures || !allSplitsHaveEmail}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {sendingSignatures ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSignature className="w-3 h-3" />}
+                      {sendingSignatures ? t("signature.sendingSignatures") : t("signature.sendForSignature")}
+                    </button>
+                  </span>
+                </TooltipTrigger>
+                {!allSplitsHaveEmail && (
+                  <TooltipContent side="top">
+                    <p className="text-xs">{t("signature.allNeedEmail")}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+
+              {/* Send Executed Copies */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <button
+                      onClick={handleSendExecutedCopies}
+                      disabled={!allSigned || sendingExecuted || effectiveExecutedSent}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {sendingExecuted ? <Loader2 className="w-3 h-3 animate-spin" /> : effectiveExecutedSent ? <CheckCircle2 className="w-3 h-3" /> : <Send className="w-3 h-3" />}
+                      {sendingExecuted ? t("signature.sendingExecuted") : effectiveExecutedSent ? t("signature.executedSentLabel") : t("signature.sendExecutedCopies")}
+                    </button>
+                  </span>
+                </TooltipTrigger>
+                {!allSigned && !effectiveExecutedSent && (
+                  <TooltipContent side="top">
+                    <p className="text-xs">{t("signature.allMustSignFirst")}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </div>
+          </TooltipProvider>
+        )}
       </SectionCard>
 
       {/* Signature preview popover */}

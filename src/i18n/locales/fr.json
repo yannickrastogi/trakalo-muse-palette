@@ -771,7 +771,13 @@
     "sendingExecuted": "Envoi...",
     "executedSentLabel": "Copies exécutées envoyées",
     "executedSent": "Copies exécutées envoyées à {{count}} collaborateurs !",
-    "executedSentError": "Échec de l'envoi des copies exécutées"
+    "executedSentError": "Échec de l'envoi des copies exécutées",
+    "downloadUnsignedPdf": "PDF Splits non signés",
+    "downloadSignedPdf": "PDF Splits signés",
+    "editSplits": "Modifier les splits",
+    "allMustSignToDownload": "Tous les collaborateurs doivent signer avant le téléchargement",
+    "allNeedEmail": "Tous les collaborateurs doivent avoir une adresse email",
+    "allMustSignFirst": "Tous les collaborateurs doivent signer d'abord"
   },
   "radio": {
     "title": "Trakalog Radio",

@@ -1033,7 +1033,13 @@
     "sendingExecuted": "Sending...",
     "executedSentLabel": "Executed copies sent",
     "executedSent": "Executed copies sent to {{count}} collaborators!",
-    "executedSentError": "Failed to send executed copies"
+    "executedSentError": "Failed to send executed copies",
+    "downloadUnsignedPdf": "Download Unsigned Splits PDF",
+    "downloadSignedPdf": "Download Signed Splits PDF",
+    "editSplits": "Edit Splits",
+    "allMustSignToDownload": "All collaborators must sign before downloading",
+    "allNeedEmail": "All collaborators need an email address",
+    "allMustSignFirst": "All collaborators must sign first"
   },
   "radio": {
     "title": "Trakalog Radio",
