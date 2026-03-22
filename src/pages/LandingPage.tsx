@@ -120,9 +120,9 @@ export default function LandingPage() {
       {/* Navbar */}
       <nav className="sticky top-0 z-50 glass border-b border-border/40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
             <img src={trakalogLogo} alt="Trakalog" className="w-9 h-9 rounded-lg object-contain" />
-            <span className="text-lg font-bold tracking-tight gradient-text">TRAKALOG</span>
+            <span className="hidden sm:inline text-lg font-bold tracking-tight gradient-text">TRAKALOG</span>
           </Link>
           <div className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
@@ -132,13 +132,13 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               to="/auth"
-              className="inline-flex px-3 sm:px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground border border-border hover:bg-secondary transition-all duration-200 min-h-[44px] items-center"
+              className="inline-flex px-4 py-2 rounded-lg text-sm font-semibold min-h-[44px] items-center border border-brand-orange/30 text-brand-orange hover:bg-brand-orange/10 transition-all duration-200"
             >
               Sign In
             </Link>
             <a
               href="#hero-form"
-              className="px-3 sm:px-4 py-2 rounded-lg btn-brand text-sm font-semibold min-h-[44px] inline-flex items-center"
+              className="px-4 py-2 rounded-lg btn-brand text-sm font-semibold min-h-[44px] inline-flex items-center"
             >
               Get Early Access
             </a>
