@@ -708,7 +708,7 @@ export interface SignedSplitEntry {
   signedAt: string | null;
 }
 
-export function generateSignedAgreementPdf(title: string, artist: string, entries: SignedSplitEntry[]) {
+function buildSignedAgreementDoc(title: string, artist: string, entries: SignedSplitEntry[]) {
   var doc = new jsPDF({ unit: "pt", format: "letter" });
   var pageW = doc.internal.pageSize.getWidth();
   var pageH = doc.internal.pageSize.getHeight();
@@ -848,5 +848,15 @@ export function generateSignedAgreementPdf(title: string, artist: string, entrie
   });
 
   drawFooters(doc, marginX);
+  return doc;
+}
+
+export function generateSignedAgreementPdf(title: string, artist: string, entries: SignedSplitEntry[]) {
+  var doc = buildSignedAgreementDoc(title, artist, entries);
   doc.save(title + " - Split Agreement.pdf");
+}
+
+export function generateSignedAgreementPdfBase64(title: string, artist: string, entries: SignedSplitEntry[]): string {
+  var doc = buildSignedAgreementDoc(title, artist, entries);
+  return doc.output("datauristring").split(",")[1];
 }

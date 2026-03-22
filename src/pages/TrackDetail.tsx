@@ -1719,9 +1719,35 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   var handleSendExecutedCopies = useCallback(function () {
     if (!trackUuid) return;
     setSendingExecuted(true);
-    supabase.functions
-      .invoke("send-executed-splits", {
-        body: { track_id: trackUuid },
+
+    // Build PDF entries from signatureStatuses + splits (same as Download Agreement PDF)
+    var entries = signatureStatuses.map(function (sig) {
+      var matchingSplit = splits.find(function (s) { return (s.email && s.email === sig.collaborator_email) || s.name === sig.collaborator_name; });
+      return {
+        name: sig.collaborator_name,
+        role: matchingSplit ? matchingSplit.role : "",
+        share: sig.split_share,
+        pro: matchingSplit ? matchingSplit.pro : "",
+        ipi: matchingSplit ? matchingSplit.ipi : "",
+        publisher: matchingSplit ? matchingSplit.publisher : "",
+        signatureData: sig.signature_data,
+        signedAt: sig.signed_at,
+      };
+    });
+
+    // Generate PDF base64 then send to edge function
+    import("@/lib/pdf-generators")
+      .then(function (mod) {
+        return mod.generateSignedAgreementPdfBase64(trackData?.title || "", trackData?.artist || "", entries);
+      })
+      .catch(function (e) {
+        console.error("PDF generation failed, sending without attachment:", e);
+        return undefined;
+      })
+      .then(function (pdfBase64) {
+        return supabase.functions.invoke("send-executed-splits", {
+          body: { track_id: trackUuid, pdf_base64: pdfBase64 },
+        });
       })
       .then(function (res) {
         setSendingExecuted(false);
@@ -1734,7 +1760,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         toast.success(t("signature.executedSent", { count: sentCount }));
         setExecutedSent(true);
       });
-  }, [trackUuid, t]);
+  }, [trackUuid, t, signatureStatuses, splits, trackData]);
 
   var pendingSubs = submissions.filter(function (s) { return s.status === "pending"; });
   var processedSubs = submissions.filter(function (s) { return s.status !== "pending"; });

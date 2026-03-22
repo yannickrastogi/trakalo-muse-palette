@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { track_id } = await req.json() as { track_id: string };
+    const { track_id, pdf_base64 } = await req.json() as { track_id: string; pdf_base64?: string };
 
     if (!track_id) {
       return new Response(JSON.stringify({ error: "track_id required" }), {
@@ -150,12 +150,17 @@ serve(async (req) => {
           "Content-Type": "application/json",
           "Authorization": "Bearer " + RESEND_API_KEY,
         },
-        body: JSON.stringify({
+        body: JSON.stringify(Object.assign({
           from: "Trakalog <noreply@trakalog.com>",
           to: [sig.collaborator_email],
           subject: "Executed Split Agreement \u2014 " + trackTitle,
           html: htmlBody,
-        }),
+        }, pdf_base64 ? {
+          attachments: [{
+            filename: trackTitle + " - Split Agreement.pdf",
+            content: pdf_base64,
+          }],
+        } : {})),
       });
 
       if (res.ok) {
