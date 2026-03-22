@@ -73,6 +73,8 @@ import {
   QrCode,
   FileSignature,
   Loader2,
+  Mail,
+  AlertTriangle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -1536,6 +1538,8 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   const [signatureStatuses, setSignatureStatuses] = useState<SignatureStatus[]>([]);
   const [sendingSignatures, setSendingSignatures] = useState(false);
   const [viewSignature, setViewSignature] = useState<string | null>(null);
+  const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
+  const [editingEmailValue, setEditingEmailValue] = useState("");
 
   const fetchSubmissions = useCallback(function () {
     if (!trackUuid) return;
@@ -1589,6 +1593,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
     var newSplit: TrackSplit = {
       id: crypto.randomUUID(),
       name: sub.full_name,
+      email: sub.email || "",
       role: sub.roles.join(", "),
       share: 0,
       pro: sub.pro_name || "",
@@ -1614,6 +1619,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
       return {
         id: crypto.randomUUID(),
         name: sub.full_name,
+        email: sub.email || "",
         role: sub.roles.join(", "),
         share: 0,
         pro: sub.pro_name || "",
@@ -1645,17 +1651,18 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
       });
   }, [fetchSubmissions]);
 
+  var allSplitsHaveEmail = splits.length > 0 && splits.every(function (s) { return s.email && s.email.indexOf("@") > 0; });
+
   var handleSendForSignature = useCallback(function () {
     if (!trackUuid || splits.length < 2 || totalShares !== 100) return;
+    if (!allSplitsHaveEmail) return;
     setSendingSignatures(true);
 
-    // Build splits with emails from accepted studio_submissions
-    var acceptedSubs = submissions.filter(function (s) { return s.status === "accepted"; });
-    var splitsWithEmails = splits.map(function (s) {
-      var matchingSub = acceptedSubs.find(function (sub) { return sub.full_name === s.name; });
+    // Use emails directly from splits (already stored in DB)
+    var splitsPayload = splits.map(function (s) {
       return {
         name: s.name,
-        email: matchingSub ? matchingSub.email : "",
+        email: s.email || "",
         role: s.role,
         share: s.share,
         pro: s.pro || "",
@@ -1667,7 +1674,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
     // Call Edge Function to insert signature_requests AND send emails
     supabase.functions
       .invoke("send-split-signature", {
-        body: { track_id: trackUuid, splits: splitsWithEmails },
+        body: { track_id: trackUuid, splits: splitsPayload },
       })
       .then(function (res) {
         setSendingSignatures(false);
@@ -1675,11 +1682,11 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
           toast.error(t("signature.signaturesSentError"));
           return;
         }
-        var sentCount = (res.data && res.data.sent) || splitsWithEmails.filter(function (s) { return s.email; }).length;
+        var sentCount = (res.data && res.data.sent) || splitsPayload.length;
         toast.success(t("signature.signaturesSent", { count: sentCount }));
         fetchSignatures();
       });
-  }, [trackUuid, splits, totalShares, submissions, t, fetchSignatures]);
+  }, [trackUuid, splits, totalShares, allSplitsHaveEmail, t, fetchSignatures]);
 
   var pendingSubs = submissions.filter(function (s) { return s.status === "pending"; });
   var processedSubs = submissions.filter(function (s) { return s.status !== "pending"; });
@@ -1782,7 +1789,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   }
 
   const startEditing = () => {
-    setEditSplits(splits.length ? splits.map(s => ({ ...s })) : [{ id: "1", name: "", role: "", share: 100, pro: "", ipi: "", publisher: "" }]);
+    setEditSplits(splits.length ? splits.map(s => ({ ...s })) : [{ id: "1", name: "", email: "", role: "", share: 100, pro: "", ipi: "", publisher: "" }]);
     setEditing(true);
   };
 
@@ -1810,7 +1817,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   };
 
   const addSplit = () => {
-    const newSplits = [...editSplits, { id: crypto.randomUUID(), name: "", role: "", share: 0, pro: "", ipi: "", publisher: "" }];
+    const newSplits = [...editSplits, { id: crypto.randomUUID(), name: "", email: "", role: "", share: 0, pro: "", ipi: "", publisher: "" }];
     setEditSplits(redistributeSplits(newSplits));
   };
 
@@ -1841,6 +1848,17 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   };
 
   const editTotalShares = editSplits.reduce((sum, s) => sum + (Number(s.share) || 0), 0);
+
+  const saveInlineEmail = (splitId: string) => {
+    var trimmed = editingEmailValue.trim();
+    if (trimmed && trimmed.indexOf("@") <= 0) return;
+    var updated = splits.map(function (s) {
+      return s.id === splitId ? { ...s, email: trimmed } : s;
+    });
+    updateTrackSplits(trackId, updated);
+    setEditingEmailId(null);
+    setEditingEmailValue("");
+  };
 
   const handleDownloadPdf = () => {
     if (!trackData) return;
@@ -1888,6 +1906,10 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
                 <div className="space-y-1">
                   <label className="text-2xs text-muted-foreground font-medium">Name</label>
                   <input value={split.name} onChange={(e) => updateSplit(split.id, "name", e.target.value)} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-muted-foreground font-medium">Email</label>
+                  <input type="email" value={split.email || ""} onChange={(e) => updateSplit(split.id, "email", e.target.value)} placeholder={t("signature.emailPlaceholder")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-2xs text-muted-foreground font-medium">Role</label>
@@ -2006,12 +2028,47 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
           {splits.map(function (s, i) {
             var dotColors = ["bg-primary", "bg-brand-pink", "bg-brand-purple", "bg-brand-orange"];
             var sigStatus = signatureStatuses.find(function (sig) { return sig.collaborator_name === s.name; });
+            var isEditingThisEmail = editingEmailId === s.id;
+            var hasNoEmail = !s.email || s.email.indexOf("@") <= 0;
             return (
-              <div key={s.name + i} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
+              <div key={s.id || s.name + i} className={"flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors" + (hasNoEmail && signatureStatuses.length === 0 && splits.length >= 2 && totalShares === 100 ? " bg-destructive/5" : "")}>
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className={"w-2.5 h-2.5 rounded-full shrink-0 " + dotColors[i % dotColors.length]} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground">{s.name}</p>
+                    {isEditingThisEmail ? (
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <input
+                          type="email"
+                          autoFocus
+                          value={editingEmailValue}
+                          onChange={function (e) { setEditingEmailValue(e.target.value); }}
+                          onKeyDown={function (e) {
+                            if (e.key === "Enter") saveInlineEmail(s.id);
+                            if (e.key === "Escape") { setEditingEmailId(null); setEditingEmailValue(""); }
+                          }}
+                          onBlur={function () { saveInlineEmail(s.id); }}
+                          placeholder={t("signature.emailPlaceholder")}
+                          className="h-6 w-48 px-2 rounded bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30"
+                        />
+                      </div>
+                    ) : s.email ? (
+                      <button
+                        onClick={function () { setEditingEmailId(s.id); setEditingEmailValue(s.email || ""); }}
+                        className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 hover:text-foreground transition-colors"
+                      >
+                        <Mail className="w-3 h-3" />
+                        {s.email}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={function () { setEditingEmailId(s.id); setEditingEmailValue(""); }}
+                        className="flex items-center gap-1 text-xs text-brand-orange mt-0.5 hover:underline"
+                      >
+                        <Mail className="w-3 h-3" />
+                        {t("signature.addEmail")}
+                      </button>
+                    )}
                     <p className="text-[11px] text-muted-foreground">{s.role} · {s.pro || "—"} · IPI: {s.ipi || "—"}</p>
                     {sigStatus && (
                       sigStatus.status === "signed" ? (
@@ -2036,6 +2093,12 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
             );
           })}
         </div>
+        {!allSplitsHaveEmail && totalShares === 100 && splits.length >= 2 && signatureStatuses.length === 0 && (
+          <div className="px-5 py-2.5 bg-brand-orange/8 border-t border-brand-orange/20 flex items-center gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-brand-orange shrink-0" />
+            <span className="text-xs text-brand-orange">{t("signature.missingEmails")}</span>
+          </div>
+        )}
         <div className="px-5 py-3 border-t border-border flex items-center justify-between text-xs">
           <span className="text-muted-foreground">Total</span>
           <div className="flex items-center gap-3">
@@ -2043,7 +2106,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
             {totalShares === 100 && splits.length >= 2 && signatureStatuses.length === 0 && (
               <button
                 onClick={handleSendForSignature}
-                disabled={sendingSignatures}
+                disabled={sendingSignatures || !allSplitsHaveEmail}
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5 disabled:opacity-50"
               >
                 {sendingSignatures ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSignature className="w-3 h-3" />}

@@ -763,7 +763,10 @@
     "disagreementNote": "Si vous n'êtes pas d'accord avec ces splits, contactez directement le propriétaire du morceau avant de signer.",
     "sendingSignatures": "Envoi des demandes de signature...",
     "signaturesSent": "Demandes de signature envoyées à {{count}} collaborateurs !",
-    "signaturesSentError": "Échec de l'envoi des demandes de signature"
+    "signaturesSentError": "Échec de l'envoi des demandes de signature",
+    "addEmail": "Ajouter un email",
+    "missingEmails": "Certains collaborateurs n'ont pas d'adresse email",
+    "emailPlaceholder": "collaborateur@email.com"
   },
   "radio": {
     "title": "Trakalog Radio",

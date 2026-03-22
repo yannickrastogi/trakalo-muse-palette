@@ -1025,7 +1025,10 @@
     "disagreementNote": "If you disagree with these splits, please contact the track owner directly before signing.",
     "sendingSignatures": "Sending signature requests...",
     "signaturesSent": "Signature requests sent to {{count}} collaborators!",
-    "signaturesSentError": "Failed to send signature requests"
+    "signaturesSentError": "Failed to send signature requests",
+    "addEmail": "Add email",
+    "missingEmails": "Some collaborators don't have an email address",
+    "emailPlaceholder": "collaborator@email.com"
   },
   "radio": {
     "title": "Trakalog Radio",
