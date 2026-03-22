@@ -1726,7 +1726,8 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
       .then(function (res) {
         setSendingExecuted(false);
         if (res.error) {
-          toast.error(t("signature.executedSentError"));
+          var errorMsg = (res.data && res.data.error) || res.error.message || t("signature.executedSentError");
+          toast.error(errorMsg);
           return;
         }
         var sentCount = (res.data && res.data.sent) || 0;

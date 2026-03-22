@@ -33,10 +33,10 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch track info
+    // Fetch track info including splits JSON
     const { data: track, error: trackError } = await supabase
       .from("tracks")
-      .select("title, artist")
+      .select("title, artist, splits")
       .eq("id", track_id)
       .single();
 
@@ -50,10 +50,10 @@ serve(async (req) => {
     // Fetch all signed signature_requests for this track
     const { data: signatures, error: sigError } = await supabase
       .from("signature_requests")
-      .select("collaborator_name, collaborator_email, role, split_share, pro, ipi, publisher, signed_at")
+      .select("collaborator_name, collaborator_email, signed_at")
       .eq("track_id", track_id)
       .eq("status", "signed")
-      .order("split_share", { ascending: false });
+      .order("created_at", { ascending: true });
 
     if (sigError || !signatures || signatures.length === 0) {
       return new Response(JSON.stringify({ error: "No signed agreements found" }), {
@@ -64,19 +64,36 @@ serve(async (req) => {
 
     const trackTitle = track.title;
     const trackArtist = track.artist;
+    const trackSplits = (track.splits || []) as Array<{
+      name?: string;
+      role?: string;
+      share?: number;
+      pro?: string;
+      ipi?: string;
+      publisher?: string;
+    }>;
 
-    // Build splits recap table rows with signed dates
-    const splitsRows = signatures
+    // Build a map of signed dates by collaborator name
+    const signedDateMap: Record<string, string> = {};
+    for (const sig of signatures) {
+      if (sig.collaborator_name && sig.signed_at) {
+        signedDateMap[sig.collaborator_name] = new Date(sig.signed_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+      }
+    }
+
+    // Build splits recap table rows from tracks.splits with signed dates from signature_requests
+    const splitsRows = trackSplits
       .map((s) => {
-        const signedDate = s.signed_at ? new Date(s.signed_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
+        const signedDate = signedDateMap[s.name || ""] || "";
+        const signedLabel = signedDate ? ("\u2705 " + signedDate) : "\u2014";
         return "<tr>"
-          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#333;\">" + s.collaborator_name + "</td>"
-          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;\">" + s.role + "</td>"
-          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#333;font-weight:bold;text-align:right;\">" + s.split_share + "%</td>"
+          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#333;\">" + (s.name || "\u2014") + "</td>"
+          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;\">" + (s.role || "\u2014") + "</td>"
+          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#333;font-weight:bold;text-align:right;\">" + (s.share || 0) + "%</td>"
           + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px;\">" + (s.pro || "\u2014") + "</td>"
           + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px;\">" + (s.ipi || "\u2014") + "</td>"
           + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px;\">" + (s.publisher || "\u2014") + "</td>"
-          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#16a34a;font-size:12px;\">\u2705 " + signedDate + "</td>"
+          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#16a34a;font-size:12px;\">" + signedLabel + "</td>"
           + "</tr>";
       })
       .join("");
@@ -119,6 +136,9 @@ serve(async (req) => {
         + "</div>"
         + "<div style=\"margin:24px 0;padding:16px;background:#fafafa;border-radius:8px;border:1px solid #eee;\">"
         + "<p style=\"color:#333;font-size:14px;line-height:1.6;margin:0;\">This document serves as confirmation of the agreed ownership splits for <strong>" + trackTitle + "</strong>. All listed parties have reviewed and signed this agreement.</p>"
+        + "</div>"
+        + "<div style=\"text-align:center;margin:24px 0;\">"
+        + "<a href=\"https://trakalog.com\" style=\"display:inline-block;padding:12px 24px;background:#f97316;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px;\">Download the full agreement PDF on Trakalog</a>"
         + "</div>"
         + "<hr style=\"border:none;border-top:1px solid #eee;margin:32px 0;\">"
         + "<p style=\"text-align:center;color:#999;font-size:12px;\">This agreement was executed via Trakalog \u2014 trakalog.com</p>"
