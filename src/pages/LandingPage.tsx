@@ -129,16 +129,16 @@ export default function LandingPage() {
             <a href="#cta" className="hover:text-foreground transition-colors">Pricing</a>
             <a href="mailto:contact@trakalog.com" className="hover:text-foreground transition-colors">Contact</a>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               to="/auth"
-              className="hidden sm:inline-flex px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground border border-border hover:bg-secondary transition-all duration-200"
+              className="inline-flex px-3 sm:px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground border border-border hover:bg-secondary transition-all duration-200 min-h-[44px] items-center"
             >
               Sign In
             </Link>
             <a
               href="#hero-form"
-              className="px-4 py-2 rounded-lg btn-brand text-sm font-semibold"
+              className="px-3 sm:px-4 py-2 rounded-lg btn-brand text-sm font-semibold min-h-[44px] inline-flex items-center"
             >
               Get Early Access
             </a>
