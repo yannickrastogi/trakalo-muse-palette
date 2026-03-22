@@ -1574,6 +1574,22 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   useEffect(function () {
     fetchSubmissions();
     fetchSignatures();
+
+    // Auto-refresh signatures every 30s
+    var interval = setInterval(fetchSignatures, 30000);
+
+    // Refresh on tab focus
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        fetchSignatures();
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return function () {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [fetchSubmissions, fetchSignatures]);
 
   // Auto-balance: distribute 100% equally among all collaborators
@@ -2001,7 +2017,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
             <button
               onClick={function () {
                 var entries = signatureStatuses.map(function (sig) {
-                  var matchingSplit = splits.find(function (s) { return s.name === sig.collaborator_name; });
+                  var matchingSplit = splits.find(function (s) { return (s.email && s.email === sig.collaborator_email) || s.name === sig.collaborator_name; });
                   return {
                     name: sig.collaborator_name,
                     role: matchingSplit ? matchingSplit.role : "",
@@ -2027,7 +2043,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         <div className="divide-y divide-border">
           {splits.map(function (s, i) {
             var dotColors = ["bg-primary", "bg-brand-pink", "bg-brand-purple", "bg-brand-orange"];
-            var sigStatus = signatureStatuses.find(function (sig) { return sig.collaborator_name === s.name; });
+            var sigStatus = signatureStatuses.find(function (sig) { return (s.email && sig.collaborator_email === s.email) || sig.collaborator_name === s.name; });
             var isEditingThisEmail = editingEmailId === s.id;
             var hasNoEmail = !s.email || s.email.indexOf("@") <= 0;
             return (
