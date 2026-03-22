@@ -12,7 +12,8 @@
     "sharedLinks": "Enlaces Compartidos",
     "notifications": "Notificaciones",
     "approvals": "Aprobaciones",
-    "more": "Más"
+    "more": "Más",
+    "radio": "Radio"
   },
   "topbar": {
     "search": "Buscar pistas, artistas, playlists…",
@@ -256,7 +257,7 @@
     "description": "Sube, organiza y gestiona stems individuales — voces, batería, bajo, sintetizadores y más."
   },
   "smartAr": "Smart A&R",
-    "contacts": {
+  "contacts": {
     "title": "Contactos",
     "subtitle": "{{count}} contactos recopilados desde enlaces compartidos",
     "exportList": "Exportar lista",

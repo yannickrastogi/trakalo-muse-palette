@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ChevronUp, ChevronDown, X } from "lucide-react";
@@ -32,10 +32,14 @@ export function PersistentPlayer() {
   } = useAudioPlayer();
 
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const [showVolume, setShowVolume] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [expanded, setExpanded] = useState(false);
+
+  // Hide persistent player when Radio page is active
+  if (location.pathname === "/radio") return null;
 
   const handleProgressClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {

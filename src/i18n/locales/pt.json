@@ -12,7 +12,8 @@
     "sharedLinks": "Links Partilhados",
     "notifications": "Notificações",
     "approvals": "Aprovações",
-    "more": "Mais"
+    "more": "Mais",
+    "radio": "Radio"
   },
   "topbar": {
     "search": "Pesquisar faixas, artistas, playlists…",
@@ -299,7 +300,7 @@
     "ofTotal": "de {{total}} no total"
   },
   "smartAr": "Smart A&R",
-    "contacts": {
+  "contacts": {
     "title": "Contactos",
     "subtitle": "{{count}} contactos recolhidos de links partilhados",
     "exportList": "Exportar lista",

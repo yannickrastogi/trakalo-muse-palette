@@ -12,6 +12,7 @@
     "sharedLinks": "Shared Links",
     "notifications": "Notifications",
     "approvals": "Approvals",
+    "radio": "Radio",
     "more": "More"
   },
   "topbar": {
@@ -930,6 +931,31 @@
   "player": {
     "nowPlaying": "Now Playing",
     "minimize": "Minimize"
+  },
+  "radio": {
+    "title": "Trakalog Radio",
+    "subtitle": "Your personal catalog, on demand",
+    "shuffleAll": "Shuffle All",
+    "byGenre": "By Genre",
+    "byMood": "By Mood",
+    "highEnergy": "High Energy",
+    "chill": "Chill",
+    "recentlyAdded": "Recently Added",
+    "nowPlaying": "Now Playing",
+    "upNext": "Up Next",
+    "crossfade": "Crossfade",
+    "off": "Off",
+    "addToPlaylist": "Add to Playlist",
+    "viewTrack": "View Track",
+    "clearQueue": "Clear Queue",
+    "shuffleQueue": "Shuffle Queue",
+    "emptyCatalog": "Your catalog is empty! Upload some tracks to start your radio.",
+    "createNew": "Create new playlist",
+    "addedToPlaylist": "Added to {{name}}",
+    "selectGenre": "Select a genre",
+    "selectMood": "Select a mood",
+    "tracks": "{{count}} tracks",
+    "radioActive": "RADIO"
   },
   "smartAr": {
     "title": "Smart A&R",
