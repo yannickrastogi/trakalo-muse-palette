@@ -80,11 +80,18 @@ serve(async (req) => {
     let sent = 0;
 
     for (const split of splits) {
-      if (!split.email) continue;
+      if (!split.email) {
+        console.log("Skipping split for " + split.name + ": no email provided");
+        continue;
+      }
 
+      console.log("Sending to:", split.email, "(" + split.name + ")");
+
+      // Generate token BEFORE insert and email
       const token = generateToken();
+      const signUrl = "https://app.trakalog.com/sign/" + token;
 
-      // Insert signature request
+      // Insert signature request with token
       const { error: insertError } = await supabase
         .from("signature_requests")
         .insert({
@@ -104,35 +111,34 @@ serve(async (req) => {
         continue;
       }
 
-      const signUrl = "https://app.trakalog.com/sign/" + token;
-
       const htmlBody = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head>"
         + "<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f5f5f5;\">"
         + "<div style=\"background:#ffffff;border-radius:12px;padding:32px;margin:20px 0;\">"
         + "<div style=\"text-align:center;margin-bottom:24px;\">"
-        + "<h1 style=\"color:#8b5cf6;margin:0;font-size:28px;\">Trakalog</h1>"
+        + "<h1 style=\"color:#f97316;margin:0;font-size:28px;\">Trakalog</h1>"
         + "</div>"
         + "<p style=\"color:#333;font-size:16px;line-height:1.6;\">Hi " + split.name + ",</p>"
-        + "<p style=\"color:#333;font-size:16px;line-height:1.6;\">You are listed as a collaborator on <strong>" + trackTitle + "</strong>. Please review the split agreement below and sign to confirm.</p>"
+        + "<p style=\"color:#333;font-size:16px;line-height:1.6;\">You are invited to review and sign the split agreement for <strong>" + trackTitle + "</strong>.</p>"
         + "<div style=\"margin:24px 0;\">"
         + "<h3 style=\"color:#333;margin-bottom:12px;\">Split Breakdown</h3>"
         + "<table style=\"width:100%;border-collapse:collapse;font-size:14px;\">"
-        + "<thead><tr style=\"background:#f9f7ff;\">"
-        + "<th style=\"padding:10px 12px;text-align:left;color:#8b5cf6;font-weight:600;\">Name</th>"
-        + "<th style=\"padding:10px 12px;text-align:left;color:#8b5cf6;font-weight:600;\">Role</th>"
-        + "<th style=\"padding:10px 12px;text-align:right;color:#8b5cf6;font-weight:600;\">Share</th>"
+        + "<thead><tr style=\"background:#fff7ed;\">"
+        + "<th style=\"padding:10px 12px;text-align:left;color:#f97316;font-weight:600;\">Name</th>"
+        + "<th style=\"padding:10px 12px;text-align:left;color:#f97316;font-weight:600;\">Role</th>"
+        + "<th style=\"padding:10px 12px;text-align:right;color:#f97316;font-weight:600;\">Share</th>"
         + "</tr></thead>"
         + "<tbody>" + splitsRows + "</tbody>"
         + "</table>"
         + "</div>"
         + "<div style=\"text-align:center;margin:32px 0;\">"
-        + "<a href=\"" + signUrl + "\" style=\"display:inline-block;background:#8b5cf6;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;font-size:16px;\">Review &amp; Sign</a>"
+        + "<a href=\"" + signUrl + "\" style=\"display:inline-block;background:#f97316;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;font-size:16px;\">Review &amp; Sign</a>"
         + "</div>"
-        + "<p style=\"color:#999;font-size:13px;line-height:1.5;\">If you did not expect this email, you can safely ignore it.</p>"
+        + "<p style=\"color:#999;font-size:13px;line-height:1.5;\">This agreement was prepared via Trakalog. If you disagree with these splits, please contact the track owner directly before signing.</p>"
         + "<hr style=\"border:none;border-top:1px solid #eee;margin:32px 0;\">"
         + "<p style=\"text-align:center;color:#999;font-size:12px;\">Sent via Trakalog</p>"
         + "</div></body></html>";
 
+      // Send email to THIS collaborator's email address
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -148,12 +154,15 @@ serve(async (req) => {
       });
 
       if (res.ok) {
+        console.log("Email sent successfully to:", split.email);
         sent++;
       } else {
         const errData = await res.json();
         console.error("Resend error for " + split.email + ": " + (errData.message || res.statusText));
       }
     }
+
+    console.log("Total emails sent:", sent, "out of", splits.length, "splits");
 
     return new Response(JSON.stringify({ success: true, sent }), {
       status: 200,
