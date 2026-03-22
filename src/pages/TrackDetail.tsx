@@ -1649,41 +1649,34 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
     if (!trackUuid || splits.length < 2 || totalShares !== 100) return;
     setSendingSignatures(true);
 
-    // Create signature_requests for each collaborator
-    var requests = splits.map(function (s) {
+    // Build splits with emails from accepted studio_submissions
+    var acceptedSubs = submissions.filter(function (s) { return s.status === "accepted"; });
+    var splitsWithEmails = splits.map(function (s) {
+      var matchingSub = acceptedSubs.find(function (sub) { return sub.full_name === s.name; });
       return {
-        track_id: trackUuid,
-        collaborator_name: s.name,
-        collaborator_email: "",
+        name: s.name,
+        email: matchingSub ? matchingSub.email : "",
         role: s.role,
-        split_share: s.share,
+        share: s.share,
         pro: s.pro || "",
         ipi: s.ipi || "",
         publisher: s.publisher || "",
-        token: crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").substring(0, 8),
-        status: "pending",
       };
     });
 
-    // Try to find emails from studio_submissions
-    var acceptedSubs = submissions.filter(function (s) { return s.status === "accepted"; });
-    requests.forEach(function (req) {
-      var matchingSub = acceptedSubs.find(function (s) { return s.full_name === req.collaborator_name; });
-      if (matchingSub) {
-        req.collaborator_email = matchingSub.email;
-      }
-    });
-
-    supabase
-      .from("signature_requests")
-      .insert(requests)
+    // Call Edge Function to insert signature_requests AND send emails
+    supabase.functions
+      .invoke("send-split-signature", {
+        body: { track_id: trackUuid, splits: splitsWithEmails },
+      })
       .then(function (res) {
         setSendingSignatures(false);
         if (res.error) {
           toast.error(t("signature.signaturesSentError"));
           return;
         }
-        toast.success(t("signature.signaturesSent", { count: requests.length }));
+        var sentCount = (res.data && res.data.sent) || splitsWithEmails.filter(function (s) { return s.email; }).length;
+        toast.success(t("signature.signaturesSent", { count: sentCount }));
         fetchSignatures();
       });
   }, [trackUuid, splits, totalShares, submissions, t, fetchSignatures]);
