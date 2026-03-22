@@ -140,6 +140,31 @@ export default function SignAgreement() {
       return;
     }
 
+    // Auto-add signer to admin's contacts
+    if (request.collaborator_email && request.track_id) {
+      var { data: trackForWs } = await anonClient
+        .from("tracks")
+        .select("workspace_id")
+        .eq("id", request.track_id)
+        .single();
+
+      if (trackForWs && trackForWs.workspace_id) {
+        var nameParts = request.collaborator_name.split(" ");
+        var firstName = nameParts[0] || "";
+        var lastName = nameParts.slice(1).join(" ") || "";
+        anonClient.functions.invoke("auto-add-contact", {
+          body: {
+            workspace_id: trackForWs.workspace_id,
+            email: request.collaborator_email,
+            first_name: firstName,
+            last_name: lastName,
+            role: request.role || null,
+            company: request.publisher || null,
+          },
+        });
+      }
+    }
+
     setSigning(false);
     setSigned(true);
   }

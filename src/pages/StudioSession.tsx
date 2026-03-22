@@ -34,7 +34,7 @@ export default function StudioSession() {
 
   var [loading, setLoading] = useState<boolean>(true);
   var [error, setError] = useState<string | null>(null);
-  var [trackData, setTrackData] = useState<{ id: string; title: string; artist: string; cover_url: string | null } | null>(null);
+  var [trackData, setTrackData] = useState<{ id: string; title: string; artist: string; cover_url: string | null; workspace_id: string } | null>(null);
   var [mode, setMode] = useState<"welcome" | "form" | "success">("welcome");
   var [step, setStep] = useState<1 | 2 | 3>(1);
   var [fullName, setFullName] = useState("");
@@ -59,7 +59,7 @@ export default function StudioSession() {
 
     anonClient
       .from("tracks")
-      .select("id, title, artist, cover_url")
+      .select("id, title, artist, cover_url, workspace_id")
       .eq("qr_token", token)
       .single()
       .then(function (res) {
@@ -131,6 +131,20 @@ export default function StudioSession() {
           }
           return;
         }
+        // Auto-add collaborator to admin's contacts
+        var nameParts = fullName.trim().split(" ");
+        var firstName = nameParts[0] || "";
+        var lastName = nameParts.slice(1).join(" ") || "";
+        anonClient.functions.invoke("auto-add-contact", {
+          body: {
+            workspace_id: trackData.workspace_id,
+            email: email.trim(),
+            first_name: firstName,
+            last_name: lastName,
+            role: roles.length > 0 ? roles.join(", ") : null,
+            company: publisherName.trim() || null,
+          },
+        });
         setMode("success");
       });
   }
