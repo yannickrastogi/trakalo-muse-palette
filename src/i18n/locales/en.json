@@ -1028,7 +1028,12 @@
     "signaturesSentError": "Failed to send signature requests",
     "addEmail": "Add email",
     "missingEmails": "Some collaborators don't have an email address",
-    "emailPlaceholder": "collaborator@email.com"
+    "emailPlaceholder": "collaborator@email.com",
+    "sendExecutedCopies": "Send Executed Copies",
+    "sendingExecuted": "Sending...",
+    "executedSentLabel": "Executed copies sent",
+    "executedSent": "Executed copies sent to {{count}} collaborators!",
+    "executedSentError": "Failed to send executed copies"
   },
   "radio": {
     "title": "Trakalog Radio",

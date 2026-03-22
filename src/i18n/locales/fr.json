@@ -766,7 +766,12 @@
     "signaturesSentError": "Échec de l'envoi des demandes de signature",
     "addEmail": "Ajouter un email",
     "missingEmails": "Certains collaborateurs n'ont pas d'adresse email",
-    "emailPlaceholder": "collaborateur@email.com"
+    "emailPlaceholder": "collaborateur@email.com",
+    "sendExecutedCopies": "Envoyer les copies exécutées",
+    "sendingExecuted": "Envoi...",
+    "executedSentLabel": "Copies exécutées envoyées",
+    "executedSent": "Copies exécutées envoyées à {{count}} collaborateurs !",
+    "executedSentError": "Échec de l'envoi des copies exécutées"
   },
   "radio": {
     "title": "Trakalog Radio",

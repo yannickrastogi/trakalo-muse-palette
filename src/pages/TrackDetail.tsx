@@ -1540,6 +1540,8 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   const [viewSignature, setViewSignature] = useState<string | null>(null);
   const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
   const [editingEmailValue, setEditingEmailValue] = useState("");
+  const [sendingExecuted, setSendingExecuted] = useState(false);
+  const [executedSent, setExecutedSent] = useState(false);
 
   const fetchSubmissions = useCallback(function () {
     if (!trackUuid) return;
@@ -1713,6 +1715,25 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         fetchSignatures();
       });
   }, [trackUuid, splits, totalShares, allSplitsHaveEmail, t, fetchSignatures]);
+
+  var handleSendExecutedCopies = useCallback(function () {
+    if (!trackUuid) return;
+    setSendingExecuted(true);
+    supabase.functions
+      .invoke("send-executed-splits", {
+        body: { track_id: trackUuid },
+      })
+      .then(function (res) {
+        setSendingExecuted(false);
+        if (res.error) {
+          toast.error(t("signature.executedSentError"));
+          return;
+        }
+        var sentCount = (res.data && res.data.sent) || 0;
+        toast.success(t("signature.executedSent", { count: sentCount }));
+        setExecutedSent(true);
+      });
+  }, [trackUuid, t]);
 
   var pendingSubs = submissions.filter(function (s) { return s.status === "pending"; });
   var processedSubs = submissions.filter(function (s) { return s.status !== "pending"; });
@@ -2019,35 +2040,47 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         </div>
         {/* All signed badge + download */}
         {signatureStatuses.length > 0 && signatureStatuses.every(function (s) { return s.status === "signed"; }) && (
-          <div className="px-5 py-2.5 bg-emerald-500/8 border-b border-emerald-500/20 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs font-semibold text-emerald-400">{t("signature.allSigned")}</span>
+          <div className="px-5 py-2.5 bg-emerald-500/8 border-b border-emerald-500/20 flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-semibold text-emerald-400">{t("signature.allSigned")}</span>
+              </div>
+              <button
+                onClick={function () {
+                  var entries = signatureStatuses.map(function (sig) {
+                    var matchingSplit = splits.find(function (s) { return (s.email && s.email === sig.collaborator_email) || s.name === sig.collaborator_name; });
+                    return {
+                      name: sig.collaborator_name,
+                      role: matchingSplit ? matchingSplit.role : "",
+                      share: sig.split_share,
+                      pro: matchingSplit ? matchingSplit.pro : "",
+                      ipi: matchingSplit ? matchingSplit.ipi : "",
+                      publisher: matchingSplit ? matchingSplit.publisher : "",
+                      signatureData: sig.signature_data,
+                      signedAt: sig.signed_at,
+                    };
+                  });
+                  import("@/lib/pdf-generators").then(function (mod) {
+                    mod.generateSignedAgreementPdf(trackData?.title || "", trackData?.artist || "", entries);
+                  });
+                }}
+                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:underline font-medium"
+              >
+                <Download className="w-3.5 h-3.5" />
+                {t("signature.downloadAgreement")}
+              </button>
             </div>
-            <button
-              onClick={function () {
-                var entries = signatureStatuses.map(function (sig) {
-                  var matchingSplit = splits.find(function (s) { return (s.email && s.email === sig.collaborator_email) || s.name === sig.collaborator_name; });
-                  return {
-                    name: sig.collaborator_name,
-                    role: matchingSplit ? matchingSplit.role : "",
-                    share: sig.split_share,
-                    pro: matchingSplit ? matchingSplit.pro : "",
-                    ipi: matchingSplit ? matchingSplit.ipi : "",
-                    publisher: matchingSplit ? matchingSplit.publisher : "",
-                    signatureData: sig.signature_data,
-                    signedAt: sig.signed_at,
-                  };
-                });
-                import("@/lib/pdf-generators").then(function (mod) {
-                  mod.generateSignedAgreementPdf(trackData?.title || "", trackData?.artist || "", entries);
-                });
-              }}
-              className="flex items-center gap-1.5 text-xs text-emerald-400 hover:underline font-medium"
-            >
-              <Download className="w-3.5 h-3.5" />
-              {t("signature.downloadAgreement")}
-            </button>
+            <div className="flex items-center justify-end">
+              <button
+                onClick={handleSendExecutedCopies}
+                disabled={sendingExecuted || executedSent}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand disabled:opacity-50"
+              >
+                {sendingExecuted ? <Loader2 className="w-3 h-3 animate-spin" /> : executedSent ? <CheckCircle2 className="w-3 h-3" /> : <Send className="w-3 h-3" />}
+                {sendingExecuted ? t("signature.sendingExecuted") : executedSent ? t("signature.executedSentLabel") : t("signature.sendExecutedCopies")}
+              </button>
+            </div>
           </div>
         )}
         <div className="divide-y divide-border">
