@@ -1070,7 +1070,7 @@ function StepInfo({
     <div className="space-y-4">
       {/* Cover Art */}
       <div className="space-y-1.5">
-        <FieldLabel>Cover Art <span className="text-muted-foreground/50 normal-case tracking-normal font-normal">(optional)</span></FieldLabel>
+        <FieldLabel>{t("uploadTrack.coverArt", "Cover Art")} <span className="text-muted-foreground/50 normal-case tracking-normal font-normal">({t("uploadTrack.optional", "optional")})</span></FieldLabel>
         <div className="flex items-start gap-4">
           <div
             onClick={() => coverInputRef.current?.click()}
@@ -1088,7 +1088,7 @@ function StepInfo({
             ) : (
               <div className="flex flex-col items-center gap-1">
                 <ImagePlus className="w-6 h-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
-                <span className="text-[9px] text-muted-foreground group-hover:text-brand-orange transition-colors">Add cover</span>
+                <span className="text-[9px] text-muted-foreground group-hover:text-brand-orange transition-colors">{t("uploadTrack.addCover", "Add cover")}</span>
               </div>
             )}
             <input
@@ -1111,7 +1111,7 @@ function StepInfo({
                 onClick={() => setCoverFile(null)}
                 className="text-2xs text-destructive hover:text-destructive/80 font-semibold mt-1 self-start"
               >
-                Remove
+                {t("uploadTrack.remove", "Remove")}
               </button>
             </div>
           )}
@@ -1131,21 +1131,21 @@ function StepInfo({
               )}
             </div>
             <span className="text-2xs font-semibold text-foreground">
-              {analyzing ? "Analyzing audio…" : "Smart Analysis Complete"}
+              {analyzing ? t("uploadTrack.analyzingAudio", "Analyzing audio...") : t("uploadTrack.smartAnalysisComplete", "Smart Analysis Complete")}
             </span>
           </div>
           {analysisResult && (
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-lg bg-secondary p-2 text-center">
-                <p className="text-2xs text-muted-foreground font-medium">BPM</p>
+                <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.bpm")}</p>
                 <p className="text-sm font-bold text-brand-orange">{analysisResult.bpm}</p>
               </div>
               <div className="rounded-lg bg-secondary p-2 text-center">
-                <p className="text-2xs text-muted-foreground font-medium">Key</p>
+                <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.key")}</p>
                 <p className="text-sm font-bold text-brand-pink">{analysisResult.key}</p>
               </div>
               <div className="rounded-lg bg-secondary p-2 text-center">
-                <p className="text-2xs text-muted-foreground font-medium">Duration</p>
+                <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.duration", "Duration")}</p>
                 <p className="text-sm font-bold text-brand-purple">{analysisResult.duration}</p>
               </div>
             </div>
@@ -1155,22 +1155,22 @@ function StepInfo({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <FieldLabel>Track Title *</FieldLabel>
+          <FieldLabel>{t("uploadTrack.trackTitle")} *</FieldLabel>
           <FieldInput value={title} onChange={setTitle} placeholder="e.g. Velvet Hour" />
         </div>
         <div className="space-y-1.5">
-          <FieldLabel>Artist *</FieldLabel>
+          <FieldLabel>{t("uploadTrack.artist")} *</FieldLabel>
           <FieldInput value={artist} onChange={setArtist} placeholder="e.g. Kira Nomura" />
         </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="space-y-1.5">
-          <FieldLabel>BPM {analysisResult && <span className="text-brand-orange text-[9px] ml-1">AUTO</span>}</FieldLabel>
+          <FieldLabel>{t("uploadTrack.bpm")} {analysisResult && <span className="text-brand-orange text-[9px] ml-1">AUTO</span>}</FieldLabel>
           <FieldInput value={bpm} onChange={setBpm} placeholder="120" type="number" />
         </div>
         <div className="space-y-1.5">
-          <FieldLabel>Key {analysisResult && <span className="text-brand-orange text-[9px] ml-1">AUTO</span>}</FieldLabel>
-          <FieldSelect value={trackKey} onChange={setTrackKey} options={KEYS} placeholder="Select key" />
+          <FieldLabel>{t("uploadTrack.key")} {analysisResult && <span className="text-brand-orange text-[9px] ml-1">AUTO</span>}</FieldLabel>
+          <FieldSelect value={trackKey} onChange={setTrackKey} options={KEYS} placeholder={t("uploadTrack.selectKey")} />
         </div>
         <div className="space-y-1.5">
           <FieldLabel>Genre</FieldLabel>

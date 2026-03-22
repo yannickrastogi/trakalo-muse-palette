@@ -257,25 +257,25 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                   <div className="flex-1 space-y-4 min-w-0">
                     <div className="space-y-2">
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-                        Playlist Name <span className="text-destructive">*</span>
+                        {t("createPlaylist.playlistName")} <span className="text-destructive">*</span>
                       </label>
                       <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Summer Vibes 2026"
+                        placeholder={t("createPlaylist.namePlaceholder")}
                         className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
                         autoFocus
                       />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-                        Description
+                        {t("createPlaylist.description")}
                       </label>
                       <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="What's this playlist about?"
+                        placeholder={t("createPlaylist.descPlaceholder")}
                         rows={2}
                         className="w-full px-4 py-3 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40 resize-none leading-relaxed"
                       />
@@ -286,7 +286,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                 {/* Genre */}
                 <div className="space-y-2 relative">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-                    Genre
+                    {t("createPlaylist.genre")}
                   </label>
                   {customGenreMode || (!GENRES.includes(genre) && genre !== "") ? (
                     <div className="flex gap-1.5">
@@ -313,7 +313,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                         className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none hover:border-primary/40 transition-colors font-medium flex items-center justify-between"
                       >
                         <span className={genre ? "text-foreground" : "text-muted-foreground/40"}>
-                          {genre || "Select a genre…"}
+                          {genre || t("createPlaylist.selectGenre")}
                         </span>
                         <ChevronDown className={`w-4 h-4 text-muted-foreground/50 transition-transform ${genreOpen ? "rotate-180" : ""}`} />
                       </button>
@@ -365,7 +365,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                 {/* Mood hashtags */}
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-                    Mood
+                    {t("createPlaylist.mood")}
                   </label>
                   <div className="flex flex-wrap items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-secondary border border-border focus-within:border-primary/40 transition-colors">
                     {moods.map((tag) => (
@@ -389,12 +389,12 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                       value={moodInput}
                       onChange={(e) => setMoodInput(e.target.value)}
                       onKeyDown={handleMoodKeyDown}
-                      placeholder={moods.length === 0 ? "Type a mood and press Enter… e.g. chill, dark, uplifting" : "Add more…"}
+                      placeholder={moods.length === 0 ? t("createPlaylist.moodPlaceholder") : t("createPlaylist.addMore")}
                       className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 outline-none flex-1 min-w-[120px] font-medium py-0.5"
                     />
                   </div>
                   <p className="text-2xs text-muted-foreground/40">
-                    Press Enter, Space or Comma to add a mood tag
+                    {t("createPlaylist.moodHint")}
                   </p>
                 </div>
 
@@ -405,7 +405,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                     animate={{ opacity: 1, y: 0 }}
                     className="p-4 rounded-xl border border-border/50 bg-secondary/30"
                   >
-                    <p className="text-2xs text-muted-foreground/60 uppercase tracking-widest font-semibold mb-2">Preview</p>
+                    <p className="text-2xs text-muted-foreground/60 uppercase tracking-widest font-semibold mb-2">{t("createPlaylist.preview")}</p>
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
                         {coverImage ? (

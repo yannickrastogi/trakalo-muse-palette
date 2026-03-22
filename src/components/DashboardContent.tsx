@@ -467,7 +467,7 @@ export function DashboardContent() {
                   Showing {filteredByRange.length} of {allTracks.length} total tracks
                 </span>
                 <Link to="/tracks" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
-                  View full catalog →
+                  {t("dashboard.viewAll")}
                 </Link>
               </div>
             </div>
@@ -574,7 +574,7 @@ export function DashboardContent() {
                   Showing {filteredPlaylists.length} of {allPlaylists.length} total playlists
                 </span>
                 <Link to="/playlists" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
-                  View all playlists →
+                  {t("dashboard.viewAll")}
                 </Link>
               </div>
             </div>
@@ -726,7 +726,7 @@ export function DashboardContent() {
                     type="text"
                     value={downloadsSearch}
                     onChange={(e) => setDownloadsSearch(e.target.value)}
-                    placeholder="Search by track, artist, or recipient…"
+                    placeholder={t("common.search") + "..."}
                     className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   />
                 </div>
@@ -792,7 +792,7 @@ export function DashboardContent() {
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-brand-purple" />
                     <h3 className="text-sm font-bold text-foreground">
-                      Contacts
+                      {t("nav.contacts")}
                       <span className="ml-2 text-muted-foreground font-normal">· {contactEntries.length} total</span>
                     </h3>
                   </div>
@@ -823,7 +823,7 @@ export function DashboardContent() {
                     type="text"
                     value={contactsSearch}
                     onChange={(e) => setContactsSearch(e.target.value)}
-                    placeholder="Search by name, email, company, or role…"
+                    placeholder={t("common.search") + "..."}
                     className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   />
                 </div>
@@ -912,7 +912,7 @@ export function DashboardContent() {
                     <div className="flex items-center gap-2">
                       <Send className="w-4 h-4 text-brand-orange" />
                       <h3 className="text-sm font-bold text-foreground">
-                        Pitches
+                        {t("pitch.title")}
                         <span className="ml-2 text-muted-foreground font-normal">· {allPitches.length} total</span>
                       </h3>
                     </div>
@@ -943,7 +943,7 @@ export function DashboardContent() {
                       type="text"
                       value={pitchesSearch}
                       onChange={(e) => setPitchesSearch(e.target.value)}
-                      placeholder="Search by track, recipient, or company…"
+                      placeholder={t("common.search") + "..."}
                       className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                     />
                   </div>
@@ -954,7 +954,7 @@ export function DashboardContent() {
                   </p>
                 </div>
                 {filteredPitches.length === 0 ? (
-                  <div className="py-10 text-center text-muted-foreground text-sm">No pitches found</div>
+                  <div className="py-10 text-center text-muted-foreground text-sm">{t("pitch.noPitches")}</div>
                 ) : (
                   <div className="divide-y divide-border/40 max-h-[360px] overflow-y-auto">
                     {filteredPitches.map((pitch) => (
