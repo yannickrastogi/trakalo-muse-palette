@@ -121,24 +121,24 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 glass border-b border-border/40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <img src={trakalogLogo} alt="Trakalog" className="w-9 h-9 rounded-lg object-contain" />
-            <span className="hidden sm:inline text-lg font-bold tracking-tight gradient-text">TRAKALOG</span>
+            <img src={trakalogLogo} alt="Trakalog" className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg object-contain" />
+            <span className="text-sm sm:text-lg font-bold tracking-tight gradient-text">TRAKALOG</span>
           </Link>
           <div className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#cta" className="hover:text-foreground transition-colors">Pricing</a>
             <a href="mailto:contact@trakalog.com" className="hover:text-foreground transition-colors">Contact</a>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <Link
               to="/auth"
-              className="inline-flex px-4 py-2 rounded-lg text-sm font-semibold min-h-[44px] items-center border border-brand-orange/30 text-brand-orange hover:bg-brand-orange/10 transition-all duration-200"
+              className="inline-flex px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold min-h-[44px] items-center border border-brand-orange/30 text-brand-orange hover:bg-brand-orange/10 transition-all duration-200 whitespace-nowrap"
             >
               Sign In
             </Link>
             <a
               href="#hero-form"
-              className="px-4 py-2 rounded-lg btn-brand text-sm font-semibold min-h-[44px] inline-flex items-center"
+              className="px-2.5 sm:px-4 py-2 rounded-lg btn-brand text-xs sm:text-sm font-semibold min-h-[44px] inline-flex items-center whitespace-nowrap"
             >
               Get Early Access
             </a>
