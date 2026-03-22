@@ -1583,7 +1583,102 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
 
   var pendingSubs = submissions.filter(function (s) { return s.status === "pending"; });
   var processedSubs = submissions.filter(function (s) { return s.status !== "pending"; });
-  var proposedTotal = pendingSubs.reduce(function (sum, s) { return sum + s.proposed_split; }, 0);
+
+  // Extracted submissions section — rendered in ALL return paths so it's never skipped by early returns
+  function renderStudioSubmissions() {
+    if (!trackUuid) return null;
+    return (
+      <div className="mt-6">
+        <div className="flex items-center gap-2 mb-3">
+          <h4 className="text-base font-bold text-foreground">{t("studioQr.pendingSubmissions")}</h4>
+          {submissions.length > 0 && (
+            <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-orange/15 text-brand-orange">
+              {submissions.length}
+            </span>
+          )}
+        </div>
+        <div className="bg-card border border-border rounded-xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+          {/* Pending submissions */}
+          {pendingSubs.length > 0 && (
+            <div className="divide-y divide-border">
+              {pendingSubs.map(function (sub) {
+                return (
+                  <div key={sub.id} className="px-5 py-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold text-foreground">{sub.full_name}</p>
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-orange/12 text-brand-orange">pending</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{sub.email}</p>
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {sub.roles.map(function (role) {
+                            return <span key={role} className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary text-foreground/70">{role}</span>;
+                          })}
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-muted-foreground">
+                          {sub.pro_name && <span>PRO: {sub.pro_name}</span>}
+                          {sub.ipi_number && <span>IPI: {sub.ipi_number}</span>}
+                          {sub.publisher_name && <span>Publisher: {sub.publisher_name}</span>}
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground shrink-0">{new Date(sub.created_at).toLocaleDateString()}</p>
+                    </div>
+                    {modifyingId === sub.id ? (
+                      <div className="flex items-center gap-2">
+                        <input type="number" min={0} max={100} step={0.01} value={modifyValue} onChange={function (e) { setModifyValue(parseFloat(e.target.value) || 0); }} className="h-8 w-24 px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 font-mono" />
+                        <span className="text-xs text-muted-foreground">%</span>
+                        <button onClick={function () { handleAcceptSubmission(sub, modifyValue); }} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand">{t("studioQr.accept")}</button>
+                        <button onClick={function () { setModifyingId(null); }} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">{t("common.cancel")}</button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button onClick={function () { handleAcceptSubmission(sub); }} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"><CheckCircle2 className="w-3 h-3 inline mr-1" />{t("studioQr.accept")}</button>
+                        <button onClick={function () { setModifyingId(sub.id); setModifyValue(sub.proposed_split); }} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors"><Edit3 className="w-3 h-3 inline mr-1" />Modify</button>
+                        <button onClick={function () { handleRejectSubmission(sub.id); }} className="px-3 py-1.5 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors">{t("studioQr.reject")}</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {processedSubs.length > 0 && (
+            <div className={"divide-y divide-border" + (pendingSubs.length > 0 ? " border-t border-border" : "")}>
+              {processedSubs.map(function (sub) {
+                var isAccepted = sub.status === "accepted";
+                return (
+                  <div key={sub.id} className={"px-5 py-3.5 " + (isAccepted ? "opacity-60" : "opacity-40")}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={"w-2 h-2 rounded-full " + (isAccepted ? "bg-emerald-400" : "bg-destructive")} />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{sub.full_name}</p>
+                          <p className="text-[11px] text-muted-foreground">{sub.roles.join(", ")}</p>
+                        </div>
+                      </div>
+                      <span className={"inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold " + (isAccepted ? "bg-emerald-500/12 text-emerald-400" : "bg-destructive/12 text-destructive")}>{isAccepted ? "Accepted" : "Rejected"}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {loadingSubs && (
+            <div className="px-5 py-6 text-center">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+            </div>
+          )}
+          {!loadingSubs && submissions.length === 0 && (
+            <div className="px-5 py-6 text-center">
+              <Users className="w-6 h-6 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">{t("studioQr.noSubmissions")}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const startEditing = () => {
     setEditSplits(splits.length ? splits.map(s => ({ ...s })) : [{ id: "1", name: "", role: "", share: 100, pro: "", ipi: "", publisher: "" }]);
@@ -1647,6 +1742,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   // Inline editing mode
   if (editing) {
     return (
+      <div>
       <SectionCard title="Publishing & Ownership Splits" icon={PieChart}
         action={
           <div className="flex items-center gap-2">
@@ -1708,12 +1804,15 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
           </button>
         </div>
       </SectionCard>
+      {renderStudioSubmissions()}
+      </div>
     );
   }
 
   // Empty state with add button
   if (splits.length === 0) {
     return (
+      <div>
       <SectionCard title="Publishing & Ownership Splits" icon={PieChart}>
         <div className="px-5 py-12 text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-secondary/80 flex items-center justify-center mx-auto">
@@ -1728,6 +1827,8 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
           </button>
         </div>
       </SectionCard>
+      {renderStudioSubmissions()}
+      </div>
     );
   }
 
@@ -1778,153 +1879,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         </div>
       </SectionCard>
 
-      {/* Studio Submissions — always visible when trackUuid exists */}
-      {trackUuid && (
-        <SectionCard
-          title={t("studioQr.pendingSubmissions")}
-          icon={Users}
-          action={
-            pendingSubs.length > 0 ? (
-              <span className="text-xs text-muted-foreground">
-                {pendingSubs.length + " pending · Current: " + totalShares + "%"}
-              </span>
-            ) : undefined
-          }
-        >
-          {/* Pending submissions */}
-          {pendingSubs.length > 0 && (
-            <div className="divide-y divide-border">
-              {pendingSubs.map(function (sub) {
-                return (
-                  <div key={sub.id} className="px-5 py-4 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-foreground">{sub.full_name}</p>
-                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-orange/12 text-brand-orange">
-                            {sub.proposed_split}% {t("studioQr.proposed")}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">{sub.email}</p>
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {sub.roles.map(function (role) {
-                            return (
-                              <span key={role} className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary text-foreground/70">
-                                {role}
-                              </span>
-                            );
-                          })}
-                        </div>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-muted-foreground">
-                          {sub.pro_name && <span>PRO: {sub.pro_name}</span>}
-                          {sub.ipi_number && <span>IPI: {sub.ipi_number}</span>}
-                          {sub.publisher_name && <span>Publisher: {sub.publisher_name}</span>}
-                        </div>
-                        {sub.justification && (
-                          <p className="text-[11px] text-muted-foreground/70 mt-2 italic">"{sub.justification}"</p>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-muted-foreground shrink-0">{new Date(sub.created_at).toLocaleDateString()}</p>
-                    </div>
-
-                    {/* Actions */}
-                    {modifyingId === sub.id ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          step={0.01}
-                          value={modifyValue}
-                          onChange={function (e) { setModifyValue(parseFloat(e.target.value) || 0); }}
-                          className="h-8 w-24 px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 font-mono"
-                        />
-                        <span className="text-xs text-muted-foreground">%</span>
-                        <button
-                          onClick={function () { handleAcceptSubmission(sub, modifyValue); }}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand"
-                        >
-                          {t("studioQr.accept")}
-                        </button>
-                        <button
-                          onClick={function () { setModifyingId(null); }}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors"
-                        >
-                          {t("common.cancel")}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={function () { handleAcceptSubmission(sub); }}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-                        >
-                          <CheckCircle2 className="w-3 h-3 inline mr-1" />
-                          {t("studioQr.accept")}
-                        </button>
-                        <button
-                          onClick={function () { setModifyingId(sub.id); setModifyValue(sub.proposed_split); }}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors"
-                        >
-                          <Edit3 className="w-3 h-3 inline mr-1" />
-                          Modify
-                        </button>
-                        <button
-                          onClick={function () { handleRejectSubmission(sub.id); }}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
-                        >
-                          {t("studioQr.reject")}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Processed submissions */}
-          {processedSubs.length > 0 && (
-            <div className="divide-y divide-border border-t border-border">
-              {processedSubs.map(function (sub) {
-                var isAccepted = sub.status === "accepted";
-                return (
-                  <div key={sub.id} className={"px-5 py-3.5 " + (isAccepted ? "opacity-60" : "opacity-40")}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={"w-2 h-2 rounded-full " + (isAccepted ? "bg-emerald-400" : "bg-destructive")} />
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{sub.full_name}</p>
-                          <p className="text-[11px] text-muted-foreground">{sub.roles.join(", ")} · {sub.proposed_split}%</p>
-                        </div>
-                      </div>
-                      <span className={"inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold " + (isAccepted ? "bg-emerald-500/12 text-emerald-400" : "bg-destructive/12 text-destructive")}>
-                        {isAccepted ? "Accepted" : "Rejected"}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Loading state */}
-          {loadingSubs && (
-            <div className="px-5 py-6 text-center">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
-            </div>
-          )}
-
-          {/* Empty state */}
-          {!loadingSubs && submissions.length === 0 && (
-            <div className="px-5 py-8 text-center">
-              <Users className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">{t("studioQr.noSubmissions")}</p>
-              <p className="text-[11px] text-muted-foreground/60 mt-1">Share the Studio QR code to collect contributions</p>
-            </div>
-          )}
-        </SectionCard>
-      )}
+      {renderStudioSubmissions()}
     </div>
   );
 }
