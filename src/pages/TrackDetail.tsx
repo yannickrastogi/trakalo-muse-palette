@@ -2209,7 +2209,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
                   <span className="inline-flex">
                     <button
                       onClick={handleSendForSignature}
-                      disabled={sendingSignatures || !allSplitsHaveEmail}
+                      disabled={sendingSignatures || !allSplitsHaveEmail || allSigned}
                       className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {sendingSignatures ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSignature className="w-3 h-3" />}
@@ -2217,11 +2217,15 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
                     </button>
                   </span>
                 </TooltipTrigger>
-                {!allSplitsHaveEmail && (
+                {allSigned ? (
+                  <TooltipContent side="top">
+                    <p className="text-xs">{t("signature.allAlreadySigned")}</p>
+                  </TooltipContent>
+                ) : !allSplitsHaveEmail ? (
                   <TooltipContent side="top">
                     <p className="text-xs">{t("signature.allNeedEmail")}</p>
                   </TooltipContent>
-                )}
+                ) : null}
               </Tooltip>
 
               {/* Send Executed Copies */}

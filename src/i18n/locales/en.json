@@ -1039,7 +1039,8 @@
     "editSplits": "Edit Splits",
     "allMustSignToDownload": "All collaborators must sign before downloading",
     "allNeedEmail": "All collaborators need an email address",
-    "allMustSignFirst": "All collaborators must sign first"
+    "allMustSignFirst": "All collaborators must sign first",
+    "allAlreadySigned": "All collaborators have already signed"
   },
   "radio": {
     "title": "Trakalog Radio",

@@ -777,7 +777,8 @@
     "editSplits": "Modifier les splits",
     "allMustSignToDownload": "Tous les collaborateurs doivent signer avant le téléchargement",
     "allNeedEmail": "Tous les collaborateurs doivent avoir une adresse email",
-    "allMustSignFirst": "Tous les collaborateurs doivent signer d'abord"
+    "allMustSignFirst": "Tous les collaborateurs doivent signer d'abord",
+    "allAlreadySigned": "Tous les collaborateurs ont déjà signé"
   },
   "radio": {
     "title": "Trakalog Radio",
