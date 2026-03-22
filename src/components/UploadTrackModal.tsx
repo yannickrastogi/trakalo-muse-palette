@@ -604,7 +604,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   return (
     <Dialog open={open} onOpenChange={(val) => { if (isSaving) return; if (!val) handleReset(); onOpenChange(val); }}>
       <DialogContent
-        className="max-w-2xl max-h-[90vh] sm:max-h-[90vh] h-[100dvh] sm:h-auto overflow-hidden flex flex-col p-0 gap-0 bg-card border-border w-full sm:w-auto"
+        className="md:max-w-2xl overflow-hidden flex flex-col p-0 gap-0 bg-card border-border"
         onInteractOutside={(e) => { if (isSaving) e.preventDefault(); }}
         onEscapeKeyDown={(e) => { if (isSaving) e.preventDefault(); }}
       >

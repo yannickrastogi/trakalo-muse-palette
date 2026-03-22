@@ -1,6 +1,6 @@
 {
   "nav": { "dashboard": "Dashboard", "tracks": "Titel", "stems": "Stems", "playlists": "Playlists", "pitch": "Pitch", "team": "Team", "settings": "Einstellungen", "smartAr": "Smart A&R",
-    "contacts": "Kontakte", "sharedLinks": "Geteilte Links", "notifications": "Benachrichtigungen", "approvals": "Freigaben" },
+    "contacts": "Kontakte", "sharedLinks": "Geteilte Links", "notifications": "Benachrichtigungen", "approvals": "Freigaben", "more": "Mehr" },
   "topbar": { "search": "Titel, Künstler, Playlists suchen…", "searchShort": "Suchen…" },
   "userMenu": { "profile": "Profil", "settings": "Einstellungen", "billing": "Abrechnung", "signOut": "Abmelden" },
   "dashboard": { "title": "Dashboard", "subtitle": "Dein Katalog auf einen Blick — {{date}}", "totalTracks": "Titel gesamt", "playlists": "Playlists", "collaborators": "Mitwirkende", "pendingPitches": "Ausstehende Pitches", "thisWeek": "+18 diese Woche", "new": "+3 neue", "active": "+12 aktive", "dueToday": "4 heute fällig", "recentTracks": "Neueste Titel", "viewAll": "Alle anzeigen →", "quickActions": "Schnellaktionen", "uploadTrack": "Titel hochladen", "newPlaylist": "Neue Playlist", "inviteMember": "Mitglied einladen", "createTeam": "Team erstellen", "newPitch": "Neuer Pitch", "activity": "Aktivität", "seeAll": "Alle anzeigen", "totalPlays": "Wiedergaben gesamt", "downloads": "Downloads", "recipients": "{{count}} Empfänger", "acrossContacts": "über {{count}} Kontakte", "recent": "+{{count}} kürzlich" },

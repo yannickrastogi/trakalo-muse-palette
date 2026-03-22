@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { motion, AnimatePresence } from "framer-motion";
+import trakalogLogo from "@/assets/trakalog-logo.png";
 
 interface TopBarProps {
   onMenuClick?: () => void;
@@ -126,104 +127,122 @@ export function TopBar({ onMenuClick }: TopBarProps) {
     playlist: "Playlist",
   };
 
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
   return (
     <header className="h-14 flex items-center justify-between px-3 sm:px-6 glass sticky top-0 z-20" style={{ borderBottom: '1px solid transparent', borderImage: 'linear-gradient(90deg, hsl(24 100% 55% / 0.15), hsl(330 80% 60% / 0.1), hsl(270 70% 55% / 0.05), transparent) 1' }}>
-      {/* Left: Hamburger + Search */}
+      {/* Left: Logo (mobile) or Search (desktop) */}
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        {isMobile && (
-          <button
-            onClick={onMenuClick}
-            className="p-2 rounded-xl hover:bg-secondary/80 transition-colors text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0"
-            aria-label="Open menu"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-        )}
-        <FirstUseTooltip id="search-bar" message="Search tracks, artists, and playlists instantly" position="bottom">
-        <div className="relative w-full max-w-md" ref={wrapperRef}>
-          <div className="flex items-center gap-2.5 bg-secondary/50 rounded-lg px-3.5 py-2 w-full border border-border/50 focus-within:border-primary/30 transition-all">
-            <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={searchValue}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              onFocus={() => searchValue.length >= 2 && setShowSuggestions(true)}
-              placeholder={isMobile ? t("topbar.searchShort") : t("topbar.search")}
-              className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
-            />
-            {searchValue ? (
-              <button onClick={() => { setSearchValue(""); setShowSuggestions(false); }} className="text-muted-foreground hover:text-foreground transition-colors">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            ) : !isMobile ? (
-              <kbd className="hidden sm:inline-flex text-2xs text-muted-foreground/40 bg-muted/40 px-1.5 py-0.5 rounded font-mono leading-none border border-border/50">
-                ⌘K
-              </kbd>
-            ) : null}
+        {/* Mobile logo */}
+        {isMobile && !mobileSearchOpen && (
+          <div className="flex items-center gap-2 shrink-0">
+            <img src={trakalogLogo} alt="Trakalog" className="w-8 h-8 rounded-lg object-contain" />
+            <span className="text-sm font-bold tracking-tight gradient-text">TRAKALOG</span>
           </div>
+        )}
 
-          {/* Suggestions dropdown */}
-          <AnimatePresence>
-            {showSuggestions && suggestions.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 4, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 4, scale: 0.97 }}
-                transition={{ duration: 0.15 }}
-                className="absolute left-0 right-0 top-full mt-1.5 bg-card border border-border rounded-xl overflow-hidden z-50"
-                style={{ boxShadow: "var(--shadow-elevated, 0 8px 30px -8px rgba(0,0,0,0.5))" }}
-              >
-                <div className="py-1">
-                  {suggestions.map((s, idx) => {
-                    const Icon = iconMap[s.type];
-                    const isSelected = idx === selectedIdx;
-                    return (
-                      <button
-                        key={`${s.type}-${s.label}-${idx}`}
-                        onClick={() => handleSelect(s)}
-                        onMouseEnter={() => setSelectedIdx(idx)}
-                        className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors ${
-                          isSelected ? "bg-secondary/80" : "hover:bg-secondary/40"
-                        }`}
-                      >
-                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                          s.type === "track" ? "bg-primary/10 text-primary" :
-                          s.type === "artist" ? "bg-brand-pink/10 text-brand-pink" :
-                          "bg-brand-purple/10 text-brand-purple"
-                        }`}>
-                          <Icon className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-medium text-foreground truncate">{s.label}</p>
-                          {s.sub && <p className="text-[11px] text-muted-foreground truncate">{s.sub}</p>}
-                        </div>
-                        <span className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-wider shrink-0">
-                          {typeLabel[s.type]}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="px-3.5 py-2 border-t border-border/50 flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground">
-                    <kbd className="px-1 py-0.5 rounded bg-muted/40 border border-border/50 font-mono text-[9px] mr-1">↑↓</kbd>
-                    navigate
-                    <kbd className="px-1 py-0.5 rounded bg-muted/40 border border-border/50 font-mono text-[9px] mx-1">↵</kbd>
-                    select
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">{suggestions.length} result{suggestions.length !== 1 ? "s" : ""}</span>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-        </FirstUseTooltip>
+        {/* Search — always visible on desktop, expandable on mobile */}
+        {(!isMobile || mobileSearchOpen) && (
+          <FirstUseTooltip id="search-bar" message="Search tracks, artists, and playlists instantly" position="bottom">
+          <div className={"relative " + (isMobile ? "w-full" : "w-full max-w-md")} ref={wrapperRef}>
+            <div className="flex items-center gap-2.5 bg-secondary/50 rounded-lg px-3.5 py-2 w-full border border-border/50 focus-within:border-primary/30 transition-all">
+              <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <input
+                ref={inputRef}
+                type="text"
+                value={searchValue}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                onFocus={() => searchValue.length >= 2 && setShowSuggestions(true)}
+                placeholder={isMobile ? t("topbar.searchShort") : t("topbar.search")}
+                className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
+                autoFocus={isMobile && mobileSearchOpen}
+              />
+              {searchValue ? (
+                <button onClick={() => { setSearchValue(""); setShowSuggestions(false); }} className="text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              ) : isMobile ? (
+                <button onClick={() => { setMobileSearchOpen(false); setSearchValue(""); setShowSuggestions(false); }} className="text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
+                  <X className="w-4 h-4" />
+                </button>
+              ) : (
+                <kbd className="hidden sm:inline-flex text-2xs text-muted-foreground/40 bg-muted/40 px-1.5 py-0.5 rounded font-mono leading-none border border-border/50">
+                  ⌘K
+                </kbd>
+              )}
+            </div>
+
+            {/* Suggestions dropdown */}
+            <AnimatePresence>
+              {showSuggestions && suggestions.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 4, scale: 0.97 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-0 right-0 top-full mt-1.5 bg-card border border-border rounded-xl overflow-hidden z-50"
+                  style={{ boxShadow: "var(--shadow-elevated, 0 8px 30px -8px rgba(0,0,0,0.5))" }}
+                >
+                  <div className="py-1">
+                    {suggestions.map((s, idx) => {
+                      const Icon = iconMap[s.type];
+                      const isSelected = idx === selectedIdx;
+                      return (
+                        <button
+                          key={`${s.type}-${s.label}-${idx}`}
+                          onClick={() => handleSelect(s)}
+                          onMouseEnter={() => setSelectedIdx(idx)}
+                          className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors ${
+                            isSelected ? "bg-secondary/80" : "hover:bg-secondary/40"
+                          }`}
+                        >
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                            s.type === "track" ? "bg-primary/10 text-primary" :
+                            s.type === "artist" ? "bg-brand-pink/10 text-brand-pink" :
+                            "bg-brand-purple/10 text-brand-purple"
+                          }`}>
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13px] font-medium text-foreground truncate">{s.label}</p>
+                            {s.sub && <p className="text-[11px] text-muted-foreground truncate">{s.sub}</p>}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-wider shrink-0">
+                            {typeLabel[s.type]}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="px-3.5 py-2 border-t border-border/50 flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">
+                      <kbd className="px-1 py-0.5 rounded bg-muted/40 border border-border/50 font-mono text-[9px] mr-1">↑↓</kbd>
+                      navigate
+                      <kbd className="px-1 py-0.5 rounded bg-muted/40 border border-border/50 font-mono text-[9px] mx-1">↵</kbd>
+                      select
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">{suggestions.length} result{suggestions.length !== 1 ? "s" : ""}</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          </FirstUseTooltip>
+        )}
       </div>
 
       {/* Right actions */}
       <div className="flex items-center gap-1.5 ml-2 sm:ml-4">
+        {/* Mobile search trigger */}
+        {isMobile && !mobileSearchOpen && (
+          <button
+            onClick={() => setMobileSearchOpen(true)}
+            className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
+          >
+            <Search className="w-[17px] h-[17px]" />
+          </button>
+        )}
         <LanguageSwitcher />
         <button
           onClick={() => navigate("/notifications")}

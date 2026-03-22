@@ -11,7 +11,8 @@
     "contacts": "Contacts",
     "sharedLinks": "Shared Links",
     "notifications": "Notifications",
-    "approvals": "Approvals"
+    "approvals": "Approvals",
+    "more": "More"
   },
   "topbar": {
     "search": "Search tracks, artists, playlists…",
@@ -725,5 +726,51 @@
     "sharePitchStepDesc": "Send your music to the world",
     "searchTooltip": "Search tracks, artists, and playlists instantly",
     "uploadTooltip": "Upload your first track to start building your catalog"
+  },
+  "smartAr": {
+    "title": "Smart A&R",
+    "subtitle": "Describe what you're looking for and let AI search your catalog.",
+    "placeholder": "Describe the tracks you're looking for...",
+    "createPlaylist": "Create Playlist",
+    "creating": "Creating...",
+    "refine": "Refine",
+    "pitchPlaylist": "Pitch this playlist",
+    "createSecureLink": "Create secure link",
+    "viewPlaylist": "View playlist",
+    "startNewSearch": "Start a new search",
+    "nowPlaying": "Now Playing"
+  },
+  "landing": {
+    "heroTitle": "Your Music Catalog,",
+    "heroHighlight": "Organized & Pitch-Ready",
+    "heroDesc": "Trakalog is the all-in-one platform for music producers and labels to manage unreleased tracks, send professional pitches, and share music securely.",
+    "getEarlyAccess": "Get Early Access",
+    "joining": "Joining...",
+    "features": "Features",
+    "pricing": "Pricing",
+    "contact": "Contact",
+    "signIn": "Sign In",
+    "featuresTitle": "Everything you need to manage your catalog",
+    "catalogManagement": "Catalog Management",
+    "catalogManagementDesc": "Organize your unreleased tracks with metadata, stems, splits, and waveforms. Everything in one place.",
+    "professionalPitches": "Professional Pitches",
+    "professionalPitchesDesc": "Send polished pitch emails with secure listening links. Track who plays and downloads your music.",
+    "secureSharing": "Secure Sharing",
+    "secureSharingDesc": "Create password-protected links with expiration dates. Control access to your music.",
+    "engagementAnalytics": "Engagement Analytics",
+    "engagementAnalyticsDesc": "See who's listening, downloading, and engaging with your tracks in real-time.",
+    "builtFor": "Built for music professionals",
+    "artists": "Artists",
+    "producers": "Producers & Songwriters",
+    "labels": "Labels, A&R & Managers",
+    "ctaTitle": "Ready to organize your catalog?",
+    "ctaDesc": "Join the waitlist and be the first to try Trakalog when we launch.",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "copyright": "© 2026 Trakalog. All rights reserved.",
+    "onWaitlist": "You're on the waitlist. We'll reach out soon.",
+    "alreadyOnWaitlist": "You're already on the waitlist!",
+    "somethingWentWrong": "Something went wrong. Please try again.",
+    "onTheList": "You're on the list! We'll be in touch."
   }
 }

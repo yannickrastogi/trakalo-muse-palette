@@ -153,7 +153,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-xl bg-card border-border p-0 gap-0 max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden">
+      <DialogContent className="md:max-w-xl bg-card border-border p-0 gap-0 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
           <DialogHeader>

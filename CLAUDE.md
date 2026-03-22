@@ -19,6 +19,12 @@ SaaS premium de gestion de catalogue musical pré-release.
 - Toutes les données viennent de Supabase — pas de mock data
 - Pas de backticks dans les template literals quand on copie du code (utiliser la concaténation +)
 - Les fichiers audio vont dans le bucket "tracks", les stems dans "stems", les covers dans "covers"
+- **Mobile-first** : tout composant doit être responsive (sm/md/lg breakpoints Tailwind)
+- **i18n** : tout texte visible utilise les clés i18next (pas de texte en dur)
+- **Modals** : full-screen ou drawer sur mobile (< 768px), dialog centré sur desktop
+- **Touch targets** : 44px minimum sur mobile
+- **Layouts** : 1 colonne sur mobile, multi-colonnes sur desktop
+- Voir CONTRIBUTING.md pour les règles complètes
 
 ## Supabase
 - URL: https://xhmeitivkclbeziqavxw.supabase.co

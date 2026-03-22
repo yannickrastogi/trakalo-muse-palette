@@ -362,8 +362,8 @@ export default function TrackDetail() {
 
             {/* Hero section: Cover + Info + Player */}
             <motion.div variants={item} className="flex flex-col lg:flex-row gap-6">
-              {/* Cover artwork */}
-              <div className="w-full lg:w-64 shrink-0">
+              {/* Cover artwork — full width on mobile */}
+              <div className="w-full md:w-52 lg:w-64 shrink-0">
                 <div className="aspect-square rounded-2xl bg-gradient-to-br from-brand-purple/30 via-brand-pink/20 to-brand-orange/30 border border-border flex items-center justify-center relative overflow-hidden group" style={{ boxShadow: "var(--shadow-card)" }}>
                   <img src={track.coverImage || DEFAULT_COVER} alt={track.title} className="absolute inset-0 w-full h-full object-cover rounded-2xl" />
                   <input
@@ -438,8 +438,8 @@ export default function TrackDetail() {
                   </p>
                 </div>
 
-                {/* Quick metadata chips */}
-                <div className="flex flex-wrap gap-2">
+                {/* Quick metadata chips — scroll horizontal on mobile */}
+                <div className="flex flex-nowrap md:flex-wrap gap-2 overflow-x-auto scrollbar-hide pb-1 md:pb-0">
                   {!isEmptyValue(track.type) && <MetaChip icon={Music} label={track.type} />}
                   {!isEmptyValue(track.genre) && <MetaChip icon={Disc3} label={track.genre} />}
                   {!isEmptyValue(track.bpm) && <MetaChip icon={Activity} label={track.bpm + " BPM"} />}
@@ -464,25 +464,25 @@ export default function TrackDetail() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -8 }}
                         transition={{ duration: 0.2 }}
-                        className="flex flex-wrap items-center gap-2"
+                        className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2"
                       >
                         {permissions.canEditOwnTracks && (
                           <button
                             onClick={() => setEditTrackModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 min-h-[44px]"
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 min-h-[44px] col-span-1"
                           >
                             <Edit3 className="w-4 h-4" /> Edit Track
                           </button>
                         )}
                         <button
                           onClick={() => setShareExpanded(true)}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px] col-span-1"
                         >
                           <Share2 className="w-4 h-4" /> Share
                         </button>
                         <button
                           onClick={() => setDownloadModalOpen(true)}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
                         >
                           <Download className="w-4 h-4" /> Download
                         </button>
@@ -2040,7 +2040,7 @@ function EngagementTab({ trackId, onSeek }: { trackId: number; onSeek?: (seconds
       {/* Shared link activity */}
       {linkEvents.length > 0 && (
         <SectionCard title="Shared Link Activity" icon={Activity}>
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
             <div className="bg-secondary/50 rounded-lg p-3 text-center">
               <Play className="w-4 h-4 text-brand-pink mx-auto mb-1" />
               <p className="text-xl font-bold text-foreground">{linkPlays}</p>

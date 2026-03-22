@@ -495,7 +495,7 @@ function AppearanceSection() {
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
       <SectionBlock title="Theme" subtitle="Choose your visual mode" icon={Palette} onSave={handleSave} saveLabel="Save Appearance">
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
           {themes.map((t) => {
             const active = theme === t.id;
             return (

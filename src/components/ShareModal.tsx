@@ -154,15 +154,15 @@ export function ShareModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center p-0 md:p-4"
         >
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={handleClose} />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative z-10 w-full max-w-md bg-card border border-border rounded-2xl overflow-hidden"
-            style={{ boxShadow: "var(--shadow-elevated)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            className="relative z-10 w-full md:max-w-md bg-card border border-border rounded-t-2xl md:rounded-2xl overflow-hidden"
+            style={{ boxShadow: "var(--shadow-elevated)", maxHeight: "95dvh", display: "flex", flexDirection: "column" }}
           >
             {/* Header */}
             <div className="shrink-0 px-6 py-4 border-b border-border">

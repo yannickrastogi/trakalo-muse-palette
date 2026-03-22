@@ -298,7 +298,7 @@ export default function Team() {
           />
         ) : (
         <>
-        <motion.div variants={item} className="grid gap-3 grid-cols-3">
+        <motion.div variants={item} className="grid gap-3 grid-cols-1 sm:grid-cols-3">
           {/* Team's Catalog */}
           <button
             onClick={() => setShowSharedCatalog(true)}

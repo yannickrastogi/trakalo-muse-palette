@@ -11,7 +11,8 @@
     "contacts": "Contacts",
     "sharedLinks": "Liens Partagés",
     "notifications": "Notifications",
-    "approvals": "Approbations"
+    "approvals": "Approbations",
+    "more": "Plus"
   },
   "topbar": {
     "search": "Rechercher morceaux, artistes, playlists…",
@@ -463,5 +464,51 @@
     "sharePitchStepDesc": "Envoyez votre musique au monde",
     "searchTooltip": "Recherchez morceaux, artistes et playlists instantanément",
     "uploadTooltip": "Téléversez votre premier morceau pour commencer votre catalogue"
+  },
+  "smartAr": {
+    "title": "Smart A&R",
+    "subtitle": "Décrivez ce que vous cherchez et laissez l'IA fouiller votre catalogue.",
+    "placeholder": "Décrivez les morceaux que vous recherchez...",
+    "createPlaylist": "Créer la playlist",
+    "creating": "Création...",
+    "refine": "Affiner",
+    "pitchPlaylist": "Pitcher cette playlist",
+    "createSecureLink": "Créer un lien sécurisé",
+    "viewPlaylist": "Voir la playlist",
+    "startNewSearch": "Nouvelle recherche",
+    "nowPlaying": "En cours de lecture"
+  },
+  "landing": {
+    "heroTitle": "Votre catalogue musical,",
+    "heroHighlight": "Organisé et prêt à pitcher",
+    "heroDesc": "Trakalog est la plateforme tout-en-un pour les producteurs et labels pour gérer les morceaux inédits, envoyer des pitchs professionnels et partager la musique en toute sécurité.",
+    "getEarlyAccess": "Accès anticipé",
+    "joining": "Inscription...",
+    "features": "Fonctionnalités",
+    "pricing": "Tarifs",
+    "contact": "Contact",
+    "signIn": "Connexion",
+    "featuresTitle": "Tout ce qu'il vous faut pour gérer votre catalogue",
+    "catalogManagement": "Gestion de catalogue",
+    "catalogManagementDesc": "Organisez vos morceaux inédits avec métadonnées, stems, splits et waveforms. Tout en un seul endroit.",
+    "professionalPitches": "Pitchs professionnels",
+    "professionalPitchesDesc": "Envoyez des emails de pitch soignés avec des liens d'écoute sécurisés. Suivez qui écoute et télécharge votre musique.",
+    "secureSharing": "Partage sécurisé",
+    "secureSharingDesc": "Créez des liens protégés par mot de passe avec dates d'expiration. Contrôlez l'accès à votre musique.",
+    "engagementAnalytics": "Statistiques d'engagement",
+    "engagementAnalyticsDesc": "Voyez qui écoute, télécharge et interagit avec vos morceaux en temps réel.",
+    "builtFor": "Conçu pour les professionnels de la musique",
+    "artists": "Artistes",
+    "producers": "Producteurs & Auteurs-compositeurs",
+    "labels": "Labels, A&R & Managers",
+    "ctaTitle": "Prêt à organiser votre catalogue ?",
+    "ctaDesc": "Rejoignez la liste d'attente et soyez les premiers à essayer Trakalog.",
+    "privacyPolicy": "Politique de confidentialité",
+    "termsOfService": "Conditions d'utilisation",
+    "copyright": "© 2026 Trakalog. Tous droits réservés.",
+    "onWaitlist": "Vous êtes sur la liste d'attente. Nous vous contacterons bientôt.",
+    "alreadyOnWaitlist": "Vous êtes déjà sur la liste d'attente !",
+    "somethingWentWrong": "Une erreur est survenue. Veuillez réessayer.",
+    "onTheList": "Vous êtes inscrit ! Nous vous contacterons bientôt."
   }
 }

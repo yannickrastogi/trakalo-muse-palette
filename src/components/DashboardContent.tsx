@@ -1004,12 +1004,12 @@ export function DashboardContent() {
         {/* Quick actions */}
         <motion.div variants={item} className="space-y-3 sm:space-y-4">
           <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">{t("dashboard.quickActions")}</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+          <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1 sm:pb-0 sm:grid sm:grid-cols-3 lg:grid-cols-5">
             {quickActions.map((action) => (
               <button
                 key={action.label}
                 onClick={action.onClick}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-[13px] group min-h-[72px] ${
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-[13px] group min-h-[72px] shrink-0 w-[120px] sm:w-auto ${
                   action.primary
                     ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange hover:bg-brand-orange/12 hover:border-brand-orange/40 gradient-border"
                     : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-brand-pink/20 hover:bg-secondary/40"

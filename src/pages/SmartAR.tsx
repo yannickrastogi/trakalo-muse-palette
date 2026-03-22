@@ -686,11 +686,11 @@ export default function SmartAR() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex flex-col h-full max-w-3xl mx-auto px-4 py-6"
+        className="flex flex-col h-full max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6"
       >
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary" />
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Sparkles className="w-5 sm:w-6 h-5 sm:h-6 text-primary" />
             Smart A&R
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -734,7 +734,7 @@ export default function SmartAR() {
         </div>
 
         {(step === "brief" || step === "results" || step === "created") && (
-          <div className="border-t border-border pt-4 mt-auto">
+          <div className="border-t border-border pt-3 sm:pt-4 mt-auto sticky bottom-0 bg-background pb-1">
             <div className="flex items-end gap-2">
               <textarea
                 value={brief}

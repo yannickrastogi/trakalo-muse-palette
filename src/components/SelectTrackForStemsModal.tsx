@@ -42,18 +42,18 @@ export function SelectTrackForStemsModal({ open, onClose }: Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center p-0 md:p-4"
         >
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="relative w-full max-w-lg bg-card border border-border rounded-2xl overflow-hidden"
+            className="relative w-full md:max-w-lg bg-card border border-border rounded-t-2xl md:rounded-2xl overflow-hidden max-h-[95dvh]"
             style={{ boxShadow: "var(--shadow-card)" }}
           >
             {/* Header */}

@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PageShell } from "@/components/PageShell";
 import { MiniWaveform } from "@/components/MiniWaveform";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 const statuses = ["Available", "On Hold", "Released"];
@@ -87,6 +88,9 @@ export default function Catalog() {
   const { permissions } = useRole();
   const [deleteTarget, setDeleteTarget] = useState<TrackData | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const isMobile = useIsMobile();
+  // Force grid on mobile
+  const effectiveViewMode = isMobile ? "grid" : viewMode;
 
   // Clear query param after consuming it
   useEffect(() => {
@@ -168,8 +172,8 @@ export default function Catalog() {
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {/* View toggle */}
-            <div className="flex items-center rounded-xl border border-border bg-card overflow-hidden">
+            {/* View toggle — hidden on mobile (always grid) */}
+            <div className="hidden md:flex items-center rounded-xl border border-border bg-card overflow-hidden">
               <button
                 onClick={() => setViewMode("table")}
                 className={`flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-semibold transition-all ${
@@ -277,7 +281,7 @@ export default function Catalog() {
 
         {/* Track Table / Grid */}
         <motion.div variants={item}>
-          {viewMode === "table" ? (
+          {effectiveViewMode === "table" ? (
           <div className="card-premium overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">

@@ -1,6 +1,6 @@
 {
   "nav": { "dashboard": "대시보드", "tracks": "트랙", "stems": "스템", "playlists": "플레이리스트", "pitch": "피칭", "team": "팀", "settings": "설정", "smartAr": "Smart A&R",
-    "contacts": "연락처", "sharedLinks": "공유 링크", "notifications": "알림", "approvals": "승인" },
+    "contacts": "연락처", "sharedLinks": "공유 링크", "notifications": "알림", "approvals": "승인", "more": "더보기" },
   "topbar": { "search": "트랙, 아티스트, 플레이리스트 검색…", "searchShort": "검색…" },
   "userMenu": { "profile": "프로필", "settings": "설정", "billing": "청구", "signOut": "로그아웃" },
   "dashboard": { "title": "대시보드", "subtitle": "카탈로그 한눈에 보기 — {{date}}", "totalTracks": "전체 트랙", "playlists": "플레이리스트", "collaborators": "협업자", "pendingPitches": "대기 중인 피칭", "thisWeek": "+18 이번 주", "new": "+3 신규", "active": "+12 활성", "dueToday": "오늘 4개 마감", "recentTracks": "최근 트랙", "viewAll": "모두 보기 →", "quickActions": "빠른 작업", "uploadTrack": "트랙 업로드", "newPlaylist": "새 플레이리스트", "inviteMember": "멤버 초대", "createTeam": "팀 만들기", "newPitch": "새 피칭", "activity": "활동", "seeAll": "모두 보기", "totalPlays": "총 재생 수", "downloads": "다운로드", "recipients": "수신자 {{count}}명", "acrossContacts": "연락처 {{count}}명 대상", "recent": "+{{count}} 최근" },

@@ -1,6 +1,6 @@
 {
   "nav": { "dashboard": "Dashboard", "tracks": "Brani", "stems": "Stems", "playlists": "Playlist", "pitch": "Pitch", "team": "Team", "settings": "Impostazioni", "smartAr": "Smart A&R",
-    "contacts": "Contatti", "sharedLinks": "Link Condivisi", "notifications": "Notifiche", "approvals": "Approvazioni" },
+    "contacts": "Contatti", "sharedLinks": "Link Condivisi", "notifications": "Notifiche", "approvals": "Approvazioni", "more": "Altro" },
   "topbar": { "search": "Cerca brani, artisti, playlist…", "searchShort": "Cerca…" },
   "userMenu": { "profile": "Profilo", "settings": "Impostazioni", "billing": "Fatturazione", "signOut": "Esci" },
   "dashboard": { "title": "Dashboard", "subtitle": "Il tuo catalogo in sintesi — {{date}}", "totalTracks": "Brani totali", "playlists": "Playlist", "collaborators": "Collaboratori", "pendingPitches": "Pitch in attesa", "thisWeek": "+18 questa settimana", "new": "+3 nuove", "active": "+12 attivi", "dueToday": "4 per oggi", "recentTracks": "Brani recenti", "viewAll": "Vedi tutto →", "quickActions": "Azioni rapide", "uploadTrack": "Carica brano", "newPlaylist": "Nuova playlist", "inviteMember": "Invita membro", "createTeam": "Crea team", "newPitch": "Nuovo pitch", "activity": "Attività", "seeAll": "Vedi tutto", "totalPlays": "Ascolti totali", "downloads": "Download", "recipients": "{{count}} destinatari", "acrossContacts": "su {{count}} contatti", "recent": "+{{count}} recenti" },

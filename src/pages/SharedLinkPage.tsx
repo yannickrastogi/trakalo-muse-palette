@@ -797,8 +797,8 @@ export default function SharedLinkPage() {
 
           {/* Playlist header */}
           <div className="rounded-2xl bg-card border border-border overflow-hidden" style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
-            <div className="flex items-start gap-5 p-6">
-              <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 p-4 sm:p-6">
+              <div className="w-full max-w-[200px] sm:w-28 md:w-36 aspect-square sm:h-28 md:h-36 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50">
                 <img src={playlistData.cover_url || DEFAULT_COVER} alt={playlistData.name} className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1 pt-1">
@@ -1099,8 +1099,8 @@ export default function SharedLinkPage() {
 
         {trackData ? (
           <div className="rounded-2xl bg-card border border-border overflow-hidden" style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
-            <div className="flex items-start gap-5 p-6">
-              <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 p-4 sm:p-6">
+              <div className="w-full max-w-[200px] sm:w-28 md:w-36 aspect-square sm:h-28 md:h-36 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50">
                 <img src={trackData.cover_url || DEFAULT_COVER} alt={trackData.title} className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1 pt-1">

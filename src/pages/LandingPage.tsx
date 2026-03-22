@@ -63,12 +63,12 @@ function WaitlistForm({ id }: { id?: string }) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="you@label.com"
-        className="flex-1 h-12 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-orange/40 focus:border-brand-orange/40 transition-all"
+        className="flex-1 h-12 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-orange/40 focus:border-brand-orange/40 transition-all min-h-[44px]"
       />
       <button
         type="submit"
         disabled={submitting}
-        className="h-12 px-6 rounded-xl btn-brand text-sm font-semibold whitespace-nowrap flex items-center gap-2 justify-center"
+        className="h-12 px-6 rounded-xl btn-brand text-sm font-semibold whitespace-nowrap flex items-center gap-2 justify-center w-full sm:w-auto min-h-[44px]"
       >
         {submitting ? "Joining..." : "Get Early Access"}
         {!submitting && <ArrowRight className="w-4 h-4" />}
@@ -153,21 +153,21 @@ export default function LandingPage() {
         animate="show"
         className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 sm:pt-32 pb-20 sm:pb-28"
       >
-        <div className="max-w-3xl">
+        <div className="max-w-3xl text-center sm:text-left mx-auto sm:mx-0">
           <motion.h1
             variants={fadeUp}
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1]"
+            className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1]"
           >
             Your Music Catalog,{" "}
             <span className="gradient-text">Organized & Pitch-Ready</span>
           </motion.h1>
           <motion.p
             variants={fadeUp}
-            className="mt-6 text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-2xl"
+            className="mt-5 sm:mt-6 text-base sm:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto sm:mx-0"
           >
             Trakalog is the all-in-one platform for music producers and labels to manage unreleased tracks, send professional pitches, and share music securely.
           </motion.p>
-          <motion.div variants={fadeUp} className="mt-8">
+          <motion.div variants={fadeUp} className="mt-6 sm:mt-8 flex justify-center sm:justify-start">
             <WaitlistForm id="hero-form" />
           </motion.div>
         </div>
@@ -210,7 +210,7 @@ export default function LandingPage() {
             whileInView="show"
             viewport={{ once: true, margin: "-100px" }}
             variants={stagger}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-5"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5"
           >
             {features.map((f) => (
               <motion.div

@@ -1,6 +1,6 @@
 {
   "nav": { "dashboard": "ダッシュボード", "tracks": "トラック", "stems": "ステム", "playlists": "プレイリスト", "pitch": "ピッチ", "team": "チーム", "settings": "設定", "smartAr": "Smart A&R",
-    "contacts": "連絡先", "sharedLinks": "共有リンク", "notifications": "通知", "approvals": "承認" },
+    "contacts": "連絡先", "sharedLinks": "共有リンク", "notifications": "通知", "approvals": "承認", "more": "もっと見る" },
   "topbar": { "search": "トラック、アーティスト、プレイリストを検索…", "searchShort": "検索…" },
   "userMenu": { "profile": "プロフィール", "settings": "設定", "billing": "請求", "signOut": "ログアウト" },
   "dashboard": { "title": "ダッシュボード", "subtitle": "カタログ一覧 — {{date}}", "totalTracks": "トラック合計", "playlists": "プレイリスト", "collaborators": "コラボレーター", "pendingPitches": "保留中のピッチ", "thisWeek": "+18 今週", "new": "+3 新規", "active": "+12 アクティブ", "dueToday": "本日4件期限", "recentTracks": "最近のトラック", "viewAll": "すべて表示 →", "quickActions": "クイックアクション", "uploadTrack": "トラックをアップロード", "newPlaylist": "新しいプレイリスト", "inviteMember": "メンバーを招待", "createTeam": "チームを作成", "newPitch": "新しいピッチ", "activity": "アクティビティ", "seeAll": "すべて表示", "totalPlays": "総再生回数", "downloads": "ダウンロード", "recipients": "{{count}}人の受信者", "acrossContacts": "{{count}}件の連絡先全体", "recent": "+{{count}} 最近" },

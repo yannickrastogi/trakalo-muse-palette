@@ -182,11 +182,11 @@ export default function SharedLinks() {
       {/* Activity modal */}
       <AnimatePresence>
         {activityLink && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center p-0 md:p-4">
             <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setActivityLinkId(null)} />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="relative z-10 w-full max-w-lg bg-card border border-border rounded-2xl overflow-hidden"
+              initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
+              className="relative z-10 w-full md:max-w-lg bg-card border border-border rounded-t-2xl md:rounded-2xl overflow-hidden max-h-[95dvh]"
               style={{ boxShadow: "var(--shadow-elevated)" }}
             >
               <div className="px-6 py-4 border-b border-border flex items-center justify-between">
