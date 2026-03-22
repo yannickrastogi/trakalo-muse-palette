@@ -223,7 +223,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate, initialPlaylist
   const handleSend = () => {
     if (!selectedItem || !canSubmit) return;
     if (linkType === "secured" && !password.trim()) {
-      alert("Please enter a password for the secured link.");
+      alert(t("shareModal.passwordRequired"));
       return;
     }
     persistContact();
@@ -475,7 +475,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate, initialPlaylist
                             </div>
                             <div className="max-h-48 overflow-y-auto">
                               {filteredContacts.length === 0 ? (
-                                <p className="text-xs text-muted-foreground/50 text-center py-4">No contacts found</p>
+                                <p className="text-xs text-muted-foreground/50 text-center py-4">{t("createPitchModal.noMatching", { type: t("createPitchModal.savedContacts").toLowerCase() })}</p>
                               ) : (
                                 filteredContacts.map((c, i) => (
                                   <button

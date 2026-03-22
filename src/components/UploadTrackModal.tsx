@@ -1173,14 +1173,14 @@ function StepInfo({
           <FieldSelect value={trackKey} onChange={setTrackKey} options={KEYS} placeholder={t("uploadTrack.selectKey")} />
         </div>
         <div className="space-y-1.5">
-          <FieldLabel>Genre</FieldLabel>
+          <FieldLabel>{t("uploadTrack.genre")}</FieldLabel>
           {genre === "__other__" || (!(GENRES as readonly string[]).includes(genre) && genre !== "") ? (
             <div className="flex gap-1.5">
               <input
                 type="text"
                 value={genre === "__other__" ? "" : genre}
                 onChange={(e) => setGenre(e.target.value)}
-                placeholder="Enter custom genre"
+                placeholder={t("uploadTrack.enterCustomGenre", "Enter custom genre")}
                 autoFocus
                 className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
               />
@@ -1197,7 +1197,7 @@ function StepInfo({
               onChange={(e) => setGenre(e.target.value)}
               className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none font-medium"
             >
-              <option value="">Select genre</option>
+              <option value="">{t("uploadTrack.selectGenre")}</option>
               {GENRES.map((o) => <option key={o} value={o}>{o}</option>)}
               <option value="__other__">Other…</option>
             </select>
@@ -1205,7 +1205,7 @@ function StepInfo({
         </div>
       </div>
       <div className="space-y-1.5">
-        <FieldLabel>Mood</FieldLabel>
+        <FieldLabel>{t("uploadTrack.mood")}</FieldLabel>
         <div className="flex flex-wrap gap-1.5">
           {MOODS.map((m) => (
             <button
@@ -1224,20 +1224,20 @@ function StepInfo({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <FieldLabel>Gender</FieldLabel>
-          <FieldSelect value={voice} onChange={setVoice} options={["Male", "Female", "Duet", "N/A"]} placeholder="Select gender" />
+          <FieldLabel>{t("editTrack.gender", "Gender")}</FieldLabel>
+          <FieldSelect value={voice} onChange={setVoice} options={["Male", "Female", "Duet", "N/A"]} placeholder={t("uploadTrack.selectGender", "Select gender")} />
         </div>
         <div className="space-y-1.5">
-          <FieldLabel>Language</FieldLabel>
-          <FieldSelect value={language} onChange={setLanguage} options={LANGUAGES} placeholder="Select language" />
+          <FieldLabel>{t("uploadTrack.language")}</FieldLabel>
+          <FieldSelect value={language} onChange={setLanguage} options={LANGUAGES} placeholder={t("uploadTrack.selectLanguage")} />
         </div>
       </div>
       <div className="space-y-1.5">
-        <FieldLabel>Notes</FieldLabel>
+        <FieldLabel>{t("uploadTrack.notes")}</FieldLabel>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Any additional notes about this track…"
+          placeholder={t("uploadTrack.notesPlaceholder", "Any additional notes about this track...")}
           rows={3}
           className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40 resize-none"
         />
@@ -1250,8 +1250,8 @@ function StepInfo({
           className="flex items-center gap-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showDetails ? "rotate-90" : ""}`} />
-          Credits
-          <span className="text-2xs text-muted-foreground/50 font-normal">— performers, production, studios</span>
+          {t("uploadTrack.credits", "Credits")}
+          <span className="text-2xs text-muted-foreground/50 font-normal">{t("uploadTrack.creditsSubtitle", "— performers, production, studios")}</span>
         </button>
         {showDetails && (
           <motion.div
@@ -1288,19 +1288,20 @@ function StepStems({
   onUpload: (files: FileList) => void;
   onRemove: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-sm font-semibold text-foreground mb-1">Stem Files</h3>
-        <p className="text-2xs text-muted-foreground">Upload individual stems (Kick, Snare, Bass, Guitar, Vocals, etc.)</p>
+        <h3 className="text-sm font-semibold text-foreground mb-1">{t("uploadTrack.stemFiles", "Stem Files")}</h3>
+        <p className="text-2xs text-muted-foreground">{t("uploadTrack.stemFilesDesc", "Upload individual stems (Kick, Snare, Bass, Guitar, Vocals, etc.)")}</p>
       </div>
       <div
         onClick={() => stemsInputRef.current?.click()}
         className="border-2 border-dashed border-border hover:border-brand-orange/30 rounded-xl p-6 flex flex-col items-center gap-2 cursor-pointer transition-all group"
       >
         <Plus className="w-5 h-5 text-muted-foreground group-hover:text-brand-orange transition-colors" />
-        <p className="text-[13px] font-semibold text-foreground">Add stem files</p>
-        <p className="text-2xs text-muted-foreground">Select one or multiple audio files</p>
+        <p className="text-[13px] font-semibold text-foreground">{t("uploadTrack.addStemFiles", "Add stem files")}</p>
+        <p className="text-2xs text-muted-foreground">{t("uploadTrack.selectAudioFiles", "Select one or multiple audio files")}</p>
         <input
           ref={stemsInputRef}
           type="file"
@@ -1343,12 +1344,13 @@ function StepSplits({
   onUpdate: (id: string, field: keyof Split, value: string | number) => void;
   onRemove: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-foreground mb-1">Splits & Credits</h3>
-          <p className="text-2xs text-muted-foreground">Add collaborators and assign ownership splits</p>
+          <h3 className="text-sm font-semibold text-foreground mb-1">{t("uploadTrack.splitsAndCredits", "Splits & Credits")}</h3>
+          <p className="text-2xs text-muted-foreground">{t("uploadTrack.splitsDesc", "Add collaborators and assign ownership splits")}</p>
         </div>
         <div className={`text-xs font-bold tabular-nums ${totalSplit === 100 ? "text-emerald-400" : totalSplit > 100 ? "text-destructive" : "text-brand-orange"}`}>
           {totalSplit}%
@@ -1362,7 +1364,7 @@ function StepSplits({
                 <div className="w-6 h-6 rounded-full bg-brand-orange/10 flex items-center justify-center">
                   <User className="w-3 h-3 text-brand-orange" />
                 </div>
-                <span className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">Contributor {idx + 1}</span>
+                <span className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">{t("uploadTrack.contributor", "Contributor")} {idx + 1}</span>
               </div>
               {splits.length > 1 && (
                 <button onClick={() => onRemove(split.id)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
@@ -1372,28 +1374,28 @@ function StepSplits({
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
-                <label className="text-2xs text-muted-foreground font-medium">Name</label>
-                <input value={split.name} onChange={(e) => onUpdate(split.id, "name", e.target.value)} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.name", "Name")}</label>
+                <input value={split.name} onChange={(e) => onUpdate(split.id, "name", e.target.value)} placeholder={t("uploadTrack.fullName", "Full name")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
-                <label className="text-2xs text-muted-foreground font-medium">Role</label>
-                <input value={split.role} onChange={(e) => onUpdate(split.id, "role", e.target.value)} placeholder="e.g. Producer" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.role", "Role")}</label>
+                <input value={split.role} onChange={(e) => onUpdate(split.id, "role", e.target.value)} placeholder={t("uploadTrack.rolePlaceholder", "e.g. Producer")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
-                <label className="text-2xs text-muted-foreground font-medium">Split %</label>
+                <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.share", "Split %")}</label>
                 <input type="number" min={0} max={100} step={0.01} value={split.percentage} onChange={(e) => onUpdate(split.id, "percentage", parseFloat(e.target.value) || 0)} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
-                <label className="text-2xs text-muted-foreground font-medium">PRO</label>
+                <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.pro", "PRO")}</label>
                 <input value={split.pro} onChange={(e) => onUpdate(split.id, "pro", e.target.value)} placeholder="e.g. ASCAP" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
-                <label className="text-2xs text-muted-foreground font-medium">IPI</label>
-                <input value={split.ipi} onChange={(e) => onUpdate(split.id, "ipi", e.target.value)} placeholder="IPI number" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.ipi", "IPI")}</label>
+                <input value={split.ipi} onChange={(e) => onUpdate(split.id, "ipi", e.target.value)} placeholder={t("uploadTrack.ipiPlaceholder", "IPI number")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
-                <label className="text-2xs text-muted-foreground font-medium">Publisher</label>
-                <input value={split.publisher} onChange={(e) => onUpdate(split.id, "publisher", e.target.value)} placeholder="Publisher name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.publisher", "Publisher")}</label>
+                <input value={split.publisher} onChange={(e) => onUpdate(split.id, "publisher", e.target.value)} placeholder={t("uploadTrack.publisherPlaceholder", "Publisher name")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
               </div>
             </div>
           </div>

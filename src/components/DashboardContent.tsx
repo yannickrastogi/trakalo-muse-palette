@@ -671,7 +671,7 @@ export function DashboardContent() {
                   Showing {filteredPlays.length} entries · {totalFilteredPlays} total plays
                 </span>
                 <Link to="/tracks" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
-                  View catalog →
+                  {t("dashboard.viewAll")}
                 </Link>
               </div>
             </div>
@@ -768,7 +768,7 @@ export function DashboardContent() {
                   Showing {filteredDownloads.length} entries · {totalFilteredDownloads} total downloads
                 </span>
                 <Link to="/tracks" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
-                  View catalog →
+                  {t("dashboard.viewAll")}
                 </Link>
               </div>
             </div>
@@ -872,7 +872,7 @@ export function DashboardContent() {
                   Showing {filteredContacts.length} of {contactEntries.length} total contacts
                 </span>
                 <Link to="/contacts" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
-                  View all contacts →
+                  {t("dashboard.viewAll")}
                 </Link>
               </div>
             </div>
@@ -990,7 +990,7 @@ export function DashboardContent() {
                     Showing {filteredPitches.length} of {allPitches.length} total pitches
                   </span>
                   <Link to="/pitch" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
-                    View all pitches →
+                    {t("dashboard.viewAll")}
                   </Link>
                 </div>
               </div>

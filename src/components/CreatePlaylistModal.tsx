@@ -452,7 +452,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                 {selectedTracks.length > 0 && (
                   <div className="px-6 pt-4 pb-3 border-b border-border/50">
                     <p className="text-2xs text-muted-foreground/60 uppercase tracking-widest font-semibold mb-2">
-                      Added · {selectedTracks.length}
+                      {t("createPlaylist.selected")} · {selectedTracks.length}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {selectedTracks.map((track) => (
@@ -483,7 +483,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                     <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                     <input
                       type="text"
-                      placeholder="Search by title, artist, or genre…"
+                      placeholder={t("createPlaylist.searchTracks")}
                       value={trackSearch}
                       onChange={(e) => setTrackSearch(e.target.value)}
                       className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/50 outline-none w-full font-medium"
@@ -502,10 +502,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                     <div className="py-12 text-center">
                       <Music className="w-8 h-8 mx-auto mb-3 text-muted-foreground/15" />
                       <p className="text-sm font-medium text-muted-foreground">
-                        {trackSearch ? "No matching tracks" : "All tracks added"}
-                      </p>
-                      <p className="text-xs text-muted-foreground/50 mt-1">
-                        {trackSearch ? "Try a different search term" : "Your entire catalog is in this playlist"}
+                        {t("createPlaylist.noTracksFound")}
                       </p>
                     </div>
                   ) : (
@@ -541,7 +538,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
         <div className="px-6 py-4 border-t border-border/50 flex items-center justify-between gap-3 shrink-0 bg-card">
           <div className="text-xs text-muted-foreground/50">
             {step === "tracks" && selectedTracks.length > 0 && (
-              <span>{selectedTracks.length} track{selectedTracks.length !== 1 ? "s" : ""} selected</span>
+              <span>{selectedTracks.length + " " + t("common.tracks") + " " + t("createPlaylist.selected").toLowerCase()}</span>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -550,7 +547,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                 onClick={() => setStep("details")}
                 className="px-4 py-2.5 rounded-xl text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
               >
-                Back
+                {t("common.back")}
               </button>
             )}
             {step === "details" ? (
@@ -559,7 +556,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                 disabled={!canProceed}
                 className="btn-brand px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
               >
-                Next: Add Tracks
+                {t("common.next") + ": " + t("createPlaylist.addFromCatalog")}
               </button>
             ) : (
               <button
@@ -588,7 +585,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                 disabled={!canCreate}
                 className="btn-brand px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
               >
-                Create Playlist
+                {t("createPlaylist.create")}
               </button>
             )}
           </div>
