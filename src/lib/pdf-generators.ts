@@ -216,11 +216,16 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
   });
   y += barHeight + 24;
 
+  // Column layout — proportional widths to prevent overlap
   const colName = marginX;
-  const colRole = marginX + 180;
-  const colPro = marginX + 310;
-  const colIpi = marginX + 370;
-  const colShare = pageW - marginX - 40;
+  const nameW = contentW * 0.28;
+  const colRole = colName + nameW;
+  const roleW = contentW * 0.28;
+  const colPro = colRole + roleW;
+  const proW = contentW * 0.13;
+  const colIpi = colPro + proW;
+  const ipiW = contentW * 0.18;
+  const colShare = marginX + contentW;
 
   doc.setFillColor(...cardBg);
   doc.roundedRect(marginX, y, contentW, 28, 6, 6, "F");
@@ -228,43 +233,89 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
   doc.setFontSize(7.5);
   doc.setTextColor(...textMuted);
   doc.text("NAME", colName + 14, y + 18);
-  doc.text("ROLE", colRole, y + 18);
-  doc.text("PRO", colPro, y + 18);
-  doc.text("IPI", colIpi, y + 18);
-  doc.text("SHARE", colShare, y + 18, { align: "right" });
+  doc.text("ROLE", colRole + 4, y + 18);
+  doc.text("PRO", colPro + 4, y + 18);
+  doc.text("IPI", colIpi + 4, y + 18);
+  doc.text("SHARE", colShare - 6, y + 18, { align: "right" });
   y += 36;
 
   splits.forEach((s, i) => {
     const color = splitColors[i % splitColors.length];
+
+    // Calculate row height based on content wrapping
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    const roleLines = doc.splitTextToSize(s.role || "—", roleW - 8);
+    const ipiLines = doc.splitTextToSize(s.ipi || "—", ipiW - 8);
+    const nameLines = doc.splitTextToSize(s.name, nameW - 24);
+    const maxLines = Math.max(roleLines.length, ipiLines.length, nameLines.length);
+    const baseRowH = 32;
+    const extraLineH = 11;
+    const rowH = baseRowH + Math.max(0, maxLines - 1) * extraLineH + (s.publisher ? 12 : 0);
+
+    // Page break check
+    if (y + rowH > pageH - 80) {
+      doc.addPage();
+      drawPageBackground(doc);
+      y = 48;
+    }
+
     if (i % 2 === 0) {
       doc.setFillColor(cardBg[0] - 2, cardBg[1] - 2, cardBg[2] - 2);
-      doc.rect(marginX, y - 4, contentW, 32, "F");
+      doc.rect(marginX, y - 4, contentW, rowH, "F");
     }
+
+    // Color dot
     doc.setFillColor(...color);
     doc.circle(colName + 6, y + 10, 4, "F");
+
+    // Name (wrapped)
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10.5);
+    doc.setFontSize(10);
     doc.setTextColor(...textLight);
-    doc.text(s.name, colName + 18, y + 12);
+    var nameY = y + 12;
+    nameLines.forEach(function (line: string) {
+      doc.text(line, colName + 18, nameY);
+      nameY += extraLineH;
+    });
+
+    // Publisher below name
     if (s.publisher) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
       doc.setTextColor(...textMuted);
-      doc.text(s.publisher, colName + 18, y + 23);
+      doc.text(s.publisher, colName + 18, nameY);
     }
+
+    // Role (wrapped)
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
+    doc.setFontSize(8.5);
     doc.setTextColor(...textLight);
-    doc.text(s.role, colRole, y + 12);
-    doc.setFontSize(9);
+    var roleY = y + 12;
+    roleLines.forEach(function (line: string) {
+      doc.text(line, colRole + 4, roleY);
+      roleY += extraLineH;
+    });
+
+    // PRO
+    doc.setFontSize(8.5);
     doc.setTextColor(...textMuted);
-    doc.text(s.pro || "—", colPro, y + 12);
-    doc.text(s.ipi || "—", colIpi, y + 12);
+    doc.text(s.pro || "—", colPro + 4, y + 12);
+
+    // IPI (wrapped)
+    var ipiY = y + 12;
+    ipiLines.forEach(function (line: string) {
+      doc.text(line, colIpi + 4, ipiY);
+      ipiY += extraLineH;
+    });
+
+    // Share %
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...color);
-    doc.text(`${s.share}%`, colShare, y + 12, { align: "right" });
-    y += 36;
+    doc.text(s.share + "%", colShare - 6, y + 14, { align: "right" });
+
+    y += rowH;
   });
 
   y += 4;
