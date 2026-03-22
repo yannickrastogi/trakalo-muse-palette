@@ -85,30 +85,52 @@ serve(async (req) => {
         continue;
       }
 
-      console.log("Sending to:", split.email, "(" + split.name + ")");
-
-      // Generate token BEFORE insert and email
-      const token = generateToken();
-      const signUrl = "https://app.trakalog.com/sign/" + token;
-
-      // Insert signature request with token
-      const { error: insertError } = await supabase
+      // Check for existing signature_request for this (track_id, email)
+      const { data: existing } = await supabase
         .from("signature_requests")
-        .insert({
-          track_id,
-          collaborator_name: split.name,
-          collaborator_email: split.email,
-          role: split.role,
-          split_share: split.share,
-          pro: split.pro || "",
-          ipi: split.ipi || "",
-          publisher: split.publisher || "",
-          token,
-        });
+        .select("id, token, status")
+        .eq("track_id", track_id)
+        .eq("collaborator_email", split.email)
+        .order("status", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (insertError) {
-        console.error("Insert error for " + split.email + ": " + insertError.message);
+      if (existing && existing.status === "signed") {
+        console.log("Skipping (already signed):", split.email);
         continue;
+      }
+
+      let signUrl: string;
+
+      if (existing && existing.status === "pending") {
+        // Resend email with existing token — no new row
+        console.log("Resending existing token:", split.email);
+        signUrl = "https://app.trakalog.com/sign/" + existing.token;
+      } else {
+        // No existing entry — create new one
+        const token = generateToken();
+        signUrl = "https://app.trakalog.com/sign/" + token;
+
+        console.log("Sending to:", split.email, "(" + split.name + ")");
+
+        const { error: insertError } = await supabase
+          .from("signature_requests")
+          .insert({
+            track_id,
+            collaborator_name: split.name,
+            collaborator_email: split.email,
+            role: split.role,
+            split_share: split.share,
+            pro: split.pro || "",
+            ipi: split.ipi || "",
+            publisher: split.publisher || "",
+            token,
+          });
+
+        if (insertError) {
+          console.error("Insert error for " + split.email + ": " + insertError.message);
+          continue;
+        }
       }
 
       const htmlBody = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head>"

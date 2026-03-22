@@ -1567,7 +1567,17 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
       .select("id, collaborator_name, collaborator_email, status, signed_at, signature_data, split_share")
       .eq("track_id", trackUuid)
       .then(function (res) {
-        if (res.data) setSignatureStatuses(res.data as SignatureStatus[]);
+        if (!res.data) return;
+        // Deduplicate: keep best status per collaborator_email (signed > pending)
+        var best: Record<string, SignatureStatus> = {};
+        (res.data as SignatureStatus[]).forEach(function (sig) {
+          var key = sig.collaborator_email || sig.collaborator_name;
+          var existing = best[key];
+          if (!existing || sig.status === "signed") {
+            best[key] = sig;
+          }
+        });
+        setSignatureStatuses(Object.values(best));
       });
   }, [trackUuid]);
 
