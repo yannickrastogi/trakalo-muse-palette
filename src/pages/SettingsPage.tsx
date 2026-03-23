@@ -37,6 +37,7 @@ import { RotateCcw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
+import { applyTheme, applyAccent, getStoredTheme, getStoredAccent, watchSystemTheme, type ThemeMode, type AccentPalette } from "@/lib/theme";
 
 /* ─── Animations ─── */
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
@@ -545,32 +546,42 @@ function NotificationsSection() {
 
 function AppearanceSection() {
   const { t } = useTranslation();
-  const [theme, setTheme] = useState<"dark" | "light" | "system">(() => {
-    return (localStorage.getItem("trakalog-theme") as "dark" | "light" | "system") || "dark";
-  });
-  const [accentIdx, setAccentIdx] = useState(0);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [theme, setThemeState] = useState<ThemeMode>(getStoredTheme);
+  const [accent, setAccentState] = useState<AccentPalette>(getStoredAccent);
   const [compactMode, setCompactMode] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [animations, setAnimations] = useState(true);
 
-  const handleThemeChange = (newTheme: "dark" | "light" | "system") => {
-    setTheme(newTheme);
-    localStorage.setItem("trakalog-theme", newTheme);
+  const handleThemeChange = (newTheme: ThemeMode) => {
+    setThemeState(newTheme);
+    applyTheme(newTheme);
     supabase.auth.updateUser({ data: { theme: newTheme } }).catch(() => {});
   };
 
-  const themes: { id: "dark" | "light" | "system"; label: string; icon: React.ElementType; bar1: string; bar2: string; bar3: string; bg: string }[] = [
+  const handleAccentChange = (newAccent: AccentPalette) => {
+    setAccentState(newAccent);
+    applyAccent(newAccent);
+    supabase.auth.updateUser({ data: { accent: newAccent } }).catch(() => {});
+  };
+
+  // Watch system theme changes
+  useEffect(() => {
+    if (theme !== "system") return;
+    return watchSystemTheme(() => applyTheme("system"));
+  }, [theme]);
+
+  const themes: { id: ThemeMode; label: string; icon: React.ElementType; bar1: string; bar2: string; bar3: string; bg: string }[] = [
     { id: "dark", label: "Dark", icon: Moon, bg: "bg-[hsl(240,6%,8%)]", bar1: "bg-[hsl(240,4%,14%)]", bar2: "bg-[hsl(240,4%,18%)]", bar3: "bg-[hsl(24,100%,55%)]" },
     { id: "light", label: "Light", icon: Sun, bg: "bg-[hsl(0,0%,97%)]", bar1: "bg-[hsl(0,0%,90%)]", bar2: "bg-[hsl(0,0%,85%)]", bar3: "bg-[hsl(24,100%,55%)]" },
     { id: "system", label: "System", icon: Monitor, bg: "bg-gradient-to-br from-[hsl(240,6%,8%)] to-[hsl(0,0%,95%)]", bar1: "bg-[hsl(240,4%,20%)]", bar2: "bg-[hsl(0,0%,80%)]", bar3: "bg-[hsl(24,100%,55%)]" },
   ];
 
-  const accents = [
-    { colors: "from-[hsl(24,100%,55%)] to-[hsl(330,80%,60%)]", name: "Sunset" },
-    { colors: "from-[hsl(200,80%,50%)] to-[hsl(240,70%,60%)]", name: "Ocean" },
-    { colors: "from-[hsl(160,70%,45%)] to-[hsl(200,80%,50%)]", name: "Mint" },
-    { colors: "from-[hsl(270,70%,55%)] to-[hsl(330,80%,60%)]", name: "Violet" },
-    { colors: "from-[hsl(0,0%,75%)] to-[hsl(0,0%,50%)]", name: "Mono" },
+  const accents: { id: AccentPalette; colors: string; name: string }[] = [
+    { id: "sunset", colors: "from-[hsl(24,100%,55%)] to-[hsl(330,80%,60%)]", name: "Sunset" },
+    { id: "ocean", colors: "from-[hsl(200,80%,50%)] to-[hsl(240,70%,60%)]", name: "Ocean" },
+    { id: "mint", colors: "from-[hsl(160,70%,45%)] to-[hsl(200,80%,50%)]", name: "Mint" },
+    { id: "violet", colors: "from-[hsl(270,70%,55%)] to-[hsl(330,80%,60%)]", name: "Violet" },
+    { id: "mono", colors: "from-[hsl(0,0%,75%)] to-[hsl(0,0%,50%)]", name: "Mono" },
   ];
 
   const handleSave = () => toast.success("Appearance preferences saved");
@@ -626,18 +637,18 @@ function AppearanceSection() {
         <div className="pt-5">
           <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Accent Palette</p>
           <div className="flex items-center gap-3">
-            {accents.map((a, i) => (
+            {accents.map((a) => (
               <button
-                key={i}
-                onClick={() => setAccentIdx(i)}
+                key={a.id}
+                onClick={() => handleAccentChange(a.id)}
                 className="group flex flex-col items-center gap-1.5"
               >
                 <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${a.colors} transition-all duration-200 ${
-                  accentIdx === i
+                  accent === a.id
                     ? "ring-2 ring-primary ring-offset-2 ring-offset-card scale-110"
                     : "ring-1 ring-border/30 group-hover:ring-border/60 group-hover:scale-105"
                 }`} />
-                <span className={`text-[10px] font-semibold ${accentIdx === i ? "text-primary" : "text-muted-foreground/40"}`}>{a.name}</span>
+                <span className={`text-[10px] font-semibold ${accent === a.id ? "text-primary" : "text-muted-foreground/40"}`}>{a.name}</span>
               </button>
             ))}
           </div>

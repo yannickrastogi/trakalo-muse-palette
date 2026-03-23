@@ -23,6 +23,19 @@
   </head>
 
   <body>
+    <script>
+      // Apply theme + accent before first render to prevent flash
+      (function() {
+        var theme = localStorage.getItem('trakalog-theme') || 'dark';
+        var accent = localStorage.getItem('trakalog-accent') || 'sunset';
+        var resolved = theme;
+        if (theme === 'system') {
+          resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.className = resolved;
+        document.documentElement.setAttribute('data-accent', accent);
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
