@@ -37,7 +37,7 @@ import { RotateCcw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
-import { applyTheme, applyAccent, getStoredTheme, getStoredAccent, watchSystemTheme, type ThemeMode, type AccentPalette } from "@/lib/theme";
+import { applyTheme, applyAccent, getStoredTheme, getStoredAccent, watchSystemTheme, applyCompactMode, applyReduceMotion, setSidebarCollapsed, getStoredCompact, getStoredReduceMotion, getStoredSidebarCollapsed, type ThemeMode, type AccentPalette } from "@/lib/theme";
 
 /* ─── Animations ─── */
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
@@ -548,9 +548,9 @@ function AppearanceSection() {
   const { t } = useTranslation();
   const [theme, setThemeState] = useState<ThemeMode>(getStoredTheme);
   const [accent, setAccentState] = useState<AccentPalette>(getStoredAccent);
-  const [compactMode, setCompactMode] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [animations, setAnimations] = useState(true);
+  const [compactMode, setCompactMode] = useState(getStoredCompact);
+  const [sidebarCollapsed, setSidebarCollapsedState] = useState(getStoredSidebarCollapsed);
+  const [animations, setAnimations] = useState(() => !getStoredReduceMotion());
 
   const handleThemeChange = (newTheme: ThemeMode) => {
     setThemeState(newTheme);
@@ -656,11 +656,11 @@ function AppearanceSection() {
       </SectionBlock>
 
       <SectionBlock title="Layout & Display" subtitle="Fine-tune your workspace layout" icon={Monitor} onSave={handleSave} saveLabel="Save Layout">
-        <SettingToggleRow icon={Laptop} label="Compact Mode" description="Reduce padding and spacing for information-dense views" enabled={compactMode} onToggle={() => setCompactMode(!compactMode)} />
+        <SettingToggleRow icon={Laptop} label="Compact Mode" description="Reduce padding and spacing for information-dense views" enabled={compactMode} onToggle={() => { const next = !compactMode; setCompactMode(next); applyCompactMode(next); supabase.auth.updateUser({ data: { compact_mode: next } }).catch(() => {}); }} />
         <Divider />
-        <SettingToggleRow icon={ChevronDown} label="Collapsed Sidebar" description="Start with the sidebar collapsed by default" enabled={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+        <SettingToggleRow icon={ChevronDown} label="Collapsed Sidebar" description="Start with the sidebar collapsed by default" enabled={sidebarCollapsed} onToggle={() => { const next = !sidebarCollapsed; setSidebarCollapsedState(next); setSidebarCollapsed(next); supabase.auth.updateUser({ data: { sidebar_collapsed: next } }).catch(() => {}); }} />
         <Divider />
-        <SettingToggleRow icon={Sparkles} label="Motion & Animations" description="Enable entrance animations and micro-interactions" enabled={animations} onToggle={() => setAnimations(!animations)} />
+        <SettingToggleRow icon={Sparkles} label="Motion & Animations" description="Enable entrance animations and micro-interactions" enabled={animations} onToggle={() => { const next = !animations; setAnimations(next); applyReduceMotion(!next); supabase.auth.updateUser({ data: { reduce_motion: !next } }).catch(() => {}); }} />
       </SectionBlock>
 
       <ResetOnboardingBlock />

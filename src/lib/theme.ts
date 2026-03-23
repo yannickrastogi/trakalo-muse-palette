@@ -36,3 +36,34 @@ export function watchSystemTheme(callback: () => void) {
   mq.addEventListener("change", callback);
   return () => mq.removeEventListener("change", callback);
 }
+
+// ── Layout preferences ──
+
+export function applyCompactMode(on: boolean) {
+  document.documentElement.classList.toggle("compact", on);
+  localStorage.setItem("trakalog-compact", on ? "1" : "0");
+}
+
+export function applyReduceMotion(off: boolean) {
+  document.documentElement.classList.toggle("reduce-motion", off);
+  localStorage.setItem("trakalog-reduce-motion", off ? "1" : "0");
+}
+
+export function setSidebarCollapsed(on: boolean) {
+  localStorage.setItem("trakalog-sidebar-collapsed", on ? "1" : "0");
+  window.dispatchEvent(new CustomEvent("trakalog-sidebar", { detail: on }));
+}
+
+export function getStoredCompact(): boolean {
+  return localStorage.getItem("trakalog-compact") === "1";
+}
+
+export function getStoredReduceMotion(): boolean {
+  const stored = localStorage.getItem("trakalog-reduce-motion");
+  if (stored !== null) return stored === "1";
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+export function getStoredSidebarCollapsed(): boolean {
+  return localStorage.getItem("trakalog-sidebar-collapsed") === "1";
+}

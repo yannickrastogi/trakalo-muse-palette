@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -193,8 +193,15 @@ export function MobileBottomNav() {
 }
 
 export function AppSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("trakalog-sidebar-collapsed") === "1");
   const isMobile = useIsMobile();
+
+  // Listen for settings changes
+  useEffect(() => {
+    const handler = (e: Event) => setCollapsed((e as CustomEvent).detail);
+    window.addEventListener("trakalog-sidebar", handler);
+    return () => window.removeEventListener("trakalog-sidebar", handler);
+  }, []);
   const { t } = useTranslation();
   const { permissions } = useRole();
 
@@ -252,7 +259,7 @@ export function AppSidebar() {
 
       <div className="mx-5 h-px" style={{ background: "var(--gradient-brand-horizontal)", opacity: 0.08 }} />
       <button
-        onClick={() => setCollapsed(!collapsed)}
+        onClick={() => { const next = !collapsed; setCollapsed(next); localStorage.setItem("trakalog-sidebar-collapsed", next ? "1" : "0"); }}
         className="flex items-center justify-center h-12 text-muted-foreground hover:text-foreground transition-colors"
       >
         {collapsed ? <ChevronRight className="w-4.5 h-4.5" /> : <ChevronLeft className="w-4.5 h-4.5" />}

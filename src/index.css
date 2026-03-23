@@ -301,6 +301,32 @@
     border: 1px solid hsl(var(--brand-orange) / 0.1);
   }
 
+  /* ── Compact mode ── */
+  .compact main {
+    --spacing-scale: 0.7;
+  }
+  .compact main .p-4 { padding: 0.5rem; }
+  .compact main .p-6 { padding: 0.75rem; }
+  .compact main .p-8 { padding: 1rem; }
+  .compact main .gap-4 { gap: 0.5rem; }
+  .compact main .gap-5 { gap: 0.625rem; }
+  .compact main .gap-6 { gap: 0.75rem; }
+  .compact main .space-y-5 > * + * { margin-top: 0.625rem; }
+  .compact main .space-y-6 > * + * { margin-top: 0.75rem; }
+  .compact main .text-sm { font-size: 0.8125rem; }
+  .compact main .text-2xl { font-size: 1.25rem; }
+  .compact main .py-5 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+  .compact main .px-6 { padding-left: 1rem; padding-right: 1rem; }
+
+  /* ── Reduce motion ── */
+  .reduce-motion *,
+  .reduce-motion *::before,
+  .reduce-motion *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
   /* Focus ring with brand gradient feel */
   .focus-brand:focus-within {
     border-color: hsl(var(--brand-orange) / 0.4);
