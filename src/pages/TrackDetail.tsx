@@ -75,6 +75,9 @@ import {
   Loader2,
   Mail,
   AlertTriangle,
+  Link2,
+  PenLine,
+  MessageCircle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -788,26 +791,7 @@ export default function TrackDetail() {
                  </div>
                )}
                {activeTab === "activity" && (
-                 <div className="space-y-10">
-                   <section>
-                     <h3 className="text-lg font-semibold text-foreground mb-4">Pitch History</h3>
-                     <PitchHistoryTab trackId={track.id} />
-                   </section>
-                   <div className="border-t border-border" />
-                   <section>
-                     <h3 className="text-lg font-semibold text-foreground mb-4">Engagement</h3>
-                     <EngagementTab trackId={track.id} onSeek={handleCommentSeek} />
-                   </section>
-                   {(getTrack(track.id)?.statusHistory || []).length > 0 && (
-                     <>
-                       <div className="border-t border-border" />
-                       <section>
-                         <h3 className="text-lg font-semibold text-foreground mb-4">Status History</h3>
-                         <StatusHistoryTimeline trackId={track.id} />
-                       </section>
-                     </>
-                   )}
-                 </div>
+                 <ActivityTimeline trackId={track.id} trackUuid={track.uuid} />
                )}
                {activeTab === "review" && (
                  <TrackReviewPanel
@@ -2805,6 +2789,209 @@ function EngagementTab({ trackId, onSeek }: { trackId: number; onSeek?: (seconds
           </div>
         </SectionCard>
       )}
+    </div>
+  );
+}
+
+/* ─── Unified Activity Timeline ─── */
+
+interface ActivityEvent {
+  id: string;
+  type: "pitch" | "play" | "download" | "shared_link" | "signature" | "studio" | "comment";
+  label: string;
+  date: Date;
+}
+
+var activityEventConfig: Record<ActivityEvent["type"], { icon: React.ElementType; color: string; bg: string }> = {
+  pitch:       { icon: Send,          color: "text-brand-orange", bg: "bg-brand-orange/12" },
+  play:        { icon: Play,          color: "text-brand-pink",   bg: "bg-brand-pink/12" },
+  download:    { icon: Download,      color: "text-chart-5",      bg: "bg-chart-5/12" },
+  shared_link: { icon: Link2,         color: "text-primary",      bg: "bg-primary/12" },
+  signature:   { icon: PenLine,       color: "text-emerald-400",  bg: "bg-emerald-400/12" },
+  studio:      { icon: QrCode,        color: "text-brand-purple", bg: "bg-brand-purple/12" },
+  comment:     { icon: MessageCircle, color: "text-accent",       bg: "bg-accent/12" },
+};
+
+function formatRelativeTime(date: Date): string {
+  var now = Date.now();
+  var diff = now - date.getTime();
+  var sec = Math.floor(diff / 1000);
+  if (sec < 60) return "just now";
+  var min = Math.floor(sec / 60);
+  if (min < 60) return min + "m ago";
+  var hrs = Math.floor(min / 60);
+  if (hrs < 24) return hrs + "h ago";
+  var days = Math.floor(hrs / 24);
+  if (days === 1) return "yesterday";
+  if (days < 30) return days + "d ago";
+  var months = Math.floor(days / 30);
+  if (months < 12) return months + "mo ago";
+  return Math.floor(months / 12) + "y ago";
+}
+
+function ActivityTimeline({ trackId, trackUuid }: { trackId: number; trackUuid: string }) {
+  var { getTrack } = useTrack();
+  var { getPitchesForTrack } = usePitches();
+  var trackData = getTrack(trackId);
+  var [events, setEvents] = useState<ActivityEvent[]>([]);
+  var [loading, setLoading] = useState(true);
+
+  useEffect(function () {
+    if (!trackUuid) { setLoading(false); return; }
+
+    var cancelled = false;
+
+    async function load() {
+      var allEvents: ActivityEvent[] = [];
+
+      // 1. Pitches — match by track title via context
+      var trackTitle = trackData?.title;
+      if (trackTitle) {
+        var pitches = getPitchesForTrack(trackTitle);
+        pitches.forEach(function (p) {
+          allEvents.push({
+            id: "pitch-" + p.id,
+            type: "pitch",
+            label: "Track pitched to " + p.recipientName + (p.recipientCompany ? " (" + p.recipientCompany + ")" : ""),
+            date: new Date(p.date),
+          });
+        });
+      }
+
+      // 2 & 3. Plays + Downloads from link_events
+      var evRes = await supabase
+        .from("link_events")
+        .select("id, event_type, visitor_email, created_at")
+        .eq("track_id", trackUuid)
+        .in("event_type", ["play", "download"])
+        .order("created_at", { ascending: false })
+        .limit(50);
+      (evRes.data || []).forEach(function (e: any) {
+        var who = e.visitor_email || "Someone";
+        allEvents.push({
+          id: "le-" + e.id,
+          type: e.event_type === "play" ? "play" : "download",
+          label: who + (e.event_type === "play" ? " played this track" : " downloaded this track"),
+          date: new Date(e.created_at),
+        });
+      });
+
+      // 4. Shared links created
+      var slRes = await supabase
+        .from("shared_links")
+        .select("id, link_slug, created_at")
+        .eq("track_id", trackUuid)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      (slRes.data || []).forEach(function (l: any) {
+        allEvents.push({
+          id: "sl-" + l.id,
+          type: "shared_link",
+          label: "Shared link created: " + l.link_slug,
+          date: new Date(l.created_at),
+        });
+      });
+
+      // 5. Signatures
+      var sigRes = await supabase
+        .from("signature_requests")
+        .select("id, signer_name, signed_at")
+        .eq("track_id", trackUuid)
+        .eq("status", "signed")
+        .order("signed_at", { ascending: false })
+        .limit(20);
+      (sigRes.data || []).forEach(function (s: any) {
+        allEvents.push({
+          id: "sig-" + s.id,
+          type: "signature",
+          label: (s.signer_name || "Someone") + " signed the split agreement",
+          date: new Date(s.signed_at),
+        });
+      });
+
+      // 6. Studio submissions
+      var subRes = await supabase
+        .from("studio_submissions")
+        .select("id, submitted_by_name, created_at")
+        .eq("track_id", trackUuid)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      (subRes.data || []).forEach(function (s: any) {
+        allEvents.push({
+          id: "stu-" + s.id,
+          type: "studio",
+          label: (s.submitted_by_name || "Someone") + " submitted splits via QR",
+          date: new Date(s.created_at),
+        });
+      });
+
+      // 7. Comments
+      var cmtRes = await supabase
+        .from("track_comments")
+        .select("id, author_name, timestamp_sec, created_at")
+        .eq("track_id", trackUuid)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      (cmtRes.data || []).forEach(function (c: any) {
+        var ts = c.timestamp_sec != null ? " at " + Math.floor(c.timestamp_sec / 60) + ":" + String(Math.floor(c.timestamp_sec % 60)).padStart(2, "0") : "";
+        allEvents.push({
+          id: "cmt-" + c.id,
+          type: "comment",
+          label: (c.author_name || "Someone") + " left a comment" + ts,
+          date: new Date(c.created_at),
+        });
+      });
+
+      // Sort descending, limit 50
+      allEvents.sort(function (a, b) { return b.date.getTime() - a.date.getTime(); });
+      allEvents = allEvents.slice(0, 50);
+
+      if (!cancelled) {
+        setEvents(allEvents);
+        setLoading(false);
+      }
+    }
+
+    load().catch(function () { if (!cancelled) setLoading(false); });
+
+    return function () { cancelled = true; };
+  }, [trackUuid, trackData?.title]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <div className="card-premium py-16 text-center">
+        <Activity className="w-10 h-10 mx-auto mb-3 text-muted-foreground/15" />
+        <p className="text-sm font-semibold text-foreground">No activity yet for this track</p>
+        <p className="text-xs mt-1 text-muted-foreground/60">Pitches, plays, downloads, and other events will appear here</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card-premium overflow-hidden divide-y divide-border/40">
+      {events.map(function (ev) {
+        var cfg = activityEventConfig[ev.type];
+        var Icon = cfg.icon;
+        return (
+          <div key={ev.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-secondary/20 transition-colors">
+            <div className={"w-8 h-8 rounded-lg flex items-center justify-center shrink-0 " + cfg.bg}>
+              <Icon className={"w-3.5 h-3.5 " + cfg.color} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-foreground truncate">{ev.label}</p>
+            </div>
+            <span className="text-2xs text-muted-foreground/60 shrink-0 whitespace-nowrap">{formatRelativeTime(ev.date)}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
