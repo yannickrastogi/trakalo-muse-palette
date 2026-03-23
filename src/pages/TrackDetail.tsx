@@ -554,20 +554,30 @@ export default function TrackDetail() {
                               )}
                               <DropdownMenuItem onClick={async () => {
                                 try {
-                                  toast.info("Analyzing audio...");
-                                  const { data: row } = await supabase
+                                  toast.info("Analyzing audio…");
+
+                                  // 1. Fetch raw storage path from DB
+                                  const { data: row, error: fetchErr } = await supabase
                                     .from("tracks")
                                     .select("audio_url")
                                     .eq("id", track.uuid)
                                     .single();
-                                  if (!row?.audio_url) throw new Error("No audio file");
+                                  if (fetchErr) throw new Error("Could not fetch track: " + fetchErr.message);
+                                  if (!row?.audio_url) throw new Error("No audio file linked to this track");
+
+                                  // 2. Download from Storage
                                   const { data: fileData, error: dlErr } = await supabase.storage
                                     .from("tracks")
                                     .download(row.audio_url as string);
-                                  if (dlErr || !fileData) throw new Error("Failed to download audio");
-                                  const audioFile = new File([fileData], "audio.wav", { type: fileData.type });
+                                  if (dlErr) throw new Error("Download failed: " + dlErr.message);
+                                  if (!fileData) throw new Error("Download returned empty data");
+
+                                  // 3. Analyze with Essentia
+                                  const audioFile = new File([fileData], "audio.wav", { type: fileData.type || "audio/wav" });
                                   const features = await analyzeWithEssentia(audioFile);
-                                  await supabase
+
+                                  // 4. Persist results
+                                  const { error: updateErr } = await supabase
                                     .from("tracks")
                                     .update({
                                       bpm: features.bpm,
@@ -576,11 +586,13 @@ export default function TrackDetail() {
                                       mood: features.mood,
                                     })
                                     .eq("id", track.uuid);
+                                  if (updateErr) throw new Error("DB update failed: " + updateErr.message);
+
                                   refreshTracks();
                                   toast.success("Analysis complete: " + features.bpm + " BPM, " + features.key);
-                                } catch (err) {
+                                } catch (err: any) {
                                   console.error("Re-analyze failed:", err);
-                                  toast.warning("Audio analysis failed");
+                                  toast.error("Re-analysis failed: " + (err?.message || "unknown error"));
                                 }
                               }}>
                                 <Activity className="w-4 h-4 mr-2" /> Re-analyze Audio

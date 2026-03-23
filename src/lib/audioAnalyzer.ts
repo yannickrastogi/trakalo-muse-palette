@@ -155,9 +155,12 @@ export async function analyzeWithEssentia(audioFile: File): Promise<AudioFeature
   const inputSignal = essentia.arrayToVector(mono);
 
   // BPM detection with PercivalBpmEstimator
+  // Signature: (signal, frameSize, frameSizeOSS, hopSize, hopSizeOSS, maxBPM, minBPM, sampleRate)
   let bpm = 0;
   try {
-    const bpmResult = essentia.PercivalBpmEstimator(inputSignal);
+    const bpmResult = essentia.PercivalBpmEstimator(
+      inputSignal, 1024, 2048, 128, 128, 210, 50, sampleRate,
+    );
     bpm = Math.round(bpmResult.bpm);
     // Normalize to 60-180 range
     while (bpm > 0 && bpm < 60) bpm *= 2;
@@ -167,10 +170,13 @@ export async function analyzeWithEssentia(audioFile: File): Promise<AudioFeature
   }
 
   // Key + Scale detection with KeyExtractor
+  // Signature: (audio, avgDetuningCorr, frameSize, hopSize, hpcpSize, maxFreq, maxSpecPeaks, minFreq, pcpThresh, profileType, sampleRate, ...)
   let key = "C";
   let scale = "major";
   try {
-    const keyResult = essentia.KeyExtractor(inputSignal);
+    const keyResult = essentia.KeyExtractor(
+      inputSignal, true, 4096, 4096, 12, 5000, 60, 25, 0.2, "bgate", sampleRate,
+    );
     key = keyResult.key;
     scale = keyResult.scale;
   } catch (e) {
