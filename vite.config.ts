@@ -24,4 +24,17 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     include: ["react", "react-dom", "react/jsx-runtime", "@tanstack/react-query"],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-pdf": ["jspdf", "html2canvas"],
+          "vendor-audio": ["@breezystack/lamejs"],
+          "vendor-ui": ["framer-motion", "recharts", "lucide-react"],
+          "vendor-i18n": ["i18next", "react-i18next"],
+        },
+      },
+    },
+  },
 }));

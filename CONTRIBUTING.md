@@ -64,6 +64,31 @@ There is **one global Audio()** instance managed by `AudioPlayerContext` — nev
 ### 7. Data Source
 All data comes from **Supabase** — no mock data, no hardcoded datasets.
 
+### 7b. Detail Page Fetching Pattern
+Detail pages (TrackDetail, PlaylistDetail, etc.) **MUST** use the context as primary data source with a DB fallback for direct navigation / refresh:
+
+```tsx
+// 1. Try context first (instant if navigated from list)
+const contextData = getItem(id);
+
+// 2. DB fallback via useRef to avoid re-fetching
+const dbFetchedRef = useRef<string | null>(null);
+useEffect(() => {
+  if (contextData || dbFetchedRef.current === id) return;
+  dbFetchedRef.current = id;
+  supabase.from("table").select("*").eq("id", id).single().then(/* ... */);
+}, [id]);
+
+// 3. Merge: context wins, DB is fallback
+const data = contextData || dbData;
+
+// 4. Track "had data" for loading vs not-found
+const hadDataRef = useRef(false);
+if (data) hadDataRef.current = true;
+```
+
+Public pages (SharedLinkPage) fetch directly from Supabase since no app context is available.
+
 ### 8. Storage Buckets
 - Audio files → `tracks` bucket (private)
 - Stems → `stems` bucket (private)

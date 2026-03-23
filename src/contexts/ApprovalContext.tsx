@@ -148,7 +148,9 @@ function mapRowToSend(row: Record<string, unknown>): SendRecord {
   };
 }
 
-let nextLocalId = 1000;
+function localId(prefix: string) {
+  return prefix + crypto.randomUUID();
+}
 
 export function ApprovalProvider({ children }: { children: ReactNode }) {
   const { activeWorkspace } = useWorkspace();
@@ -241,7 +243,7 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
       ? getMemberRule(sendInput.teamId, sendInput.createdByUserId)
       : "n/a" as MemberApprovalRule | "n/a";
 
-    const localId = "send-" + (++nextLocalId);
+    const localId = localId("send-");
 
     const newSend: SendRecord = {
       ...sendInput,
@@ -310,13 +312,13 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
 
     // Audit
     const events: AuditEvent[] = [
-      { id: "ae-" + (++nextLocalId), sendId: localId, eventType: "send_created", actorName: sendInput.createdByName, createdAt: now },
+      { id: localId("ae-"), sendId: localId, eventType: "send_created", actorName: sendInput.createdByName, createdAt: now },
     ];
     if (requiresApproval) {
-      events.push({ id: "ae-" + (++nextLocalId), sendId: localId, eventType: "submitted_for_approval", actorName: sendInput.createdByName, createdAt: now });
+      events.push({ id: localId("ae-"), sendId: localId, eventType: "submitted_for_approval", actorName: sendInput.createdByName, createdAt: now });
     } else {
-      events.push({ id: "ae-" + (++nextLocalId), sendId: localId, eventType: "auto_approved", actorName: "System", createdAt: now });
-      events.push({ id: "ae-" + (++nextLocalId), sendId: localId, eventType: "sent", actorName: "System", createdAt: now });
+      events.push({ id: localId("ae-"), sendId: localId, eventType: "auto_approved", actorName: "System", createdAt: now });
+      events.push({ id: localId("ae-"), sendId: localId, eventType: "sent", actorName: "System", createdAt: now });
     }
     setAuditTrail(prev => [...prev, ...events]);
 
@@ -375,14 +377,14 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
       }).catch(function (err) { console.error("Error:", err); });
 
     setAuditTrail(prev => [...prev,
-      { id: "ae-" + (++nextLocalId), sendId, eventType: "manually_approved", actorName: approverName, note, createdAt: now },
-      { id: "ae-" + (++nextLocalId), sendId, eventType: "sent", actorName: "System", createdAt: now },
+      { id: localId("ae-"), sendId, eventType: "manually_approved", actorName: approverName, note, createdAt: now },
+      { id: localId("ae-"), sendId, eventType: "sent", actorName: "System", createdAt: now },
     ]);
 
     const send = sends.find(s => s.id === sendId);
     if (send) {
       setNotifications(prev => [{
-        id: "an-" + (++nextLocalId),
+        id: localId("an-"),
         sendId,
         type: "approved",
         message: 'Your ' + send.sendType + ' "' + send.relatedEntityTitle + '" has been approved and sent',
@@ -427,13 +429,13 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
       }).catch(function (err) { console.error("Error:", err); });
 
     setAuditTrail(prev => [...prev,
-      { id: "ae-" + (++nextLocalId), sendId, eventType: "rejected", actorName: rejectorName, note: reason, createdAt: now },
+      { id: localId("ae-"), sendId, eventType: "rejected", actorName: rejectorName, note: reason, createdAt: now },
     ]);
 
     const send = sends.find(s => s.id === sendId);
     if (send) {
       setNotifications(prev => [{
-        id: "an-" + (++nextLocalId),
+        id: localId("an-"),
         sendId,
         type: "rejected",
         message: 'Your ' + send.sendType + ' "' + send.relatedEntityTitle + '" was rejected' + (reason ? ": " + reason : ""),
@@ -447,7 +449,7 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
     const now = new Date().toISOString();
     setSends(prev => prev.map(s => s.id === sendId ? { ...s, status: "cancelled" as SendStatus } : s));
     setAuditTrail(prev => [...prev,
-      { id: "ae-" + (++nextLocalId), sendId, eventType: "cancelled", actorName: "You", createdAt: now },
+      { id: localId("ae-"), sendId, eventType: "cancelled", actorName: "You", createdAt: now },
     ]);
   }, []);
 
