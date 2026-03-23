@@ -227,46 +227,74 @@ export function DashboardContent() {
     return entries;
   }, [trackEngagement, allTracks]);
 
-  const filteredPlays = useMemo(() => {
-    const now = new Date();
-    const cutoff = new Date(now);
+  // Build enriched play/download event lists from real link_events
+  const enrichedPlays = useMemo(function () {
+    return linkPlays.map(function (ev) {
+      var track = ev.track_id ? allTracks.find(function (t) { return t.uuid === ev.track_id; }) : null;
+      return {
+        id: ev.created_at + (ev.visitor_email || "") + (ev.track_id || ""),
+        trackTitle: track ? track.title : "Unknown track",
+        trackArtist: track ? track.artist : "",
+        trackUuid: track ? track.uuid : null,
+        coverImage: track ? track.coverImage : undefined,
+        visitorEmail: ev.visitor_email || "Anonymous",
+        date: new Date(ev.created_at),
+      };
+    });
+  }, [linkPlays, allTracks]);
+
+  const enrichedDownloads = useMemo(function () {
+    return linkDownloads.map(function (ev) {
+      var track = ev.track_id ? allTracks.find(function (t) { return t.uuid === ev.track_id; }) : null;
+      return {
+        id: ev.created_at + (ev.visitor_email || "") + (ev.track_id || ""),
+        trackTitle: track ? track.title : "Unknown track",
+        trackArtist: track ? track.artist : "",
+        trackUuid: track ? track.uuid : null,
+        coverImage: track ? track.coverImage : undefined,
+        visitorEmail: ev.visitor_email || "Anonymous",
+        date: new Date(ev.created_at),
+      };
+    });
+  }, [linkDownloads, allTracks]);
+
+  const filteredPlays = useMemo(function () {
+    var now = new Date();
+    var cutoff = new Date(now);
     if (playsRange === "all") cutoff.setTime(0);
     else if (playsRange === "1d") cutoff.setDate(now.getDate() - 1);
     else if (playsRange === "1w") cutoff.setDate(now.getDate() - 7);
     else if (playsRange === "1m") cutoff.setMonth(now.getMonth() - 1);
     else cutoff.setFullYear(now.getFullYear() - 1);
 
-    return engagementEntries
-      .filter((e) => e.plays > 0 && e.lastActivity >= cutoff)
-      .filter((e) => {
+    return enrichedPlays
+      .filter(function (e) { return e.date >= cutoff; })
+      .filter(function (e) {
         if (!playsSearch) return true;
-        const q = playsSearch.toLowerCase();
-        return e.trackTitle.toLowerCase().includes(q) || e.trackArtist.toLowerCase().includes(q) || e.recipientName.toLowerCase().includes(q) || e.recipientCompany.toLowerCase().includes(q);
+        var q = playsSearch.toLowerCase();
+        return e.trackTitle.toLowerCase().includes(q) || e.trackArtist.toLowerCase().includes(q) || e.visitorEmail.toLowerCase().includes(q);
       })
-      .sort((a, b) => b.plays - a.plays);
-  }, [engagementEntries, playsRange, playsSearch]);
+      .slice(0, 20);
+  }, [enrichedPlays, playsRange, playsSearch]);
 
-  const filteredDownloads = useMemo(() => {
-    const now = new Date();
-    const cutoff = new Date(now);
+  const filteredDownloads = useMemo(function () {
+    var now = new Date();
+    var cutoff = new Date(now);
     if (downloadsRange === "all") cutoff.setTime(0);
     else if (downloadsRange === "1d") cutoff.setDate(now.getDate() - 1);
     else if (downloadsRange === "1w") cutoff.setDate(now.getDate() - 7);
     else if (downloadsRange === "1m") cutoff.setMonth(now.getMonth() - 1);
     else cutoff.setFullYear(now.getFullYear() - 1);
 
-    return engagementEntries
-      .filter((e) => e.downloads > 0 && e.lastActivity >= cutoff)
-      .filter((e) => {
+    return enrichedDownloads
+      .filter(function (e) { return e.date >= cutoff; })
+      .filter(function (e) {
         if (!downloadsSearch) return true;
-        const q = downloadsSearch.toLowerCase();
-        return e.trackTitle.toLowerCase().includes(q) || e.trackArtist.toLowerCase().includes(q) || e.recipientName.toLowerCase().includes(q) || e.recipientCompany.toLowerCase().includes(q);
+        var q = downloadsSearch.toLowerCase();
+        return e.trackTitle.toLowerCase().includes(q) || e.trackArtist.toLowerCase().includes(q) || e.visitorEmail.toLowerCase().includes(q);
       })
-      .sort((a, b) => b.downloads - a.downloads);
-  }, [engagementEntries, downloadsRange, downloadsSearch]);
-
-  const totalFilteredPlays = filteredPlays.reduce((sum, e) => sum + e.plays, 0);
-  const totalFilteredDownloads = filteredDownloads.reduce((sum, e) => sum + e.downloads, 0);
+      .slice(0, 20);
+  }, [enrichedDownloads, downloadsRange, downloadsSearch]);
 
   // Build contacts list directly from context (single source of truth)
   const contactEntries = useMemo(() => {
@@ -341,14 +369,14 @@ export function DashboardContent() {
             variants={item}
             onClick={stat.clickable ? () => {
               const closeAll = () => { setShowTracksPanel(false); setShowPlaylistsPanel(false); setShowPlaysPanel(false); setShowDownloadsPanel(false); setShowContactsPanel(false); setShowPitchesPanel(false); };
-              if (stat.id === "tracks") { const next = !showTracksPanel; closeAll(); setShowTracksPanel(next); }
-              else if (stat.id === "playlists") { const next = !showPlaylistsPanel; closeAll(); setShowPlaylistsPanel(next); }
+              if (stat.id === "tracks") { closeAll(); navigate("/tracks"); }
+              else if (stat.id === "playlists") { closeAll(); navigate("/playlists"); }
               else if (stat.id === "plays") { const next = !showPlaysPanel; closeAll(); setShowPlaysPanel(next); }
               else if (stat.id === "downloads") { const next = !showDownloadsPanel; closeAll(); setShowDownloadsPanel(next); }
-              else if (stat.id === "contacts") { const next = !showContactsPanel; closeAll(); setShowContactsPanel(next); }
-              else if (stat.id === "pitches") { const next = !showPitchesPanel; closeAll(); setShowPitchesPanel(next); }
+              else if (stat.id === "contacts") { closeAll(); navigate("/contacts"); }
+              else if (stat.id === "pitches") { closeAll(); navigate("/pitch"); }
             } : undefined}
-            className={`card-premium p-5 sm:p-7 group relative overflow-hidden ${stat.clickable ? "cursor-pointer" : "cursor-default"} ${stat.borderAccent} ${stat.clickable && ((stat.id === "tracks" && showTracksPanel) || (stat.id === "playlists" && showPlaylistsPanel) || (stat.id === "plays" && showPlaysPanel) || (stat.id === "downloads" && showDownloadsPanel) || (stat.id === "contacts" && showContactsPanel) || (stat.id === "pitches" && showPitchesPanel)) ? `border-brand-orange/40 ring-1 ring-brand-orange/20` : ""}`}
+            className={`card-premium p-5 sm:p-7 group relative overflow-hidden ${stat.clickable ? "cursor-pointer" : "cursor-default"} ${stat.borderAccent} ${((stat.id === "plays" && showPlaysPanel) || (stat.id === "downloads" && showDownloadsPanel)) ? "border-brand-orange/40 ring-1 ring-brand-orange/20" : ""}`}
           >
             <div
               className="absolute -top-12 -right-12 w-40 h-40 rounded-full blur-3xl opacity-50 group-hover:opacity-90 transition-opacity duration-700 pointer-events-none"
@@ -599,7 +627,7 @@ export function DashboardContent() {
                     <Headphones className="w-4 h-4 text-brand-pink" />
                     <h3 className="text-sm font-bold text-foreground">
                       {t("dashboard.totalPlays")}
-                      <span className="ml-2 text-muted-foreground font-normal">· {engagementStats.totalPlays} total</span>
+                      <span className="ml-2 text-muted-foreground font-normal">· {linkPlays.length || engagementStats.totalPlays} total</span>
                     </h3>
                   </div>
                   <div className="flex items-center gap-2">
@@ -636,43 +664,41 @@ export function DashboardContent() {
               </div>
               <div className="px-5 py-2.5 border-b border-border/50 bg-secondary/20">
                 <p className="text-2xs text-muted-foreground font-medium">
-                  {totalFilteredPlays} play{totalFilteredPlays !== 1 ? "s" : ""} across {filteredPlays.length} recipient{filteredPlays.length !== 1 ? "s" : ""} in the last {playsRange === "all" ? "all time" : playsRange === "1d" ? "24 hours" : playsRange === "1w" ? "week" : playsRange === "1m" ? "month" : "year"}
+                  {filteredPlays.length} play{filteredPlays.length !== 1 ? "s" : ""} in the last {playsRange === "all" ? "all time" : playsRange === "1d" ? "24 hours" : playsRange === "1w" ? "week" : playsRange === "1m" ? "month" : "year"}
                 </p>
               </div>
               {filteredPlays.length === 0 ? (
                 <div className="py-10 text-center text-muted-foreground text-sm">No plays recorded in this period</div>
               ) : (
                 <div className="divide-y divide-border/40 max-h-[360px] overflow-y-auto">
-                  {filteredPlays.map((entry, idx) => (
-                    <div
-                      key={`${entry.trackId}-${entry.recipientName}-${idx}`}
-                      className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
-                      onClick={() => navigate(`/track/${entry.trackUuid}`)}
-                    >
-                      <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
-                      <img src={entry.coverImage || DEFAULT_COVER} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-pink transition-colors">{entry.trackTitle}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{entry.trackArtist}</p>
+                  {filteredPlays.map(function (entry, idx) {
+                    return (
+                      <div
+                        key={entry.id + idx}
+                        className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
+                        onClick={function () { if (entry.trackUuid) navigate("/track/" + entry.trackUuid); }}
+                      >
+                        <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
+                        <img src={entry.coverImage || DEFAULT_COVER} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-pink transition-colors">{entry.trackTitle}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{entry.trackArtist}</p>
+                        </div>
+                        <div className="hidden sm:block text-right min-w-[100px]">
+                          <p className="text-[11px] text-foreground/70 truncate">{entry.visitorEmail}</p>
+                        </div>
+                        <span className="text-2xs text-muted-foreground/60 shrink-0 whitespace-nowrap">
+                          {timeAgo(entry.date.toISOString())}
+                        </span>
                       </div>
-                      <div className="hidden sm:block text-right min-w-[80px]">
-                        <p className="text-[11px] text-foreground/70 truncate">{entry.recipientName}</p>
-                        <p className="text-2xs text-muted-foreground truncate">{entry.recipientCompany}</p>
-                      </div>
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-pink/12 text-brand-pink">
-                        {entry.plays} plays
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
               <div className="px-5 py-3 border-t border-border/50 flex items-center justify-between">
                 <span className="text-2xs text-muted-foreground">
-                  Showing {filteredPlays.length} entries · {totalFilteredPlays} total plays
+                  Showing {filteredPlays.length} of {linkPlays.length} total plays
                 </span>
-                <Link to="/tracks" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
-                  {t("dashboard.viewAll")}
-                </Link>
               </div>
             </div>
           </motion.div>
@@ -696,7 +722,7 @@ export function DashboardContent() {
                     <Download className="w-4 h-4 text-brand-purple" />
                     <h3 className="text-sm font-bold text-foreground">
                       {t("dashboard.downloads")}
-                      <span className="ml-2 text-muted-foreground font-normal">· {engagementStats.totalDownloads} total</span>
+                      <span className="ml-2 text-muted-foreground font-normal">· {linkDownloads.length || engagementStats.totalDownloads} total</span>
                     </h3>
                   </div>
                   <div className="flex items-center gap-2">
@@ -733,43 +759,41 @@ export function DashboardContent() {
               </div>
               <div className="px-5 py-2.5 border-b border-border/50 bg-secondary/20">
                 <p className="text-2xs text-muted-foreground font-medium">
-                  {totalFilteredDownloads} download{totalFilteredDownloads !== 1 ? "s" : ""} across {filteredDownloads.length} recipient{filteredDownloads.length !== 1 ? "s" : ""} in the last {downloadsRange === "all" ? "all time" : downloadsRange === "1d" ? "24 hours" : downloadsRange === "1w" ? "week" : downloadsRange === "1m" ? "month" : "year"}
+                  {filteredDownloads.length} download{filteredDownloads.length !== 1 ? "s" : ""} in the last {downloadsRange === "all" ? "all time" : downloadsRange === "1d" ? "24 hours" : downloadsRange === "1w" ? "week" : downloadsRange === "1m" ? "month" : "year"}
                 </p>
               </div>
               {filteredDownloads.length === 0 ? (
                 <div className="py-10 text-center text-muted-foreground text-sm">No downloads recorded in this period</div>
               ) : (
                 <div className="divide-y divide-border/40 max-h-[360px] overflow-y-auto">
-                  {filteredDownloads.map((entry, idx) => (
-                    <div
-                      key={`${entry.trackId}-${entry.recipientName}-${idx}`}
-                      className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
-                      onClick={() => navigate(`/track/${entry.trackUuid}`)}
-                    >
-                      <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
-                      <img src={entry.coverImage || DEFAULT_COVER} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-purple transition-colors">{entry.trackTitle}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{entry.trackArtist}</p>
+                  {filteredDownloads.map(function (entry, idx) {
+                    return (
+                      <div
+                        key={entry.id + idx}
+                        className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
+                        onClick={function () { if (entry.trackUuid) navigate("/track/" + entry.trackUuid); }}
+                      >
+                        <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
+                        <img src={entry.coverImage || DEFAULT_COVER} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-purple transition-colors">{entry.trackTitle}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{entry.trackArtist}</p>
+                        </div>
+                        <div className="hidden sm:block text-right min-w-[100px]">
+                          <p className="text-[11px] text-foreground/70 truncate">{entry.visitorEmail}</p>
+                        </div>
+                        <span className="text-2xs text-muted-foreground/60 shrink-0 whitespace-nowrap">
+                          {timeAgo(entry.date.toISOString())}
+                        </span>
                       </div>
-                      <div className="hidden sm:block text-right min-w-[80px]">
-                        <p className="text-[11px] text-foreground/70 truncate">{entry.recipientName}</p>
-                        <p className="text-2xs text-muted-foreground truncate">{entry.recipientCompany}</p>
-                      </div>
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-purple/12 text-brand-purple">
-                        {entry.downloads} dl
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
               <div className="px-5 py-3 border-t border-border/50 flex items-center justify-between">
                 <span className="text-2xs text-muted-foreground">
-                  Showing {filteredDownloads.length} entries · {totalFilteredDownloads} total downloads
+                  Showing {filteredDownloads.length} of {linkDownloads.length} total downloads
                 </span>
-                <Link to="/tracks" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
-                  {t("dashboard.viewAll")}
-                </Link>
               </div>
             </div>
           </motion.div>
