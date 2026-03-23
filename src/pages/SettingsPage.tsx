@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
@@ -25,6 +25,7 @@ import {
   ChevronDown,
   Save,
   AlertTriangle,
+  LogOut,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useTranslation } from "react-i18next";
@@ -33,6 +34,9 @@ import { useRole } from "@/contexts/RoleContext";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import { toast } from "sonner";
 import { RotateCcw } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ─── Animations ─── */
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
@@ -240,42 +244,61 @@ function SectionBlock({ title, subtitle, icon: Icon, children, onSave, saveLabel
 
 function ProfileSection() {
   const { t } = useTranslation();
-  const [firstName, setFirstName] = useState("John");
-  const [lastName, setLastName] = useState("Doe");
-  const [email, setEmail] = useState("john@trakalog.com");
-  const [bio, setBio] = useState("Music producer & songwriter based in Los Angeles. Focused on neo-soul, R&B, and electronic music.");
-  const [phone, setPhone] = useState("+1 (555) 012-3456");
-  const [profileVisible, setProfileVisible] = useState(true);
-  const [showEmail, setShowEmail] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [initials] = useState("JD");
+  const { user } = useAuth();
+  const [firstName, setFirstName] = useState(user?.user_metadata?.first_name || "");
+  const [lastName, setLastName] = useState(user?.user_metadata?.last_name || "");
+  const [email] = useState(user?.email || "");
+  const [bio, setBio] = useState(user?.user_metadata?.bio || "");
+  const [phone, setPhone] = useState(user?.user_metadata?.phone || "");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.user_metadata?.avatar_url || null);
+  const [profileVisible, setProfileVisible] = useState(user?.user_metadata?.profile_visible !== false);
+  const [showEmail, setShowEmail] = useState(user?.user_metadata?.show_email === true);
 
-  const handleSave = () => toast.success("Profile saved successfully");
+  const initials = ((user?.user_metadata?.first_name || "")[0] || "") + ((user?.user_metadata?.last_name || "")[0] || "") || "?";
+
+  const handleSave = async () => {
+    const { error } = await supabase.auth.updateUser({
+      data: { first_name: firstName, last_name: lastName, phone, bio }
+    });
+    if (error) toast.error(error.message);
+    else toast.success(t("settings.profileSaved"));
+  };
+
+  const handlePrivacySave = async () => {
+    const { error } = await supabase.auth.updateUser({
+      data: { profile_visible: profileVisible, show_email: showEmail }
+    });
+    if (error) toast.error(error.message);
+    else toast.success(t("settings.profileSaved"));
+  };
 
   const handleAvatarUpload = () => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/png, image/jpeg, image/webp";
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("File too large — max 5 MB");
+        toast.error(t("settings.fileTooLarge"));
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        setAvatarUrl(reader.result as string);
-        toast.success("Profile photo updated");
-      };
-      reader.readAsDataURL(file);
+      const path = user!.id + "/avatar." + file.name.split(".").pop();
+      const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (uploadErr) { toast.error(uploadErr.message); return; }
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = urlData.publicUrl + "?t=" + Date.now();
+      await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
+      setAvatarUrl(publicUrl);
+      toast.success(t("settings.photoUpdated"));
     };
     input.click();
   };
 
-  const handleAvatarRemove = () => {
+  const handleAvatarRemove = async () => {
+    await supabase.auth.updateUser({ data: { avatar_url: null } });
     setAvatarUrl(null);
-    toast.success("Profile photo removed");
+    toast.success(t("settings.photoRemoved"));
   };
 
   return (
@@ -320,8 +343,8 @@ function ProfileSection() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
           <FieldGroup label={t("settings.emailAddress")} hint={t("settings.emailHint")} htmlFor="email">
-            <PremiumInput id="email" value={email} placeholder="you@example.com" type="email" onChange={setEmail}
-              prefix={<Mail className="w-3.5 h-3.5" />} />
+            <PremiumInput id="email" value={email} placeholder="you@example.com" type="email" onChange={() => {}}
+              prefix={<Mail className="w-3.5 h-3.5" />} readOnly />
           </FieldGroup>
           <FieldGroup label={t("settings.phoneNumber")} hint={t("settings.phoneHint")} htmlFor="phone">
             <PremiumInput id="phone" value={phone} placeholder="+1 (555) 000-0000" onChange={setPhone}
@@ -336,7 +359,7 @@ function ProfileSection() {
         </div>
       </SectionBlock>
 
-      <SectionBlock title={t("settings.privacy")} subtitle={t("settings.privacyControlDesc")} icon={Eye} onSave={handleSave} saveLabel={t("settings.updatePrivacy")} changesHint={t("settings.changesHint")}>
+      <SectionBlock title={t("settings.privacy")} subtitle={t("settings.privacyControlDesc")} icon={Eye} onSave={handlePrivacySave} saveLabel={t("settings.updatePrivacy")} changesHint={t("settings.changesHint")}>
         <SettingToggleRow icon={Globe} label={t("settings.profileVisibility")} description={t("settings.profileVisibilityDesc")} enabled={profileVisible} onToggle={() => setProfileVisible(!profileVisible)} />
         <Divider />
         <SettingToggleRow icon={Mail} label={t("settings.showEmailAddress")} description={t("settings.showEmailDesc")} enabled={showEmail} onToggle={() => setShowEmail(!showEmail)} />
@@ -351,13 +374,35 @@ function ProfileSection() {
 
 function WorkspaceSection() {
   const { t } = useTranslation();
-  const [name, setName] = useState("Nightfall Records");
-  const [slug, setSlug] = useState("nightfall-records");
-  const [language, setLanguage] = useState("en");
+  const { activeWorkspace } = useWorkspace();
+  const [name, setName] = useState(activeWorkspace?.name || "");
+  const [slug, setSlug] = useState(activeWorkspace?.slug || "");
+  const [language, setLanguage] = useState(activeWorkspace?.settings?.defaultLanguage || "en");
   const [genre, setGenre] = useState("");
-  const [copyright, setCopyright] = useState("© 2026 Nightfall Records");
+  const [copyright, setCopyright] = useState("");
 
-  const handleSave = () => toast.success("Workspace settings saved");
+  useEffect(() => {
+    if (activeWorkspace) {
+      setName(activeWorkspace.name || "");
+      setSlug(activeWorkspace.slug || "");
+      setLanguage(activeWorkspace.settings?.defaultLanguage || "en");
+    }
+  }, [activeWorkspace]);
+
+  const handleSave = async () => {
+    if (!activeWorkspace) return;
+    const { error } = await supabase.from("workspaces").update({ name, slug }).eq("id", activeWorkspace.id);
+    if (error) toast.error(error.message);
+    else toast.success(t("settings.workspaceSaved"));
+  };
+
+  const handleDefaultsSave = async () => {
+    if (!activeWorkspace) return;
+    const newSettings = { ...activeWorkspace.settings, defaultLanguage: language, defaultGenre: genre, defaultCopyright: copyright };
+    const { error } = await supabase.from("workspaces").update({ settings: newSettings as unknown as Record<string, unknown> }).eq("id", activeWorkspace.id);
+    if (error) toast.error(error.message);
+    else toast.success(t("settings.workspaceSaved"));
+  };
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
@@ -367,7 +412,7 @@ function WorkspaceSection() {
             <PremiumInput value={name} placeholder="Your workspace" onChange={setName} />
           </FieldGroup>
           <FieldGroup label={t("settings.workspaceUrl")} hint="trakalog.app/w/">
-            <PremiumInput value={slug} placeholder="your-workspace" onChange={setSlug} prefix={<span className="text-[11px]">/w/</span>} />
+            <PremiumInput value={slug} placeholder="your-workspace" onChange={() => {}} prefix={<span className="text-[11px]">/w/</span>} readOnly />
           </FieldGroup>
         </div>
         <div className="mt-5">
@@ -381,7 +426,7 @@ function WorkspaceSection() {
         </div>
       </SectionBlock>
 
-      <SectionBlock title={t("settings.uploadDefaults")} subtitle={t("settings.uploadDefaultsDesc")} icon={Sparkles} onSave={handleSave} saveLabel={t("settings.saveDefaults")} changesHint={t("settings.changesHint")}>
+      <SectionBlock title={t("settings.uploadDefaults")} subtitle={t("settings.uploadDefaultsDesc")} icon={Sparkles} onSave={handleDefaultsSave} saveLabel={t("settings.saveDefaults")} changesHint={t("settings.changesHint")}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <FieldGroup label={t("settings.defaultGenre")} hint={t("settings.defaultGenreHint")}>
             <PremiumSelect value={genre} onChange={setGenre} options={[
@@ -433,37 +478,62 @@ function WorkspaceSection() {
 
 function NotificationsSection() {
   const { t } = useTranslation();
-  const [emailPitch, setEmailPitch] = useState(true);
-  const [emailUpload, setEmailUpload] = useState(true);
-  const [emailTeam, setEmailTeam] = useState(false);
-  const [emailDigest, setEmailDigest] = useState(true);
-  const [pushPitch, setPushPitch] = useState(true);
-  const [pushUpload, setPushUpload] = useState(false);
-  const [pushComment, setPushComment] = useState(true);
-  const [pushMention, setPushMention] = useState(true);
+  const { user } = useAuth();
+  const prefs = user?.user_metadata?.notification_prefs || {};
+  const [emailPitch, setEmailPitch] = useState(prefs.email_pitch !== false);
+  const [emailUpload, setEmailUpload] = useState(prefs.email_upload !== false);
+  const [emailTeam, setEmailTeam] = useState(prefs.email_team === true);
+  const [emailDigest, setEmailDigest] = useState(prefs.email_digest !== false);
+  const [pushPitch, setPushPitch] = useState(prefs.push_pitch !== false);
+  const [pushUpload, setPushUpload] = useState(prefs.push_upload === true);
+  const [pushComment, setPushComment] = useState(prefs.push_comment !== false);
+  const [pushMention, setPushMention] = useState(prefs.push_mention !== false);
 
-  const handleSave = () => toast.success("Notification preferences saved");
+  const savePrefs = async (updates: Record<string, boolean>) => {
+    const current = user?.user_metadata?.notification_prefs || {};
+    await supabase.auth.updateUser({ data: { notification_prefs: { ...current, ...updates } } });
+  };
+
+  const handleSave = async () => {
+    await savePrefs({
+      email_pitch: emailPitch,
+      email_upload: emailUpload,
+      email_team: emailTeam,
+      email_digest: emailDigest,
+      push_pitch: pushPitch,
+      push_upload: pushUpload,
+      push_comment: pushComment,
+      push_mention: pushMention,
+    });
+    toast.success(t("settings.profileSaved"));
+  };
+
+  const toggleAndSave = (key: string, current: boolean, setter: (v: boolean) => void) => {
+    const next = !current;
+    setter(next);
+    savePrefs({ [key]: next }).catch(() => {});
+  };
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title={t("settings.emailNotifications")} subtitle="Delivered to john@trakalog.com" icon={Mail} onSave={handleSave} saveLabel={t("settings.saveChanges")} changesHint={t("settings.changesHint")}>
-        <SettingToggleRow label="Pitch Responses" description="When a recipient opens or responds to your pitch" enabled={emailPitch} onToggle={() => setEmailPitch(!emailPitch)} />
+      <SectionBlock title={t("settings.emailNotifications")} subtitle={user?.email ? "Delivered to " + user.email : ""} icon={Mail} onSave={handleSave} saveLabel={t("settings.saveChanges")} changesHint={t("settings.changesHint")}>
+        <SettingToggleRow label="Pitch Responses" description="When a recipient opens or responds to your pitch" enabled={emailPitch} onToggle={() => toggleAndSave("email_pitch", emailPitch, setEmailPitch)} />
         <Divider />
-        <SettingToggleRow label="Track Uploads" description="When a collaborator uploads a new track to the catalog" enabled={emailUpload} onToggle={() => setEmailUpload(!emailUpload)} />
+        <SettingToggleRow label="Track Uploads" description="When a collaborator uploads a new track to the catalog" enabled={emailUpload} onToggle={() => toggleAndSave("email_upload", emailUpload, setEmailUpload)} />
         <Divider />
-        <SettingToggleRow label="Team Changes" description="When members join, leave, or have their roles updated" enabled={emailTeam} onToggle={() => setEmailTeam(!emailTeam)} />
+        <SettingToggleRow label="Team Changes" description="When members join, leave, or have their roles updated" enabled={emailTeam} onToggle={() => toggleAndSave("email_team", emailTeam, setEmailTeam)} />
         <Divider />
-        <SettingToggleRow label="Weekly Digest" description="A curated summary of your workspace activity every Monday" enabled={emailDigest} onToggle={() => setEmailDigest(!emailDigest)} />
+        <SettingToggleRow label="Weekly Digest" description="A curated summary of your workspace activity every Monday" enabled={emailDigest} onToggle={() => toggleAndSave("email_digest", emailDigest, setEmailDigest)} />
       </SectionBlock>
 
       <SectionBlock title={t("settings.pushNotifications")} subtitle={t("settings.realTimeAlertsDesc")} icon={Bell} onSave={handleSave} saveLabel={t("settings.saveChanges")} changesHint={t("settings.changesHint")}>
-        <SettingToggleRow label="Pitch Status Updates" description="Real-time alerts when pitches are opened, read, or replied to" enabled={pushPitch} onToggle={() => setPushPitch(!pushPitch)} />
+        <SettingToggleRow label="Pitch Status Updates" description="Real-time alerts when pitches are opened, read, or replied to" enabled={pushPitch} onToggle={() => toggleAndSave("push_pitch", pushPitch, setPushPitch)} />
         <Divider />
-        <SettingToggleRow label="New Catalog Uploads" description="When tracks or stems are added to the catalog" enabled={pushUpload} onToggle={() => setPushUpload(!pushUpload)} />
+        <SettingToggleRow label="New Catalog Uploads" description="When tracks or stems are added to the catalog" enabled={pushUpload} onToggle={() => toggleAndSave("push_upload", pushUpload, setPushUpload)} />
         <Divider />
-        <SettingToggleRow label="Comments & Feedback" description="When someone leaves feedback or a note on your track" enabled={pushComment} onToggle={() => setPushComment(!pushComment)} />
+        <SettingToggleRow label="Comments & Feedback" description="When someone leaves feedback or a note on your track" enabled={pushComment} onToggle={() => toggleAndSave("push_comment", pushComment, setPushComment)} />
         <Divider />
-        <SettingToggleRow label="Mentions" description="When you're @mentioned in a comment or note" enabled={pushMention} onToggle={() => setPushMention(!pushMention)} />
+        <SettingToggleRow label="Mentions" description="When you're @mentioned in a comment or note" enabled={pushMention} onToggle={() => toggleAndSave("push_mention", pushMention, setPushMention)} />
       </SectionBlock>
     </motion.div>
   );
@@ -475,11 +545,19 @@ function NotificationsSection() {
 
 function AppearanceSection() {
   const { t } = useTranslation();
-  const [theme, setTheme] = useState<"dark" | "light" | "system">("dark");
+  const [theme, setTheme] = useState<"dark" | "light" | "system">(() => {
+    return (localStorage.getItem("trakalog-theme") as "dark" | "light" | "system") || "dark";
+  });
   const [accentIdx, setAccentIdx] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
   const [animations, setAnimations] = useState(true);
+
+  const handleThemeChange = (newTheme: "dark" | "light" | "system") => {
+    setTheme(newTheme);
+    localStorage.setItem("trakalog-theme", newTheme);
+    supabase.auth.updateUser({ data: { theme: newTheme } }).catch(() => {});
+  };
 
   const themes: { id: "dark" | "light" | "system"; label: string; icon: React.ElementType; bar1: string; bar2: string; bar3: string; bg: string }[] = [
     { id: "dark", label: "Dark", icon: Moon, bg: "bg-[hsl(240,6%,8%)]", bar1: "bg-[hsl(240,4%,14%)]", bar2: "bg-[hsl(240,4%,18%)]", bar3: "bg-[hsl(24,100%,55%)]" },
@@ -506,7 +584,7 @@ function AppearanceSection() {
             return (
               <button
                 key={t.id}
-                onClick={() => setTheme(t.id)}
+                onClick={() => handleThemeChange(t.id)}
                 className={`relative rounded-2xl border-2 transition-all duration-300 p-3.5 flex flex-col items-center gap-3 group ${
                   active
                     ? "border-primary/60 shadow-[0_0_20px_hsl(24_95%_53%/0.1)]"
@@ -608,67 +686,102 @@ function ResetOnboardingBlock() {
 
 function SecuritySection() {
   const { t } = useTranslation();
+  const { user, signOut } = useAuth();
+  const isOAuth = user?.app_metadata?.provider === "google";
   const [twoFa, setTwoFa] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
 
-  const sessions = [
-    { device: "MacBook Pro", browser: "Chrome 122", location: "Los Angeles, CA", time: "Active now", current: true, icon: Laptop },
-    { device: "iPhone 15 Pro", browser: "Safari", location: "Los Angeles, CA", time: "2h ago", current: false, icon: Smartphone },
-    { device: "Windows Desktop", browser: "Firefox 124", location: "New York, NY", time: "3 days ago", current: false, icon: Monitor },
-  ];
+  const currentSession = {
+    device: navigator.userAgent.includes("Mac") ? "Mac" : navigator.userAgent.includes("Windows") ? "Windows" : navigator.userAgent.includes("Linux") ? "Linux" : "Unknown Device",
+    browser: navigator.userAgent.includes("Chrome") ? "Chrome" : navigator.userAgent.includes("Firefox") ? "Firefox" : navigator.userAgent.includes("Safari") ? "Safari" : "Browser",
+    time: "Active now",
+    current: true,
+    icon: navigator.userAgent.includes("Mac") ? Laptop : navigator.userAgent.includes("iPhone") ? Smartphone : Monitor,
+  };
 
-  const handleSave = () => toast.success("Password updated successfully");
+  const handlePasswordChange = async () => {
+    if (!newPw || newPw.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPw });
+    if (error) toast.error(error.message);
+    else {
+      toast.success(t("settings.passwordUpdated"));
+      setCurrentPw("");
+      setNewPw("");
+    }
+  };
+
+  const handleSignOutEverywhere = async () => {
+    await supabase.auth.signOut({ scope: "global" });
+    toast.success("Signed out from all devices");
+  };
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title={t("settings.changePassword")} subtitle={t("settings.changePasswordDesc")} icon={Lock} onSave={handleSave} saveLabel={t("settings.updatePassword")} changesHint={t("settings.changesHint")}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <FieldGroup label={t("settings.currentPassword")}>
-            <PremiumInput
-              value={currentPw}
-              placeholder="Enter current password"
-              type={showPw ? "text" : "password"}
-              onChange={setCurrentPw}
-              suffix={
-                <button onClick={() => setShowPw(!showPw)} className="text-muted-foreground/40 hover:text-foreground transition-colors">
-                  {showPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
-              }
-            />
-          </FieldGroup>
-          <FieldGroup label={t("settings.newPassword")}>
-            <PremiumInput
-              value={newPw}
-              placeholder="Enter new password"
-              type={showPw ? "text" : "password"}
-              onChange={setNewPw}
-              suffix={
-                <button onClick={() => setShowPw(!showPw)} className="text-muted-foreground/40 hover:text-foreground transition-colors">
-                  {showPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
-              }
-            />
-          </FieldGroup>
-        </div>
-        {newPw.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="mt-4">
-            <div className="flex gap-1.5">
-              {[1, 2, 3, 4].map((level) => (
-                <div key={level} className={`h-1 flex-1 rounded-full transition-colors ${
-                  newPw.length >= level * 3
-                    ? level >= 4 ? "bg-emerald-400" : level >= 3 ? "bg-brand-orange" : "bg-destructive"
-                    : "bg-secondary"
-                }`} />
-              ))}
+      {isOAuth ? (
+        <SectionBlock title={t("settings.changePassword")} subtitle={t("settings.changePasswordDesc")} icon={Lock}>
+          <div className="flex items-center gap-3 p-4 rounded-xl border border-border/40 bg-secondary/30">
+            <div className="w-8 h-8 rounded-lg bg-secondary/60 flex items-center justify-center shrink-0">
+              <Lock className="w-4 h-4 text-muted-foreground" />
             </div>
-            <p className="text-[10px] text-muted-foreground/40 mt-1.5 font-medium">
-              {newPw.length < 6 ? "Too short" : newPw.length < 9 ? "Fair" : newPw.length < 12 ? "Good" : "Strong"}
-            </p>
-          </motion.div>
-        )}
-      </SectionBlock>
+            <div>
+              <p className="text-[13px] text-foreground font-semibold">Signed in with Google</p>
+              <p className="text-[11px] text-muted-foreground/50 mt-0.5">Password management is handled by your Google account</p>
+            </div>
+          </div>
+        </SectionBlock>
+      ) : (
+        <SectionBlock title={t("settings.changePassword")} subtitle={t("settings.changePasswordDesc")} icon={Lock} onSave={handlePasswordChange} saveLabel={t("settings.updatePassword")} changesHint={t("settings.changesHint")}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <FieldGroup label={t("settings.currentPassword")}>
+              <PremiumInput
+                value={currentPw}
+                placeholder="Enter current password"
+                type={showPw ? "text" : "password"}
+                onChange={setCurrentPw}
+                suffix={
+                  <button onClick={() => setShowPw(!showPw)} className="text-muted-foreground/40 hover:text-foreground transition-colors">
+                    {showPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                }
+              />
+            </FieldGroup>
+            <FieldGroup label={t("settings.newPassword")}>
+              <PremiumInput
+                value={newPw}
+                placeholder="Enter new password"
+                type={showPw ? "text" : "password"}
+                onChange={setNewPw}
+                suffix={
+                  <button onClick={() => setShowPw(!showPw)} className="text-muted-foreground/40 hover:text-foreground transition-colors">
+                    {showPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                }
+              />
+            </FieldGroup>
+          </div>
+          {newPw.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="mt-4">
+              <div className="flex gap-1.5">
+                {[1, 2, 3, 4].map((level) => (
+                  <div key={level} className={`h-1 flex-1 rounded-full transition-colors ${
+                    newPw.length >= level * 3
+                      ? level >= 4 ? "bg-emerald-400" : level >= 3 ? "bg-brand-orange" : "bg-destructive"
+                      : "bg-secondary"
+                  }`} />
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground/40 mt-1.5 font-medium">
+                {newPw.length < 6 ? "Too short" : newPw.length < 9 ? "Fair" : newPw.length < 12 ? "Good" : "Strong"}
+              </p>
+            </motion.div>
+          )}
+        </SectionBlock>
+      )}
 
       <SectionBlock title={t("settings.twoFactor")} subtitle={t("settings.twoFactorDesc")} icon={Shield}>
         <div className="flex items-center justify-between gap-4 py-1">
@@ -701,37 +814,33 @@ function SecuritySection() {
       </SectionBlock>
 
       <SectionBlock title="Active Sessions" subtitle="Manage where you're signed in" icon={Key}>
-        {sessions.map((s, i) => (
-          <div key={i}>
-            <div className="flex items-center justify-between gap-3 py-4">
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  s.current ? "bg-emerald-500/10" : "bg-secondary/60"
-                }`}>
-                  <s.icon className={`w-[18px] h-[18px] ${s.current ? "text-emerald-400" : "text-muted-foreground/60"}`} />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-[13px] font-semibold text-foreground tracking-tight">{s.device}</p>
-                    <span className="text-[11px] text-muted-foreground/40">· {s.browser}</span>
-                    {s.current && (
-                      <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                        Current
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground/40 mt-0.5">{s.location} · {s.time}</p>
-                </div>
-              </div>
-              {!s.current && (
-                <button className="text-[12px] font-semibold text-destructive/70 hover:text-destructive hover:bg-destructive/8 px-3 py-1.5 rounded-lg transition-all shrink-0">
-                  Revoke
-                </button>
-              )}
+        <div className="flex items-center justify-between gap-3 py-4">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10">
+              <currentSession.icon className="w-[18px] h-[18px] text-emerald-400" />
             </div>
-            {i < sessions.length - 1 && <Divider />}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-[13px] font-semibold text-foreground tracking-tight">{currentSession.device}</p>
+                <span className="text-[11px] text-muted-foreground/40">· {currentSession.browser}</span>
+                <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  Current
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground/40 mt-0.5">{currentSession.time}</p>
+            </div>
           </div>
-        ))}
+        </div>
+        <Divider />
+        <div className="flex items-center justify-between gap-3 py-4">
+          <div>
+            <p className="text-[13px] font-semibold text-foreground">Sign out everywhere</p>
+            <p className="text-[11px] text-muted-foreground/50 mt-0.5">This will sign you out from all devices and sessions</p>
+          </div>
+          <button onClick={handleSignOutEverywhere} className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-destructive/30 text-destructive hover:bg-destructive/10 transition-all min-h-[40px] flex items-center gap-2 shrink-0">
+            <LogOut className="w-3.5 h-3.5" /> Sign Out All
+          </button>
+        </div>
       </SectionBlock>
 
       <SectionBlock title="Data & Privacy" subtitle="Export or delete your data" icon={Download}>
@@ -840,7 +949,7 @@ export default function SettingsPage() {
 
             {!isMobile && (
               <div className="mt-8 pt-5 border-t border-border/30 px-4">
-                <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/25 font-bold">TRAKALOG v2.4.0</p>
+                <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/25 font-bold">TRAKALOG</p>
               </div>
             )}
           </motion.nav>
