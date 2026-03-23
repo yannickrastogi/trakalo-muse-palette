@@ -43,6 +43,22 @@ serve(async (req) => {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Rate limiting: max 10 invitations per workspace per hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count } = await supabase
+      .from("invitations")
+      .select("*", { count: "exact", head: true })
+      .eq("workspace_id", workspace_id)
+      .gte("created_at", oneHourAgo);
+
+    if (count !== null && count >= 10) {
+      return new Response(JSON.stringify({ error: "Too many invitations. Please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const token = generateToken(32);
 
     const { error: insertError } = await supabase.from("invitations").insert({

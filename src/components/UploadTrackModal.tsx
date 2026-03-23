@@ -1156,11 +1156,11 @@ function StepInfo({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <FieldLabel>{t("uploadTrack.trackTitle")} *</FieldLabel>
-          <FieldInput value={title} onChange={setTitle} placeholder="e.g. Velvet Hour" />
+          <FieldInput value={title} onChange={setTitle} placeholder={t("uploadTrack.titlePlaceholder")} />
         </div>
         <div className="space-y-1.5">
           <FieldLabel>{t("uploadTrack.artist")} *</FieldLabel>
-          <FieldInput value={artist} onChange={setArtist} placeholder="e.g. Kira Nomura" />
+          <FieldInput value={artist} onChange={setArtist} placeholder={t("uploadTrack.artistPlaceholder")} />
         </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -1387,7 +1387,7 @@ function StepSplits({
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.pro", "PRO")}</label>
-                <input value={split.pro} onChange={(e) => onUpdate(split.id, "pro", e.target.value)} placeholder="e.g. ASCAP" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                <input value={split.pro} onChange={(e) => onUpdate(split.id, "pro", e.target.value)} placeholder={t("uploadTrack.proPlaceholder")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.ipi", "IPI")}</label>

@@ -86,6 +86,7 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { PageShell } from "@/components/PageShell";
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
 import { StemsTab } from "@/components/StemsTab";
@@ -132,36 +133,36 @@ function isEmptyValue(val: unknown): boolean {
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
 
-const detailLabels: Record<string, string> = {
-  producers: "Producer(s)", songwriters: "Songwriter(s)", recordingEngineer: "Recording Engineer",
-  mixingEngineer: "Mixing Engineer", masteringEngineer: "Mastering Engineer", drumsBy: "Drums By",
-  synthsBy: "Synths By", keysBy: "Keys By", guitarsBy: "Guitars By", bassBy: "Bass By",
-  programmingBy: "Programming By", vocalsBy: "Vocals By", backgroundVocalsBy: "Background Vocals By",
-  mixingStudio: "Mixing Studio", recordingStudio: "Recording Studio", recordingDate: "Recording Date",
+const detailLabelKeys: Record<string, string> = {
+  producers: "productionCredits.producers", songwriters: "productionCredits.songwriters", recordingEngineer: "productionCredits.recordingEngineer",
+  mixingEngineer: "productionCredits.mixingEngineer", masteringEngineer: "productionCredits.masteringEngineer", drumsBy: "performerCredits.drums",
+  synthsBy: "performerCredits.synths", keysBy: "performerCredits.keys", guitarsBy: "performerCredits.guitars", bassBy: "performerCredits.bass",
+  programmingBy: "productionCredits.programmingBy", vocalsBy: "performerCredits.leadVocals", backgroundVocalsBy: "performerCredits.backgroundVocals",
+  mixingStudio: "productionCredits.mixingStudio", recordingStudio: "productionCredits.recordingStudio", recordingDate: "productionCredits.recordingDate",
 };
 
-function buildMeta(trackData: TrackData) {
+function buildMeta(trackData: TrackData, t: (key: string) => string) {
   const meta = [
-    { label: "Album / EP", value: trackData.album || "\u2014" },
-    { label: "Label", value: trackData.label || "\u2014" },
-    { label: "Publisher", value: trackData.publisher || "\u2014" },
-    { label: "Release Date", value: trackData.releaseDate || "\u2014" },
-    { label: "ISRC", value: trackData.isrc || "\u2014" },
-    { label: "UPC", value: trackData.upc || "\u2014" },
-    { label: "Written By", value: trackData.writtenBy.length ? trackData.writtenBy.join(", ") : "\u2014" },
-    { label: "Produced By", value: trackData.producedBy.length ? trackData.producedBy.join(", ") : "\u2014" },
-    { label: "Mixed By", value: trackData.mixedBy || "\u2014" },
-    { label: "Mastered By", value: trackData.masteredBy || "\u2014" },
-    { label: "Copyright", value: trackData.copyright || "\u2014" },
-    { label: "Language", value: trackData.language || "\u2014" },
-    { label: "Gender", value: trackData.voice || "\u2014" },
-    { label: "Explicit", value: trackData.explicit ? "Yes" : "No" },
-    { label: "Notes", value: trackData.notes || "\u2014" },
+    { label: t("trackDetail.albumEp"), value: trackData.album || "\u2014" },
+    { label: t("trackDetail.label"), value: trackData.label || "\u2014" },
+    { label: t("trackDetail.publisher"), value: trackData.publisher || "\u2014" },
+    { label: t("trackDetail.releaseDate"), value: trackData.releaseDate || "\u2014" },
+    { label: t("trackDetail.isrc"), value: trackData.isrc || "\u2014" },
+    { label: t("trackDetail.upc"), value: trackData.upc || "\u2014" },
+    { label: t("trackDetail.writtenBy"), value: trackData.writtenBy.length ? trackData.writtenBy.join(", ") : "\u2014" },
+    { label: t("trackDetail.producedBy"), value: trackData.producedBy.length ? trackData.producedBy.join(", ") : "\u2014" },
+    { label: t("trackDetail.mixedBy"), value: trackData.mixedBy || "\u2014" },
+    { label: t("trackDetail.masteredBy"), value: trackData.masteredBy || "\u2014" },
+    { label: t("trackDetail.copyright"), value: trackData.copyright || "\u2014" },
+    { label: t("trackDetail.language"), value: trackData.language || "\u2014" },
+    { label: t("trackDetail.gender"), value: trackData.voice || "\u2014" },
+    { label: t("trackDetail.explicit"), value: trackData.explicit ? t("trackDetail.yes") : t("trackDetail.no") },
+    { label: t("trackDetail.notes"), value: trackData.notes || "\u2014" },
   ];
   Object.entries(trackData.details || {}).forEach(([key, values]) => {
     const filtered = values.filter(Boolean);
     if (filtered.length > 0) {
-      meta.push({ label: detailLabels[key] || key, value: filtered.join(", ") });
+      meta.push({ label: detailLabelKeys[key] ? t(detailLabelKeys[key]) : key, value: filtered.join(", ") });
     }
   });
   return meta;
@@ -363,10 +364,20 @@ export default function TrackDetail() {
         <>
           <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
             {/* Breadcrumb */}
-            <motion.div variants={item} className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Link to="/tracks" className="hover:text-foreground transition-colors">Tracks</Link>
-              <ChevronRight className="w-3.5 h-3.5" />
-              <span className="text-foreground font-medium">{track.title}</span>
+            <motion.div variants={item}>
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <Link to="/tracks">{t("trackDetail.tracks")}</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>{track.title}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
             </motion.div>
 
             {/* Hero section: Cover + Info + Player */}
@@ -823,7 +834,7 @@ export default function TrackDetail() {
           open={downloadModalOpen}
           onClose={() => setDownloadModalOpen(false)}
           trackData={track}
-          meta={buildMeta(track)}
+          meta={buildMeta(track, t)}
         />
       )}
       {track && (
@@ -913,11 +924,12 @@ function SectionCard({ title, icon: Icon, children, action }: { title: string; i
 }
 
 function OverviewTab({ trackId, onEdit }: { trackId: number; onEdit: () => void }) {
+  const { t } = useTranslation();
   const { getTrack } = useTrack();
   const trackData = getTrack(trackId);
   if (!trackData) return null;
 
-  const meta = buildMeta(trackData);
+  const meta = buildMeta(trackData, t);
 
   const handleDownloadPdf = () => {
     generateMetadataPdf(trackData.title, trackData.artist, meta);

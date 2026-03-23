@@ -50,6 +50,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { PageShell } from "@/components/PageShell";
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { useTranslation } from "react-i18next";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePlaylists, type PlaylistItem } from "@/contexts/PlaylistContext";
@@ -75,6 +77,7 @@ const itemVariant = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, t
 
 export default function PlaylistDetail() {
   const { id } = useParams();
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { getPlaylist, updatePlaylist, deletePlaylist } = usePlaylists();
@@ -137,19 +140,21 @@ export default function PlaylistDetail() {
 
   useEffect(function() {
     if (!id) return;
-    supabase.from("playlist_tracks").select("track_id, position").eq("playlist_id", id).order("position", { ascending: true }).then(function(res) {
-      if (!res.data || res.data.length === 0) return;
-      var uuids = res.data.map(function(r) { return r.track_id; });
-      supabase.from("tracks").select("*").in("id", uuids).then(function(res2) {
+    (async function() {
+      try {
+        const res = await supabase.from("playlist_tracks").select("track_id, position").eq("playlist_id", id).order("position", { ascending: true });
+        if (!res.data || res.data.length === 0) return;
+        const uuids = res.data.map(function(r) { return r.track_id; });
+        const res2 = await supabase.from("tracks").select("*").in("id", uuids);
         if (!res2.data) return;
-        var map: Record<string, any> = {};
+        const map: Record<string, any> = {};
         res2.data.forEach(function(t: any) { map[t.id] = t; });
-        var ordered = uuids.map(function(uid) { return map[uid]; }).filter(Boolean);
+        const ordered = uuids.map(function(uid) { return map[uid]; }).filter(Boolean);
         setDbTracks(ordered.map(function(row: any, idx: number) {
           return mapRowToTrack(row as Record<string, unknown>, idx);
         }) as Track[]);
-      }).catch(function (err) { console.error("Error:", err); });
-    }).catch(function (err) { console.error("Error:", err); });
+      } catch (err) { console.error("Error:", err); }
+    })();
   }, [id]);
 
   var displayTracks = tracks.length > 0 ? tracks : dbTracks;
@@ -254,10 +259,10 @@ export default function PlaylistDetail() {
         ) : (
           <div className="flex flex-col items-center justify-center py-32 text-center px-4">
             <ListMusic className="w-12 h-12 text-muted-foreground/15 mb-4" />
-            <h2 className="text-lg font-semibold text-foreground">Playlist not found</h2>
-            <p className="text-sm text-muted-foreground mt-1">This playlist may have been removed.</p>
+            <h2 className="text-lg font-semibold text-foreground">{t("playlistDetail.notFound")}</h2>
+            <p className="text-sm text-muted-foreground mt-1">{t("playlistDetail.mayHaveBeenRemoved")}</p>
             <Link to="/playlists" className="mt-4 text-sm gradient-text font-semibold hover:opacity-80 transition-opacity">
-              ← Back to Playlists
+              {t("playlistDetail.backToPlaylists")}
             </Link>
           </div>
         )
@@ -270,13 +275,20 @@ export default function PlaylistDetail() {
         className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]"
       >
         {/* Breadcrumb */}
-        <motion.div variants={itemVariant} className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link to="/playlists" className="hover:text-foreground transition-colors flex items-center gap-1">
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Playlists
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-foreground font-medium truncate">{playlistName}</span>
+        <motion.div variants={itemVariant}>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/playlists">{t("playlistDetail.playlists")}</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{playlistName}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </motion.div>
 
         {/* Hero */}

@@ -27,6 +27,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
+import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRole } from "@/contexts/RoleContext";
 import { useOnboarding } from "@/contexts/OnboardingContext";
@@ -42,12 +43,12 @@ const fadeUp = {
 
 type SettingsSection = "profile" | "workspace" | "notifications" | "appearance" | "security";
 
-const sections: { id: SettingsSection; label: string; icon: React.ElementType; description: string }[] = [
-  { id: "profile", label: "Profile", icon: User, description: "Account details & public identity" },
-  { id: "workspace", label: "Workspace", icon: Building2, description: "Team settings & defaults" },
-  { id: "notifications", label: "Notifications", icon: Bell, description: "Email & push preferences" },
-  { id: "appearance", label: "Appearance", icon: Palette, description: "Theme, layout & display" },
-  { id: "security", label: "Security", icon: Shield, description: "Password & authentication" },
+const sections: { id: SettingsSection; labelKey: string; icon: React.ElementType; descKey: string }[] = [
+  { id: "profile", labelKey: "settings.profile", icon: User, descKey: "settings.profileDesc" },
+  { id: "workspace", labelKey: "settings.workspace", icon: Building2, descKey: "settings.workspaceDesc" },
+  { id: "notifications", labelKey: "settings.notifications", icon: Bell, descKey: "settings.notificationsDesc" },
+  { id: "appearance", labelKey: "settings.appearance", icon: Palette, descKey: "settings.appearanceDesc" },
+  { id: "security", labelKey: "settings.security", icon: Shield, descKey: "settings.securityDesc" },
 ];
 
 /* ═══════════════════════════════════════════════════════
@@ -198,8 +199,8 @@ function Divider() {
   return <div className="h-px bg-border/40" />;
 }
 
-function SectionBlock({ title, subtitle, icon: Icon, children, onSave, saveLabel = "Save Changes" }: {
-  title: string; subtitle?: string; icon: React.ElementType; children: ReactNode; onSave?: () => void; saveLabel?: string;
+function SectionBlock({ title, subtitle, icon: Icon, children, onSave, saveLabel, changesHint }: {
+  title: string; subtitle?: string; icon: React.ElementType; children: ReactNode; onSave?: () => void; saveLabel?: string; changesHint?: string;
 }) {
   return (
     <motion.div variants={fadeUp} className="rounded-2xl border border-border/50 bg-card overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
@@ -222,7 +223,7 @@ function SectionBlock({ title, subtitle, icon: Icon, children, onSave, saveLabel
       {/* Footer with save */}
       {onSave && (
         <div className="px-6 py-4 border-t border-border/40 flex items-center justify-between" style={{ background: "hsl(240 5% 8% / 0.5)" }}>
-          <p className="text-[11px] text-muted-foreground/40 font-medium">Changes are saved to your account</p>
+          <p className="text-[11px] text-muted-foreground/40 font-medium">{changesHint}</p>
           <button onClick={onSave} className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold min-h-[40px]">
             <Save className="w-3.5 h-3.5" />
             {saveLabel}
@@ -238,6 +239,7 @@ function SectionBlock({ title, subtitle, icon: Icon, children, onSave, saveLabel
    ═══════════════════════════════════════════════════════ */
 
 function ProfileSection() {
+  const { t } = useTranslation();
   const [firstName, setFirstName] = useState("John");
   const [lastName, setLastName] = useState("Doe");
   const [email, setEmail] = useState("john@trakalog.com");
@@ -278,7 +280,7 @@ function ProfileSection() {
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title="Personal Information" subtitle="Your identity across TRAKALOG" icon={User} onSave={handleSave}>
+      <SectionBlock title={t("settings.personalInfo")} subtitle={t("settings.personalInfoDesc")} icon={User} onSave={handleSave} saveLabel={t("settings.saveChanges")} changesHint={t("settings.changesHint")}>
         {/* Avatar row */}
         <div className="flex items-center gap-5 pb-6 mb-6 border-b border-border/30">
           <div className="relative group cursor-pointer" onClick={handleAvatarUpload}>
@@ -296,48 +298,48 @@ function ProfileSection() {
             </div>
           </div>
           <div className="space-y-1">
-            <p className="text-sm font-bold text-foreground tracking-tight">Profile Photo</p>
-            <p className="text-[11px] text-muted-foreground/50">Recommended: 256×256px, JPG or PNG</p>
+            <p className="text-sm font-bold text-foreground tracking-tight">{t("settings.profilePhoto")}</p>
+            <p className="text-[11px] text-muted-foreground/50">{t("settings.photoHint")}</p>
             <div className="flex items-center gap-3 mt-1.5">
-              <button onClick={handleAvatarUpload} className="text-[11px] gradient-text font-bold hover:opacity-80 transition-opacity">Upload new</button>
+              <button onClick={handleAvatarUpload} className="text-[11px] gradient-text font-bold hover:opacity-80 transition-opacity">{t("settings.uploadNew")}</button>
               <span className="text-muted-foreground/20">·</span>
-              <button onClick={handleAvatarRemove} className="text-[11px] text-muted-foreground/40 font-medium hover:text-destructive transition-colors">Remove</button>
+              <button onClick={handleAvatarRemove} className="text-[11px] text-muted-foreground/40 font-medium hover:text-destructive transition-colors">{t("settings.remove")}</button>
             </div>
           </div>
         </div>
 
         {/* Form grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <FieldGroup label="First Name" htmlFor="firstName">
+          <FieldGroup label={t("settings.firstName")} htmlFor="firstName">
             <PremiumInput id="firstName" value={firstName} placeholder="Your first name" onChange={setFirstName} />
           </FieldGroup>
-          <FieldGroup label="Last Name" htmlFor="lastName">
+          <FieldGroup label={t("settings.lastName")} htmlFor="lastName">
             <PremiumInput id="lastName" value={lastName} placeholder="Your last name" onChange={setLastName} />
           </FieldGroup>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
-          <FieldGroup label="Email Address" hint="Used for login and notifications" htmlFor="email">
+          <FieldGroup label={t("settings.emailAddress")} hint={t("settings.emailHint")} htmlFor="email">
             <PremiumInput id="email" value={email} placeholder="you@example.com" type="email" onChange={setEmail}
               prefix={<Mail className="w-3.5 h-3.5" />} />
           </FieldGroup>
-          <FieldGroup label="Phone Number" hint="Optional — used for SMS alerts" htmlFor="phone">
+          <FieldGroup label={t("settings.phoneNumber")} hint={t("settings.phoneHint")} htmlFor="phone">
             <PremiumInput id="phone" value={phone} placeholder="+1 (555) 000-0000" onChange={setPhone}
               prefix={<Smartphone className="w-3.5 h-3.5" />} />
           </FieldGroup>
         </div>
 
         <div className="mt-5">
-          <FieldGroup label="Bio" hint="Visible on your team profile">
+          <FieldGroup label={t("settings.bio")} hint={t("settings.bioHint")}>
             <PremiumTextarea value={bio} placeholder="Tell your team a bit about yourself…" onChange={setBio} rows={3} />
           </FieldGroup>
         </div>
       </SectionBlock>
 
-      <SectionBlock title="Privacy" subtitle="Control what others can see" icon={Eye} onSave={handleSave} saveLabel="Update Privacy">
-        <SettingToggleRow icon={Globe} label="Profile Visibility" description="Allow team members to find and view your profile" enabled={profileVisible} onToggle={() => setProfileVisible(!profileVisible)} />
+      <SectionBlock title={t("settings.privacy")} subtitle={t("settings.privacyControlDesc")} icon={Eye} onSave={handleSave} saveLabel={t("settings.updatePrivacy")} changesHint={t("settings.changesHint")}>
+        <SettingToggleRow icon={Globe} label={t("settings.profileVisibility")} description={t("settings.profileVisibilityDesc")} enabled={profileVisible} onToggle={() => setProfileVisible(!profileVisible)} />
         <Divider />
-        <SettingToggleRow icon={Mail} label="Show Email Address" description="Display your email on your public team profile" enabled={showEmail} onToggle={() => setShowEmail(!showEmail)} />
+        <SettingToggleRow icon={Mail} label={t("settings.showEmailAddress")} description={t("settings.showEmailDesc")} enabled={showEmail} onToggle={() => setShowEmail(!showEmail)} />
       </SectionBlock>
     </motion.div>
   );
@@ -348,6 +350,7 @@ function ProfileSection() {
    ═══════════════════════════════════════════════════════ */
 
 function WorkspaceSection() {
+  const { t } = useTranslation();
   const [name, setName] = useState("Nightfall Records");
   const [slug, setSlug] = useState("nightfall-records");
   const [language, setLanguage] = useState("en");
@@ -358,17 +361,17 @@ function WorkspaceSection() {
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title="General" subtitle="Your team's identity" icon={Building2} onSave={handleSave}>
+      <SectionBlock title={t("settings.general")} subtitle={t("settings.generalDesc")} icon={Building2} onSave={handleSave} saveLabel={t("settings.saveChanges")} changesHint={t("settings.changesHint")}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <FieldGroup label="Workspace Name" hint="Visible to all team members">
+          <FieldGroup label={t("settings.workspaceName")} hint={t("settings.workspaceNameHint")}>
             <PremiumInput value={name} placeholder="Your workspace" onChange={setName} />
           </FieldGroup>
-          <FieldGroup label="Workspace URL" hint="trakalog.app/w/">
+          <FieldGroup label={t("settings.workspaceUrl")} hint="trakalog.app/w/">
             <PremiumInput value={slug} placeholder="your-workspace" onChange={setSlug} prefix={<span className="text-[11px]">/w/</span>} />
           </FieldGroup>
         </div>
         <div className="mt-5">
-          <FieldGroup label="Default Language" hint="Sets the UI language for new members">
+          <FieldGroup label={t("settings.defaultLanguage")} hint={t("settings.defaultLanguageHint")}>
             <PremiumSelect value={language} onChange={setLanguage} options={[
               { value: "en", label: "English" },
               { value: "fr", label: "Français" },
@@ -378,9 +381,9 @@ function WorkspaceSection() {
         </div>
       </SectionBlock>
 
-      <SectionBlock title="Upload Defaults" subtitle="Pre-fill metadata for new tracks" icon={Sparkles} onSave={handleSave} saveLabel="Save Defaults">
+      <SectionBlock title={t("settings.uploadDefaults")} subtitle={t("settings.uploadDefaultsDesc")} icon={Sparkles} onSave={handleSave} saveLabel={t("settings.saveDefaults")} changesHint={t("settings.changesHint")}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <FieldGroup label="Default Genre" hint="Applied when uploading new tracks">
+          <FieldGroup label={t("settings.defaultGenre")} hint={t("settings.defaultGenreHint")}>
             <PremiumSelect value={genre} onChange={setGenre} options={[
               { value: "", label: "None" },
               { value: "hiphop", label: "Hip-Hop" },
@@ -392,7 +395,7 @@ function WorkspaceSection() {
               { value: "jazz", label: "Jazz" },
             ]} />
           </FieldGroup>
-          <FieldGroup label="Default Copyright" hint="Embedded in track metadata">
+          <FieldGroup label={t("settings.defaultCopyright")} hint={t("settings.defaultCopyrightHint")}>
             <PremiumInput value={copyright} placeholder="© Year Label Name" onChange={setCopyright} />
           </FieldGroup>
         </div>
@@ -404,8 +407,8 @@ function WorkspaceSection() {
             <AlertTriangle className="w-[17px] h-[17px] text-destructive" />
           </div>
           <div>
-            <h3 className="text-[14px] font-bold text-destructive tracking-tight">Danger Zone</h3>
-            <p className="text-[11px] text-destructive/50 mt-0.5">Irreversible actions</p>
+            <h3 className="text-[14px] font-bold text-destructive tracking-tight">{t("settings.dangerZone")}</h3>
+            <p className="text-[11px] text-destructive/50 mt-0.5">{t("settings.dangerZoneDesc")}</p>
           </div>
         </div>
         <div className="px-6 py-5 border-t border-destructive/10">
@@ -429,6 +432,7 @@ function WorkspaceSection() {
    ═══════════════════════════════════════════════════════ */
 
 function NotificationsSection() {
+  const { t } = useTranslation();
   const [emailPitch, setEmailPitch] = useState(true);
   const [emailUpload, setEmailUpload] = useState(true);
   const [emailTeam, setEmailTeam] = useState(false);
@@ -442,7 +446,7 @@ function NotificationsSection() {
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title="Email Notifications" subtitle="Delivered to john@trakalog.com" icon={Mail} onSave={handleSave} saveLabel="Save Email Preferences">
+      <SectionBlock title={t("settings.emailNotifications")} subtitle="Delivered to john@trakalog.com" icon={Mail} onSave={handleSave} saveLabel={t("settings.saveChanges")} changesHint={t("settings.changesHint")}>
         <SettingToggleRow label="Pitch Responses" description="When a recipient opens or responds to your pitch" enabled={emailPitch} onToggle={() => setEmailPitch(!emailPitch)} />
         <Divider />
         <SettingToggleRow label="Track Uploads" description="When a collaborator uploads a new track to the catalog" enabled={emailUpload} onToggle={() => setEmailUpload(!emailUpload)} />
@@ -452,7 +456,7 @@ function NotificationsSection() {
         <SettingToggleRow label="Weekly Digest" description="A curated summary of your workspace activity every Monday" enabled={emailDigest} onToggle={() => setEmailDigest(!emailDigest)} />
       </SectionBlock>
 
-      <SectionBlock title="Push Notifications" subtitle="In-app and browser alerts" icon={Bell} onSave={handleSave} saveLabel="Save Push Preferences">
+      <SectionBlock title={t("settings.pushNotifications")} subtitle={t("settings.realTimeAlertsDesc")} icon={Bell} onSave={handleSave} saveLabel={t("settings.saveChanges")} changesHint={t("settings.changesHint")}>
         <SettingToggleRow label="Pitch Status Updates" description="Real-time alerts when pitches are opened, read, or replied to" enabled={pushPitch} onToggle={() => setPushPitch(!pushPitch)} />
         <Divider />
         <SettingToggleRow label="New Catalog Uploads" description="When tracks or stems are added to the catalog" enabled={pushUpload} onToggle={() => setPushUpload(!pushUpload)} />
@@ -470,6 +474,7 @@ function NotificationsSection() {
    ═══════════════════════════════════════════════════════ */
 
 function AppearanceSection() {
+  const { t } = useTranslation();
   const [theme, setTheme] = useState<"dark" | "light" | "system">("dark");
   const [accentIdx, setAccentIdx] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -602,6 +607,7 @@ function ResetOnboardingBlock() {
    ═══════════════════════════════════════════════════════ */
 
 function SecuritySection() {
+  const { t } = useTranslation();
   const [twoFa, setTwoFa] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
@@ -617,9 +623,9 @@ function SecuritySection() {
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title="Change Password" subtitle="Use a strong, unique password" icon={Lock} onSave={handleSave} saveLabel="Update Password">
+      <SectionBlock title={t("settings.changePassword")} subtitle={t("settings.changePasswordDesc")} icon={Lock} onSave={handleSave} saveLabel={t("settings.updatePassword")} changesHint={t("settings.changesHint")}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <FieldGroup label="Current Password">
+          <FieldGroup label={t("settings.currentPassword")}>
             <PremiumInput
               value={currentPw}
               placeholder="Enter current password"
@@ -632,7 +638,7 @@ function SecuritySection() {
               }
             />
           </FieldGroup>
-          <FieldGroup label="New Password">
+          <FieldGroup label={t("settings.newPassword")}>
             <PremiumInput
               value={newPw}
               placeholder="Enter new password"
@@ -664,7 +670,7 @@ function SecuritySection() {
         )}
       </SectionBlock>
 
-      <SectionBlock title="Two-Factor Authentication" subtitle="Extra security for your account" icon={Shield}>
+      <SectionBlock title={t("settings.twoFactor")} subtitle={t("settings.twoFactorDesc")} icon={Shield}>
         <div className="flex items-center justify-between gap-4 py-1">
           <div className="flex items-start gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${twoFa ? "bg-emerald-500/12" : "bg-secondary/60"}`}>
@@ -766,6 +772,7 @@ const sectionComponents: Record<SettingsSection, React.FC> = {
 };
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState<SettingsSection>("profile");
   const isMobile = useIsMobile();
   const ActiveComponent = sectionComponents[activeSection];
@@ -776,8 +783,8 @@ export default function SettingsPage() {
       <motion.div variants={stagger} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 max-w-[1200px]">
         {/* Page header */}
         <motion.div variants={fadeUp} className="mb-8">
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Settings</h1>
-          <p className="text-muted-foreground text-xs sm:text-sm mt-1">Manage your workspace and account preferences</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("settings.title")}</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("settings.subtitle")}</p>
         </motion.div>
 
         <div className="flex flex-col lg:flex-row gap-8">
@@ -819,10 +826,10 @@ export default function SettingsPage() {
 
                     <s.icon className={`w-[17px] h-[17px] shrink-0 relative z-10 ${isActive ? "text-primary" : ""}`} />
                     <div className="relative z-10 min-w-0">
-                      <span className={`text-[13px] font-semibold tracking-tight block ${isActive ? "" : ""}`}>{s.label}</span>
+                      <span className={`text-[13px] font-semibold tracking-tight block ${isActive ? "" : ""}`}>{t(s.labelKey)}</span>
                       {!isMobile && (
                         <span className={`text-[10px] mt-0.5 block ${isActive ? "text-muted-foreground/50" : "text-muted-foreground/30"}`}>
-                          {s.description}
+                          {t(s.descKey)}
                         </span>
                       )}
                     </div>

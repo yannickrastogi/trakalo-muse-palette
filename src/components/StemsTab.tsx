@@ -203,7 +203,7 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
         // Get signed URL
         const { data: signedData } = await supabase.storage
           .from("stems")
-          .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+          .createSignedUrl(filePath, 3600);
 
         const fileUrl = signedData?.signedUrl || "";
 

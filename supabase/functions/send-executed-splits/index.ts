@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
+const maskIpi = (ipi: string | undefined) => ipi ? "***" + ipi.slice(-3) : "\u2014";
+
 serve(async (req) => {
   const corsRes = handleCors(req);
   if (corsRes) return corsRes;
@@ -87,7 +89,7 @@ serve(async (req) => {
           + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;\">" + (s.role || "\u2014") + "</td>"
           + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#333;font-weight:bold;text-align:right;\">" + (s.share || 0) + "%</td>"
           + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px;\">" + (s.pro || "\u2014") + "</td>"
-          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px;\">" + (s.ipi || "\u2014") + "</td>"
+          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px;\">" + maskIpi(s.ipi) + "</td>"
           + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px;\">" + (s.publisher || "\u2014") + "</td>"
           + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#16a34a;font-size:12px;\">" + signedLabel + "</td>"
           + "</tr>";

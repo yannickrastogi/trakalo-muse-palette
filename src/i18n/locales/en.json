@@ -465,7 +465,17 @@
     "selectGender": "Select gender",
     "selectLanguage": "Select language",
     "customGenre": "Enter custom genre",
-    "other": "Other…"
+    "other": "Other…",
+    "titlePlaceholder": "e.g. Velvet Hour",
+    "artistPlaceholder": "e.g. Kira Nomura",
+    "albumPlaceholder": "e.g. Late Bloom EP",
+    "isrcPlaceholder": "e.g. USRC12600001",
+    "upcPlaceholder": "e.g. 0850123456789",
+    "labelPlaceholder": "e.g. Nightfall Records",
+    "publisherPlaceholder": "e.g. Nomura Publishing",
+    "copyrightPlaceholder": "e.g. © 2026 Nightfall Records",
+    "rolePlaceholder": "e.g. Producer",
+    "proPlaceholder": "e.g. ASCAP"
   },
   "settings": {
     "title": "Settings",
@@ -598,7 +608,10 @@
     "notes": "Notes",
     "selectKey": "Select key",
     "selectGenre": "Select genre",
-    "selectLanguage": "Select language"
+    "selectLanguage": "Select language",
+    "titlePlaceholder": "e.g. Velvet Hour",
+    "artistPlaceholder": "e.g. Kira Nomura",
+    "proPlaceholder": "e.g. ASCAP"
   },
   "createPlaylist": {
     "title": "Create Playlist",
@@ -1065,7 +1078,17 @@
     "selectGenre": "Select a genre",
     "selectMood": "Select a mood",
     "tracks": "{{count}} tracks",
-    "radioActive": "RADIO"
+    "radioActive": "RADIO",
+    "shuffle": "Shuffle",
+    "previous": "Previous",
+    "play": "Play",
+    "pause": "Pause",
+    "next": "Next",
+    "repeat": "Repeat",
+    "remove": "Remove",
+    "noTracks": "No tracks match this filter",
+    "noPlaylists": "No playlists yet",
+    "queueEmpty": "Queue is empty"
   },
   "smartAr": {
     "title": "Smart A&R",
@@ -1112,5 +1135,49 @@
     "alreadyOnWaitlist": "You're already on the waitlist!",
     "somethingWentWrong": "Something went wrong. Please try again.",
     "onTheList": "You're on the list! We'll be in touch."
+  },
+  "approvals": {
+    "title": "Approval Queue",
+    "subtitle": "Review and manage outbound send requests",
+    "searchPlaceholder": "Search sends...",
+    "requestDetails": "Approval request details",
+    "sendType": "Send Type",
+    "team": "Team",
+    "createdBy": "Created By",
+    "recipients": "Recipient(s)",
+    "created": "Created",
+    "message": "Message",
+    "rejectionReason": "Rejection Reason",
+    "internalNote": "Internal Note (optional)",
+    "internalNotePlaceholder": "Add an internal note...",
+    "rejectionReasonLabel": "Rejection Reason (optional)",
+    "rejectionPlaceholder": "Explain why this send is being rejected...",
+    "approveAndSend": "Approve & Send",
+    "reject": "Reject",
+    "confirmRejection": "Confirm Rejection",
+    "history": "Approval History",
+    "noPending": "No pending approvals",
+    "noSends": "No sends found",
+    "allReviewed": "All outbound sends have been reviewed",
+    "adjustFilters": "Try adjusting your filters",
+    "draft": "Draft",
+    "pending": "Pending",
+    "pendingCount": "Pending ({{count}})",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "sent": "Sent",
+    "cancelled": "Cancelled",
+    "all": "All",
+    "typeTrack": "Track",
+    "typePlaylist": "Playlist",
+    "typePitch": "Pitch",
+    "typeShareLink": "Share Link",
+    "typeRecipientSend": "Recipient Send",
+    "typeOther": "Other"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or has been moved.",
+    "goBack": "Go Back"
   }
 }

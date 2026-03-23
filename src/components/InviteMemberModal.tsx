@@ -275,7 +275,7 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
             ) : (
               <div className="space-y-2">
                 <Input
-                  placeholder="e.g. Nightfall Records, Studio Session A"
+                  placeholder={t("createTeam.namePlaceholder")}
                   value={newTeamName}
                   onChange={(e) => { setNewTeamName(e.target.value); if (error) setError(""); }}
                   className="bg-secondary border-border text-foreground placeholder:text-muted-foreground text-[13px] min-h-[44px]"

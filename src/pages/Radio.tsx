@@ -575,21 +575,21 @@ export default function RadioPage() {
                       "p-2 rounded-full min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors " +
                       (radioState.shuffle ? "text-brand-orange" : "text-muted-foreground hover:text-foreground")
                     }
-                    title="Shuffle"
+                    title={t("radio.shuffle")}
                   >
                     <Shuffle className="w-5 h-5" />
                   </button>
                   <button
                     onClick={handlePrev}
                     className="p-2 rounded-full min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                    title="Previous"
+                    title={t("radio.previous")}
                   >
                     <SkipBack className="w-5 h-5" />
                   </button>
                   <button
                     onClick={handleTogglePlay}
                     className="btn-brand w-14 h-14 rounded-full flex items-center justify-center shadow-lg"
-                    title={radioState.isPlaying ? "Pause" : "Play"}
+                    title={radioState.isPlaying ? t("radio.pause") : t("radio.play")}
                   >
                     {radioState.isPlaying ? (
                       <Pause className="w-6 h-6" />
@@ -600,7 +600,7 @@ export default function RadioPage() {
                   <button
                     onClick={handleNext}
                     className="p-2 rounded-full min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                    title="Next"
+                    title={t("radio.next")}
                   >
                     <SkipForward className="w-5 h-5" />
                   </button>
@@ -610,7 +610,7 @@ export default function RadioPage() {
                       "p-2 rounded-full min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors " +
                       (radioState.repeat ? "text-brand-orange" : "text-muted-foreground hover:text-foreground")
                     }
-                    title="Repeat"
+                    title={t("radio.repeat")}
                   >
                     <Repeat className="w-5 h-5" />
                   </button>
@@ -749,7 +749,7 @@ export default function RadioPage() {
                           <button
                             onClick={function () { handleRemoveFromQueue(idx); }}
                             className="p-1.5 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center shrink-0"
-                            title="Remove"
+                            title={t("radio.remove")}
                           >
                             <X className="w-4 h-4" />
                           </button>
