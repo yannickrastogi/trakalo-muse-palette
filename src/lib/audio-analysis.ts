@@ -175,130 +175,253 @@ const CHAPTER_COLORS = [
   "hsl(var(--chart-5))",
 ];
 
-const SECTION_LABELS = [
-  "Intro", "Verse 1", "Pre-Chorus", "Chorus", "Post-Chorus",
-  "Verse 2", "Pre-Chorus", "Chorus", "Post-Chorus",
-  "Bridge", "Chorus", "Outro",
-];
+/** Per-segment audio features for classification. */
+interface SegmentFeatures {
+  energy: number;
+  brightness: number;
+  zcr: number;
+}
+
+/** Compute features for 0.5-second segments across the entire buffer. */
+function computeSegmentFeatures(data: Float32Array, sampleRate: number): SegmentFeatures[] {
+  var segLen = Math.floor(sampleRate * 0.5); // 0.5s windows
+  var numSegs = Math.floor(data.length / segLen);
+  var features: SegmentFeatures[] = [];
+
+  for (var i = 0; i < numSegs; i++) {
+    var off = i * segLen;
+    var sumSq = 0;
+    var zeroCrossings = 0;
+    var highEnergy = 0;
+    var totalEnergy = 0;
+    var cutoffSample = Math.floor(segLen * 2000 / sampleRate); // 2 kHz
+
+    for (var j = 0; j < segLen; j++) {
+      var s = data[off + j];
+      sumSq += s * s;
+      if (j > 0 && ((data[off + j - 1] >= 0 && s < 0) || (data[off + j - 1] < 0 && s >= 0))) {
+        zeroCrossings++;
+      }
+      var val = s * s;
+      totalEnergy += val;
+      if (j >= cutoffSample) highEnergy += val;
+    }
+
+    features.push({
+      energy: Math.sqrt(sumSq / segLen),
+      brightness: totalEnergy > 0 ? highEnergy / totalEnergy : 0,
+      zcr: zeroCrossings / segLen,
+    });
+  }
+  return features;
+}
+
+/** Smooth an array with a symmetric moving average of halfWidth on each side. */
+function smooth(arr: number[], halfWidth: number): number[] {
+  var out: number[] = [];
+  for (var i = 0; i < arr.length; i++) {
+    var sum = 0, cnt = 0;
+    for (var j = Math.max(0, i - halfWidth); j <= Math.min(arr.length - 1, i + halfWidth); j++) {
+      sum += arr[j];
+      cnt++;
+    }
+    out.push(sum / cnt);
+  }
+  return out;
+}
+
+/** Compute novelty curve: combined rate of change across features. */
+function computeNovelty(features: SegmentFeatures[]): number[] {
+  var energies = features.map(function (f) { return f.energy; });
+  var brights = features.map(function (f) { return f.brightness; });
+  var zcrs = features.map(function (f) { return f.zcr; });
+
+  // Smooth with half-window of 4 segments (2 seconds)
+  var sEnergy = smooth(energies, 4);
+  var sBright = smooth(brights, 4);
+  var sZcr = smooth(zcrs, 4);
+
+  // Normalize each feature to [0,1]
+  function normalize(arr: number[]): number[] {
+    var mn = Math.min.apply(null, arr);
+    var mx = Math.max.apply(null, arr);
+    var range = mx - mn || 1;
+    return arr.map(function (v) { return (v - mn) / range; });
+  }
+  var nE = normalize(sEnergy);
+  var nB = normalize(sBright);
+  var nZ = normalize(sZcr);
+
+  // Novelty = magnitude of change across all features
+  var novelty: number[] = [0];
+  for (var i = 1; i < features.length; i++) {
+    var dE = Math.abs(nE[i] - nE[i - 1]);
+    var dB = Math.abs(nB[i] - nB[i - 1]);
+    var dZ = Math.abs(nZ[i] - nZ[i - 1]);
+    novelty.push(dE * 0.5 + dB * 0.3 + dZ * 0.2);
+  }
+  return smooth(novelty, 2);
+}
+
+/** Pick the top N peaks from novelty curve, respecting a minimum gap. */
+function pickBoundaries(novelty: number[], targetCount: number, minGapSegs: number): number[] {
+  // Score every candidate
+  var candidates: { idx: number; score: number }[] = [];
+  for (var i = 1; i < novelty.length - 1; i++) {
+    if (novelty[i] > novelty[i - 1] && novelty[i] >= novelty[i + 1]) {
+      candidates.push({ idx: i, score: novelty[i] });
+    }
+  }
+  candidates.sort(function (a, b) { return b.score - a.score; });
+
+  var picked: number[] = [];
+  for (var c = 0; c < candidates.length && picked.length < targetCount; c++) {
+    var tooClose = false;
+    for (var p = 0; p < picked.length; p++) {
+      if (Math.abs(candidates[c].idx - picked[p]) < minGapSegs) { tooClose = true; break; }
+    }
+    if (!tooClose) picked.push(candidates[c].idx);
+  }
+  picked.sort(function (a, b) { return a - b; });
+  return picked;
+}
 
 /**
- * Detects chapters via energy segmentation.
- * Splits the audio into segments based on energy changes and assigns section labels.
+ * Classify a section by its energy/brightness profile relative to the track.
+ *
+ * Returns a structural label: Intro, Verse, Pre-Chorus, Chorus, Bridge, Outro, Drop, Section.
+ */
+function classifySection(
+  avgEnergy: number, avgBrightness: number,
+  medianEnergy: number, medianBrightness: number,
+  isFirst: boolean, isLast: boolean,
+  prevLabel: string, energyTrend: number,
+): string {
+  var eRatio = medianEnergy > 0 ? avgEnergy / medianEnergy : 1;
+  var bRatio = medianBrightness > 0 ? avgBrightness / medianBrightness : 1;
+
+  if (isFirst && eRatio < 1.15) return "Intro";
+  if (isLast && eRatio < 1.15) return "Outro";
+
+  // High energy + high brightness = Chorus or Drop
+  if (eRatio > 1.25 && bRatio > 1.1) {
+    if (prevLabel === "Chorus" || prevLabel === "Drop") return "Drop";
+    return "Chorus";
+  }
+
+  // Rising energy leading into a peak = Pre-Chorus
+  if (energyTrend > 0.15 && eRatio > 0.85 && eRatio < 1.3) {
+    return "Pre-Chorus";
+  }
+
+  // Distinct change, lower than chorus = Bridge
+  if (eRatio > 0.7 && eRatio < 1.1 && bRatio < 0.9 && prevLabel === "Chorus") {
+    return "Bridge";
+  }
+
+  // Medium energy = Verse
+  if (eRatio > 0.5 && eRatio <= 1.25) {
+    return "Verse";
+  }
+
+  // Low energy section in the middle
+  if (eRatio <= 0.5) {
+    return "Bridge";
+  }
+
+  return "Section";
+}
+
+/**
+ * Detects chapters via multi-feature audio analysis.
+ *
+ * 1. Compute RMS energy + spectral brightness + ZCR per 0.5s segment
+ * 2. Smooth features, compute novelty (rate of combined change)
+ * 3. Pick novelty peaks as section boundaries
+ * 4. Classify each section by its energy/brightness profile
  */
 function detectChaptersFromAudio(buffer: AudioBuffer): TrackChapter[] {
-  const data = buffer.getChannelData(0);
-  const sampleRate = buffer.sampleRate;
-  const duration = buffer.duration;
+  var data = buffer.getChannelData(0);
+  var sampleRate = buffer.sampleRate;
+  var duration = buffer.duration;
+  var segDur = 0.5; // seconds per segment
 
-  // Compute energy in ~1s windows
-  const windowSamples = sampleRate;
-  const numWindows = Math.floor(data.length / windowSamples);
-  const energies: number[] = [];
-
-  for (let i = 0; i < numWindows; i++) {
-    let sum = 0;
-    const start = i * windowSamples;
-    for (let j = 0; j < windowSamples; j++) {
-      const sample = data[start + j];
-      sum += sample * sample;
-    }
-    energies.push(Math.sqrt(sum / windowSamples));
+  var features = computeSegmentFeatures(data, sampleRate);
+  if (features.length < 8) {
+    // Track too short — single section
+    return [{
+      id: "ch-0", label: "Section", startPercent: 0, endPercent: 100,
+      startSec: 0, endSec: duration,
+      color: CHAPTER_COLORS[0],
+    }];
   }
 
-  if (energies.length < 4) {
-    // Too short, use simple equal divisions
-    return SECTION_LABELS.slice(0, 4).map((label, i) => ({
-      id: `ch-${i}`,
-      label,
-      startPercent: (i / 4) * 100,
-      endPercent: ((i + 1) / 4) * 100,
-      color: CHAPTER_COLORS[i % CHAPTER_COLORS.length],
-    }));
-  }
+  // Novelty curve
+  var novelty = computeNovelty(features);
 
-  // Smooth energies
-  const smoothed: number[] = [];
-  const smoothWindow = 3;
-  for (let i = 0; i < energies.length; i++) {
-    let sum = 0, count = 0;
-    for (let j = Math.max(0, i - smoothWindow); j <= Math.min(energies.length - 1, i + smoothWindow); j++) {
-      sum += energies[j];
-      count++;
-    }
-    smoothed.push(sum / count);
-  }
+  // Target 5-10 sections depending on duration
+  var targetBoundaries = Math.min(11, Math.max(4, Math.round(duration / 25)));
+  var minGapSegs = Math.max(6, Math.floor(4 / segDur)); // at least 3 seconds apart
 
-  // Find change points using energy derivative
-  const derivatives: number[] = [];
-  for (let i = 1; i < smoothed.length; i++) {
-    derivatives.push(Math.abs(smoothed[i] - smoothed[i - 1]));
-  }
+  var boundaries = pickBoundaries(novelty, targetBoundaries, minGapSegs);
 
-  // Find peaks in derivative (significant energy changes)
-  const meanDeriv = derivatives.reduce((a, b) => a + b, 0) / derivatives.length;
-  const threshold = meanDeriv * 1.5;
+  // Always include 0 as first boundary and end as implicit
+  if (boundaries.length === 0 || boundaries[0] !== 0) boundaries.unshift(0);
+  var numSegs = features.length;
 
-  const changePoints: number[] = [0]; // Always start at 0
-  let lastChange = 0;
-  const minGapSeconds = Math.max(4, duration * 0.04); // At least 4s between changes
+  // Compute median energy/brightness for classification
+  var allEnergies = features.map(function (f) { return f.energy; }).slice().sort(function (a, b) { return a - b; });
+  var allBrights = features.map(function (f) { return f.brightness; }).slice().sort(function (a, b) { return a - b; });
+  var medianEnergy = allEnergies[Math.floor(allEnergies.length / 2)];
+  var medianBrightness = allBrights[Math.floor(allBrights.length / 2)];
 
-  for (let i = 0; i < derivatives.length; i++) {
-    const timeInSeconds = (i + 1);
-    if (derivatives[i] > threshold && (timeInSeconds - lastChange) > minGapSeconds) {
-      changePoints.push(timeInSeconds);
-      lastChange = timeInSeconds;
-    }
-  }
+  // Build sections
+  var chapters: TrackChapter[] = [];
+  var prevLabel = "";
+  var verseCount = 0;
+  var chorusCount = 0;
 
-  // Ensure we don't have too many or too few sections
-  // Target: ~8-12 sections for a typical song
-  const targetSections = Math.min(SECTION_LABELS.length, Math.max(4, Math.round(duration / 20)));
+  for (var i = 0; i < boundaries.length; i++) {
+    var start = boundaries[i];
+    var end = i < boundaries.length - 1 ? boundaries[i + 1] : numSegs;
+    var isFirst = i === 0;
+    var isLast = i === boundaries.length - 1;
 
-  // If too many change points, keep the strongest
-  if (changePoints.length > targetSections + 1) {
-    const scored = changePoints.slice(1).map((cp, i) => ({
-      point: cp,
-      score: derivatives[cp - 1] || 0,
-      index: i,
-    }));
-    scored.sort((a, b) => b.score - a.score);
-    const kept = scored.slice(0, targetSections - 1).map((s) => s.point);
-    kept.sort((a, b) => a - b);
-    changePoints.length = 1; // keep 0
-    changePoints.push(...kept);
-  }
+    // Compute average energy/brightness for this section
+    var sumE = 0, sumB = 0;
+    for (var s = start; s < end; s++) { sumE += features[s].energy; sumB += features[s].brightness; }
+    var count = end - start;
+    var avgE = count > 0 ? sumE / count : 0;
+    var avgB = count > 0 ? sumB / count : 0;
 
-  // If too few, subdivide largest sections
-  while (changePoints.length < Math.min(targetSections + 1, 5)) {
-    let maxGap = 0, maxIdx = 0;
-    for (let i = 0; i < changePoints.length; i++) {
-      const end = i < changePoints.length - 1 ? changePoints[i + 1] : numWindows;
-      const gap = end - changePoints[i];
-      if (gap > maxGap) {
-        maxGap = gap;
-        maxIdx = i;
-      }
-    }
-    const end = maxIdx < changePoints.length - 1 ? changePoints[maxIdx + 1] : numWindows;
-    changePoints.splice(maxIdx + 1, 0, Math.floor((changePoints[maxIdx] + end) / 2));
-  }
+    // Compute energy trend (rising or falling?)
+    var firstHalf = 0, secondHalf = 0;
+    var half = Math.floor(count / 2);
+    for (var s2 = start; s2 < start + half; s2++) firstHalf += features[s2].energy;
+    for (var s3 = start + half; s3 < end; s3++) secondHalf += features[s3].energy;
+    var trend = half > 0 ? (secondHalf - firstHalf) / (half * (medianEnergy || 1)) : 0;
 
-  // Convert to chapters
-  const numSections = changePoints.length;
-  const chapters: TrackChapter[] = [];
+    var label = classifySection(avgE, avgB, medianEnergy, medianBrightness, isFirst, isLast, prevLabel, trend);
 
-  for (let i = 0; i < numSections; i++) {
-    const startSec = changePoints[i];
-    const endSec = i < numSections - 1 ? changePoints[i + 1] : numWindows;
-    const label = SECTION_LABELS[i % SECTION_LABELS.length];
+    // Number repeated labels
+    if (label === "Verse") { verseCount++; if (verseCount > 1) label = "Verse " + verseCount; else label = "Verse 1"; }
+    if (label === "Chorus") { chorusCount++; }
+
+    var startSec = Math.round(start * segDur * 100) / 100;
+    var endSec = Math.round(end * segDur * 100) / 100;
+    if (endSec > duration) endSec = Math.round(duration * 100) / 100;
 
     chapters.push({
-      id: `ch-${i}`,
-      label,
-      startPercent: Math.round((startSec / numWindows) * 10000) / 100,
-      endPercent: Math.round((endSec / numWindows) * 10000) / 100,
+      id: "ch-" + i,
+      label: label,
+      startPercent: Math.round((startSec / duration) * 10000) / 100,
+      endPercent: Math.round((endSec / duration) * 10000) / 100,
+      startSec: startSec,
+      endSec: endSec,
       color: CHAPTER_COLORS[i % CHAPTER_COLORS.length],
     });
+
+    prevLabel = label;
   }
 
   return chapters;

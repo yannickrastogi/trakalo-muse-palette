@@ -97,6 +97,7 @@ import { STEM_TYPES, DEFAULT_COVER } from "@/lib/constants";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { toast } from "sonner";
 import { analyzeWithEssentia } from "@/lib/audioAnalyzer";
+import { analyzeAudio } from "@/lib/audio-analysis";
 import type { StemType } from "@/lib/constants";
 
 interface StemFile {
@@ -575,24 +576,31 @@ export default function TrackDetail() {
                                   if (dlErr) throw new Error("Download failed: " + dlErr.message);
                                   if (!fileData) throw new Error("Download returned empty data");
 
-                                  // 3. Analyze with Essentia
+                                  // 3. Analyze with Essentia + structure detection in parallel
                                   const audioFile = new File([fileData], "audio.wav", { type: fileData.type || "audio/wav" });
-                                  const features = await analyzeWithEssentia(audioFile);
+                                  const [features, structureResult] = await Promise.all([
+                                    analyzeWithEssentia(audioFile),
+                                    analyzeAudio(audioFile).catch(function () { return null; }),
+                                  ]);
 
-                                  // 4. Persist results
+                                  // 4. Persist results (including chapters from structure analysis)
+                                  const updatePayload: Record<string, unknown> = {
+                                    bpm: features.bpm,
+                                    key: features.key,
+                                    genre: features.genre,
+                                    mood: features.mood,
+                                  };
+                                  if (structureResult && structureResult.chapters) {
+                                    updatePayload.chapters = structureResult.chapters;
+                                  }
                                   const { error: updateErr } = await supabase
                                     .from("tracks")
-                                    .update({
-                                      bpm: features.bpm,
-                                      key: features.key,
-                                      genre: features.genre,
-                                      mood: features.mood,
-                                    })
+                                    .update(updatePayload)
                                     .eq("id", track.uuid);
                                   if (updateErr) throw new Error("DB update failed: " + updateErr.message);
 
                                   refreshTracks();
-                                  toast.success("Analysis complete: " + features.bpm + " BPM, " + features.key);
+                                  toast.success("Analysis complete: " + features.bpm + " BPM, " + features.key + (structureResult ? " · " + (structureResult.chapters?.length || 0) + " sections" : ""));
                                 } catch (err: any) {
                                   console.error("Re-analyze failed:", err);
                                   toast.error("Re-analysis failed: " + (err?.message || "unknown error"));

@@ -464,6 +464,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         notes: currentTrack.notes,
         lyrics: currentTrack.lyrics || undefined,
         waveformData: waveformData,
+        chapters: currentTrack.analysisResult?.chapters || undefined,
         splits: currentTrack.splits.filter((s) => s.name.trim()).map((s) => ({
           id: s.id,
           name: s.name,
