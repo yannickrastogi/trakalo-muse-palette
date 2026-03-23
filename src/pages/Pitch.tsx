@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -18,15 +19,18 @@ import {
   Filter,
   ChevronDown,
   Play,
+  Pause,
   Download,
   Users,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePitchModal, type PitchEntry } from "@/components/CreatePitchModal";
 import { useRole } from "@/contexts/RoleContext";
 import { usePitches } from "@/contexts/PitchContext";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 import { DEFAULT_COVER } from "@/lib/constants";
@@ -58,6 +62,89 @@ export default function Pitch() {
   const [createOpen, setCreateOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pitchStats, setPitchStats] = useState<Record<string, { views: number; plays: number; downloads: number }>>({});
+  const [linkMeta, setLinkMeta] = useState<Record<string, { trackId: string | null; playlistId: string | null }>>({});
+
+  // Audio player state (same pattern as SmartAR)
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+  const [loadingAudioId, setLoadingAudioId] = useState<string | null>(null);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+
+  useEffect(function () {
+    return function () {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  var handlePlayTrack = useCallback(function (trackId: string) {
+    if (playingTrackId === trackId) {
+      if (audioRef.current) { audioRef.current.pause(); }
+      setPlayingTrackId(null);
+      setAudioProgress(0);
+      setAudioDuration(0);
+      return;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    setPlayingTrackId(null);
+    setAudioProgress(0);
+    setAudioDuration(0);
+    setLoadingAudioId(trackId);
+
+    fetch(SUPABASE_URL + "/functions/v1/get-audio-url", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({ track_id: trackId, quality: "preview" }),
+    })
+      .then(function (res) {
+        return res.json().then(function (json) {
+          if (!res.ok || json.error) throw new Error(json.error || "Failed to get audio URL");
+          return json;
+        });
+      })
+      .then(function (data) {
+        if (!data.url) {
+          setLoadingAudioId(null);
+          toast.error("Could not load audio preview");
+          return;
+        }
+        var audio = new Audio(data.url);
+        audioRef.current = audio;
+        audio.addEventListener("loadedmetadata", function () { setAudioDuration(audio.duration); });
+        audio.addEventListener("timeupdate", function () { setAudioProgress(audio.currentTime); });
+        audio.addEventListener("ended", function () { setPlayingTrackId(null); setAudioProgress(0); setAudioDuration(0); });
+        audio.addEventListener("error", function () {
+          if (audioRef.current !== audio) return;
+          setPlayingTrackId(null); setLoadingAudioId(null); setAudioProgress(0);
+          toast.error("Error playing audio");
+        });
+        audio.play().then(function () {
+          if (audioRef.current !== audio) return;
+          setPlayingTrackId(trackId); setLoadingAudioId(null);
+        }).catch(function () {
+          if (audioRef.current !== audio) return;
+          setLoadingAudioId(null);
+          toast.error("Could not play audio");
+        });
+      })
+      .catch(function () {
+        setLoadingAudioId(null);
+        toast.error("Could not load audio preview");
+      });
+  }, [playingTrackId]);
 
   useEffect(function() {
     if (!activeWorkspace) return;
@@ -65,10 +152,19 @@ export default function Pitch() {
     async function fetchStats() {
       var { data: links } = await supabase
         .from("shared_links")
-        .select("id, link_name")
+        .select("id, link_name, track_id, playlist_id")
         .eq("workspace_id", activeWorkspace!.id);
 
       if (!links || links.length === 0) return;
+
+      // Build link_name → track_id/playlist_id map
+      var metaByName: Record<string, { trackId: string | null; playlistId: string | null }> = {};
+      links.forEach(function(l) {
+        if (!metaByName[l.link_name]) {
+          metaByName[l.link_name] = { trackId: l.track_id, playlistId: l.playlist_id };
+        }
+      });
+      setLinkMeta(metaByName);
 
       var linkIds = links.map(function(l) { return l.id; });
       var { data: events } = await supabase
@@ -270,9 +366,26 @@ export default function Pitch() {
               expandedId={expandedId}
               onToggle={(id) => setExpandedId(expandedId === id ? null : id)}
               pitchStats={pitchStats}
+              linkMeta={linkMeta}
+              playingTrackId={playingTrackId}
+              loadingAudioId={loadingAudioId}
+              audioProgress={audioProgress}
+              audioDuration={audioDuration}
+              onPlayTrack={handlePlayTrack}
             />
           ) : (
-            <DesktopPitchTable pitches={filtered} expandedId={expandedId} onToggle={(id) => setExpandedId(expandedId === id ? null : id)} pitchStats={pitchStats} />
+            <DesktopPitchTable
+              pitches={filtered}
+              expandedId={expandedId}
+              onToggle={(id) => setExpandedId(expandedId === id ? null : id)}
+              pitchStats={pitchStats}
+              linkMeta={linkMeta}
+              playingTrackId={playingTrackId}
+              loadingAudioId={loadingAudioId}
+              audioProgress={audioProgress}
+              audioDuration={audioDuration}
+              onPlayTrack={handlePlayTrack}
+            />
           )}
         </motion.div>
       </motion.div>
@@ -288,11 +401,23 @@ function DesktopPitchTable({
   expandedId,
   onToggle,
   pitchStats,
+  linkMeta,
+  playingTrackId,
+  loadingAudioId,
+  audioProgress,
+  audioDuration,
+  onPlayTrack,
 }: {
   pitches: PitchEntry[];
   expandedId: string | null;
   onToggle: (id: string) => void;
   pitchStats: Record<string, { views: number; plays: number; downloads: number }>;
+  linkMeta: Record<string, { trackId: string | null; playlistId: string | null }>;
+  playingTrackId: string | null;
+  loadingAudioId: string | null;
+  audioProgress: number;
+  audioDuration: number;
+  onPlayTrack: (trackId: string) => void;
 }) {
   return (
     <div className="card-premium overflow-hidden">
@@ -314,6 +439,12 @@ function DesktopPitchTable({
               const cfg = statusConfig[p.status as keyof typeof statusConfig];
               const StatusIcon = cfg.icon;
               const isExpanded = expandedId === p.id;
+              const meta = linkMeta[p.itemName];
+              const trackId = p.trackUuid || (meta && meta.trackId) || null;
+              const playlistId = p.playlistUuid || (meta && meta.playlistId) || null;
+              const isPlaying = trackId ? playingTrackId === trackId : false;
+              const isLoadingAudio = trackId ? loadingAudioId === trackId : false;
+              const progressPct = isPlaying && audioDuration > 0 ? (audioProgress / audioDuration) * 100 : 0;
               return (
                 <tr
                   key={p.id}
@@ -322,9 +453,36 @@ function DesktopPitchTable({
                 >
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 ring-1 ring-border/50">
+                      {/* Play button / cover */}
+                      <button
+                        className="relative w-9 h-9 rounded-lg overflow-hidden shrink-0 ring-1 ring-border/50 group/play"
+                        onClick={function (e) {
+                          if (!trackId) return;
+                          e.stopPropagation();
+                          onPlayTrack(trackId);
+                        }}
+                      >
                         <img src={DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
-                      </div>
+                        {trackId && (isPlaying || isLoadingAudio) && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                            {isLoadingAudio && !isPlaying ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            ) : (
+                              <Pause className="w-4 h-4 text-white" />
+                            )}
+                          </div>
+                        )}
+                        {trackId && !isPlaying && !isLoadingAudio && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover/play:opacity-100 transition-opacity">
+                            <Play className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                        {isPlaying && audioDuration > 0 && (
+                          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/20">
+                            <div className="h-full bg-primary transition-all" style={{ width: progressPct + "%" }} />
+                          </div>
+                        )}
+                      </button>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           {p.type === "playlist" ? (
@@ -332,7 +490,25 @@ function DesktopPitchTable({
                           ) : (
                             <Music className="w-3 h-3 text-primary/50 shrink-0" />
                           )}
-                          <p className="font-semibold text-foreground truncate text-[13px] tracking-tight">{p.itemName}</p>
+                          {p.type === "track" && trackId ? (
+                            <Link
+                              to={"/track/" + trackId}
+                              onClick={function (e) { e.stopPropagation(); }}
+                              className="font-semibold text-foreground truncate text-[13px] tracking-tight hover:text-primary transition-colors"
+                            >
+                              {p.itemName}
+                            </Link>
+                          ) : p.type === "playlist" && playlistId ? (
+                            <Link
+                              to={"/playlist/" + playlistId}
+                              onClick={function (e) { e.stopPropagation(); }}
+                              className="font-semibold text-foreground truncate text-[13px] tracking-tight hover:text-primary transition-colors"
+                            >
+                              {p.itemName}
+                            </Link>
+                          ) : (
+                            <p className="font-semibold text-foreground truncate text-[13px] tracking-tight">{p.itemName}</p>
+                          )}
                         </div>
                         <p className="text-[11px] text-muted-foreground truncate">{p.artist}</p>
                       </div>
@@ -412,11 +588,23 @@ function MobilePitchList({
   expandedId,
   onToggle,
   pitchStats,
+  linkMeta,
+  playingTrackId,
+  loadingAudioId,
+  audioProgress,
+  audioDuration,
+  onPlayTrack,
 }: {
   pitches: PitchEntry[];
   expandedId: string | null;
   onToggle: (id: string) => void;
   pitchStats: Record<string, { views: number; plays: number; downloads: number }>;
+  linkMeta: Record<string, { trackId: string | null; playlistId: string | null }>;
+  playingTrackId: string | null;
+  loadingAudioId: string | null;
+  audioProgress: number;
+  audioDuration: number;
+  onPlayTrack: (trackId: string) => void;
 }) {
   return (
     <div className="space-y-2.5">
@@ -424,6 +612,12 @@ function MobilePitchList({
         const cfg = statusConfig[p.status as keyof typeof statusConfig];
         const StatusIcon = cfg.icon;
         const isExpanded = expandedId === p.id;
+        const meta = linkMeta[p.itemName];
+        const trackId = p.trackUuid || (meta && meta.trackId) || null;
+        const playlistId = p.playlistUuid || (meta && meta.playlistId) || null;
+        const isPlaying = trackId ? playingTrackId === trackId : false;
+        const isLoadingAudio = trackId ? loadingAudioId === trackId : false;
+        const progressPct = isPlaying && audioDuration > 0 ? (audioProgress / audioDuration) * 100 : 0;
         return (
           <motion.div
             key={p.id}
@@ -432,9 +626,36 @@ function MobilePitchList({
             onClick={() => onToggle(p.id)}
           >
             <div className="p-4 flex items-start gap-3">
-              <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0 ring-1 ring-border/50">
+              {/* Play button / cover */}
+              <button
+                className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 ring-1 ring-border/50"
+                onClick={function (e) {
+                  if (!trackId) return;
+                  e.stopPropagation();
+                  onPlayTrack(trackId);
+                }}
+              >
                 <img src={DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
-              </div>
+                {trackId && (isPlaying || isLoadingAudio) && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    {isLoadingAudio && !isPlaying ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    ) : (
+                      <Pause className="w-4 h-4 text-white" />
+                    )}
+                  </div>
+                )}
+                {trackId && !isPlaying && !isLoadingAudio && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <Play className="w-4 h-4 text-white" />
+                  </div>
+                )}
+                {isPlaying && audioDuration > 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/20">
+                    <div className="h-full bg-primary transition-all" style={{ width: progressPct + "%" }} />
+                  </div>
+                )}
+              </button>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   {p.type === "playlist" ? (
@@ -442,7 +663,25 @@ function MobilePitchList({
                   ) : (
                     <Music className="w-3 h-3 text-primary/50 shrink-0" />
                   )}
-                  <p className="font-semibold text-foreground text-[13px] tracking-tight truncate">{p.itemName}</p>
+                  {p.type === "track" && trackId ? (
+                    <Link
+                      to={"/track/" + trackId}
+                      onClick={function (e) { e.stopPropagation(); }}
+                      className="font-semibold text-foreground text-[13px] tracking-tight truncate hover:text-primary transition-colors"
+                    >
+                      {p.itemName}
+                    </Link>
+                  ) : p.type === "playlist" && playlistId ? (
+                    <Link
+                      to={"/playlist/" + playlistId}
+                      onClick={function (e) { e.stopPropagation(); }}
+                      className="font-semibold text-foreground text-[13px] tracking-tight truncate hover:text-primary transition-colors"
+                    >
+                      {p.itemName}
+                    </Link>
+                  ) : (
+                    <p className="font-semibold text-foreground text-[13px] tracking-tight truncate">{p.itemName}</p>
+                  )}
                 </div>
                 <p className="text-[11px] text-muted-foreground truncate mt-0.5">
                   → {p.recipientName} · {p.recipientCompany}

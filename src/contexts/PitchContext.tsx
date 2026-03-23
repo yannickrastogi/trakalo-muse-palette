@@ -42,6 +42,7 @@ function mapRowToPitch(row: Record<string, unknown>): PitchEntry {
     itemName: (row.subject as string) || "",
     artist: "",
     coverIdx: 0,
+    trackUuid: trackIds.length > 0 ? trackIds[0] : undefined,
     recipientName: (row.recipient_name as string) || "",
     recipientCompany: (row.recipient_company as string) || "",
     recipientEmail: (row.recipient_email as string) || "",
@@ -106,7 +107,7 @@ export function PitchProvider({ children }: { children: ReactNode }) {
           recipient_company: pitch.recipientCompany,
           subject: pitch.itemName,
           message: pitch.notes || null,
-          track_ids: [],
+          track_ids: pitch.trackUuid ? [pitch.trackUuid] : [],
           status: dbStatus,
           sent_at: dbStatus === "sent" ? now : null,
         });
