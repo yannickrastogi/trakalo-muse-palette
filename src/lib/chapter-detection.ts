@@ -11,95 +11,52 @@ const CHAPTER_COLORS = [
   "hsl(var(--chart-5))",
 ];
 
-/** Standard song structure template */
-const SONG_STRUCTURE = [
-  { label: "Intro", weight: 0.06 },
-  { label: "Verse 1", weight: 0.12 },
-  { label: "Pre-Chorus", weight: 0.06 },
-  { label: "Chorus", weight: 0.12 },
-  { label: "Post-Chorus", weight: 0.04 },
-  { label: "Verse 2", weight: 0.12 },
-  { label: "Pre-Chorus", weight: 0.06 },
-  { label: "Chorus", weight: 0.12 },
-  { label: "Post-Chorus", weight: 0.04 },
-  { label: "Bridge", weight: 0.10 },
-  { label: "Chorus", weight: 0.12 },
-  { label: "Outro", weight: 0.04 },
-];
+/** Default section count per track type */
+const SECTION_COUNTS: Record<string, number> = {
+  Song: 12,
+  Instrumental: 8,
+  Sample: 6,
+  Acapella: 10,
+};
 
-const INSTRUMENTAL_STRUCTURE = [
-  { label: "Intro", weight: 0.08 },
-  { label: "Theme A", weight: 0.18 },
-  { label: "Build", weight: 0.10 },
-  { label: "Theme B", weight: 0.18 },
-  { label: "Breakdown", weight: 0.12 },
-  { label: "Theme A", weight: 0.16 },
-  { label: "Climax", weight: 0.10 },
-  { label: "Outro", weight: 0.08 },
-];
-
-const SAMPLE_STRUCTURE = [
-  { label: "Intro", weight: 0.10 },
-  { label: "Loop A", weight: 0.25 },
-  { label: "Variation", weight: 0.20 },
-  { label: "Loop B", weight: 0.25 },
-  { label: "Breakdown", weight: 0.10 },
-  { label: "Outro", weight: 0.10 },
-];
+/** Weights for equal-ish sections with slight variation per type */
+function buildWeights(count: number): number[] {
+  var weights: number[] = [];
+  for (var i = 0; i < count; i++) weights.push(1 / count);
+  return weights;
+}
 
 /**
- * Generates "smart-detected" chapters based on track type and BPM.
- * Uses deterministic seeding from BPM for slight variation.
+ * Generates numbered section chapters based on track type.
+ * Labels are simply "Section 1", "Section 2", etc.
+ * Uses deterministic seeding from BPM for slight variation in section sizes.
  */
 export function detectChapters(
   trackType: string,
   bpm: number,
   seed: number = 0
 ): TrackChapter[] {
-  let structure: { label: string; weight: number }[];
-
-  switch (trackType) {
-    case "Instrumental":
-      structure = INSTRUMENTAL_STRUCTURE;
-      break;
-    case "Sample":
-      structure = SAMPLE_STRUCTURE;
-      break;
-    case "Acapella":
-      structure = SONG_STRUCTURE.filter(
-        (s) => !["Post-Chorus"].includes(s.label)
-      );
-      break;
-    default:
-      structure = SONG_STRUCTURE;
-  }
-
-  // Normalize weights
-  const totalWeight = structure.reduce((sum, s) => sum + s.weight, 0);
+  var count = SECTION_COUNTS[trackType] || SECTION_COUNTS.Song;
+  var weights = buildWeights(count);
 
   // Add slight deterministic variation based on seed (BPM + id)
-  const varied = structure.map((s, i) => {
-    const jitter = ((((seed + i) * 16807 + 7) % 2147483647) / 2147483647 - 0.5) * 0.02;
-    return { ...s, weight: s.weight / totalWeight + jitter };
+  var varied = weights.map(function (w, i) {
+    var jitter = ((((seed + i) * 16807 + 7) % 2147483647) / 2147483647 - 0.5) * 0.02;
+    return w + jitter;
   });
 
-  // Re-normalize after jitter
-  const variedTotal = varied.reduce((sum, s) => sum + s.weight, 0);
+  // Re-normalize
+  var total = varied.reduce(function (sum, v) { return sum + v; }, 0);
 
-  let cursor = 0;
-  const labelCount: Record<string, number> = {};
-
-  return varied.map((s, i) => {
-    const normalizedWeight = s.weight / variedTotal;
-    const start = cursor;
+  var cursor = 0;
+  return varied.map(function (w, i) {
+    var normalizedWeight = w / total;
+    var start = cursor;
     cursor += normalizedWeight;
 
-    // Track label occurrences for unique IDs
-    labelCount[s.label] = (labelCount[s.label] || 0) + 1;
-
     return {
-      id: `ch-${i}`,
-      label: s.label,
+      id: "ch-" + i,
+      label: "Section " + (i + 1),
       startPercent: Math.round(start * 10000) / 100,
       endPercent: Math.round(Math.min(cursor, 1) * 10000) / 100,
       color: CHAPTER_COLORS[i % CHAPTER_COLORS.length],

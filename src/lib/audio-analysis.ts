@@ -286,51 +286,7 @@ function pickBoundaries(novelty: number[], targetCount: number, minGapSegs: numb
   return picked;
 }
 
-/**
- * Classify a section by its energy/brightness profile relative to the track.
- *
- * Returns a structural label: Intro, Verse, Pre-Chorus, Chorus, Bridge, Outro, Drop, Section.
- */
-function classifySection(
-  avgEnergy: number, avgBrightness: number,
-  medianEnergy: number, medianBrightness: number,
-  isFirst: boolean, isLast: boolean,
-  prevLabel: string, energyTrend: number,
-): string {
-  var eRatio = medianEnergy > 0 ? avgEnergy / medianEnergy : 1;
-  var bRatio = medianBrightness > 0 ? avgBrightness / medianBrightness : 1;
-
-  if (isFirst && eRatio < 1.15) return "Intro";
-  if (isLast && eRatio < 1.15) return "Outro";
-
-  // High energy + high brightness = Chorus or Drop
-  if (eRatio > 1.25 && bRatio > 1.1) {
-    if (prevLabel === "Chorus" || prevLabel === "Drop") return "Drop";
-    return "Chorus";
-  }
-
-  // Rising energy leading into a peak = Pre-Chorus
-  if (energyTrend > 0.15 && eRatio > 0.85 && eRatio < 1.3) {
-    return "Pre-Chorus";
-  }
-
-  // Distinct change, lower than chorus = Bridge
-  if (eRatio > 0.7 && eRatio < 1.1 && bRatio < 0.9 && prevLabel === "Chorus") {
-    return "Bridge";
-  }
-
-  // Medium energy = Verse
-  if (eRatio > 0.5 && eRatio <= 1.25) {
-    return "Verse";
-  }
-
-  // Low energy section in the middle
-  if (eRatio <= 0.5) {
-    return "Bridge";
-  }
-
-  return "Section";
-}
+/* Section labels are simply numbered — no guessing verse/chorus. */
 
 /**
  * Detects chapters via multi-feature audio analysis.
@@ -350,7 +306,7 @@ function detectChaptersFromAudio(buffer: AudioBuffer): TrackChapter[] {
   if (features.length < 8) {
     // Track too short — single section
     return [{
-      id: "ch-0", label: "Section", startPercent: 0, endPercent: 100,
+      id: "ch-0", label: "Section 1", startPercent: 0, endPercent: 100,
       startSec: 0, endSec: duration,
       color: CHAPTER_COLORS[0],
     }];
@@ -369,43 +325,12 @@ function detectChaptersFromAudio(buffer: AudioBuffer): TrackChapter[] {
   if (boundaries.length === 0 || boundaries[0] !== 0) boundaries.unshift(0);
   var numSegs = features.length;
 
-  // Compute median energy/brightness for classification
-  var allEnergies = features.map(function (f) { return f.energy; }).slice().sort(function (a, b) { return a - b; });
-  var allBrights = features.map(function (f) { return f.brightness; }).slice().sort(function (a, b) { return a - b; });
-  var medianEnergy = allEnergies[Math.floor(allEnergies.length / 2)];
-  var medianBrightness = allBrights[Math.floor(allBrights.length / 2)];
-
-  // Build sections
+  // Build sections with numbered labels
   var chapters: TrackChapter[] = [];
-  var prevLabel = "";
-  var verseCount = 0;
-  var chorusCount = 0;
 
   for (var i = 0; i < boundaries.length; i++) {
     var start = boundaries[i];
     var end = i < boundaries.length - 1 ? boundaries[i + 1] : numSegs;
-    var isFirst = i === 0;
-    var isLast = i === boundaries.length - 1;
-
-    // Compute average energy/brightness for this section
-    var sumE = 0, sumB = 0;
-    for (var s = start; s < end; s++) { sumE += features[s].energy; sumB += features[s].brightness; }
-    var count = end - start;
-    var avgE = count > 0 ? sumE / count : 0;
-    var avgB = count > 0 ? sumB / count : 0;
-
-    // Compute energy trend (rising or falling?)
-    var firstHalf = 0, secondHalf = 0;
-    var half = Math.floor(count / 2);
-    for (var s2 = start; s2 < start + half; s2++) firstHalf += features[s2].energy;
-    for (var s3 = start + half; s3 < end; s3++) secondHalf += features[s3].energy;
-    var trend = half > 0 ? (secondHalf - firstHalf) / (half * (medianEnergy || 1)) : 0;
-
-    var label = classifySection(avgE, avgB, medianEnergy, medianBrightness, isFirst, isLast, prevLabel, trend);
-
-    // Number repeated labels
-    if (label === "Verse") { verseCount++; if (verseCount > 1) label = "Verse " + verseCount; else label = "Verse 1"; }
-    if (label === "Chorus") { chorusCount++; }
 
     var startSec = Math.round(start * segDur * 100) / 100;
     var endSec = Math.round(end * segDur * 100) / 100;
@@ -413,15 +338,13 @@ function detectChaptersFromAudio(buffer: AudioBuffer): TrackChapter[] {
 
     chapters.push({
       id: "ch-" + i,
-      label: label,
+      label: "Section " + (i + 1),
       startPercent: Math.round((startSec / duration) * 10000) / 100,
       endPercent: Math.round((endSec / duration) * 10000) / 100,
       startSec: startSec,
       endSec: endSec,
       color: CHAPTER_COLORS[i % CHAPTER_COLORS.length],
     });
-
-    prevLabel = label;
   }
 
   return chapters;
