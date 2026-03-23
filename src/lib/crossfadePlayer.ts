@@ -364,26 +364,36 @@ class CrossfadePlayer {
     const url = this.preloadedUrl || await this.resolveUrl(track);
     if (!url) return;
 
-    // Quick crossfade (1s) for manual skip
     const active = this.getActive();
     const inactive = this.getInactive();
-    inactive.src = url;
-    inactive.volume = 0;
-    inactive.play().catch(() => {});
 
-    const steps = 20;
-    const vol = this.state.volume;
-    let step = 0;
-    const timer = window.setInterval(() => {
-      step++;
-      active.volume = Math.max(0, vol - (vol / steps) * step);
-      inactive.volume = Math.min(vol, (vol / steps) * step);
-      if (step >= steps) {
-        clearInterval(timer);
-        active.pause();
-        this.activePlayer = this.activePlayer === "A" ? "B" : "A";
-      }
-    }, 50);
+    if (this.state.crossfadeDuration === 0) {
+      // No crossfade: direct swap — stop A, play B at full volume
+      active.pause();
+      inactive.src = url;
+      inactive.volume = this.state.volume;
+      inactive.play().catch(() => {});
+      this.activePlayer = this.activePlayer === "A" ? "B" : "A";
+    } else {
+      // Quick crossfade (1s) for manual skip
+      inactive.src = url;
+      inactive.volume = 0;
+      inactive.play().catch(() => {});
+
+      const steps = 20;
+      const vol = this.state.volume;
+      let step = 0;
+      const timer = window.setInterval(() => {
+        step++;
+        active.volume = Math.max(0, vol - (vol / steps) * step);
+        inactive.volume = Math.min(vol, (vol / steps) * step);
+        if (step >= steps) {
+          clearInterval(timer);
+          active.pause();
+          this.activePlayer = this.activePlayer === "A" ? "B" : "A";
+        }
+      }, 50);
+    }
 
     this.history.push(track);
     this.update({
