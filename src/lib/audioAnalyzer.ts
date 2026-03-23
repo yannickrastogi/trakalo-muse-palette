@@ -20,8 +20,8 @@ async function getEssentia(): Promise<any> {
   const { EssentiaWASM } = await import("essentia.js/dist/essentia-wasm.es.js");
   const { default: Essentia } = await import("essentia.js/dist/essentia.js-core.es.js");
 
-  const wasmModule = await EssentiaWASM();
-  essentiaInstance = new Essentia(wasmModule);
+  // EssentiaWASM is a Module object, not a factory function — pass it directly
+  essentiaInstance = new Essentia(EssentiaWASM);
   return essentiaInstance;
 }
 
