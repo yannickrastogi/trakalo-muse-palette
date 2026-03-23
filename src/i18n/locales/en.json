@@ -663,6 +663,7 @@
     "invalidEmail": "Please enter a valid email address",
     "cancel": "Cancel",
     "sendInvite": "Send Invite",
+    "sending": "Sending…",
     "inviteSent": "Invitation sent to {{email}}",
     "team": "Team",
     "selectTeam": "Select a team…",

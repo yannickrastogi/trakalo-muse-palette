@@ -47,9 +47,9 @@ export function StudioQRModal({ open, onClose, trackId, trackTitle, trackArtist 
                 setQrToken(token);
               }
               setLoading(false);
-            });
+            }).catch(function (err) { console.error("Error updating qr_token:", err); setLoading(false); });
         }
-      });
+      }).catch(function (err) { console.error("Error fetching qr_token:", err); setLoading(false); });
   }, [open, trackId]);
 
   var fetchSubmissions = useCallback(function (tId: string) {
@@ -60,7 +60,7 @@ export function StudioQRModal({ open, onClose, trackId, trackTitle, trackArtist 
       .then(function (res) {
         setSubmissionCount(res.count || 0);
         setLoading(false);
-      });
+      }).catch(function (err) { console.error("Error fetching submissions:", err); setLoading(false); });
   }, []);
 
   var studioUrl = qrToken ? window.location.origin + "/studio/" + qrToken : "";

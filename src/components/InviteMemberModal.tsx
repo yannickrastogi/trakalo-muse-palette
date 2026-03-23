@@ -84,7 +84,7 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
     }
 
     if (!teamId) {
-      setError("Please select a team");
+      setError(t("inviteMember.selectTeamError"));
       return;
     }
     if (!firstName.trim()) {
@@ -252,7 +252,7 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
               <div className="space-y-2">
                 <Select value={selectedTeamId} onValueChange={(v) => { setSelectedTeamId(v); if (error) setError(""); }}>
                   <SelectTrigger className="bg-secondary border-border text-foreground text-[13px] min-h-[44px]">
-                    <SelectValue placeholder="Select a team…" />
+                    <SelectValue placeholder={t("inviteMember.selectTeam")} />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
                     {teams.map((team) => (
@@ -375,7 +375,7 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
             disabled={sending}
             className="btn-brand px-5 py-2.5 rounded-lg text-[13px] font-semibold min-h-[40px] disabled:opacity-50"
           >
-            {sending ? "Sending…" : t("inviteMember.sendInvite")}
+            {sending ? t("inviteMember.sending") : t("inviteMember.sendInvite")}
           </button>
         </DialogFooter>
       </DialogContent>

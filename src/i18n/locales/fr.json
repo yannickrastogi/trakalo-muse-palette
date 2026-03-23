@@ -465,7 +465,17 @@
     "selectGender": "Sélectionner le genre vocal",
     "selectLanguage": "Sélectionner la langue",
     "customGenre": "Saisir un genre personnalisé",
-    "other": "Autre…"
+    "other": "Autre…",
+    "titlePlaceholder": "ex. Velvet Hour",
+    "artistPlaceholder": "ex. Kira Nomura",
+    "albumPlaceholder": "ex. Late Bloom EP",
+    "isrcPlaceholder": "ex. USRC12600001",
+    "upcPlaceholder": "ex. 0850123456789",
+    "labelPlaceholder": "ex. Nightfall Records",
+    "publisherPlaceholder": "ex. Nomura Publishing",
+    "copyrightPlaceholder": "ex. © 2026 Nightfall Records",
+    "rolePlaceholder": "ex. Producteur",
+    "proPlaceholder": "ex. ASCAP"
   },
   "settings": {
     "title": "Paramètres",
@@ -598,7 +608,10 @@
     "notes": "Notes",
     "selectKey": "Sélectionner la tonalité",
     "selectGenre": "Sélectionner le genre",
-    "selectLanguage": "Sélectionner la langue"
+    "selectLanguage": "Sélectionner la langue",
+    "titlePlaceholder": "ex. Velvet Hour",
+    "artistPlaceholder": "ex. Kira Nomura",
+    "proPlaceholder": "ex. ASCAP"
   },
   "createPlaylist": {
     "title": "Créer une playlist",
@@ -660,7 +673,8 @@
     "noTeamTitle": "Vous ne pouvez pas inviter un membre sans créer une équipe.",
     "noTeamDesc": "Souhaitez-vous d'abord créer une nouvelle équipe ?",
     "createTeam": "Créer une équipe",
-    "selectTeamError": "Veuillez sélectionner une équipe"
+    "selectTeamError": "Veuillez sélectionner une équipe",
+    "sending": "Envoi en cours…"
   },
   "invites": {
     "title": "Invitations en attente",
@@ -1065,7 +1079,17 @@
     "selectGenre": "Choisir un genre",
     "selectMood": "Choisir une ambiance",
     "tracks": "{{count}} morceaux",
-    "radioActive": "RADIO"
+    "radioActive": "RADIO",
+    "shuffle": "Aléatoire",
+    "previous": "Précédent",
+    "play": "Lecture",
+    "pause": "Pause",
+    "next": "Suivant",
+    "repeat": "Répéter",
+    "remove": "Supprimer",
+    "noTracks": "Aucun morceau ne correspond à ce filtre",
+    "noPlaylists": "Aucune playlist pour l'instant",
+    "queueEmpty": "La file est vide"
   },
   "smartAr": {
     "title": "Smart A&R",

@@ -103,7 +103,7 @@ export function DashboardContent() {
       .limit(200)
       .then(function(res) {
         if (res.data) setLinkEvents(res.data);
-      });
+      }).catch(function(err) { console.error("Error fetching link events:", err); });
   }, [activeWorkspace]);
 
   const linkPlays = linkEvents.filter(function(e) { return e.event_type === "play"; });

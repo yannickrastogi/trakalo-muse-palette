@@ -478,7 +478,17 @@
     "selectGender": "Stimmgeschlecht wählen",
     "selectLanguage": "Sprache wählen",
     "customGenre": "Eigenes Genre eingeben",
-    "other": "Andere…"
+    "other": "Andere…",
+    "titlePlaceholder": "z.B. Velvet Hour",
+    "artistPlaceholder": "z.B. Kira Nomura",
+    "albumPlaceholder": "z.B. Late Bloom EP",
+    "isrcPlaceholder": "z.B. USRC12600001",
+    "upcPlaceholder": "z.B. 0850123456789",
+    "labelPlaceholder": "z.B. Nightfall Records",
+    "publisherPlaceholder": "z.B. Nomura Publishing",
+    "copyrightPlaceholder": "z.B. © 2026 Nightfall Records",
+    "rolePlaceholder": "z.B. Produzent",
+    "proPlaceholder": "z.B. ASCAP"
   },
   "settings": {
     "title": "Einstellungen",
@@ -611,7 +621,10 @@
     "notes": "Notizen",
     "selectKey": "Tonart wählen",
     "selectGenre": "Genre wählen",
-    "selectLanguage": "Sprache wählen"
+    "selectLanguage": "Sprache wählen",
+    "titlePlaceholder": "z.B. Velvet Hour",
+    "artistPlaceholder": "z.B. Kira Nomura",
+    "proPlaceholder": "z.B. ASCAP"
   },
   "createPlaylist": {
     "title": "Playlist erstellen",
@@ -673,7 +686,8 @@
     "noTeamTitle": "Du kannst kein Mitglied einladen, ohne ein Team zu erstellen.",
     "noTeamDesc": "Möchtest du zuerst ein neues Team erstellen?",
     "createTeam": "Team erstellen",
-    "selectTeamError": "Bitte wähle ein Team"
+    "selectTeamError": "Bitte wähle ein Team",
+    "sending": "Wird gesendet…"
   },
   "invites": {
     "title": "Ausstehende Einladungen",
@@ -1078,7 +1092,17 @@
     "selectGenre": "Genre auswählen",
     "selectMood": "Stimmung auswählen",
     "tracks": "{{count}} Titel",
-    "radioActive": "RADIO"
+    "radioActive": "RADIO",
+    "shuffle": "Zufällig",
+    "previous": "Zurück",
+    "play": "Abspielen",
+    "pause": "Pause",
+    "next": "Weiter",
+    "repeat": "Wiederholen",
+    "remove": "Entfernen",
+    "noTracks": "Keine Titel entsprechen diesem Filter",
+    "noPlaylists": "Noch keine Playlists",
+    "queueEmpty": "Die Warteschlange ist leer"
   },
   "landing": {
     "heroTitle": "Dein Musikkatalog,",

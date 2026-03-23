@@ -465,7 +465,17 @@
     "selectGender": "Seleziona genere vocale",
     "selectLanguage": "Seleziona lingua",
     "customGenre": "Inserisci genere personalizzato",
-    "other": "Altro…"
+    "other": "Altro…",
+    "titlePlaceholder": "es. Velvet Hour",
+    "artistPlaceholder": "es. Kira Nomura",
+    "albumPlaceholder": "es. Late Bloom EP",
+    "isrcPlaceholder": "es. USRC12600001",
+    "upcPlaceholder": "es. 0850123456789",
+    "labelPlaceholder": "es. Nightfall Records",
+    "publisherPlaceholder": "es. Nomura Publishing",
+    "copyrightPlaceholder": "es. © 2026 Nightfall Records",
+    "rolePlaceholder": "es. Produttore",
+    "proPlaceholder": "es. ASCAP"
   },
   "settings": {
     "title": "Impostazioni",
@@ -598,7 +608,10 @@
     "notes": "Note",
     "selectKey": "Seleziona tonalità",
     "selectGenre": "Seleziona genere",
-    "selectLanguage": "Seleziona lingua"
+    "selectLanguage": "Seleziona lingua",
+    "titlePlaceholder": "es. Velvet Hour",
+    "artistPlaceholder": "es. Kira Nomura",
+    "proPlaceholder": "es. ASCAP"
   },
   "createPlaylist": {
     "title": "Crea playlist",
@@ -660,7 +673,8 @@
     "noTeamTitle": "Non puoi invitare un membro senza creare un team.",
     "noTeamDesc": "Vuoi creare prima un nuovo team?",
     "createTeam": "Crea un Team",
-    "selectTeamError": "Seleziona un team"
+    "selectTeamError": "Seleziona un team",
+    "sending": "Invio in corso…"
   },
   "invites": {
     "title": "Inviti in attesa",
@@ -1065,7 +1079,17 @@
     "selectGenre": "Seleziona un genere",
     "selectMood": "Seleziona un mood",
     "tracks": "{{count}} brani",
-    "radioActive": "RADIO"
+    "radioActive": "RADIO",
+    "shuffle": "Casuale",
+    "previous": "Precedente",
+    "play": "Riproduci",
+    "pause": "Pausa",
+    "next": "Successivo",
+    "repeat": "Ripeti",
+    "remove": "Rimuovi",
+    "noTracks": "Nessun brano corrisponde a questo filtro",
+    "noPlaylists": "Ancora nessuna playlist",
+    "queueEmpty": "La coda è vuota"
   },
   "smartAr": {
     "title": "Smart A&R",

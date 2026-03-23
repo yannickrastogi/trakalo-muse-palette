@@ -465,7 +465,17 @@
     "selectGender": "Selecionar género vocal",
     "selectLanguage": "Selecionar idioma",
     "customGenre": "Introduzir género personalizado",
-    "other": "Outro…"
+    "other": "Outro…",
+    "titlePlaceholder": "ex. Velvet Hour",
+    "artistPlaceholder": "ex. Kira Nomura",
+    "albumPlaceholder": "ex. Late Bloom EP",
+    "isrcPlaceholder": "ex. USRC12600001",
+    "upcPlaceholder": "ex. 0850123456789",
+    "labelPlaceholder": "ex. Nightfall Records",
+    "publisherPlaceholder": "ex. Nomura Publishing",
+    "copyrightPlaceholder": "ex. © 2026 Nightfall Records",
+    "rolePlaceholder": "ex. Produtor",
+    "proPlaceholder": "ex. ASCAP"
   },
   "settings": {
     "title": "Definições",
@@ -598,7 +608,10 @@
     "notes": "Notas",
     "selectKey": "Selecionar tonalidade",
     "selectGenre": "Selecionar género",
-    "selectLanguage": "Selecionar idioma"
+    "selectLanguage": "Selecionar idioma",
+    "titlePlaceholder": "ex. Velvet Hour",
+    "artistPlaceholder": "ex. Kira Nomura",
+    "proPlaceholder": "ex. ASCAP"
   },
   "createPlaylist": {
     "title": "Criar playlist",
@@ -660,7 +673,8 @@
     "noTeamTitle": "Não pode convidar um membro sem criar uma equipa.",
     "noTeamDesc": "Gostaria de criar uma nova equipa primeiro?",
     "createTeam": "Criar uma equipa",
-    "selectTeamError": "Por favor selecione uma equipa"
+    "selectTeamError": "Por favor selecione uma equipa",
+    "sending": "Enviando…"
   },
   "invites": {
     "title": "Convites pendentes",
@@ -1065,7 +1079,17 @@
     "selectGenre": "Selecionar um género",
     "selectMood": "Selecionar um mood",
     "tracks": "{{count}} faixas",
-    "radioActive": "RADIO"
+    "radioActive": "RADIO",
+    "shuffle": "Aleatório",
+    "previous": "Anterior",
+    "play": "Reproduzir",
+    "pause": "Pausar",
+    "next": "Próxima",
+    "repeat": "Repetir",
+    "remove": "Remover",
+    "noTracks": "Nenhuma faixa corresponde a este filtro",
+    "noPlaylists": "Nenhuma playlist",
+    "queueEmpty": "A fila está vazia"
   },
   "smartAr": {
     "title": "Smart A&R",

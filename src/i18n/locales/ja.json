@@ -465,7 +465,17 @@
     "selectGender": "ボーカル性別を選択",
     "selectLanguage": "言語を選択",
     "customGenre": "カスタムジャンルを入力",
-    "other": "その他…"
+    "other": "その他…",
+    "titlePlaceholder": "例: Velvet Hour",
+    "artistPlaceholder": "例: Kira Nomura",
+    "albumPlaceholder": "例: Late Bloom EP",
+    "isrcPlaceholder": "例: USRC12600001",
+    "upcPlaceholder": "例: 0850123456789",
+    "labelPlaceholder": "例: Nightfall Records",
+    "publisherPlaceholder": "例: Nomura Publishing",
+    "copyrightPlaceholder": "例: © 2026 Nightfall Records",
+    "rolePlaceholder": "例: プロデューサー",
+    "proPlaceholder": "例: ASCAP"
   },
   "settings": {
     "title": "設定",
@@ -598,7 +608,10 @@
     "notes": "メモ",
     "selectKey": "キーを選択",
     "selectGenre": "ジャンルを選択",
-    "selectLanguage": "言語を選択"
+    "selectLanguage": "言語を選択",
+    "titlePlaceholder": "例: Velvet Hour",
+    "artistPlaceholder": "例: Kira Nomura",
+    "proPlaceholder": "例: ASCAP"
   },
   "createPlaylist": {
     "title": "プレイリストを作成",
@@ -660,7 +673,8 @@
     "noTeamTitle": "チームを作成しないとメンバーを招待できません。",
     "noTeamDesc": "先に新しいチームを作成しますか？",
     "createTeam": "チームを作成",
-    "selectTeamError": "チームを選択してください"
+    "selectTeamError": "チームを選択してください",
+    "sending": "送信中…"
   },
   "invites": {
     "title": "保留中の招待",
@@ -1065,7 +1079,17 @@
     "selectGenre": "ジャンルを選択",
     "selectMood": "ムードを選択",
     "tracks": "{{count}}トラック",
-    "radioActive": "RADIO"
+    "radioActive": "RADIO",
+    "shuffle": "シャッフル",
+    "previous": "前へ",
+    "play": "再生",
+    "pause": "一時停止",
+    "next": "次へ",
+    "repeat": "リピート",
+    "remove": "削除",
+    "noTracks": "このフィルターに一致するトラックはありません",
+    "noPlaylists": "プレイリストはまだありません",
+    "queueEmpty": "キューは空です"
   },
   "smartAr": {
     "title": "Smart A&R",

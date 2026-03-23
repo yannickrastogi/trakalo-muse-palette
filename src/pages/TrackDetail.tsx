@@ -169,6 +169,7 @@ function buildMeta(trackData: TrackData, t: (key: string) => string) {
 }
 
 export default function TrackDetail() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
 
