@@ -2437,6 +2437,62 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
     }
   };
 
+  const handleDownload = async (doc: TrackDocument) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(doc.file_path, 3600);
+      if (error) throw error;
+
+      const response = await fetch(data.signedUrl);
+      const arrayBuffer = await response.arrayBuffer();
+
+      if (doc.mime_type && doc.mime_type.includes("pdf")) {
+        const pdfDoc = await PDFDocument.load(arrayBuffer);
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const pages = pdfDoc.getPages();
+
+        for (const page of pages) {
+          const { width, height } = page.getSize();
+          const fontSize = width / 4;
+          const textWidth = font.widthOfTextAtSize("TRAKALOG", fontSize);
+
+          for (let y = height * 0.2; y < height; y += height * 0.25) {
+            page.drawText("TRAKALOG", {
+              x: (width - textWidth * 0.7) / 2,
+              y: y,
+              size: fontSize,
+              font,
+              color: rgb(0.5, 0.5, 0.5),
+              opacity: 0.08,
+              rotate: degrees(45),
+            });
+          }
+        }
+
+        const watermarkedBytes = await pdfDoc.save();
+        const blob = new Blob([watermarkedBytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = (doc.file_name || doc.name + ".pdf");
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        const blob = new Blob([arrayBuffer], { type: doc.mime_type || "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = (doc.file_name || doc.name);
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error("Failed to download document:", err);
+      alert("Download failed. Please try again.");
+    }
+  };
+
   const cycleStatus = async (doc: TrackDocument) => {
     const next: Record<string, string> = { draft: "pending", pending: "signed", signed: "draft" };
     const newStatus = next[doc.status] || "draft";
@@ -2556,6 +2612,13 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
                   title="Open"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => handleDownload(doc)}
+                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  title="Download"
+                >
+                  <Download className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => handleDelete(doc)}
