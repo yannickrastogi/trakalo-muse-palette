@@ -794,7 +794,7 @@ export default function TrackDetail() {
                    <div className="border-t border-border" />
                    <section>
                      <h3 className="text-lg font-semibold text-foreground mb-4">Paperwork</h3>
-                     <PaperworkTab />
+                     <PaperworkTab trackUuid={track.uuid} />
                    </section>
                  </div>
                )}
@@ -2286,48 +2286,252 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   );
 }
 
-function PaperworkTab() {
-  const paperwork = [
-    { name: "Master License Agreement", type: "PDF", date: "Jan 15, 2026", status: "Signed" },
-    { name: "Publishing Split Sheet", type: "PDF", date: "Jan 18, 2026", status: "Signed" },
-    { name: "Sync License — Nike Campaign", type: "PDF", date: "Feb 22, 2026", status: "Pending" },
-    { name: "Distribution Agreement", type: "PDF", date: "Jan 10, 2026", status: "Signed" },
-    { name: "Mechanical License", type: "PDF", date: "Mar 01, 2026", status: "Draft" },
-  ];
+interface TrackDocument {
+  id: string;
+  name: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  status: "draft" | "pending" | "signed";
+  created_at: string;
+  updated_at: string;
+}
+
+function PaperworkTab({ trackUuid }: { trackUuid: string }) {
+  const { currentWorkspace } = useWorkspace();
+  const [documents, setDocuments] = useState<TrackDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const workspaceId = currentWorkspace?.id;
+
+  const fetchDocuments = useCallback(async () => {
+    if (!trackUuid || !workspaceId) return;
+    try {
+      const { data, error } = await supabase
+        .from("track_documents")
+        .select("*")
+        .eq("track_id", trackUuid)
+        .eq("workspace_id", workspaceId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setDocuments(data || []);
+    } catch (err) {
+      console.error("Failed to fetch documents:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [trackUuid, workspaceId]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !workspaceId || !trackUuid) return;
+
+    if (file.size > 20 * 1024 * 1024) {
+      alert("File too large. Maximum size is 20MB.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "pdf";
+      const storagePath = workspaceId + "/" + trackUuid + "/" + crypto.randomUUID() + "." + ext;
+
+      const { error: storageError } = await supabase.storage
+        .from("documents")
+        .upload(storagePath, file, { contentType: file.type });
+      if (storageError) throw storageError;
+
+      const { error: dbError } = await supabase
+        .from("track_documents")
+        .insert({
+          track_id: trackUuid,
+          workspace_id: workspaceId,
+          uploaded_by: (await supabase.auth.getUser()).data.user?.id,
+          name: file.name.replace(/\.[^/.]+$/, ""),
+          file_name: file.name,
+          file_path: storagePath,
+          file_size: file.size,
+          mime_type: file.type || "application/octet-stream",
+          status: "draft",
+        });
+      if (dbError) throw dbError;
+
+      await fetchDocuments();
+    } catch (err) {
+      console.error("Upload failed:", err);
+      alert("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDelete = async (doc: TrackDocument) => {
+    if (!confirm("Delete \"" + doc.name + "\"?")) return;
+    try {
+      await supabase.storage.from("documents").remove([doc.file_path]);
+      const { error } = await supabase
+        .from("track_documents")
+        .delete()
+        .eq("id", doc.id);
+      if (error) throw error;
+      setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  };
+
+  const handleOpen = async (doc: TrackDocument) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(doc.file_path, 3600);
+      if (error) throw error;
+      window.open(data.signedUrl, "_blank");
+    } catch (err) {
+      console.error("Failed to open document:", err);
+    }
+  };
+
+  const cycleStatus = async (doc: TrackDocument) => {
+    const next: Record<string, string> = { draft: "pending", pending: "signed", signed: "draft" };
+    const newStatus = next[doc.status] || "draft";
+    try {
+      const { error } = await supabase
+        .from("track_documents")
+        .update({ status: newStatus })
+        .eq("id", doc.id);
+      if (error) throw error;
+      setDocuments((prev) =>
+        prev.map((d) => (d.id === doc.id ? { ...d, status: newStatus as TrackDocument["status"] } : d))
+      );
+    } catch (err) {
+      console.error("Status update failed:", err);
+    }
+  };
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
+
+  const formatDate = (iso: string) => {
+    return new Date(iso).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const statusLabels: Record<string, string> = {
+    draft: "Draft",
+    pending: "Pending",
+    signed: "Signed",
+  };
 
   return (
     <SectionCard
       title="Documents & Contracts"
       icon={Paperclip}
       action={
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">
-          <Paperclip className="w-3.5 h-3.5" /> Upload
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
+        >
+          {uploading ? (
+            <>
+              <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              Uploading…
+            </>
+          ) : (
+            <>
+              <Upload className="w-3.5 h-3.5" /> Upload
+            </>
+          )}
         </button>
       }
     >
-      <div className="divide-y divide-border">
-        {paperwork.map((doc) => (
-          <div key={doc.name} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">{doc.name}</p>
-                <p className="text-[11px] text-muted-foreground">{doc.type} · {doc.date}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium ${docStatusColors[doc.status]}`}>
-                {doc.status}
-              </span>
-              <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
-            </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        accept=".pdf,.doc,.docx,.txt,.rtf,.png,.jpg,.jpeg"
+        onChange={handleUpload}
+      />
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="w-5 h-5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : documents.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center mb-3">
+            <Paperclip className="w-5 h-5 text-muted-foreground" />
           </div>
-        ))}
-      </div>
+          <p className="text-sm font-medium text-foreground mb-1">No documents yet</p>
+          <p className="text-xs text-muted-foreground mb-4">
+            Upload contracts, split sheets, licenses, and other paperwork.
+          </p>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-brand-primary text-white hover:bg-brand-primary/90 transition-colors"
+          >
+            <Upload className="w-3.5 h-3.5" /> Upload Document
+          </button>
+        </div>
+      ) : (
+        <div className="divide-y divide-border">
+          {documents.map((doc) => (
+            <div
+              key={doc.id}
+              className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors"
+            >
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{doc.name}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {formatSize(doc.file_size)} · {formatDate(doc.created_at)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                <button
+                  onClick={() => cycleStatus(doc)}
+                  className={"inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium cursor-pointer hover:opacity-80 transition-opacity " + docStatusColors[statusLabels[doc.status]]}
+                >
+                  {statusLabels[doc.status]}
+                </button>
+                <button
+                  onClick={() => handleOpen(doc)}
+                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  title="Open"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => handleDelete(doc)}
+                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </SectionCard>
   );
 }

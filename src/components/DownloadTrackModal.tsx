@@ -17,7 +17,6 @@ import {
   generateLyricsPdf,
   generateSplitsPdf,
   generateMetadataPdf,
-  generatePaperworkPdf,
   addWatermark,
 } from "@/lib/pdf-generators";
 import type { TrackData } from "@/contexts/TrackContext";
@@ -145,30 +144,6 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
         const totalShares = trackData.splits.reduce((sum, s) => sum + (s.share || 0), 0);
         const blob = generateSplitsPdf(trackData.title, trackData.artist, trackData.splits, totalShares, true) as Blob;
         metaFolder.file(`${trackData.title} - Splits.pdf`, blob);
-      }
-
-      // Paperwork
-      if (selectedItems.has("paperwork")) {
-        const paperworkFolder = root.folder("Paperwork")!;
-
-        // Generate index PDF
-        const paperworkDocs = [
-          { name: "Master License Agreement", status: "Signed", date: "Jan 15, 2026" },
-          { name: "Publishing Split Sheet", status: "Signed", date: "Jan 18, 2026" },
-          { name: "Sync License — Nike Campaign", status: "Pending", date: "Feb 22, 2026" },
-          { name: "Distribution Agreement", status: "Signed", date: "Jan 10, 2026" },
-          { name: "Mechanical License", status: "Draft", date: "Mar 01, 2026" },
-        ];
-
-        const indexBlob = generatePaperworkPdf(trackData.title, trackData.artist, paperworkDocs);
-        paperworkFolder.file(`${trackData.title} - Documents Index.pdf`, indexBlob);
-
-        // Generate individual watermarked document placeholders
-        // In a real app, these would be actual uploaded PDFs with watermark applied
-        paperworkDocs.forEach(doc => {
-          const docBlob = generateWatermarkedDocumentPdf(doc.name, doc.status, doc.date, trackData.title, trackData.artist);
-          paperworkFolder.file(`${doc.name}.pdf`, docBlob);
-        });
       }
 
       // Generate and download the ZIP
@@ -439,52 +414,6 @@ function drawFallbackCover(ctx: CanvasRenderingContext2D, size: number, trackDat
   ctx.fillStyle = "rgba(255, 140, 26, 0.6)";
   ctx.font = `bold ${size * 0.025}px -apple-system, BlinkMacSystemFont, sans-serif`;
   ctx.fillText("TRAKALOG", size / 2, size * 0.95);
-}
-
-/** Generate a watermarked placeholder document PDF */
-function generateWatermarkedDocumentPdf(docName: string, status: string, date: string, trackTitle: string, trackArtist: string): Blob {
-  const doc = new jsPDF({ unit: "pt", format: "letter" });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-
-  // White background for document pages
-  doc.setFillColor(255, 255, 255);
-  doc.rect(0, 0, pageW, pageH, "F");
-
-  // Document header
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(30, 30, 30);
-  doc.text(docName, 56, 80);
-
-  // Subtitle
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(120, 120, 120);
-  doc.text(`Track: ${trackTitle} — ${trackArtist}`, 56, 105);
-  doc.text(`Status: ${status}  |  Date: ${date}`, 56, 122);
-
-  // Placeholder body
-  doc.setFontSize(10);
-  doc.setTextColor(80, 80, 80);
-  const bodyLines = [
-    "This document is a copy of the original uploaded to Trakalog.",
-    "The original document is securely stored and can be accessed",
-    "through your Trakalog account at any time.",
-    "",
-    "This copy is provided as part of the Trakalog Pack download",
-    "and is watermarked for identification purposes.",
-  ];
-  let y = 170;
-  bodyLines.forEach(line => {
-    doc.text(line, 56, y);
-    y += 18;
-  });
-
-  // Add watermark
-  addWatermark(doc);
-
-  return doc.output("blob");
 }
 
 /** Get cover art as ArrayBuffer for ID3 embedding */
