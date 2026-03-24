@@ -2331,8 +2331,13 @@ function PaperworkTab({ trackUuid }: { trackUuid: string }) {
   }, [fetchDocuments]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("File selected:", e.target.files);
     const file = e.target.files?.[0];
-    if (!file || !workspaceId || !trackUuid) return;
+    console.log("Parsed file:", file, "workspaceId:", workspaceId, "trackUuid:", trackUuid);
+    if (!file || !workspaceId || !trackUuid) {
+      console.log("Early return — missing:", { file: !!file, workspaceId: !!workspaceId, trackUuid: !!trackUuid });
+      return;
+    }
 
     if (file.size > 20 * 1024 * 1024) {
       alert("File too large. Maximum size is 20MB.");
@@ -2490,7 +2495,7 @@ function PaperworkTab({ trackUuid }: { trackUuid: string }) {
       icon={Paperclip}
       action={
         <button
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => { console.log("Upload button clicked"); console.log("File input ref:", fileInputRef.current); fileInputRef.current?.click(); }}
           disabled={uploading}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
         >
