@@ -795,7 +795,7 @@ export default function TrackDetail() {
                    <div className="border-t border-border" />
                    <section>
                      <h3 className="text-lg font-semibold text-foreground mb-4">Paperwork</h3>
-                     <PaperworkTab trackUuid={track.uuid} workspaceId={track.workspace_id} />
+                     <PaperworkTab trackUuid={track.uuid} workspaceId={activeWorkspace.id} />
                    </section>
                  </div>
                )}
