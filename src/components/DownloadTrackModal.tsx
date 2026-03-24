@@ -21,6 +21,7 @@ import {
   addWatermark,
 } from "@/lib/pdf-generators";
 import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_COVER } from "@/lib/constants";
 import type { TrackData } from "@/contexts/TrackContext";
 
 interface DownloadTrackModalProps {
@@ -93,22 +94,24 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
       const folderName = `${trackData.title} - ${trackData.artist} - Trakalog Pack`;
       const root = zip.folder(folderName)!;
 
-      // Get cover art for embedding in audio files
+      // Get cover art for embedding in audio files (used by stems)
       const coverArrayBuffer = await getCoverArtArrayBuffer(trackData);
 
-      // Track — with embedded cover art
-      if (selectedItems.has("track")) {
+      // Track — real audio file from Supabase Storage
+      if (selectedItems.has("track") && trackData.originalFileUrl) {
         const trackFolder = root.folder("Track")!;
-        const fileName = trackData.originalFileName?.replace(/\.\w+$/, '.mp3') || `${trackData.title}.mp3`;
-        const taggedBlob = createTaggedAudioBlob(trackData.title, trackData.artist, trackData.album, coverArrayBuffer);
-        trackFolder.file(fileName, taggedBlob);
+        const fileName = trackData.originalFileName || (trackData.title + ".mp3");
+        const audioBytes = await fetch(trackData.originalFileUrl).then(r => r.arrayBuffer());
+        trackFolder.file(fileName, audioBytes);
       }
 
-      // Cover Art — generate a 3000x3000 JPEG from the cover image
+      // Cover Art — real image from Supabase Storage or default
       if (selectedItems.has("cover")) {
         const coverFolder = root.folder("Cover Art")!;
-        const coverBlob = await generateCoverArtBlob(trackData);
-        coverFolder.file(`${trackData.title} - Cover Art.jpg`, coverBlob);
+        const coverUrl = trackData.coverImage || DEFAULT_COVER;
+        const coverBytes = await fetch(coverUrl).then(r => r.arrayBuffer());
+        const ext = trackData.coverImage ? (trackData.coverImage.match(/\.(jpe?g|png|webp)$/i)?.[0] || ".jpg") : ".png";
+        coverFolder.file(trackData.title + " - Cover Art" + ext, coverBytes);
       }
 
       // Lyrics
@@ -391,38 +394,6 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
   );
 }
 
-/** Generate cover art as a JPEG blob — 3000x3000 for industry standards */
-async function generateCoverArtBlob(trackData: TrackData): Promise<Blob> {
-  const size = 3000;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d")!;
-
-  if (trackData.coverImage) {
-    // If there's a cover image, draw it at 3000x3000
-    return new Promise<Blob>((resolve) => {
-      const img = new window.Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, size, size);
-        canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.95);
-      };
-      img.onerror = () => {
-        // Fallback gradient
-        drawFallbackCover(ctx, size, trackData);
-        canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.95);
-      };
-      img.src = trackData.coverImage!;
-    });
-  } else {
-    // Generate a branded gradient cover
-    drawFallbackCover(ctx, size, trackData);
-    return new Promise<Blob>((resolve) => {
-      canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.95);
-    });
-  }
-}
 
 function drawFallbackCover(ctx: CanvasRenderingContext2D, size: number, trackData: TrackData) {
   // Gradient background
