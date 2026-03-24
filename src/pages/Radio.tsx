@@ -349,13 +349,13 @@ export default function RadioPage() {
   // -----------------------------------------------------------------------
   // Mode card data
   // -----------------------------------------------------------------------
-  var modeCards: { key: RadioMode; icon: React.ReactNode; label: string }[] = [
-    { key: "shuffle", icon: <Shuffle className="w-5 h-5" />, label: t("radio.shuffleAll", "Shuffle All") },
-    { key: "genre", icon: <Music className="w-5 h-5" />, label: t("radio.byGenre", "By Genre") },
-    { key: "mood", icon: <Sparkles className="w-5 h-5" />, label: t("radio.byMood", "By Mood") },
-    { key: "energy", icon: <Zap className="w-5 h-5" />, label: t("radio.highEnergy", "High Energy") },
-    { key: "chill", icon: <Moon className="w-5 h-5" />, label: t("radio.chill", "Chill") },
-    { key: "recent", icon: <Clock className="w-5 h-5" />, label: t("radio.recentlyAdded", "Recently Added") },
+  var modeCards: { key: RadioMode; icon: React.ReactNode; label: string; gradient: string; iconColor: string; glowColor: string }[] = [
+    { key: "shuffle", icon: <Shuffle className="w-5 h-5" />, label: t("radio.shuffleAll", "Shuffle All"), gradient: "from-brand-orange/15 to-brand-pink/15", iconColor: "text-brand-orange", glowColor: "rgba(255,140,50,0.3)" },
+    { key: "genre", icon: <Music className="w-5 h-5" />, label: t("radio.byGenre", "By Genre"), gradient: "from-brand-purple/15 to-brand-pink/15", iconColor: "text-brand-purple", glowColor: "rgba(168,85,247,0.3)" },
+    { key: "mood", icon: <Sparkles className="w-5 h-5" />, label: t("radio.byMood", "By Mood"), gradient: "from-brand-pink/15 to-brand-orange/15", iconColor: "text-brand-pink", glowColor: "rgba(236,72,153,0.3)" },
+    { key: "energy", icon: <Zap className="w-5 h-5" />, label: t("radio.highEnergy", "High Energy"), gradient: "from-brand-orange/20 to-red-500/15", iconColor: "text-brand-orange", glowColor: "rgba(255,140,50,0.3)" },
+    { key: "chill", icon: <Moon className="w-5 h-5" />, label: t("radio.chill", "Chill"), gradient: "from-brand-purple/15 to-blue-500/15", iconColor: "text-blue-400", glowColor: "rgba(96,165,250,0.3)" },
+    { key: "recent", icon: <Clock className="w-5 h-5" />, label: t("radio.recentlyAdded", "Recently Added"), gradient: "from-emerald-500/15 to-teal-500/15", iconColor: "text-emerald-400", glowColor: "rgba(52,211,153,0.3)" },
   ];
 
   var coverSrc = (radioState.currentTrack && radioState.currentTrack.coverImage) || DEFAULT_COVER;
@@ -421,18 +421,21 @@ export default function RadioPage() {
                 <motion.button
                   key={card.key as string}
                   whileTap={{ scale: 0.96 }}
+                  whileHover={{ scale: 1.03, brightness: 1.1 }}
                   onClick={function () { handleModeSelect(card.key); }}
                   className={
-                    "card-premium p-4 flex flex-col items-center gap-2 min-h-[44px] transition-all " +
+                    "relative overflow-hidden rounded-xl border p-4 flex flex-col items-center gap-2 min-h-[44px] transition-all duration-200 bg-gradient-to-br " +
+                    card.gradient + " " +
                     (isActive
-                      ? "ring-2 ring-brand-orange shadow-[0_0_16px_rgba(255,140,50,0.3)]"
-                      : "hover:ring-1 hover:ring-border")
+                      ? "border-brand-orange/50 ring-2 ring-brand-orange/40"
+                      : "border-border/50 hover:border-border hover:brightness-110")
                   }
+                  style={isActive ? { boxShadow: "0 0 20px " + card.glowColor + ", 0 0 40px " + card.glowColor.replace("0.3", "0.1") } : undefined}
                 >
-                  <span className={isActive ? "text-brand-orange" : "text-muted-foreground"}>
+                  <span className={card.iconColor}>
                     {card.icon}
                   </span>
-                  <span className={"text-xs font-medium " + (isActive ? "text-foreground" : "text-muted-foreground")}>
+                  <span className={"text-xs font-semibold " + (isActive ? "text-foreground" : "text-foreground/70")}>
                     {card.label}
                   </span>
                 </motion.button>
