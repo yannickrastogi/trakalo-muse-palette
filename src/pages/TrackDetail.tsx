@@ -2339,22 +2339,32 @@ function PaperworkTab({ trackUuid }: { trackUuid: string }) {
       return;
     }
 
+    console.log("Upload started", { fileName: file.name, size: file.size, type: file.type });
     setUploading(true);
     try {
       const ext = file.name.split(".").pop() || "pdf";
       const storagePath = workspaceId + "/" + trackUuid + "/" + crypto.randomUUID() + "." + ext;
+      console.log("Storage path:", storagePath);
 
       const { error: storageError } = await supabase.storage
         .from("documents")
         .upload(storagePath, file, { contentType: file.type });
-      if (storageError) throw storageError;
+      if (storageError) {
+        console.error("Storage error:", JSON.stringify(storageError));
+        alert("Storage upload failed: " + storageError.message);
+        return;
+      }
+      console.log("Storage upload done");
+
+      const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+      console.log("User ID for upload:", userId);
 
       const { error: dbError } = await supabase
         .from("track_documents")
         .insert({
           track_id: trackUuid,
           workspace_id: workspaceId,
-          uploaded_by: (await supabase.auth.getUser()).data.user?.id,
+          uploaded_by: userId,
           name: file.name.replace(/\.[^/.]+$/, ""),
           file_name: file.name,
           file_path: storagePath,
@@ -2362,12 +2372,17 @@ function PaperworkTab({ trackUuid }: { trackUuid: string }) {
           mime_type: file.type || "application/octet-stream",
           status: "draft",
         });
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("DB error:", JSON.stringify(dbError));
+        alert("Database insert failed: " + dbError.message);
+        return;
+      }
+      console.log("DB insert done");
 
       await fetchDocuments();
     } catch (err) {
       console.error("Upload failed:", err);
-      alert("Upload failed. Please try again.");
+      alert("Upload failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -2481,7 +2496,7 @@ function PaperworkTab({ trackUuid }: { trackUuid: string }) {
         >
           {uploading ? (
             <>
-              <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              <div className="w-3.5 h-3.5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
               Uploading…
             </>
           ) : (
