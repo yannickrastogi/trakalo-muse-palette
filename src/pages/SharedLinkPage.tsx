@@ -363,16 +363,21 @@ export default function SharedLinkPage() {
           }
         }
       } else if (link.track_id) {
-        // Single track
-        var { data: track } = await anonSupabase
+        // Single track (also used by stems and pack share types)
+        var { data: track, error: trackErr } = await anonSupabase
           .from("tracks")
           .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood, waveform_data, lyrics, lyrics_segments, splits, isrc, labels, publishers, language, gender, released_at, original_file_name")
           .eq("id", link.track_id)
           .single();
 
+        if (trackErr) {
+          console.error("Failed to fetch track for shared link:", trackErr, "track_id:", link.track_id, "share_type:", link.share_type);
+        }
         if (track) {
           setTrackData(track as unknown as TrackData);
         }
+      } else {
+        console.error("Shared link has no track_id or playlist_id:", link.share_type, link.id);
       }
 
       setLoading(false);

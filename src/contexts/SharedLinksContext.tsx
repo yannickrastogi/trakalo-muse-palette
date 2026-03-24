@@ -32,6 +32,7 @@ export interface SharedLink extends WorkspaceScoped {
   id: string;
   shareType: ShareType;
   trackId: number;
+  trackUuid?: string;
   trackTitle: string;
   trackArtist: string;
   trackCover?: string;
@@ -170,11 +171,15 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
 
     var slug = generateSlug();
 
-    // Resolve track UUID from numeric trackId
-    var trackUuid: string | null = null;
-    if (link.trackId && link.shareType !== "playlist") {
+    // Resolve track UUID — prefer direct UUID if provided, fall back to numeric ID lookup
+    var trackUuid: string | null = link.trackUuid || null;
+    if (!trackUuid && link.trackId && link.shareType !== "playlist") {
       var matchedTrack = tracks.find(function(t) { return t.id === link.trackId; });
-      if (matchedTrack) trackUuid = matchedTrack.uuid;
+      if (matchedTrack) {
+        trackUuid = matchedTrack.uuid;
+      } else {
+        console.error("SharedLinksContext: could not resolve trackId", link.trackId, "to UUID. Available tracks:", tracks.length);
+      }
     }
 
     var hashedPassword: string | null = null;

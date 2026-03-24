@@ -821,6 +821,7 @@ export default function TrackDetail() {
         onClose={() => setShareModalOpen(false)}
         shareType="stems"
         trackId={track.id}
+        trackUuid={track.uuid}
         trackTitle={track?.title}
         trackArtist={track?.artist}
         trackCover={track?.coverImage}
@@ -831,6 +832,7 @@ export default function TrackDetail() {
         onClose={() => setShareTrackModalOpen(false)}
         shareType="track"
         trackId={track.id}
+        trackUuid={track.uuid}
         trackTitle={track?.title}
         trackArtist={track?.artist}
         trackCover={track?.coverImage}

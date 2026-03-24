@@ -199,6 +199,7 @@ export function SharePackModal({ open, onClose, trackData }: SharePackModalProps
         onClose={handleShareModalClose}
         shareType="pack"
         trackId={trackData.id}
+        trackUuid={trackData.uuid}
         trackTitle={trackData.title}
         trackArtist={trackData.artist}
         trackCover={trackData.coverImage}

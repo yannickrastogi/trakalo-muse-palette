@@ -12,6 +12,7 @@ interface ShareModalProps {
   shareType: ShareType;
   // For track/stems
   trackId?: number;
+  trackUuid?: string;
   trackTitle?: string;
   trackArtist?: string;
   trackCover?: string;
@@ -34,7 +35,7 @@ const shareTypeItemLabel: Record<ShareType, string> = {
 
 export function ShareModal({
   open, onClose, shareType,
-  trackId, trackTitle, trackArtist, trackCover, stems,
+  trackId, trackUuid, trackTitle, trackArtist, trackCover, stems,
   playlistId, playlistName, playlistCover, playlistTracks,
   packItems,
 }: ShareModalProps) {
@@ -96,6 +97,7 @@ export function ShareModal({
       workspace_id: "",
       shareType,
       trackId: trackId || 0,
+      trackUuid: trackUuid || undefined,
       trackTitle: trackTitle || playlistName || "",
       trackArtist: trackArtist || "",
       trackCover: trackCover || playlistCover,
