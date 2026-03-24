@@ -113,8 +113,8 @@ export function ShareModal({
       playlistCover: playlistCover || undefined,
       playlistTracks: playlistTracks || undefined,
       packItems: packItems || undefined,
-      allowDownload,
-      downloadQuality: allowDownload ? downloadQuality : undefined,
+      allowDownload: shareType === "pack" ? true : allowDownload,
+      downloadQuality: (shareType === "pack" || allowDownload) ? downloadQuality : undefined,
     };
 
     const created = await createSharedLink(newLink);
@@ -297,7 +297,8 @@ export function ShareModal({
                   />
                 </div>
 
-                {/* Download Permissions */}
+                {/* Download Permissions — hidden for pack (always enabled) */}
+                {shareType !== "pack" && (
                 <div className="space-y-3">
                   <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">{t("shareModal.downloadPermission")}</label>
                   <div className={"rounded-xl border transition-all " + (allowDownload ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/30") + " p-3.5"}>
@@ -348,6 +349,7 @@ export function ShareModal({
                     </AnimatePresence>
                   </div>
                 </div>
+                )}
 
                 {/* Item count */}
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 border border-border">
@@ -370,7 +372,7 @@ export function ShareModal({
                   disabled={(itemCount === 0 && shareType !== "track") || creating}
                   className="px-5 py-2.5 rounded-lg text-xs font-semibold btn-brand disabled:opacity-40 disabled:pointer-events-none"
                 >
-                  {creating ? t("shareModal.creating") : t("shareModal.createLink")}
+                  {creating ? t("shareModal.creating") : shareType === "pack" ? t("shareModal.createPackLink", "Create Pack Link") : t("shareModal.createLink")}
                 </button>
               </div>
               </>
