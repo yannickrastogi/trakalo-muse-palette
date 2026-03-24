@@ -795,7 +795,7 @@ export default function TrackDetail() {
                    <div className="border-t border-border" />
                    <section>
                      <h3 className="text-lg font-semibold text-foreground mb-4">Paperwork</h3>
-                     <PaperworkTab trackUuid={track.uuid} />
+                     <PaperworkTab trackUuid={track.uuid} workspaceId={track.workspace_id} />
                    </section>
                  </div>
                )}
@@ -2299,14 +2299,11 @@ interface TrackDocument {
   updated_at: string;
 }
 
-function PaperworkTab({ trackUuid }: { trackUuid: string }) {
-  const { currentWorkspace } = useWorkspace();
+function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspaceId: string }) {
   const [documents, setDocuments] = useState<TrackDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const workspaceId = currentWorkspace?.id;
 
   const fetchDocuments = useCallback(async () => {
     if (!trackUuid || !workspaceId) return;
@@ -2331,38 +2328,28 @@ function PaperworkTab({ trackUuid }: { trackUuid: string }) {
   }, [fetchDocuments]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("File selected:", e.target.files);
     const file = e.target.files?.[0];
-    console.log("Parsed file:", file, "workspaceId:", workspaceId, "trackUuid:", trackUuid);
-    if (!file || !workspaceId || !trackUuid) {
-      console.log("Early return — missing:", { file: !!file, workspaceId: !!workspaceId, trackUuid: !!trackUuid });
-      return;
-    }
+    if (!file || !workspaceId || !trackUuid) return;
 
     if (file.size > 20 * 1024 * 1024) {
       alert("File too large. Maximum size is 20MB.");
       return;
     }
 
-    console.log("Upload started", { fileName: file.name, size: file.size, type: file.type });
     setUploading(true);
     try {
       const ext = file.name.split(".").pop() || "pdf";
       const storagePath = workspaceId + "/" + trackUuid + "/" + crypto.randomUUID() + "." + ext;
-      console.log("Storage path:", storagePath);
 
       const { error: storageError } = await supabase.storage
         .from("documents")
         .upload(storagePath, file, { contentType: file.type });
       if (storageError) {
-        console.error("Storage error:", JSON.stringify(storageError));
         alert("Storage upload failed: " + storageError.message);
         return;
       }
-      console.log("Storage upload done");
 
       const userId = (await supabase.auth.getSession()).data.session?.user?.id;
-      console.log("User ID for upload:", userId);
 
       const { error: dbError } = await supabase
         .from("track_documents")
@@ -2378,11 +2365,9 @@ function PaperworkTab({ trackUuid }: { trackUuid: string }) {
           status: "draft",
         });
       if (dbError) {
-        console.error("DB error:", JSON.stringify(dbError));
         alert("Database insert failed: " + dbError.message);
         return;
       }
-      console.log("DB insert done");
 
       await fetchDocuments();
     } catch (err) {
@@ -2495,7 +2480,7 @@ function PaperworkTab({ trackUuid }: { trackUuid: string }) {
       icon={Paperclip}
       action={
         <button
-          onClick={() => { console.log("Upload button clicked"); console.log("File input ref:", fileInputRef.current); fileInputRef.current?.click(); }}
+          onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
         >
