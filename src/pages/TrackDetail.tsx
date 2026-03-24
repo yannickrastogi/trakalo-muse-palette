@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -2394,7 +2395,38 @@ function PaperworkTab({ trackUuid }: { trackUuid: string }) {
         .from("documents")
         .createSignedUrl(doc.file_path, 3600);
       if (error) throw error;
-      window.open(data.signedUrl, "_blank");
+
+      if (doc.mime_type && doc.mime_type.includes("pdf")) {
+        const pdfBytes = await fetch(data.signedUrl).then(r => r.arrayBuffer());
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const pages = pdfDoc.getPages();
+
+        for (const page of pages) {
+          const { width, height } = page.getSize();
+          const fontSize = width / 4;
+          const textWidth = font.widthOfTextAtSize("TRAKALOG", fontSize);
+
+          for (let y = height * 0.2; y < height; y += height * 0.25) {
+            page.drawText("TRAKALOG", {
+              x: (width - textWidth * 0.7) / 2,
+              y: y,
+              size: fontSize,
+              font,
+              color: rgb(0.5, 0.5, 0.5),
+              opacity: 0.08,
+              rotate: degrees(45),
+            });
+          }
+        }
+
+        const watermarkedBytes = await pdfDoc.save();
+        const blob = new Blob([watermarkedBytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+      } else {
+        window.open(data.signedUrl, "_blank");
+      }
     } catch (err) {
       console.error("Failed to open document:", err);
     }
