@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import JSZip from "jszip";
 import { jsPDF } from "jspdf";
 import { ID3Writer } from "browser-id3-writer";
+import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import {
   generateMetadataPdf,
   addWatermark,
 } from "@/lib/pdf-generators";
+import { supabase } from "@/integrations/supabase/client";
 import type { TrackData } from "@/contexts/TrackContext";
 
 interface DownloadTrackModalProps {
@@ -144,6 +146,51 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
         const totalShares = trackData.splits.reduce((sum, s) => sum + (s.share || 0), 0);
         const blob = generateSplitsPdf(trackData.title, trackData.artist, trackData.splits, totalShares, true) as Blob;
         metaFolder.file(`${trackData.title} - Splits.pdf`, blob);
+      }
+
+      // Paperwork
+      const trackId = trackData.uuid || trackData.id;
+      if (selectedItems.has("paperwork") && trackId) {
+        const { data: docs } = await supabase
+          .from("track_documents")
+          .select("*")
+          .eq("track_id", trackId);
+
+        if (docs && docs.length > 0) {
+          const paperworkFolder = root.folder("Paperwork")!;
+          for (const doc of docs) {
+            const { data: signedData } = await supabase.storage
+              .from("documents")
+              .createSignedUrl(doc.file_path, 3600);
+            if (!signedData?.signedUrl) continue;
+
+            const fileBytes = await fetch(signedData.signedUrl).then(r => r.arrayBuffer());
+
+            if (doc.mime_type && doc.mime_type.includes("pdf")) {
+              const pdfDoc = await PDFDocument.load(fileBytes);
+              const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+              for (const page of pdfDoc.getPages()) {
+                const { width, height } = page.getSize();
+                const fontSize = width / 4;
+                for (let y = height * 0.2; y < height; y += height * 0.25) {
+                  page.drawText("TRAKALOG", {
+                    x: width * 0.15,
+                    y,
+                    size: fontSize,
+                    font,
+                    color: rgb(0.5, 0.5, 0.5),
+                    opacity: 0.08,
+                    rotate: degrees(45),
+                  });
+                }
+              }
+              const watermarkedBytes = await pdfDoc.save();
+              paperworkFolder.file(doc.file_name, watermarkedBytes);
+            } else {
+              paperworkFolder.file(doc.file_name, fileBytes);
+            }
+          }
+        }
       }
 
       // Generate and download the ZIP
