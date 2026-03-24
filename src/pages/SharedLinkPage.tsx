@@ -11,6 +11,7 @@ import {
   generateMetadataPdf,
   generateSplitsPdf,
   generateCreditsPdf,
+  generateSignedAgreementPdf,
 } from "@/lib/pdf-generators";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
@@ -741,6 +742,36 @@ export default function SharedLinkPage() {
         var totalShares = trackData.splits.reduce(function(sum, s) { return sum + (s.share || 0); }, 0);
         var splitsBlob = generateSplitsPdf(trackData.title, trackData.artist, trackData.splits, totalShares, true) as Blob;
         root.folder("Metadata")!.file(trackData.title + " - Splits.pdf", splitsBlob);
+      }
+
+      // Signed Split Agreement
+      if (items.indexOf("metadata") >= 0 && trackData.id) {
+        var { data: signatures } = await anonSupabase
+          .from("signature_requests")
+          .select("collaborator_name, collaborator_email, status, signed_at, signature_data, split_share")
+          .eq("track_id", trackData.id);
+
+        if (signatures) {
+          var signedEntries = signatures
+            .filter(function(sig) { return sig.status === "signed"; })
+            .map(function(sig) {
+              return {
+                name: sig.collaborator_name,
+                role: "",
+                share: sig.split_share || 0,
+                pro: "",
+                ipi: "",
+                publisher: "",
+                signatureData: sig.signature_data,
+                signedAt: sig.signed_at,
+              };
+            });
+
+          if (signedEntries.length > 0) {
+            var signedBlob = generateSignedAgreementPdf(trackData.title, trackData.artist, signedEntries, true) as Blob;
+            root.folder("Metadata")!.file(trackData.title + " - Split Agreement (Signed).pdf", signedBlob);
+          }
+        }
       }
 
       // Credits — branded PDF

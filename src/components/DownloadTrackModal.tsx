@@ -18,6 +18,7 @@ import {
   generateLyricsPdf,
   generateSplitsPdf,
   generateMetadataPdf,
+  generateSignedAgreementPdf,
   addWatermark,
 } from "@/lib/pdf-generators";
 import { supabase } from "@/integrations/supabase/client";
@@ -149,6 +150,36 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
         const totalShares = trackData.splits.reduce((sum, s) => sum + (s.share || 0), 0);
         const blob = generateSplitsPdf(trackData.title, trackData.artist, trackData.splits, totalShares, true) as Blob;
         metaFolder.file(`${trackData.title} - Splits.pdf`, blob);
+      }
+
+      // Signed Split Agreement
+      if (selectedItems.has("metadata") && (trackData.uuid || trackData.id)) {
+        const trackIdForSig = trackData.uuid || trackData.id;
+        const { data: signatures } = await supabase
+          .from("signature_requests")
+          .select("collaborator_name, collaborator_email, status, signed_at, signature_data, split_share")
+          .eq("track_id", trackIdForSig);
+
+        if (signatures) {
+          const signedEntries = signatures
+            .filter(sig => sig.status === "signed")
+            .map(sig => ({
+              name: sig.collaborator_name,
+              role: "",
+              share: sig.split_share || 0,
+              pro: "",
+              ipi: "",
+              publisher: "",
+              signatureData: sig.signature_data,
+              signedAt: sig.signed_at,
+            }));
+
+          if (signedEntries.length > 0) {
+            const metaFolder = root.folder("Metadata")!;
+            const signedBlob = generateSignedAgreementPdf(trackData.title, trackData.artist, signedEntries, true) as Blob;
+            metaFolder.file(trackData.title + " - Split Agreement (Signed).pdf", signedBlob);
+          }
+        }
       }
 
       // Paperwork

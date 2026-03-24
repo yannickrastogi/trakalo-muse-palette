@@ -851,8 +851,11 @@ function buildSignedAgreementDoc(title: string, artist: string, entries: SignedS
   return doc;
 }
 
-export function generateSignedAgreementPdf(title: string, artist: string, entries: SignedSplitEntry[]) {
+export function generateSignedAgreementPdf(title: string, artist: string, entries: SignedSplitEntry[], asBlob?: boolean): Blob | void {
   var doc = buildSignedAgreementDoc(title, artist, entries);
+  if (asBlob) {
+    return doc.output("blob");
+  }
   doc.save(title + " - Split Agreement.pdf");
 }
 

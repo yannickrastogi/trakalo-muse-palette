@@ -55,29 +55,34 @@ serve(async (req) => {
       });
     }
 
-    // 2. Download audio from storage — try original first, fallback to preview if too large
+    // 2. Download audio via fresh signed URL — try original first, fallback to preview if too large
     let audioPath = originalPath || previewPath;
     let fileData: Blob | null = null;
 
-    if (originalPath) {
-      const { data, error } = await supabaseAdmin.storage
+    // Helper: create a fresh signed URL and fetch the file
+    async function fetchViaSignedUrl(path: string): Promise<Blob | null> {
+      const { data: signedData, error: signErr } = await supabaseAdmin.storage
         .from("tracks")
-        .download(originalPath);
+        .createSignedUrl(path, 3600);
+      if (signErr || !signedData?.signedUrl) return null;
+      const res = await fetch(signedData.signedUrl);
+      if (!res.ok) return null;
+      return await res.blob();
+    }
 
-      if (!error && data && data.size <= 25 * 1024 * 1024) {
-        fileData = data;
+    if (originalPath) {
+      const blob = await fetchViaSignedUrl(originalPath);
+      if (blob && blob.size <= 25 * 1024 * 1024) {
+        fileData = blob;
         audioPath = originalPath;
       }
     }
 
     // Fallback to MP3 preview if original unavailable or > 25MB
     if (!fileData && previewPath) {
-      const { data, error } = await supabaseAdmin.storage
-        .from("tracks")
-        .download(previewPath);
-
-      if (!error && data) {
-        fileData = data;
+      const blob = await fetchViaSignedUrl(previewPath);
+      if (blob) {
+        fileData = blob;
         audioPath = previewPath;
       }
     }
