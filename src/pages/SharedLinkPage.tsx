@@ -54,7 +54,6 @@ interface TrackData {
   language: string | null;
   gender: string | null;
   released_at: string | null;
-  original_file_name: string | null;
 }
 
 interface PlaylistData {
@@ -366,7 +365,7 @@ export default function SharedLinkPage() {
         // Single track (also used by stems and pack share types)
         var { data: track, error: trackErr } = await anonSupabase
           .from("tracks")
-          .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood, waveform_data, lyrics, lyrics_segments, splits, isrc, labels, publishers, language, gender, released_at, original_file_name")
+          .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood, waveform_data, lyrics, lyrics_segments, splits, isrc, labels, publishers, language, gender, released_at")
           .eq("id", link.track_id)
           .single();
 
@@ -677,7 +676,7 @@ export default function SharedLinkPage() {
         var audioUrl = await fetchAudioUrl(trackData.id, "original");
         if (audioUrl) {
           var audioBytes = await fetch(audioUrl).then(function(r) { return r.arrayBuffer(); });
-          var fileName = trackData.original_file_name || (trackData.title + ".mp3");
+          var fileName = (trackData.audio_url && trackData.audio_url.split("/").pop()) || (trackData.title + ".mp3");
           root.folder("Track")!.file(fileName, audioBytes);
         }
       }
