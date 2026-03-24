@@ -6,6 +6,12 @@ import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, 
 import { DEFAULT_COVER } from "@/lib/constants";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import JSZip from "jszip";
+import {
+  generateLyricsPdf,
+  generateMetadataPdf,
+  generateSplitsPdf,
+  generateCreditsPdf,
+} from "@/lib/pdf-generators";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
 interface SharedLinkData {
@@ -41,6 +47,14 @@ interface TrackData {
   waveform_data: number[] | null;
   lyrics: string | null;
   lyrics_segments: { start: number; end: number; text: string }[] | null;
+  splits: { name: string; role: string; share: number; pro: string; ipi: string; publisher: string }[] | null;
+  isrc: string | null;
+  labels: string[] | null;
+  publishers: string[] | null;
+  language: string | null;
+  gender: string | null;
+  released_at: string | null;
+  original_file_name: string | null;
 }
 
 interface PlaylistData {
@@ -352,7 +366,7 @@ export default function SharedLinkPage() {
         // Single track
         var { data: track } = await anonSupabase
           .from("tracks")
-          .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood, waveform_data, lyrics, lyrics_segments")
+          .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood, waveform_data, lyrics, lyrics_segments, splits, isrc, labels, publishers, language, gender, released_at, original_file_name")
           .eq("id", link.track_id)
           .single();
 
@@ -658,12 +672,12 @@ export default function SharedLinkPage() {
         var audioUrl = await fetchAudioUrl(trackData.id, "original");
         if (audioUrl) {
           var audioBytes = await fetch(audioUrl).then(function(r) { return r.arrayBuffer(); });
-          var ext = trackData.audio_url && trackData.audio_url.match(/\.\w+$/)?.[0] || ".mp3";
-          root.folder("Track")!.file(trackData.title + ext, audioBytes);
+          var fileName = trackData.original_file_name || (trackData.title + ".mp3");
+          root.folder("Track")!.file(fileName, audioBytes);
         }
       }
 
-      // Cover Art
+      // Cover Art — real image
       if (items.indexOf("cover") >= 0) {
         var coverUrl = trackData.cover_url || DEFAULT_COVER;
         var coverBytes = await fetch(coverUrl).then(function(r) { return r.arrayBuffer(); });
@@ -671,12 +685,13 @@ export default function SharedLinkPage() {
         root.folder("Cover Art")!.file(trackData.title + " - Cover Art" + coverExt, coverBytes);
       }
 
-      // Lyrics — simple text file since we don't have pdf-generators on this page
+      // Lyrics — branded PDF
       if (items.indexOf("lyrics") >= 0 && trackData.lyrics) {
-        root.folder("Lyrics")!.file(trackData.title + " - Lyrics.txt", trackData.lyrics);
+        var lyricsBlob = generateLyricsPdf(trackData.title, trackData.artist, trackData.lyrics, true) as Blob;
+        root.folder("Lyrics")!.file(trackData.title + " - Lyrics.pdf", lyricsBlob);
       }
 
-      // Stems
+      // Stems — real files from storage
       if (items.indexOf("stems") >= 0) {
         var { data: stems } = await anonSupabase
           .from("stems")
@@ -699,19 +714,41 @@ export default function SharedLinkPage() {
         }
       }
 
-      // Metadata — text summary
+      // Metadata — branded PDF
       if (items.indexOf("metadata") >= 0) {
-        var metaLines = [
-          "Title: " + trackData.title,
-          "Artist: " + trackData.artist,
-          trackData.featuring ? "Featuring: " + trackData.featuring : "",
-          trackData.genre ? "Genre: " + trackData.genre : "",
-          trackData.bpm ? "BPM: " + trackData.bpm : "",
-          trackData.key ? "Key: " + trackData.key : "",
-          trackData.duration_sec ? "Duration: " + formatDuration(trackData.duration_sec) : "",
-          trackData.mood && trackData.mood.length > 0 ? "Mood: " + trackData.mood.join(", ") : "",
-        ].filter(function(l) { return l; });
-        root.folder("Metadata")!.file(trackData.title + " - Metadata.txt", metaLines.join("\n"));
+        var meta: { label: string; value: string }[] = [
+          { label: "Genre", value: trackData.genre || "\u2014" },
+          { label: "BPM", value: trackData.bpm ? String(trackData.bpm) : "\u2014" },
+          { label: "Key", value: trackData.key || "\u2014" },
+          { label: "Duration", value: trackData.duration_sec ? formatDuration(trackData.duration_sec) : "\u2014" },
+          { label: "Mood", value: trackData.mood && trackData.mood.length > 0 ? trackData.mood.join(", ") : "\u2014" },
+          { label: "Label", value: trackData.labels && trackData.labels.length > 0 ? trackData.labels[0] : "\u2014" },
+          { label: "Publisher", value: trackData.publishers && trackData.publishers.length > 0 ? trackData.publishers[0] : "\u2014" },
+          { label: "ISRC", value: trackData.isrc || "\u2014" },
+          { label: "Language", value: trackData.language || "\u2014" },
+          { label: "Release Date", value: trackData.released_at || "\u2014" },
+        ];
+        var metaBlob = generateMetadataPdf(trackData.title, trackData.artist, meta, true) as Blob;
+        root.folder("Metadata")!.file(trackData.title + " - Metadata.pdf", metaBlob);
+      }
+
+      // Splits — branded PDF (included with metadata, same as owner pack)
+      if (items.indexOf("metadata") >= 0 && trackData.splits && trackData.splits.length > 0) {
+        var totalShares = trackData.splits.reduce(function(sum, s) { return sum + (s.share || 0); }, 0);
+        var splitsBlob = generateSplitsPdf(trackData.title, trackData.artist, trackData.splits, totalShares, true) as Blob;
+        root.folder("Metadata")!.file(trackData.title + " - Splits.pdf", splitsBlob);
+      }
+
+      // Credits — branded PDF
+      if (items.indexOf("credits") >= 0) {
+        var topLevel: { label: string; value: string }[] = [
+          { label: "Artist", value: trackData.artist },
+          { label: "Featuring", value: trackData.featuring || "\u2014" },
+        ];
+        var creditsBlob = generateCreditsPdf(trackData.title, trackData.artist, topLevel, [], [], true) as Blob;
+        if (creditsBlob) {
+          root.folder("Credits")!.file(trackData.title + " - Credits.pdf", creditsBlob);
+        }
       }
 
       // Paperwork — real documents with TRAKALOG watermark on PDFs
