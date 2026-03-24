@@ -2,8 +2,10 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
-import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2 } from "lucide-react";
 import { DEFAULT_COVER } from "@/lib/constants";
+import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
+import JSZip from "jszip";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
 interface SharedLinkData {
@@ -21,6 +23,7 @@ interface SharedLinkData {
   expires_at: string | null;
   status: string;
   created_at: string;
+  pack_items: string[] | null;
 }
 
 interface TrackData {
@@ -247,6 +250,9 @@ export default function SharedLinkPage() {
   var [commentText, setCommentText] = useState("");
   var [submittingComment, setSubmittingComment] = useState(false);
   var commentInputRef = useRef<HTMLInputElement>(null);
+
+  // Pack download state
+  var [packDownloading, setPackDownloading] = useState(false);
 
   // Cache resolved audio URLs to avoid re-fetching
   var audioUrlCache = useRef<Record<string, string>>({});
@@ -634,6 +640,134 @@ export default function SharedLinkPage() {
         }
       }).catch(function (err) { console.error("Error:", err); });
   }, [trackData, playingTrackId, linkData, commentText, commentTimestamp, submittingComment, visitorName]);
+
+  var handleDownloadPack = useCallback(async function() {
+    if (!linkData || !trackData || packDownloading) return;
+    var items = linkData.pack_items;
+    if (!items || items.length === 0) return;
+    setPackDownloading(true);
+    logEvent(trackData.id, "download");
+
+    try {
+      var zip = new JSZip();
+      var folderName = trackData.title + " - " + trackData.artist + " - Trakalog Pack";
+      var root = zip.folder(folderName)!;
+
+      // Track — real audio file
+      if (items.indexOf("track") >= 0) {
+        var audioUrl = await fetchAudioUrl(trackData.id, "original");
+        if (audioUrl) {
+          var audioBytes = await fetch(audioUrl).then(function(r) { return r.arrayBuffer(); });
+          var ext = trackData.audio_url && trackData.audio_url.match(/\.\w+$/)?.[0] || ".mp3";
+          root.folder("Track")!.file(trackData.title + ext, audioBytes);
+        }
+      }
+
+      // Cover Art
+      if (items.indexOf("cover") >= 0) {
+        var coverUrl = trackData.cover_url || DEFAULT_COVER;
+        var coverBytes = await fetch(coverUrl).then(function(r) { return r.arrayBuffer(); });
+        var coverExt = trackData.cover_url ? (trackData.cover_url.match(/\.(jpe?g|png|webp)$/i)?.[0] || ".jpg") : ".png";
+        root.folder("Cover Art")!.file(trackData.title + " - Cover Art" + coverExt, coverBytes);
+      }
+
+      // Lyrics — simple text file since we don't have pdf-generators on this page
+      if (items.indexOf("lyrics") >= 0 && trackData.lyrics) {
+        root.folder("Lyrics")!.file(trackData.title + " - Lyrics.txt", trackData.lyrics);
+      }
+
+      // Stems
+      if (items.indexOf("stems") >= 0) {
+        var { data: stems } = await anonSupabase
+          .from("stems")
+          .select("*")
+          .eq("track_id", trackData.id);
+        if (stems && stems.length > 0) {
+          var stemsFolder = root.folder("Stems")!;
+          for (var si = 0; si < stems.length; si++) {
+            var stem = stems[si] as Record<string, unknown>;
+            var stemPath = stem.file_path as string;
+            if (!stemPath) continue;
+            var { data: stemSigned } = await anonSupabase.storage
+              .from("stems")
+              .createSignedUrl(stemPath, 3600);
+            if (stemSigned?.signedUrl) {
+              var stemBytes = await fetch(stemSigned.signedUrl).then(function(r) { return r.arrayBuffer(); });
+              stemsFolder.file((stem.file_name as string) || ("stem-" + si), stemBytes);
+            }
+          }
+        }
+      }
+
+      // Metadata — text summary
+      if (items.indexOf("metadata") >= 0) {
+        var metaLines = [
+          "Title: " + trackData.title,
+          "Artist: " + trackData.artist,
+          trackData.featuring ? "Featuring: " + trackData.featuring : "",
+          trackData.genre ? "Genre: " + trackData.genre : "",
+          trackData.bpm ? "BPM: " + trackData.bpm : "",
+          trackData.key ? "Key: " + trackData.key : "",
+          trackData.duration_sec ? "Duration: " + formatDuration(trackData.duration_sec) : "",
+          trackData.mood && trackData.mood.length > 0 ? "Mood: " + trackData.mood.join(", ") : "",
+        ].filter(function(l) { return l; });
+        root.folder("Metadata")!.file(trackData.title + " - Metadata.txt", metaLines.join("\n"));
+      }
+
+      // Paperwork — real documents with TRAKALOG watermark on PDFs
+      if (items.indexOf("paperwork") >= 0) {
+        var { data: docs } = await anonSupabase
+          .from("track_documents")
+          .select("*")
+          .eq("track_id", trackData.id);
+        if (docs && docs.length > 0) {
+          var paperworkFolder = root.folder("Paperwork")!;
+          for (var di = 0; di < docs.length; di++) {
+            var doc = docs[di] as Record<string, unknown>;
+            var docPath = doc.file_path as string;
+            if (!docPath) continue;
+            var { data: docSigned } = await anonSupabase.storage
+              .from("documents")
+              .createSignedUrl(docPath, 3600);
+            if (!docSigned?.signedUrl) continue;
+            var docBytes = await fetch(docSigned.signedUrl).then(function(r) { return r.arrayBuffer(); });
+            var mimeType = (doc.mime_type as string) || "";
+            if (mimeType.indexOf("pdf") >= 0) {
+              var pdfDoc = await PDFDocument.load(docBytes);
+              var font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+              var pages = pdfDoc.getPages();
+              for (var pi = 0; pi < pages.length; pi++) {
+                var page = pages[pi];
+                var sz = page.getSize();
+                var fontSize = sz.width / 4;
+                for (var y = sz.height * 0.2; y < sz.height; y += sz.height * 0.25) {
+                  page.drawText("TRAKALOG", {
+                    x: sz.width * 0.15, y: y, size: fontSize, font: font,
+                    color: rgb(0.5, 0.5, 0.5), opacity: 0.08, rotate: degrees(45),
+                  });
+                }
+              }
+              var watermarkedBytes = await pdfDoc.save();
+              paperworkFolder.file((doc.file_name as string) || ("document-" + di + ".pdf"), watermarkedBytes);
+            } else {
+              paperworkFolder.file((doc.file_name as string) || ("document-" + di), docBytes);
+            }
+          }
+        }
+      }
+
+      var zipBlob = await zip.generateAsync({ type: "blob" });
+      var link = document.createElement("a");
+      link.href = URL.createObjectURL(zipBlob);
+      link.download = folderName + ".zip";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch (err) {
+      console.error("Failed to generate Trakalog Pack:", err);
+    } finally {
+      setPackDownloading(false);
+    }
+  }, [linkData, trackData, packDownloading, fetchAudioUrl, slug]);
 
   var progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   var needsGate = linkData && !gateCompleted;
@@ -1248,7 +1382,7 @@ export default function SharedLinkPage() {
               />
             )}
 
-            {linkData?.allow_download && (trackData.audio_url || slug) && (
+            {linkData?.allow_download && (trackData.audio_url || slug) && linkData.share_type !== "pack" && (
               <div className="border-t border-border px-6 py-4">
                 <button
                   onClick={function() {
@@ -1271,6 +1405,29 @@ export default function SharedLinkPage() {
                 >
                   <Download className="w-4 h-4" />
                   {"Download " + (linkData.download_quality === "hi-res" ? "(Hi-Res)" : "(Low-Res)")}
+                </button>
+              </div>
+            )}
+
+            {linkData?.share_type === "pack" && linkData.pack_items && linkData.pack_items.length > 0 && (
+              <div className="border-t border-border px-6 py-4">
+                <button
+                  onClick={handleDownloadPack}
+                  disabled={packDownloading}
+                  className="w-full py-3.5 rounded-xl text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
+                  style={{ background: "linear-gradient(135deg, hsl(24, 100%, 55%), hsl(330, 80%, 60%), hsl(270, 70%, 55%))" }}
+                >
+                  {packDownloading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Generating Pack...
+                    </>
+                  ) : (
+                    <>
+                      <Package className="w-4 h-4" />
+                      Download Trakalog Pack
+                    </>
+                  )}
                 </button>
               </div>
             )}
