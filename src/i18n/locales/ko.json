@@ -315,14 +315,19 @@
   "contacts": {
     "title": "연락처",
     "subtitle": "공유 링크에서 수집된 {{count}}개 연락처",
+    "contactsCount": "{{count}}개 연락처",
+    "tracksShared": "{{count}}개 트랙 공유됨",
+    "totalDownloads": "{{count}}회 다운로드",
     "exportList": "목록 내보내기",
     "searchPlaceholder": "이름, 이메일 또는 조직으로 검색…",
     "noContacts": "아직 연락처가 없습니다",
-    "noContactsDesc": "수신자가 공유 스템 링크에 접속하면 여기에 연락처가 표시됩니다.",
+    "noContactsDesc": "사람들이 공유 링크에 접속하여 게이트 화면을 작성하면 여기에 연락처가 표시됩니다.",
     "name": "이름",
     "email": "이메일",
     "organization": "조직",
+    "allOrganizations": "모든 조직",
     "role": "역할",
+    "engagement": "참여도",
     "tracksCol": "트랙",
     "lastInteraction": "마지막 상호작용",
     "downloadsCol": "다운로드",
@@ -335,7 +340,11 @@
     "xlsx": "Excel (XLSX)",
     "xlsxDesc": "Microsoft Excel 호환",
     "trackCount": "{{count}}개 트랙",
-    "trackCountPlural": "{{count}}개 트랙"
+    "trackCountPlural": "{{count}}개 트랙",
+    "emailCopied": "이메일이 복사되었습니다!",
+    "sendPitch": "피칭 보내기",
+    "daysAgo": "{{count}}일 전",
+    "justNow": "방금"
   },
   "notifications": {
     "title": "알림 센터",

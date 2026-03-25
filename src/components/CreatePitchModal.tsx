@@ -70,17 +70,20 @@ interface CreatePitchModalProps {
   onOpenChange: (open: boolean) => void;
   onCreate: (pitch: PitchEntry) => void;
   initialPlaylistId?: string;
+  initialRecipientName?: string;
+  initialRecipientEmail?: string;
+  initialRecipientCompany?: string;
 }
 
-export function CreatePitchModal({ open, onOpenChange, onCreate, initialPlaylistId }: CreatePitchModalProps) {
+export function CreatePitchModal({ open, onOpenChange, onCreate, initialPlaylistId, initialRecipientName, initialRecipientEmail, initialRecipientCompany }: CreatePitchModalProps) {
   const { t } = useTranslation();
   const [step, setStep] = useState<"select" | "compose">("select");
   const [pitchType, setPitchType] = useState<"track" | "playlist">("track");
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
   const [itemSearch, setItemSearch] = useState("");
-  const [recipientName, setRecipientName] = useState("");
-  const [recipientCompany, setRecipientCompany] = useState("");
-  const [recipientEmail, setRecipientEmail] = useState("");
+  const [recipientName, setRecipientName] = useState(initialRecipientName || "");
+  const [recipientCompany, setRecipientCompany] = useState(initialRecipientCompany || "");
+  const [recipientEmail, setRecipientEmail] = useState(initialRecipientEmail || "");
   const [message, setMessage] = useState("");
   const [allowDownload, setAllowDownload] = useState(false);
   const [downloadQuality, setDownloadQuality] = useState<"hi-res" | "low-res">("low-res");
@@ -110,6 +113,15 @@ export function CreatePitchModal({ open, onOpenChange, onCreate, initialPlaylist
       }
     }
   }, [open, initialPlaylistId, playlists]);
+
+  // Pre-fill recipient when initial props are provided
+  useEffect(() => {
+    if (open) {
+      if (initialRecipientName) setRecipientName(initialRecipientName);
+      if (initialRecipientEmail) setRecipientEmail(initialRecipientEmail);
+      if (initialRecipientCompany) setRecipientCompany(initialRecipientCompany);
+    }
+  }, [open, initialRecipientName, initialRecipientEmail, initialRecipientCompany]);
 
   const savedContacts = useMemo(() => getSavedContacts(), [open]);
 

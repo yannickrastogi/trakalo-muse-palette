@@ -315,14 +315,19 @@
   "contacts": {
     "title": "Kontakte",
     "subtitle": "{{count}} Kontakte aus geteilten Links gesammelt",
+    "contactsCount": "{{count}} Kontakte",
+    "tracksShared": "{{count}} Titel geteilt",
+    "totalDownloads": "{{count}} Downloads",
     "exportList": "Liste exportieren",
     "searchPlaceholder": "Nach Name, E-Mail oder Organisation suchen…",
     "noContacts": "Noch keine Kontakte",
-    "noContactsDesc": "Kontakte erscheinen hier, wenn Empfänger auf deine geteilten Stem-Links zugreifen.",
+    "noContactsDesc": "Kontakte erscheinen hier, wenn Personen auf deine geteilten Links zugreifen und das Gate-Formular ausfüllen.",
     "name": "Name",
     "email": "E-Mail",
     "organization": "Organisation",
+    "allOrganizations": "Alle Organisationen",
     "role": "Rolle",
+    "engagement": "Engagement",
     "tracksCol": "Titel",
     "lastInteraction": "Letzte Interaktion",
     "downloadsCol": "Downloads",
@@ -335,7 +340,11 @@
     "xlsx": "Excel (XLSX)",
     "xlsxDesc": "Microsoft Excel kompatibel",
     "trackCount": "{{count}} Titel",
-    "trackCountPlural": "{{count}} Titel"
+    "trackCountPlural": "{{count}} Titel",
+    "emailCopied": "E-Mail kopiert!",
+    "sendPitch": "Pitch senden",
+    "daysAgo": "vor {{count}}T",
+    "justNow": "Gerade eben"
   },
   "notifications": {
     "title": "Benachrichtigungszentrum",

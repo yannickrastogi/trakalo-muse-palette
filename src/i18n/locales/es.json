@@ -302,14 +302,19 @@
   "contacts": {
     "title": "Contactos",
     "subtitle": "{{count}} contactos recopilados desde enlaces compartidos",
+    "contactsCount": "{{count}} contactos",
+    "tracksShared": "{{count}} pistas compartidas",
+    "totalDownloads": "{{count}} descargas",
     "exportList": "Exportar lista",
     "searchPlaceholder": "Buscar por nombre, e-mail u organización…",
     "noContacts": "Aún no hay contactos",
-    "noContactsDesc": "Los contactos aparecerán aquí cuando los destinatarios accedan a tus enlaces de stems compartidos.",
+    "noContactsDesc": "Los contactos aparecerán aquí cuando las personas accedan a tus enlaces compartidos y completen la pantalla de registro.",
     "name": "Nombre",
     "email": "E-mail",
     "organization": "Organización",
+    "allOrganizations": "Todas las organizaciones",
     "role": "Rol",
+    "engagement": "Interacción",
     "tracksCol": "Pistas",
     "lastInteraction": "Última interacción",
     "downloadsCol": "Descargas",
@@ -322,7 +327,11 @@
     "xlsx": "Excel (XLSX)",
     "xlsxDesc": "Compatible con Microsoft Excel",
     "trackCount": "{{count}} pista",
-    "trackCountPlural": "{{count}} pistas"
+    "trackCountPlural": "{{count}} pistas",
+    "emailCopied": "¡E-mail copiado!",
+    "sendPitch": "Enviar Pitch",
+    "daysAgo": "hace {{count}}d",
+    "justNow": "Ahora mismo"
   },
   "notifications": {
     "title": "Centro de notificaciones",

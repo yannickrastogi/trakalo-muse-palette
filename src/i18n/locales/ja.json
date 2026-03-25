@@ -302,14 +302,19 @@
   "contacts": {
     "title": "連絡先",
     "subtitle": "共有リンクから収集された{{count}}件の連絡先",
+    "contactsCount": "{{count}}件の連絡先",
+    "tracksShared": "{{count}}曲を共有",
+    "totalDownloads": "{{count}}回ダウンロード",
     "exportList": "リストをエクスポート",
     "searchPlaceholder": "名前、メール、組織で検索…",
     "noContacts": "まだ連絡先がありません",
-    "noContactsDesc": "受信者が共有ステムリンクにアクセスすると、ここに連絡先が表示されます。",
+    "noContactsDesc": "共有リンクにアクセスしてゲート画面に情報を入力すると、ここに連絡先が表示されます。",
     "name": "名前",
     "email": "メール",
     "organization": "組織",
+    "allOrganizations": "すべての組織",
     "role": "役割",
+    "engagement": "エンゲージメント",
     "tracksCol": "トラック",
     "lastInteraction": "最終インタラクション",
     "downloadsCol": "ダウンロード",
@@ -322,7 +327,11 @@
     "xlsx": "Excel (XLSX)",
     "xlsxDesc": "Microsoft Excel互換",
     "trackCount": "{{count}}トラック",
-    "trackCountPlural": "{{count}}トラック"
+    "trackCountPlural": "{{count}}トラック",
+    "emailCopied": "メールをコピーしました！",
+    "sendPitch": "ピッチを送信",
+    "daysAgo": "{{count}}日前",
+    "justNow": "たった今"
   },
   "notifications": {
     "title": "通知センター",
