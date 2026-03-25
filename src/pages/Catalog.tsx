@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { UploadTrackModal } from "@/components/UploadTrackModal";
@@ -8,7 +8,7 @@ import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { GENRES, KEYS, MOODS, LANGUAGES, GENDERS, DEFAULT_COVER } from "@/lib/constants";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Music,
   Upload,
@@ -215,65 +215,66 @@ export default function Catalog() {
         </motion.div>
 
         {/* Expanded filters */}
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="card-premium p-5"
-          >
-            <div className="flex flex-wrap gap-4 items-end">
-              <FilterSelect label={t("catalog.type")} value={typeFilter} options={types} onChange={setTypeFilter} />
-              <FilterSelect label={t("catalog.genre")} value={genreFilter} options={genres} onChange={setGenreFilter} />
-              <FilterSelect label={t("catalog.key")} value={keyFilter} options={keys} onChange={setKeyFilter} />
-              <div className="flex flex-col gap-1.5">
-                <label className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">{t("catalog.bpmRange")}</label>
-                <div className="relative">
-                  <select
-                    value={bpmFilter?.label ?? ""}
-                    onChange={(e) => {
-                      const f = bpmRanges.find((r) => r.label === e.target.value);
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="overflow-hidden"
+            >
+              <div className="card-premium p-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                  <FilterSelect label={t("catalog.type")} value={typeFilter} options={types} onChange={setTypeFilter} />
+                  <FilterSelect label={t("catalog.genre")} value={genreFilter} options={genres} onChange={setGenreFilter} />
+                  <FilterSelect label={t("catalog.key")} value={keyFilter} options={keys} onChange={setKeyFilter} />
+                  <FilterSelect
+                    label={t("catalog.bpmRange")}
+                    value={bpmFilter?.label ?? null}
+                    options={bpmRanges.map((r) => r.label)}
+                    onChange={(v) => {
+                      const f = bpmRanges.find((r) => r.label === v);
                       setBpmFilter(f ?? null);
                     }}
-                    className="h-9 px-3 pr-7 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none min-w-[150px] font-medium"
-                  >
-                    <option value="">{t("catalog.allBPMs")}</option>
-                    {bpmRanges.map((r) => (
-                      <option key={r.label} value={r.label}>{r.label}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-3 h-3 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  />
+                  <FilterSelect label={t("catalog.mood")} value={moodFilter} options={moods} onChange={setMoodFilter} />
+                  <FilterSelect label={t("catalog.language")} value={languageFilter} options={languages} onChange={setLanguageFilter} />
+                  <FilterSelect label="Gender" value={voiceFilter} options={voices} onChange={setVoiceFilter} />
+                  <FilterSelect label={t("catalog.status")} value={statusFilter} options={statuses} onChange={setStatusFilter} />
                 </div>
+                {activeFilterCount > 0 && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={clearFilters}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-brand-orange hover:text-brand-pink transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                      {t("catalog.clearAll")}
+                    </button>
+                  </div>
+                )}
               </div>
-              <FilterSelect label={t("catalog.mood")} value={moodFilter} options={moods} onChange={setMoodFilter} />
-              <FilterSelect label={t("catalog.language")} value={languageFilter} options={languages} onChange={setLanguageFilter} />
-              <FilterSelect label="Gender" value={voiceFilter} options={voices} onChange={setVoiceFilter} />
-              <FilterSelect label={t("catalog.status")} value={statusFilter} options={statuses} onChange={setStatusFilter} />
-              {activeFilterCount > 0 && (
-                <button
-                  onClick={clearFilters}
-                  className="h-9 px-4 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                >
-                  {t("catalog.clearAll")}
-                </button>
-              )}
-            </div>
-          </motion.div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Active filter tags */}
         {activeFilterCount > 0 && !showFilters && (
-          <motion.div variants={item} className="flex flex-wrap gap-1.5 items-center">
+          <motion.div variants={item} className="flex flex-wrap gap-2 items-center">
             <span className="text-xs text-muted-foreground mr-1 font-medium">{t("catalog.activeFilters")}</span>
-            {typeFilter && <FilterTag label={`Type: ${typeFilter}`} onRemove={() => setTypeFilter(null)} />}
-            {genreFilter && <FilterTag label={`Genre: ${genreFilter}`} onRemove={() => setGenreFilter(null)} />}
-            {keyFilter && <FilterTag label={`Key: ${keyFilter}`} onRemove={() => setKeyFilter(null)} />}
-            {bpmFilter && <FilterTag label={`BPM: ${bpmFilter.label}`} onRemove={() => setBpmFilter(null)} />}
-            {moodFilter && <FilterTag label={`Mood: ${moodFilter}`} onRemove={() => setMoodFilter(null)} />}
-            {languageFilter && <FilterTag label={`Lang: ${languageFilter}`} onRemove={() => setLanguageFilter(null)} />}
-            {voiceFilter && <FilterTag label={`Gender: ${voiceFilter}`} onRemove={() => setVoiceFilter(null)} />}
-            {statusFilter && <FilterTag label={`Status: ${statusFilter}`} onRemove={() => setStatusFilter(null)} />}
-            <button onClick={clearFilters} className="text-xs gradient-text hover:opacity-80 ml-1.5 font-semibold transition-opacity">
+            <AnimatePresence>
+              {typeFilter && <FilterTag key="type" label={"Type: " + typeFilter} onRemove={() => setTypeFilter(null)} />}
+              {genreFilter && <FilterTag key="genre" label={"Genre: " + genreFilter} onRemove={() => setGenreFilter(null)} />}
+              {keyFilter && <FilterTag key="key" label={"Key: " + keyFilter} onRemove={() => setKeyFilter(null)} />}
+              {bpmFilter && <FilterTag key="bpm" label={"BPM: " + bpmFilter.label} onRemove={() => setBpmFilter(null)} />}
+              {moodFilter && <FilterTag key="mood" label={"Mood: " + moodFilter} onRemove={() => setMoodFilter(null)} />}
+              {languageFilter && <FilterTag key="lang" label={"Lang: " + languageFilter} onRemove={() => setLanguageFilter(null)} />}
+              {voiceFilter && <FilterTag key="voice" label={"Gender: " + voiceFilter} onRemove={() => setVoiceFilter(null)} />}
+              {statusFilter && <FilterTag key="status" label={"Status: " + statusFilter} onRemove={() => setStatusFilter(null)} />}
+            </AnimatePresence>
+            <button onClick={clearFilters} className="text-xs text-brand-orange hover:text-brand-pink ml-1.5 font-semibold transition-colors flex items-center gap-1">
+              <X className="w-3 h-3" />
               {t("catalog.clear")}
             </button>
           </motion.div>
@@ -568,23 +569,62 @@ function FilterSelect({
   options: string[];
   onChange: (v: string | null) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">{label}</label>
+    <div className="flex flex-col gap-1.5" ref={ref}>
+      <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</label>
       <div className="relative">
-        <select
-          value={value ?? ""}
-          onChange={(e) => onChange(e.target.value || null)}
-          className="h-9 px-3 pr-7 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none min-w-[140px] font-medium"
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className={"flex items-center justify-between w-full h-10 px-3 rounded-xl bg-card text-[13px] font-medium transition-all " + (value ? "border-2 border-brand-orange/40 text-brand-orange" : "border border-border text-muted-foreground hover:border-brand-pink/20 hover:text-foreground")}
         >
-          <option value="">All</option>
-          {options.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-        <ChevronDown className="w-3 h-3 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <span className="truncate">{value || "All"}</span>
+          <ChevronDown className={"w-3.5 h-3.5 shrink-0 ml-2 transition-transform duration-200 " + (open ? "rotate-180" : "")} />
+        </button>
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute z-50 mt-1.5 w-full bg-card border border-border rounded-xl shadow-xl backdrop-blur-sm max-h-60 overflow-y-auto"
+            >
+              <div className="p-1">
+                <button
+                  type="button"
+                  onClick={() => { onChange(null); setOpen(false); }}
+                  className={"w-full text-left px-4 py-2.5 rounded-lg text-[13px] transition-colors " + (!value ? "bg-brand-orange/10 text-brand-orange font-medium" : "text-foreground hover:bg-secondary/60")}
+                >
+                  All
+                </button>
+                {options.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => { onChange(opt); setOpen(false); }}
+                    className={"w-full text-left px-4 py-2.5 rounded-lg text-[13px] transition-colors " + (value === opt ? "bg-brand-orange/10 text-brand-orange font-medium" : "text-foreground hover:bg-secondary/60")}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -592,11 +632,17 @@ function FilterSelect({
 
 function FilterTag({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-orange/10 text-brand-orange text-xs font-semibold">
+    <motion.span
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.2 }}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-orange/10 border border-brand-orange/20 text-brand-orange text-xs font-semibold"
+    >
       {label}
-      <button onClick={onRemove} className="hover:text-foreground transition-colors">
+      <button onClick={onRemove} className="hover:bg-brand-orange/20 rounded-full p-0.5 transition-colors">
         <X className="w-3 h-3" />
       </button>
-    </span>
+    </motion.span>
   );
 }
