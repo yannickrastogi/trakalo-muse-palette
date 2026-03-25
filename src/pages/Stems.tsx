@@ -1,10 +1,13 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Upload, Play, Download, ExternalLink, Layers, ChevronDown, X, SlidersHorizontal } from "lucide-react";
+import { Search, Upload, Play, Pause, Download, ExternalLink, Layers, ChevronDown, X, SlidersHorizontal } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
 import { useNavigate } from "react-router-dom";
 import { SelectTrackForStemsModal } from "@/components/SelectTrackForStemsModal";
+import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { supabase } from "@/integrations/supabase/client";
 
 // Use centralized constants
 import { STEM_TYPES, GENRES, DEFAULT_COVER } from "@/lib/constants";
@@ -106,6 +109,8 @@ function FilterSelect({ label, value, onChange, options }: {
 export default function Stems() {
   const { tracks } = useTrack();
   const navigate = useNavigate();
+  const { currentTrack, isPlaying: globalIsPlaying, togglePlay, playTrack } = useAudioPlayer();
+  const { activeWorkspace } = useWorkspace();
 
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -119,6 +124,75 @@ export default function Stems() {
   const [keyFilter, setKeyFilter] = useState("all");
   const [bpmMin, setBpmMin] = useState("");
   const [bpmMax, setBpmMax] = useState("");
+
+  // Stem numeric ID for audio player matching
+  const stemNumericId = useCallback(function(stemId: string) {
+    return Math.abs(stemId.split("").reduce(function(a, b) { return ((a << 5) - a) + b.charCodeAt(0); }, 0));
+  }, []);
+
+  const handlePlayStem = useCallback(function(stem: FlatStem) {
+    if (stem.isPack || !activeWorkspace) return;
+    var numId = stemNumericId(stem.id);
+    if (currentTrack?.id === numId) {
+      togglePlay();
+      return;
+    }
+    // Create a fresh signed URL then play
+    var storagePath = activeWorkspace.id + "/" + stem.trackUuid + "/" + stem.id + "/" + stem.fileName;
+    supabase.storage.from("stems").createSignedUrl(storagePath, 3600).then(function(res) {
+      if (!res.data?.signedUrl) return;
+      playTrack({
+        id: numId,
+        uuid: stem.id,
+        workspace_id: activeWorkspace.id,
+        title: stem.fileName,
+        artist: stem.trackArtist,
+        featuredArtists: [],
+        album: "",
+        genre: "",
+        bpm: 0,
+        key: "",
+        duration: "0:00",
+        mood: [],
+        voice: "",
+        status: "Available",
+        isrc: "",
+        upc: "",
+        releaseDate: "",
+        label: "",
+        publisher: "",
+        writtenBy: [],
+        producedBy: [],
+        mixedBy: "",
+        masteredBy: "",
+        copyright: "",
+        language: "",
+        explicit: false,
+        type: "Stem",
+        coverIdx: 0,
+        coverImage: stem.trackCover,
+        previewUrl: res.data.signedUrl,
+        notes: "",
+        details: {},
+        stems: [],
+        splits: [],
+        statusHistory: [],
+      } as any);
+    });
+  }, [activeWorkspace, currentTrack, togglePlay, playTrack, stemNumericId]);
+
+  const handleDownloadStem = useCallback(function(stem: FlatStem) {
+    if (stem.isPack || !activeWorkspace) return;
+    var storagePath = activeWorkspace.id + "/" + stem.trackUuid + "/" + stem.id + "/" + stem.fileName;
+    supabase.storage.from("stems").createSignedUrl(storagePath, 3600).then(function(res) {
+      if (!res.data?.signedUrl) return;
+      var link = document.createElement("a");
+      link.href = res.data.signedUrl;
+      link.download = stem.fileName;
+      link.target = "_blank";
+      link.click();
+    });
+  }, [activeWorkspace]);
 
   // Flatten all stems + add pack entries for tracks that have stems
   const allStems = useMemo<FlatStem[]>(() => {
@@ -455,12 +529,16 @@ export default function Stems() {
                       )}
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0">
-                      <button className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Play">
-                        <Play className="w-3.5 h-3.5" />
-                      </button>
-                      <button className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
-                        <Download className="w-3.5 h-3.5" />
-                      </button>
+                      {!stem.isPack && (
+                        <button onClick={() => handlePlayStem(stem)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Play">
+                          {currentTrack?.id === stemNumericId(stem.id) && globalIsPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
+                      {!stem.isPack && (
+                        <button onClick={() => handleDownloadStem(stem)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       <button
                         onClick={() => navigate("/track/" + stem.trackUuid)}
                         className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
@@ -554,12 +632,16 @@ export default function Stems() {
                           {/* Actions */}
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-1">
-                              <button className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title="Play">
-                                <Play className="w-3.5 h-3.5" />
-                              </button>
-                              <button className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title="Download">
-                                <Download className="w-3.5 h-3.5" />
-                              </button>
+                              {!stem.isPack && (
+                                <button onClick={() => handlePlayStem(stem)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title="Play">
+                                  {currentTrack?.id === stemNumericId(stem.id) && globalIsPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                                </button>
+                              )}
+                              {!stem.isPack && (
+                                <button onClick={() => handleDownloadStem(stem)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title="Download">
+                                  <Download className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                               <button
                                 onClick={() => navigate("/track/" + stem.trackUuid)}
                                 className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"

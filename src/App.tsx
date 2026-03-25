@@ -114,6 +114,7 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedApp><Index /></ProtectedApp>} />
             <Route path="/tracks" element={<ProtectedApp><Catalog /></ProtectedApp>} />
             <Route path="/track/:id" element={<ProtectedApp><TrackDetail /></ProtectedApp>} />
+            {/* Alias: /tracks/:id kept for backwards compatibility with older shared URLs */}
             <Route path="/tracks/:id" element={<ProtectedApp><TrackDetail /></ProtectedApp>} />
             <Route path="/playlists" element={<ProtectedApp><Playlists /></ProtectedApp>} />
             <Route path="/playlist/:id" element={<ProtectedApp><PlaylistDetail /></ProtectedApp>} />

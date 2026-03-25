@@ -392,68 +392,6 @@ export function generateMetadataPdf(title: string, artist: string, meta: MetaFie
   doc.save(`${title} - Metadata.pdf`);
 }
 
-/** Generate a watermarked paperwork cover page PDF */
-export function generatePaperworkPdf(title: string, artist: string, documents: { name: string; status: string; date: string }[]): Blob {
-  const doc = new jsPDF({ unit: "pt", format: "letter" });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const marginX = 56;
-  const contentW = pageW - marginX * 2;
-
-  drawPageBackground(doc);
-  drawLogo(doc, marginX);
-  drawHeaderCard(doc, marginX, contentW, pageW, title, artist, "PAPERWORK");
-  drawDividerDots(doc, pageW);
-
-  let y = 210;
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...textMuted);
-  doc.text("DOCUMENTS INDEX", marginX, y);
-  y += 24;
-
-  // Table header
-  doc.setFillColor(...cardBg);
-  doc.roundedRect(marginX, y, contentW, 28, 6, 6, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  doc.setTextColor(...textMuted);
-  doc.text("DOCUMENT NAME", marginX + 14, y + 18);
-  doc.text("STATUS", marginX + 320, y + 18);
-  doc.text("DATE", pageW - marginX - 40, y + 18, { align: "right" });
-  y += 36;
-
-  documents.forEach((d, i) => {
-    if (i % 2 === 0) {
-      doc.setFillColor(cardBg[0] - 2, cardBg[1] - 2, cardBg[2] - 2);
-      doc.rect(marginX, y - 4, contentW, 28, "F");
-    }
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(...textLight);
-    doc.text(d.name, marginX + 14, y + 12);
-
-    // Status badge
-    const statusColor = d.status === "Signed" ? [74, 222, 128] as [number, number, number] :
-                         d.status === "Pending" ? brandOrange : textMuted;
-    doc.setFontSize(8);
-    doc.setTextColor(...statusColor);
-    doc.setFont("helvetica", "bold");
-    doc.text(d.status.toUpperCase(), marginX + 320, y + 12);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(...textMuted);
-    doc.text(d.date, pageW - marginX - 40, y + 12, { align: "right" });
-    y += 28;
-  });
-
-  // Add diagonal watermark on all pages
-  addWatermark(doc);
-  drawFooters(doc, marginX);
-
-  return doc.output("blob");
-}
 
 export interface CreditEntry {
   label: string;
