@@ -227,8 +227,32 @@ export default function Stems() {
         {/* Header */}
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Stems</h1>
-            <p className="text-muted-foreground text-xs sm:text-sm mt-1">Browse and manage all stems across your catalog.</p>
+            <div className="flex items-center gap-3 mb-1.5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                <Layers className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Stems</h1>
+            </div>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
+                <Layers className="w-3 h-3" />
+                {allStems.length + " stem" + (allStems.length !== 1 ? "s" : "")}
+              </span>
+              <span className="text-muted-foreground/40 text-xs">·</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
+                {tracks.filter((t) => t.stems.length > 0).length + " tracks with stems"}
+              </span>
+              <span className="text-muted-foreground/40 text-xs">·</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
+                {(() => {
+                  const totalMB = allStems.reduce((acc, s) => {
+                    const num = parseFloat(s.fileSize);
+                    return acc + (isNaN(num) ? 0 : num);
+                  }, 0);
+                  return totalMB >= 1000 ? (totalMB / 1000).toFixed(1) + " GB" : totalMB.toFixed(1) + " MB";
+                })() + " total"}
+              </span>
+            </div>
           </div>
           <button
             onClick={() => setShowTrackPicker(true)}
@@ -378,126 +402,192 @@ export default function Stems() {
           )}
         </motion.div>
 
-        {/* Stats */}
-        <motion.div variants={item} className="flex items-center gap-4">
-          <span className="text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground">{filtered.length}</span> stem{filtered.length !== 1 ? "s" : ""}
-            {filtered.length !== allStems.length && (
-              <span className="ml-1">of {allStems.length} total</span>
-            )}
-          </span>
-        </motion.div>
-
-        {/* Table */}
-        {filtered.length > 0 ? (
-          <motion.div variants={item} className="card-premium overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Stem Name</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Artist</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Track</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Type</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden md:table-cell">BPM</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden md:table-cell">Key</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Genre</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Size</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden xl:table-cell">Uploaded</th>
-                    <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((stem, idx) => {
-                    const coverSrc = stem.trackCover || DEFAULT_COVER;
-                    const typeClass = stemTypeColors[stem.type] || "bg-muted text-muted-foreground";
-
-                    return (
-                      <motion.tr
-                        key={`${stem.trackId}-${stem.id}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: idx * 0.02 }}
-                        className="border-b border-border/50 last:border-0 hover:bg-secondary/40 transition-colors group"
-                      >
-                        {/* Stem Name */}
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-border/50 ${stem.isPack ? "ring-1 ring-brand-orange/40" : ""}`}>
-                              <img src={coverSrc} alt="" className="w-full h-full object-cover" />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className={`text-xs font-medium truncate max-w-[200px] ${stem.isPack ? "text-brand-orange" : "text-foreground"}`}>{stem.fileName}</span>
-                              {stem.isPack && stem.stemCount && (
-                                <span className="text-[10px] text-muted-foreground">{stem.stemCount} stems included</span>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        {/* Artist */}
-                        <td className="px-4 py-3">
-                          <span className="text-xs text-muted-foreground truncate max-w-[120px] block">{stem.trackArtist}</span>
-                        </td>
-                        {/* Track */}
-                        <td className="px-4 py-3">
-                          <button
-                            onClick={() => navigate(`/track/${stem.trackUuid}`)}
-                            className="text-xs text-foreground hover:text-primary transition-colors font-medium truncate max-w-[140px] block"
-                          >
-                            {stem.trackTitle}
-                          </button>
-                        </td>
-                        {/* Type */}
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide ${typeClass}`}>
-                            {stem.isPack ? "Stems Pack" : stem.type}
-                          </span>
-                        </td>
-                        {/* BPM */}
-                        <td className="px-4 py-3 hidden md:table-cell">
-                          <span className="text-xs text-muted-foreground font-mono">{stem.trackBpm}</span>
-                        </td>
-                        {/* Key */}
-                        <td className="px-4 py-3 hidden md:table-cell">
-                          <span className="text-xs text-muted-foreground">{stem.key || stem.trackKey || "—"}</span>
-                        </td>
-                        {/* Genre */}
-                        <td className="px-4 py-3 hidden lg:table-cell">
-                          <span className="text-xs text-muted-foreground">{stem.trackGenre}</span>
-                        </td>
-                        {/* Size */}
-                        <td className="px-4 py-3 hidden lg:table-cell">
-                          <span className="text-xs text-muted-foreground font-mono">{stem.fileSize}</span>
-                        </td>
-                        {/* Uploaded */}
-                        <td className="px-4 py-3 hidden xl:table-cell">
-                          <span className="text-xs text-muted-foreground">{stem.uploadDate}</span>
-                        </td>
-                        {/* Actions */}
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-1">
-                            <button className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title="Play">
-                              <Play className="w-3.5 h-3.5" />
-                            </button>
-                            <button className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title="Download">
-                              <Download className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => navigate(`/track/${stem.trackUuid}`)}
-                              className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
-                              title="Open Track"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+        {/* Stats (filtered count) */}
+        {filtered.length !== allStems.length && (
+          <motion.div variants={item} className="flex items-center gap-4">
+            <span className="text-xs text-muted-foreground">
+              Showing <span className="font-semibold text-foreground">{filtered.length}</span> of {allStems.length} stems
+            </span>
           </motion.div>
+        )}
+
+        {/* Mobile Cards */}
+        {filtered.length > 0 ? (
+          <>
+            <motion.div variants={item} className="space-y-2.5 md:hidden">
+              {filtered.map((stem, idx) => {
+                const coverSrc = stem.trackCover || DEFAULT_COVER;
+                const typeClass = stemTypeColors[stem.type] || "bg-muted text-muted-foreground";
+                const details = [
+                  stem.trackBpm ? stem.trackBpm + " BPM" : "",
+                  stem.key || stem.trackKey || "",
+                  stem.trackGenre || "",
+                ].filter(Boolean).join(" · ");
+
+                return (
+                  <motion.div
+                    key={"m-" + stem.trackId + "-" + stem.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: idx * 0.02 }}
+                    className="card-premium overflow-hidden p-4 flex items-start gap-3"
+                  >
+                    <div className={"w-11 h-11 rounded-lg overflow-hidden shrink-0 ring-1 ring-border/50 " + (stem.isPack ? "ring-brand-orange/40" : "")}>
+                      <img src={coverSrc} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={"text-xs font-semibold truncate " + (stem.isPack ? "text-brand-orange" : "text-foreground")}>{stem.fileName}</p>
+                      <p className="text-[11px] text-muted-foreground truncate mt-0.5">{stem.trackArtist}</p>
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        <button
+                          onClick={() => navigate("/track/" + stem.trackUuid)}
+                          className="text-[11px] text-foreground hover:text-primary transition-colors font-medium truncate"
+                        >
+                          {stem.trackTitle}
+                        </button>
+                        <span className={"inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide " + typeClass}>
+                          {stem.isPack ? "Stems Pack" : stem.type}
+                        </span>
+                      </div>
+                      {details && <p className="text-[10px] text-muted-foreground mt-1.5">{details}</p>}
+                      {stem.isPack && stem.stemCount && (
+                        <p className="text-[10px] text-muted-foreground">{stem.stemCount} stems included</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <button className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Play">
+                        <Play className="w-3.5 h-3.5" />
+                      </button>
+                      <button className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => navigate("/track/" + stem.trackUuid)}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        title="Open Track"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+
+            {/* Desktop Table */}
+            <motion.div variants={item} className="card-premium overflow-hidden hidden md:block">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Stem</th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Track</th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Type</th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Details</th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Size</th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden xl:table-cell">Uploaded</th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((stem, idx) => {
+                      const coverSrc = stem.trackCover || DEFAULT_COVER;
+                      const typeClass = stemTypeColors[stem.type] || "bg-muted text-muted-foreground";
+                      const details = [
+                        stem.trackBpm ? stem.trackBpm + " BPM" : "",
+                        stem.key || stem.trackKey || "",
+                        stem.trackGenre || "",
+                      ].filter(Boolean).join(" · ");
+
+                      return (
+                        <motion.tr
+                          key={stem.trackId + "-" + stem.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: idx * 0.02 }}
+                          className="border-b border-border/50 last:border-0 hover:bg-secondary/40 transition-colors group"
+                        >
+                          {/* Stem Name + Artist */}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className={"w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-border/50 " + (stem.isPack ? "ring-1 ring-brand-orange/40" : "")}>
+                                <img src={coverSrc} alt="" className="w-full h-full object-cover" />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className={"text-xs font-semibold truncate max-w-[200px] " + (stem.isPack ? "text-brand-orange" : "text-foreground")}>{stem.fileName}</span>
+                                <span className="text-xs text-muted-foreground truncate max-w-[160px]">{stem.trackArtist}</span>
+                                {stem.isPack && stem.stemCount && (
+                                  <span className="text-[10px] text-muted-foreground">{stem.stemCount} stems included</span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          {/* Track */}
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => navigate("/track/" + stem.trackUuid)}
+                              className="text-xs text-foreground hover:text-primary transition-colors font-medium truncate max-w-[140px] block"
+                            >
+                              {stem.trackTitle}
+                            </button>
+                          </td>
+                          {/* Type */}
+                          <td className="px-4 py-3">
+                            <span className={"inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide " + typeClass}>
+                              {stem.isPack ? "Stems Pack" : stem.type}
+                            </span>
+                          </td>
+                          {/* Details (BPM · Key · Genre) */}
+                          <td className="px-4 py-3 hidden lg:table-cell">
+                            <span className="text-xs text-muted-foreground">{details || "—"}</span>
+                          </td>
+                          {/* Size */}
+                          <td className="px-4 py-3 hidden lg:table-cell">
+                            <span className="text-xs text-muted-foreground font-mono">{stem.fileSize}</span>
+                          </td>
+                          {/* Uploaded */}
+                          <td className="px-4 py-3 hidden xl:table-cell">
+                            <span className="text-xs text-muted-foreground">
+                              {stem.uploadDate ? new Date(stem.uploadDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                            </span>
+                          </td>
+                          {/* Actions */}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <button className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title="Play">
+                                <Play className="w-3.5 h-3.5" />
+                              </button>
+                              <button className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title="Download">
+                                <Download className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => navigate("/track/" + stem.trackUuid)}
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
+                                title="Open Track"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {/* Table Footer */}
+              <div
+                className="flex items-center justify-between px-5 py-3 text-xs text-muted-foreground font-medium"
+                style={{
+                  borderTop: "1px solid transparent",
+                  borderImage: "linear-gradient(90deg, hsl(24 100% 55% / 0.1), hsl(330 80% 60% / 0.06), transparent) 1",
+                }}
+              >
+                <span>{filtered.length} stem{filtered.length !== 1 ? "s" : ""}</span>
+                <span className="text-2xs text-muted-foreground/50">TRAKALOG Stems</span>
+              </div>
+            </motion.div>
+          </>
         ) : (
           <motion.div variants={item} className="card-premium flex flex-col items-center justify-center py-16 sm:py-24 text-center px-4">
             <div className="w-14 h-14 rounded-2xl icon-brand flex items-center justify-center mb-4">
