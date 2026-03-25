@@ -26,6 +26,7 @@ import {
   Download,
   Edit3,
   Trash2,
+  Send,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -136,14 +137,31 @@ export default function Catalog() {
 
   return (
     <PageShell>
-      <motion.div variants={container} initial="hidden" animate="show" className="p-6 lg:p-8 space-y-6 max-w-[1400px]">
+      <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
         {/* Header */}
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
            <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("catalog.title")}</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              {t("catalog.tracksInCatalog", { total: allTracks.length, shown: filteredTracks.length })}
-            </p>
+            <div className="flex items-center gap-3 mb-1.5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                <Music className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("catalog.title")}</h1>
+            </div>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
+                {allTracks.length + " track" + (allTracks.length !== 1 ? "s" : "")}
+              </span>
+              <span className="text-muted-foreground/40 text-xs">&middot;</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
+                <Headphones className="w-3 h-3" />
+                {allTracks.reduce((sum, t) => sum + getTotalPlaysForTrack(t.id), 0) + " plays"}
+              </span>
+              <span className="text-muted-foreground/40 text-xs">&middot;</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
+                <Send className="w-3 h-3" />
+                {allTracks.reduce((sum, t) => sum + getTotalDownloadsForTrack(t.id), 0) + " pitches sent"}
+              </span>
+            </div>
           </div>
           {permissions.canUploadTracks && (
             <FirstUseTooltip id="upload-track" message="Upload your first track to start building your catalog" position="left">
@@ -289,22 +307,17 @@ export default function Catalog() {
                   <tr className="border-b border-border">
                     <th className="text-left pl-5 pr-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-8">#</th>
                     <th className="text-left px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Track</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Type</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Genre</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">BPM</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Details</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Mood</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
-                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Gender</th>
-                     <th className="text-center px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Plays</th>
-                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
-                     <th className="px-4 py-3 w-10"></th>
+                    <th className="text-center px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Plays</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
+                    <th className="px-4 py-3 w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredTracks.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-5 py-20 text-center text-muted-foreground">
+                      <td colSpan={7} className="px-5 py-20 text-center text-muted-foreground">
                         <Music className="w-10 h-10 mx-auto mb-4 opacity-15" />
                         <p className="text-sm font-semibold">{t("catalog.noTracks")}</p>
                         <p className="text-xs mt-1.5 text-muted-foreground/70">{t("catalog.adjustFilters")}</p>
@@ -357,32 +370,26 @@ export default function Catalog() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-xs">{track.type || "—"}</td>
-                          <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.genre || "—"}</span></td>
-                          <td className="px-4 py-3 hidden lg:table-cell"><span className="font-mono text-2xs text-foreground/60 tabular-nums">{track.bpm || "—"}</span></td>
-                          <td className="px-4 py-3 hidden lg:table-cell">
-                            {track.key ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary text-2xs font-semibold text-foreground/70">
-                                <Music className="w-2.5 h-2.5 text-brand-orange/50" />{track.key}
-                              </span>
-                            ) : (
-                              <span className="text-2xs text-muted-foreground">—</span>
-                            )}
+                          <td className="px-4 py-3 hidden sm:table-cell">
+                            <span className="text-xs text-muted-foreground">
+                              {[track.type, track.genre, track.bpm ? track.bpm + " BPM" : null, track.key].filter(Boolean).join(" · ") || "—"}
+                            </span>
                           </td>
                           <td className="px-4 py-3 hidden md:table-cell">
                             {track.mood.length > 0 ? (
                               <div className="flex flex-wrap gap-1 max-w-[140px]">
-                                {track.mood.map((tag) => (
+                                {track.mood.slice(0, 2).map((tag) => (
                                   <span key={tag} className="inline-flex px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70">#{tag}</span>
                                 ))}
+                                {track.mood.length > 2 && (
+                                  <span className="inline-flex px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-secondary text-muted-foreground">+{track.mood.length - 2}</span>
+                                )}
                               </div>
                             ) : (
                               <span className="text-2xs text-muted-foreground">—</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.language || "—"}</span></td>
-                           <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.voice || "—"}</span></td>
-                           <td className="px-4 py-3 hidden lg:table-cell text-center">
+                          <td className="px-4 py-3 hidden lg:table-cell text-center">
                              {(() => {
                                const plays = getTotalPlaysForTrack(track.id);
                                return plays > 0 ? (
@@ -449,7 +456,7 @@ export default function Catalog() {
                       key={track.id}
                       whileHover={{ y: -4 }}
                       transition={{ duration: 0.2 }}
-                      className="card-premium overflow-hidden cursor-pointer group/card"
+                      className="card-premium overflow-hidden cursor-pointer group/card hover:ring-1 hover:ring-border/60 transition-shadow"
                       onClick={() => navigate(`/track/${track.uuid}`)}
                     >
                       {/* Cover art */}
@@ -480,7 +487,7 @@ export default function Catalog() {
                           </button>
                         </div>
                         {/* Status badge */}
-                        <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-2xs font-semibold backdrop-blur-sm ${statusColors[track.status]}`}>
+                        <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-2xs font-semibold backdrop-blur-md ${statusColors[track.status]}`}>
                           {track.status}
                         </span>
                       </div>
