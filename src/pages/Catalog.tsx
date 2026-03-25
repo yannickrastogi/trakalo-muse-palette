@@ -218,13 +218,12 @@ export default function Catalog() {
         <AnimatePresence>
           {showFilters && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
             >
-              <div className="card-premium p-5">
+              <div className="card-premium p-5" style={{ overflow: "visible" }}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   <FilterSelect label={t("catalog.type")} value={typeFilter} options={types} onChange={setTypeFilter} />
                   <FilterSelect label={t("catalog.genre")} value={genreFilter} options={genres} onChange={setGenreFilter} />
