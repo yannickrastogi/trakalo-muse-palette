@@ -32,6 +32,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { usePitches } from "@/contexts/PitchContext";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useTrack } from "@/contexts/TrackContext";
 
 import { DEFAULT_COVER } from "@/lib/constants";
 
@@ -44,12 +45,20 @@ const statusConfig: Record<PitchStatus, { color: string; icon: React.ElementType
   Responded: { color: "bg-emerald-500/12 text-emerald-400", icon: MessageSquare, dot: "bg-emerald-400" },
 };
 
-const allStatuses: PitchStatus[] = ["Draft", "Sent", "Opened", "Responded"];
+const statCardIcons = [Send, FileText, Eye, MessageSquare];
 
-// Demo pitches removed — now managed via PitchContext
+const allStatuses: PitchStatus[] = ["Draft", "Sent", "Opened", "Responded"];
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
+
+function getCoverForPitch(p: PitchEntry, tracks: { id: string; coverImage?: string }[]): string {
+  if (p.trackUuid) {
+    var match = tracks.find(function (t) { return t.id === p.trackUuid; });
+    if (match && match.coverImage) return match.coverImage;
+  }
+  return DEFAULT_COVER;
+}
 
 export default function Pitch() {
   const { t } = useTranslation();
@@ -57,6 +66,7 @@ export default function Pitch() {
   const { permissions } = useRole();
   const { pitches, addPitch } = usePitches();
   const { activeWorkspace } = useWorkspace();
+  const { tracks } = useTrack();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PitchStatus | "active" | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -250,9 +260,14 @@ export default function Pitch() {
           className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
         >
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
-              {t("pitch.title")}
-            </h1>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                <Send className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+                {t("pitch.title")}
+              </h1>
+            </div>
             <p className="text-muted-foreground text-xs sm:text-sm mt-1">
               {t("pitch.subtitle")}
             </p>
@@ -271,31 +286,32 @@ export default function Pitch() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {stats.statCards.map((s, i) => {
             const isActive = statusFilter === s.filterKey;
+            const CardIcon = statCardIcons[i];
             return (
               <motion.div
                 key={s.label}
                 variants={item}
                 onClick={() => setStatusFilter(isActive ? null : s.filterKey)}
-                className={`card-premium p-4 sm:p-5 relative overflow-hidden cursor-pointer transition-all duration-200 ${
+                className={"card-premium p-4 sm:p-5 relative overflow-hidden cursor-pointer transition-all duration-200 " + (
                   isActive
-                    ? "ring-2 ring-primary/40 bg-primary/5"
+                    ? "ring-2 ring-brand-orange/40 bg-brand-orange/5"
                     : "hover:ring-1 hover:ring-border/60"
-                }`}
-              >
-                {i === 0 && (
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-[40px] pointer-events-none" />
                 )}
+              >
+                <div className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange/8 to-brand-pink/8 flex items-center justify-center pointer-events-none">
+                  <CardIcon className="w-3.5 h-3.5 text-brand-orange/40" />
+                </div>
                 <p className="text-xl sm:text-[28px] font-bold text-foreground tracking-tight leading-none">
                   {s.value}
                 </p>
                 <p className="text-2xs sm:text-xs text-muted-foreground mt-1.5 sm:mt-2 font-medium">
                   {s.label}
                 </p>
-                <p className={`text-2xs mt-0.5 sm:mt-1 font-semibold ${s.accent ? "text-emerald-400/80" : "text-muted-foreground/50"}`}>
+                <p className={"text-2xs mt-0.5 sm:mt-1 font-semibold " + (s.accent ? "text-brand-orange/80" : "text-muted-foreground/50")}>
                   {s.sub}
                 </p>
                 {isActive && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary via-accent to-brand-purple" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple" />
                 )}
               </motion.div>
             );
@@ -305,7 +321,7 @@ export default function Pitch() {
         {/* Filters & Search */}
         <motion.div variants={item} className="flex flex-col sm:flex-row gap-3">
           {/* Search */}
-          <div className="flex items-center gap-2.5 bg-secondary/50 rounded-xl px-4 py-2.5 flex-1 max-w-md border border-border/50 focus-within:border-primary/30 transition-all">
+          <div className="flex items-center gap-2.5 bg-secondary/50 rounded-xl px-4 py-2.5 flex-1 max-w-md border border-border/50 focus-brand transition-all">
             <Search className="w-4 h-4 text-muted-foreground shrink-0" />
             <input
               type="text"
@@ -325,9 +341,11 @@ export default function Pitch() {
           <div className="flex items-center gap-1.5 flex-wrap">
             <button
               onClick={() => setStatusFilter(null)}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all min-h-[36px] ${
-                !statusFilter ? "bg-primary/12 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-              }`}
+              className={"px-3 py-2 rounded-xl text-xs font-semibold transition-all min-h-[36px] border " + (
+                !statusFilter
+                  ? "bg-brand-orange/10 text-brand-orange border-brand-orange/25"
+                  : "text-muted-foreground border-transparent hover:text-foreground hover:bg-secondary/60"
+              )}
             >
               {t("pitch.all")}
             </button>
@@ -338,11 +356,13 @@ export default function Pitch() {
                 <button
                   key={s}
                   onClick={() => setStatusFilter(statusFilter === s ? null : s)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all min-h-[36px] ${
-                    isActive ? cfg.color : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                  }`}
+                  className={"flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all min-h-[36px] border " + (
+                    isActive
+                      ? cfg.color + " border-current/25"
+                      : "text-muted-foreground border-transparent hover:text-foreground hover:bg-secondary/60"
+                  )}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                  <span className={"w-1.5 h-1.5 rounded-full " + cfg.dot} />
                   {s}
                 </button>
               );
@@ -354,15 +374,18 @@ export default function Pitch() {
         <motion.div variants={item}>
           {filtered.length === 0 ? (
             <div className="card-premium py-20 text-center">
-              <Send className="w-10 h-10 mx-auto mb-4 text-muted-foreground/15" />
+              <div className="w-14 h-14 rounded-2xl icon-brand flex items-center justify-center mx-auto mb-4">
+                <Send className="w-6 h-6 text-primary" />
+              </div>
               <p className="text-sm font-semibold text-foreground">{t("pitch.noPitches")}</p>
-              <p className="text-xs mt-1.5 text-muted-foreground/70">
+              <p className="text-xs mt-1.5 text-muted-foreground/70 max-w-sm mx-auto">
                 {search || statusFilter ? t("pitch.adjustFilters") : t("pitch.createFirst")}
               </p>
             </div>
           ) : isMobile ? (
             <MobilePitchList
               pitches={filtered}
+              tracks={tracks}
               expandedId={expandedId}
               onToggle={(id) => setExpandedId(expandedId === id ? null : id)}
               pitchStats={pitchStats}
@@ -376,6 +399,7 @@ export default function Pitch() {
           ) : (
             <DesktopPitchTable
               pitches={filtered}
+              tracks={tracks}
               expandedId={expandedId}
               onToggle={(id) => setExpandedId(expandedId === id ? null : id)}
               pitchStats={pitchStats}
@@ -398,6 +422,7 @@ export default function Pitch() {
 /* ─── Desktop Table ─── */
 function DesktopPitchTable({
   pitches,
+  tracks,
   expandedId,
   onToggle,
   pitchStats,
@@ -409,6 +434,7 @@ function DesktopPitchTable({
   onPlayTrack,
 }: {
   pitches: PitchEntry[];
+  tracks: { id: string; coverImage?: string }[];
   expandedId: string | null;
   onToggle: (id: string) => void;
   pitchStats: Record<string, { views: number; plays: number; downloads: number }>;
@@ -424,17 +450,15 @@ function DesktopPitchTable({
       <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
           <thead>
-            <tr className="border-b border-border">
-              <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Track / Playlist</th>
-              <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Recipient</th>
-              <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Company</th>
-              <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Email</th>
-              <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Date</th>
-              <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Engagement</th>
-              <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
+            <tr className="border-b border-border/50">
+              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Track / Playlist</th>
+              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Recipient</th>
+              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden sm:table-cell">Date</th>
+              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden md:table-cell">Engagement</th>
+              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Status</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-border/30">
             {pitches.map((p) => {
               const cfg = statusConfig[p.status as keyof typeof statusConfig];
               const StatusIcon = cfg.icon;
@@ -445,10 +469,11 @@ function DesktopPitchTable({
               const isPlaying = trackId ? playingTrackId === trackId : false;
               const isLoadingAudio = trackId ? loadingAudioId === trackId : false;
               const progressPct = isPlaying && audioDuration > 0 ? (audioProgress / audioDuration) * 100 : 0;
+              const coverUrl = getCoverForPitch(p, tracks);
               return (
                 <tr
                   key={p.id}
-                  className="border-b border-border/40 last:border-0 hover:bg-secondary/25 transition-all duration-200 cursor-pointer group/row"
+                  className={"border-b border-border/30 last:border-0 hover:bg-secondary/40 transition-colors duration-300 cursor-pointer group/row" + (isExpanded ? " bg-secondary/20" : "")}
                   onClick={() => onToggle(p.id)}
                 >
                   <td className="px-5 py-3.5">
@@ -462,7 +487,7 @@ function DesktopPitchTable({
                           onPlayTrack(trackId);
                         }}
                       >
-                        <img src={DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
+                        <img src={coverUrl} alt="" className="w-full h-full object-cover" />
                         {trackId && (isPlaying || isLoadingAudio) && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                             {isLoadingAudio && !isPlaying ? (
@@ -479,7 +504,7 @@ function DesktopPitchTable({
                         )}
                         {isPlaying && audioDuration > 0 && (
                           <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/20">
-                            <div className="h-full bg-primary transition-all" style={{ width: progressPct + "%" }} />
+                            <div className="h-full bg-brand-orange transition-all" style={{ width: progressPct + "%" }} />
                           </div>
                         )}
                       </button>
@@ -494,7 +519,7 @@ function DesktopPitchTable({
                             <Link
                               to={"/track/" + trackId}
                               onClick={function (e) { e.stopPropagation(); }}
-                              className="font-semibold text-foreground truncate text-[13px] tracking-tight hover:text-primary transition-colors"
+                              className="font-semibold text-foreground truncate text-[13px] tracking-tight hover:text-brand-orange transition-colors"
                             >
                               {p.itemName}
                             </Link>
@@ -502,7 +527,7 @@ function DesktopPitchTable({
                             <Link
                               to={"/playlist/" + playlistId}
                               onClick={function (e) { e.stopPropagation(); }}
-                              className="font-semibold text-foreground truncate text-[13px] tracking-tight hover:text-primary transition-colors"
+                              className="font-semibold text-foreground truncate text-[13px] tracking-tight hover:text-brand-orange transition-colors"
                             >
                               {p.itemName}
                             </Link>
@@ -514,23 +539,10 @@ function DesktopPitchTable({
                       </div>
                     </div>
                   </td>
+                  {/* Merged Recipient column */}
                   <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-2">
-                      <User className="w-3 h-3 text-muted-foreground/40 shrink-0" />
-                      <span className="text-foreground font-medium text-[13px]">{p.recipientName}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5 hidden md:table-cell">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-3 h-3 text-muted-foreground/40 shrink-0" />
-                      <span className="text-muted-foreground text-xs">{p.recipientCompany}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5 hidden lg:table-cell">
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-3 h-3 text-muted-foreground/30 shrink-0" />
-                      <span className="text-muted-foreground/70 text-xs font-mono">{p.recipientEmail}</span>
-                    </div>
+                    <p className="font-semibold text-foreground text-[13px]">{p.recipientName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{p.recipientCompany} · {p.recipientEmail}</p>
                   </td>
                   <td className="px-5 py-3.5 hidden sm:table-cell">
                     <span className="text-muted-foreground text-xs">{p.date}</span>
@@ -557,7 +569,7 @@ function DesktopPitchTable({
                     })()}
                   </td>
                   <td className="px-5 py-3.5">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-2xs font-semibold ${cfg.color}`}>
+                    <span className={"inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-2xs font-semibold " + cfg.color}>
                       <StatusIcon className="w-3 h-3" />
                       {p.status}
                     </span>
@@ -568,6 +580,49 @@ function DesktopPitchTable({
           </tbody>
         </table>
       </div>
+
+      {/* Expanded detail panels */}
+      <AnimatePresence>
+        {pitches.map((p) => {
+          if (expandedId !== p.id) return null;
+          return (
+            <motion.div
+              key={"detail-" + p.id}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden border-t border-border/30 bg-secondary/10"
+            >
+              <div className="px-5 py-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">Email</p>
+                  <p className="text-xs text-foreground/80 font-mono mt-0.5">{p.recipientEmail}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">Company</p>
+                  <p className="text-xs text-foreground/80 mt-0.5">{p.recipientCompany}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">Type</p>
+                  <p className="text-xs text-foreground/80 mt-0.5 capitalize">{p.type}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">Date</p>
+                  <p className="text-xs text-foreground/80 mt-0.5">{p.date}</p>
+                </div>
+                {p.notes && (
+                  <div className="col-span-2 md:col-span-4">
+                    <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">Notes</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{p.notes}</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+
       <div
         className="flex items-center justify-between px-5 py-3 text-xs text-muted-foreground font-medium"
         style={{
@@ -585,6 +640,7 @@ function DesktopPitchTable({
 /* ─── Mobile List ─── */
 function MobilePitchList({
   pitches,
+  tracks,
   expandedId,
   onToggle,
   pitchStats,
@@ -596,6 +652,7 @@ function MobilePitchList({
   onPlayTrack,
 }: {
   pitches: PitchEntry[];
+  tracks: { id: string; coverImage?: string }[];
   expandedId: string | null;
   onToggle: (id: string) => void;
   pitchStats: Record<string, { views: number; plays: number; downloads: number }>;
@@ -618,6 +675,7 @@ function MobilePitchList({
         const isPlaying = trackId ? playingTrackId === trackId : false;
         const isLoadingAudio = trackId ? loadingAudioId === trackId : false;
         const progressPct = isPlaying && audioDuration > 0 ? (audioProgress / audioDuration) * 100 : 0;
+        const coverUrl = getCoverForPitch(p, tracks);
         return (
           <motion.div
             key={p.id}
@@ -635,7 +693,7 @@ function MobilePitchList({
                   onPlayTrack(trackId);
                 }}
               >
-                <img src={DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
+                <img src={coverUrl} alt="" className="w-full h-full object-cover" />
                 {trackId && (isPlaying || isLoadingAudio) && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                     {isLoadingAudio && !isPlaying ? (
@@ -652,7 +710,7 @@ function MobilePitchList({
                 )}
                 {isPlaying && audioDuration > 0 && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/20">
-                    <div className="h-full bg-primary transition-all" style={{ width: progressPct + "%" }} />
+                    <div className="h-full bg-brand-orange transition-all" style={{ width: progressPct + "%" }} />
                   </div>
                 )}
               </button>
@@ -667,7 +725,7 @@ function MobilePitchList({
                     <Link
                       to={"/track/" + trackId}
                       onClick={function (e) { e.stopPropagation(); }}
-                      className="font-semibold text-foreground text-[13px] tracking-tight truncate hover:text-primary transition-colors"
+                      className="font-semibold text-foreground text-[13px] tracking-tight truncate hover:text-brand-orange transition-colors"
                     >
                       {p.itemName}
                     </Link>
@@ -675,7 +733,7 @@ function MobilePitchList({
                     <Link
                       to={"/playlist/" + playlistId}
                       onClick={function (e) { e.stopPropagation(); }}
-                      className="font-semibold text-foreground text-[13px] tracking-tight truncate hover:text-primary transition-colors"
+                      className="font-semibold text-foreground text-[13px] tracking-tight truncate hover:text-brand-orange transition-colors"
                     >
                       {p.itemName}
                     </Link>
@@ -688,7 +746,7 @@ function MobilePitchList({
                 </p>
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <span className="text-2xs text-muted-foreground/60">{p.date}</span>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold ${cfg.color}`}>
+                  <span className={"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold " + cfg.color}>
                     <StatusIcon className="w-2.5 h-2.5" />
                     {p.status}
                   </span>
@@ -711,7 +769,7 @@ function MobilePitchList({
                   })()}
                 </div>
               </div>
-              <ChevronDown className={`w-4 h-4 text-muted-foreground/40 shrink-0 mt-1 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+              <ChevronDown className={"w-4 h-4 text-muted-foreground shrink-0 mt-1 transition-transform " + (isExpanded ? "rotate-180" : "")} />
             </div>
             <AnimatePresence>
               {isExpanded && (
