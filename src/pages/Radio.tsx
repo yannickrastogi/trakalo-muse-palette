@@ -31,6 +31,7 @@ import {
   SkipForward,
   Repeat,
   ListPlus,
+  ListMusic,
   ExternalLink,
   ChevronDown,
   ChevronUp,
@@ -122,7 +123,30 @@ export default function RadioPage() {
   var [queueOpen, setQueueOpen] = useState(false);
   var [addToPlaylistOpen, setAddToPlaylistOpen] = useState(false);
   var [crossfadeValue, setCrossfadeValue] = useState(3);
+  var [genreDropdownOpen, setGenreDropdownOpen] = useState(false);
+  var [moodDropdownOpen, setMoodDropdownOpen] = useState(false);
   var playerRef = useRef<ReturnType<typeof getCrossfadePlayer> | null>(null);
+  var genreDropdownRef = useRef<HTMLDivElement>(null);
+  var moodDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Click-outside handlers for custom dropdowns
+  useEffect(function () {
+    if (!genreDropdownOpen) return;
+    var handler = function (e: MouseEvent) {
+      if (genreDropdownRef.current && !genreDropdownRef.current.contains(e.target as Node)) setGenreDropdownOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return function () { document.removeEventListener("mousedown", handler); };
+  }, [genreDropdownOpen]);
+
+  useEffect(function () {
+    if (!moodDropdownOpen) return;
+    var handler = function (e: MouseEvent) {
+      if (moodDropdownRef.current && !moodDropdownRef.current.contains(e.target as Node)) setMoodDropdownOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return function () { document.removeEventListener("mousedown", handler); };
+  }, [moodDropdownOpen]);
 
   // -----------------------------------------------------------------------
   // Effect: mount / unmount crossfade player
@@ -268,6 +292,42 @@ export default function RadioPage() {
   }, [tracks]);
 
   // -----------------------------------------------------------------------
+  // Track counts per mode (for card sub-labels)
+  // -----------------------------------------------------------------------
+  var modeCounts = useMemo(function () {
+    var energy = tracks.filter(function (tr) {
+      var highBpm = tr.bpm > 110;
+      var energyMood = tr.mood && tr.mood.some(function (m) {
+        var low = m.toLowerCase();
+        return low === "energetic" || low === "hype" || low === "party" || low === "driving" || low === "euphoric";
+      });
+      return highBpm || energyMood;
+    }).length;
+    var chill = tracks.filter(function (tr) {
+      var lowBpm = tr.bpm > 0 && tr.bpm < 100;
+      var chillMood = tr.mood && tr.mood.some(function (m) {
+        var low = m.toLowerCase();
+        return low === "calm" || low === "chill" || low === "dreamy" || low === "meditative" || low === "smooth";
+      });
+      return lowBpm || chillMood;
+    }).length;
+    var thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    var recent = tracks.filter(function (tr) {
+      if (!tr.createdAt) return false;
+      return new Date(tr.createdAt) >= thirtyDaysAgo;
+    }).length;
+    return {
+      shuffle: tracks.length,
+      genre: availableGenres.length,
+      mood: availableMoods.length,
+      energy: energy,
+      chill: chill,
+      recent: recent,
+    } as Record<string, number>;
+  }, [tracks, availableGenres, availableMoods]);
+
+  // -----------------------------------------------------------------------
   // Handlers
   // -----------------------------------------------------------------------
 
@@ -400,14 +460,29 @@ export default function RadioPage() {
           <p className="text-muted-foreground mt-1">
             {t("radio.subtitle", "Your personal catalog, on demand")}
           </p>
+          {tracks.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              <span className="bg-secondary rounded-full px-3 py-1 text-xs text-muted-foreground">
+                {tracks.length + " " + t("radio.tracksInCatalog", "tracks in catalog")}
+              </span>
+              <span className="bg-secondary rounded-full px-3 py-1 text-xs text-muted-foreground">
+                {availableGenres.length + " " + t("radio.genresAvailable", "genres available")}
+              </span>
+              <span className="bg-secondary rounded-full px-3 py-1 text-xs text-muted-foreground">
+                {availableMoods.length + " " + t("radio.moodsLabel", "moods")}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Empty state */}
         {tracks.length === 0 && (
-          <div className="card-premium p-8 text-center">
-            <Music className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">
-              {t("radio.emptyCatalog", "Your catalog is empty! Upload some tracks to start your radio.")}
+          <div className="card-premium p-10 text-center">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-orange/20 to-brand-pink/20 flex items-center justify-center mx-auto mb-4">
+              <Radio className="w-10 h-10 text-brand-orange" />
+            </div>
+            <p className="text-muted-foreground text-sm">
+              {t("radio.emptyCatalog", "Your catalog is empty! Upload some tracks to start your personal radio station.")}
             </p>
           </div>
         )}
@@ -424,11 +499,11 @@ export default function RadioPage() {
                   whileHover={{ scale: 1.03, brightness: 1.1 }}
                   onClick={function () { handleModeSelect(card.key); }}
                   className={
-                    "relative overflow-hidden rounded-xl border p-4 flex flex-col items-center gap-2 min-h-[44px] transition-all duration-200 bg-gradient-to-br " +
+                    "relative overflow-hidden rounded-xl border p-4 flex flex-col items-center gap-2 min-h-[100px] transition-all duration-200 bg-gradient-to-br " +
                     card.gradient + " " +
                     (isActive
                       ? "border-brand-orange/50 ring-2 ring-brand-orange/40"
-                      : "border-border/50 hover:border-border hover:brightness-110")
+                      : "border-border/50 hover:border-border hover:brightness-110 hover:ring-1 hover:ring-border/60")
                   }
                   style={isActive ? { boxShadow: "0 0 20px " + card.glowColor + ", 0 0 40px " + card.glowColor.replace("0.3", "0.1") } : undefined}
                 >
@@ -437,6 +512,9 @@ export default function RadioPage() {
                   </span>
                   <span className={"text-xs font-semibold " + (isActive ? "text-foreground" : "text-foreground/70")}>
                     {card.label}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/50">
+                    {(modeCounts[card.key as string] || 0) + " " + (card.key === "genre" ? t("radio.genresLabel", "genres") : card.key === "mood" ? t("radio.moodsLabel", "moods") : t("radio.tracksLabel", "tracks"))}
                   </span>
                 </motion.button>
               );
@@ -452,16 +530,44 @@ export default function RadioPage() {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <select
-              value={genreFilter || ""}
-              onChange={function (e) { setGenreFilter(e.target.value || null); }}
-              className="w-full sm:w-64 p-3 rounded-lg bg-card border border-border text-foreground min-h-[44px]"
-            >
-              <option value="">{t("radio.selectGenre", "Select a genre...")}</option>
-              {availableGenres.map(function (g) {
-                return <option key={g} value={g}>{g}</option>;
-              })}
-            </select>
+            <div className="flex flex-col gap-1.5 w-full sm:w-64" ref={genreDropdownRef}>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={function () { setGenreDropdownOpen(!genreDropdownOpen); }}
+                  className={"flex items-center justify-between w-full h-10 px-3 rounded-xl bg-card text-[13px] font-medium transition-all " + (genreFilter ? "border-2 border-brand-orange/40 text-brand-orange" : "border border-border text-muted-foreground hover:border-brand-pink/20 hover:text-foreground")}
+                >
+                  <span className="truncate">{genreFilter || t("radio.selectGenre", "Select a genre...")}</span>
+                  <ChevronDown className={"w-3.5 h-3.5 shrink-0 ml-2 transition-transform duration-200 " + (genreDropdownOpen ? "rotate-180" : "")} />
+                </button>
+                <AnimatePresence>
+                  {genreDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className="absolute z-50 mt-1.5 w-full bg-card border border-border rounded-xl shadow-xl backdrop-blur-sm max-h-60 overflow-y-auto"
+                    >
+                      <div className="p-1">
+                        {availableGenres.map(function (g) {
+                          return (
+                            <button
+                              key={g}
+                              type="button"
+                              onClick={function () { setGenreFilter(g); setGenreDropdownOpen(false); }}
+                              className={"w-full text-left px-4 py-2.5 rounded-lg text-[13px] transition-colors " + (genreFilter === g ? "bg-brand-orange/10 text-brand-orange font-medium" : "text-foreground hover:bg-secondary/60")}
+                            >
+                              {g}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -473,16 +579,44 @@ export default function RadioPage() {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <select
-              value={moodFilter || ""}
-              onChange={function (e) { setMoodFilter(e.target.value || null); }}
-              className="w-full sm:w-64 p-3 rounded-lg bg-card border border-border text-foreground min-h-[44px]"
-            >
-              <option value="">{t("radio.selectMood", "Select a mood...")}</option>
-              {availableMoods.map(function (m) {
-                return <option key={m} value={m}>{m}</option>;
-              })}
-            </select>
+            <div className="flex flex-col gap-1.5 w-full sm:w-64" ref={moodDropdownRef}>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={function () { setMoodDropdownOpen(!moodDropdownOpen); }}
+                  className={"flex items-center justify-between w-full h-10 px-3 rounded-xl bg-card text-[13px] font-medium transition-all " + (moodFilter ? "border-2 border-brand-orange/40 text-brand-orange" : "border border-border text-muted-foreground hover:border-brand-pink/20 hover:text-foreground")}
+                >
+                  <span className="truncate">{moodFilter || t("radio.selectMood", "Select a mood...")}</span>
+                  <ChevronDown className={"w-3.5 h-3.5 shrink-0 ml-2 transition-transform duration-200 " + (moodDropdownOpen ? "rotate-180" : "")} />
+                </button>
+                <AnimatePresence>
+                  {moodDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className="absolute z-50 mt-1.5 w-full bg-card border border-border rounded-xl shadow-xl backdrop-blur-sm max-h-60 overflow-y-auto"
+                    >
+                      <div className="p-1">
+                        {availableMoods.map(function (m) {
+                          return (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={function () { setMoodFilter(m); setMoodDropdownOpen(false); }}
+                              className={"w-full text-left px-4 py-2.5 rounded-lg text-[13px] transition-colors " + (moodFilter === m ? "bg-brand-orange/10 text-brand-orange font-medium" : "text-foreground hover:bg-secondary/60")}
+                            >
+                              {m}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -526,17 +660,17 @@ export default function RadioPage() {
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2 mt-3 justify-center lg:justify-start">
                   {radioState.currentTrack.genre && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-brand-orange/10 text-brand-orange">
+                    <span className="text-xs px-2 py-1 rounded-full bg-brand-orange/12 text-brand-orange">
                       {radioState.currentTrack.genre}
                     </span>
                   )}
                   {radioState.currentTrack.bpm > 0 && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-brand-pink/10 text-brand-pink">
+                    <span className="text-xs px-2 py-1 rounded-full bg-brand-pink/12 text-brand-pink">
                       {radioState.currentTrack.bpm + " BPM"}
                     </span>
                   )}
                   {radioState.currentTrack.key && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-brand-purple/10 text-brand-purple">
+                    <span className="text-xs px-2 py-1 rounded-full bg-brand-purple/12 text-brand-purple">
                       {radioState.currentTrack.key}
                     </span>
                   )}
@@ -545,7 +679,7 @@ export default function RadioPage() {
                       return (
                         <span
                           key={m}
-                          className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground"
+                          className="text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground"
                         >
                           {m}
                         </span>
@@ -631,7 +765,7 @@ export default function RadioPage() {
                           "px-3 py-1.5 rounded-full min-h-[32px] transition-colors " +
                           (crossfadeValue === val
                             ? "bg-brand-orange text-white"
-                            : "bg-muted text-muted-foreground hover:text-foreground")
+                            : "border border-border text-muted-foreground hover:text-foreground")
                         }
                       >
                         {val === 0 ? t("radio.off", "Off") : val + "s"}
@@ -645,7 +779,7 @@ export default function RadioPage() {
                   <div className="relative">
                     <button
                       onClick={function () { setAddToPlaylistOpen(!addToPlaylistOpen); }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted hover:bg-muted/80 text-sm min-h-[44px] transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card hover:bg-secondary text-sm min-h-[44px] transition-colors"
                     >
                       <ListPlus className="w-4 h-4" />
                       {t("radio.addToPlaylist", "Add to Playlist")}
@@ -687,7 +821,7 @@ export default function RadioPage() {
                         navigate("/track/" + radioState.currentTrack.uuid);
                       }
                     }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted hover:bg-muted/80 text-sm min-h-[44px] transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card hover:bg-secondary text-sm min-h-[44px] transition-colors"
                   >
                     <ExternalLink className="w-4 h-4" />
                     {t("radio.viewTrack", "View Track")}
@@ -706,8 +840,9 @@ export default function RadioPage() {
               className="w-full flex items-center justify-between p-4 min-h-[44px] hover:bg-muted/50 transition-colors"
             >
               <span className="font-semibold flex items-center gap-2">
+                <ListMusic className="w-4 h-4 text-muted-foreground" />
                 {t("radio.upNext", "Up Next")}
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                <span className="text-xs bg-brand-orange/10 text-brand-orange px-2 py-0.5 rounded-full">
                   {upcomingQueue.length}
                 </span>
               </span>
@@ -742,7 +877,7 @@ export default function RadioPage() {
                           <img
                             src={qTrack.coverImage || DEFAULT_COVER}
                             alt={qTrack.title}
-                            className="w-10 h-10 rounded object-cover shrink-0"
+                            className="w-10 h-10 rounded-lg ring-1 ring-border/50 object-cover shrink-0"
                           />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{qTrack.title}</p>
@@ -765,14 +900,14 @@ export default function RadioPage() {
                   <div className="flex gap-2 px-4 pb-4">
                     <button
                       onClick={handleClearQueue}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 text-xs min-h-[40px] transition-colors"
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card hover:bg-secondary text-xs min-h-[40px] transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       {t("radio.clearQueue", "Clear Queue")}
                     </button>
                     <button
                       onClick={handleShuffleQueue}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 text-xs min-h-[40px] transition-colors"
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card hover:bg-secondary text-xs min-h-[40px] transition-colors"
                     >
                       <Shuffle className="w-3.5 h-3.5" />
                       {t("radio.shuffleQueue", "Shuffle Queue")}
