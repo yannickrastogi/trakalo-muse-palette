@@ -34,22 +34,22 @@ interface EnrichedActivity extends TeamActivity {
   teamId: string;
 }
 
-const activityMeta: Record<ActivityType, { icon: LucideIcon; color: string }> = {
-  upload: { icon: Upload, color: "text-emerald-400" },
-  pitch: { icon: Send, color: "text-brand-orange" },
-  link: { icon: Link2, color: "text-sky-400" },
-  member: { icon: UserPlus, color: "text-brand-pink" },
-  status: { icon: RefreshCw, color: "text-amber-400" },
-  metadata: { icon: FileText, color: "text-violet-400" },
-  splits: { icon: PieChart, color: "text-teal-400" },
-  stems: { icon: Layers, color: "text-indigo-400" },
-  lyrics: { icon: Music2, color: "text-rose-400" },
-  paperwork: { icon: FileCheck, color: "text-cyan-400" },
-  recipient_opened: { icon: Eye, color: "text-yellow-400" },
-  recipient_played: { icon: Play, color: "text-green-400" },
-  recipient_downloaded: { icon: Download, color: "text-blue-400" },
-  recipient_pack: { icon: Package, color: "text-orange-400" },
-  recipient_stems: { icon: Layers, color: "text-purple-400" },
+const activityMeta: Record<ActivityType, { icon: LucideIcon; color: string; bg: string; badgeCls: string }> = {
+  upload: { icon: Upload, color: "text-emerald-400", bg: "bg-emerald-400/10", badgeCls: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20" },
+  pitch: { icon: Send, color: "text-brand-orange", bg: "bg-brand-orange/10", badgeCls: "bg-brand-orange/10 text-brand-orange border-brand-orange/20" },
+  link: { icon: Link2, color: "text-sky-400", bg: "bg-sky-400/10", badgeCls: "bg-sky-400/10 text-sky-400 border-sky-400/20" },
+  member: { icon: UserPlus, color: "text-brand-pink", bg: "bg-brand-pink/10", badgeCls: "bg-brand-pink/10 text-brand-pink border-brand-pink/20" },
+  status: { icon: RefreshCw, color: "text-amber-400", bg: "bg-amber-400/10", badgeCls: "bg-amber-400/10 text-amber-400 border-amber-400/20" },
+  metadata: { icon: FileText, color: "text-violet-400", bg: "bg-violet-400/10", badgeCls: "bg-violet-400/10 text-violet-400 border-violet-400/20" },
+  splits: { icon: PieChart, color: "text-teal-400", bg: "bg-teal-400/10", badgeCls: "bg-teal-400/10 text-teal-400 border-teal-400/20" },
+  stems: { icon: Layers, color: "text-indigo-400", bg: "bg-indigo-400/10", badgeCls: "bg-indigo-400/10 text-indigo-400 border-indigo-400/20" },
+  lyrics: { icon: Music2, color: "text-rose-400", bg: "bg-rose-400/10", badgeCls: "bg-rose-400/10 text-rose-400 border-rose-400/20" },
+  paperwork: { icon: FileCheck, color: "text-cyan-400", bg: "bg-cyan-400/10", badgeCls: "bg-cyan-400/10 text-cyan-400 border-cyan-400/20" },
+  recipient_opened: { icon: Eye, color: "text-yellow-400", bg: "bg-yellow-400/10", badgeCls: "bg-yellow-400/10 text-yellow-400 border-yellow-400/20" },
+  recipient_played: { icon: Play, color: "text-green-400", bg: "bg-green-400/10", badgeCls: "bg-green-400/10 text-green-400 border-green-400/20" },
+  recipient_downloaded: { icon: Download, color: "text-blue-400", bg: "bg-blue-400/10", badgeCls: "bg-blue-400/10 text-blue-400 border-blue-400/20" },
+  recipient_pack: { icon: Package, color: "text-orange-400", bg: "bg-orange-400/10", badgeCls: "bg-orange-400/10 text-orange-400 border-orange-400/20" },
+  recipient_stems: { icon: Layers, color: "text-purple-400", bg: "bg-purple-400/10", badgeCls: "bg-purple-400/10 text-purple-400 border-purple-400/20" },
 };
 
 const timeFilters: { key: TimeFilter; label: string }[] = [
@@ -210,6 +210,25 @@ export default function NotificationCenter() {
     return Array.from(types).sort();
   }, [allActivities]);
 
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredActivities.forEach((a) => {
+      counts[a.type] = (counts[a.type] || 0) + 1;
+    });
+    return counts;
+  }, [filteredActivities]);
+
+  const todayCount = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return filteredActivities.filter((a) => new Date(a.date) >= today).length;
+  }, [filteredActivities]);
+
+  const thisWeekCount = useMemo(() => {
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    return filteredActivities.filter((a) => new Date(a.date) >= weekAgo).length;
+  }, [filteredActivities]);
+
   const typeLabels: Record<string, string> = {
     upload: "Uploads",
     pitch: "Pitches",
@@ -242,9 +261,17 @@ export default function NotificationCenter() {
               <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">All activity across your teams in real time</p>
             </div>
           </div>
-          <Badge variant="secondary" className="self-start sm:self-auto text-xs font-semibold px-3 py-1.5">
-            {filteredActivities.length} {filteredActivities.length === 1 ? "event" : "events"}
-          </Badge>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <Badge className="bg-brand-orange/10 text-brand-orange border border-brand-orange/20 text-xs font-semibold px-3 py-1.5">
+              {filteredActivities.length} {filteredActivities.length === 1 ? "event" : "events"}
+            </Badge>
+            <span className="text-2xs text-muted-foreground font-medium px-2 py-1 rounded-full bg-secondary/60 border border-border">
+              {todayCount} today
+            </span>
+            <span className="text-2xs text-muted-foreground font-medium px-2 py-1 rounded-full bg-secondary/60 border border-border">
+              {thisWeekCount} this week
+            </span>
+          </div>
         </motion.div>
 
         {/* Filters */}
@@ -257,8 +284,8 @@ export default function NotificationCenter() {
                 onClick={() => setTimeFilter(f.key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   timeFilter === f.key
-                    ? "bg-brand-orange text-white shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/25"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary border border-transparent"
                 }`}
               >
                 {f.label}
@@ -272,8 +299,8 @@ export default function NotificationCenter() {
               onClick={() => setTeamFilter("all")}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 teamFilter === "all"
-                  ? "bg-brand-orange text-white shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/25"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary border border-transparent"
               }`}
             >
               <Users className="w-3 h-3" />
@@ -285,8 +312,8 @@ export default function NotificationCenter() {
                 onClick={() => setTeamFilter(team.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
                   teamFilter === team.id
-                    ? "bg-brand-orange text-white shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/25"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary border border-transparent"
                 }`}
               >
                 {team.name}
@@ -322,7 +349,7 @@ export default function NotificationCenter() {
                 }`}
               >
                 {Icon && <Icon className="w-3 h-3" />}
-                {typeLabels[type] || type}
+                {typeLabels[type] || type}{typeCounts[type] ? " (" + typeCounts[type] + ")" : ""}
               </button>
             );
           })}
@@ -331,9 +358,11 @@ export default function NotificationCenter() {
         {/* Activity feed */}
         {filteredActivities.length === 0 ? (
           <motion.div variants={item} className="card-premium p-12 text-center">
-            <Bell className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground font-medium">No activity found for this period</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Try adjusting your filters</p>
+            <div className="w-14 h-14 rounded-2xl bg-brand-orange/10 flex items-center justify-center mx-auto mb-4">
+              <Bell className="w-7 h-7 text-brand-orange" />
+            </div>
+            <p className="text-sm text-foreground font-semibold">No activity yet</p>
+            <p className="text-xs text-muted-foreground mt-1">When your team takes action, it will show up here. Try adjusting your filters or check back later.</p>
           </motion.div>
         ) : (
           Object.entries(groupedActivities).map(([group, activities]) => (
@@ -341,22 +370,24 @@ export default function NotificationCenter() {
               <div className="flex items-center gap-3">
                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{group}</h3>
                 <div className="flex-1 h-px bg-border/60" />
-                <span className="text-2xs text-muted-foreground font-medium">{activities.length}</span>
+                <span className="text-2xs text-brand-orange font-semibold bg-brand-orange/10 rounded-full px-2 py-0.5">{activities.length}</span>
               </div>
               <div className="card-premium divide-y divide-border/40 overflow-hidden">
                 {activities.map((activity) => {
                   const meta = activityMeta[activity.type];
                   const Icon = meta?.icon || Bell;
                   const colorClass = meta?.color || "text-muted-foreground";
+                  const bgClass = meta?.bg || "bg-secondary";
+                  const badgeCls = meta?.badgeCls || "bg-secondary text-muted-foreground border-border/60";
 
                   return (
                     <motion.div
                       key={activity.id}
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="flex items-start gap-3 px-4 py-3.5 hover:bg-secondary/20 transition-colors group"
+                      className="flex items-start gap-3 px-4 py-3.5 hover:bg-secondary/30 transition-colors group"
                     >
-                      <div className={`w-9 h-9 rounded-xl bg-secondary flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform`}>
+                      <div className={`w-9 h-9 rounded-xl ${bgClass} flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform`}>
                         <Icon className={`w-4 h-4 ${colorClass}`} />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -370,7 +401,7 @@ export default function NotificationCenter() {
                           <span className="text-2xs text-muted-foreground/70 font-medium">{activity.teamName}</span>
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-2xs shrink-0 self-center border-border/60 text-muted-foreground/70">
+                      <Badge className={`text-2xs shrink-0 self-center border ${badgeCls}`}>
                         {typeLabels[activity.type] || activity.type}
                       </Badge>
                     </motion.div>
