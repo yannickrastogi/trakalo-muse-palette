@@ -90,7 +90,7 @@ export default function Contacts() {
   const { contacts } = useContacts();
   const { addPitch } = usePitches();
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("All");
   const [orgFilter, setOrgFilter] = useState("All");
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [pitchContact, setPitchContact] = useState<{ name: string; email: string; company: string } | null>(null);
@@ -107,6 +107,7 @@ export default function Contacts() {
   }, []);
 
   const roles = useMemo(() => [...new Set(contacts.map((c) => c.role))].sort(), [contacts]);
+  const roleOptions = useMemo(() => ["All", ...roles], [roles]);
   const organizations = useMemo(() => {
     const orgs = [...new Set(contacts.map((c) => c.organization).filter(Boolean))].sort();
     return ["All", ...orgs];
@@ -131,7 +132,7 @@ export default function Contacts() {
           c.organization.toLowerCase().includes(q)
       );
     }
-    if (roleFilter) {
+    if (roleFilter !== "All") {
       result = result.filter((c) => c.role === roleFilter);
     }
     if (orgFilter !== "All") {
@@ -260,7 +261,7 @@ export default function Contacts() {
                     <div className="px-3 py-2 border-t border-border">
                       <p className="text-[10px] text-muted-foreground text-center">
                         {t(filtered.length !== 1 ? "contacts.exportingPlural" : "contacts.exporting", { count: filtered.length })}
-                        {roleFilter && " (" + roleFilter + ")"}
+                        {roleFilter !== "All" && " (" + roleFilter + ")"}
                       </p>
                     </div>
                   </motion.div>
@@ -286,28 +287,9 @@ export default function Contacts() {
               </button>
             )}
           </div>
-          {/* Role filter pills */}
+          {/* Role dropdown */}
           {roles.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-              <button
-                onClick={() => setRoleFilter("")}
-                className={"px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap border " + (!roleFilter ? "bg-brand-orange/10 text-brand-orange border-brand-orange/25" : "bg-card border-border text-muted-foreground hover:text-foreground")}
-              >
-                All ({contacts.length})
-              </button>
-              {roles.map((r) => {
-                const count = contacts.filter((c) => c.role === r).length;
-                return (
-                  <button
-                    key={r}
-                    onClick={() => setRoleFilter(roleFilter === r ? "" : r)}
-                    className={"px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap border " + (roleFilter === r ? "bg-brand-orange/10 text-brand-orange border-brand-orange/25" : "bg-card border-border text-muted-foreground hover:text-foreground")}
-                  >
-                    {r} ({count})
-                  </button>
-                );
-              })}
-            </div>
+            <FilterSelect label={t("contacts.role")} value={roleFilter} options={roleOptions} onChange={setRoleFilter} />
           )}
           {/* Organization dropdown */}
           {organizations.length > 1 && (
