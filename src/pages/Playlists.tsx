@@ -1,6 +1,6 @@
-import { useState, useMemo, forwardRef } from "react";
+import { useState, useMemo, useRef, useEffect, forwardRef } from "react";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   ListMusic,
@@ -14,6 +14,9 @@ import {
   Music,
   Edit3,
   Trash2,
+  SlidersHorizontal,
+  ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -49,31 +52,129 @@ import {
 
 const container = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.06 } },
+  show: { transition: { staggerChildren: 0.04 } },
 };
 const item = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 12 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: "easeOut" as const },
+    transition: { duration: 0.3, ease: "easeOut" as const },
   },
 };
 
-const MiniCoverGrid = forwardRef<HTMLDivElement, { idxs: number[]; coverImage?: string }>(
-  ({ idxs, coverImage }, ref) => {
-    if (coverImage) {
+const trackCountRanges = [
+  { label: "All", min: 0, max: Infinity },
+  { label: "1-5 tracks", min: 1, max: 5 },
+  { label: "6-15 tracks", min: 6, max: 15 },
+  { label: "15+ tracks", min: 16, max: Infinity },
+];
+
+function FilterSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string | null;
+  options: string[];
+  onChange: (v: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    var handler = function (e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return function () { document.removeEventListener("mousedown", handler); };
+  }, [open]);
+
+  return (
+    <div className="flex flex-col gap-1.5" ref={ref}>
+      <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={function () { setOpen(!open); }}
+          className={"flex items-center justify-between w-full h-10 px-3 rounded-xl bg-card text-[13px] font-medium transition-all " + (value ? "border-2 border-brand-orange/40 text-brand-orange" : "border border-border text-muted-foreground hover:border-brand-pink/20 hover:text-foreground")}
+        >
+          <span className="truncate">{value || "All"}</span>
+          <ChevronDown className={"w-3.5 h-3.5 shrink-0 ml-2 transition-transform duration-200 " + (open ? "rotate-180" : "")} />
+        </button>
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute z-50 mt-1.5 w-full bg-card border border-border rounded-xl shadow-xl backdrop-blur-sm max-h-60 overflow-y-auto"
+            >
+              <div className="p-1">
+                <button
+                  type="button"
+                  onClick={function () { onChange(null); setOpen(false); }}
+                  className={"w-full text-left px-4 py-2.5 rounded-lg text-[13px] transition-colors " + (!value ? "bg-brand-orange/10 text-brand-orange font-medium" : "text-foreground hover:bg-secondary/60")}
+                >
+                  All
+                </button>
+                {options.map(function (opt) {
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={function () { onChange(opt); setOpen(false); }}
+                      className={"w-full text-left px-4 py-2.5 rounded-lg text-[13px] transition-colors " + (value === opt ? "bg-brand-orange/10 text-brand-orange font-medium" : "text-foreground hover:bg-secondary/60")}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+function FilterTag({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <motion.span
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.2 }}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-orange/10 border border-brand-orange/20 text-brand-orange text-xs font-semibold"
+    >
+      {label}
+      <button onClick={onRemove} className="hover:bg-brand-orange/20 rounded-full p-0.5 transition-colors">
+        <X className="w-3 h-3" />
+      </button>
+    </motion.span>
+  );
+}
+
+const MiniCoverGrid = forwardRef<HTMLDivElement, { covers: string[] }>(
+  function MiniCoverGridInner({ covers }, ref) {
+    if (covers.length === 1) {
       return (
         <div ref={ref} className="w-full aspect-square rounded-xl overflow-hidden">
-          <img src={coverImage} alt="" className="w-full h-full object-cover" />
+          <img src={covers[0]} alt="" className="w-full h-full object-cover" />
         </div>
       );
     }
+    var gridCovers = covers.length >= 4 ? covers.slice(0, 4) : [DEFAULT_COVER, DEFAULT_COVER, DEFAULT_COVER, DEFAULT_COVER];
     return (
       <div ref={ref} className="grid grid-cols-2 gap-0.5 w-full aspect-square rounded-xl overflow-hidden">
-        {idxs.slice(0, 4).map((ci, i) => (
-          <img key={i} src={DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
-        ))}
+        {gridCovers.map(function (src, i) {
+          return <img key={i} src={src} alt="" className="w-full h-full object-cover" />;
+        })}
       </div>
     );
   }
@@ -83,6 +184,9 @@ MiniCoverGrid.displayName = "MiniCoverGrid";
 export default function Playlists() {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
+  const [moodFilter, setMoodFilter] = useState<string | null>(null);
+  const [trackCountFilter, setTrackCountFilter] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string } | null>(null);
@@ -95,16 +199,99 @@ export default function Playlists() {
   const { playTrack, togglePlay, setQueue, isPlaying: audioIsPlaying, currentTrack, queue } = useAudioPlayer();
   const { permissions } = useRole();
 
-  const filtered = useMemo(() => {
-    if (!search) return playlists;
-    const q = search.toLowerCase();
-    return playlists.filter(
-      (pl) =>
-        pl.name.toLowerCase().includes(q) ||
-        pl.mood.toLowerCase().includes(q) ||
-        pl.description.toLowerCase().includes(q)
-    );
-  }, [search, playlists]);
+  // Derive moods from tracks in playlists
+  var playlistMoods = useMemo(function () {
+    var moods = new Set<string>();
+    playlists.forEach(function (pl) {
+      if (pl.trackIds) {
+        pl.trackIds.forEach(function (tid) {
+          var track = allTracks.find(function (t) { return t.id === tid; });
+          if (track && track.mood) {
+            track.mood.forEach(function (m) { if (m) moods.add(m); });
+          }
+        });
+      }
+    });
+    return Array.from(moods).sort();
+  }, [playlists, allTracks]);
+
+  // Build cover map for each playlist from real track covers
+  var playlistCovers = useMemo(function () {
+    var map: Record<string, string[]> = {};
+    playlists.forEach(function (pl) {
+      var covers: string[] = [];
+      if (pl.coverImage) {
+        covers = [pl.coverImage];
+      } else if (pl.trackIds) {
+        pl.trackIds.forEach(function (tid) {
+          var track = allTracks.find(function (t) { return t.id === tid; });
+          if (track && track.coverImage) covers.push(track.coverImage);
+        });
+      }
+      if (covers.length === 0) covers = [DEFAULT_COVER, DEFAULT_COVER, DEFAULT_COVER, DEFAULT_COVER];
+      map[pl.id] = covers;
+    });
+    return map;
+  }, [playlists, allTracks]);
+
+  // Derive dominant mood per playlist
+  var playlistDominantMood = useMemo(function () {
+    var map: Record<string, string> = {};
+    playlists.forEach(function (pl) {
+      if (pl.trackIds) {
+        var moodCounts: Record<string, number> = {};
+        pl.trackIds.forEach(function (tid) {
+          var track = allTracks.find(function (t) { return t.id === tid; });
+          if (track && track.mood) {
+            track.mood.forEach(function (m) {
+              if (m) moodCounts[m] = (moodCounts[m] || 0) + 1;
+            });
+          }
+        });
+        var best = "";
+        var bestCount = 0;
+        Object.keys(moodCounts).forEach(function (m) {
+          if (moodCounts[m] > bestCount) { best = m; bestCount = moodCounts[m]; }
+        });
+        if (best) map[pl.id] = best;
+      }
+    });
+    return map;
+  }, [playlists, allTracks]);
+
+  var activeFilterCount = [moodFilter, trackCountFilter].filter(Boolean).length;
+
+  var clearFilters = function () {
+    setMoodFilter(null);
+    setTrackCountFilter(null);
+  };
+
+  var filtered = useMemo(function () {
+    return playlists.filter(function (pl) {
+      // Search
+      if (search) {
+        var q = search.toLowerCase();
+        if (
+          !pl.name.toLowerCase().includes(q) &&
+          !pl.mood.toLowerCase().includes(q) &&
+          !pl.description.toLowerCase().includes(q)
+        ) return false;
+      }
+      // Mood filter
+      if (moodFilter) {
+        var dominant = playlistDominantMood[pl.id];
+        if (dominant !== moodFilter) return false;
+      }
+      // Track count filter
+      if (trackCountFilter) {
+        var range = trackCountRanges.find(function (r) { return r.label === trackCountFilter; });
+        if (range && (pl.tracks < range.min || pl.tracks > range.max)) return false;
+      }
+      return true;
+    });
+  }, [search, playlists, moodFilter, trackCountFilter, playlistDominantMood]);
+
+  var totalTracks = playlists.reduce(function (s, p) { return s + p.tracks; }, 0);
 
   return (
     <PageShell>
@@ -120,82 +307,173 @@ export default function Playlists() {
           className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
         >
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
-              {t("playlists.title")}
-            </h1>
-            <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-              {t("playlists.subtitle", { count: playlists.length, tracks: playlists.reduce((s, p) => s + p.tracks, 0) })}
-            </p>
+            <div className="flex items-center gap-3 mb-1.5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                <ListMusic className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+                {t("playlists.title")}
+              </h1>
+            </div>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
+                <ListMusic className="w-3 h-3" />
+                {playlists.length + " collections"}
+              </span>
+              <span className="text-muted-foreground/40 text-xs">·</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
+                <Music className="w-3 h-3" />
+                {totalTracks + " tracks"}
+              </span>
+            </div>
           </div>
           {permissions.canCreatePlaylists && (
-            <button onClick={() => setCreateOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
+            <button onClick={function () { setCreateOpen(true); }} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start min-h-[44px]">
               <Plus className="w-4 h-4" /> {t("playlists.createPlaylist")}
             </button>
           )}
         </motion.div>
 
-        {/* Search */}
-        <motion.div variants={item}>
-          <div className="flex items-center gap-2.5 bg-secondary/50 rounded-xl px-4 py-2.5 max-w-md border border-border/50 focus-brand transition-all">
+        {/* Search + Filter Toggle */}
+        <motion.div variants={item} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex items-center gap-2.5 bg-secondary/50 rounded-xl px-4 py-2.5 flex-1 border border-border/50 focus-brand transition-all">
             <Search className="w-4 h-4 text-muted-foreground shrink-0" />
             <input
               type="text"
               placeholder={t("playlists.searchPlaceholder")}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={function (e) { setSearch(e.target.value); }}
               className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
             />
             {search && (
               <button
-                onClick={() => setSearch("")}
+                onClick={function () { setSearch(""); }}
                 className="text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
+          <button
+            onClick={function () { setShowFilters(!showFilters); }}
+            className={"flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border transition-all min-h-[44px] shrink-0 " + (
+              showFilters || activeFilterCount > 0
+                ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange"
+                : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-brand-pink/20"
+            )}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-1 w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold btn-brand" style={{ boxShadow: "none" }}>
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
         </motion.div>
+
+        {/* Expanded filters */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+            >
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="card-premium p-5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <FilterSelect label="Mood" value={moodFilter} options={playlistMoods} onChange={setMoodFilter} />
+                    <FilterSelect label="Tracks" value={trackCountFilter} options={trackCountRanges.slice(1).map(function (r) { return r.label; })} onChange={setTrackCountFilter} />
+                  </div>
+                  {activeFilterCount > 0 && (
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        onClick={clearFilters}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-brand-orange hover:text-brand-pink transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                        Clear all
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Active filter tags */}
+        {activeFilterCount > 0 && !showFilters && (
+          <motion.div variants={item} className="flex flex-wrap gap-2 items-center">
+            <span className="text-xs text-muted-foreground mr-1 font-medium">Active filters:</span>
+            <AnimatePresence>
+              {moodFilter && <FilterTag key="mood" label={"Mood: " + moodFilter} onRemove={function () { setMoodFilter(null); }} />}
+              {trackCountFilter && <FilterTag key="tracks" label={trackCountFilter} onRemove={function () { setTrackCountFilter(null); }} />}
+            </AnimatePresence>
+          </motion.div>
+        )}
 
         {/* Playlist Grid */}
         {filtered.length === 0 ? (
           <motion.div variants={item} className="card-premium py-20 text-center">
-            <ListMusic className="w-10 h-10 mx-auto mb-4 text-muted-foreground/15" />
+            <div className="w-14 h-14 rounded-2xl icon-brand flex items-center justify-center mx-auto mb-4">
+              <ListMusic className="w-7 h-7 text-white" />
+            </div>
             <p className="text-sm font-semibold text-foreground">{t("playlists.noPlaylists")}</p>
-            <p className="text-xs mt-1.5 text-muted-foreground/70">{t("playlists.tryDifferent")}</p>
+            <p className="text-xs mt-1.5 text-muted-foreground/70 max-w-sm mx-auto">
+              No playlists yet. Create your first playlist or let Smart A&R curate one for you.
+            </p>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {filtered.map((pl) => {
-              // Check if this playlist's tracks are currently playing
-              const plTracks = pl.trackIds
-                ? allTracks.filter((t) => pl.trackIds!.includes(t.id))
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+            {filtered.map(function (pl) {
+              var plTracks = pl.trackIds
+                ? allTracks.filter(function (t) { return pl.trackIds!.includes(t.id); })
                 : [];
-              const isPlaying = audioIsPlaying && currentTrack != null && plTracks.some((t) => t.id === currentTrack.id);
+              var isPlaying = audioIsPlaying && currentTrack != null && plTracks.some(function (t) { return t.id === currentTrack.id; });
+              var covers = playlistCovers[pl.id] || [DEFAULT_COVER];
+              var dominantMood = playlistDominantMood[pl.id];
+              var isSmartAR = pl.description.toLowerCase().includes("smart a&r");
               return (
                 <motion.div
                   key={pl.id}
                   variants={item}
                   whileHover={{ y: -4 }}
                   transition={{ duration: 0.2 }}
-                  className="card-premium group cursor-pointer flex flex-col"
-                  onClick={() => navigate("/playlist/" + pl.id)}
+                  className="card-premium group cursor-pointer flex flex-col hover:ring-1 hover:ring-border/60 transition-all"
+                  onClick={function () { navigate("/playlist/" + pl.id); }}
                 >
                   {/* Cover art */}
                   <div className="relative p-4 pb-0">
-                    <div className={"absolute inset-0 bg-gradient-to-br " + pl.color + " opacity-60 group-hover:opacity-90 transition-opacity duration-500 rounded-t-[var(--radius)]"} />
+                    <div className={"absolute inset-0 bg-gradient-to-br " + pl.color + " opacity-60 group-hover:opacity-75 transition-opacity duration-500 rounded-t-[var(--radius)]"} />
                     <div className="relative w-full max-w-[200px] mx-auto">
-                      <MiniCoverGrid idxs={pl.coverIdxs} coverImage={pl.coverImage} />
+                      <MiniCoverGrid covers={covers} />
+                      {/* Smart A&R badge */}
+                      {isSmartAR && (
+                        <div className="absolute top-2 left-2 z-10">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/80 text-white backdrop-blur-sm">
+                            <Sparkles className="w-3 h-3" />
+                            Smart A&R
+                          </span>
+                        </div>
+                      )}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                         <button
-                          onClick={(e) => {
+                          onClick={function (e) {
                             e.stopPropagation();
                             if (plTracks.length === 0) return;
                             if (isPlaying) {
-                              // Already playing a track from this playlist — toggle pause
                               togglePlay();
                             } else {
-                              // Start playing this playlist from the beginning (or resume if same queue)
-                              var alreadyQueued = currentTrack != null && plTracks.some(function(t) { return t.id === currentTrack.id; });
+                              var alreadyQueued = currentTrack != null && plTracks.some(function (t) { return t.id === currentTrack.id; });
                               if (alreadyQueued) {
                                 togglePlay();
                               } else {
@@ -221,7 +499,7 @@ export default function Playlists() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={function (e) { e.stopPropagation(); }}
                             className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center -mt-1 -mr-1"
                           >
                             <MoreHorizontal className="w-4 h-4" />
@@ -230,7 +508,7 @@ export default function Playlists() {
                         <DropdownMenuContent align="end" className="w-40">
                           {permissions.canEditPlaylists && (
                             <DropdownMenuItem
-                              onClick={(e) => {
+                              onClick={function (e) {
                                 e.stopPropagation();
                                 setEditTarget({ id: pl.id, name: pl.name, description: pl.description });
                                 setEditName(pl.name);
@@ -243,7 +521,7 @@ export default function Playlists() {
                           )}
                           {permissions.canEditPlaylists && (
                             <DropdownMenuItem
-                              onClick={(e) => {
+                              onClick={function (e) {
                                 e.stopPropagation();
                                 setDeleteTarget({ id: pl.id, name: pl.name });
                               }}
@@ -264,7 +542,9 @@ export default function Playlists() {
                     </div>
                     <div className="flex items-center justify-between mt-auto pt-3.5 border-t border-border/50 mt-3.5">
                       <span className="text-2xs text-muted-foreground/60 font-medium">Updated {pl.updated}</span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/12 text-accent/80">#{pl.mood}</span>
+                      {dominantMood && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-brand-purple/12 text-brand-purple">#{dominantMood}</span>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -276,7 +556,7 @@ export default function Playlists() {
       <CreatePlaylistModal open={createOpen} onOpenChange={setCreateOpen} onCreate={addPlaylist} />
 
       {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+      <AlertDialog open={!!deleteTarget} onOpenChange={function (open) { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground">Delete Playlist</AlertDialogTitle>
@@ -285,10 +565,10 @@ export default function Playlists() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="text-sm border border-border">Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-sm"
-              onClick={() => {
+              onClick={function () {
                 if (deleteTarget) {
                   deletePlaylist(deleteTarget.id);
                   setDeleteTarget(null);
@@ -302,7 +582,7 @@ export default function Playlists() {
       </AlertDialog>
 
       {/* Edit Dialog */}
-      <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
+      <Dialog open={!!editTarget} onOpenChange={function (open) { if (!open) setEditTarget(null); }}>
         <DialogContent className="sm:max-w-md bg-card border-border">
           <DialogHeader>
             <DialogTitle className="text-foreground">Edit Playlist</DialogTitle>
@@ -313,7 +593,7 @@ export default function Playlists() {
               <input
                 type="text"
                 value={editName}
-                onChange={(e) => setEditName(e.target.value)}
+                onChange={function (e) { setEditName(e.target.value); }}
                 className="w-full h-10 px-3 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-colors font-medium"
                 autoFocus
               />
@@ -322,16 +602,16 @@ export default function Playlists() {
               <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">Description</label>
               <textarea
                 value={editDesc}
-                onChange={(e) => setEditDesc(e.target.value)}
+                onChange={function (e) { setEditDesc(e.target.value); }}
                 rows={3}
                 className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-colors resize-none"
               />
             </div>
           </div>
           <DialogFooter>
-            <button onClick={() => setEditTarget(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+            <button onClick={function () { setEditTarget(null); }} className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border border-border">Cancel</button>
             <button
-              onClick={() => {
+              onClick={function () {
                 if (editTarget && editName.trim()) {
                   updatePlaylist(editTarget.id, { name: editName.trim(), description: editDesc.trim() });
                   setEditTarget(null);
