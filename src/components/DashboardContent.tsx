@@ -28,6 +28,10 @@ import {
   Search,
   Mail,
   Building2,
+  LayoutDashboard,
+  Sparkles,
+  Radio,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
@@ -327,12 +331,12 @@ export function DashboardContent() {
   }, [contactEntries, contactsRange, contactsSearch]);
 
   const stats = [
-    { id: "tracks", label: t("dashboard.totalTracks"), value: allTracks.length.toLocaleString(), icon: Music, change: "+" + tracksThisWeek + " " + t("common.thisWeek").toLowerCase(), accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20", clickable: true },
-    { id: "playlists", label: t("dashboard.playlists"), value: allPlaylists.length.toLocaleString(), icon: ListMusic, change: allPlaylists.length + " total", accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
-    { id: "plays", label: t("dashboard.totalPlays"), value: (linkPlays.length || engagementStats.totalPlays).toLocaleString(), icon: Headphones, change: t("dashboard.recipients", { count: playRecipients || engagementStats.uniqueRecipients }), accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", clickable: true },
-    { id: "downloads", label: t("dashboard.downloads"), value: (linkDownloads.length || engagementStats.totalDownloads).toLocaleString(), icon: Download, change: t("dashboard.acrossContacts", { count: downloadRecipients || engagementStats.uniqueRecipients }), accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
-    { id: "contacts", label: t("nav.contacts"), value: allContacts.length.toLocaleString(), icon: Users, change: t("dashboard.recent", { count: contactsThisWeek }), accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", clickable: true },
-    { id: "pitches", label: t("pitch.title"), value: allPitches.length.toLocaleString(), icon: Send, change: t("pitch.active", { count: allPitches.filter(function(p) { return p.status === "Sent" || p.status === "Opened"; }).length }), accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", clickable: true },
+    { id: "tracks", label: t("dashboard.totalTracks"), value: allTracks.length.toLocaleString(), icon: Music, change: "+" + tracksThisWeek + " " + t("common.thisWeek").toLowerCase(), changeColor: "text-brand-orange", accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20", hoverRing: "hover:ring-1 hover:ring-brand-orange/20", clickable: true },
+    { id: "playlists", label: t("dashboard.playlists"), value: allPlaylists.length.toLocaleString(), icon: ListMusic, change: allPlaylists.length + " total", changeColor: "text-brand-pink", accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", hoverRing: "hover:ring-1 hover:ring-brand-pink/20", clickable: true },
+    { id: "plays", label: t("dashboard.totalPlays"), value: (linkPlays.length || engagementStats.totalPlays).toLocaleString(), icon: Headphones, change: t("dashboard.recipients", { count: playRecipients || engagementStats.uniqueRecipients }), changeColor: "text-brand-pink", accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", hoverRing: "hover:ring-1 hover:ring-brand-pink/20", clickable: true },
+    { id: "downloads", label: t("dashboard.downloads"), value: (linkDownloads.length || engagementStats.totalDownloads).toLocaleString(), icon: Download, change: t("dashboard.acrossContacts", { count: downloadRecipients || engagementStats.uniqueRecipients }), changeColor: "text-brand-purple", accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", hoverRing: "hover:ring-1 hover:ring-brand-purple/20", clickable: true },
+    { id: "contacts", label: t("nav.contacts"), value: allContacts.length.toLocaleString(), icon: Users, change: t("dashboard.recent", { count: contactsThisWeek }), changeColor: "text-brand-purple", accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", hoverRing: "hover:ring-1 hover:ring-brand-purple/20", clickable: true },
+    { id: "pitches", label: t("pitch.title"), value: allPitches.length.toLocaleString(), icon: Send, change: t("pitch.active", { count: allPitches.filter(function(p) { return p.status === "Sent" || p.status === "Opened"; }).length }), changeColor: "text-brand-orange", accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", hoverRing: "hover:ring-1 hover:ring-brand-orange/20", clickable: true },
   ];
 
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -348,13 +352,21 @@ export function DashboardContent() {
     { label: t("dashboard.inviteMember"), icon: Users, visible: permissions.canInviteMembers, onClick: () => setShowInviteModal(true) },
     { label: t("dashboard.createTeam"), icon: Users, visible: permissions.canInviteMembers, onClick: () => setShowCreateTeamModal(true) },
     { label: t("dashboard.newPitch"), icon: Send, visible: permissions.canSendPitches, onClick: () => setShowPitchModal(true) },
+    { label: t("nav.smartAR") || "Smart A&R", icon: Sparkles, visible: true, onClick: () => navigate("/smart-ar") },
+    { label: t("radio.title") || "Radio", icon: Radio, visible: true, onClick: () => navigate("/radio") },
+    { label: "Export Contacts", icon: FileSpreadsheet, visible: allContacts.length > 0, onClick: () => navigate("/contacts") },
   ].filter((a) => a.visible);
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-7 max-w-[1400px]">
       {/* Header */}
       <motion.div variants={item}>
-        <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("dashboard.title")}</h1>
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center">
+            <LayoutDashboard className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-white" />
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("dashboard.title")}</h1>
+        </div>
         <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("dashboard.subtitle", { date: new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) })}</p>
       </motion.div>
 
@@ -376,7 +388,7 @@ export function DashboardContent() {
               else if (stat.id === "contacts") { closeAll(); navigate("/contacts"); }
               else if (stat.id === "pitches") { closeAll(); navigate("/pitch"); }
             } : undefined}
-            className={`card-premium p-5 sm:p-7 group relative overflow-hidden ${stat.clickable ? "cursor-pointer" : "cursor-default"} ${stat.borderAccent} ${((stat.id === "plays" && showPlaysPanel) || (stat.id === "downloads" && showDownloadsPanel)) ? "border-brand-orange/40 ring-1 ring-brand-orange/20" : ""}`}
+            className={`card-premium p-5 sm:p-7 group relative overflow-hidden transition-all ${stat.clickable ? "cursor-pointer" : "cursor-default"} ${stat.borderAccent} ${stat.hoverRing} ${((stat.id === "plays" && showPlaysPanel) || (stat.id === "downloads" && showDownloadsPanel)) ? "border-brand-orange/40 ring-1 ring-brand-orange/20" : ""}`}
           >
             <div
               className="absolute -top-12 -right-12 w-40 h-40 rounded-full blur-3xl opacity-50 group-hover:opacity-90 transition-opacity duration-700 pointer-events-none"
@@ -388,12 +400,12 @@ export function DashboardContent() {
               <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl ${stat.iconBg} flex items-center justify-center transition-all duration-300`} style={{ boxShadow: `0 0 24px ${stat.glowColor}` }}>
                 <stat.icon className={`w-5 h-5 sm:w-[22px] sm:h-[22px] ${stat.iconColor} transition-colors duration-300`} />
               </div>
-              <ArrowUpRight className={`w-4 h-4 text-muted-foreground/20 group-hover:${stat.iconColor} transition-colors duration-300 opacity-0 group-hover:opacity-50`} />
+              <ArrowUpRight className={`w-4 h-4 text-muted-foreground/20 group-hover:${stat.iconColor} transition-colors duration-300 opacity-0 group-hover:opacity-70`} />
             </div>
             <p className="text-2xl sm:text-[34px] font-bold text-foreground tracking-tight leading-none relative">{stat.value}</p>
             <div className="flex items-center justify-between mt-2.5 sm:mt-3 relative">
               <p className="text-xs sm:text-sm text-muted-foreground font-medium">{stat.label}</p>
-              <p className="text-xs sm:text-sm text-emerald-400/80 font-medium">{stat.change}</p>
+              <p className={`text-xs sm:text-sm ${stat.changeColor} font-medium`}>{stat.change}</p>
             </div>
           </motion.div>
         ))}
@@ -428,7 +440,7 @@ export function DashboardContent() {
                           onClick={() => setTracksRange(range)}
                           className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
                             tracksRange === range
-                              ? "bg-brand-orange/15 text-brand-orange"
+                              ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/25"
                               : "text-muted-foreground hover:text-foreground"
                           }`}
                         >
@@ -451,7 +463,7 @@ export function DashboardContent() {
                     value={tracksSearch}
                     onChange={(e) => setTracksSearch(e.target.value)}
                     placeholder={t("common.search") + "..."}
-                    className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                    className="w-full h-9 pl-9 pr-3 rounded-xl bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   />
                 </div>
               </div>
@@ -494,9 +506,12 @@ export function DashboardContent() {
                 <span className="text-2xs text-muted-foreground">
                   Showing {filteredByRange.length} of {allTracks.length} total tracks
                 </span>
-                <Link to="/tracks" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
-                  {t("dashboard.viewAll")}
-                </Link>
+                <div className="flex items-center gap-3">
+                  <Link to="/tracks" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
+                    {t("dashboard.viewAll")}
+                  </Link>
+                  <span className="text-2xs text-muted-foreground/30 font-semibold tracking-widest">TRAKALOG</span>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -532,7 +547,7 @@ export function DashboardContent() {
                           onClick={() => setPlaylistsRange(range)}
                           className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
                             playlistsRange === range
-                              ? "bg-brand-pink/15 text-brand-pink"
+                              ? "bg-brand-pink/10 text-brand-pink border border-brand-pink/25"
                               : "text-muted-foreground hover:text-foreground"
                           }`}
                         >
@@ -555,7 +570,7 @@ export function DashboardContent() {
                     value={playlistsSearch}
                     onChange={(e) => setPlaylistsSearch(e.target.value)}
                     placeholder={t("common.search") + "..."}
-                    className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                    className="w-full h-9 pl-9 pr-3 rounded-xl bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   />
                 </div>
               </div>
@@ -601,9 +616,12 @@ export function DashboardContent() {
                 <span className="text-2xs text-muted-foreground">
                   Showing {filteredPlaylists.length} of {allPlaylists.length} total playlists
                 </span>
-                <Link to="/playlists" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
-                  {t("dashboard.viewAll")}
-                </Link>
+                <div className="flex items-center gap-3">
+                  <Link to="/playlists" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
+                    {t("dashboard.viewAll")}
+                  </Link>
+                  <span className="text-2xs text-muted-foreground/30 font-semibold tracking-widest">TRAKALOG</span>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -638,7 +656,7 @@ export function DashboardContent() {
                           onClick={() => setPlaysRange(range)}
                           className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
                             playsRange === range
-                              ? "bg-brand-pink/15 text-brand-pink"
+                              ? "bg-brand-pink/10 text-brand-pink border border-brand-pink/25"
                               : "text-muted-foreground hover:text-foreground"
                           }`}
                         >
@@ -658,7 +676,7 @@ export function DashboardContent() {
                     value={playsSearch}
                     onChange={(e) => setPlaysSearch(e.target.value)}
                     placeholder={t("common.search") + "..."}
-                    className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                    className="w-full h-9 pl-9 pr-3 rounded-xl bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   />
                 </div>
               </div>
@@ -699,6 +717,7 @@ export function DashboardContent() {
                 <span className="text-2xs text-muted-foreground">
                   Showing {filteredPlays.length} of {linkPlays.length} total plays
                 </span>
+                <span className="text-2xs text-muted-foreground/30 font-semibold tracking-widest">TRAKALOG</span>
               </div>
             </div>
           </motion.div>
@@ -733,7 +752,7 @@ export function DashboardContent() {
                           onClick={() => setDownloadsRange(range)}
                           className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
                             downloadsRange === range
-                              ? "bg-brand-purple/15 text-brand-purple"
+                              ? "bg-brand-purple/10 text-brand-purple border border-brand-purple/25"
                               : "text-muted-foreground hover:text-foreground"
                           }`}
                         >
@@ -753,7 +772,7 @@ export function DashboardContent() {
                     value={downloadsSearch}
                     onChange={(e) => setDownloadsSearch(e.target.value)}
                     placeholder={t("common.search") + "..."}
-                    className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                    className="w-full h-9 pl-9 pr-3 rounded-xl bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   />
                 </div>
               </div>
@@ -794,6 +813,7 @@ export function DashboardContent() {
                 <span className="text-2xs text-muted-foreground">
                   Showing {filteredDownloads.length} of {linkDownloads.length} total downloads
                 </span>
+                <span className="text-2xs text-muted-foreground/30 font-semibold tracking-widest">TRAKALOG</span>
               </div>
             </div>
           </motion.div>
@@ -828,7 +848,7 @@ export function DashboardContent() {
                           onClick={() => setContactsRange(range)}
                           className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
                             contactsRange === range
-                              ? "bg-brand-purple/15 text-brand-purple"
+                              ? "bg-brand-purple/10 text-brand-purple border border-brand-purple/25"
                               : "text-muted-foreground hover:text-foreground"
                           }`}
                         >
@@ -848,7 +868,7 @@ export function DashboardContent() {
                     value={contactsSearch}
                     onChange={(e) => setContactsSearch(e.target.value)}
                     placeholder={t("common.search") + "..."}
-                    className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                    className="w-full h-9 pl-9 pr-3 rounded-xl bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                   />
                 </div>
               </div>
@@ -895,9 +915,12 @@ export function DashboardContent() {
                 <span className="text-2xs text-muted-foreground">
                   Showing {filteredContacts.length} of {contactEntries.length} total contacts
                 </span>
-                <Link to="/contacts" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
-                  {t("dashboard.viewAll")}
-                </Link>
+                <div className="flex items-center gap-3">
+                  <Link to="/contacts" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
+                    {t("dashboard.viewAll")}
+                  </Link>
+                  <span className="text-2xs text-muted-foreground/30 font-semibold tracking-widest">TRAKALOG</span>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -948,7 +971,7 @@ export function DashboardContent() {
                             onClick={() => setPitchesStatusFilter(s)}
                             className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
                               pitchesStatusFilter === s
-                                ? "bg-brand-orange/15 text-brand-orange"
+                                ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/25"
                                 : "text-muted-foreground hover:text-foreground"
                             }`}
                           >
@@ -968,7 +991,7 @@ export function DashboardContent() {
                       value={pitchesSearch}
                       onChange={(e) => setPitchesSearch(e.target.value)}
                       placeholder={t("common.search") + "..."}
-                      className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                      className="w-full h-9 pl-9 pr-3 rounded-xl bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -1013,9 +1036,12 @@ export function DashboardContent() {
                   <span className="text-2xs text-muted-foreground">
                     Showing {filteredPitches.length} of {allPitches.length} total pitches
                   </span>
-                  <Link to="/pitch" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
-                    {t("dashboard.viewAll")}
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <Link to="/pitch" className="text-2xs gradient-text font-semibold hover:opacity-80 transition-opacity">
+                      {t("dashboard.viewAll")}
+                    </Link>
+                    <span className="text-2xs text-muted-foreground/30 font-semibold tracking-widest">TRAKALOG</span>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -1028,14 +1054,14 @@ export function DashboardContent() {
         {/* Quick actions */}
         <motion.div variants={item} className="space-y-3 sm:space-y-4">
           <h2 className="text-sm sm:text-base font-semibold text-foreground tracking-tight">{t("dashboard.quickActions")}</h2>
-          <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1 sm:pb-0 sm:grid sm:grid-cols-3 lg:grid-cols-5">
+          <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1 sm:pb-0 sm:grid sm:grid-cols-4 lg:grid-cols-4">
             {quickActions.map((action) => (
               <button
                 key={action.label}
                 onClick={action.onClick}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-[13px] group min-h-[72px] shrink-0 w-[120px] sm:w-auto ${
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-[13px] group min-h-[72px] shrink-0 w-[120px] sm:w-auto hover:scale-[1.02] ${
                   action.primary
-                    ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange hover:bg-brand-orange/12 hover:border-brand-orange/40 gradient-border"
+                    ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange hover:bg-brand-orange/12 hover:border-brand-orange/40 gradient-border hover:shadow-[0_0_20px_rgba(var(--brand-orange-rgb,255,140,50),0.15)]"
                     : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-brand-pink/20 hover:bg-secondary/40"
                 }`}
                 style={{ boxShadow: "var(--shadow-inner-glow)" }}
@@ -1058,8 +1084,8 @@ export function DashboardContent() {
               <div className="px-4 py-10 text-center text-muted-foreground text-sm">No recent activity</div>
             ) : activityFeed.map((a, i) => (
               <div key={i} className="flex items-start gap-3 px-3 sm:px-4 py-3 sm:py-3.5 hover:bg-secondary/20 transition-colors">
-                <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0 mt-0.5">
-                  <a.icon className="w-3.5 h-3.5 text-muted-foreground" />
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${a.icon === Upload ? "bg-emerald-400/10" : a.icon === Headphones ? "bg-brand-pink/10" : a.icon === Download ? "bg-brand-purple/10" : a.icon === Send ? "bg-brand-orange/10" : "bg-secondary"}`}>
+                  <a.icon className={`w-3.5 h-3.5 ${a.icon === Upload ? "text-emerald-400" : a.icon === Headphones ? "text-brand-pink" : a.icon === Download ? "text-brand-purple" : a.icon === Send ? "text-brand-orange" : "text-muted-foreground"}`} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-foreground/85 leading-relaxed">{a.text}</p>
