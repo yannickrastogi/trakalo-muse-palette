@@ -411,7 +411,7 @@ export default function Playlists() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2, ease: "easeInOut" }}
             >
-              <div className="card-premium p-5">
+              <div className="card-premium p-5" style={{ overflow: "visible" }}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   <FilterSelect label="Mood" value={moodFilter} options={playlistMoods} onChange={setMoodFilter} />
                   <FilterSelect label="Style" value={styleFilter} options={[...GENRES]} onChange={setStyleFilter} />
