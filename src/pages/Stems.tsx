@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Filter, Upload, Play, Download, ExternalLink, Layers, ChevronDown, X } from "lucide-react";
+import { Search, Upload, Play, Download, ExternalLink, Layers, ChevronDown, X, SlidersHorizontal } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useTrack, type TrackStem } from "@/contexts/TrackContext";
 import { useNavigate } from "react-router-dom";
@@ -41,25 +41,64 @@ const stemTypeColors: Record<string, string> = {
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } } };
 
-// Reusable filter select
+// Custom filter dropdown matching Catalog premium style
 function FilterSelect({ label, value, onChange, options }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const isActive = value !== "all";
+  const displayLabel = options.find((o) => o.value === value)?.label || "All";
+
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
   return (
-    <div className="flex flex-col gap-1.5 min-w-[140px]">
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-8 px-3 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary/30 transition-colors cursor-pointer"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
+    <div className="flex flex-col gap-1.5" ref={ref}>
+      <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className={"flex items-center justify-between w-full h-10 px-3 rounded-xl bg-card text-[13px] font-medium transition-all " + (isActive ? "border-2 border-brand-orange/40 text-brand-orange" : "border border-border text-muted-foreground hover:border-brand-pink/20 hover:text-foreground")}
+        >
+          <span className="truncate">{displayLabel}</span>
+          <ChevronDown className={"w-3.5 h-3.5 shrink-0 ml-2 transition-transform duration-200 " + (open ? "rotate-180" : "")} />
+        </button>
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute z-50 mt-1.5 w-full bg-card border border-border rounded-xl shadow-xl backdrop-blur-sm max-h-60 overflow-y-auto"
+            >
+              <div className="p-1">
+                {options.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => { onChange(opt.value); setOpen(false); }}
+                    className={"w-full text-left px-4 py-2.5 rounded-lg text-[13px] transition-colors " + (value === opt.value ? "bg-brand-orange/10 text-brand-orange font-medium" : "text-foreground hover:bg-secondary/60")}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
@@ -220,20 +259,19 @@ export default function Stems() {
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`h-10 px-4 rounded-xl border text-xs font-medium flex items-center gap-2 transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border transition-all ${
                 showFilters || activeFilterCount > 0
-                  ? "border-primary/40 bg-primary/5 text-primary"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-brand-pink/20"
               }`}
             >
-              <Filter className="w-3.5 h-3.5" />
+              <SlidersHorizontal className="w-3.5 h-3.5" />
               Filters
               {activeFilterCount > 0 && (
-                <span className="ml-0.5 w-4.5 h-4.5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+                <span className="ml-1 w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold btn-brand" style={{ boxShadow: "none" }}>
                   {activeFilterCount}
                 </span>
               )}
-              <ChevronDown className={`w-3 h-3 transition-transform ${showFilters ? "rotate-180" : ""}`} />
             </button>
           </div>
 
@@ -241,15 +279,13 @@ export default function Stems() {
           <AnimatePresence>
             {showFilters && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
               >
-                <div className="p-4 rounded-xl bg-card border border-border space-y-4" style={{ boxShadow: "var(--shadow-card)" }}>
-                  {/* Row 1: Dropdowns */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div className="card-premium p-5" style={{ overflow: "visible" }}>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                     <FilterSelect
                       label="Track"
                       value={trackFilter}
@@ -262,21 +298,16 @@ export default function Stems() {
                       onChange={setArtistFilter}
                       options={[{ value: "all", label: "All Artists" }, ...uniqueArtists.map((a) => ({ value: a, label: a }))]}
                     />
-                    <div className="flex flex-col gap-1.5 min-w-[140px]">
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Stem Type</span>
-                      <select
-                        value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                        className="h-8 px-3 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary/30 transition-colors cursor-pointer"
-                      >
-                        <option value="all">All Types</option>
-                        <option value="pack">🎛️ Stems Pack</option>
-                        <option disabled>──────────</option>
-                        {STEM_TYPES.map((t) => (
-                          <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <FilterSelect
+                      label="Stem Type"
+                      value={typeFilter}
+                      onChange={setTypeFilter}
+                      options={[
+                        { value: "all", label: "All Types" },
+                        { value: "pack", label: "Stems Pack" },
+                        ...STEM_TYPES.map((t) => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) })),
+                      ]}
+                    />
                     <FilterSelect
                       label="Genre"
                       value={genreFilter}
@@ -289,20 +320,16 @@ export default function Stems() {
                       onChange={setKeyFilter}
                       options={[{ value: "all", label: "All Keys" }, ...uniqueKeys.map((k) => ({ value: k, label: k }))]}
                     />
-                  </div>
-
-                  {/* Row 2: BPM range + Date range */}
-                  <div className="flex flex-wrap items-end gap-3">
                     {/* BPM Range */}
                     <div className="flex flex-col gap-1.5">
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">BPM Range</span>
+                      <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">BPM Range</label>
                       <div className="flex items-center gap-1.5">
                         <input
                           type="number"
                           value={bpmMin}
                           onChange={(e) => setBpmMin(e.target.value)}
                           placeholder="Min"
-                          className="w-[72px] h-8 px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary/30 transition-colors font-mono placeholder:text-muted-foreground"
+                          className="w-full h-10 px-3 rounded-xl bg-card border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-colors font-mono placeholder:text-muted-foreground"
                         />
                         <span className="text-muted-foreground text-xs">–</span>
                         <input
@@ -310,52 +337,45 @@ export default function Stems() {
                           value={bpmMax}
                           onChange={(e) => setBpmMax(e.target.value)}
                           placeholder="Max"
-                          className="w-[72px] h-8 px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-primary/30 transition-colors font-mono placeholder:text-muted-foreground"
+                          className="w-full h-10 px-3 rounded-xl bg-card border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-colors font-mono placeholder:text-muted-foreground"
                         />
                       </div>
                     </div>
-
-
-
-                    {/* Clear */}
-                    {activeFilterCount > 0 && (
+                  </div>
+                  {activeFilterCount > 0 && (
+                    <div className="mt-4 flex justify-end">
                       <button
                         onClick={clearAllFilters}
-                        className="h-8 px-3 rounded-lg text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border hover:bg-secondary transition-colors flex items-center gap-1.5"
+                        className="flex items-center gap-1.5 text-xs font-semibold text-brand-orange hover:text-brand-pink transition-colors"
                       >
                         <X className="w-3 h-3" />
                         Clear All
                       </button>
-                    )}
-                  </div>
-
-                  {/* Active filter pills */}
-                  {activeFilterCount > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {trackFilter !== "all" && (
-                        <FilterPill label={`Track: ${trackFilter}`} onClear={() => setTrackFilter("all")} />
-                      )}
-                      {artistFilter !== "all" && (
-                        <FilterPill label={`Artist: ${artistFilter}`} onClear={() => setArtistFilter("all")} />
-                      )}
-                      {typeFilter !== "all" && (
-                        <FilterPill label={`Type: ${typeFilter}`} onClear={() => setTypeFilter("all")} />
-                      )}
-                      {genreFilter !== "all" && (
-                        <FilterPill label={`Genre: ${genreFilter}`} onClear={() => setGenreFilter("all")} />
-                      )}
-                      {keyFilter !== "all" && (
-                        <FilterPill label={`Key: ${keyFilter}`} onClear={() => setKeyFilter("all")} />
-                      )}
-                      {(bpmMin || bpmMax) && (
-                        <FilterPill label={`BPM: ${bpmMin || "–"}–${bpmMax || "–"}`} onClear={() => { setBpmMin(""); setBpmMax(""); }} />
-                      )}
                     </div>
                   )}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Active filter tags (when panel closed) */}
+          {activeFilterCount > 0 && !showFilters && (
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-xs text-muted-foreground mr-1 font-medium">Active filters:</span>
+              <AnimatePresence>
+                {trackFilter !== "all" && <FilterTag key="track" label={"Track: " + trackFilter} onRemove={() => setTrackFilter("all")} />}
+                {artistFilter !== "all" && <FilterTag key="artist" label={"Artist: " + artistFilter} onRemove={() => setArtistFilter("all")} />}
+                {typeFilter !== "all" && <FilterTag key="type" label={"Type: " + typeFilter} onRemove={() => setTypeFilter("all")} />}
+                {genreFilter !== "all" && <FilterTag key="genre" label={"Genre: " + genreFilter} onRemove={() => setGenreFilter("all")} />}
+                {keyFilter !== "all" && <FilterTag key="key" label={"Key: " + keyFilter} onRemove={() => setKeyFilter("all")} />}
+                {(bpmMin || bpmMax) && <FilterTag key="bpm" label={"BPM: " + (bpmMin || "–") + "–" + (bpmMax || "–")} onRemove={() => { setBpmMin(""); setBpmMax(""); }} />}
+              </AnimatePresence>
+              <button onClick={clearAllFilters} className="text-xs text-brand-orange hover:text-brand-pink ml-1.5 font-semibold transition-colors flex items-center gap-1">
+                <X className="w-3 h-3" />
+                Clear
+              </button>
+            </div>
+          )}
         </motion.div>
 
         {/* Stats */}
@@ -499,13 +519,19 @@ export default function Stems() {
   );
 }
 
-function FilterPill({ label, onClear }: { label: string; onClear: () => void }) {
+function FilterTag({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-medium text-primary">
+    <motion.span
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.2 }}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-orange/10 border border-brand-orange/20 text-brand-orange text-xs font-semibold"
+    >
       {label}
-      <button onClick={onClear} className="hover:text-primary-foreground transition-colors">
-        <X className="w-2.5 h-2.5" />
+      <button onClick={onRemove} className="hover:bg-brand-orange/20 rounded-full p-0.5 transition-colors">
+        <X className="w-3 h-3" />
       </button>
-    </span>
+    </motion.span>
   );
 }
