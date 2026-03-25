@@ -22,7 +22,7 @@ import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
 import { usePlaylists } from "@/contexts/PlaylistContext";
-import { DEFAULT_COVER } from "@/lib/constants";
+import { DEFAULT_COVER, GENRES } from "@/lib/constants";
 import { useTrack } from "@/contexts/TrackContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -185,6 +185,7 @@ export default function Playlists() {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [moodFilter, setMoodFilter] = useState<string | null>(null);
+  const [styleFilter, setStyleFilter] = useState<string | null>(null);
   const [trackCountFilter, setTrackCountFilter] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -259,10 +260,34 @@ export default function Playlists() {
     return map;
   }, [playlists, allTracks]);
 
-  var activeFilterCount = [moodFilter, trackCountFilter].filter(Boolean).length;
+  // Derive dominant genre/style per playlist
+  var playlistDominantStyle = useMemo(function () {
+    var map: Record<string, string> = {};
+    playlists.forEach(function (pl) {
+      if (pl.trackIds) {
+        var genreCounts: Record<string, number> = {};
+        pl.trackIds.forEach(function (tid) {
+          var track = allTracks.find(function (t) { return t.id === tid; });
+          if (track && track.genre) {
+            genreCounts[track.genre] = (genreCounts[track.genre] || 0) + 1;
+          }
+        });
+        var best = "";
+        var bestCount = 0;
+        Object.keys(genreCounts).forEach(function (g) {
+          if (genreCounts[g] > bestCount) { best = g; bestCount = genreCounts[g]; }
+        });
+        if (best) map[pl.id] = best;
+      }
+    });
+    return map;
+  }, [playlists, allTracks]);
+
+  var activeFilterCount = [moodFilter, styleFilter, trackCountFilter].filter(Boolean).length;
 
   var clearFilters = function () {
     setMoodFilter(null);
+    setStyleFilter(null);
     setTrackCountFilter(null);
   };
 
@@ -282,6 +307,11 @@ export default function Playlists() {
         var dominant = playlistDominantMood[pl.id];
         if (dominant !== moodFilter) return false;
       }
+      // Style filter
+      if (styleFilter) {
+        var style = playlistDominantStyle[pl.id];
+        if (style !== styleFilter) return false;
+      }
       // Track count filter
       if (trackCountFilter) {
         var range = trackCountRanges.find(function (r) { return r.label === trackCountFilter; });
@@ -289,7 +319,7 @@ export default function Playlists() {
       }
       return true;
     });
-  }, [search, playlists, moodFilter, trackCountFilter, playlistDominantMood]);
+  }, [search, playlists, moodFilter, styleFilter, trackCountFilter, playlistDominantMood, playlistDominantStyle]);
 
   var totalTracks = playlists.reduce(function (s, p) { return s + p.tracks; }, 0);
 
@@ -376,36 +406,29 @@ export default function Playlists() {
         <AnimatePresence>
           {showFilters && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2, ease: "easeInOut" }}
             >
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                <div className="card-premium p-5">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    <FilterSelect label="Mood" value={moodFilter} options={playlistMoods} onChange={setMoodFilter} />
-                    <FilterSelect label="Tracks" value={trackCountFilter} options={trackCountRanges.slice(1).map(function (r) { return r.label; })} onChange={setTrackCountFilter} />
-                  </div>
-                  {activeFilterCount > 0 && (
-                    <div className="mt-4 flex justify-end">
-                      <button
-                        onClick={clearFilters}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-brand-orange hover:text-brand-pink transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                        Clear all
-                      </button>
-                    </div>
-                  )}
+              <div className="card-premium p-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <FilterSelect label="Mood" value={moodFilter} options={playlistMoods} onChange={setMoodFilter} />
+                  <FilterSelect label="Style" value={styleFilter} options={[...GENRES]} onChange={setStyleFilter} />
+                  <FilterSelect label="Tracks" value={trackCountFilter} options={trackCountRanges.slice(1).map(function (r) { return r.label; })} onChange={setTrackCountFilter} />
                 </div>
-              </motion.div>
+                {activeFilterCount > 0 && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={clearFilters}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-brand-orange hover:text-brand-pink transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                      Clear all
+                    </button>
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -416,6 +439,7 @@ export default function Playlists() {
             <span className="text-xs text-muted-foreground mr-1 font-medium">Active filters:</span>
             <AnimatePresence>
               {moodFilter && <FilterTag key="mood" label={"Mood: " + moodFilter} onRemove={function () { setMoodFilter(null); }} />}
+              {styleFilter && <FilterTag key="style" label={"Style: " + styleFilter} onRemove={function () { setStyleFilter(null); }} />}
               {trackCountFilter && <FilterTag key="tracks" label={trackCountFilter} onRemove={function () { setTrackCountFilter(null); }} />}
             </AnimatePresence>
           </motion.div>
