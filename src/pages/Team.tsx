@@ -105,6 +105,17 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function formatDateSmart(dateStr: string) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return diffDays + " days ago";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 const statusConfig = {
   pending: { icon: Clock, color: "bg-brand-orange/12 text-brand-orange" },
   active: { icon: CheckCircle2, color: "bg-emerald-500/12 text-emerald-400" },
@@ -158,10 +169,20 @@ export default function Team() {
           {/* Header */}
           <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("team.title")}</h1>
-              <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-                {t("team.teamsSubtitle", { count: teams.length })}
-              </p>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2.5">
+                <Users className="w-6 h-6 text-brand-orange" />
+                {t("team.title")}
+              </h1>
+              {teams.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span className="bg-secondary rounded-full px-3 py-1 text-xs text-muted-foreground">
+                    {teams.length + " team" + (teams.length !== 1 ? "s" : "")}
+                  </span>
+                  <span className="bg-secondary rounded-full px-3 py-1 text-xs text-muted-foreground">
+                    {teams.reduce((sum, t) => sum + t.members.length, 0) + " total members"}
+                  </span>
+                </div>
+              )}
             </div>
             {permissions.canInviteMembers && (
               <button
@@ -191,7 +212,7 @@ export default function Team() {
               </button>
             </motion.div>
           ) : (
-            <motion.div variants={item} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <motion.div variants={item} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {teams.map((team) => {
                 const adminCount = team.members.filter((m) => m.role === "Admin").length;
                 const pendingCount = team.members.filter((m) => m.status === "pending").length;
@@ -199,20 +220,23 @@ export default function Team() {
                   <button
                     key={team.id}
                     onClick={() => setSelectedTeamId(team.id)}
-                    className="card-premium p-5 text-left hover:border-brand-orange/30 transition-colors group"
+                    className="card-premium p-5 text-left hover:border-brand-orange/30 hover:ring-1 hover:ring-brand-orange/30 transition-all group"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
                         <Users className="w-5 h-5 text-primary-foreground" />
                       </div>
-                      <span className="text-2xs text-muted-foreground">{formatDate(team.createdAt)}</span>
+                      <span className="text-2xs text-muted-foreground">{formatDateSmart(team.createdAt)}</span>
                     </div>
                     <h3 className="text-foreground font-bold text-[15px] mt-3 group-hover:text-brand-orange transition-colors">
                       {team.name}
                     </h3>
-                    <div className="flex items-center gap-3 mt-2.5">
+                    <div className="flex flex-col gap-1.5 mt-2.5">
                       <span className="text-2xs text-muted-foreground">
-                        {t("team.membersCount", { count: team.members.length })}
+                        {team.members.length + " member" + (team.members.length !== 1 ? "s" : "")}
+                      </span>
+                      <span className="text-2xs text-muted-foreground">
+                        {team.sharedTrackIds.length + " shared track" + (team.sharedTrackIds.length !== 1 ? "s" : "")}
                       </span>
                       {pendingCount > 0 && (
                         <span className="text-2xs bg-brand-orange/12 text-brand-orange px-2 py-0.5 rounded-full font-semibold">
@@ -383,7 +407,7 @@ export default function Team() {
                 value={activitySearch}
                 onChange={(e) => setActivitySearch(e.target.value)}
                 placeholder="Search activity… e.g. track name, pitched, stems, status"
-                className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                className="w-full h-9 pl-9 pr-3 rounded-xl bg-secondary/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
               />
             </div>
           </div>
@@ -467,7 +491,7 @@ export default function Team() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("team.searchPlaceholder")}
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground text-[13px] placeholder:text-muted-foreground focus:outline-none focus-brand min-h-[44px]"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary/50 border border-border/50 text-foreground text-[13px] placeholder:text-muted-foreground focus:outline-none focus-brand min-h-[44px]"
             />
           </div>
         </motion.div>
@@ -529,7 +553,6 @@ export default function Team() {
                   <thead>
                     <tr className="border-b border-border">
                       <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("team.member")}</th>
-                      <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("team.email")}</th>
                       <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("team.role")}</th>
                       <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">{t("team.dateJoined")}</th>
                       <th className="text-left px-5 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("team.status")}</th>
@@ -551,12 +574,14 @@ export default function Team() {
                                   {getInitials(m.firstName, m.lastName)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-semibold text-foreground text-[13px] tracking-tight">
-                                {m.firstName} {m.lastName}
-                              </span>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-foreground text-[13px] tracking-tight truncate">
+                                  {m.firstName} {m.lastName}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate">{m.email}</p>
+                              </div>
                             </div>
                           </td>
-                          <td className="px-5 py-3.5 text-muted-foreground hidden md:table-cell text-xs">{m.email}</td>
                           <td className="px-5 py-3.5">
                             {isOwner || !permissions.canManageTeam ? (
                               <Badge variant="outline" className="text-2xs gap-1 border-border bg-secondary/50 text-secondary-foreground font-medium">
@@ -604,6 +629,17 @@ export default function Team() {
               {filteredMembers.length === 0 && (
                 <div className="py-12 text-center text-muted-foreground text-sm">{t("team.noResults")}</div>
               )}
+              {/* Table Footer */}
+              <div
+                className="flex items-center justify-between px-5 py-3 text-xs text-muted-foreground font-medium"
+                style={{
+                  borderTop: "1px solid transparent",
+                  borderImage: "linear-gradient(90deg, hsl(24 100% 55% / 0.1), hsl(330 80% 60% / 0.06), transparent) 1",
+                }}
+              >
+                <span>{filteredMembers.length + " member" + (filteredMembers.length !== 1 ? "s" : "")}</span>
+                <span className="text-2xs text-muted-foreground/50">TRAKALOG Team</span>
+              </div>
             </div>
           )}
         </motion.div>
