@@ -24,7 +24,7 @@ var anonSupabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
-var roleOptions = ["Admin", "Manager", "Producer", "Viewer", "Other"];
+var roleOptions = ["Artist", "Manager", "Producer", "A&R", "Music Director", "Publisher", "Sync Agent", "Songwriter", "Musician", "Assistant", "Mix Engineer", "Mastering Engineer", "PR", "Video Director", "Other"];
 
 interface SharedLinkRow {
   id: string;

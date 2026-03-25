@@ -909,14 +909,14 @@ export default function SharedLinkPage() {
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Role</label>
-                <input
-                  type="text"
+                <select
                   value={visitorRole}
                   onChange={function(e) { setVisitorRole(e.target.value); }}
-                  placeholder="e.g. A&R, Manager, DJ"
-                  maxLength={100}
-                  className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
-                />
+                  className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium appearance-none cursor-pointer"
+                >
+                  <option value="">Select role...</option>
+                  {["Artist", "Manager", "Producer", "A&R", "Music Director", "Publisher", "Sync Agent", "Songwriter", "Musician", "Assistant", "Mix Engineer", "Mastering Engineer", "PR", "Video Director", "Other"].map(function(r) { return <option key={r} value={r}>{r}</option>; })}
+                </select>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Company</label>

@@ -14,13 +14,40 @@ import { toast } from "sonner";
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
 
+const CANONICAL_ROLES: Record<string, string> = {
+  artist: "Artist",
+  manager: "Manager",
+  producer: "Producer",
+  "a&r": "A&R",
+  "music director": "Music Director",
+  publisher: "Publisher",
+  "sync agent": "Sync Agent",
+  songwriter: "Songwriter",
+  musician: "Musician",
+  assistant: "Assistant",
+  "mix engineer": "Mix Engineer",
+  "mastering engineer": "Mastering Engineer",
+  pr: "PR",
+  "video director": "Video Director",
+  admin: "Admin",
+  viewer: "Viewer",
+  other: "Other",
+};
+
+function normalizeRole(role: string): string {
+  if (!role) return "Other";
+  const key = role.trim().toLowerCase();
+  return CANONICAL_ROLES[key] || role.trim();
+}
+
 const roleColors: Record<string, string> = {
-  Admin: "bg-brand-orange/12 text-brand-orange",
-  admin: "bg-brand-orange/12 text-brand-orange",
+  Artist: "bg-brand-orange/12 text-brand-orange",
   Producer: "bg-brand-purple/12 text-brand-purple",
-  producer: "bg-brand-purple/12 text-brand-purple",
   "A&R": "bg-brand-pink/12 text-brand-pink",
-  "a&r": "bg-brand-pink/12 text-brand-pink",
+  Manager: "bg-emerald-500/12 text-emerald-400",
+  "Mix Engineer": "bg-sky-500/12 text-sky-400",
+  "Mastering Engineer": "bg-sky-500/12 text-sky-400",
+  Publisher: "bg-amber-500/12 text-amber-400",
 };
 
 function getRoleColor(role: string) {
@@ -87,7 +114,7 @@ function FilterSelect({ label, value, options, onChange }: {
 
 export default function Contacts() {
   const { t } = useTranslation();
-  const { contacts } = useContacts();
+  const { contacts: rawContacts } = useContacts();
   const { addPitch } = usePitches();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
@@ -95,6 +122,9 @@ export default function Contacts() {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [pitchContact, setPitchContact] = useState<{ name: string; email: string; company: string } | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
+
+  // Normalize roles on all contacts
+  const contacts = useMemo(() => rawContacts.map((c) => ({ ...c, role: normalizeRole(c.role) })), [rawContacts]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
