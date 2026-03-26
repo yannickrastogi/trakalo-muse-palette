@@ -726,7 +726,7 @@ export default function SharedLinkPage() {
           { label: "BPM", value: trackData.bpm ? String(trackData.bpm) : "\u2014" },
           { label: "Key", value: trackData.key || "\u2014" },
           { label: "Duration", value: trackData.duration_sec ? formatDuration(trackData.duration_sec) : "\u2014" },
-          { label: "Mood", value: trackData.mood && trackData.mood.length > 0 ? trackData.mood.join(", ") : "\u2014" },
+          { label: "Mood", value: Array.isArray(trackData.mood) && trackData.mood.length > 0 ? trackData.mood.join(", ") : "\u2014" },
           { label: "Label", value: trackData.labels && trackData.labels.length > 0 ? trackData.labels[0] : "\u2014" },
           { label: "Publisher", value: trackData.publishers && trackData.publishers.length > 0 ? trackData.publishers[0] : "\u2014" },
           { label: "ISRC", value: trackData.isrc || "\u2014" },
@@ -738,7 +738,7 @@ export default function SharedLinkPage() {
       }
 
       // Splits — branded PDF (included with metadata, same as owner pack)
-      if (items.indexOf("metadata") >= 0 && trackData.splits && trackData.splits.length > 0) {
+      if (items.indexOf("metadata") >= 0 && Array.isArray(trackData.splits) && trackData.splits.length > 0) {
         var totalShares = trackData.splits.reduce(function(sum, s) { return sum + (s.share || 0); }, 0);
         var splitsBlob = generateSplitsPdf(trackData.title, trackData.artist, trackData.splits, totalShares, true) as Blob;
         root.folder("Metadata")!.file(trackData.title + " - Splits.pdf", splitsBlob);
@@ -1114,7 +1114,7 @@ export default function SharedLinkPage() {
 
                   {/* Progress bar / Waveform */}
                   <div className="relative">
-                    {activeTrack && activeTrack.waveform_data ? (
+                    {activeTrack && Array.isArray(activeTrack.waveform_data) ? (
                       <WaveformBar peaks={activeTrack.waveform_data} progress={progress} onSeek={handleSeek} onDoubleClick={handleWaveformDoubleClick} />
                     ) : (
                       <div
@@ -1224,7 +1224,7 @@ export default function SharedLinkPage() {
                     </div>
                   </div>
 
-                  {activeTrack && activeTrack.lyrics_segments && activeTrack.lyrics_segments.length > 0 && (
+                  {activeTrack && Array.isArray(activeTrack.lyrics_segments) && activeTrack.lyrics_segments.length > 0 && (
                     <KaraokeLyrics
                       segments={activeTrack.lyrics_segments}
                       currentTime={currentTime}
@@ -1337,7 +1337,7 @@ export default function SharedLinkPage() {
                     </span>
                   )}
                 </div>
-                {trackData.mood && trackData.mood.length > 0 && (
+                {Array.isArray(trackData.mood) && trackData.mood.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {trackData.mood.map(function(m) {
                       return (
@@ -1353,7 +1353,7 @@ export default function SharedLinkPage() {
             {(trackData.audio_url || slug) && (
               <div className="border-t border-border px-6 py-4 space-y-3">
                 <div className="relative">
-                  {trackData.waveform_data ? (
+                  {Array.isArray(trackData.waveform_data) ? (
                     <WaveformBar peaks={trackData.waveform_data} progress={progress} onSeek={handleSeek} onDoubleClick={handleWaveformDoubleClick} />
                   ) : (
                     <div
@@ -1444,7 +1444,7 @@ export default function SharedLinkPage() {
               </div>
             )}
 
-            {trackData.lyrics_segments && trackData.lyrics_segments.length > 0 && playingTrackId === trackData.id && (
+            {Array.isArray(trackData.lyrics_segments) && trackData.lyrics_segments.length > 0 && playingTrackId === trackData.id && (
               <KaraokeLyrics
                 segments={trackData.lyrics_segments}
                 currentTime={currentTime}
