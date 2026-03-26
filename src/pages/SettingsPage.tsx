@@ -20,6 +20,7 @@ import {
   Check,
   Eye,
   EyeOff,
+  Edit3,
   Sparkles,
   Laptop,
   ChevronDown,
@@ -570,17 +571,36 @@ function BrandingSection() {
       <SectionBlock title="Hero Image" subtitle="Background image for your shared links and pitches" icon={Image}>
         <FieldGroup label="Hero Image" hint="Background image shown to recipients on your shared links and pitches. Recommended: 1920×600px">
           {heroUrl ? (
-            <div className="space-y-3">
-              <div className="relative rounded-xl overflow-hidden border border-border/50" style={{ maxHeight: 200, aspectRatio: "16/6" }}>
-                <img src={heroUrl} alt="Hero" className="w-full h-full object-cover" />
+            <div className="group/hero relative rounded-xl overflow-hidden border border-border/50 cursor-pointer" style={{ aspectRatio: "16/6" }}>
+              <img src={heroUrl} alt="Hero" className="w-full h-full object-cover" />
+              {/* Watermark overlay */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="text-white/20 text-lg font-bold uppercase tracking-widest select-none">Hero Image</span>
               </div>
-              <div className="flex items-center gap-3">
-                <button onClick={() => handleUpload("hero")} className="text-[11px] gradient-text font-bold hover:opacity-80 transition-opacity">
-                  {uploading === "hero" ? "Uploading..." : "Replace"}
-                </button>
-                <span className="text-muted-foreground/20">·</span>
-                <button onClick={() => handleRemove("hero")} className="text-[11px] text-muted-foreground/40 font-medium hover:text-destructive transition-colors">Remove</button>
+              {/* Hover overlay with actions */}
+              <div className="absolute inset-0 bg-black/0 group-hover/hero:bg-black/40 transition-all duration-200">
+                <div className="absolute top-2.5 right-2.5 flex items-center gap-2 opacity-0 group-hover/hero:opacity-100 transition-opacity duration-200">
+                  <button
+                    onClick={() => handleUpload("hero")}
+                    className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm"
+                    title="Change"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-gray-700" />
+                  </button>
+                  <button
+                    onClick={() => handleRemove("hero")}
+                    className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm"
+                    title="Remove"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                  </button>
+                </div>
               </div>
+              {uploading === "hero" && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <span className="text-white text-[12px] font-semibold">Uploading...</span>
+                </div>
+              )}
             </div>
           ) : (
             <button
@@ -605,15 +625,19 @@ function BrandingSection() {
         <FieldGroup label="Logo" hint="Your logo displayed alongside TRAKALOG branding. Recommended: PNG with transparent background">
           {logoUrl ? (
             <div className="space-y-3">
-              <div className="inline-flex items-center justify-center p-4 rounded-xl border border-border/50 bg-secondary/20">
-                <img src={logoUrl} alt="Logo" style={{ maxHeight: 60 }} className="object-contain" />
+              <div className="flex items-center justify-center p-4 rounded-xl border border-border/50 bg-secondary/30">
+                <img src={logoUrl} alt="Logo" style={{ maxHeight: 80 }} className="object-contain" />
               </div>
               <div className="flex items-center gap-3">
-                <button onClick={() => handleUpload("logo")} className="text-[11px] gradient-text font-bold hover:opacity-80 transition-opacity">
-                  {uploading === "logo" ? "Uploading..." : "Replace"}
+                <button onClick={() => handleUpload("logo")} className="inline-flex items-center gap-1.5 text-[11px] gradient-text font-bold hover:opacity-80 transition-opacity">
+                  <Edit3 className="w-3 h-3" />
+                  {uploading === "logo" ? "Uploading..." : "Change"}
                 </button>
                 <span className="text-muted-foreground/20">·</span>
-                <button onClick={() => handleRemove("logo")} className="text-[11px] text-muted-foreground/40 font-medium hover:text-destructive transition-colors">Remove</button>
+                <button onClick={() => handleRemove("logo")} className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/40 font-medium hover:text-destructive transition-colors">
+                  <Trash2 className="w-3 h-3" />
+                  Remove
+                </button>
               </div>
             </div>
           ) : (
@@ -654,6 +678,13 @@ function BrandingSection() {
                 </button>
               ))}
             </div>
+            {/* Brand color preview */}
+            {brandColor && (
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-10 rounded-lg border border-border/40 shadow-sm" style={{ backgroundColor: brandColor }} />
+                <span className="text-[13px] font-mono font-semibold text-foreground/70">{brandColor.toUpperCase()}</span>
+              </div>
+            )}
             {/* Custom color input */}
             <div className="flex items-center gap-3">
               <input
@@ -668,12 +699,9 @@ function BrandingSection() {
                 onChange={(v) => setBrandColor(v)}
               />
               {brandColor && (
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg border border-border/40" style={{ backgroundColor: brandColor }} />
-                  <button onClick={() => setBrandColor("")} className="text-[11px] text-muted-foreground/40 hover:text-destructive transition-colors">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <button onClick={() => setBrandColor("")} className="text-[11px] text-muted-foreground/40 hover:text-destructive transition-colors">
+                  <X className="w-3.5 h-3.5" />
+                </button>
               )}
             </div>
           </div>
