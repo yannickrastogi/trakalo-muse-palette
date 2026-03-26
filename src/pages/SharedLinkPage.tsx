@@ -100,7 +100,7 @@ function hashId(id: string): number {
 function CommentMarkers({ comments, totalDuration }: { comments: TrackComment[]; totalDuration: number }) {
   if (!totalDuration || comments.length === 0) return null;
   return (
-    <div className="absolute inset-0 pointer-events-none" style={{ height: 48 }}>
+    <div className="absolute inset-0 pointer-events-none" style={{ height: 56 }}>
       {comments.map(function(c) {
         var left = Math.min(100, (c.timestamp_sec / totalDuration) * 100);
         return (
@@ -628,14 +628,15 @@ export default function SharedLinkPage() {
 
   var handleWaveformDoubleClickPercent = useCallback(function(percent: number) {
     var audio = audioRef.current;
-    if (!audio || !audio.duration) return;
-    var seconds = (percent / 100) * audio.duration;
-    audio.currentTime = seconds;
+    var dur = (audio && audio.duration) || (trackData?.duration_sec) || (playlistTracks.length > 0 && playlistTracks[0]?.duration_sec) || 0;
+    if (!dur) return;
+    var seconds = (percent / 100) * dur;
+    if (audio && audio.duration) audio.currentTime = seconds;
     setCommentTimestamp(seconds);
     setCommentComposerOpen(true);
     setCommentText("");
     setTimeout(function() { commentInputRef.current?.focus(); }, 50);
-  }, []);
+  }, [trackData, playlistTracks]);
 
   var handleSubmitComment = useCallback(function() {
     var tId = trackData?.id || playingTrackId;
@@ -846,6 +847,7 @@ export default function SharedLinkPage() {
   }, [linkData, trackData, packDownloading, fetchAudioUrl, slug]);
 
   var progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  var effectiveDuration = duration || (trackData?.duration_sec) || 0;
   var needsGate = linkData && !gateCompleted;
   var needsPassword = linkData && linkData.link_type === "secured" && !passwordVerified && gateCompleted;
   var isPlaylist = linkData?.share_type === "playlist";
@@ -1126,7 +1128,7 @@ export default function SharedLinkPage() {
                       onDoubleClick={handleWaveformDoubleClickPercent}
                       isPlaying={isPlaying}
                     />
-                    <CommentMarkers comments={comments} totalDuration={duration} />
+                    <CommentMarkers comments={comments} totalDuration={effectiveDuration} />
                   </div>
                   <p className="text-[10px] text-muted-foreground/40 text-center">Double-click waveform to leave a comment</p>
 
@@ -1355,7 +1357,7 @@ export default function SharedLinkPage() {
                     onDoubleClick={handleWaveformDoubleClickPercent}
                     isPlaying={isPlaying}
                   />
-                  <CommentMarkers comments={comments} totalDuration={duration} />
+                  <CommentMarkers comments={comments} totalDuration={effectiveDuration} />
                 </div>
                 <p className="text-[10px] text-muted-foreground/40 text-center">Double-click waveform to leave a comment</p>
 
