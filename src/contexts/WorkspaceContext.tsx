@@ -86,6 +86,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             storageQuotaMB: 2048,
           },
           hero_image_url: (ws as any).hero_image_url || null,
+          hero_position: (ws as any).hero_position ?? null,
           logo_url: (ws as any).logo_url || null,
           brand_color: (ws as any).brand_color || null,
         }));

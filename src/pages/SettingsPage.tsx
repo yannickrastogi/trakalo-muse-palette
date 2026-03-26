@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
@@ -21,6 +21,7 @@ import {
   Eye,
   EyeOff,
   Edit3,
+  Move,
   Sparkles,
   Laptop,
   ChevronDown,
@@ -500,14 +501,75 @@ function BrandingSection() {
   const [logoUrl, setLogoUrl] = useState<string | null>(activeWorkspace?.logo_url || null);
   const [brandColor, setBrandColor] = useState<string>(activeWorkspace?.brand_color || "");
   const [uploading, setUploading] = useState<"hero" | "logo" | null>(null);
+  const [heroPosition, setHeroPosition] = useState<number>(activeWorkspace?.hero_position ?? 50);
+  const [repositioning, setRepositioning] = useState(false);
+  const [dragPosition, setDragPosition] = useState<number>(50);
+  const dragRef = useRef<{ startY: number; startPos: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (activeWorkspace) {
       setHeroUrl(activeWorkspace.hero_image_url || null);
       setLogoUrl(activeWorkspace.logo_url || null);
       setBrandColor(activeWorkspace.brand_color || "");
+      setHeroPosition(activeWorkspace.hero_position ?? 50);
     }
   }, [activeWorkspace]);
+
+  const startReposition = useCallback(() => {
+    setDragPosition(heroPosition);
+    setRepositioning(true);
+  }, [heroPosition]);
+
+  const handleDragStart = useCallback((clientY: number) => {
+    dragRef.current = { startY: clientY, startPos: dragPosition };
+  }, [dragPosition]);
+
+  const handleDragMove = useCallback((clientY: number) => {
+    if (!dragRef.current || !containerRef.current) return;
+    const containerHeight = containerRef.current.getBoundingClientRect().height;
+    const deltaY = clientY - dragRef.current.startY;
+    const deltaPct = (deltaY / containerHeight) * 100;
+    const newPos = Math.max(0, Math.min(100, dragRef.current.startPos - deltaPct));
+    setDragPosition(newPos);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    dragRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    if (!repositioning) return;
+    const onMouseMove = (e: MouseEvent) => handleDragMove(e.clientY);
+    const onMouseUp = () => handleDragEnd();
+    const onTouchMove = (e: TouchEvent) => { e.preventDefault(); handleDragMove(e.touches[0].clientY); };
+    const onTouchEnd = () => handleDragEnd();
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onTouchEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [repositioning, handleDragMove, handleDragEnd]);
+
+  const handleSavePosition = async () => {
+    if (!activeWorkspace) return;
+    const pos = Math.round(dragPosition);
+    const { error } = await supabase.from("workspaces").update({ hero_position: pos }).eq("id", activeWorkspace.id);
+    if (error) { toast.error(error.message); return; }
+    setHeroPosition(pos);
+    setRepositioning(false);
+    toast.success("Hero position saved");
+  };
+
+  const handleCancelReposition = () => {
+    setDragPosition(heroPosition);
+    setRepositioning(false);
+  };
 
   const handleUpload = (type: "hero" | "logo") => {
     const input = document.createElement("input");
@@ -571,34 +633,85 @@ function BrandingSection() {
       <SectionBlock title="Hero Image" subtitle="Background image for your shared links and pitches" icon={Image}>
         <FieldGroup label="Hero Image" hint="Background image shown to recipients on your shared links and pitches. Recommended: 1920×600px">
           {heroUrl ? (
-            <div className="group/hero relative rounded-xl overflow-hidden border border-border/50 cursor-pointer" style={{ aspectRatio: "16/6" }}>
-              <img src={heroUrl} alt="Hero" className="w-full h-full object-cover" />
-              {/* Watermark overlay */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="text-white/20 text-lg font-bold uppercase tracking-widest select-none">Hero Image</span>
+            <div className="space-y-3">
+              <div
+                ref={containerRef}
+                className={"group/hero relative rounded-xl overflow-hidden border border-border/50 " + (repositioning ? "cursor-grab active:cursor-grabbing" : "cursor-pointer")}
+                style={{ aspectRatio: "16/6" }}
+                onMouseDown={repositioning ? (e) => { e.preventDefault(); handleDragStart(e.clientY); } : undefined}
+                onTouchStart={repositioning ? (e) => handleDragStart(e.touches[0].clientY) : undefined}
+              >
+                <img
+                  src={heroUrl}
+                  alt="Hero"
+                  className="w-full h-full object-cover pointer-events-none select-none"
+                  style={{ objectPosition: "center " + (repositioning ? dragPosition : heroPosition) + "%" }}
+                  draggable={false}
+                />
+                {/* Watermark overlay */}
+                {!repositioning && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="text-white/20 text-lg font-bold uppercase tracking-widest select-none">Hero Image</span>
+                  </div>
+                )}
+                {/* Reposition mode overlay */}
+                {repositioning && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="bg-black/50 text-white text-[12px] font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                      Drag to reposition
+                    </div>
+                  </div>
+                )}
+                {/* Hover overlay with actions (not in reposition mode) */}
+                {!repositioning && (
+                  <div className="absolute inset-0 bg-black/0 group-hover/hero:bg-black/40 transition-all duration-200">
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-2 opacity-0 group-hover/hero:opacity-100 transition-opacity duration-200">
+                      <button
+                        onClick={startReposition}
+                        className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm"
+                        title="Reposition"
+                      >
+                        <Move className="w-3.5 h-3.5 text-gray-700" />
+                      </button>
+                      <button
+                        onClick={() => handleUpload("hero")}
+                        className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm"
+                        title="Change"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-gray-700" />
+                      </button>
+                      <button
+                        onClick={() => handleRemove("hero")}
+                        className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm"
+                        title="Remove"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {uploading === "hero" && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <span className="text-white text-[12px] font-semibold">Uploading...</span>
+                  </div>
+                )}
               </div>
-              {/* Hover overlay with actions */}
-              <div className="absolute inset-0 bg-black/0 group-hover/hero:bg-black/40 transition-all duration-200">
-                <div className="absolute top-2.5 right-2.5 flex items-center gap-2 opacity-0 group-hover/hero:opacity-100 transition-opacity duration-200">
+              {/* Reposition action buttons */}
+              {repositioning && (
+                <div className="flex items-center gap-3">
                   <button
-                    onClick={() => handleUpload("hero")}
-                    className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm"
-                    title="Change"
+                    onClick={handleSavePosition}
+                    className="px-4 py-2 text-[12px] font-bold rounded-lg text-white transition-opacity hover:opacity-90"
+                    style={{ background: "var(--gradient-brand-horizontal)" }}
                   >
-                    <Edit3 className="w-3.5 h-3.5 text-gray-700" />
+                    Save Position
                   </button>
                   <button
-                    onClick={() => handleRemove("hero")}
-                    className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm"
-                    title="Remove"
+                    onClick={handleCancelReposition}
+                    className="px-4 py-2 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                    Cancel
                   </button>
-                </div>
-              </div>
-              {uploading === "hero" && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <span className="text-white text-[12px] font-semibold">Uploading...</span>
                 </div>
               )}
             </div>

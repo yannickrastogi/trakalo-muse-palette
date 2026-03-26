@@ -37,6 +37,7 @@ interface SharedLinkData {
 
 interface WorkspaceBranding {
   hero_image_url: string | null;
+  hero_position: number | null;
   logo_url: string | null;
   brand_color: string | null;
 }
@@ -424,7 +425,7 @@ export default function SharedLinkPage() {
     if (!linkData || !linkData.workspace_id) return;
     anonSupabase
       .from("workspaces")
-      .select("hero_image_url, logo_url, brand_color")
+      .select("hero_image_url, hero_position, logo_url, brand_color")
       .eq("id", linkData.workspace_id)
       .single()
       .then(function(res) {
@@ -1589,6 +1590,7 @@ export default function SharedLinkPage() {
 
 function Shell({ children, branding }: { children: React.ReactNode; branding?: WorkspaceBranding | null }) {
   var heroUrl = branding?.hero_image_url || null;
+  var heroPos = branding?.hero_position ?? 50;
   var logoUrl = branding?.logo_url || null;
 
   return (
@@ -1596,7 +1598,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
       <header className={"border-b border-border/50 " + (heroUrl ? "relative overflow-hidden" : "bg-card/50 backdrop-blur-sm")}>
         {heroUrl && (
           <>
-            <img src={heroUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={heroUrl} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: "center " + heroPos + "%" }} />
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-background" />
           </>
         )}

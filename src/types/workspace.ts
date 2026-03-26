@@ -21,6 +21,7 @@ export interface Workspace {
   created_at: string;
   settings: WorkspaceSettings;
   hero_image_url: string | null;
+  hero_position: number | null;
   logo_url: string | null;
   brand_color: string | null;
 }

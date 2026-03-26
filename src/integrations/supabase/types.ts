@@ -738,6 +738,7 @@ export type Database = {
           brand_color: string | null
           created_at: string
           hero_image_url: string | null
+          hero_position: number | null
           id: string
           logo_url: string | null
           name: string
@@ -751,6 +752,7 @@ export type Database = {
           brand_color?: string | null
           created_at?: string
           hero_image_url?: string | null
+          hero_position?: number | null
           id?: string
           logo_url?: string | null
           name: string
@@ -764,6 +766,7 @@ export type Database = {
           brand_color?: string | null
           created_at?: string
           hero_image_url?: string | null
+          hero_position?: number | null
           id?: string
           logo_url?: string | null
           name?: string
