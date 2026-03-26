@@ -50,7 +50,7 @@ interface CommentGroup {
 
 export function TrackReviewPanel({
   trackId,
-  currentUserName = "Kira Nomura",
+  currentUserName = "Unknown",
   progress,
   onSeek,
   totalDurationSeconds,

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTeams } from "@/contexts/TeamContext";
 import { useTrack, mapRowToTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
@@ -203,6 +204,7 @@ export default function TrackDetail() {
     }
   }, []);
 
+  const { user } = useAuth();
   const { permissions } = useRole();
   const { activeWorkspace } = useWorkspace();
   const navigate = useNavigate();
@@ -224,6 +226,7 @@ export default function TrackDetail() {
   const [commentFilterAuthor, setCommentFilterAuthor] = useState<string | null>(null);
   const [commentFilterLink, setCommentFilterLink] = useState<string | null>(null);
   const { teams } = useTeams();
+  const currentUserName = user?.user_metadata?.full_name || user?.email || "Unknown";
 
   const trackData = id ? getTrackByUuid(id) : undefined;
 
@@ -378,7 +381,7 @@ export default function TrackDetail() {
     if (!track) return;
     addComment({
       trackId: track.id,
-      authorName: "Kira Nomura",
+      authorName: currentUserName,
       authorType: "owner",
       commentText: text,
       timestampSeconds,
@@ -872,7 +875,7 @@ export default function TrackDetail() {
                {activeTab === "review" && (
                  <TrackReviewPanel
                    trackId={track.id}
-                   currentUserName="Kira Nomura"
+                   currentUserName={currentUserName}
                    progress={currentProgress}
                    onSeek={handleCommentSeek}
                    totalDurationSeconds={totalDurationSeconds}
