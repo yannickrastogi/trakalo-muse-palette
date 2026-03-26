@@ -85,6 +85,7 @@ function formatDuration(seconds: number): string {
 
 function parseWaveform(raw: unknown): number[] | null {
   if (Array.isArray(raw)) return raw;
+  if (raw && typeof raw === "object" && Array.isArray((raw as any).peaks)) return (raw as any).peaks;
   if (typeof raw === "string") {
     try { var parsed = JSON.parse(raw); if (Array.isArray(parsed)) return parsed; } catch (_e) { /* ignore */ }
   }

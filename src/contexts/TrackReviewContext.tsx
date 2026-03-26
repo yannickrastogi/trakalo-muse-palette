@@ -176,7 +176,11 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       .eq("id", trackUuid)
       .single();
 
-    const existing = (current?.waveform_data as WaveformDataWithComments) || {};
+    const raw = current?.waveform_data;
+    // Preserve peaks array if waveform_data was stored as number[] (not an object)
+    const existing: WaveformDataWithComments = Array.isArray(raw)
+      ? { peaks: raw }
+      : (raw as WaveformDataWithComments) || {};
     const updated = { ...existing, comments: trackComments };
 
     const { error } = await supabase

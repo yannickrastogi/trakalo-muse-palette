@@ -96,6 +96,7 @@ import { type PitchEntry } from "@/components/CreatePitchModal";
 import { StemsTab } from "@/components/StemsTab";
 import { STEM_TYPES, DEFAULT_COVER } from "@/lib/constants";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
+import { generateWaveform } from "@/lib/waveformGenerator";
 import { toast } from "sonner";
 import { analyzeWithEssentia } from "@/lib/audioAnalyzer";
 import { analyzeAudio } from "@/lib/audio-analysis";
@@ -264,6 +265,46 @@ export default function TrackDetail() {
   // Remember if we ever had a track, to show loading instead of "not found" during context resets
   const hadTrackRef = useRef(false);
   if (track) hadTrackRef.current = true;
+
+  // Auto-regenerate waveform peaks for tracks that have waveform_data = NULL
+  const waveformRegenRef = useRef<string | null>(null);
+  useEffect(function() {
+    if (!track || !track.uuid) return;
+    if (track.waveformData && track.waveformData.length > 0) return;
+    if (waveformRegenRef.current === track.uuid) return;
+    waveformRegenRef.current = track.uuid;
+
+    var audioPath = track.previewUrl || track.originalFileUrl;
+    if (!audioPath) return;
+
+    // Fetch the audio file and regenerate peaks
+    (async function() {
+      try {
+        // If the URL is already signed/absolute, fetch directly; otherwise get a signed URL
+        var url = audioPath;
+        if (!url.startsWith("http")) {
+          var signed = await supabase.storage.from("tracks").createSignedUrl(url, 300);
+          if (signed.error || !signed.data?.signedUrl) return;
+          url = signed.data.signedUrl;
+        }
+        var response = await fetch(url);
+        if (!response.ok) return;
+        var blob = await response.blob();
+        var file = new File([blob], "audio", { type: blob.type });
+        var peaks = await generateWaveform(file, 200);
+        if (!peaks || peaks.length === 0) return;
+
+        // Persist to DB
+        await supabase.from("tracks").update({ waveform_data: peaks }).eq("id", track.uuid);
+        // Update local state
+        if (track.id !== undefined) {
+          updateTrack(track.id, { waveformData: peaks });
+        }
+      } catch (e) {
+        console.error("Waveform auto-regeneration error:", e);
+      }
+    })();
+  }, [track?.uuid, track?.waveformData, track?.previewUrl, track?.originalFileUrl]);
 
   // Play/pause handler — must be before early return to respect Rules of Hooks
   const handlePlayPause = useCallback(() => {

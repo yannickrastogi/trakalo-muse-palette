@@ -167,7 +167,11 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     splits: (row.splits as TrackSplit[]) || [],
     lyrics: (row.lyrics as string) || undefined,
     lyricsSegments: Array.isArray(row.lyrics_segments) ? (row.lyrics_segments as { start: number; end: number; text: string }[]) : undefined,
-    waveformData: row.waveform_data ? (row.waveform_data as number[]) : undefined,
+    waveformData: Array.isArray(row.waveform_data)
+      ? (row.waveform_data as number[])
+      : row.waveform_data && typeof row.waveform_data === "object" && Array.isArray((row.waveform_data as any).peaks)
+        ? ((row.waveform_data as any).peaks as number[])
+        : undefined,
     chapters: Array.isArray(row.chapters) ? (row.chapters as TrackChapter[]) : undefined,
     createdAt: (row.created_at as string) || undefined,
     statusHistory: [],
@@ -438,6 +442,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (updates.splits !== undefined) payload.splits = updates.splits;
       if (updates.isrc !== undefined) payload.isrc = updates.isrc || null;
       if (updates.chapters !== undefined) payload.chapters = updates.chapters || null;
+      if (updates.waveformData !== undefined) payload.waveform_data = updates.waveformData || null;
 
       if (Object.keys(payload).length > 0) {
         const { error } = await supabase
