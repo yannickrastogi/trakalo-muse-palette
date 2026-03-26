@@ -211,6 +211,21 @@ var anonSupabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
+function setVisitorCookie(data: { name: string; email: string; role: string; company: string }) {
+  var value = JSON.stringify({ name: data.name, email: data.email, role: data.role, company: data.company, timestamp: Date.now() });
+  document.cookie = "trakalog_visitor=" + encodeURIComponent(value) + "; max-age=172800; path=/; SameSite=Lax; Secure";
+}
+
+function getVisitorCookie(): { name: string; email: string; role: string; company: string } | null {
+  var match = document.cookie.match(/trakalog_visitor=([^;]+)/);
+  if (!match) return null;
+  try {
+    var data = JSON.parse(decodeURIComponent(match[1]));
+    if (Date.now() - data.timestamp > 172800000) return null;
+    return { name: data.name, email: data.email, role: data.role, company: data.company };
+  } catch { return null; }
+}
+
 export default function SharedLinkPage() {
   var { slug } = useParams<{ slug: string }>();
 
@@ -221,13 +236,14 @@ export default function SharedLinkPage() {
   var [playlistTracks, setPlaylistTracks] = useState<TrackData[]>([]);
   var [error, setError] = useState<string | null>(null);
 
-  // Gate state
+  // Gate state — pre-fill from cookie if available
+  var savedVisitor = useMemo(function() { return getVisitorCookie(); }, []);
   var [gateCompleted, setGateCompleted] = useState(false);
-  var [visitorName, setVisitorName] = useState("");
-  var [visitorEmail, setVisitorEmail] = useState("");
-  var visitorEmailRef = useRef("");
-  var [visitorRole, setVisitorRole] = useState("");
-  var [visitorCompany, setVisitorCompany] = useState("");
+  var [visitorName, setVisitorName] = useState(savedVisitor?.name || "");
+  var [visitorEmail, setVisitorEmail] = useState(savedVisitor?.email || "");
+  var visitorEmailRef = useRef(savedVisitor?.email || "");
+  var [visitorRole, setVisitorRole] = useState(savedVisitor?.role || "");
+  var [visitorCompany, setVisitorCompany] = useState(savedVisitor?.company || "");
   var [gateError, setGateError] = useState("");
 
   // Password state
@@ -375,6 +391,22 @@ export default function SharedLinkPage() {
       setLoading(false);
     });
   }, [slug]);
+
+  // Auto-skip gate screen if valid visitor cookie exists
+  useEffect(function() {
+    if (!linkData || gateCompleted) return;
+    if (!savedVisitor) return;
+    // Skip the gate (both public and secured — secured will still show password screen)
+    setGateCompleted(true);
+    visitorEmailRef.current = savedVisitor.email;
+    // Log access with cookie data
+    fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/log-link-access", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY },
+      body: JSON.stringify({ slug: slug, name: savedVisitor.name, email: savedVisitor.email, role: savedVisitor.role, company: savedVisitor.company }),
+    }).catch(function(err) { console.error("Failed to log access:", err); });
+    logEvent(null, "view");
+  }, [linkData]);
 
   // Setup audio element (single instance for lifetime of page)
   useEffect(function() {
@@ -571,6 +603,7 @@ export default function SharedLinkPage() {
     setGateError("");
     setGateCompleted(true);
     visitorEmailRef.current = visitorEmail;
+    setVisitorCookie({ name: visitorName.trim(), email: visitorEmail.trim(), role: visitorRole.trim(), company: visitorCompany.trim() });
 
     fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/log-link-access", {
       method: "POST",
