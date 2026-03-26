@@ -1711,7 +1711,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
   var effectiveExecutedSent = executedSent && splitsMatchSignatures;
 
   var handleSendForSignature = useCallback(function () {
-    if (!trackUuid || splits.length < 2 || totalShares !== 100) return;
+    if (!trackUuid || splits.length < 1 || totalShares !== 100) return;
     if (!allSplitsHaveEmail) return;
     setSendingSignatures(true);
 
@@ -2108,7 +2108,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
             var isEditingThisEmail = editingEmailId === s.id;
             var hasNoEmail = !s.email || s.email.indexOf("@") <= 0;
             return (
-              <div key={s.id || s.name + i} className={"flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors" + (hasNoEmail && splits.length >= 2 && totalShares === 100 ? " bg-destructive/5" : "")}>
+              <div key={s.id || s.name + i} className={"flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors" + (hasNoEmail && splits.length >= 1 && totalShares === 100 ? " bg-destructive/5" : "")}>
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className={"w-2.5 h-2.5 rounded-full shrink-0 " + dotColors[i % dotColors.length]} />
                   <div className="min-w-0">
@@ -2170,7 +2170,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
             );
           })}
         </div>
-        {!allSplitsHaveEmail && totalShares === 100 && splits.length >= 2 && (
+        {!allSplitsHaveEmail && totalShares === 100 && splits.length >= 1 && (
           <div className="px-5 py-2.5 bg-brand-orange/8 border-t border-brand-orange/20 flex items-center gap-2">
             <AlertTriangle className="w-3.5 h-3.5 text-brand-orange shrink-0" />
             <span className="text-xs text-brand-orange">{t("signature.missingEmails")}</span>
@@ -2180,7 +2180,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
           <span className="text-muted-foreground">Total</span>
           <span className={"font-bold " + (totalShares === 100 ? "text-emerald-400" : "text-destructive")}>{totalShares}%</span>
         </div>
-        {totalShares === 100 && splits.length >= 2 && (
+        {totalShares === 100 && splits.length >= 1 && (
           <TooltipProvider delayDuration={200}>
             <div className="px-5 py-3 border-t border-border flex flex-wrap items-center gap-2">
               {/* Download Signed Splits PDF */}
