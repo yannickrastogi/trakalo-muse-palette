@@ -735,8 +735,11 @@ export type Database = {
       }
       workspaces: {
         Row: {
+          brand_color: string | null
           created_at: string
+          hero_image_url: string | null
           id: string
+          logo_url: string | null
           name: string
           owner_id: string
           plan: string
@@ -745,8 +748,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          brand_color?: string | null
           created_at?: string
+          hero_image_url?: string | null
           id?: string
+          logo_url?: string | null
           name: string
           owner_id: string
           plan?: string
@@ -755,8 +761,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          brand_color?: string | null
           created_at?: string
+          hero_image_url?: string | null
           id?: string
+          logo_url?: string | null
           name?: string
           owner_id?: string
           plan?: string

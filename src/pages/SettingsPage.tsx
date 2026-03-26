@@ -26,6 +26,9 @@ import {
   Save,
   AlertTriangle,
   LogOut,
+  Image,
+  Upload,
+  X,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useTranslation } from "react-i18next";
@@ -46,11 +49,12 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
 };
 
-type SettingsSection = "profile" | "workspace" | "notifications" | "appearance" | "security";
+type SettingsSection = "profile" | "workspace" | "branding" | "notifications" | "appearance" | "security";
 
 const sections: { id: SettingsSection; labelKey: string; icon: React.ElementType; descKey: string }[] = [
   { id: "profile", labelKey: "settings.profile", icon: User, descKey: "settings.profileDesc" },
   { id: "workspace", labelKey: "settings.workspace", icon: Building2, descKey: "settings.workspaceDesc" },
+  { id: "branding", labelKey: "settings.branding", icon: Palette, descKey: "settings.brandingDesc" },
   { id: "notifications", labelKey: "settings.notifications", icon: Bell, descKey: "settings.notificationsDesc" },
   { id: "appearance", labelKey: "settings.appearance", icon: Palette, descKey: "settings.appearanceDesc" },
   { id: "security", labelKey: "settings.security", icon: Shield, descKey: "settings.securityDesc" },
@@ -474,6 +478,212 @@ function WorkspaceSection() {
 }
 
 /* ═══════════════════════════════════════════════════════
+   SECTION: BRANDING
+   ═══════════════════════════════════════════════════════ */
+
+const BRAND_PRESET_COLORS = [
+  { hex: "#FF8C32", label: "Orange" },
+  { hex: "#EC4899", label: "Pink" },
+  { hex: "#8B5CF6", label: "Purple" },
+  { hex: "#3B82F6", label: "Blue" },
+  { hex: "#10B981", label: "Green" },
+  { hex: "#F59E0B", label: "Amber" },
+  { hex: "#6B7280", label: "Gray" },
+  { hex: "#1F2937", label: "Dark" },
+];
+
+function BrandingSection() {
+  const { t } = useTranslation();
+  const { activeWorkspace } = useWorkspace();
+  const [heroUrl, setHeroUrl] = useState<string | null>(activeWorkspace?.hero_image_url || null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(activeWorkspace?.logo_url || null);
+  const [brandColor, setBrandColor] = useState<string>(activeWorkspace?.brand_color || "");
+  const [uploading, setUploading] = useState<"hero" | "logo" | null>(null);
+
+  useEffect(() => {
+    if (activeWorkspace) {
+      setHeroUrl(activeWorkspace.hero_image_url || null);
+      setLogoUrl(activeWorkspace.logo_url || null);
+      setBrandColor(activeWorkspace.brand_color || "");
+    }
+  }, [activeWorkspace]);
+
+  const handleUpload = (type: "hero" | "logo") => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = type === "logo"
+      ? "image/png, image/jpeg, image/webp, image/svg+xml"
+      : "image/png, image/jpeg, image/webp";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file || !activeWorkspace) return;
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("File too large (max 10MB)");
+        return;
+      }
+      setUploading(type);
+      const ext = file.name.split(".").pop() || "png";
+      const path = activeWorkspace.id + "/" + type + "." + ext;
+      const { error: uploadErr } = await supabase.storage.from("branding").upload(path, file, { upsert: true });
+      if (uploadErr) {
+        toast.error(uploadErr.message);
+        setUploading(null);
+        return;
+      }
+      const { data: urlData } = supabase.storage.from("branding").getPublicUrl(path);
+      const publicUrl = urlData.publicUrl + "?t=" + Date.now();
+      const column = type === "hero" ? "hero_image_url" : "logo_url";
+      const { error: updateErr } = await supabase.from("workspaces").update({ [column]: publicUrl }).eq("id", activeWorkspace.id);
+      if (updateErr) {
+        toast.error(updateErr.message);
+        setUploading(null);
+        return;
+      }
+      if (type === "hero") setHeroUrl(publicUrl);
+      else setLogoUrl(publicUrl);
+      setUploading(null);
+      toast.success(type === "hero" ? "Hero image updated" : "Logo updated");
+    };
+    input.click();
+  };
+
+  const handleRemove = async (type: "hero" | "logo") => {
+    if (!activeWorkspace) return;
+    const column = type === "hero" ? "hero_image_url" : "logo_url";
+    const { error } = await supabase.from("workspaces").update({ [column]: null }).eq("id", activeWorkspace.id);
+    if (error) { toast.error(error.message); return; }
+    if (type === "hero") setHeroUrl(null);
+    else setLogoUrl(null);
+    toast.success(type === "hero" ? "Hero image removed" : "Logo removed");
+  };
+
+  const handleBrandColorSave = async () => {
+    if (!activeWorkspace) return;
+    const { error } = await supabase.from("workspaces").update({ brand_color: brandColor || null }).eq("id", activeWorkspace.id);
+    if (error) toast.error(error.message);
+    else toast.success("Brand color saved");
+  };
+
+  return (
+    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+      {/* Hero Image */}
+      <SectionBlock title="Hero Image" subtitle="Background image for your shared links and pitches" icon={Image}>
+        <FieldGroup label="Hero Image" hint="Background image shown to recipients on your shared links and pitches. Recommended: 1920×600px">
+          {heroUrl ? (
+            <div className="space-y-3">
+              <div className="relative rounded-xl overflow-hidden border border-border/50" style={{ maxHeight: 200, aspectRatio: "16/6" }}>
+                <img src={heroUrl} alt="Hero" className="w-full h-full object-cover" />
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => handleUpload("hero")} className="text-[11px] gradient-text font-bold hover:opacity-80 transition-opacity">
+                  {uploading === "hero" ? "Uploading..." : "Replace"}
+                </button>
+                <span className="text-muted-foreground/20">·</span>
+                <button onClick={() => handleRemove("hero")} className="text-[11px] text-muted-foreground/40 font-medium hover:text-destructive transition-colors">Remove</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => handleUpload("hero")}
+              disabled={uploading === "hero"}
+              className="w-full border-2 border-dashed border-border/50 rounded-xl py-8 flex flex-col items-center gap-2 hover:border-primary/30 hover:bg-primary/[0.02] transition-all cursor-pointer group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-secondary/60 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                <Upload className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <span className="text-[12px] font-semibold text-muted-foreground/60 group-hover:text-foreground transition-colors">
+                {uploading === "hero" ? "Uploading..." : "Click to upload hero image"}
+              </span>
+              <span className="text-[10px] text-muted-foreground/30">.jpg, .png, .webp</span>
+            </button>
+          )}
+        </FieldGroup>
+      </SectionBlock>
+
+      {/* Logo */}
+      <SectionBlock title="Logo" subtitle="Your logo displayed alongside TRAKALOG branding" icon={Image}>
+        <FieldGroup label="Logo" hint="Your logo displayed alongside TRAKALOG branding. Recommended: PNG with transparent background">
+          {logoUrl ? (
+            <div className="space-y-3">
+              <div className="inline-flex items-center justify-center p-4 rounded-xl border border-border/50 bg-secondary/20">
+                <img src={logoUrl} alt="Logo" style={{ maxHeight: 60 }} className="object-contain" />
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => handleUpload("logo")} className="text-[11px] gradient-text font-bold hover:opacity-80 transition-opacity">
+                  {uploading === "logo" ? "Uploading..." : "Replace"}
+                </button>
+                <span className="text-muted-foreground/20">·</span>
+                <button onClick={() => handleRemove("logo")} className="text-[11px] text-muted-foreground/40 font-medium hover:text-destructive transition-colors">Remove</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => handleUpload("logo")}
+              disabled={uploading === "logo"}
+              className="w-full border-2 border-dashed border-border/50 rounded-xl py-8 flex flex-col items-center gap-2 hover:border-primary/30 hover:bg-primary/[0.02] transition-all cursor-pointer group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-secondary/60 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                <Upload className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <span className="text-[12px] font-semibold text-muted-foreground/60 group-hover:text-foreground transition-colors">
+                {uploading === "logo" ? "Uploading..." : "Click to upload logo"}
+              </span>
+              <span className="text-[10px] text-muted-foreground/30">.jpg, .png, .webp, .svg</span>
+            </button>
+          )}
+        </FieldGroup>
+      </SectionBlock>
+
+      {/* Brand Color */}
+      <SectionBlock title="Brand Color" subtitle="Accent color for your branded pages" icon={Palette} onSave={handleBrandColorSave} saveLabel="Save Color" changesHint="Color will apply to shared links">
+        <FieldGroup label="Accent Color" hint="Accent color for your branded pages">
+          <div className="space-y-4">
+            {/* Preset colors */}
+            <div className="flex flex-wrap gap-3">
+              {BRAND_PRESET_COLORS.map((c) => (
+                <button
+                  key={c.hex}
+                  onClick={() => setBrandColor(c.hex)}
+                  className="group flex flex-col items-center gap-1.5"
+                >
+                  <div
+                    className={"w-9 h-9 rounded-xl transition-all duration-200 " + (brandColor === c.hex ? "ring-2 ring-primary ring-offset-2 ring-offset-card scale-110" : "ring-1 ring-border/30 group-hover:ring-border/60 group-hover:scale-105")}
+                    style={{ backgroundColor: c.hex }}
+                  />
+                  <span className={"text-[10px] font-semibold " + (brandColor === c.hex ? "text-primary" : "text-muted-foreground/40")}>{c.label}</span>
+                </button>
+              ))}
+            </div>
+            {/* Custom color input */}
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={brandColor || "#FF8C32"}
+                onChange={(e) => setBrandColor(e.target.value)}
+                className="w-9 h-9 rounded-lg border border-border/60 cursor-pointer bg-transparent"
+              />
+              <PremiumInput
+                value={brandColor}
+                placeholder="#FF8C32"
+                onChange={(v) => setBrandColor(v)}
+              />
+              {brandColor && (
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg border border-border/40" style={{ backgroundColor: brandColor }} />
+                  <button onClick={() => setBrandColor("")} className="text-[11px] text-muted-foreground/40 hover:text-destructive transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </FieldGroup>
+      </SectionBlock>
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
    SECTION: NOTIFICATIONS
    ═══════════════════════════════════════════════════════ */
 
@@ -886,6 +1096,7 @@ function SecuritySection() {
 const sectionComponents: Record<SettingsSection, React.FC> = {
   profile: ProfileSection,
   workspace: WorkspaceSection,
+  branding: BrandingSection,
   notifications: NotificationsSection,
   appearance: AppearanceSection,
   security: SecuritySection,

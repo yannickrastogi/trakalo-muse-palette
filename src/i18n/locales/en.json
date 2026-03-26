@@ -501,6 +501,8 @@
     "integrationsDesc": "Connect Spotify, Apple Music, DistroKid, and more",
     "workspace": "Workspace",
     "workspaceDesc": "Team settings & defaults",
+    "branding": "Branding",
+    "brandingDesc": "Hero image, logo & brand color",
     "security": "Security",
     "securityDesc": "Password & authentication",
     "restartOnboarding": "Restart Onboarding",

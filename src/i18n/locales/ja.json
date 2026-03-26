@@ -501,6 +501,8 @@
     "integrationsDesc": "Spotify、Apple Music、DistroKidなどと接続",
     "workspace": "ワークスペース",
     "workspaceDesc": "チーム設定とデフォルト",
+    "branding": "ブランディング",
+    "brandingDesc": "ヒーロー画像、ロゴ、ブランドカラー",
     "security": "セキュリティ",
     "securityDesc": "パスワードと認証",
     "restartOnboarding": "オンボーディングを再開",

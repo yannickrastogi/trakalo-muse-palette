@@ -20,6 +20,9 @@ export interface Workspace {
   plan: WorkspacePlan;
   created_at: string;
   settings: WorkspaceSettings;
+  hero_image_url: string | null;
+  logo_url: string | null;
+  brand_color: string | null;
 }
 
 // ── Tenant-scoped entity base ──

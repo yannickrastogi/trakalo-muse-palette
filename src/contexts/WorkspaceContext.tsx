@@ -85,6 +85,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             maxMembers: 5,
             storageQuotaMB: 2048,
           },
+          hero_image_url: (ws as any).hero_image_url || null,
+          logo_url: (ws as any).logo_url || null,
+          brand_color: (ws as any).brand_color || null,
         }));
 
         setWorkspaces(mapped);

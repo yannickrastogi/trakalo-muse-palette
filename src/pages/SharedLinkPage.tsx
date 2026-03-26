@@ -32,6 +32,13 @@ interface SharedLinkData {
   status: string;
   created_at: string;
   pack_items: string[] | null;
+  workspace_id: string;
+}
+
+interface WorkspaceBranding {
+  hero_image_url: string | null;
+  logo_url: string | null;
+  brand_color: string | null;
 }
 
 interface TrackData {
@@ -272,6 +279,9 @@ export default function SharedLinkPage() {
   // Pack download state
   var [packDownloading, setPackDownloading] = useState(false);
 
+  // Workspace branding
+  var [branding, setBranding] = useState<WorkspaceBranding | null>(null);
+
   // Cache resolved audio URLs to avoid re-fetching
   var audioUrlCache = useRef<Record<string, string>>({});
 
@@ -407,6 +417,21 @@ export default function SharedLinkPage() {
       body: JSON.stringify({ slug: slug, name: savedVisitor.name, email: savedVisitor.email, role: savedVisitor.role, company: savedVisitor.company }),
     }).catch(function(err) { console.error("Failed to log access:", err); });
     logEvent(null, "view");
+  }, [linkData]);
+
+  // Fetch workspace branding when link data is available
+  useEffect(function() {
+    if (!linkData || !linkData.workspace_id) return;
+    anonSupabase
+      .from("workspaces")
+      .select("hero_image_url, logo_url, brand_color")
+      .eq("id", linkData.workspace_id)
+      .single()
+      .then(function(res) {
+        if (res.data) {
+          setBranding(res.data as WorkspaceBranding);
+        }
+      }).catch(function(err) { console.error("Failed to fetch workspace branding:", err); });
   }, [linkData]);
 
   // Setup audio element (single instance for lifetime of page)
@@ -1024,8 +1049,8 @@ export default function SharedLinkPage() {
   if (isPlaylist && playlistData) {
     var totalDuration = playlistTracks.reduce(function(sum, t) { return sum + (t.duration_sec || 0); }, 0);
     return (
-      <Shell>
-        <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
+      <Shell branding={branding}>
+        <div className="max-w-2xl mx-auto py-8 px-4 space-y-6" style={branding?.brand_color ? { "--brand-accent": branding.brand_color } as React.CSSProperties : undefined}>
           {linkData?.message && (
             <div className="relative overflow-hidden rounded-2xl border border-brand-orange/15 bg-gradient-to-br from-brand-orange/5 via-brand-pink/5 to-brand-purple/5 px-6 py-5">
               <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-orange via-brand-pink to-brand-purple rounded-full" />
@@ -1224,6 +1249,7 @@ export default function SharedLinkPage() {
                       <button
                         onClick={function() { if (activeTrack) handlePlayTrack(activeTrack); }}
                         className="w-10 h-10 rounded-full btn-brand flex items-center justify-center"
+                        style={branding?.brand_color ? { background: branding.brand_color } : undefined}
                       >
                         {isPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
                       </button>
@@ -1325,8 +1351,8 @@ export default function SharedLinkPage() {
 
   // ── Single track view ──
   return (
-    <Shell>
-      <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
+    <Shell branding={branding}>
+      <div className="max-w-2xl mx-auto py-8 px-4 space-y-6" style={branding?.brand_color ? { "--brand-accent": branding.brand_color } as React.CSSProperties : undefined}>
         {linkData?.message && (
           <div className="relative overflow-hidden rounded-2xl border border-brand-orange/15 bg-gradient-to-br from-brand-orange/5 via-brand-pink/5 to-brand-purple/5 px-6 py-5">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-orange via-brand-pink to-brand-purple rounded-full" />
@@ -1358,7 +1384,7 @@ export default function SharedLinkPage() {
                 <img src={trackData.cover_url || DEFAULT_COVER} alt={trackData.title} className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1 pt-1">
-                <p className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1">
+                <p className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1" style={branding?.brand_color ? { color: branding.brand_color } : undefined}>
                   {linkData?.share_type === "stems" ? "Stems" : linkData?.share_type === "pack" ? "Pack" : "Track"}
                 </p>
                 <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight leading-tight truncate">
@@ -1370,16 +1396,16 @@ export default function SharedLinkPage() {
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {trackData.genre && (
-                    <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-muted-foreground">{trackData.genre}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-muted-foreground" style={branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.genre}</span>
                   )}
                   {trackData.bpm && (
-                    <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-muted-foreground font-mono">{trackData.bpm + " BPM"}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-muted-foreground font-mono" style={branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.bpm + " BPM"}</span>
                   )}
                   {trackData.key && (
-                    <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-muted-foreground">{trackData.key}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-muted-foreground" style={branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.key}</span>
                   )}
                   {trackData.duration_sec && (
-                    <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-muted-foreground">
+                    <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-muted-foreground" style={branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>
                       <Clock className="w-3 h-3 inline mr-0.5 -mt-0.5" />
                       {formatDuration(trackData.duration_sec)}
                     </span>
@@ -1451,6 +1477,7 @@ export default function SharedLinkPage() {
                   <button
                     onClick={function() { handlePlayTrack(trackData!); }}
                     className="w-11 h-11 rounded-full btn-brand flex items-center justify-center"
+                    style={branding?.brand_color ? { background: branding.brand_color } : undefined}
                   >
                     {playingTrackId === trackData.id && isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
                   </button>
@@ -1560,17 +1587,34 @@ export default function SharedLinkPage() {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, branding }: { children: React.ReactNode; branding?: WorkspaceBranding | null }) {
+  var heroUrl = branding?.hero_image_url || null;
+  var logoUrl = branding?.logo_url || null;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
-        <div className="max-w-2xl mx-auto px-4 py-5 flex items-center justify-center">
+      <header className={"border-b border-border/50 " + (heroUrl ? "relative overflow-hidden" : "bg-card/50 backdrop-blur-sm")}>
+        {heroUrl && (
+          <>
+            <img src={heroUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-background" />
+          </>
+        )}
+        <div className={"max-w-2xl mx-auto px-4 flex items-center justify-center relative z-10 " + (heroUrl ? "py-10 sm:py-14" : "py-5")}>
           <div className="flex flex-col items-center">
             <div className="flex items-center gap-3">
-              <img src={trakalogLogo} alt="Trakalog" className="h-10" />
-              <span className="text-xl font-bold tracking-wider uppercase" style={{ background: "linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Trakalog</span>
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" style={{ maxHeight: 40 }} className="object-contain" />
+              ) : (
+                <>
+                  <img src={trakalogLogo} alt="Trakalog" className="h-10" />
+                  <span className="text-xl font-bold tracking-wider uppercase" style={{ background: "linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Trakalog</span>
+                </>
+              )}
             </div>
-            <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50 mt-1">Catalog Manager</span>
+            {!logoUrl && (
+              <span className={"text-[10px] uppercase tracking-[0.2em] mt-1 " + (heroUrl ? "text-white/50" : "text-muted-foreground/50")}>Catalog Manager</span>
+            )}
           </div>
         </div>
       </header>

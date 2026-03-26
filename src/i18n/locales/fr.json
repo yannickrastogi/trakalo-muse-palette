@@ -501,6 +501,8 @@
     "integrationsDesc": "Connectez Spotify, Apple Music, DistroKid et plus",
     "workspace": "Espace de travail",
     "workspaceDesc": "Paramètres d'équipe et valeurs par défaut",
+    "branding": "Branding",
+    "brandingDesc": "Image hero, logo et couleur de marque",
     "security": "Sécurité",
     "securityDesc": "Mot de passe et authentification",
     "restartOnboarding": "Relancer l'intégration",

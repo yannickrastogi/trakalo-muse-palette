@@ -514,6 +514,8 @@
     "integrationsDesc": "Spotify, Apple Music, DistroKid und mehr verbinden",
     "workspace": "Arbeitsbereich",
     "workspaceDesc": "Team-Einstellungen & Standards",
+    "branding": "Branding",
+    "brandingDesc": "Hero-Bild, Logo & Markenfarbe",
     "security": "Sicherheit",
     "securityDesc": "Passwort & Authentifizierung",
     "restartOnboarding": "Onboarding neu starten",
