@@ -429,6 +429,10 @@ export default function SharedLinkPage() {
       .eq("id", linkData.workspace_id)
       .single()
       .then(function(res) {
+        if (res.error) {
+          console.error("Workspace branding fetch error:", res.error);
+          return;
+        }
         if (res.data) {
           setBranding(res.data as WorkspaceBranding);
         }
