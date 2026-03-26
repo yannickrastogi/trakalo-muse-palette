@@ -736,37 +736,6 @@ export default function TrackDetail() {
                   <input type="range" min="0" max="1" step="0.05" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} className="w-20 h-1.5 accent-primary cursor-pointer" />
                 </div>
               </div>
-              {commentCount > 0 && (commentAuthors.length > 1 || commentSharedLinks.length > 1) && (
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-[10px] text-muted-foreground/60">Filter:</span>
-                  {commentAuthors.length > 1 && (
-                    <select
-                      value={commentFilterAuthor || ""}
-                      onChange={(e) => setCommentFilterAuthor(e.target.value || null)}
-                      className="h-7 px-2 pr-6 rounded-lg bg-secondary border border-border text-[11px] text-foreground outline-none cursor-pointer appearance-none"
-                      style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center" }}
-                    >
-                      <option value="">{"All authors (" + commentCount + ")"}</option>
-                      {commentAuthors.map((a) => (
-                        <option key={a.name} value={a.name}>{a.name + " (" + a.count + ")"}</option>
-                      ))}
-                    </select>
-                  )}
-                  {commentSharedLinks.length > 1 && (
-                    <select
-                      value={commentFilterLink || ""}
-                      onChange={(e) => setCommentFilterLink(e.target.value || null)}
-                      className="h-7 px-2 pr-6 rounded-lg bg-secondary border border-border text-[11px] text-foreground outline-none cursor-pointer appearance-none"
-                      style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center" }}
-                    >
-                      <option value="">{"All links (" + commentCount + ")"}</option>
-                      {commentSharedLinks.map((l) => (
-                        <option key={l.id} value={l.id}>{l.name + " (" + l.count + ")"}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              )}
               <div className="relative">
                 <TrackWaveformPlayer
                   seed={track.id}
@@ -801,6 +770,63 @@ export default function TrackDetail() {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Recipient feedback filter pills */}
+              {commentCount > 0 && (
+                <div className="px-0 py-3">
+                  <p className="text-sm font-semibold text-foreground mb-2">
+                    {"Recipient Feedback "}
+                    <span className="text-muted-foreground font-normal">
+                      {"· " + commentCount + " comment" + (commentCount !== 1 ? "s" : "") + " from " + commentAuthors.length + " " + (commentAuthors.length !== 1 ? "people" : "person")}
+                    </span>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setCommentFilterAuthor(null)}
+                      className={"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors min-h-[32px] " + (!commentFilterAuthor ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/25" : "bg-card border border-border text-muted-foreground hover:text-foreground")}
+                    >
+                      {"All (" + commentCount + ")"}
+                    </button>
+                    {commentAuthors.map((a) => {
+                      const initials = a.name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+                      const isActive = commentFilterAuthor === a.name;
+                      return (
+                        <button
+                          key={a.name}
+                          onClick={() => setCommentFilterAuthor(a.name)}
+                          className={"inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors min-h-[32px] " + (isActive ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/25" : "bg-card border border-border text-muted-foreground hover:text-foreground")}
+                        >
+                          <span className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0">
+                            {initials}
+                          </span>
+                          {a.name + " (" + a.count + ")"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {commentSharedLinks.length > 1 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      <span className="text-[10px] text-muted-foreground/60 self-center mr-1">via:</span>
+                      <button
+                        onClick={() => setCommentFilterLink(null)}
+                        className={"inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors min-h-[28px] " + (!commentFilterLink ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/25" : "bg-card border border-border text-muted-foreground hover:text-foreground")}
+                      >
+                        All Links
+                      </button>
+                      {commentSharedLinks.map((l) => (
+                        <button
+                          key={l.id}
+                          onClick={() => setCommentFilterLink(l.id)}
+                          className={"inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors min-h-[28px] " + (commentFilterLink === l.id ? "bg-brand-orange/10 text-brand-orange border border-brand-orange/25" : "bg-card border border-border text-muted-foreground hover:text-foreground")}
+                        >
+                          <Link2 className="w-3 h-3" />
+                          {l.name + " (" + l.count + ")"}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
 
             {/* Tabs */}
