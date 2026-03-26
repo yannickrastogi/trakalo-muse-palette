@@ -12,6 +12,7 @@ interface TrackWaveformPlayerProps {
   chapters?: TrackChapter[];
   isPlaying?: boolean;
   className?: string;
+  unplayedColor?: string;
 }
 
 /**
@@ -28,6 +29,7 @@ export function TrackWaveformPlayer({
   chapters = [],
   isPlaying = false,
   className = "",
+  unplayedColor,
 }: TrackWaveformPlayerProps) {
   const [hoveredChapter, setHoveredChapter] = useState<string | null>(null);
   const [hoverPercent, setHoverPercent] = useState<number | null>(null);
@@ -146,7 +148,7 @@ export function TrackWaveformPlayer({
                 width={barWidth}
                 height={barHeight}
                 rx={1}
-                fill={played ? `url(#wf-played-${seed})` : "hsl(var(--muted-foreground) / 0.2)"}
+                fill={played ? `url(#wf-played-${seed})` : (unplayedColor || "hsl(var(--muted-foreground) / 0.2)")}
                 className={`transition-opacity duration-75 ${
                   isPlaying && played ? "opacity-100" : played ? "opacity-80" : "opacity-100"
                 }`}

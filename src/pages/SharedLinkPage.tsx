@@ -1097,9 +1097,9 @@ export default function SharedLinkPage() {
           )}
 
           {/* Playlist header */}
-          <div className={"rounded-2xl overflow-hidden " + (plImmersive ? "bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl" : "bg-card border border-border")} style={plImmersive ? undefined : { boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+          <div className={"rounded-2xl overflow-hidden " + (plImmersive ? "bg-white/8 backdrop-blur-xl border border-white/15 shadow-2xl" : "bg-card border border-border")} style={plImmersive ? undefined : { boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 p-4 sm:p-6">
-              <div className="w-full max-w-[200px] sm:w-28 md:w-36 aspect-square sm:h-28 md:h-36 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50">
+              <div className={"w-full max-w-[200px] sm:w-28 md:w-36 aspect-square sm:h-28 md:h-36 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50 " + (plImmersive ? "ring-1 ring-white/20" : "")}>
                 <img src={playlistData.cover_url || DEFAULT_COVER} alt={playlistData.name} className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1 pt-1">
@@ -1216,6 +1216,7 @@ export default function SharedLinkPage() {
                       onSeek={handleSeekPercent}
                       onDoubleClick={handleWaveformDoubleClickPercent}
                       isPlaying={isPlaying}
+                      unplayedColor={plImmersive ? "rgba(255,255,255,0.3)" : undefined}
                     />
                     <CommentMarkers comments={comments} totalDuration={effectiveDuration} />
                   </div>
@@ -1415,9 +1416,9 @@ export default function SharedLinkPage() {
         )}
 
         {trackData ? (
-          <div className={"rounded-2xl overflow-hidden " + (immersive ? "bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl" : "bg-card border border-border")} style={immersive ? undefined : { boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+          <div className={"rounded-2xl overflow-hidden " + (immersive ? "bg-white/8 backdrop-blur-xl border border-white/15 shadow-2xl" : "bg-card border border-border")} style={immersive ? undefined : { boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 p-4 sm:p-6">
-              <div className="w-full max-w-[200px] sm:w-28 md:w-36 aspect-square sm:h-28 md:h-36 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50">
+              <div className={"w-full max-w-[200px] sm:w-28 md:w-36 aspect-square sm:h-28 md:h-36 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50 " + (immersive ? "ring-1 ring-white/20" : "")}>
                 <img src={trackData.cover_url || DEFAULT_COVER} alt={trackData.title} className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1 pt-1">
@@ -1433,16 +1434,16 @@ export default function SharedLinkPage() {
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {trackData.genre && (
-                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/10 border border-white/10 text-white/80" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.genre}</span>
+                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/12 border border-white/15 text-white/90" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.genre}</span>
                   )}
                   {trackData.bpm && (
-                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium font-mono " + (immersive ? "bg-white/10 border border-white/10 text-white/80" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.bpm + " BPM"}</span>
+                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium font-mono " + (immersive ? "bg-white/12 border border-white/15 text-white/90" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.bpm + " BPM"}</span>
                   )}
                   {trackData.key && (
-                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/10 border border-white/10 text-white/80" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.key}</span>
+                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/12 border border-white/15 text-white/90" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.key}</span>
                   )}
                   {trackData.duration_sec && (
-                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/10 border border-white/10 text-white/80" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>
+                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/12 border border-white/15 text-white/90" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>
                       <Clock className="w-3 h-3 inline mr-0.5 -mt-0.5" />
                       {formatDuration(trackData.duration_sec)}
                     </span>
@@ -1452,7 +1453,7 @@ export default function SharedLinkPage() {
                   <div className="flex flex-wrap gap-1 mt-2">
                     {trackData.mood.map(function(m) {
                       return (
-                        <span key={m} className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/10 border border-white/10 text-white/80" : "bg-primary/10 text-primary")}>{m}</span>
+                        <span key={m} className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/12 border border-white/15 text-white/90" : "bg-primary/10 text-primary")}>{m}</span>
                       );
                     })}
                   </div>
@@ -1471,6 +1472,7 @@ export default function SharedLinkPage() {
                     onSeek={handleSeekPercent}
                     onDoubleClick={handleWaveformDoubleClickPercent}
                     isPlaying={isPlaying}
+                    unplayedColor={immersive ? "rgba(255,255,255,0.3)" : undefined}
                   />
                   <CommentMarkers comments={comments} totalDuration={effectiveDuration} />
                 </div>
@@ -1639,9 +1641,9 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
             src={heroUrl!}
             alt=""
             className="w-full h-full object-cover"
-            style={{ objectPosition: "center " + heroPos + "%", filter: "blur(2px)", transform: "scale(1.05)" }}
+            style={{ objectPosition: "center " + heroPos + "%", transform: "scale(1.05)" }}
           />
-          <div className="absolute inset-0 bg-black/75" />
+          <div className="absolute inset-0 bg-black/55" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/90" />
         </div>
         {/* Content floating above */}
@@ -1658,7 +1660,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
                 </div>
               )}
               {logoUrl && (
-                <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">TRAKALOG</span>
+                <span className="text-[10px] tracking-[0.3em] font-semibold bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
               )}
             </div>
           </header>
