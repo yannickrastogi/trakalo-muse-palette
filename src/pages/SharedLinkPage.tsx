@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
-import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2 } from "lucide-react";
+import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare } from "lucide-react";
 import { DEFAULT_COVER } from "@/lib/constants";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import JSZip from "jszip";
@@ -1027,8 +1027,17 @@ export default function SharedLinkPage() {
       <Shell>
         <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
           {linkData?.message && (
-            <div className="px-4 py-3 rounded-xl bg-secondary/50 border border-border">
-              <p className="text-sm text-muted-foreground italic">{linkData.message}</p>
+            <div className="relative overflow-hidden rounded-2xl border border-brand-orange/15 bg-gradient-to-br from-brand-orange/5 via-brand-pink/5 to-brand-purple/5 px-6 py-5">
+              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-orange via-brand-pink to-brand-purple rounded-full" />
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0 mt-0.5">
+                  <MessageSquare className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-brand-orange uppercase tracking-wider mb-1.5">Message from the sender</p>
+                  <p className="text-sm text-foreground leading-relaxed font-medium">{linkData.message}</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1319,8 +1328,17 @@ export default function SharedLinkPage() {
     <Shell>
       <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
         {linkData?.message && (
-          <div className="px-4 py-3 rounded-xl bg-secondary/50 border border-border">
-            <p className="text-sm text-muted-foreground italic">{linkData.message}</p>
+          <div className="relative overflow-hidden rounded-2xl border border-brand-orange/15 bg-gradient-to-br from-brand-orange/5 via-brand-pink/5 to-brand-purple/5 px-6 py-5">
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-orange via-brand-pink to-brand-purple rounded-full" />
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0 mt-0.5">
+                <MessageSquare className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-brand-orange uppercase tracking-wider mb-1.5">Message from the sender</p>
+                <p className="text-sm text-foreground leading-relaxed font-medium">{linkData.message}</p>
+              </div>
+            </div>
           </div>
         )}
 
