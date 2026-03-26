@@ -1053,55 +1053,71 @@ export default function SharedLinkPage() {
   // ── Playlist view ──
   if (isPlaylist && playlistData) {
     var totalDuration = playlistTracks.reduce(function(sum, t) { return sum + (t.duration_sec || 0); }, 0);
+    var plImmersive = !!branding?.hero_image_url;
     return (
       <Shell branding={branding}>
         <div className="max-w-2xl mx-auto py-8 px-4 space-y-6" style={branding?.brand_color ? { "--brand-accent": branding.brand_color } as React.CSSProperties : undefined}>
           {linkData?.message && (
-            <div className="relative overflow-hidden rounded-2xl border border-brand-orange/15 bg-gradient-to-br from-brand-orange/5 via-brand-pink/5 to-brand-purple/5 px-6 py-5">
-              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-orange via-brand-pink to-brand-purple rounded-full" />
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0 mt-0.5">
-                  <MessageSquare className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-brand-orange uppercase tracking-wider mb-1.5">Message from the sender</p>
-                  <p className="text-sm text-foreground leading-relaxed font-medium">{linkData.message}</p>
+            plImmersive ? (
+              <div className="relative overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 px-6 py-5">
+                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-orange via-brand-pink to-brand-purple rounded-full" />
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0 mt-0.5">
+                    <MessageSquare className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider mb-1.5">Message from the sender</p>
+                    <p className="text-sm text-white leading-relaxed font-medium">{linkData.message}</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="relative overflow-hidden rounded-2xl border border-brand-orange/15 bg-gradient-to-br from-brand-orange/5 via-brand-pink/5 to-brand-purple/5 px-6 py-5">
+                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-orange via-brand-pink to-brand-purple rounded-full" />
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0 mt-0.5">
+                    <MessageSquare className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-brand-orange uppercase tracking-wider mb-1.5">Message from the sender</p>
+                    <p className="text-sm text-foreground leading-relaxed font-medium">{linkData.message}</p>
+                  </div>
+                </div>
+              </div>
+            )
           )}
 
           {linkData?.expires_at && (
-            <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-orange/10 border border-brand-orange/20">
-              <Clock className="w-3.5 h-3.5 text-brand-orange" />
-              <p className="text-xs font-medium text-brand-orange">
+            <div className={"flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl " + (plImmersive ? "bg-white/5 backdrop-blur border border-white/10" : "bg-brand-orange/10 border border-brand-orange/20")}>
+              <Clock className={"w-3.5 h-3.5 " + (plImmersive ? "text-white/60" : "text-brand-orange")} />
+              <p className={"text-xs font-medium " + (plImmersive ? "text-white/60" : "text-brand-orange")}>
                 {"This link expires on " + new Date(linkData.expires_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
               </p>
             </div>
           )}
 
           {/* Playlist header */}
-          <div className="rounded-2xl bg-card border border-border overflow-hidden" style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+          <div className={"rounded-2xl overflow-hidden " + (plImmersive ? "bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl" : "bg-card border border-border")} style={plImmersive ? undefined : { boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 p-4 sm:p-6">
               <div className="w-full max-w-[200px] sm:w-28 md:w-36 aspect-square sm:h-28 md:h-36 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50">
                 <img src={playlistData.cover_url || DEFAULT_COVER} alt={playlistData.name} className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1 pt-1">
-                <p className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1">Playlist</p>
-                <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight leading-tight">
+                <p className={"text-[10px] uppercase tracking-wider font-semibold mb-1 " + (plImmersive ? "text-white/60" : "text-primary")}>Playlist</p>
+                <h1 className={"text-xl sm:text-2xl font-bold tracking-tight leading-tight " + (plImmersive ? "text-white" : "text-foreground")}>
                   {playlistData.name}
                 </h1>
                 {playlistData.description && (
-                  <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{playlistData.description}</p>
+                  <p className={"text-sm mt-1.5 leading-relaxed " + (plImmersive ? "text-white/60" : "text-muted-foreground")}>{playlistData.description}</p>
                 )}
-                <div className="flex items-center gap-3 mt-3 text-muted-foreground">
+                <div className={"flex items-center gap-3 mt-3 " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
                   <span className="flex items-center gap-1 text-xs font-medium">
                     <Music className="w-3.5 h-3.5" />
                     {playlistTracks.length + " tracks"}
                   </span>
                   {totalDuration > 0 && (
                     <>
-                      <span className="w-px h-3.5 bg-border" />
+                      <span className={"w-px h-3.5 " + (plImmersive ? "bg-white/20" : "bg-border")} />
                       <span className="flex items-center gap-1 text-xs font-medium">
                         <Clock className="w-3.5 h-3.5" />
                         {formatDuration(totalDuration)}
@@ -1114,7 +1130,7 @@ export default function SharedLinkPage() {
 
             {/* Track list */}
             {playlistTracks.length > 0 && (
-              <div className="border-t border-border">
+              <div className={plImmersive ? "border-t border-white/10" : "border-t border-border"}>
                 {playlistTracks.map(function(track, idx) {
                   var isActive = playingTrackId === track.id;
                   var isAudioPlaying = isActive && isPlaying;
@@ -1122,11 +1138,11 @@ export default function SharedLinkPage() {
                     <div
                       key={track.id}
                       onClick={function() { handlePlayTrack(track); }}
-                      className={"flex items-center gap-3 px-6 py-3 border-b border-border/40 last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer select-none " + (isActive ? "bg-primary/5" : "")}
+                      className={"flex items-center gap-3 px-6 py-3 last:border-0 transition-colors cursor-pointer select-none " + (plImmersive ? "border-b border-white/5 hover:bg-white/5 " : "border-b border-border/40 hover:bg-secondary/30 ") + (isActive ? (plImmersive ? "bg-white/10" : "bg-primary/5") : "")}
                     >
                       {/* Play button / track number */}
                       <div
-                        className={"w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all " + (isAudioPlaying ? "btn-brand" : "bg-secondary/80 text-foreground hover:bg-primary/15 hover:text-primary")}
+                        className={"w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all " + (isAudioPlaying ? "btn-brand" : (plImmersive ? "bg-white/10 text-white hover:bg-white/20" : "bg-secondary/80 text-foreground hover:bg-primary/15 hover:text-primary"))}
                       >
                         {isAudioPlaying ? (
                           <Pause className="w-3.5 h-3.5 text-primary-foreground" />
@@ -1142,15 +1158,15 @@ export default function SharedLinkPage() {
 
                       {/* Info */}
                       <div className="min-w-0 flex-1">
-                        <p className={"text-[13px] font-semibold truncate " + (isActive ? "text-primary" : "text-foreground")}>{track.title}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">
+                        <p className={"text-[13px] font-semibold truncate " + (isActive ? "text-primary" : (plImmersive ? "text-white" : "text-foreground"))}>{track.title}</p>
+                        <p className={"text-[11px] truncate " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
                           {track.artist}
                           {track.featuring ? " ft. " + track.featuring : ""}
                         </p>
                       </div>
 
                       {/* Duration */}
-                      <span className="text-[11px] font-mono text-muted-foreground tabular-nums shrink-0">
+                      <span className={"text-[11px] font-mono tabular-nums shrink-0 " + (plImmersive ? "text-white/40" : "text-muted-foreground")}>
                         {track.duration_sec ? formatDuration(track.duration_sec) : "--:--"}
                       </span>
                     </div>
@@ -1161,8 +1177,8 @@ export default function SharedLinkPage() {
 
             {/* Player bar — prompt or active */}
             {!playingTrackId && playlistTracks.length > 0 && (
-              <div className="border-t border-border px-6 py-4 bg-secondary/20">
-                <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <div className={(plImmersive ? "border-t border-white/10 bg-white/5" : "border-t border-border bg-secondary/20") + " px-6 py-4"}>
+                <div className={"flex items-center justify-center gap-2 " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
                   <Play className="w-4 h-4" />
                   <span className="text-xs font-medium">Select a track to start playback</span>
                 </div>
@@ -1174,7 +1190,7 @@ export default function SharedLinkPage() {
               var hasPrev = activeIdx > 0;
               var hasNext = activeIdx >= 0 && activeIdx < playlistTracks.length - 1;
               return (
-                <div className="border-t border-border px-6 py-4 space-y-3 bg-secondary/20">
+                <div className={(plImmersive ? "border-t border-white/10 bg-white/5" : "border-t border-border bg-secondary/20") + " px-6 py-4 space-y-3"}>
                   {/* Now playing info */}
                   {activeTrack && (
                     <div className="flex items-center gap-3">
@@ -1182,8 +1198,8 @@ export default function SharedLinkPage() {
                         <img src={activeTrack.cover_url || DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-semibold text-foreground truncate">{activeTrack.title}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">
+                        <p className={"text-[13px] font-semibold truncate " + (plImmersive ? "text-white" : "text-foreground")}>{activeTrack.title}</p>
+                        <p className={"text-[11px] truncate " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
                           {activeTrack.artist}
                           {activeTrack.featuring ? " ft. " + activeTrack.featuring : ""}
                         </p>
@@ -1203,10 +1219,10 @@ export default function SharedLinkPage() {
                     />
                     <CommentMarkers comments={comments} totalDuration={effectiveDuration} />
                   </div>
-                  <p className="text-[10px] text-muted-foreground/40 text-center">Double-click waveform to leave a comment</p>
+                  <p className={"text-[10px] text-center " + (plImmersive ? "text-white/40" : "text-muted-foreground/40")}>Double-click waveform to leave a comment</p>
 
                   {commentComposerOpen && (
-                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-secondary/80 border border-border">
+                    <div className={"flex items-center gap-2 px-3 py-2.5 rounded-xl " + (plImmersive ? "bg-white/10 backdrop-blur border border-white/10" : "bg-secondary/80 border border-border")}>
                       <span className="text-[11px] font-mono text-brand-pink whitespace-nowrap">{formatDuration(commentTimestamp)}</span>
                       <input
                         ref={commentInputRef}
@@ -1218,7 +1234,7 @@ export default function SharedLinkPage() {
                           if (e.key === "Escape") { setCommentComposerOpen(false); setCommentText(""); }
                         }}
                         placeholder="Leave a comment..."
-                        className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                        className={"flex-1 bg-transparent text-sm outline-none " + (plImmersive ? "text-white placeholder:text-white/40" : "text-foreground placeholder:text-muted-foreground")}
                       />
                       <button
                         onClick={handleSubmitComment}
@@ -1229,7 +1245,7 @@ export default function SharedLinkPage() {
                       </button>
                       <button
                         onClick={function() { setCommentComposerOpen(false); setCommentText(""); }}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                        className={"p-1.5 rounded-lg transition-colors " + (plImmersive ? "text-white/40 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -1238,7 +1254,7 @@ export default function SharedLinkPage() {
 
                   {/* Controls row */}
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-mono text-muted-foreground tabular-nums w-10">
+                    <span className={"text-[11px] font-mono tabular-nums w-10 " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
                       {formatDuration(currentTime)}
                     </span>
 
@@ -1247,7 +1263,7 @@ export default function SharedLinkPage() {
                       <button
                         onClick={handlePrevTrack}
                         disabled={!hasPrev && (!audioRef.current || audioRef.current.currentTime < 1)}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
+                        className={"p-1.5 rounded-lg transition-colors disabled:opacity-30 " + (plImmersive ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                       >
                         <SkipBack className="w-4 h-4" />
                       </button>
@@ -1261,7 +1277,7 @@ export default function SharedLinkPage() {
                       <button
                         onClick={handleNextTrack}
                         disabled={!hasNext}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
+                        className={"p-1.5 rounded-lg transition-colors disabled:opacity-30 " + (plImmersive ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                       >
                         <SkipForward className="w-4 h-4" />
                       </button>
@@ -1275,7 +1291,7 @@ export default function SharedLinkPage() {
                           if (audioRef.current) audioRef.current.volume = newVol;
                           setVolume(newVol);
                         }}
-                        className="p-1 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                        className={"p-1 rounded-lg transition-colors " + (plImmersive ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                       >
                         {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                       </button>
@@ -1288,7 +1304,7 @@ export default function SharedLinkPage() {
                         onChange={handleVolumeChange}
                         className="w-20 h-1.5 accent-primary cursor-pointer hidden sm:block"
                       />
-                      <span className="text-[11px] font-mono text-muted-foreground tabular-nums ml-1 hidden sm:inline">
+                      <span className={"text-[11px] font-mono tabular-nums ml-1 hidden sm:inline " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
                         {formatDuration(duration)}
                       </span>
                     </div>
@@ -1300,7 +1316,7 @@ export default function SharedLinkPage() {
                       currentTime={currentTime}
                       isPlaying={isPlaying}
                       onSeek={function(time) { if (audioRef.current) { audioRef.current.currentTime = time; } }}
-                      className="border-t border-border -mx-6 px-6 mt-2"
+                      className={(plImmersive ? "border-t border-white/10" : "border-t border-border") + " -mx-6 px-6 mt-2"}
                     />
                   )}
                 </div>
@@ -1309,8 +1325,8 @@ export default function SharedLinkPage() {
           </div>
 
           {linkData?.allow_download && playlistTracks.length > 0 && (
-            <div className="rounded-2xl bg-card border border-border overflow-hidden p-4">
-              <p className="text-xs text-muted-foreground mb-3">Download is enabled for this shared link</p>
+            <div className={"rounded-2xl overflow-hidden p-4 " + (plImmersive ? "bg-white/5 backdrop-blur-xl border border-white/10" : "bg-card border border-border")}>
+              <p className={"text-xs mb-3 " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>Download is enabled for this shared link</p>
               <div className="space-y-2">
                 {playlistTracks.map(function(track) {
                   return (
@@ -1332,10 +1348,10 @@ export default function SharedLinkPage() {
                           }).catch(function (err) { console.error("Error:", err); });
                         }).catch(function (err) { console.error("Error:", err); });
                       }}
-                      className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs border border-border bg-card hover:bg-secondary transition-colors"
+                      className={"w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs transition-colors " + (plImmersive ? "border border-white/10 bg-white/5 hover:bg-white/10" : "border border-border bg-card hover:bg-secondary")}
                     >
-                      <span className="font-medium text-foreground">{track.title} - {track.artist}</span>
-                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                      <span className={"font-medium " + (plImmersive ? "text-white" : "text-foreground")}>{track.title} - {track.artist}</span>
+                      <span className={"flex items-center gap-1.5 " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
                         <Download className="w-3.5 h-3.5" />
                         {linkData.download_quality === "hi-res" ? "Hi-Res" : "Low-Res"}
                       </span>
@@ -1346,7 +1362,7 @@ export default function SharedLinkPage() {
             </div>
           )}
 
-          <p className="text-center text-[10px] text-muted-foreground/60">
+          <p className={"text-center text-[10px] " + (plImmersive ? "text-white/30" : "text-muted-foreground/60")}>
             {"Shared via Trakalog on " + new Date(linkData?.created_at || "").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
           </p>
         </div>
@@ -1355,62 +1371,78 @@ export default function SharedLinkPage() {
   }
 
   // ── Single track view ──
+  var immersive = !!branding?.hero_image_url;
   return (
     <Shell branding={branding}>
       <div className="max-w-2xl mx-auto py-8 px-4 space-y-6" style={branding?.brand_color ? { "--brand-accent": branding.brand_color } as React.CSSProperties : undefined}>
         {linkData?.message && (
-          <div className="relative overflow-hidden rounded-2xl border border-brand-orange/15 bg-gradient-to-br from-brand-orange/5 via-brand-pink/5 to-brand-purple/5 px-6 py-5">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-orange via-brand-pink to-brand-purple rounded-full" />
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0 mt-0.5">
-                <MessageSquare className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold text-brand-orange uppercase tracking-wider mb-1.5">Message from the sender</p>
-                <p className="text-sm text-foreground leading-relaxed font-medium">{linkData.message}</p>
+          immersive ? (
+            <div className="relative overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 px-6 py-5">
+              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-orange via-brand-pink to-brand-purple rounded-full" />
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0 mt-0.5">
+                  <MessageSquare className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider mb-1.5">Message from the sender</p>
+                  <p className="text-sm text-white leading-relaxed font-medium">{linkData.message}</p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="relative overflow-hidden rounded-2xl border border-brand-orange/15 bg-gradient-to-br from-brand-orange/5 via-brand-pink/5 to-brand-purple/5 px-6 py-5">
+              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-brand-orange via-brand-pink to-brand-purple rounded-full" />
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0 mt-0.5">
+                  <MessageSquare className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-brand-orange uppercase tracking-wider mb-1.5">Message from the sender</p>
+                  <p className="text-sm text-foreground leading-relaxed font-medium">{linkData.message}</p>
+                </div>
+              </div>
+            </div>
+          )
         )}
 
         {linkData?.expires_at && (
-          <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-orange/10 border border-brand-orange/20">
-            <Clock className="w-3.5 h-3.5 text-brand-orange" />
-            <p className="text-xs font-medium text-brand-orange">
+          <div className={"flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl " + (immersive ? "bg-white/5 backdrop-blur border border-white/10" : "bg-brand-orange/10 border border-brand-orange/20")}>
+            <Clock className={"w-3.5 h-3.5 " + (immersive ? "text-white/60" : "text-brand-orange")} />
+            <p className={"text-xs font-medium " + (immersive ? "text-white/60" : "text-brand-orange")}>
               {"This link expires on " + new Date(linkData.expires_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
             </p>
           </div>
         )}
 
         {trackData ? (
-          <div className="rounded-2xl bg-card border border-border overflow-hidden" style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+          <div className={"rounded-2xl overflow-hidden " + (immersive ? "bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl" : "bg-card border border-border")} style={immersive ? undefined : { boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 p-4 sm:p-6">
               <div className="w-full max-w-[200px] sm:w-28 md:w-36 aspect-square sm:h-28 md:h-36 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50">
                 <img src={trackData.cover_url || DEFAULT_COVER} alt={trackData.title} className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1 pt-1">
-                <p className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1" style={branding?.brand_color ? { color: branding.brand_color } : undefined}>
+                <p className={"text-[10px] uppercase tracking-wider font-semibold mb-1 " + (immersive ? "text-white/60" : "text-primary")} style={!immersive && branding?.brand_color ? { color: branding.brand_color } : undefined}>
                   {linkData?.share_type === "stems" ? "Stems" : linkData?.share_type === "pack" ? "Pack" : "Track"}
                 </p>
-                <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight leading-tight truncate">
+                <h1 className={"text-xl sm:text-2xl font-bold tracking-tight leading-tight truncate " + (immersive ? "text-white" : "text-foreground")}>
                   {trackData.title}
                 </h1>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className={"text-sm mt-1 " + (immersive ? "text-white/60" : "text-muted-foreground")}>
                   {trackData.artist}
                   {trackData.featuring ? " ft. " + trackData.featuring : ""}
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {trackData.genre && (
-                    <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-muted-foreground" style={branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.genre}</span>
+                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/10 border border-white/10 text-white/80" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.genre}</span>
                   )}
                   {trackData.bpm && (
-                    <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-muted-foreground font-mono" style={branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.bpm + " BPM"}</span>
+                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium font-mono " + (immersive ? "bg-white/10 border border-white/10 text-white/80" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.bpm + " BPM"}</span>
                   )}
                   {trackData.key && (
-                    <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-muted-foreground" style={branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.key}</span>
+                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/10 border border-white/10 text-white/80" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.key}</span>
                   )}
                   {trackData.duration_sec && (
-                    <span className="px-2 py-0.5 rounded-md bg-secondary text-[10px] font-medium text-muted-foreground" style={branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>
+                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/10 border border-white/10 text-white/80" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>
                       <Clock className="w-3 h-3 inline mr-0.5 -mt-0.5" />
                       {formatDuration(trackData.duration_sec)}
                     </span>
@@ -1420,7 +1452,7 @@ export default function SharedLinkPage() {
                   <div className="flex flex-wrap gap-1 mt-2">
                     {trackData.mood.map(function(m) {
                       return (
-                        <span key={m} className="px-2 py-0.5 rounded-md bg-primary/10 text-[10px] font-medium text-primary">{m}</span>
+                        <span key={m} className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/10 border border-white/10 text-white/80" : "bg-primary/10 text-primary")}>{m}</span>
                       );
                     })}
                   </div>
@@ -1430,7 +1462,7 @@ export default function SharedLinkPage() {
 
             {/* Player */}
             {(trackData.audio_url || slug) && (
-              <div className="border-t border-border px-6 py-4 space-y-3">
+              <div className={"px-6 py-4 space-y-3 " + (immersive ? "border-t border-white/10" : "border-t border-border")}>
                 <div className="relative">
                   <TrackWaveformPlayer
                     seed={hashId(trackData.id)}
@@ -1442,10 +1474,10 @@ export default function SharedLinkPage() {
                   />
                   <CommentMarkers comments={comments} totalDuration={effectiveDuration} />
                 </div>
-                <p className="text-[10px] text-muted-foreground/40 text-center">Double-click waveform to leave a comment</p>
+                <p className={"text-[10px] text-center " + (immersive ? "text-white/40" : "text-muted-foreground/40")}>Double-click waveform to leave a comment</p>
 
                 {commentComposerOpen && (
-                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-secondary/80 border border-border">
+                  <div className={"flex items-center gap-2 px-3 py-2.5 rounded-xl " + (immersive ? "bg-white/10 backdrop-blur border border-white/10" : "bg-secondary/80 border border-border")}>
                     <span className="text-[11px] font-mono text-brand-pink whitespace-nowrap">{formatDuration(commentTimestamp)}</span>
                     <input
                       ref={commentInputRef}
@@ -1457,7 +1489,7 @@ export default function SharedLinkPage() {
                         if (e.key === "Escape") { setCommentComposerOpen(false); setCommentText(""); }
                       }}
                       placeholder="Leave a comment..."
-                      className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                      className={"flex-1 bg-transparent text-sm outline-none " + (immersive ? "text-white placeholder:text-white/40" : "text-foreground placeholder:text-muted-foreground")}
                     />
                     <button
                       onClick={handleSubmitComment}
@@ -1468,7 +1500,7 @@ export default function SharedLinkPage() {
                     </button>
                     <button
                       onClick={function() { setCommentComposerOpen(false); setCommentText(""); }}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                      className={"p-1.5 rounded-lg transition-colors " + (immersive ? "text-white/40 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -1476,7 +1508,7 @@ export default function SharedLinkPage() {
                 )}
 
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
+                  <span className={"text-[11px] font-mono tabular-nums " + (immersive ? "text-white/50" : "text-muted-foreground")}>
                     {formatDuration(currentTime)}
                   </span>
                   <button
@@ -1493,7 +1525,7 @@ export default function SharedLinkPage() {
                         if (audioRef.current) audioRef.current.volume = newVol;
                         setVolume(newVol);
                       }}
-                      className="p-1 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                      className={"p-1 rounded-lg transition-colors " + (immersive ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                     >
                       {volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                     </button>
@@ -1506,7 +1538,7 @@ export default function SharedLinkPage() {
                       onChange={handleVolumeChange}
                       className="w-20 h-1.5 accent-primary cursor-pointer hidden sm:block"
                     />
-                    <span className="text-[11px] font-mono text-muted-foreground tabular-nums ml-1">
+                    <span className={"text-[11px] font-mono tabular-nums ml-1 " + (immersive ? "text-white/50" : "text-muted-foreground")}>
                       {formatDuration(duration)}
                     </span>
                   </div>
@@ -1520,12 +1552,12 @@ export default function SharedLinkPage() {
                 currentTime={currentTime}
                 isPlaying={isPlaying}
                 onSeek={function(time) { if (audioRef.current) { audioRef.current.currentTime = time; } }}
-                className="border-t border-border px-6"
+                className={(immersive ? "border-t border-white/10" : "border-t border-border") + " px-6"}
               />
             )}
 
             {linkData?.allow_download && (trackData.audio_url || slug) && linkData.share_type !== "pack" && (
-              <div className="border-t border-border px-6 py-4">
+              <div className={"px-6 py-4 " + (immersive ? "border-t border-white/10" : "border-t border-border")}>
                 <button
                   onClick={function() {
                     logEvent(trackData!.id, "download");
@@ -1552,7 +1584,7 @@ export default function SharedLinkPage() {
             )}
 
             {linkData?.share_type === "pack" && linkData.pack_items && linkData.pack_items.length > 0 && (
-              <div className="border-t border-border px-6 py-4">
+              <div className={"px-6 py-4 " + (immersive ? "border-t border-white/10" : "border-t border-border")}>
                 <button
                   onClick={handleDownloadPack}
                   disabled={packDownloading}
@@ -1576,15 +1608,15 @@ export default function SharedLinkPage() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4">
-              <Music className="w-6 h-6 text-muted-foreground" />
+            <div className={"w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 " + (immersive ? "bg-white/10" : "bg-secondary")}>
+              <Music className={"w-6 h-6 " + (immersive ? "text-white/60" : "text-muted-foreground")} />
             </div>
-            <h2 className="text-lg font-semibold text-foreground">{linkData?.link_name || "Shared Content"}</h2>
-            <p className="text-sm text-muted-foreground mt-1.5">No track data available.</p>
+            <h2 className={"text-lg font-semibold " + (immersive ? "text-white" : "text-foreground")}>{linkData?.link_name || "Shared Content"}</h2>
+            <p className={"text-sm mt-1.5 " + (immersive ? "text-white/50" : "text-muted-foreground")}>No track data available.</p>
           </div>
         )}
 
-        <p className="text-center text-[10px] text-muted-foreground/60">
+        <p className={"text-center text-[10px] " + (immersive ? "text-white/30" : "text-muted-foreground/60")}>
           {"Shared via Trakalog on " + new Date(linkData?.created_at || "").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
         </p>
       </div>
@@ -1596,17 +1628,55 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
   var heroUrl = branding?.hero_image_url || null;
   var heroPos = branding?.hero_position ?? 50;
   var logoUrl = branding?.logo_url || null;
+  var immersive = !!heroUrl;
+
+  if (immersive) {
+    return (
+      <div className="min-h-screen relative">
+        {/* Fixed full-screen background */}
+        <div className="fixed inset-0 z-0">
+          <img
+            src={heroUrl!}
+            alt=""
+            className="w-full h-full object-cover"
+            style={{ objectPosition: "center " + heroPos + "%", filter: "blur(2px)", transform: "scale(1.05)" }}
+          />
+          <div className="absolute inset-0 bg-black/75" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/90" />
+        </div>
+        {/* Content floating above */}
+        <div className="relative z-10 min-h-screen flex flex-col">
+          {/* Logo header */}
+          <header className="py-6 sm:py-8">
+            <div className="flex flex-col items-center gap-1.5">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" style={{ maxHeight: 50, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.5))" }} className="object-contain" />
+              ) : (
+                <div className="flex items-center gap-3">
+                  <img src={trakalogLogo} alt="Trakalog" className="h-10" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.5))" }} />
+                  <span className="text-xl font-bold tracking-wider uppercase" style={{ background: "linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Trakalog</span>
+                </div>
+              )}
+              {logoUrl && (
+                <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">TRAKALOG</span>
+              )}
+            </div>
+          </header>
+          <div className="flex-1">{children}</div>
+          <footer className="py-6 text-center">
+            <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] hover:opacity-80 transition-opacity" style={{ color: "#f97316" }}>
+              {"Powered by Trakalog \u2726"}
+            </a>
+          </footer>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className={"border-b border-border/50 " + (heroUrl ? "relative overflow-hidden" : "bg-card/50 backdrop-blur-sm")}>
-        {heroUrl && (
-          <>
-            <img src={heroUrl} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: "center " + heroPos + "%" }} />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-background" />
-          </>
-        )}
-        <div className={"max-w-2xl mx-auto px-4 flex items-center justify-center relative z-10 " + (heroUrl ? "py-10 sm:py-14" : "py-5")}>
+      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
+        <div className="max-w-2xl mx-auto px-4 flex items-center justify-center relative z-10 py-5">
           <div className="flex flex-col items-center">
             <div className="flex items-center gap-3">
               {logoUrl ? (
@@ -1619,7 +1689,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               )}
             </div>
             {!logoUrl && (
-              <span className={"text-[10px] uppercase tracking-[0.2em] mt-1 " + (heroUrl ? "text-white/50" : "text-muted-foreground/50")}>Catalog Manager</span>
+              <span className="text-[10px] uppercase tracking-[0.2em] mt-1 text-muted-foreground/50">Catalog Manager</span>
             )}
           </div>
         </div>
