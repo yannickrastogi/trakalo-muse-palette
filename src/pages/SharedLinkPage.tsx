@@ -82,6 +82,14 @@ function formatDuration(seconds: number): string {
   return m + ":" + (s < 10 ? "0" : "") + s;
 }
 
+function parseWaveform(raw: unknown): number[] | null {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string") {
+    try { var parsed = JSON.parse(raw); if (Array.isArray(parsed)) return parsed; } catch (_e) { /* ignore */ }
+  }
+  return null;
+}
+
 function WaveformBar({ peaks, progress, onSeek, onDoubleClick }: { peaks: number[]; progress: number; onSeek: (e: React.MouseEvent<HTMLDivElement>) => void; onDoubleClick?: (e: React.MouseEvent<HTMLDivElement>) => void }) {
   var barCount = peaks.length;
   return (
@@ -1114,8 +1122,8 @@ export default function SharedLinkPage() {
 
                   {/* Progress bar / Waveform */}
                   <div className="relative">
-                    {activeTrack && Array.isArray(activeTrack.waveform_data) ? (
-                      <WaveformBar peaks={activeTrack.waveform_data} progress={progress} onSeek={handleSeek} onDoubleClick={handleWaveformDoubleClick} />
+                    {activeTrack && parseWaveform(activeTrack.waveform_data) ? (
+                      <WaveformBar peaks={parseWaveform(activeTrack.waveform_data)!} progress={progress} onSeek={handleSeek} onDoubleClick={handleWaveformDoubleClick} />
                     ) : (
                       <div
                         className="h-2 bg-secondary rounded-full cursor-pointer group relative"
@@ -1353,8 +1361,8 @@ export default function SharedLinkPage() {
             {(trackData.audio_url || slug) && (
               <div className="border-t border-border px-6 py-4 space-y-3">
                 <div className="relative">
-                  {Array.isArray(trackData.waveform_data) ? (
-                    <WaveformBar peaks={trackData.waveform_data} progress={progress} onSeek={handleSeek} onDoubleClick={handleWaveformDoubleClick} />
+                  {parseWaveform(trackData.waveform_data) ? (
+                    <WaveformBar peaks={parseWaveform(trackData.waveform_data)!} progress={progress} onSeek={handleSeek} onDoubleClick={handleWaveformDoubleClick} />
                   ) : (
                     <div
                       className="h-2 bg-secondary rounded-full cursor-pointer group relative"
