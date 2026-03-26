@@ -14,6 +14,7 @@ import {
   generateSignedAgreementPdf,
 } from "@/lib/pdf-generators";
 import trakalogLogo from "@/assets/trakalog-logo.png";
+import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 
 interface SharedLinkData {
   id: string;
@@ -90,32 +91,10 @@ function parseWaveform(raw: unknown): number[] | null {
   return null;
 }
 
-function WaveformBar({ peaks, progress, onSeek, onDoubleClick }: { peaks: number[]; progress: number; onSeek: (e: React.MouseEvent<HTMLDivElement>) => void; onDoubleClick?: (e: React.MouseEvent<HTMLDivElement>) => void }) {
-  var barCount = peaks.length;
-  return (
-    <div
-      className="w-full cursor-pointer flex items-end gap-[1px]"
-      style={{ height: 48 }}
-      onClick={onSeek}
-      onDoubleClick={onDoubleClick}
-    >
-      {peaks.map(function(peak, i) {
-        var pct = (i / barCount) * 100;
-        var active = pct < progress;
-        return (
-          <div
-            key={i}
-            className="rounded-sm flex-shrink-0"
-            style={{
-              width: 2,
-              height: Math.max(2, peak * 48),
-              background: active ? "#f97316" : "rgba(255,255,255,0.15)",
-            }}
-          />
-        );
-      })}
-    </div>
-  );
+function hashId(id: string): number {
+  var h = 0;
+  for (var i = 0; i < id.length; i++) { h = ((h << 5) - h + id.charCodeAt(i)) | 0; }
+  return Math.abs(h);
 }
 
 function CommentMarkers({ comments, totalDuration }: { comments: TrackComment[]; totalDuration: number }) {
@@ -543,6 +522,12 @@ export default function SharedLinkPage() {
     audio.currentTime = pct * audio.duration;
   }, []);
 
+  var handleSeekPercent = useCallback(function(percent: number) {
+    var audio = audioRef.current;
+    if (!audio || !audio.duration) return;
+    audio.currentTime = (percent / 100) * audio.duration;
+  }, []);
+
   var handleVolumeChange = useCallback(function(e: React.ChangeEvent<HTMLInputElement>) {
     var vol = parseFloat(e.target.value);
     if (audioRef.current) audioRef.current.volume = vol;
@@ -634,6 +619,17 @@ export default function SharedLinkPage() {
     var rect = e.currentTarget.getBoundingClientRect();
     var pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     var seconds = pct * audio.duration;
+    audio.currentTime = seconds;
+    setCommentTimestamp(seconds);
+    setCommentComposerOpen(true);
+    setCommentText("");
+    setTimeout(function() { commentInputRef.current?.focus(); }, 50);
+  }, []);
+
+  var handleWaveformDoubleClickPercent = useCallback(function(percent: number) {
+    var audio = audioRef.current;
+    if (!audio || !audio.duration) return;
+    var seconds = (percent / 100) * audio.duration;
     audio.currentTime = seconds;
     setCommentTimestamp(seconds);
     setCommentComposerOpen(true);
@@ -1122,24 +1118,14 @@ export default function SharedLinkPage() {
 
                   {/* Progress bar / Waveform */}
                   <div className="relative">
-                    {activeTrack && parseWaveform(activeTrack.waveform_data) ? (
-                      <WaveformBar peaks={parseWaveform(activeTrack.waveform_data)!} progress={progress} onSeek={handleSeek} onDoubleClick={handleWaveformDoubleClick} />
-                    ) : (
-                      <div
-                        className="h-2 bg-secondary rounded-full cursor-pointer group relative"
-                        onClick={handleSeek}
-                        onDoubleClick={handleWaveformDoubleClick}
-                      >
-                        <div
-                          className="h-full rounded-full transition-[width] duration-100 ease-linear"
-                          style={{ width: progress + "%", background: "var(--gradient-brand-horizontal)" }}
-                        />
-                        <div
-                          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                          style={{ left: "calc(" + progress + "% - 6px)" }}
-                        />
-                      </div>
-                    )}
+                    <TrackWaveformPlayer
+                      seed={activeTrack ? hashId(activeTrack.id) : 0}
+                      peaks={activeTrack ? parseWaveform(activeTrack.waveform_data) || undefined : undefined}
+                      progress={progress}
+                      onSeek={handleSeekPercent}
+                      onDoubleClick={handleWaveformDoubleClickPercent}
+                      isPlaying={isPlaying}
+                    />
                     <CommentMarkers comments={comments} totalDuration={duration} />
                   </div>
                   <p className="text-[10px] text-muted-foreground/40 text-center">Double-click waveform to leave a comment</p>
@@ -1361,24 +1347,14 @@ export default function SharedLinkPage() {
             {(trackData.audio_url || slug) && (
               <div className="border-t border-border px-6 py-4 space-y-3">
                 <div className="relative">
-                  {parseWaveform(trackData.waveform_data) ? (
-                    <WaveformBar peaks={parseWaveform(trackData.waveform_data)!} progress={progress} onSeek={handleSeek} onDoubleClick={handleWaveformDoubleClick} />
-                  ) : (
-                    <div
-                      className="h-2 bg-secondary rounded-full cursor-pointer group relative"
-                      onClick={handleSeek}
-                      onDoubleClick={handleWaveformDoubleClick}
-                    >
-                      <div
-                        className="h-full rounded-full transition-[width] duration-100 ease-linear"
-                        style={{ width: progress + "%", background: "var(--gradient-brand-horizontal)" }}
-                      />
-                      <div
-                        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                        style={{ left: "calc(" + progress + "% - 6px)" }}
-                      />
-                    </div>
-                  )}
+                  <TrackWaveformPlayer
+                    seed={hashId(trackData.id)}
+                    peaks={parseWaveform(trackData.waveform_data) || undefined}
+                    progress={progress}
+                    onSeek={handleSeekPercent}
+                    onDoubleClick={handleWaveformDoubleClickPercent}
+                    isPlaying={isPlaying}
+                  />
                   <CommentMarkers comments={comments} totalDuration={duration} />
                 </div>
                 <p className="text-[10px] text-muted-foreground/40 text-center">Double-click waveform to leave a comment</p>
