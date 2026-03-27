@@ -1668,7 +1668,10 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
                 </div>
               )}
               {logoUrl && (
-                <span className="text-[11px] tracking-[0.3em] font-semibold bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+                <div className="flex flex-col items-center">
+                  <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+                  <span className="text-[10px] tracking-[0.2em] text-white/30 font-medium block mt-0.5">CATALOG MANAGER</span>
+                </div>
               )}
             </div>
           </header>
