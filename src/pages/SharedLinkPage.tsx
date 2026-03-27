@@ -1651,8 +1651,8 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
             className="w-full h-full object-cover"
             style={{ objectPosition: "center " + heroPos + "%", transform: "scale(1.05)" }}
           />
-          <div className="absolute inset-0 bg-black/55" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/90" />
+          <div className="absolute inset-0 bg-black/35" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/70" />
         </div>
         {/* Content floating above */}
         <div className="relative z-10 min-h-screen flex flex-col">
