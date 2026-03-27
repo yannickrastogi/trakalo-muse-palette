@@ -8,7 +8,7 @@ export type SourceContext = "internal_review" | "recipient_review" | "shared_lin
 
 export interface TimecodedComment {
   id: string;
-  trackId: number;
+  trackId: string;
   authorUserId?: string;
   authorGuestId?: string;
   authorName: string;
@@ -31,7 +31,7 @@ export interface TimecodedComment {
 
 export interface CommentNotification {
   id: string;
-  trackId: number;
+  trackId: string;
   trackTitle: string;
   commentId: string;
   authorName: string;
@@ -48,17 +48,15 @@ type CommentSort = "timecode" | "latest";
 interface TrackReviewContextValue {
   comments: TimecodedComment[];
   notifications: CommentNotification[];
-  getCommentsForTrack: (trackId: number) => TimecodedComment[];
+  getCommentsForTrack: (trackId: string) => TimecodedComment[];
   addComment: (comment: Omit<TimecodedComment, "id" | "createdAt" | "updatedAt" | "isEdited">) => TimecodedComment;
   editComment: (commentId: string, newText: string) => void;
   deleteComment: (commentId: string) => void;
-  getFilteredComments: (trackId: number, filter: CommentFilter, currentUserId: string, searchQuery?: string) => TimecodedComment[];
+  getFilteredComments: (trackId: string, filter: CommentFilter, currentUserId: string, searchQuery?: string) => TimecodedComment[];
   getSortedComments: (comments: TimecodedComment[], sort: CommentSort) => TimecodedComment[];
-  getCommentCountForTrack: (trackId: number) => number;
+  getCommentCountForTrack: (trackId: string) => number;
   markNotificationRead: (notificationId: string) => void;
   unreadNotificationCount: number;
-  /** Maps track UUID to the numeric trackId used internally for comments */
-  trackUuidToId: Record<string, number>;
 }
 
 function formatTimestamp(seconds: number): string {
@@ -83,10 +81,6 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
   const [comments, setComments] = useState<TimecodedComment[]>([]);
   const [notifications, setNotifications] = useState<CommentNotification[]>([]);
 
-  // Map track UUID → numeric trackId (index+1 based)
-  const [trackUuidToId, setTrackUuidToId] = useState<Record<string, number>>({});
-  const [trackIdToUuid, setTrackIdToUuid] = useState<Record<number, string>>({});
-
   // Load comments from waveform_data + track_comments table
   const fetchComments = useCallback(async () => {
     if (!activeWorkspace || !user) {
@@ -106,23 +100,14 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Build UUID <-> numeric ID maps
-    const uuidToId: Record<string, number> = {};
-    const idToUuid: Record<number, string> = {};
-    (data || []).forEach((row, idx) => {
-      const numericId = idx + 1;
-      uuidToId[row.id] = numericId;
-      idToUuid[numericId] = row.id;
-    });
-    setTrackUuidToId(uuidToId);
-    setTrackIdToUuid(idToUuid);
-
-    // 1. Comments from waveform_data (legacy)
+    // 1. Comments from waveform_data (legacy) — tag each with the track UUID
     const allComments: TimecodedComment[] = [];
     for (const row of data || []) {
       const wd = row.waveform_data as WaveformDataWithComments | null;
       if (wd?.comments && Array.isArray(wd.comments)) {
-        allComments.push(...wd.comments);
+        for (const c of wd.comments) {
+          allComments.push({ ...c, trackId: row.id });
+        }
       }
     }
 
@@ -137,14 +122,12 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
 
       if (dbComments) {
         for (const c of dbComments) {
-          const numId = uuidToId[c.track_id];
-          if (!numId) continue;
           // Skip if already exists (by id)
           if (allComments.some((existing) => existing.id === c.id)) continue;
           const linkInfo = c.shared_links as { link_name: string; link_slug: string } | null;
           allComments.push({
             id: c.id,
-            trackId: numId,
+            trackId: c.track_id,
             authorName: c.author_name,
             authorEmail: c.author_email || undefined,
             authorType: (c.author_type || "guest_recipient") as AuthorType,
@@ -195,24 +178,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Map trackId (numeric) to track uuid for persistence
-  const getTrackUuid = useCallback(async (trackId: number): Promise<string | null> => {
-    if (!activeWorkspace) return null;
-
-    const { data, error } = await supabase
-      .from("tracks")
-      .select("id")
-      .eq("workspace_id", activeWorkspace.id)
-      .order("created_at", { ascending: false });
-
-    if (error || !data) return null;
-
-    // trackId is index+1 based (from TrackContext mapping)
-    const idx = trackId - 1;
-    return data[idx]?.id || null;
-  }, [activeWorkspace]);
-
-  const getCommentsForTrack = useCallback((trackId: number) => {
+  const getCommentsForTrack = useCallback((trackId: string) => {
     return comments.filter((c) => c.trackId === trackId && !c.deletedAt);
   }, [comments]);
 
@@ -230,30 +196,24 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       const updated = [...prev, newComment];
 
       // Persist to waveform_data (legacy)
-      getTrackUuid(data.trackId).then((uuid) => {
-        if (uuid) {
-          const trackComments = updated.filter((c) => c.trackId === data.trackId);
-          persistCommentsForTrack(uuid, trackComments);
-        }
-      }).catch(function (err) { console.error("Error:", err); });
+      const trackComments = updated.filter((c) => c.trackId === data.trackId);
+      persistCommentsForTrack(data.trackId, trackComments)
+        .catch(function (err) { console.error("Error:", err); });
 
       return updated;
     });
 
     // Also persist to track_comments table
-    const trackUuid = trackIdToUuid[data.trackId];
-    if (trackUuid) {
-      supabase.from("track_comments").insert({
-        track_id: trackUuid,
-        author_name: data.authorName,
-        author_email: data.authorEmail || null,
-        author_type: data.authorType,
-        timestamp_sec: data.timestampSeconds,
-        content: data.commentText,
-      }).then(({ error: insertErr }) => {
-        if (insertErr) console.error("Error inserting to track_comments:", insertErr);
-      }).catch(function (err) { console.error("Error:", err); });
-    }
+    supabase.from("track_comments").insert({
+      track_id: data.trackId,
+      author_name: data.authorName,
+      author_email: data.authorEmail || null,
+      author_type: data.authorType,
+      timestamp_sec: data.timestampSeconds,
+      content: data.commentText,
+    }).then(({ error: insertErr }) => {
+      if (insertErr) console.error("Error inserting to track_comments:", insertErr);
+    }).catch(function (err) { console.error("Error:", err); });
 
     // Generate notification for non-owner comments
     if (data.authorType !== "owner") {
@@ -272,7 +232,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       setNotifications((prev) => [...prev, notification]);
     }
     return newComment;
-  }, [getTrackUuid, persistCommentsForTrack, trackIdToUuid]);
+  }, [persistCommentsForTrack]);
 
   const editComment = useCallback((commentId: string, newText: string) => {
     setComments((prev) => {
@@ -282,16 +242,13 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
 
       const target = updated.find((c) => c.id === commentId);
       if (target) {
-        getTrackUuid(target.trackId).then((uuid) => {
-          if (uuid) {
-            persistCommentsForTrack(uuid, updated.filter((c) => c.trackId === target.trackId));
-          }
-        }).catch(function (err) { console.error("Error:", err); });
+        persistCommentsForTrack(target.trackId, updated.filter((c) => c.trackId === target.trackId))
+          .catch(function (err) { console.error("Error:", err); });
       }
 
       return updated;
     });
-  }, [getTrackUuid, persistCommentsForTrack]);
+  }, [persistCommentsForTrack]);
 
   const deleteComment = useCallback((commentId: string) => {
     setComments((prev) => {
@@ -301,11 +258,8 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
 
       const target = updated.find((c) => c.id === commentId);
       if (target) {
-        getTrackUuid(target.trackId).then((uuid) => {
-          if (uuid) {
-            persistCommentsForTrack(uuid, updated.filter((c) => c.trackId === target.trackId));
-          }
-        }).catch(function (err) { console.error("Error:", err); });
+        persistCommentsForTrack(target.trackId, updated.filter((c) => c.trackId === target.trackId))
+          .catch(function (err) { console.error("Error:", err); });
       }
 
       return updated;
@@ -316,10 +270,10 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       .then(({ error: delErr }) => {
         if (delErr) console.error("Error deleting from track_comments:", delErr);
       }).catch(function (err) { console.error("Error:", err); });
-  }, [getTrackUuid, persistCommentsForTrack]);
+  }, [persistCommentsForTrack]);
 
   const getFilteredComments = useCallback(
-    (trackId: number, filter: CommentFilter, currentUserId: string, searchQuery?: string) => {
+    (trackId: string, filter: CommentFilter, currentUserId: string, searchQuery?: string) => {
       let result = comments.filter((c) => c.trackId === trackId && !c.deletedAt);
       switch (filter) {
         case "team": result = result.filter((c) => c.authorType === "owner" || c.authorType === "team_member"); break;
@@ -342,7 +296,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const getCommentCountForTrack = useCallback((trackId: number) => {
+  const getCommentCountForTrack = useCallback((trackId: string) => {
     return comments.filter((c) => c.trackId === trackId && !c.deletedAt).length;
   }, [comments]);
 
@@ -356,7 +310,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
     <TrackReviewContext.Provider
       value={{
         comments, notifications, getCommentsForTrack, addComment, editComment, deleteComment,
-        getFilteredComments, getSortedComments, getCommentCountForTrack, markNotificationRead, unreadNotificationCount, trackUuidToId,
+        getFilteredComments, getSortedComments, getCommentCountForTrack, markNotificationRead, unreadNotificationCount,
       }}
     >
       {children}

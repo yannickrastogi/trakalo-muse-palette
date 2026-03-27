@@ -29,7 +29,7 @@ const authorTypeBadgeKey: Record<AuthorType, string> = {
 };
 
 interface TrackReviewPanelProps {
-  trackId: number;
+  trackId: string;
   currentUserName?: string;
   progress: number;
   onSeek: (seconds: number, totalDuration: number) => void;

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface RecipientReviewPlayerProps {
-  trackId: number;
+  trackId: string;
   recipientName: string;
   recipientEmail?: string;
   progress: number;

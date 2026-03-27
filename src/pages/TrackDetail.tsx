@@ -213,7 +213,7 @@ export default function TrackDetail() {
   const navigate = useNavigate();
   const { getTrackByUuid, getTrack, updateTrack, updateTrackStatus, deleteTrack, refreshTracks } = useTrack();
   const { getTrackEngagement } = useEngagement();
-  const { getCommentsForTrack, addComment, trackUuidToId } = useTrackReview();
+  const { getCommentsForTrack, addComment } = useTrackReview();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTrackModalOpen, setShareTrackModalOpen] = useState(false);
@@ -323,10 +323,8 @@ export default function TrackDetail() {
   }, [track, currentTrack, id, togglePlay, globalPlayTrack]);
 
   const numericId = track?.id;
-  // Use the UUID→numericId mapping from TrackReviewContext for correct comment filtering
-  const commentTrackId = track?.uuid ? (trackUuidToId[track.uuid] || numericId) : numericId;
   const engagement = numericId ? getTrackEngagement(numericId) : undefined;
-  const trackComments = commentTrackId ? getCommentsForTrack(commentTrackId) : [];
+  const trackComments = track?.uuid ? getCommentsForTrack(track.uuid) : [];
   const commentCount = trackComments.length;
 
   // Unique comment authors and shared links for the filter dropdowns
@@ -386,7 +384,7 @@ export default function TrackDetail() {
   const handleWaveformCommentSubmit = (text: string, timestampSeconds: number) => {
     if (!track) return;
     addComment({
-      trackId: track.id,
+      trackId: track.uuid,
       authorName: currentUserName,
       authorType: "owner",
       commentText: text,
@@ -903,7 +901,7 @@ export default function TrackDetail() {
                    </div>
                  )}
                  <TrackReviewPanel
-                   trackId={commentTrackId || track.id}
+                   trackId={track.uuid}
                    currentUserName={currentUserName}
                    progress={currentProgress}
                    onSeek={handleCommentSeek}
@@ -2947,10 +2945,10 @@ function EngagementTab({ trackId, onSeek }: { trackId: number; onSeek?: (seconds
   const { getTrack } = useTrack();
   const [expandedRecipient, setExpandedRecipient] = useState<string | null>(null);
   const engagement = getTrackEngagement(trackId);
-  const trackComments = getCommentsForTrack(trackId);
 
   // Fetch link_events for this track
   const trackUuid = getTrack(trackId)?.uuid;
+  const trackComments = trackUuid ? getCommentsForTrack(trackUuid) : [];
   const [linkEvents, setLinkEvents] = useState<{ event_type: string; visitor_email: string | null; created_at: string }[]>([]);
 
   useEffect(function() {
