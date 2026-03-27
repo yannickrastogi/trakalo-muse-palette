@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, CheckCircle2, Plus } from "lucide-react";
+import { ChevronDown, CheckCircle2, Plus, LayoutGrid } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
+import { useTranslation } from "react-i18next";
 
 export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean; onSwitch?: () => void }) {
   const { activeWorkspace, workspaces, switchWorkspace } = useWorkspace();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [trackCounts, setTrackCounts] = useState<Record<string, number>>({});
@@ -133,6 +137,16 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
             })}
 
             <div className="h-px bg-border mx-3 my-1.5" />
+
+            <button
+              onClick={function () { setOpen(false); navigate("/workspaces"); if (onSwitch) onSwitch(); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-secondary/50 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center shrink-0">
+                <LayoutGrid className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">{t("workspaces.manageWorkspaces")}</span>
+            </button>
 
             <button
               onClick={function () { setOpen(false); setCreateOpen(true); }}

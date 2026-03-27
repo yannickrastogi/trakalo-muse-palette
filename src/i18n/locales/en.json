@@ -13,6 +13,8 @@
     "notifications": "Notifications",
     "approvals": "Approvals",
     "radio": "Radio",
+    "members": "Members",
+    "workspaces": "Workspaces",
     "more": "More"
   },
   "topbar": {
@@ -172,9 +174,9 @@
     "sendPitch": "Send Pitch"
   },
   "team": {
-    "title": "Teams",
-    "teamsSubtitle": "{{count}} teams in your workspace",
-    "subtitle": "{{count}} collaborators in this team",
+    "title": "Members",
+    "teamsSubtitle": "{{count}} members in {{workspace}}",
+    "subtitle": "{{count}} members in {{workspace}}",
     "createTeam": "Create New Team",
     "inviteMember": "Invite Member",
     "member": "Member",
@@ -211,6 +213,28 @@
     "role_a&r": "A&R",
     "role_assistant": "Assistant",
     "role_viewer": "Viewer"
+  },
+  "workspaces": {
+    "title": "Workspaces",
+    "subtitle": "Manage all your workspaces",
+    "createWorkspace": "Create New Workspace",
+    "manageWorkspaces": "Manage Workspaces",
+    "active": "Active",
+    "switchTo": "Switch to this workspace",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete this workspace? This action cannot be undone.",
+    "deleteTitle": "Delete Workspace",
+    "cannotDeleteActive": "Cannot delete the active workspace",
+    "cannotDeleteLast": "Cannot delete your last workspace",
+    "deleted": "Workspace deleted",
+    "switched": "Switched to {{name}}",
+    "tracks": "{{count}} tracks",
+    "members": "{{count}} members",
+    "pitches": "{{count}} pitches",
+    "newActivity": "{{count}} new",
+    "singleWorkspace": "You have one workspace. Create additional workspaces to manage multiple projects, artists, or labels.",
+    "created": "Created {{date}}"
   },
   "trackDetail": {
     "editTrack": "Edit Track",

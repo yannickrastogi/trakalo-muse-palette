@@ -13,6 +13,8 @@
     "notifications": "Notifications",
     "approvals": "Approbations",
     "radio": "Radio",
+    "members": "Membres",
+    "workspaces": "Espaces de travail",
     "more": "Plus"
   },
   "topbar": {
@@ -172,9 +174,9 @@
     "sendPitch": "Envoyer le pitch"
   },
   "team": {
-    "title": "Équipes",
-    "teamsSubtitle": "{{count}} équipes dans votre espace de travail",
-    "subtitle": "{{count}} collaborateurs dans cette équipe",
+    "title": "Membres",
+    "teamsSubtitle": "{{count}} membres dans {{workspace}}",
+    "subtitle": "{{count}} membres dans {{workspace}}",
     "createTeam": "Créer une nouvelle équipe",
     "inviteMember": "Inviter un membre",
     "member": "Membre",
@@ -211,6 +213,28 @@
     "role_a&r": "A&R",
     "role_assistant": "Assistant",
     "role_viewer": "Lecteur"
+  },
+  "workspaces": {
+    "title": "Espaces de travail",
+    "subtitle": "Gérer tous vos espaces de travail",
+    "createWorkspace": "Créer un espace de travail",
+    "manageWorkspaces": "Gérer les espaces de travail",
+    "active": "Actif",
+    "switchTo": "Basculer vers cet espace",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cet espace de travail ? Cette action est irréversible.",
+    "deleteTitle": "Supprimer l'espace de travail",
+    "cannotDeleteActive": "Impossible de supprimer l'espace actif",
+    "cannotDeleteLast": "Impossible de supprimer votre dernier espace",
+    "deleted": "Espace de travail supprimé",
+    "switched": "Basculé vers {{name}}",
+    "tracks": "{{count}} morceaux",
+    "members": "{{count}} membres",
+    "pitches": "{{count}} pitches",
+    "newActivity": "{{count}} nouveau(x)",
+    "singleWorkspace": "Vous avez un seul espace de travail. Créez-en d'autres pour gérer plusieurs projets, artistes ou labels.",
+    "created": "Créé le {{date}}"
   },
   "trackDetail": {
     "editTrack": "Modifier le morceau",

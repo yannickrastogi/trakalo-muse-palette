@@ -28,6 +28,8 @@ import PlaylistDetail from "./pages/PlaylistDetail";
 import Stems from "./pages/Stems";
 import Pitch from "./pages/Pitch";
 import Team from "./pages/Team";
+import { lazy, Suspense } from "react";
+const Workspaces = lazy(() => import("./pages/Workspaces"));
 import SettingsPage from "./pages/SettingsPage";
 import Contacts from "./pages/Contacts";
 import SharedLinks from "./pages/SharedLinks";
@@ -123,6 +125,7 @@ const App = () => (
             <Route path="/smart-ar" element={<ProtectedApp><SmartAR /></ProtectedApp>} />
             <Route path="/radio" element={<ProtectedApp><RadioPage /></ProtectedApp>} />
             <Route path="/team" element={<ProtectedApp><Team /></ProtectedApp>} />
+            <Route path="/workspaces" element={<ProtectedApp><Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><Workspaces /></Suspense></ProtectedApp>} />
             <Route path="/contacts" element={<ProtectedApp><Contacts /></ProtectedApp>} />
             <Route path="/shared-links" element={<ProtectedApp><SharedLinks /></ProtectedApp>} />
             <Route path="/settings" element={<ProtectedApp><SettingsPage /></ProtectedApp>} />

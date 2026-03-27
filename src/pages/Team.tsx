@@ -5,7 +5,7 @@ import { SendApprovalSettings } from "@/components/SendApprovalSettings";
 import {
   Plus, Search, Mail, Shield, Eye, Headphones, UserCog, MoreHorizontal,
   Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3,
-  Music, Clock, CheckCircle2, XCircle, Users, ArrowLeft, Trash2, UserPlus,
+  Music, Clock, CheckCircle2, XCircle, Users, Trash2, UserPlus,
   Upload, Send, ExternalLink, Activity, BarChart3, FileText, SplitSquareVertical,
   Layers, Type, Play, Download, Package, Bell,
 } from "lucide-react";
@@ -15,10 +15,10 @@ import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { InviteMemberModal, type InvitePayload } from "@/components/InviteMemberModal";
-import { CreateTeamModal } from "@/components/CreateTeamModal";
 import { toast } from "sonner";
 import { useRole } from "@/contexts/RoleContext";
-import { useTeams, type Team, type TeamRole, type ActivityType } from "@/contexts/TeamContext";
+import { useTeams, type TeamRole, type ActivityType } from "@/contexts/TeamContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import {
   Select,
   SelectContent,
@@ -126,24 +126,19 @@ export default function Team() {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { permissions } = useRole();
-  const { teams, createTeam, addMember, removeMember, updateMemberRole, deleteTeam } = useTeams();
+  const { teams, addMember, removeMember, updateMemberRole } = useTeams();
+  const { activeWorkspace } = useWorkspace();
 
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [showSharedCatalog, setShowSharedCatalog] = useState(false);
   const [activityRange, setActivityRange] = useState<"1d" | "1w" | "1m" | "1y">("1w");
   const [activitySearch, setActivitySearch] = useState("");
   const membersRef = React.useRef<HTMLDivElement>(null);
-  const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const selectedTeam = teams.find((t) => t.id === selectedTeamId);
-
-  const handleCreateTeam = (name: string) => {
-    const team = createTeam(name);
-    setSelectedTeamId(team.id);
-    toast.success(t("createTeam.created", { name }));
-  };
+  // Use the first team of the active workspace (the workspace IS the team)
+  const selectedTeam = teams[0] || null;
+  const selectedTeamId = selectedTeam?.id || null;
 
   const handleInvite = (payload: InvitePayload) => {
     toast.success(t("inviteMember.inviteSent", { email: payload.email }));
@@ -161,144 +156,28 @@ export default function Team() {
     toast.success(t("team.roleUpdated"));
   };
 
-  // ─── TEAMS LIST VIEW ───
-  if (!selectedTeam) {
-    return (
-      <PageShell>
-        <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1400px]">
-          {/* Header */}
-          <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2.5">
-                <Users className="w-6 h-6 text-brand-orange" />
-                {t("team.title")}
-              </h1>
-              {teams.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="bg-secondary rounded-full px-3 py-1 text-xs text-muted-foreground">
-                    {teams.length + " team" + (teams.length !== 1 ? "s" : "")}
-                  </span>
-                  <span className="bg-secondary rounded-full px-3 py-1 text-xs text-muted-foreground">
-                    {teams.reduce((sum, t) => sum + t.members.length, 0) + " total members"}
-                  </span>
-                </div>
-              )}
-            </div>
-            {permissions.canInviteMembers && (
-              <button
-                onClick={() => setCreateTeamOpen(true)}
-                className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold shrink-0 self-start min-h-[44px]"
-              >
-                <Plus className="w-3.5 h-3.5" /> {t("team.createTeam")}
-              </button>
-            )}
-          </motion.div>
-
-          {/* Teams grid */}
-          {teams.length === 0 ? (
-            <motion.div variants={item} className="card-premium p-12 flex flex-col items-center gap-4 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center">
-                <Users className="w-7 h-7 text-primary-foreground" />
-              </div>
-              <div>
-                <h3 className="text-foreground font-semibold text-base">{t("team.noTeams")}</h3>
-                <p className="text-muted-foreground text-sm mt-1">{t("team.noTeamsDesc")}</p>
-              </div>
-              <button
-                onClick={() => setCreateTeamOpen(true)}
-                className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold min-h-[44px] mt-2"
-              >
-                <Plus className="w-3.5 h-3.5" /> {t("team.createTeam")}
-              </button>
-            </motion.div>
-          ) : (
-            <motion.div variants={item} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {teams.map((team) => {
-                const adminCount = team.members.filter((m) => m.role === "Admin").length;
-                const pendingCount = team.members.filter((m) => m.status === "pending").length;
-                return (
-                  <button
-                    key={team.id}
-                    onClick={() => setSelectedTeamId(team.id)}
-                    className="card-premium p-5 text-left hover:border-brand-orange/30 hover:ring-1 hover:ring-brand-orange/30 transition-all group"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
-                        <Users className="w-5 h-5 text-primary-foreground" />
-                      </div>
-                      <span className="text-2xs text-muted-foreground">{formatDateSmart(team.createdAt)}</span>
-                    </div>
-                    <h3 className="text-foreground font-bold text-[15px] mt-3 group-hover:text-brand-orange transition-colors">
-                      {team.name}
-                    </h3>
-                    <div className="flex flex-col gap-1.5 mt-2.5">
-                      <span className="text-2xs text-muted-foreground">
-                        {team.members.length + " member" + (team.members.length !== 1 ? "s" : "")}
-                      </span>
-                      <span className="text-2xs text-muted-foreground">
-                        {team.sharedTrackIds.length + " shared track" + (team.sharedTrackIds.length !== 1 ? "s" : "")}
-                      </span>
-                      {pendingCount > 0 && (
-                        <span className="text-2xs bg-brand-orange/12 text-brand-orange px-2 py-0.5 rounded-full font-semibold">
-                          {t("team.pendingCount", { count: pendingCount })}
-                        </span>
-                      )}
-                    </div>
-                    {/* Member avatars */}
-                    <div className="flex -space-x-2 mt-3">
-                      {team.members.slice(0, 5).map((m) => (
-                        <Avatar key={m.id} className="w-7 h-7 border-2 border-card">
-                          <AvatarFallback className={`bg-gradient-to-br ${roleColors[m.role]} text-primary-foreground text-[9px] font-bold`}>
-                            {getInitials(m.firstName, m.lastName)}
-                          </AvatarFallback>
-                        </Avatar>
-                      ))}
-                      {team.members.length > 5 && (
-                        <Avatar className="w-7 h-7 border-2 border-card">
-                          <AvatarFallback className="bg-secondary text-muted-foreground text-[9px] font-bold">
-                            +{team.members.length - 5}
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </motion.div>
-          )}
-        </motion.div>
-
-        <CreateTeamModal open={createTeamOpen} onOpenChange={setCreateTeamOpen} onCreate={handleCreateTeam} />
-      </PageShell>
-    );
-  }
-
-  // ─── TEAM DETAIL VIEW ───
-  const filteredMembers = selectedTeam.members.filter(
-    (m) =>
-      `${m.firstName} ${m.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
-      m.email.toLowerCase().includes(search.toLowerCase()) ||
-      m.role.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredMembers = selectedTeam
+    ? selectedTeam.members.filter(
+        (m) =>
+          (m.firstName + " " + m.lastName).toLowerCase().includes(search.toLowerCase()) ||
+          m.email.toLowerCase().includes(search.toLowerCase()) ||
+          m.role.toLowerCase().includes(search.toLowerCase())
+      )
+    : [];
 
   return (
     <PageShell>
       <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
         {/* Header */}
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => { setSelectedTeamId(null); setSearch(""); setShowSharedCatalog(false); }}
-              className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{selectedTeam.name}</h1>
-              <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
-                {t("team.subtitle", { count: selectedTeam.members.length })}
-              </p>
-            </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight flex items-center gap-2.5">
+              <Users className="w-6 h-6 text-brand-orange" />
+              {t("team.title")}
+            </h1>
+            <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+              {t("team.subtitle", { count: selectedTeam?.members.length || 0, workspace: activeWorkspace.name })}
+            </p>
           </div>
           <div className="flex items-center gap-2 self-start">
             {permissions.canInviteMembers && (
@@ -312,7 +191,18 @@ export default function Team() {
           </div>
         </motion.div>
 
-        {/* ─── Team Dashboard ─── */}
+        {!selectedTeam ? (
+          <motion.div variants={item} className="card-premium p-12 flex flex-col items-center gap-4 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center">
+              <Users className="w-7 h-7 text-primary-foreground" />
+            </div>
+            <div>
+              <h3 className="text-foreground font-semibold text-base">{t("team.noTeams")}</h3>
+              <p className="text-muted-foreground text-sm mt-1">{t("team.noTeamsDesc")}</p>
+            </div>
+          </motion.div>
+        ) : (
+        <>
         {/* ─── Shared Catalog View ─── */}
         {showSharedCatalog ? (
           <TeamSharedCatalog
@@ -322,6 +212,7 @@ export default function Team() {
           />
         ) : (
         <>
+        {/* ─── Dashboard Cards ─── */}
         <motion.div variants={item} className="grid gap-3 grid-cols-1 sm:grid-cols-3">
           {/* Team's Catalog */}
           <button
@@ -334,7 +225,7 @@ export default function Team() {
                 <Music className="w-5 h-5 text-brand-orange" />
               </div>
               <div>
-                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Team's Catalog</p>
+                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Catalog</p>
                 <p className="text-xl font-bold text-foreground group-hover:text-brand-orange transition-colors">{selectedTeam.sharedTrackIds.length}</p>
               </div>
             </div>
@@ -350,7 +241,7 @@ export default function Team() {
                 <Users className="w-5 h-5 text-brand-purple" />
               </div>
               <div>
-                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Members</p>
+                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">{t("team.members")}</p>
                 <p className="text-xl font-bold text-foreground group-hover:text-brand-purple transition-colors">{selectedTeam.members.length}</p>
               </div>
             </div>
@@ -358,8 +249,8 @@ export default function Team() {
           {/* Activity */}
           <button
             onClick={() => {
-              const el = document.getElementById("team-activity-feed");
-              el?.scrollIntoView({ behavior: "smooth", block: "start" });
+              var el = document.getElementById("team-activity-feed");
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
             }}
             className="card-premium p-4 rounded-xl relative overflow-hidden text-left hover:border-brand-pink/30 transition-colors group"
           >
@@ -369,7 +260,7 @@ export default function Team() {
                 <Activity className="w-5 h-5 text-brand-pink" />
               </div>
               <div>
-                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Activity</p>
+                <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">{t("team.activity")}</p>
                 <p className="text-xl font-bold text-foreground group-hover:text-brand-pink transition-colors">{selectedTeam.activities.length}</p>
               </div>
             </div>
@@ -382,18 +273,18 @@ export default function Team() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-muted-foreground" />
-                <h3 className="text-sm font-bold text-foreground">Team Activity</h3>
+                <h3 className="text-sm font-bold text-foreground">{t("team.teamActivity")}</h3>
               </div>
               <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5">
                 {(["1d", "1w", "1m", "1y"] as const).map((range) => (
                   <button
                     key={range}
                     onClick={() => setActivityRange(range)}
-                    className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition-all ${
+                    className={"px-2.5 py-1 rounded-md text-2xs font-semibold transition-all " + (
                       activityRange === range
                         ? "bg-brand-pink/15 text-brand-pink"
                         : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    )}
                   >
                     {range === "1d" ? "1D" : range === "1w" ? "1W" : range === "1m" ? "1M" : "1Y"}
                   </button>
@@ -412,14 +303,14 @@ export default function Team() {
             </div>
           </div>
           {(() => {
-            const now = new Date();
-            const cutoff = new Date(now);
+            var now = new Date();
+            var cutoff = new Date(now);
             if (activityRange === "1d") cutoff.setDate(now.getDate() - 1);
             else if (activityRange === "1w") cutoff.setDate(now.getDate() - 7);
             else if (activityRange === "1m") cutoff.setMonth(now.getMonth() - 1);
             else cutoff.setFullYear(now.getFullYear() - 1);
-            const q = activitySearch.toLowerCase().trim();
-            const filtered = selectedTeam.activities.filter((a) => {
+            var q = activitySearch.toLowerCase().trim();
+            var filtered = selectedTeam.activities.filter(function (a) {
               if (new Date(a.date) < cutoff) return false;
               if (q && !a.message.toLowerCase().includes(q) && !a.user.toLowerCase().includes(q) && !a.type.toLowerCase().includes(q)) return false;
               return true;
@@ -430,26 +321,26 @@ export default function Team() {
               </div>
             ) : (
               <div className="divide-y divide-border/60 max-h-[320px] overflow-y-auto">
-                {filtered.map((activity) => {
-                const Icon = activityIcons[activity.type];
-                const colorClass = activityColors[activity.type];
-                const d = new Date(activity.date);
-                const timeStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " · " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-                return (
-                  <div key={activity.id} className="px-5 py-3.5 flex items-start gap-3 hover:bg-secondary/30 transition-colors">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${colorClass}`}>
-                      <Icon className="w-3.5 h-3.5" />
+                {filtered.map(function (activity) {
+                  var Icon = activityIcons[activity.type];
+                  var colorClass = activityColors[activity.type];
+                  var d = new Date(activity.date);
+                  var timeStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " · " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+                  return (
+                    <div key={activity.id} className="px-5 py-3.5 flex items-start gap-3 hover:bg-secondary/30 transition-colors">
+                      <div className={"w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 " + colorClass}>
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] text-foreground">
+                          <span className="font-semibold">{activity.user}</span>{" "}
+                          <span className="text-muted-foreground">{activity.message}</span>
+                        </p>
+                        <p className="text-2xs text-muted-foreground/60 mt-0.5">{timeStr}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] text-foreground">
-                        <span className="font-semibold">{activity.user}</span>{" "}
-                        <span className="text-muted-foreground">{activity.message}</span>
-                      </p>
-                      <p className="text-2xs text-muted-foreground/60 mt-0.5">{timeStr}</p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
             );
           })()}
@@ -464,17 +355,17 @@ export default function Team() {
 
         {/* Role stat pills */}
         <motion.div variants={item} className="flex flex-wrap gap-2">
-          {ROLES.map((role) => {
-            const Icon = roleIcons[role];
-            const count = selectedTeam.members.filter((m) => m.role === role).length;
+          {ROLES.map(function (role) {
+            var Icon = roleIcons[role];
+            var count = selectedTeam.members.filter(function (m) { return m.role === role; }).length;
             if (count === 0) return null;
             return (
               <div key={role} className="card-premium flex items-center gap-2.5 px-4 py-2.5 rounded-xl">
-                <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${roleColors[role]} flex items-center justify-center`}>
+                <div className={"w-7 h-7 rounded-lg bg-gradient-to-br " + roleColors[role] + " flex items-center justify-center"}>
                   <Icon className="w-3.5 h-3.5 text-primary-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">{t(`team.role_${role.toLowerCase()}`)}</p>
+                  <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">{t("team.role_" + role.toLowerCase())}</p>
                   <p className="text-sm font-bold text-foreground">{count}</p>
                 </div>
               </div>
@@ -482,14 +373,13 @@ export default function Team() {
           })}
         </motion.div>
 
-
         {/* Search */}
         <motion.div variants={item} ref={membersRef}>
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={function (e) { setSearch(e.target.value); }}
               placeholder={t("team.searchPlaceholder")}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary/50 border border-border/50 text-foreground text-[13px] placeholder:text-muted-foreground focus:outline-none focus-brand min-h-[44px]"
             />
@@ -500,15 +390,15 @@ export default function Team() {
         <motion.div variants={item}>
           {isMobile ? (
             <div className="space-y-2.5">
-              {filteredMembers.map((m) => {
-                const RoleIcon = roleIcons[m.role];
-                const cfg = statusConfig[m.status];
-                const StatusIcon = cfg.icon;
-                const isOwner = m.firstName === "You";
+              {filteredMembers.map(function (m) {
+                var RoleIcon = roleIcons[m.role];
+                var cfg = statusConfig[m.status];
+                var StatusIcon = cfg.icon;
+                var isOwner = m.firstName === "You";
                 return (
                   <div key={m.id} className="card-premium p-4 flex items-start gap-3">
                     <Avatar className="w-10 h-10 shrink-0">
-                      <AvatarFallback className={`bg-gradient-to-br ${roleColors[m.role]} text-primary-foreground text-2xs font-bold`}>
+                      <AvatarFallback className={"bg-gradient-to-br " + roleColors[m.role] + " text-primary-foreground text-2xs font-bold"}>
                         {getInitials(m.firstName, m.lastName)}
                       </AvatarFallback>
                     </Avatar>
@@ -523,9 +413,9 @@ export default function Team() {
                       </div>
                       <div className="flex items-center flex-wrap gap-1.5">
                         <Badge variant="outline" className="text-2xs gap-1 border-border bg-secondary/50 text-secondary-foreground">
-                          <RoleIcon className="w-3 h-3" /> {t(`team.role_${m.role.toLowerCase()}`)}
+                          <RoleIcon className="w-3 h-3" /> {t("team.role_" + m.role.toLowerCase())}
                         </Badge>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold ${cfg.color}`}>
+                        <span className={"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold " + cfg.color}>
                           <StatusIcon className="w-3 h-3" />
                           {m.status === "active" ? t("team.active") : m.status === "pending" ? t("team.invited") : t("team.expired")}
                         </span>
@@ -536,7 +426,7 @@ export default function Team() {
                     </div>
                     {!isOwner && permissions.canManageTeam && (
                       <button
-                        onClick={() => handleRemoveMember(m.id)}
+                        onClick={function () { handleRemoveMember(m.id); }}
                         className="p-2 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -560,17 +450,17 @@ export default function Team() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredMembers.map((m) => {
-                      const RoleIcon = roleIcons[m.role];
-                      const cfg = statusConfig[m.status];
-                      const StatusIcon = cfg.icon;
-                      const isOwner = m.firstName === "You";
+                    {filteredMembers.map(function (m) {
+                      var RoleIcon = roleIcons[m.role];
+                      var cfg = statusConfig[m.status];
+                      var StatusIcon = cfg.icon;
+                      var isOwner = m.firstName === "You";
                       return (
                         <tr key={m.id} className="border-b border-border/60 last:border-0 hover:bg-secondary/30 transition-colors group">
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-3">
                               <Avatar className="w-8 h-8">
-                                <AvatarFallback className={`bg-gradient-to-br ${roleColors[m.role]} text-primary-foreground text-2xs font-bold`}>
+                                <AvatarFallback className={"bg-gradient-to-br " + roleColors[m.role] + " text-primary-foreground text-2xs font-bold"}>
                                   {getInitials(m.firstName, m.lastName)}
                                 </AvatarFallback>
                               </Avatar>
@@ -585,27 +475,29 @@ export default function Team() {
                           <td className="px-5 py-3.5">
                             {isOwner || !permissions.canManageTeam ? (
                               <Badge variant="outline" className="text-2xs gap-1 border-border bg-secondary/50 text-secondary-foreground font-medium">
-                                <RoleIcon className="w-3 h-3" /> {t(`team.role_${m.role.toLowerCase()}`)}
+                                <RoleIcon className="w-3 h-3" /> {t("team.role_" + m.role.toLowerCase())}
                               </Badge>
                             ) : (
-                              <Select value={m.role} onValueChange={(v) => handleRoleChange(m.id, v as TeamRole)}>
+                              <Select value={m.role} onValueChange={function (v) { handleRoleChange(m.id, v as TeamRole); }}>
                                 <SelectTrigger className="h-7 w-auto min-w-[130px] bg-secondary/50 border-border text-2xs gap-1">
                                   <RoleIcon className="w-3 h-3 shrink-0" />
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-card border-border">
-                                  {ROLES.map((r) => (
-                                    <SelectItem key={r} value={r} className="text-2xs">
-                                      {t(`team.role_${r.toLowerCase()}`)}
-                                    </SelectItem>
-                                  ))}
+                                  {ROLES.map(function (r) {
+                                    return (
+                                      <SelectItem key={r} value={r} className="text-2xs">
+                                        {t("team.role_" + r.toLowerCase())}
+                                      </SelectItem>
+                                    );
+                                  })}
                                 </SelectContent>
                               </Select>
                             )}
                           </td>
                           <td className="px-5 py-3.5 text-muted-foreground hidden lg:table-cell text-xs">{formatDate(m.joinedAt)}</td>
                           <td className="px-5 py-3.5">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-semibold ${cfg.color}`}>
+                            <span className={"inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-semibold " + cfg.color}>
                               <StatusIcon className="w-3 h-3" />
                               {m.status === "active" ? t("team.active") : m.status === "pending" ? t("team.invited") : t("team.expired")}
                             </span>
@@ -613,7 +505,7 @@ export default function Team() {
                           <td className="px-5 py-3.5">
                             {!isOwner && permissions.canManageTeam && (
                               <button
-                                onClick={() => handleRemoveMember(m.id)}
+                                onClick={function () { handleRemoveMember(m.id); }}
                                 className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -638,11 +530,13 @@ export default function Team() {
                 }}
               >
                 <span>{filteredMembers.length + " member" + (filteredMembers.length !== 1 ? "s" : "")}</span>
-                <span className="text-2xs text-muted-foreground/50">TRAKALOG Team</span>
+                <span className="text-2xs text-muted-foreground/50">TRAKALOG</span>
               </div>
             </div>
           )}
         </motion.div>
+        </>
+        )}
         </>
         )}
       </motion.div>
