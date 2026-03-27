@@ -403,12 +403,6 @@ export default function TrackDetail() {
     { id: "review", label: commentCount ? "Review (" + commentCount + ")" : "Review" },
   ];
 
-  // Access level restrictions for shared tracks
-  var shareLevel = track?.shareAccessLevel || null;
-  var canEdit = !shareLevel || shareLevel === "editor" || shareLevel === "admin";
-  var canShare = !shareLevel || shareLevel !== "viewer";
-  var canDownload = !shareLevel || shareLevel !== "viewer";
-
   return (
     <PageShell>
       {!track ? (
@@ -446,9 +440,6 @@ export default function TrackDetail() {
                 <Info className="w-4 h-4 text-brand-purple shrink-0" />
                 <p className="text-sm text-foreground">
                   {t("catalogSharing.sharedFromBanner", { workspace: track.sharedFrom || "" })}
-                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-purple/10 text-brand-purple capitalize">
-                    {track.shareAccessLevel}
-                  </span>
                 </p>
               </motion.div>
             )}
@@ -559,7 +550,7 @@ export default function TrackDetail() {
                         transition={{ duration: 0.2 }}
                         className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2"
                       >
-                        {permissions.canEditOwnTracks && canEdit && (
+                        {permissions.canEditOwnTracks && (
                           <button
                             onClick={() => setEditTrackModalOpen(true)}
                             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 min-h-[44px] col-span-1"
@@ -567,23 +558,19 @@ export default function TrackDetail() {
                             <Edit3 className="w-4 h-4" /> Edit Track
                           </button>
                         )}
-                        {canShare && (
-                          <button
-                            onClick={() => setShareExpanded(true)}
-                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px] col-span-1"
-                          >
-                            <Share2 className="w-4 h-4" /> Share
-                          </button>
-                        )}
-                        {canDownload && (
-                          <button
-                            onClick={() => setDownloadModalOpen(true)}
-                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
-                          >
-                            <Download className="w-4 h-4" /> Download
-                          </button>
-                        )}
-                        {permissions.canEditOwnTracks && canEdit && (
+                        <button
+                          onClick={() => setShareExpanded(true)}
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px] col-span-1"
+                        >
+                          <Share2 className="w-4 h-4" /> Share
+                        </button>
+                        <button
+                          onClick={() => setDownloadModalOpen(true)}
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
+                        >
+                          <Download className="w-4 h-4" /> Download
+                        </button>
+                        {permissions.canEditOwnTracks && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <button className="flex items-center justify-center w-10 h-10 rounded-lg border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200">
@@ -683,10 +670,14 @@ export default function TrackDetail() {
                               <DropdownMenuItem onClick={() => setStudioQrOpen(true)}>
                                 <QrCode className="w-4 h-4 mr-2" /> Studio QR
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} className="text-destructive focus:text-destructive">
-                                <Trash2 className="w-4 h-4 mr-2" /> Delete
-                              </DropdownMenuItem>
+                              {!track.isShared && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} className="text-destructive focus:text-destructive">
+                                    <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         )}
