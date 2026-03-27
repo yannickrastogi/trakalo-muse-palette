@@ -134,12 +134,13 @@ function CommentMarkers({ comments, totalDuration }: { comments: TrackComment[];
   );
 }
 
-function KaraokeLyrics({ segments, currentTime, isPlaying, onSeek, className }: {
+function KaraokeLyrics({ segments, currentTime, isPlaying, onSeek, className, darkBg }: {
   segments: { start: number; end: number; text: string }[];
   currentTime: number;
   isPlaying: boolean;
   onSeek: (time: number) => void;
   className?: string;
+  darkBg?: boolean;
 }) {
   var [expanded, setExpanded] = useState(true);
   var containerRef = useRef<HTMLDivElement>(null);
@@ -179,7 +180,7 @@ function KaraokeLyrics({ segments, currentTime, isPlaying, onSeek, className }: 
       {expanded && (
         <div
           ref={containerRef}
-          className="max-h-[400px] overflow-y-auto space-y-1 pb-4 scroll-smooth"
+          className={"max-h-[400px] overflow-y-auto space-y-1 pb-4 scroll-smooth" + (darkBg ? " bg-black/30 backdrop-blur-sm rounded-lg p-2" : "")}
         >
           {segments.map(function(seg, i) {
             var isActive = isPlaying && currentTime >= seg.start && currentTime < seg.end;
@@ -1318,6 +1319,7 @@ export default function SharedLinkPage() {
                       currentTime={currentTime}
                       isPlaying={isPlaying}
                       onSeek={function(time) { if (audioRef.current) { audioRef.current.currentTime = time; } }}
+                      darkBg={plImmersive}
                       className={(plImmersive ? "border-t border-white/10" : "border-t border-border") + " -mx-6 px-6 mt-2"}
                     />
                   )}
@@ -1561,6 +1563,7 @@ export default function SharedLinkPage() {
                 currentTime={currentTime}
                 isPlaying={isPlaying}
                 onSeek={function(time) { if (audioRef.current) { audioRef.current.currentTime = time; } }}
+                darkBg={immersive}
                 className={(immersive ? "border-t border-white/10" : "border-t border-border") + " px-6"}
               />
             )}
