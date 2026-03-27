@@ -27,6 +27,7 @@ import { useTranslation } from "react-i18next";
 import { useRole } from "@/contexts/RoleContext";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 
 const navItems = [
   { titleKey: "nav.dashboard", icon: LayoutDashboard, url: "/dashboard", permKey: null },
@@ -118,6 +119,7 @@ export function MobileSidebar({ open, onOpenChange }: { open: boolean; onOpenCha
         <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
         <SidebarLogo />
         <div className="mx-5 h-px" style={{ background: "var(--gradient-brand-horizontal)", opacity: 0.15 }} />
+        <WorkspaceSwitcher onSwitch={() => onOpenChange(false)} />
         <SidebarNav onNavigate={() => onOpenChange(false)} />
       </SheetContent>
     </Sheet>
@@ -241,6 +243,10 @@ export function AppSidebar() {
       </div>
 
       <div className="mx-5 h-px" style={{ background: "var(--gradient-brand-horizontal)", opacity: 0.15 }} />
+
+      <div className="pt-3">
+        <WorkspaceSwitcher collapsed={collapsed} />
+      </div>
 
       <nav className="flex-1 py-5 px-3 space-y-1">
         {visibleItems.map((item) => (

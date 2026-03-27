@@ -14,6 +14,10 @@ interface WorkspaceContextValue {
   switchWorkspace: (workspaceId: string) => void;
   /** Update settings on the active workspace */
   updateWorkspaceSettings: (updates: Partial<WorkspaceSettings>) => void;
+  /** Create a new workspace and switch to it */
+  createWorkspace: (name: string, description?: string) => Promise<string | null>;
+  /** Re-fetch all workspaces from DB */
+  refreshWorkspaces: () => Promise<void>;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -25,6 +29,87 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const hasFetchedRef = useRef(false);
 
+  const fetchWorkspaces = useCallback(async (opts?: { switchTo?: string }) => {
+    if (!user) return;
+    // Don't show loading spinner if we already have data (re-fetch in background)
+    if (workspaces.length === 0) setLoading(true);
+    try {
+      // Get workspace IDs the user is a member of
+      const { data: memberships, error: memberError } = await supabase
+        .from("workspace_members")
+        .select("workspace_id")
+        .eq("user_id", user.id);
+
+      if (memberError) {
+        console.error("Error fetching memberships:", memberError);
+        setLoading(false);
+        return;
+      }
+
+      if (!memberships || memberships.length === 0) {
+        setWorkspaces([]);
+        setActiveId(null);
+        setLoading(false);
+        return;
+      }
+
+      const workspaceIds = memberships.map((m) => m.workspace_id);
+
+      // Fetch workspace details
+      const { data: wsData, error: wsError } = await supabase
+        .from("workspaces")
+        .select("*")
+        .in("id", workspaceIds);
+
+      if (wsError) {
+        console.error("Error fetching workspaces:", wsError);
+        setLoading(false);
+        return;
+      }
+
+      const mapped: Workspace[] = (wsData || []).map((ws) => ({
+        id: ws.id,
+        name: ws.name,
+        slug: ws.slug,
+        owner_id: ws.owner_id,
+        plan: (ws.plan as Workspace["plan"]) || "free",
+        created_at: ws.created_at,
+        settings: (ws.settings as WorkspaceSettings) || {
+          defaultLanguage: "en",
+          allowPublicLinks: true,
+          requireApproval: false,
+          maxMembers: 5,
+          storageQuotaMB: 2048,
+        },
+        hero_image_url: (ws as any).hero_image_url || null,
+        hero_position: (ws as any).hero_position ?? null,
+        logo_url: (ws as any).logo_url || null,
+        brand_color: (ws as any).brand_color || null,
+      }));
+
+      setWorkspaces(mapped);
+
+      // If switchTo is specified (e.g. after creating a new workspace), use it
+      if (opts?.switchTo && mapped.some((w) => w.id === opts.switchTo)) {
+        setActiveId(opts.switchTo);
+        localStorage.setItem("trakalog_active_workspace", opts.switchTo);
+      } else if (!activeId || !mapped.some((w) => w.id === activeId)) {
+        // Set active workspace: use stored preference or first workspace
+        const stored = localStorage.getItem("trakalog_active_workspace");
+        if (stored && mapped.some((w) => w.id === stored)) {
+          setActiveId(stored);
+        } else if (mapped.length > 0) {
+          setActiveId(mapped[0].id);
+        }
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching workspaces:", err);
+    } finally {
+      setLoading(false);
+      hasFetchedRef.current = true;
+    }
+  }, [user]);
+
   // Fetch workspaces the user belongs to
   useEffect(() => {
     if (!user) {
@@ -33,80 +118,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (!authLoading && hasFetchedRef.current) setLoading(false);
       return;
     }
-
-    const fetchWorkspaces = async () => {
-      // Don't show loading spinner if we already have data (re-fetch in background)
-      if (workspaces.length === 0) setLoading(true);
-      try {
-        // Get workspace IDs the user is a member of
-        const { data: memberships, error: memberError } = await supabase
-          .from("workspace_members")
-          .select("workspace_id")
-          .eq("user_id", user.id);
-
-        if (memberError) {
-          console.error("Error fetching memberships:", memberError);
-          setLoading(false);
-          return;
-        }
-
-        if (!memberships || memberships.length === 0) {
-          setWorkspaces([]);
-          setActiveId(null);
-          setLoading(false);
-          return;
-        }
-
-        const workspaceIds = memberships.map((m) => m.workspace_id);
-
-        // Fetch workspace details
-        const { data: wsData, error: wsError } = await supabase
-          .from("workspaces")
-          .select("*")
-          .in("id", workspaceIds);
-
-        if (wsError) {
-          console.error("Error fetching workspaces:", wsError);
-          setLoading(false);
-          return;
-        }
-
-        const mapped: Workspace[] = (wsData || []).map((ws) => ({
-          id: ws.id,
-          name: ws.name,
-          slug: ws.slug,
-          owner_id: ws.owner_id,
-          plan: (ws.plan as Workspace["plan"]) || "free",
-          created_at: ws.created_at,
-          settings: (ws.settings as WorkspaceSettings) || {
-            defaultLanguage: "en",
-            allowPublicLinks: true,
-            requireApproval: false,
-            maxMembers: 5,
-            storageQuotaMB: 2048,
-          },
-          hero_image_url: (ws as any).hero_image_url || null,
-          hero_position: (ws as any).hero_position ?? null,
-          logo_url: (ws as any).logo_url || null,
-          brand_color: (ws as any).brand_color || null,
-        }));
-
-        setWorkspaces(mapped);
-
-        // Set active workspace: use stored preference or first workspace
-        const stored = localStorage.getItem("trakalog_active_workspace");
-        if (stored && mapped.some((w) => w.id === stored)) {
-          setActiveId(stored);
-        } else if (mapped.length > 0) {
-          setActiveId(mapped[0].id);
-        }
-      } catch (err) {
-        console.error("Unexpected error fetching workspaces:", err);
-      } finally {
-        setLoading(false);
-        hasFetchedRef.current = true;
-      }
-    };
 
     fetchWorkspaces();
   }, [user]);
@@ -117,6 +128,29 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setActiveId(workspaceId);
     localStorage.setItem("trakalog_active_workspace", workspaceId);
   }, []);
+
+  const createWorkspace = useCallback(async (name: string, description?: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.rpc("create_workspace_with_member", {
+        _name: name,
+        _description: description || null,
+      });
+      if (error) {
+        console.error("Error creating workspace:", error);
+        return null;
+      }
+      const newId = data as string;
+      await fetchWorkspaces({ switchTo: newId });
+      return newId;
+    } catch (err) {
+      console.error("Unexpected error creating workspace:", err);
+      return null;
+    }
+  }, [fetchWorkspaces]);
+
+  const refreshWorkspaces = useCallback(async () => {
+    await fetchWorkspaces();
+  }, [fetchWorkspaces]);
 
   const updateWorkspaceSettings = useCallback(
     async (updates: Partial<WorkspaceSettings>) => {
@@ -163,7 +197,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   return (
     <WorkspaceContext.Provider
-      value={{ activeWorkspace, workspaces, loading, switchWorkspace, updateWorkspaceSettings }}
+      value={{ activeWorkspace, workspaces, loading, switchWorkspace, updateWorkspaceSettings, createWorkspace, refreshWorkspaces }}
     >
       {children}
     </WorkspaceContext.Provider>
