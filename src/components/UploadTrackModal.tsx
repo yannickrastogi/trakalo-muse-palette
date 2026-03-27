@@ -105,8 +105,23 @@ interface UploadTrackModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+function parseFileName(fileName: string): { artist: string; title: string } {
+  var nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
+  var separators = [" - ", " – ", " — "];
+  for (var i = 0; i < separators.length; i++) {
+    var idx = nameWithoutExt.indexOf(separators[i]);
+    if (idx > 0) {
+      return {
+        artist: nameWithoutExt.substring(0, idx).trim(),
+        title: nameWithoutExt.substring(idx + separators[i].length).trim(),
+      };
+    }
+  }
+  return { artist: "", title: nameWithoutExt.trim() };
+}
+
 function createTrackEntry(file: File): TrackEntry {
-  const nameWithoutExt = file.name.replace(/\.[^.]+$/, "");
+  var parsed = parseFileName(file.name);
   return {
     id: crypto.randomUUID(),
     file,
@@ -118,8 +133,8 @@ function createTrackEntry(file: File): TrackEntry {
     analysisError: false,
     compressing: false,
     compressed: null,
-    title: nameWithoutExt,
-    artist: "",
+    title: parsed.title,
+    artist: parsed.artist,
     bpm: "",
     trackKey: "",
     genre: "",
