@@ -176,7 +176,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const stemsInputRef = useRef<HTMLInputElement>(null);
   const lyricsFileInputRef = useRef<HTMLInputElement>(null);
 
-  const EDIT_STEPS = [t("uploadTrack.info"), t("uploadTrack.stems"), t("uploadTrack.lyrics"), t("uploadTrack.splits"), t("uploadTrack.review"), t("uploadTrack.teams")];
+  const EDIT_STEPS = [t("uploadTrack.info"), t("uploadTrack.stems"), t("uploadTrack.lyrics"), t("uploadTrack.splits"), t("uploadTrack.review"), t("uploadTrack.workspacesStep", "Workspaces")];
 
   const currentTrack = queue[currentIdx] || null;
 
@@ -806,14 +806,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               )}
               {phase === "edit" && currentTrack && editStep === 5 && (
                 <StepTeams
-                  teams={teams}
-                  selectedTeams={currentTrack.sharedTeams}
-                  onToggle={(teamId) => {
-                    const sharedTeams = currentTrack.sharedTeams.includes(teamId)
-                      ? currentTrack.sharedTeams.filter((id) => id !== teamId)
-                      : [...currentTrack.sharedTeams, teamId];
-                    updateCurrent({ sharedTeams });
-                  }}
                   otherWorkspaces={workspaces.filter(function (ws) { return ws.id !== activeWorkspace?.id; })}
                   selectedWorkspaces={currentTrack.sharedWorkspaces}
                   onToggleWorkspace={function (wsId) {
@@ -905,6 +897,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                       <Check className="w-3.5 h-3.5" />
                       {currentIdx < queue.length - 1
                         ? t("uploadTrack.saveAndNext", "Save & Next") + " (" + (currentIdx + 2) + "/" + queue.length + ")"
+                        : currentTrack && currentTrack.sharedWorkspaces.length > 0
+                        ? t("uploadTrack.uploadAndShare", "Upload & Share")
                         : queue.length > 1
                         ? t("uploadTrack.saveAllToCatalog", "Save All to Catalog")
                         : t("uploadTrack.saveToCatalog")
@@ -1702,19 +1696,13 @@ function StepReview({
   );
 }
 
-/* ─── Teams Step ─── */
+/* ─── Workspaces Step ─── */
 
 function StepTeams({
-  teams,
-  selectedTeams,
-  onToggle,
   otherWorkspaces,
   selectedWorkspaces,
   onToggleWorkspace,
 }: {
-  teams: { id: string; name: string; members: { id: string }[]; createdAt: string }[];
-  selectedTeams: string[];
-  onToggle: (teamId: string) => void;
   otherWorkspaces: { id: string; name: string; logo_url: string | null }[];
   selectedWorkspaces: string[];
   onToggleWorkspace: (wsId: string) => void;
@@ -1727,101 +1715,48 @@ function StepTeams({
 
   return (
     <div className="space-y-5">
-      {/* Share to Workspaces */}
-      {otherWorkspaces.length > 0 && (
-        <>
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
-              <ArrowRightLeft className="w-4 h-4 text-brand-orange" />
-              {t("uploadTrack.shareToWorkspaces", "Share to Workspaces")}
-            </h3>
-            <p className="text-2xs text-muted-foreground">
-              {t("uploadTrack.shareToWorkspacesDesc", "Make this track available in other workspaces")}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            {otherWorkspaces.map(function (ws) {
-              var isSelected = selectedWorkspaces.includes(ws.id);
-              return (
-                <button
-                  key={ws.id}
-                  onClick={function () { onToggleWorkspace(ws.id); }}
-                  className={"w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left " + (
-                    isSelected
-                      ? "border-brand-orange/20 bg-brand-orange/5"
-                      : "border-border bg-transparent hover:border-border/80"
-                  )}
-                >
-                  {ws.logo_url ? (
-                    <img src={ws.logo_url} alt="" className="w-7 h-7 rounded-lg object-contain shrink-0" />
-                  ) : (
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
-                      <span className="text-[9px] font-bold text-white">{getInitials(ws.name)}</span>
-                    </div>
-                  )}
-                  <p className="flex-1 min-w-0 text-sm font-semibold text-foreground truncate">{ws.name}</p>
-                  <div className={"w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 " + (
-                    isSelected ? "border-brand-orange bg-brand-orange" : "border-muted-foreground/30"
-                  )}>
-                    {isSelected && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {selectedWorkspaces.length > 0 && (
-            <p className="text-2xs text-muted-foreground">
-              {selectedWorkspaces.length + " workspace" + (selectedWorkspaces.length !== 1 ? "s" : "") + " selected"}
-            </p>
-          )}
-
-          <div className="h-px bg-border" />
-        </>
-      )}
-
-      {/* Share with Teams */}
       <div>
-        <h3 className="text-sm font-semibold text-foreground mb-1">{t("uploadTrack.shareWithTeams", "Share with Teams")}</h3>
+        <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
+          <ArrowRightLeft className="w-4 h-4 text-brand-orange" />
+          {t("uploadTrack.shareInWorkspaces", "Share in Workspaces")}
+        </h3>
         <p className="text-2xs text-muted-foreground">
-          {t("uploadTrack.shareWithTeamsDesc", "Select which teams should have access to this track. You can skip this step.")}
+          {t("uploadTrack.shareToWorkspacesDesc", "Make this track available in other workspaces")}
         </p>
       </div>
 
-      {teams.length === 0 ? (
+      {otherWorkspaces.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <Users className="w-10 h-10 text-muted-foreground/30 mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">{t("uploadTrack.noTeamsYet", "No teams yet")}</p>
-          <p className="text-2xs text-muted-foreground/60 mt-1">{t("uploadTrack.noTeamsDesc", "Create a team in the Team section to start collaborating")}</p>
+          <ArrowRightLeft className="w-10 h-10 text-muted-foreground/30 mb-3" />
+          <p className="text-sm font-medium text-muted-foreground">{t("uploadTrack.noOtherWorkspaces", "No other workspaces")}</p>
+          <p className="text-2xs text-muted-foreground/60 mt-1">{t("uploadTrack.noOtherWorkspacesDesc", "Create another workspace to share tracks between them")}</p>
         </div>
       ) : (
         <div className="space-y-2">
-          {teams.map((team) => {
-            const isSelected = selectedTeams.includes(team.id);
+          {otherWorkspaces.map(function (ws) {
+            var isSelected = selectedWorkspaces.includes(ws.id);
             return (
               <button
-                key={team.id}
-                onClick={() => onToggle(team.id)}
-                className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${
+                key={ws.id}
+                onClick={function () { onToggleWorkspace(ws.id); }}
+                className={"w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left " + (
                   isSelected
-                    ? "border-primary/40 bg-primary/5"
-                    : "border-border bg-secondary/50 hover:border-border/80"
-                }`}
+                    ? "border-brand-orange/20 bg-brand-orange/5"
+                    : "border-border bg-transparent hover:border-border/80"
+                )}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-                  isSelected ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"
-                }`}>
-                  <Users className="w-4.5 h-4.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{team.name}</p>
-                  <p className="text-2xs text-muted-foreground">{team.members.length} {t("uploadTrack.members", "members")}</p>
-                </div>
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
-                  isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
-                }`}>
-                  {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                {ws.logo_url ? (
+                  <img src={ws.logo_url} alt="" className="w-7 h-7 rounded-lg object-contain shrink-0" />
+                ) : (
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                    <span className="text-[9px] font-bold text-white">{getInitials(ws.name)}</span>
+                  </div>
+                )}
+                <p className="flex-1 min-w-0 text-sm font-semibold text-foreground truncate">{ws.name}</p>
+                <div className={"w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 " + (
+                  isSelected ? "border-brand-orange bg-brand-orange" : "border-muted-foreground/30"
+                )}>
+                  {isSelected && <Check className="w-3 h-3 text-white" />}
                 </div>
               </button>
             );
@@ -1829,9 +1764,9 @@ function StepTeams({
         </div>
       )}
 
-      {selectedTeams.length > 0 && (
+      {selectedWorkspaces.length > 0 && (
         <p className="text-2xs text-muted-foreground">
-          {t("uploadTrack.teamsSelected", { count: selectedTeams.length, defaultValue: selectedTeams.length + " team(s) selected" })}
+          {selectedWorkspaces.length + " workspace" + (selectedWorkspaces.length !== 1 ? "s" : "") + " selected"}
         </p>
       )}
     </div>
