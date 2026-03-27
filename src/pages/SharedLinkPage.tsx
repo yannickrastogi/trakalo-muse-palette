@@ -1659,20 +1659,11 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
           {/* Logo header */}
           <header className="py-6 sm:py-8">
             <div className="flex flex-col items-center gap-1.5">
-              {logoUrl ? (
-                <img src={logoUrl} alt="Logo" style={{ maxHeight: 70, filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.6))" }} className="object-contain" />
-              ) : (
-                <div className="flex items-center gap-3">
-                  <img src={trakalogLogo} alt="Trakalog" className="h-10" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.5))" }} />
-                  <span className="text-xl font-bold tracking-wider uppercase" style={{ background: "linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Trakalog</span>
-                </div>
-              )}
-              {logoUrl && (
-                <div className="flex flex-col items-center">
-                  <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
-                  <span className="text-[10px] tracking-[0.2em] text-white/30 font-medium block mt-0.5">CATALOG MANAGER</span>
-                </div>
-              )}
+              <img src={logoUrl || trakalogLogo} alt="Logo" style={{ maxHeight: 70, filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.6))" }} className="object-contain" />
+              <div className="flex flex-col items-center">
+                <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+                <span className="text-[10px] tracking-[0.2em] text-white/30 font-medium block mt-0.5">CATALOG MANAGER</span>
+              </div>
             </div>
           </header>
           <div className="flex-1">{children}</div>

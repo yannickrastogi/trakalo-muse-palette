@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import trakalogLogo from "@/assets/trakalog-logo.png";
 import {
   User,
   Bell,
@@ -629,6 +630,44 @@ function BrandingSection() {
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+      {/* Logo */}
+      <SectionBlock title="Logo" subtitle="Your logo displayed alongside TRAKALOG branding" icon={Image}>
+        <FieldGroup label="Logo" hint="Your logo displayed alongside TRAKALOG branding. Recommended: PNG with transparent background">
+          {logoUrl ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-center p-4 rounded-xl border border-border/50 bg-secondary/30">
+                <img src={logoUrl} alt="Logo" style={{ maxHeight: 80 }} className="object-contain" />
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => handleUpload("logo")} className="inline-flex items-center gap-1.5 text-[11px] gradient-text font-bold hover:opacity-80 transition-opacity">
+                  <Edit3 className="w-3 h-3" />
+                  {uploading === "logo" ? "Uploading..." : "Change"}
+                </button>
+                <span className="text-muted-foreground/20">·</span>
+                <button onClick={() => handleRemove("logo")} className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/40 font-medium hover:text-destructive transition-colors">
+                  <Trash2 className="w-3 h-3" />
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => handleUpload("logo")}
+              disabled={uploading === "logo"}
+              className="w-full border-2 border-dashed border-border/50 rounded-xl py-8 flex flex-col items-center gap-2 hover:border-primary/30 hover:bg-primary/[0.02] transition-all cursor-pointer group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-secondary/60 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                <Upload className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <span className="text-[12px] font-semibold text-muted-foreground/60 group-hover:text-foreground transition-colors">
+                {uploading === "logo" ? "Uploading..." : "Click to upload logo"}
+              </span>
+              <span className="text-[10px] text-muted-foreground/30">.jpg, .png, .webp, .svg</span>
+            </button>
+          )}
+        </FieldGroup>
+      </SectionBlock>
+
       {/* Background Image */}
       <SectionBlock title="Background Image" subtitle="Full-screen background for your shared links" icon={Image}>
         <FieldGroup label="Background Image" hint="Full-screen background shown to recipients on your shared links. Recommended: high-resolution photo (min 1920×1080px). The image will be darkened for readability.">
@@ -636,7 +675,7 @@ function BrandingSection() {
             <div className="space-y-3">
               <div
                 ref={containerRef}
-                className={"group/hero relative rounded-xl overflow-hidden border border-border/50 " + (repositioning ? "cursor-grab active:cursor-grabbing" : "cursor-pointer")}
+                className={"group/hero relative rounded-xl overflow-hidden border border-border/50 bg-black " + (repositioning ? "cursor-grab active:cursor-grabbing" : "cursor-pointer")}
                 style={{ aspectRatio: "16/9" }}
                 onMouseDown={repositioning ? (e) => { e.preventDefault(); handleDragStart(e.clientY); } : undefined}
                 onTouchStart={repositioning ? (e) => handleDragStart(e.touches[0].clientY) : undefined}
@@ -648,14 +687,48 @@ function BrandingSection() {
                   style={{ objectPosition: "center " + (repositioning ? dragPosition : heroPosition) + "%" }}
                   draggable={false}
                 />
-                {/* Dark overlay + preview of recipient view */}
+                {/* Dark overlay like SharedLinkPage */}
+                {!repositioning && <div className="absolute inset-0 bg-black/55" />}
+                {/* Mini-mockup of recipient view */}
                 {!repositioning && (
-                  <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center pointer-events-none gap-2">
-                    {logoUrl && (
-                      <img src={logoUrl} alt="Logo" className="h-[36px] object-contain" />
-                    )}
-                    <span className="text-sm font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent select-none">TRAKALOG</span>
-                    <div className="bg-white/8 rounded-lg w-2/3 h-1/3" />
+                  <div className="absolute inset-0 flex flex-col items-center pointer-events-none select-none">
+                    {/* Header: logo + TRAKALOG + CATALOG MANAGER */}
+                    <div className="flex flex-col items-center mt-[8%] gap-0.5">
+                      <img src={logoUrl || trakalogLogo} alt="Logo" className="h-[25px] object-contain" />
+                      <span className="text-[6px] font-bold tracking-wider bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+                      <span className="text-[4px] tracking-[0.15em] text-white/30 font-medium">CATALOG MANAGER</span>
+                    </div>
+                    {/* Message card */}
+                    <div className="mt-[5%] w-[55%] flex items-start gap-1.5 rounded bg-white/5 border border-white/10 px-2 py-1.5">
+                      <div className="w-[2px] h-3 rounded-full bg-gradient-to-b from-brand-orange to-brand-pink flex-shrink-0 mt-0.5" />
+                      <span className="text-[5px] text-white/50 italic leading-tight">Message from sender...</span>
+                    </div>
+                    {/* Glassmorphism card */}
+                    <div className="mt-[4%] w-[55%] rounded-lg bg-white/8 backdrop-blur border border-white/10 p-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-[30px] h-[30px] rounded bg-gradient-to-br from-brand-orange to-brand-pink flex-shrink-0" />
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[7px] font-bold text-white leading-none">Track Title</span>
+                          <span className="text-[5px] text-white/60 leading-none">Artist Name</span>
+                        </div>
+                      </div>
+                      {/* Fake waveform */}
+                      <div className="flex items-end gap-[1px] mt-2 h-3">
+                        {[40, 70, 55, 85, 45, 75, 60, 90, 50, 80, 65, 45, 70, 55, 85, 40, 75, 60, 50, 80, 65, 55, 70, 45, 85].map((h, i) => (
+                          <div key={i} className="flex-1 bg-white/20 rounded-sm" style={{ height: h + "%" }} />
+                        ))}
+                      </div>
+                      {/* Fake play button */}
+                      <div className="flex justify-center mt-2">
+                        <div className="w-[14px] h-[14px] rounded-full bg-brand-orange flex items-center justify-center">
+                          <div className="w-0 h-0 border-l-[4px] border-l-white border-y-[2.5px] border-y-transparent ml-[1px]" />
+                        </div>
+                      </div>
+                    </div>
+                    {/* Footer */}
+                    <div className="mt-auto mb-[4%]">
+                      <span className="text-[4px] text-white/30">Shared via Trakalog</span>
+                    </div>
                   </div>
                 )}
                 {/* Reposition mode overlay */}
@@ -732,44 +805,6 @@ function BrandingSection() {
                 {uploading === "hero" ? "Uploading..." : "Click to upload background image"}
               </span>
               <span className="text-[10px] text-muted-foreground/30">.jpg, .png, .webp</span>
-            </button>
-          )}
-        </FieldGroup>
-      </SectionBlock>
-
-      {/* Logo */}
-      <SectionBlock title="Logo" subtitle="Your logo displayed alongside TRAKALOG branding" icon={Image}>
-        <FieldGroup label="Logo" hint="Your logo displayed alongside TRAKALOG branding. Recommended: PNG with transparent background">
-          {logoUrl ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-center p-4 rounded-xl border border-border/50 bg-secondary/30">
-                <img src={logoUrl} alt="Logo" style={{ maxHeight: 80 }} className="object-contain" />
-              </div>
-              <div className="flex items-center gap-3">
-                <button onClick={() => handleUpload("logo")} className="inline-flex items-center gap-1.5 text-[11px] gradient-text font-bold hover:opacity-80 transition-opacity">
-                  <Edit3 className="w-3 h-3" />
-                  {uploading === "logo" ? "Uploading..." : "Change"}
-                </button>
-                <span className="text-muted-foreground/20">·</span>
-                <button onClick={() => handleRemove("logo")} className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/40 font-medium hover:text-destructive transition-colors">
-                  <Trash2 className="w-3 h-3" />
-                  Remove
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => handleUpload("logo")}
-              disabled={uploading === "logo"}
-              className="w-full border-2 border-dashed border-border/50 rounded-xl py-8 flex flex-col items-center gap-2 hover:border-primary/30 hover:bg-primary/[0.02] transition-all cursor-pointer group"
-            >
-              <div className="w-10 h-10 rounded-xl bg-secondary/60 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                <Upload className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-              <span className="text-[12px] font-semibold text-muted-foreground/60 group-hover:text-foreground transition-colors">
-                {uploading === "logo" ? "Uploading..." : "Click to upload logo"}
-              </span>
-              <span className="text-[10px] text-muted-foreground/30">.jpg, .png, .webp, .svg</span>
             </button>
           )}
         </FieldGroup>
