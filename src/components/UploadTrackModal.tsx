@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ import {
   AlertCircle,
   ImagePlus,
   CheckCircle2,
+  ArrowRightLeft,
 } from "lucide-react";
 import { PerformerCreditsSection } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
@@ -92,6 +94,7 @@ interface TrackEntry {
   splits: Split[];
   lyrics: string;
   sharedTeams: string[];
+  sharedWorkspaces: string[];
   coverFile: File | null;
   // Status
   metadataComplete: boolean;
@@ -129,6 +132,7 @@ function createTrackEntry(file: File): TrackEntry {
     splits: [{ id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
     lyrics: "",
     sharedTeams: [],
+    sharedWorkspaces: [],
     coverFile: null,
     metadataComplete: false,
   };
@@ -138,7 +142,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const { t } = useTranslation();
   const { tracks, addTrack, updateTrack, refreshTracks } = useTrack();
   const { teams } = useTeams();
-  const { activeWorkspace } = useWorkspace();
+  const { activeWorkspace, workspaces } = useWorkspace();
+  const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStage, setUploadStage] = useState("");
@@ -499,8 +504,29 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         setUploadProgress(98);
       }
 
+      // ── Share to other workspaces if selected ──
+      if (savedTrack && currentTrack.sharedWorkspaces.length > 0 && user && activeWorkspace) {
+        for (var i = 0; i < currentTrack.sharedWorkspaces.length; i++) {
+          await supabase.from("catalog_shares").insert({
+            track_id: savedTrack.uuid,
+            source_workspace_id: activeWorkspace.id,
+            target_workspace_id: currentTrack.sharedWorkspaces[i],
+            shared_by: user.id,
+            access_level: "pitcher",
+          });
+        }
+      }
+
       setUploadProgress(100);
-      setUploadStage(t("uploadTrack.trackUploaded", "Track uploaded!"));
+      var sharedCount = currentTrack.sharedWorkspaces.length;
+      if (sharedCount === 1) {
+        var sharedWs = workspaces.find(function (w) { return w.id === currentTrack.sharedWorkspaces[0]; });
+        setUploadStage(t("uploadTrack.trackUploadedAndShared", { name: sharedWs?.name || "", defaultValue: "Track uploaded and shared to " + (sharedWs?.name || "") + "!" }));
+      } else if (sharedCount > 1) {
+        setUploadStage(t("uploadTrack.trackUploadedAndSharedMultiple", { count: sharedCount, defaultValue: "Track uploaded and shared to " + sharedCount + " workspaces!" }));
+      } else {
+        setUploadStage(t("uploadTrack.trackUploaded", "Track uploaded!"));
+      }
       setUploadComplete(true);
 
       // Fire-and-forget: compress audio to MP3 128kbps client-side, then transcribe lyrics
@@ -772,6 +798,14 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                       ? currentTrack.sharedTeams.filter((id) => id !== teamId)
                       : [...currentTrack.sharedTeams, teamId];
                     updateCurrent({ sharedTeams });
+                  }}
+                  otherWorkspaces={workspaces.filter(function (ws) { return ws.id !== activeWorkspace?.id; })}
+                  selectedWorkspaces={currentTrack.sharedWorkspaces}
+                  onToggleWorkspace={function (wsId) {
+                    var sharedWorkspaces = currentTrack.sharedWorkspaces.includes(wsId)
+                      ? currentTrack.sharedWorkspaces.filter(function (id) { return id !== wsId; })
+                      : currentTrack.sharedWorkspaces.concat(wsId);
+                    updateCurrent({ sharedWorkspaces: sharedWorkspaces });
                   }}
                 />
               )}
@@ -1641,14 +1675,80 @@ function StepTeams({
   teams,
   selectedTeams,
   onToggle,
+  otherWorkspaces,
+  selectedWorkspaces,
+  onToggleWorkspace,
 }: {
   teams: { id: string; name: string; members: { id: string }[]; createdAt: string }[];
   selectedTeams: string[];
   onToggle: (teamId: string) => void;
+  otherWorkspaces: { id: string; name: string; logo_url: string | null }[];
+  selectedWorkspaces: string[];
+  onToggleWorkspace: (wsId: string) => void;
 }) {
   const { t } = useTranslation();
+
+  function getInitials(name: string) {
+    return name.split(/\s+/).map(function (w) { return w[0] || ""; }).join("").toUpperCase().slice(0, 2);
+  }
+
   return (
     <div className="space-y-5">
+      {/* Share to Workspaces */}
+      {otherWorkspaces.length > 0 && (
+        <>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
+              <ArrowRightLeft className="w-4 h-4 text-brand-orange" />
+              {t("uploadTrack.shareToWorkspaces", "Share to Workspaces")}
+            </h3>
+            <p className="text-2xs text-muted-foreground">
+              {t("uploadTrack.shareToWorkspacesDesc", "Make this track available in other workspaces")}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            {otherWorkspaces.map(function (ws) {
+              var isSelected = selectedWorkspaces.includes(ws.id);
+              return (
+                <button
+                  key={ws.id}
+                  onClick={function () { onToggleWorkspace(ws.id); }}
+                  className={"w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left " + (
+                    isSelected
+                      ? "border-brand-orange/20 bg-brand-orange/5"
+                      : "border-border bg-transparent hover:border-border/80"
+                  )}
+                >
+                  {ws.logo_url ? (
+                    <img src={ws.logo_url} alt="" className="w-7 h-7 rounded-lg object-contain shrink-0" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                      <span className="text-[9px] font-bold text-white">{getInitials(ws.name)}</span>
+                    </div>
+                  )}
+                  <p className="flex-1 min-w-0 text-sm font-semibold text-foreground truncate">{ws.name}</p>
+                  <div className={"w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 " + (
+                    isSelected ? "border-brand-orange bg-brand-orange" : "border-muted-foreground/30"
+                  )}>
+                    {isSelected && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {selectedWorkspaces.length > 0 && (
+            <p className="text-2xs text-muted-foreground">
+              {selectedWorkspaces.length + " workspace" + (selectedWorkspaces.length !== 1 ? "s" : "") + " selected"}
+            </p>
+          )}
+
+          <div className="h-px bg-border" />
+        </>
+      )}
+
+      {/* Share with Teams */}
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-1">{t("uploadTrack.shareWithTeams", "Share with Teams")}</h3>
         <p className="text-2xs text-muted-foreground">
