@@ -605,7 +605,7 @@ function BrandingSection() {
       if (type === "hero") setHeroUrl(publicUrl);
       else setLogoUrl(publicUrl);
       setUploading(null);
-      toast.success(type === "hero" ? "Hero image updated" : "Logo updated");
+      toast.success(type === "hero" ? "Background image updated" : "Logo updated");
     };
     input.click();
   };
@@ -617,7 +617,7 @@ function BrandingSection() {
     if (error) { toast.error(error.message); return; }
     if (type === "hero") setHeroUrl(null);
     else setLogoUrl(null);
-    toast.success(type === "hero" ? "Hero image removed" : "Logo removed");
+    toast.success(type === "hero" ? "Background image removed" : "Logo removed");
   };
 
   const handleBrandColorSave = async () => {
@@ -629,29 +629,33 @@ function BrandingSection() {
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      {/* Hero Image */}
-      <SectionBlock title="Hero Image" subtitle="Background image for your shared links and pitches" icon={Image}>
-        <FieldGroup label="Hero Image" hint="Background image shown to recipients on your shared links and pitches. Recommended: 1920×600px">
+      {/* Background Image */}
+      <SectionBlock title="Background Image" subtitle="Full-screen background for your shared links" icon={Image}>
+        <FieldGroup label="Background Image" hint="Full-screen background shown to recipients on your shared links. Recommended: high-resolution photo (min 1920×1080px). The image will be darkened for readability.">
           {heroUrl ? (
             <div className="space-y-3">
               <div
                 ref={containerRef}
                 className={"group/hero relative rounded-xl overflow-hidden border border-border/50 " + (repositioning ? "cursor-grab active:cursor-grabbing" : "cursor-pointer")}
-                style={{ aspectRatio: "16/6" }}
+                style={{ aspectRatio: "16/9" }}
                 onMouseDown={repositioning ? (e) => { e.preventDefault(); handleDragStart(e.clientY); } : undefined}
                 onTouchStart={repositioning ? (e) => handleDragStart(e.touches[0].clientY) : undefined}
               >
                 <img
                   src={heroUrl}
-                  alt="Hero"
+                  alt="Background"
                   className="w-full h-full object-cover pointer-events-none select-none"
                   style={{ objectPosition: "center " + (repositioning ? dragPosition : heroPosition) + "%" }}
                   draggable={false}
                 />
-                {/* Watermark overlay */}
+                {/* Dark overlay + preview of recipient view */}
                 {!repositioning && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <span className="text-white/20 text-lg font-bold uppercase tracking-widest select-none">Hero Image</span>
+                  <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center pointer-events-none gap-2">
+                    {logoUrl && (
+                      <img src={logoUrl} alt="Logo" className="h-[36px] object-contain" />
+                    )}
+                    <span className="text-sm font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent select-none">TRAKALOG</span>
+                    <div className="bg-white/8 rounded-lg w-2/3 h-1/3" />
                   </div>
                 )}
                 {/* Reposition mode overlay */}
@@ -725,7 +729,7 @@ function BrandingSection() {
                 <Upload className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
               <span className="text-[12px] font-semibold text-muted-foreground/60 group-hover:text-foreground transition-colors">
-                {uploading === "hero" ? "Uploading..." : "Click to upload hero image"}
+                {uploading === "hero" ? "Uploading..." : "Click to upload background image"}
               </span>
               <span className="text-[10px] text-muted-foreground/30">.jpg, .png, .webp</span>
             </button>
