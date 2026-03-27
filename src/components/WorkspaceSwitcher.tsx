@@ -16,23 +16,39 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
   const [trackCounts, setTrackCounts] = useState<Record<string, number>>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch track counts per workspace
+  // Fetch track counts per workspace (own tracks + shared tracks via catalog_shares)
   useEffect(() => {
     if (workspaces.length === 0) return;
     var ids = workspaces.map(function (w) { return w.id; });
-    supabase
-      .from("tracks")
-      .select("workspace_id", { count: "exact", head: false })
-      .in("workspace_id", ids)
-      .then(function (res) {
-        if (!res.data) return;
-        var counts: Record<string, number> = {};
-        for (var i = 0; i < res.data.length; i++) {
-          var wsId = (res.data[i] as any).workspace_id;
+
+    Promise.all([
+      supabase
+        .from("tracks")
+        .select("workspace_id", { count: "exact", head: false })
+        .in("workspace_id", ids),
+      supabase
+        .from("catalog_shares")
+        .select("target_workspace_id", { count: "exact", head: false })
+        .in("target_workspace_id", ids)
+        .eq("status", "active"),
+    ]).then(function (results) {
+      var counts: Record<string, number> = {};
+      var ownData = results[0].data;
+      if (ownData) {
+        for (var i = 0; i < ownData.length; i++) {
+          var wsId = (ownData[i] as any).workspace_id;
           counts[wsId] = (counts[wsId] || 0) + 1;
         }
-        setTrackCounts(counts);
-      });
+      }
+      var sharedData = results[1].data;
+      if (sharedData) {
+        for (var j = 0; j < sharedData.length; j++) {
+          var targetId = (sharedData[j] as any).target_workspace_id;
+          counts[targetId] = (counts[targetId] || 0) + 1;
+        }
+      }
+      setTrackCounts(counts);
+    });
   }, [workspaces]);
 
   // Close dropdown on outside click
