@@ -361,7 +361,14 @@ export default function Catalog() {
                             <div className="flex items-center gap-3">
                               <img src={track.coverImage || DEFAULT_COVER} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                               <div className="min-w-0 flex-1">
-                                <p className="font-semibold text-foreground truncate text-[13px] tracking-tight leading-tight">{track.title}</p>
+                                <div className="flex items-center gap-1.5">
+                                  <p className="font-semibold text-foreground truncate text-[13px] tracking-tight leading-tight">{track.title}</p>
+                                  {track.isShared && track.sharedFrom && (
+                                    <span className="shrink-0 inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/10 text-brand-purple">
+                                      via {track.sharedFrom}
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>
                               </div>
                               <div className={`hidden md:flex items-center gap-2 transition-opacity duration-300 ${isPlaying ? "opacity-100" : "opacity-20 group-hover/row:opacity-50"}`}>
@@ -495,6 +502,11 @@ export default function Catalog() {
                       <div className="p-3 space-y-1.5">
                         <p className="font-semibold text-foreground text-[13px] tracking-tight truncate leading-tight">{track.title}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
+                        {track.isShared && track.sharedFrom && (
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/10 text-brand-purple">
+                            via {track.sharedFrom}
+                          </span>
+                        )}
                          <div className="flex items-center gap-2 pt-1 flex-wrap">
                            <span className="text-2xs text-muted-foreground shrink-0">{track.genre || "—"}</span>
                            <span className="w-px h-3 bg-border shrink-0" />

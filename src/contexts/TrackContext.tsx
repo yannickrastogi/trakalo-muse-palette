@@ -86,6 +86,11 @@ export interface TrackData extends WorkspaceScoped {
   chapters?: TrackChapter[];
   createdAt?: string;
   statusHistory: TrackStatusEntry[];
+  // Catalog sharing fields
+  isShared?: boolean;
+  sharedFrom?: string;
+  shareAccessLevel?: string;
+  shareId?: string;
 }
 
 const stemTypeColors: Record<string, string> = {
@@ -262,8 +267,8 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     try {
-      // Fetch tracks and stems in parallel
-      const [tracksRes, stemsRes] = await Promise.all([
+      // Fetch own tracks, stems, and shared tracks in parallel
+      const [tracksRes, stemsRes, sharedRes] = await Promise.all([
         supabase
           .from("tracks")
           .select("*")
@@ -274,6 +279,12 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           .select("*")
           .eq("workspace_id", activeWorkspace.id)
           .order("created_at", { ascending: true }),
+        // Fetch tracks shared TO this workspace
+        supabase
+          .from("catalog_shares")
+          .select("id, track_id, source_workspace_id, access_level, workspaces!catalog_shares_source_workspace_id_fkey(name)")
+          .eq("target_workspace_id", activeWorkspace.id)
+          .eq("status", "active"),
       ]);
 
       if (tracksRes.error) {
@@ -292,6 +303,64 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           const trackStems = stemsByTrack[r.id as string] || [];
           return mapRowToTrack(r, i, trackStems);
         });
+
+        // Fetch shared tracks if any
+        const sharedTrackIds: string[] = [];
+        const shareInfoMap: Record<string, { sharedFrom: string; accessLevel: string; shareId: string }> = {};
+        if (!sharedRes.error && sharedRes.data && sharedRes.data.length > 0) {
+          for (const share of sharedRes.data) {
+            const s = share as any;
+            sharedTrackIds.push(s.track_id);
+            shareInfoMap[s.track_id] = {
+              sharedFrom: s.workspaces?.name || "",
+              accessLevel: s.access_level || "viewer",
+              shareId: s.id,
+            };
+          }
+
+          // Fetch the actual track rows for shared tracks (excluding ones we already own)
+          const ownTrackIds = new Set(mapped.map(function (t) { return t.uuid; }));
+          const idsToFetch = sharedTrackIds.filter(function (id) { return !ownTrackIds.has(id); });
+
+          if (idsToFetch.length > 0) {
+            const { data: sharedTrackRows } = await supabase
+              .from("tracks")
+              .select("*")
+              .in("id", idsToFetch);
+
+            if (sharedTrackRows) {
+              // Fetch stems for shared tracks
+              const { data: sharedStemsData } = await supabase
+                .from("stems")
+                .select("*")
+                .in("track_id", idsToFetch)
+                .order("created_at", { ascending: true });
+
+              const sharedStemsByTrack: Record<string, TrackStem[]> = {};
+              for (const row of sharedStemsData || []) {
+                const tid = row.track_id as string;
+                if (!sharedStemsByTrack[tid]) sharedStemsByTrack[tid] = [];
+                sharedStemsByTrack[tid].push(mapStemRow(row as unknown as Record<string, unknown>));
+              }
+
+              const baseIndex = mapped.length;
+              for (let i = 0; i < sharedTrackRows.length; i++) {
+                const r = sharedTrackRows[i] as unknown as Record<string, unknown>;
+                const trackId = r.id as string;
+                const trackStems = sharedStemsByTrack[trackId] || [];
+                const sharedTrack = mapRowToTrack(r, baseIndex + i, trackStems);
+                const info = shareInfoMap[trackId];
+                if (info) {
+                  sharedTrack.isShared = true;
+                  sharedTrack.sharedFrom = info.sharedFrom;
+                  sharedTrack.shareAccessLevel = info.accessLevel;
+                  sharedTrack.shareId = info.shareId;
+                }
+                mapped.push(sharedTrack);
+              }
+            }
+          }
+        }
 
         // Resolve storage paths to signed URLs for audio (preview + original)
         const pathsToSign = new Set<string>();

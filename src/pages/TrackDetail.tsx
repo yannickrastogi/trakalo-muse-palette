@@ -19,6 +19,7 @@ import { TrackReviewPanel } from "@/components/TrackReviewPanel";
 import { TimecodedCommentComposer } from "@/components/TimecodedCommentComposer";
 import { ShareModal } from "@/components/ShareModal";
 import { ShareWithTeamModal } from "@/components/ShareWithTeamModal";
+import { ShareToWorkspaceModal } from "@/components/ShareToWorkspaceModal";
 import { StudioQRModal } from "@/components/StudioQRModal";
 import { usePitches } from "@/contexts/PitchContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
@@ -36,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   ArrowLeft,
+  ArrowRightLeft,
   Play,
   Pause,
   SkipBack,
@@ -58,6 +60,7 @@ import {
   AlertCircle,
   MoreHorizontal,
   ChevronRight,
+  Info,
   Activity,
   Trash2,
   Upload,
@@ -206,7 +209,7 @@ export default function TrackDetail() {
 
   const { user } = useAuth();
   const { permissions } = useRole();
-  const { activeWorkspace } = useWorkspace();
+  const { activeWorkspace, workspaces } = useWorkspace();
   const navigate = useNavigate();
   const { getTrackByUuid, getTrack, updateTrack, updateTrackStatus, deleteTrack, refreshTracks } = useTrack();
   const { getTrackEngagement } = useEngagement();
@@ -222,6 +225,7 @@ export default function TrackDetail() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [shareExpanded, setShareExpanded] = useState(false);
+  const [shareToWorkspaceOpen, setShareToWorkspaceOpen] = useState(false);
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
   const [commentFilterAuthor, setCommentFilterAuthor] = useState<string | null>(null);
   const [commentFilterLink, setCommentFilterLink] = useState<string | null>(null);
@@ -399,6 +403,12 @@ export default function TrackDetail() {
     { id: "review", label: commentCount ? "Review (" + commentCount + ")" : "Review" },
   ];
 
+  // Access level restrictions for shared tracks
+  var shareLevel = track?.shareAccessLevel || null;
+  var canEdit = !shareLevel || shareLevel === "editor" || shareLevel === "admin";
+  var canShare = !shareLevel || shareLevel !== "viewer";
+  var canDownload = !shareLevel || shareLevel !== "viewer";
+
   return (
     <PageShell>
       {!track ? (
@@ -429,6 +439,19 @@ export default function TrackDetail() {
                 </BreadcrumbList>
               </Breadcrumb>
             </motion.div>
+
+            {/* Shared track banner */}
+            {track.isShared && (
+              <motion.div variants={item} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-purple/8 border border-brand-purple/20">
+                <Info className="w-4 h-4 text-brand-purple shrink-0" />
+                <p className="text-sm text-foreground">
+                  {t("catalogSharing.sharedFromBanner", { workspace: track.sharedFrom || "" })}
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-purple/10 text-brand-purple capitalize">
+                    {track.shareAccessLevel}
+                  </span>
+                </p>
+              </motion.div>
+            )}
 
             {/* Hero section: Cover + Info + Player */}
             <motion.div variants={item} className="flex flex-col lg:flex-row gap-6">
@@ -536,7 +559,7 @@ export default function TrackDetail() {
                         transition={{ duration: 0.2 }}
                         className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2"
                       >
-                        {permissions.canEditOwnTracks && (
+                        {permissions.canEditOwnTracks && canEdit && (
                           <button
                             onClick={() => setEditTrackModalOpen(true)}
                             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 min-h-[44px] col-span-1"
@@ -544,19 +567,23 @@ export default function TrackDetail() {
                             <Edit3 className="w-4 h-4" /> Edit Track
                           </button>
                         )}
-                        <button
-                          onClick={() => setShareExpanded(true)}
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px] col-span-1"
-                        >
-                          <Share2 className="w-4 h-4" /> Share
-                        </button>
-                        <button
-                          onClick={() => setDownloadModalOpen(true)}
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
-                        >
-                          <Download className="w-4 h-4" /> Download
-                        </button>
-                        {permissions.canEditOwnTracks && (
+                        {canShare && (
+                          <button
+                            onClick={() => setShareExpanded(true)}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px] col-span-1"
+                          >
+                            <Share2 className="w-4 h-4" /> Share
+                          </button>
+                        )}
+                        {canDownload && (
+                          <button
+                            onClick={() => setDownloadModalOpen(true)}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
+                          >
+                            <Download className="w-4 h-4" /> Download
+                          </button>
+                        )}
+                        {permissions.canEditOwnTracks && canEdit && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <button className="flex items-center justify-center w-10 h-10 rounded-lg border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200">
@@ -703,6 +730,14 @@ export default function TrackDetail() {
                         >
                           <Users className="w-4 h-4" /> Share with Team
                         </button>
+                        {workspaces.length > 1 && !track.isShared && (
+                          <button
+                            onClick={() => { setShareToWorkspaceOpen(true); setShareExpanded(false); }}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
+                          >
+                            <ArrowRightLeft className="w-4 h-4" /> Share to Workspace
+                          </button>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -932,6 +967,14 @@ export default function TrackDetail() {
           open={shareWithTeamOpen}
           onClose={() => setShareWithTeamOpen(false)}
           trackTitle={track.title}
+        />
+      )}
+      {track && workspaces.length > 1 && (
+        <ShareToWorkspaceModal
+          open={shareToWorkspaceOpen}
+          onClose={() => setShareToWorkspaceOpen(false)}
+          trackId={track.uuid}
+          sourceWorkspaceId={activeWorkspace.id}
         />
       )}
       <StudioQRModal
