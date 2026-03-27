@@ -57,6 +57,8 @@ interface TrackReviewContextValue {
   getCommentCountForTrack: (trackId: number) => number;
   markNotificationRead: (notificationId: string) => void;
   unreadNotificationCount: number;
+  /** Maps track UUID to the numeric trackId used internally for comments */
+  trackUuidToId: Record<string, number>;
 }
 
 function formatTimestamp(seconds: number): string {
@@ -354,7 +356,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
     <TrackReviewContext.Provider
       value={{
         comments, notifications, getCommentsForTrack, addComment, editComment, deleteComment,
-        getFilteredComments, getSortedComments, getCommentCountForTrack, markNotificationRead, unreadNotificationCount,
+        getFilteredComments, getSortedComments, getCommentCountForTrack, markNotificationRead, unreadNotificationCount, trackUuidToId,
       }}
     >
       {children}
