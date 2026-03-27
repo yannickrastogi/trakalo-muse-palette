@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Mail, ShieldCheck, User, Users, Plus, AlertTriangle } from "lucide-react";
+import { Mail, ShieldCheck, User, Users, Plus, AlertTriangle, Eye, Send, Edit3, Shield } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,15 +24,27 @@ import { CreateTeamModal } from "@/components/CreateTeamModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import type { AccessLevel } from "@/contexts/RoleContext";
 
-const INVITE_ROLES = ["Admin", "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer", "Manager", "Publisher", "A&R", "Assistant", "Viewer"] as const;
-export type InviteRole = (typeof INVITE_ROLES)[number];
+const PROFESSIONAL_TITLES = [
+  "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer",
+  "Manager", "Publisher", "A&R", "Assistant", "Artist",
+];
+
+const ACCESS_LEVEL_CARDS: { level: AccessLevel; icon: typeof Eye; title: string; subtitle: string; description: string }[] = [
+  { level: "viewer", icon: Eye, title: "Viewer", subtitle: "View & Listen", description: "Can browse and listen to tracks" },
+  { level: "pitcher", icon: Send, title: "Pitcher", subtitle: "Pitch & Share", description: "Can create playlists, pitches, and share links" },
+  { level: "editor", icon: Edit3, title: "Editor", subtitle: "Edit & Manage", description: "Can also edit metadata, stems, and lyrics" },
+  { level: "admin", icon: Shield, title: "Admin", subtitle: "Full Access", description: "Complete control including splits, members, and branding" },
+];
 
 export interface InvitePayload {
   firstName: string;
   lastName: string;
   email: string;
-  role: InviteRole;
+  role: string;
+  accessLevel: AccessLevel;
+  professionalTitle: string | null;
   teamId: string;
 }
 
@@ -56,7 +68,8 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<InviteRole>("Viewer");
+  const [accessLevel, setAccessLevel] = useState<AccessLevel>("viewer");
+  const [professionalTitle, setProfessionalTitle] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
@@ -68,7 +81,8 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
     setFirstName("");
     setLastName("");
     setEmail("");
-    setRole("Viewer");
+    setAccessLevel("viewer");
+    setProfessionalTitle(null);
     setError("");
     setSending(false);
   };
@@ -120,7 +134,9 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
           email: trimmedEmail,
           first_name: firstName.trim(),
           last_name: lastName.trim(),
-          role: role,
+          role: accessLevel,
+          access_level: accessLevel,
+          professional_title: professionalTitle,
         }),
       });
 
@@ -137,10 +153,20 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: trimmedEmail,
-        role: role,
+        role: accessLevel === "admin" ? "Admin" : accessLevel === "editor" ? "Manager" : accessLevel === "pitcher" ? "Publisher" : "Viewer",
+        accessLevel: accessLevel,
+        professionalTitle: professionalTitle,
       });
 
-      onInvite({ firstName: firstName.trim(), lastName: lastName.trim(), email: trimmedEmail, role, teamId });
+      onInvite({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: trimmedEmail,
+        role: accessLevel,
+        accessLevel: accessLevel,
+        professionalTitle: professionalTitle,
+        teamId,
+      });
       reset();
       onOpenChange(false);
     } catch (err: any) {
@@ -230,7 +256,7 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
         onOpenChange(v);
       }}
     >
-      <DialogContent className="sm:max-w-md bg-card border-border">
+      <DialogContent className="sm:max-w-lg bg-card border-border max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-foreground text-lg font-bold">
             {t("inviteMember.title")}
@@ -339,22 +365,62 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
             />
           </div>
 
-          {/* Role */}
+          {/* Access Level — 4 cards */}
           <div className="space-y-2">
-            <Label htmlFor="invite-role" className="text-foreground text-[13px] font-semibold flex items-center gap-1.5">
+            <Label className="text-foreground text-[13px] font-semibold flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
               {t("inviteMember.roleLabel")}
             </Label>
-            <Select value={role} onValueChange={(v) => setRole(v as InviteRole)}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {ACCESS_LEVEL_CARDS.map(function (card) {
+                var CardIcon = card.icon;
+                var isSelected = accessLevel === card.level;
+                return (
+                  <button
+                    key={card.level}
+                    type="button"
+                    onClick={function () { setAccessLevel(card.level); }}
+                    className={
+                      "border rounded-xl p-3 sm:p-4 text-left transition-all min-h-[44px] " +
+                      (isSelected
+                        ? "border-brand-orange/40 bg-brand-orange/5"
+                        : "border-border hover:border-brand-orange/30")
+                    }
+                  >
+                    <div className="flex items-center gap-2.5 mb-1">
+                      <CardIcon className={"w-4 h-4 " + (isSelected ? "text-brand-orange" : "text-muted-foreground")} />
+                      <span className={"text-[13px] font-semibold " + (isSelected ? "text-foreground" : "text-foreground")}>{card.title}</span>
+                    </div>
+                    <p className={"text-2xs font-medium " + (isSelected ? "text-brand-orange" : "text-muted-foreground")}>{card.subtitle}</p>
+                    <p className="text-2xs text-muted-foreground mt-0.5">{card.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Professional Title (optional) */}
+          <div className="space-y-2">
+            <Label className="text-foreground text-[13px] font-semibold flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-muted-foreground" />
+              Professional Title
+              <span className="text-2xs text-muted-foreground font-normal ml-1">(optional)</span>
+            </Label>
+            <Select value={professionalTitle || "__none__"} onValueChange={function (v) { setProfessionalTitle(v === "__none__" ? null : v); }}>
               <SelectTrigger className="bg-secondary border-border text-foreground text-[13px] min-h-[44px]">
-                <SelectValue />
+                <SelectValue placeholder="Select a title" />
               </SelectTrigger>
               <SelectContent className="bg-card border-border">
-                {INVITE_ROLES.map((r) => (
-                  <SelectItem key={r} value={r} className="text-[13px]">
-                    {t(`team.role_${r.toLowerCase()}`)}
-                  </SelectItem>
-                ))}
+                <SelectItem value="__none__" className="text-[13px] text-muted-foreground">
+                  No title
+                </SelectItem>
+                {PROFESSIONAL_TITLES.map(function (title) {
+                  return (
+                    <SelectItem key={title} value={title} className="text-[13px]">
+                      {title}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

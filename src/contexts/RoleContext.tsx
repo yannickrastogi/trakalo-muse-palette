@@ -1,5 +1,24 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
+export type AccessLevel = "viewer" | "pitcher" | "editor" | "admin";
+
+export type ProfessionalTitle =
+  | "Producer"
+  | "Songwriter"
+  | "Musician"
+  | "Mix Engineer"
+  | "Mastering Engineer"
+  | "Manager"
+  | "Publisher"
+  | "A&R"
+  | "Assistant"
+  | "Artist"
+  | string;
+
+// Keep old AppRole type for backward compatibility (UserMenu, etc.)
 export type AppRole =
   | "Admin"
   | "Manager"
@@ -13,109 +32,190 @@ export type AppRole =
   | "Publisher"
   | "Viewer";
 
-// Permission tiers
-// Admin: full access
-// Manager/A&R/Assistant: upload, create playlists, send pitches, manage catalog
-// Producer/Songwriter/Musician/Mix Engineer/Mastering Engineer: upload, manage own tracks/catalog
-// Publisher: same as Manager tier (can manage catalog)
-// Viewer: read-only
-
 export interface Permissions {
+  canViewTracks: boolean;
+  canPlayTracks: boolean;
   canUploadTracks: boolean;
-  canEditAllTracks: boolean;
-  canEditOwnTracks: boolean;
+  canEditTracks: boolean;
+  canDeleteTracks: boolean;
   canCreatePlaylists: boolean;
   canEditPlaylists: boolean;
   canSendPitches: boolean;
-  canManageTeam: boolean;
+  canCreateSharedLinks: boolean;
+  canManageSplits: boolean;
   canInviteMembers: boolean;
+  canManageTeam: boolean;
+  canEditBranding: boolean;
   canAccessSettings: boolean;
-  canDeleteTracks: boolean;
+  // Legacy aliases
+  canEditAllTracks: boolean;
+  canEditOwnTracks: boolean;
   isReadOnly: boolean;
 }
 
-function getPermissions(role: AppRole): Permissions {
-  switch (role) {
-    case "Admin":
-      return {
-        canUploadTracks: true,
-        canEditAllTracks: true,
-        canEditOwnTracks: true,
-        canCreatePlaylists: true,
-        canEditPlaylists: true,
-        canSendPitches: true,
-        canManageTeam: true,
-        canInviteMembers: true,
-        canAccessSettings: true,
-        canDeleteTracks: true,
-        isReadOnly: false,
-      };
-    case "Manager":
-    case "A&R":
-    case "Assistant":
-    case "Publisher":
-      return {
-        canUploadTracks: true,
-        canEditAllTracks: true,
-        canEditOwnTracks: true,
-        canCreatePlaylists: true,
-        canEditPlaylists: true,
-        canSendPitches: true,
-        canManageTeam: false,
-        canInviteMembers: false,
-        canAccessSettings: false,
-        canDeleteTracks: false,
-        isReadOnly: false,
-      };
-    case "Producer":
-    case "Songwriter":
-    case "Musician":
-    case "Mix Engineer":
-    case "Mastering Engineer":
-      return {
-        canUploadTracks: true,
-        canEditAllTracks: false,
-        canEditOwnTracks: true,
-        canCreatePlaylists: false,
-        canEditPlaylists: false,
-        canSendPitches: false,
-        canManageTeam: false,
-        canInviteMembers: false,
-        canAccessSettings: false,
-        canDeleteTracks: false,
-        isReadOnly: false,
-      };
-    case "Viewer":
-      return {
-        canUploadTracks: false,
-        canEditAllTracks: false,
-        canEditOwnTracks: false,
-        canCreatePlaylists: false,
-        canEditPlaylists: false,
-        canSendPitches: false,
-        canManageTeam: false,
-        canInviteMembers: false,
-        canAccessSettings: false,
-        canDeleteTracks: false,
-        isReadOnly: true,
-      };
-  }
+const accessPermissions: Record<AccessLevel, Permissions> = {
+  viewer: {
+    canViewTracks: true,
+    canPlayTracks: true,
+    canUploadTracks: false,
+    canEditTracks: false,
+    canDeleteTracks: false,
+    canCreatePlaylists: false,
+    canEditPlaylists: false,
+    canSendPitches: false,
+    canCreateSharedLinks: false,
+    canManageSplits: false,
+    canInviteMembers: false,
+    canManageTeam: false,
+    canEditBranding: false,
+    canAccessSettings: false,
+    canEditAllTracks: false,
+    canEditOwnTracks: false,
+    isReadOnly: true,
+  },
+  pitcher: {
+    canViewTracks: true,
+    canPlayTracks: true,
+    canUploadTracks: true,
+    canEditTracks: false,
+    canDeleteTracks: false,
+    canCreatePlaylists: true,
+    canEditPlaylists: true,
+    canSendPitches: true,
+    canCreateSharedLinks: true,
+    canManageSplits: false,
+    canInviteMembers: false,
+    canManageTeam: false,
+    canEditBranding: false,
+    canAccessSettings: false,
+    canEditAllTracks: false,
+    canEditOwnTracks: true,
+    isReadOnly: false,
+  },
+  editor: {
+    canViewTracks: true,
+    canPlayTracks: true,
+    canUploadTracks: true,
+    canEditTracks: true,
+    canDeleteTracks: false,
+    canCreatePlaylists: true,
+    canEditPlaylists: true,
+    canSendPitches: true,
+    canCreateSharedLinks: true,
+    canManageSplits: false,
+    canInviteMembers: false,
+    canManageTeam: false,
+    canEditBranding: false,
+    canAccessSettings: false,
+    canEditAllTracks: true,
+    canEditOwnTracks: true,
+    isReadOnly: false,
+  },
+  admin: {
+    canViewTracks: true,
+    canPlayTracks: true,
+    canUploadTracks: true,
+    canEditTracks: true,
+    canDeleteTracks: true,
+    canCreatePlaylists: true,
+    canEditPlaylists: true,
+    canSendPitches: true,
+    canCreateSharedLinks: true,
+    canManageSplits: true,
+    canInviteMembers: true,
+    canManageTeam: true,
+    canEditBranding: true,
+    canAccessSettings: true,
+    canEditAllTracks: true,
+    canEditOwnTracks: true,
+    isReadOnly: false,
+  },
+};
+
+function getPermissions(level: AccessLevel): Permissions {
+  return accessPermissions[level] || accessPermissions.viewer;
 }
 
 interface RoleContextValue {
+  accessLevel: AccessLevel;
+  professionalTitle: string | null;
+  permissions: Permissions;
+  // Legacy — kept for UserMenu role switcher (testing)
   role: AppRole;
   setRole: (role: AppRole) => void;
-  permissions: Permissions;
 }
 
 const RoleContext = createContext<RoleContextValue | undefined>(undefined);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<AppRole>("Admin");
-  const permissions = getPermissions(role);
+  const { user } = useAuth();
+  const { activeWorkspace } = useWorkspace();
+  const [accessLevel, setAccessLevel] = useState<AccessLevel>("admin");
+  const [professionalTitle, setProfessionalTitle] = useState<string | null>(null);
+
+  // Fetch access_level from workspace_members
+  useEffect(() => {
+    if (!user || !activeWorkspace) return;
+
+    // Workspace owner is always admin
+    if (activeWorkspace.owner_id === user.id) {
+      setAccessLevel("admin");
+      setProfessionalTitle(null);
+      return;
+    }
+
+    supabase
+      .from("workspace_members")
+      .select("access_level, professional_title")
+      .eq("user_id", user.id)
+      .eq("workspace_id", activeWorkspace.id)
+      .maybeSingle()
+      .then(function (res) {
+        if (res.data) {
+          var level = res.data.access_level as AccessLevel;
+          if (level && accessPermissions[level]) {
+            setAccessLevel(level);
+          } else {
+            setAccessLevel("viewer");
+          }
+          setProfessionalTitle(res.data.professional_title || null);
+        } else {
+          setAccessLevel("viewer");
+          setProfessionalTitle(null);
+        }
+      });
+  }, [user, activeWorkspace]);
+
+  const permissions = getPermissions(accessLevel);
+
+  // Legacy role mapping for backward compat
+  var legacyRoleMap: Record<AccessLevel, AppRole> = {
+    admin: "Admin",
+    editor: "Manager",
+    pitcher: "Publisher",
+    viewer: "Viewer",
+  };
+  var role = legacyRoleMap[accessLevel] || "Viewer";
+  var setRole = useCallback(function (r: AppRole) {
+    // Allow manual override for testing
+    var levelMap: Record<string, AccessLevel> = {
+      Admin: "admin",
+      Manager: "editor",
+      "A&R": "editor",
+      Assistant: "pitcher",
+      Publisher: "pitcher",
+      Producer: "pitcher",
+      Songwriter: "pitcher",
+      Musician: "pitcher",
+      "Mix Engineer": "pitcher",
+      "Mastering Engineer": "pitcher",
+      Viewer: "viewer",
+    };
+    setAccessLevel(levelMap[r] || "viewer");
+  }, []);
 
   return (
-    <RoleContext.Provider value={{ role, setRole, permissions }}>
+    <RoleContext.Provider value={{ accessLevel, professionalTitle, permissions, role, setRole }}>
       {children}
     </RoleContext.Provider>
   );

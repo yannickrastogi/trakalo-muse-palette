@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import type { WorkspaceScoped } from "@/types/workspace";
+import type { AccessLevel } from "@/contexts/RoleContext";
 
 export type TeamRole = "Admin" | "Manager" | "A&R" | "Assistant" | "Producer" | "Songwriter" | "Musician" | "Mix Engineer" | "Mastering Engineer" | "Publisher" | "Viewer";
 
@@ -22,6 +23,8 @@ export interface TeamMember {
   lastName: string;
   email: string;
   role: TeamRole;
+  accessLevel: AccessLevel;
+  professionalTitle: string | null;
   joinedAt: string;
   status: "active" | "pending" | "expired";
 }
@@ -43,6 +46,7 @@ interface TeamContextValue {
   addMember: (teamId: string, member: Omit<TeamMember, "id" | "joinedAt" | "status">) => void;
   removeMember: (teamId: string, memberId: string) => void;
   updateMemberRole: (teamId: string, memberId: string, role: TeamRole) => void;
+  updateMemberAccess: (teamId: string, memberId: string, accessLevel: AccessLevel, professionalTitle: string | null) => void;
 }
 
 const TeamContext = createContext<TeamContextValue | undefined>(undefined);
@@ -76,10 +80,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Fetch workspace members
+    // Fetch workspace members with access_level and professional_title
     const { data: members, error: mErr } = await supabase
       .from("workspace_members")
-      .select("id, user_id, joined_at")
+      .select("id, user_id, joined_at, access_level, professional_title")
       .eq("workspace_id", activeWorkspace.id);
 
     if (mErr) {
@@ -88,7 +92,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Fetch roles for all members in this workspace
+    // Also fetch legacy roles for backward compat display
     const { data: roles, error: rErr } = await supabase
       .from("user_roles")
       .select("user_id, role")
@@ -108,6 +112,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       const isCurrentUser = m.user_id === user.id;
       const dbRole = roleMap[m.user_id] || "viewer";
       const meta = user.user_metadata || {};
+      const memberAccessLevel = ((m as any).access_level as AccessLevel) || "viewer";
+      const memberProfTitle = (m as any).professional_title as string | null;
 
       return {
         id: m.user_id,
@@ -115,6 +121,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         lastName: isCurrentUser ? (meta.last_name || meta.full_name?.split(" ").slice(1).join(" ") || "") : m.user_id.slice(0, 8),
         email: isCurrentUser ? (user.email || "") : "",
         role: dbRoleToUi[dbRole] || "Viewer",
+        accessLevel: memberAccessLevel,
+        professionalTitle: memberProfTitle || null,
         joinedAt: m.joined_at ? m.joined_at.split("T")[0] : "",
         status: "active" as const,
       };
@@ -140,7 +148,6 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const createTeam = useCallback(
     (name: string): Team => {
-      // Create a local-only team (no dedicated teams table)
       const newTeam: Team = {
         id: "team-" + Date.now(),
         workspace_id: activeWorkspace.id,
@@ -155,6 +162,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
             lastName: "(Owner)",
             email: user?.email || "",
             role: "Admin",
+            accessLevel: "admin",
+            professionalTitle: null,
             joinedAt: new Date().toISOString().split("T")[0],
             status: "active",
           },
@@ -178,8 +187,6 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     async (teamId: string, member: Omit<TeamMember, "id" | "joinedAt" | "status">) => {
       if (!activeWorkspace) return;
 
-      // Insert into workspace_members (using email as a lookup isn't possible without profiles,
-      // so we add the member locally and persist the role if we have a user_id)
       const newMember: TeamMember = {
         ...member,
         id: "pending-" + Date.now(),
@@ -198,14 +205,12 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const removeMember = useCallback(
     async (teamId: string, memberId: string) => {
-      // Update locally
       setTeams((prev) =>
         prev.map((t) =>
           t.id === teamId ? { ...t, members: t.members.filter((m) => m.id !== memberId) } : t
         )
       );
 
-      // Remove from workspace_members in Supabase
       if (activeWorkspace && !memberId.startsWith("pending-")) {
         const { error } = await supabase
           .from("workspace_members")
@@ -222,9 +227,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     [activeWorkspace, fetchTeam]
   );
 
+  // Legacy: update role in user_roles table
   const updateMemberRole = useCallback(
     async (teamId: string, memberId: string, role: TeamRole) => {
-      // Update locally
       setTeams((prev) =>
         prev.map((t) =>
           t.id === teamId
@@ -233,11 +238,8 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         )
       );
 
-      // Persist to user_roles
       if (activeWorkspace && !memberId.startsWith("pending-")) {
         const dbRole = uiRoleToDb[role] || "viewer";
-
-        // Upsert: try update first, insert if not found
         const { data: existing } = await supabase
           .from("user_roles")
           .select("id")
@@ -250,17 +252,11 @@ export function TeamProvider({ children }: { children: ReactNode }) {
             .from("user_roles")
             .update({ role: dbRole })
             .eq("id", existing.id);
-
           if (error) console.error("Error updating role:", error);
         } else {
           const { error } = await supabase
             .from("user_roles")
-            .insert({
-              user_id: memberId,
-              workspace_id: activeWorkspace.id,
-              role: dbRole,
-            });
-
+            .insert({ user_id: memberId, workspace_id: activeWorkspace.id, role: dbRole });
           if (error) console.error("Error inserting role:", error);
         }
       }
@@ -268,8 +264,45 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     [activeWorkspace]
   );
 
+  // New: update access_level and professional_title in workspace_members
+  const updateMemberAccess = useCallback(
+    async (teamId: string, memberId: string, newAccessLevel: AccessLevel, newProfessionalTitle: string | null) => {
+      setTeams((prev) =>
+        prev.map((t) =>
+          t.id === teamId
+            ? {
+                ...t,
+                members: t.members.map((m) =>
+                  m.id === memberId
+                    ? { ...m, accessLevel: newAccessLevel, professionalTitle: newProfessionalTitle }
+                    : m
+                ),
+              }
+            : t
+        )
+      );
+
+      if (activeWorkspace && !memberId.startsWith("pending-")) {
+        const { error } = await supabase
+          .from("workspace_members")
+          .update({
+            access_level: newAccessLevel,
+            professional_title: newProfessionalTitle,
+          })
+          .eq("user_id", memberId)
+          .eq("workspace_id", activeWorkspace.id);
+
+        if (error) {
+          console.error("Error updating member access:", error);
+          await fetchTeam();
+        }
+      }
+    },
+    [activeWorkspace, fetchTeam]
+  );
+
   return (
-    <TeamContext.Provider value={{ teams, createTeam, deleteTeam, renameTeam, addMember, removeMember, updateMemberRole }}>
+    <TeamContext.Provider value={{ teams, createTeam, deleteTeam, renameTeam, addMember, removeMember, updateMemberRole, updateMemberAccess }}>
       {children}
     </TeamContext.Provider>
   );

@@ -7,7 +7,7 @@ import {
   Calendar, PenTool, BookOpen, Briefcase, UserCheck, Sliders, Disc3,
   Music, Clock, CheckCircle2, XCircle, Users, Trash2, UserPlus,
   Upload, Send, ExternalLink, Activity, BarChart3, FileText, SplitSquareVertical,
-  Layers, Type, Play, Download, Package, Bell,
+  Layers, Type, Play, Download, Package, Bell, Edit3,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { InviteMemberModal, type InvitePayload } from "@/components/InviteMemberModal";
 import { toast } from "sonner";
-import { useRole } from "@/contexts/RoleContext";
+import { useRole, type AccessLevel } from "@/contexts/RoleContext";
 import { useTeams, type TeamRole, type ActivityType } from "@/contexts/TeamContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import {
@@ -27,7 +27,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const ROLES: TeamRole[] = ["Admin", "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer", "Manager", "Publisher", "A&R", "Assistant", "Viewer"];
+const ACCESS_LEVELS: AccessLevel[] = ["viewer", "pitcher", "editor", "admin"];
+
+const accessLevelLabels: Record<AccessLevel, string> = {
+  viewer: "Viewer",
+  pitcher: "Pitcher",
+  editor: "Editor",
+  admin: "Admin",
+};
+
+const accessLevelColors: Record<AccessLevel, string> = {
+  admin: "bg-brand-orange/12 text-brand-orange",
+  editor: "bg-brand-purple/12 text-brand-purple",
+  pitcher: "bg-brand-pink/12 text-brand-pink",
+  viewer: "bg-muted-foreground/12 text-muted-foreground",
+};
+
+const accessLevelIcons: Record<AccessLevel, React.ElementType> = {
+  admin: Shield,
+  editor: Edit3,
+  pitcher: Send,
+  viewer: Eye,
+};
+
+const PROFESSIONAL_TITLES = [
+  "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer",
+  "Manager", "Publisher", "A&R", "Assistant", "Artist",
+];
 
 const roleIcons: Record<string, React.ElementType> = {
   Admin: Shield,
@@ -55,6 +81,14 @@ const roleColors: Record<string, string> = {
   "A&R": "from-brand-orange to-brand-purple",
   Assistant: "from-brand-pink to-[hsl(200,70%,50%)]",
   Viewer: "from-muted-foreground/40 to-muted-foreground/20",
+};
+
+// Map access levels to gradient colors for avatars
+const accessGradients: Record<AccessLevel, string> = {
+  admin: "from-brand-orange to-brand-pink",
+  editor: "from-brand-purple to-brand-pink",
+  pitcher: "from-brand-pink to-brand-orange",
+  viewer: "from-muted-foreground/40 to-muted-foreground/20",
 };
 
 const activityIcons: Record<ActivityType, React.ElementType> = {
@@ -126,7 +160,7 @@ export default function Team() {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { permissions } = useRole();
-  const { teams, addMember, removeMember, updateMemberRole } = useTeams();
+  const { teams, addMember, removeMember, updateMemberAccess } = useTeams();
   const { activeWorkspace } = useWorkspace();
 
   const [showSharedCatalog, setShowSharedCatalog] = useState(false);
@@ -150,9 +184,15 @@ export default function Team() {
     toast.success(t("team.memberRemoved"));
   };
 
-  const handleRoleChange = (memberId: string, role: TeamRole) => {
+  const handleAccessLevelChange = (memberId: string, newLevel: AccessLevel, currentTitle: string | null) => {
     if (!selectedTeamId) return;
-    updateMemberRole(selectedTeamId, memberId, role);
+    updateMemberAccess(selectedTeamId, memberId, newLevel, currentTitle);
+    toast.success(t("team.roleUpdated"));
+  };
+
+  const handleProfessionalTitleChange = (memberId: string, currentLevel: AccessLevel, newTitle: string | null) => {
+    if (!selectedTeamId) return;
+    updateMemberAccess(selectedTeamId, memberId, currentLevel, newTitle);
     toast.success(t("team.roleUpdated"));
   };
 
@@ -161,7 +201,8 @@ export default function Team() {
         (m) =>
           (m.firstName + " " + m.lastName).toLowerCase().includes(search.toLowerCase()) ||
           m.email.toLowerCase().includes(search.toLowerCase()) ||
-          m.role.toLowerCase().includes(search.toLowerCase())
+          accessLevelLabels[m.accessLevel].toLowerCase().includes(search.toLowerCase()) ||
+          (m.professionalTitle || "").toLowerCase().includes(search.toLowerCase())
       )
     : [];
 
@@ -353,19 +394,19 @@ export default function Team() {
           </motion.div>
         )}
 
-        {/* Role stat pills */}
+        {/* Access level stat pills */}
         <motion.div variants={item} className="flex flex-wrap gap-2">
-          {ROLES.map(function (role) {
-            var Icon = roleIcons[role];
-            var count = selectedTeam.members.filter(function (m) { return m.role === role; }).length;
+          {ACCESS_LEVELS.map(function (level) {
+            var Icon = accessLevelIcons[level];
+            var count = selectedTeam.members.filter(function (m) { return m.accessLevel === level; }).length;
             if (count === 0) return null;
             return (
-              <div key={role} className="card-premium flex items-center gap-2.5 px-4 py-2.5 rounded-xl">
-                <div className={"w-7 h-7 rounded-lg bg-gradient-to-br " + roleColors[role] + " flex items-center justify-center"}>
-                  <Icon className="w-3.5 h-3.5 text-primary-foreground" />
+              <div key={level} className="card-premium flex items-center gap-2.5 px-4 py-2.5 rounded-xl">
+                <div className={"w-7 h-7 rounded-lg flex items-center justify-center " + accessLevelColors[level]}>
+                  <Icon className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">{t("team.role_" + role.toLowerCase())}</p>
+                  <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">{accessLevelLabels[level]}</p>
                   <p className="text-sm font-bold text-foreground">{count}</p>
                 </div>
               </div>
@@ -391,14 +432,14 @@ export default function Team() {
           {isMobile ? (
             <div className="space-y-2.5">
               {filteredMembers.map(function (m) {
-                var RoleIcon = roleIcons[m.role];
+                var AccessIcon = accessLevelIcons[m.accessLevel];
                 var cfg = statusConfig[m.status];
                 var StatusIcon = cfg.icon;
-                var isOwner = m.firstName === "You";
+                var isOwner = m.id === activeWorkspace.owner_id;
                 return (
                   <div key={m.id} className="card-premium p-4 flex items-start gap-3">
                     <Avatar className="w-10 h-10 shrink-0">
-                      <AvatarFallback className={"bg-gradient-to-br " + roleColors[m.role] + " text-primary-foreground text-2xs font-bold"}>
+                      <AvatarFallback className={"bg-gradient-to-br " + accessGradients[m.accessLevel] + " text-primary-foreground text-2xs font-bold"}>
                         {getInitials(m.firstName, m.lastName)}
                       </AvatarFallback>
                     </Avatar>
@@ -412,9 +453,12 @@ export default function Team() {
                         </p>
                       </div>
                       <div className="flex items-center flex-wrap gap-1.5">
-                        <Badge variant="outline" className="text-2xs gap-1 border-border bg-secondary/50 text-secondary-foreground">
-                          <RoleIcon className="w-3 h-3" /> {t("team.role_" + m.role.toLowerCase())}
-                        </Badge>
+                        <span className={"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold uppercase tracking-wider " + accessLevelColors[m.accessLevel]}>
+                          <AccessIcon className="w-3 h-3" /> {accessLevelLabels[m.accessLevel]}
+                        </span>
+                        {m.professionalTitle && (
+                          <span className="text-xs text-muted-foreground">{m.professionalTitle}</span>
+                        )}
                         <span className={"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold " + cfg.color}>
                           <StatusIcon className="w-3 h-3" />
                           {m.status === "active" ? t("team.active") : m.status === "pending" ? t("team.invited") : t("team.expired")}
@@ -451,16 +495,16 @@ export default function Team() {
                   </thead>
                   <tbody>
                     {filteredMembers.map(function (m) {
-                      var RoleIcon = roleIcons[m.role];
+                      var AccessIcon = accessLevelIcons[m.accessLevel];
                       var cfg = statusConfig[m.status];
                       var StatusIcon = cfg.icon;
-                      var isOwner = m.firstName === "You";
+                      var isOwner = m.id === activeWorkspace.owner_id;
                       return (
                         <tr key={m.id} className="border-b border-border/60 last:border-0 hover:bg-secondary/30 transition-colors group">
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-3">
                               <Avatar className="w-8 h-8">
-                                <AvatarFallback className={"bg-gradient-to-br " + roleColors[m.role] + " text-primary-foreground text-2xs font-bold"}>
+                                <AvatarFallback className={"bg-gradient-to-br " + accessGradients[m.accessLevel] + " text-primary-foreground text-2xs font-bold"}>
                                   {getInitials(m.firstName, m.lastName)}
                                 </AvatarFallback>
                               </Avatar>
@@ -474,25 +518,52 @@ export default function Team() {
                           </td>
                           <td className="px-5 py-3.5">
                             {isOwner || !permissions.canManageTeam ? (
-                              <Badge variant="outline" className="text-2xs gap-1 border-border bg-secondary/50 text-secondary-foreground font-medium">
-                                <RoleIcon className="w-3 h-3" /> {t("team.role_" + m.role.toLowerCase())}
-                              </Badge>
+                              <div>
+                                <span className={"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold uppercase tracking-wider " + accessLevelColors[m.accessLevel]}>
+                                  <AccessIcon className="w-3 h-3" /> {accessLevelLabels[m.accessLevel]}
+                                </span>
+                                {m.professionalTitle && (
+                                  <p className="text-xs text-muted-foreground mt-1">{m.professionalTitle}</p>
+                                )}
+                              </div>
                             ) : (
-                              <Select value={m.role} onValueChange={function (v) { handleRoleChange(m.id, v as TeamRole); }}>
-                                <SelectTrigger className="h-7 w-auto min-w-[130px] bg-secondary/50 border-border text-2xs gap-1">
-                                  <RoleIcon className="w-3 h-3 shrink-0" />
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-card border-border">
-                                  {ROLES.map(function (r) {
-                                    return (
-                                      <SelectItem key={r} value={r} className="text-2xs">
-                                        {t("team.role_" + r.toLowerCase())}
-                                      </SelectItem>
-                                    );
-                                  })}
-                                </SelectContent>
-                              </Select>
+                              <div className="space-y-1.5">
+                                <Select value={m.accessLevel} onValueChange={function (v) { handleAccessLevelChange(m.id, v as AccessLevel, m.professionalTitle); }}>
+                                  <SelectTrigger className="h-7 w-auto min-w-[120px] bg-secondary/50 border-border text-2xs gap-1">
+                                    <AccessIcon className="w-3 h-3 shrink-0" />
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-card border-border">
+                                    {ACCESS_LEVELS.map(function (level) {
+                                      var LvlIcon = accessLevelIcons[level];
+                                      return (
+                                        <SelectItem key={level} value={level} className="text-2xs">
+                                          <span className="flex items-center gap-1.5">
+                                            <LvlIcon className="w-3 h-3" /> {accessLevelLabels[level]}
+                                          </span>
+                                        </SelectItem>
+                                      );
+                                    })}
+                                  </SelectContent>
+                                </Select>
+                                <Select value={m.professionalTitle || "__none__"} onValueChange={function (v) { handleProfessionalTitleChange(m.id, m.accessLevel, v === "__none__" ? null : v); }}>
+                                  <SelectTrigger className="h-6 w-auto min-w-[120px] bg-transparent border-border/50 text-2xs text-muted-foreground gap-1">
+                                    <SelectValue placeholder="Title (optional)" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-card border-border">
+                                    <SelectItem value="__none__" className="text-2xs text-muted-foreground">
+                                      No title
+                                    </SelectItem>
+                                    {PROFESSIONAL_TITLES.map(function (title) {
+                                      return (
+                                        <SelectItem key={title} value={title} className="text-2xs">
+                                          {title}
+                                        </SelectItem>
+                                      );
+                                    })}
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             )}
                           </td>
                           <td className="px-5 py-3.5 text-muted-foreground hidden lg:table-cell text-xs">{formatDate(m.joinedAt)}</td>

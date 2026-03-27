@@ -1,21 +1,29 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, LogOut, Settings, CreditCard, ChevronDown, Shield } from "lucide-react";
+import { User, LogOut, Settings, CreditCard, ChevronDown, Shield, Eye, Send, Edit3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useRole, type AppRole } from "@/contexts/RoleContext";
+import { useRole, type AccessLevel } from "@/contexts/RoleContext";
 import { useAuth } from "@/contexts/AuthContext";
 
-const ALL_ROLES: AppRole[] = [
-  "Admin", "Manager", "A&R", "Assistant", "Publisher",
-  "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer",
-  "Viewer",
+const ACCESS_LEVELS: { level: AccessLevel; icon: typeof Eye; label: string }[] = [
+  { level: "admin", icon: Shield, label: "Admin" },
+  { level: "editor", icon: Edit3, label: "Editor" },
+  { level: "pitcher", icon: Send, label: "Pitcher" },
+  { level: "viewer", icon: Eye, label: "Viewer" },
 ];
+
+const accessLevelColors: Record<AccessLevel, string> = {
+  admin: "bg-brand-orange/12 text-brand-orange",
+  editor: "bg-brand-purple/12 text-brand-purple",
+  pitcher: "bg-brand-pink/12 text-brand-pink",
+  viewer: "bg-muted-foreground/12 text-muted-foreground",
+};
 
 export function UserMenu() {
   const [open, setOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const { t } = useTranslation();
-  const { role, setRole } = useRole();
+  const { accessLevel, professionalTitle, setRole } = useRole();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -25,6 +33,9 @@ export function UserMenu() {
   const email = user?.email || "";
   const avatarUrl = user?.user_metadata?.avatar_url || null;
   const initials = ((firstName[0] || user?.email?.[0] || "") + (lastName[0] || "")).toUpperCase() || "?";
+
+  const currentLevelConfig = ACCESS_LEVELS.find(function (l) { return l.level === accessLevel; }) || ACCESS_LEVELS[0];
+  var CurrentIcon = currentLevelConfig.icon;
 
   return (
     <div className="relative">
@@ -49,36 +60,52 @@ export function UserMenu() {
             <div className="px-3 py-3 border-b border-border mb-1.5">
               <p className="text-[13px] font-semibold text-foreground tracking-tight">{fullName}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">{email}</p>
-              <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-2xs font-semibold bg-primary/12 text-primary">
-                <Shield className="w-2.5 h-2.5" />
-                {role}
-              </span>
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <span className={"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold uppercase tracking-wider " + accessLevelColors[accessLevel]}>
+                  <CurrentIcon className="w-2.5 h-2.5" />
+                  {currentLevelConfig.label}
+                </span>
+                {professionalTitle && (
+                  <span className="text-2xs text-muted-foreground">{professionalTitle}</span>
+                )}
+              </div>
             </div>
 
-            {/* Role switcher */}
+            {/* Access level switcher (for testing) */}
             <div className="relative">
               <button
                 onClick={() => setRoleMenuOpen(!roleMenuOpen)}
                 className="flex items-center gap-2.5 w-full px-3 py-2 text-[13px] text-secondary-foreground hover:bg-secondary rounded-lg transition-colors font-medium"
               >
                 <Shield className="w-3.5 h-3.5 text-muted-foreground" />
-                Switch Role
+                Switch Access Level
                 <ChevronDown className={`w-3 h-3 text-muted-foreground ml-auto transition-transform ${roleMenuOpen ? "rotate-180" : ""}`} />
               </button>
               {roleMenuOpen && (
                 <div className="mt-1 mx-1 p-1 bg-secondary/50 rounded-lg max-h-48 overflow-y-auto">
-                  {ALL_ROLES.map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => { setRole(r); setRoleMenuOpen(false); setOpen(false); }}
-                      className={`flex items-center gap-2 w-full px-2.5 py-1.5 text-[12px] rounded-md transition-colors font-medium ${
-                        r === role ? "bg-primary/12 text-primary" : "text-secondary-foreground hover:bg-secondary"
-                      }`}
-                    >
-                      {r}
-                      {r === role && <span className="ml-auto text-primary text-[10px]">✓</span>}
-                    </button>
-                  ))}
+                  {ACCESS_LEVELS.map(function (item) {
+                    var ItemIcon = item.icon;
+                    var isActive = item.level === accessLevel;
+                    return (
+                      <button
+                        key={item.level}
+                        onClick={function () {
+                          // Use setRole with mapped AppRole for testing
+                          var roleMap: Record<string, string> = { admin: "Admin", editor: "Manager", pitcher: "Publisher", viewer: "Viewer" };
+                          setRole(roleMap[item.level] as any);
+                          setRoleMenuOpen(false);
+                          setOpen(false);
+                        }}
+                        className={"flex items-center gap-2 w-full px-2.5 py-1.5 text-[12px] rounded-md transition-colors font-medium " +
+                          (isActive ? "bg-primary/12 text-primary" : "text-secondary-foreground hover:bg-secondary")
+                        }
+                      >
+                        <ItemIcon className="w-3 h-3" />
+                        {item.label}
+                        {isActive && <span className="ml-auto text-primary text-[10px]">✓</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
