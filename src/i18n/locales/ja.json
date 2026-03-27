@@ -476,7 +476,7 @@
     "customGenre": "カスタムジャンルを入力",
     "other": "その他…",
     "titlePlaceholder": "例: Velvet Hour",
-    "artistPlaceholder": "例: Kira Nomura",
+    "artistPlaceholder": "例: アーティスト名",
     "albumPlaceholder": "例: Late Bloom EP",
     "isrcPlaceholder": "例: USRC12600001",
     "upcPlaceholder": "例: 0850123456789",
@@ -621,7 +621,7 @@
     "selectGenre": "ジャンルを選択",
     "selectLanguage": "言語を選択",
     "titlePlaceholder": "例: Velvet Hour",
-    "artistPlaceholder": "例: Kira Nomura",
+    "artistPlaceholder": "例: アーティスト名",
     "proPlaceholder": "例: ASCAP"
   },
   "createPlaylist": {

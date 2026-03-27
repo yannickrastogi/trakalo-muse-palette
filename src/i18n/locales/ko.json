@@ -489,7 +489,7 @@
     "customGenre": "사용자 정의 장르 입력",
     "other": "기타…",
     "titlePlaceholder": "예: Velvet Hour",
-    "artistPlaceholder": "예: Kira Nomura",
+    "artistPlaceholder": "예: 아티스트 이름",
     "albumPlaceholder": "예: Late Bloom EP",
     "isrcPlaceholder": "예: USRC12600001",
     "upcPlaceholder": "예: 0850123456789",
@@ -634,7 +634,7 @@
     "selectGenre": "장르 선택",
     "selectLanguage": "언어 선택",
     "titlePlaceholder": "예: Velvet Hour",
-    "artistPlaceholder": "예: Kira Nomura",
+    "artistPlaceholder": "예: 아티스트 이름",
     "proPlaceholder": "예: ASCAP"
   },
   "createPlaylist": {

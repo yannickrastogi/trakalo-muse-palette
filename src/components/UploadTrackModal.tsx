@@ -1169,19 +1169,32 @@ function StepInfo({
               {analyzing ? t("uploadTrack.analyzingAudio", "Analyzing audio...") : t("uploadTrack.smartAnalysisComplete", "Smart Analysis Complete")}
             </span>
           </div>
-          {analysisResult && (
+          {!analyzing && (
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-lg bg-secondary p-2 text-center">
+              <div className="rounded-lg bg-secondary p-2 text-center group/bpm cursor-text">
                 <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.bpm")}</p>
-                <p className="text-sm font-bold text-brand-orange">{analysisResult.bpm}</p>
+                <input
+                  type="number"
+                  value={bpm}
+                  onChange={function (e) { setBpm(e.target.value); }}
+                  className="w-full text-center text-sm font-bold text-brand-orange bg-transparent outline-none border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder="—"
+                />
               </div>
               <div className="rounded-lg bg-secondary p-2 text-center">
                 <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.key")}</p>
-                <p className="text-sm font-bold text-brand-pink">{analysisResult.key}</p>
+                <select
+                  value={trackKey}
+                  onChange={function (e) { setTrackKey(e.target.value); }}
+                  className="w-full text-center text-sm font-bold text-brand-pink bg-transparent outline-none border-none appearance-none cursor-pointer"
+                >
+                  <option value="">—</option>
+                  {KEYS.map(function (k) { return <option key={k} value={k}>{k}</option>; })}
+                </select>
               </div>
               <div className="rounded-lg bg-secondary p-2 text-center">
                 <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.duration", "Duration")}</p>
-                <p className="text-sm font-bold text-brand-purple">{analysisResult.duration}</p>
+                <p className="text-sm font-bold text-brand-purple">{analysisResult?.duration || "—"}</p>
               </div>
             </div>
           )}
@@ -1198,15 +1211,20 @@ function StepInfo({
           <FieldInput value={artist} onChange={setArtist} placeholder={t("uploadTrack.artistPlaceholder")} />
         </div>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <div className="space-y-1.5">
-          <FieldLabel>{t("uploadTrack.bpm")} {analysisResult && <span className="text-brand-orange text-[9px] ml-1">AUTO</span>}</FieldLabel>
-          <FieldInput value={bpm} onChange={setBpm} placeholder="120" type="number" />
+      {/* BPM and Key fields when no analysis available */}
+      {!analyzing && !analysisResult && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <FieldLabel>{t("uploadTrack.bpm")}</FieldLabel>
+            <FieldInput value={bpm} onChange={setBpm} placeholder="120" type="number" />
+          </div>
+          <div className="space-y-1.5">
+            <FieldLabel>{t("uploadTrack.key")}</FieldLabel>
+            <FieldSelect value={trackKey} onChange={setTrackKey} options={KEYS} placeholder={t("uploadTrack.selectKey")} />
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <FieldLabel>{t("uploadTrack.key")} {analysisResult && <span className="text-brand-orange text-[9px] ml-1">AUTO</span>}</FieldLabel>
-          <FieldSelect value={trackKey} onChange={setTrackKey} options={KEYS} placeholder={t("uploadTrack.selectKey")} />
-        </div>
+      )}
+      <div className="grid grid-cols-1 gap-4">
         <div className="space-y-1.5">
           <FieldLabel>{t("uploadTrack.genre")}</FieldLabel>
           {genre === "__other__" || (!(GENRES as readonly string[]).includes(genre) && genre !== "") ? (

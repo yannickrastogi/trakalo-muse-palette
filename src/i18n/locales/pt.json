@@ -476,7 +476,7 @@
     "customGenre": "Introduzir género personalizado",
     "other": "Outro…",
     "titlePlaceholder": "ex. Velvet Hour",
-    "artistPlaceholder": "ex. Kira Nomura",
+    "artistPlaceholder": "ex. Nome do artista",
     "albumPlaceholder": "ex. Late Bloom EP",
     "isrcPlaceholder": "ex. USRC12600001",
     "upcPlaceholder": "ex. 0850123456789",
@@ -621,7 +621,7 @@
     "selectGenre": "Selecionar género",
     "selectLanguage": "Selecionar idioma",
     "titlePlaceholder": "ex. Velvet Hour",
-    "artistPlaceholder": "ex. Kira Nomura",
+    "artistPlaceholder": "ex. Nome do artista",
     "proPlaceholder": "ex. ASCAP"
   },
   "createPlaylist": {
