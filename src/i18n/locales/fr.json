@@ -269,8 +269,16 @@
     "notShared": "Non partagé",
     "tracksSharedCount": "{{count}} morceaux partagés",
     "noShares": "Votre catalogue n'est partagé avec aucun espace de travail",
-    "incomingTitle": "Catalogues partagés entrants",
-    "incomingSubtitle": "Catalogues partagés avec votre espace par d'autres"
+    "noSharesHint": "Partagez votre catalogue pour permettre à d'autres espaces de pitcher et créer des playlists avec vos morceaux.",
+    "incomingTitle": "Partagés avec vous",
+    "incomingSubtitle": "Catalogues partagés avec votre espace par d'autres",
+    "shareCatalog": "Partager le catalogue",
+    "shareFullCatalog": "Partager le catalogue complet",
+    "selectWorkspace": "Sélectionner un espace",
+    "upgradeToFull": "Passer au catalogue complet",
+    "revokeAccess": "Révoquer l'accès",
+    "revokeConfirmTitle": "Révoquer l'accès ?",
+    "revokeConfirmDesc": "{{name}} perdra l'accès à tous vos morceaux partagés."
   },
   "trackDetail": {
     "editTrack": "Modifier le morceau",

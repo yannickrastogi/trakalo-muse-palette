@@ -269,8 +269,16 @@
     "notShared": "Not shared",
     "tracksSharedCount": "{{count}} tracks shared",
     "noShares": "Your catalog is not shared with any workspace",
-    "incomingTitle": "Incoming Shared Catalogs",
-    "incomingSubtitle": "Catalogs shared with your workspace by others"
+    "noSharesHint": "Share your catalog to let other workspaces pitch and create playlists with your tracks.",
+    "incomingTitle": "Shared with you",
+    "incomingSubtitle": "Catalogs shared with your workspace by others",
+    "shareCatalog": "Share Catalog",
+    "shareFullCatalog": "Share Full Catalog",
+    "selectWorkspace": "Select a workspace",
+    "upgradeToFull": "Upgrade to Full Catalog",
+    "revokeAccess": "Revoke Access",
+    "revokeConfirmTitle": "Revoke access?",
+    "revokeConfirmDesc": "{{name}} will lose access to all your shared tracks."
   },
   "trackDetail": {
     "editTrack": "Edit Track",

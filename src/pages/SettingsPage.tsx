@@ -32,6 +32,11 @@ import {
   Image,
   Upload,
   X,
+  Plus,
+  Library,
+  CheckCircle2,
+  Loader2,
+  ArrowRightLeft,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useTranslation } from "react-i18next";
@@ -871,22 +876,37 @@ function BrandingSection() {
 function CatalogSharingSection() {
   const { t } = useTranslation();
   const { activeWorkspace, workspaces } = useWorkspace();
+  const { user } = useAuth();
   const [shares, setShares] = useState<{ id: string; target_workspace_id: string | null; source_workspace_id: string | null; track_id: string | null; status: string }[]>([]);
+  const [incomingShares, setIncomingShares] = useState<{ id: string; source_workspace_id: string; track_id: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [shareDropdownOpen, setShareDropdownOpen] = useState(false);
+  const [revokeConfirmWsId, setRevokeConfirmWsId] = useState<string | null>(null);
+  const shareDropdownRef = useRef<HTMLDivElement>(null);
 
   var fetchCatalogShares = useCallback(async function () {
     if (!activeWorkspace) return;
     setLoading(true);
 
-    // Fetch all active shares FROM this workspace
-    var { data, error } = await supabase
-      .from("catalog_shares")
-      .select("id, target_workspace_id, source_workspace_id, track_id, status")
-      .eq("source_workspace_id", activeWorkspace.id)
-      .eq("status", "active");
+    var [outgoingRes, incomingRes] = await Promise.all([
+      supabase
+        .from("catalog_shares")
+        .select("id, target_workspace_id, source_workspace_id, track_id, status")
+        .eq("source_workspace_id", activeWorkspace.id)
+        .eq("status", "active"),
+      supabase
+        .from("catalog_shares")
+        .select("id, source_workspace_id, track_id")
+        .eq("target_workspace_id", activeWorkspace.id)
+        .eq("status", "active"),
+    ]);
 
-    if (!error && data) {
-      setShares(data as any[]);
+    if (!outgoingRes.error && outgoingRes.data) {
+      setShares(outgoingRes.data as any[]);
+    }
+    if (!incomingRes.error && incomingRes.data) {
+      setIncomingShares(incomingRes.data as any[]);
     }
     setLoading(false);
   }, [activeWorkspace]);
@@ -895,25 +915,95 @@ function CatalogSharingSection() {
     fetchCatalogShares();
   }, [fetchCatalogShares]);
 
-  var handleRevoke = async function (shareId: string, isFullCatalog: boolean, wsName: string) {
+  // Close share dropdown on outside click
+  useEffect(function () {
+    if (!shareDropdownOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (shareDropdownRef.current && !shareDropdownRef.current.contains(e.target as Node)) {
+        setShareDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return function () { document.removeEventListener("mousedown", handleClick); };
+  }, [shareDropdownOpen]);
+
+  var handleRevokeAll = async function (targetWsId: string) {
+    if (!activeWorkspace) return;
+    setSubmitting(true);
     var { error } = await supabase
       .from("catalog_shares")
-      .update({ status: "revoked", revoked_at: new Date().toISOString() })
-      .eq("id", shareId);
+      .update({ status: "revoked", revoked_at: new Date().toISOString() } as any)
+      .eq("source_workspace_id", activeWorkspace.id)
+      .eq("target_workspace_id", targetWsId)
+      .eq("status", "active");
 
     if (error) {
       toast.error(t("catalogSharing.revokeFailed"));
     } else {
-      if (isFullCatalog) {
-        toast.success(t("catalogSharing.fullCatalogRevoked", { name: wsName }));
-      } else {
-        toast.success(t("catalogSharing.revoked"));
-      }
+      var ws = workspaces.find(function (w) { return w.id === targetWsId; });
+      toast.success(t("catalogSharing.fullCatalogRevoked", { name: ws?.name || "" }));
       fetchCatalogShares();
     }
+    setSubmitting(false);
+    setRevokeConfirmWsId(null);
   };
 
-  // Group shares by target workspace
+  var handleUpgradeToFullCatalog = async function (targetWsId: string) {
+    if (!activeWorkspace || !user) return;
+    setSubmitting(true);
+
+    // Insert full catalog share
+    var { error } = await supabase.from("catalog_shares").insert({
+      track_id: null,
+      source_workspace_id: activeWorkspace.id,
+      target_workspace_id: targetWsId,
+      shared_by: user.id,
+      access_level: "pitcher",
+    } as any);
+
+    if (error) {
+      toast.error(t("catalogSharing.shareFailed"));
+    } else {
+      // Revoke individual shares (now redundant)
+      await supabase
+        .from("catalog_shares")
+        .update({ status: "revoked", revoked_at: new Date().toISOString() } as any)
+        .eq("source_workspace_id", activeWorkspace.id)
+        .eq("target_workspace_id", targetWsId)
+        .eq("status", "active")
+        .not("track_id", "is", null);
+
+      var ws = workspaces.find(function (w) { return w.id === targetWsId; });
+      toast.success(t("catalogSharing.fullCatalogShareSuccess", { name: ws?.name || "" }));
+      fetchCatalogShares();
+    }
+    setSubmitting(false);
+  };
+
+  var handleShareFullCatalog = async function (targetWsId: string) {
+    if (!activeWorkspace || !user) return;
+    setSubmitting(true);
+
+    var { error } = await supabase.from("catalog_shares").insert({
+      track_id: null,
+      source_workspace_id: activeWorkspace.id,
+      target_workspace_id: targetWsId,
+      shared_by: user.id,
+      access_level: "pitcher",
+    } as any);
+
+    if (error) {
+      toast.error(t("catalogSharing.shareFailed"));
+    } else {
+      var ws = workspaces.find(function (w) { return w.id === targetWsId; });
+      toast.success(t("catalogSharing.fullCatalogShareSuccess", { name: ws?.name || "" }));
+      fetchCatalogShares();
+    }
+    setSubmitting(false);
+    setShareDropdownOpen(false);
+  };
+
+  // Group outgoing shares by target workspace
   var sharesByWs: Record<string, { fullCatalog: boolean; trackCount: number; shares: typeof shares }> = {};
   for (var i = 0; i < shares.length; i++) {
     var s = shares[i];
@@ -931,143 +1021,239 @@ function CatalogSharingSection() {
 
   var wsEntries = Object.entries(sharesByWs);
 
+  // Group incoming shares by source workspace
+  var incomingBySource: Record<string, { fullCatalog: boolean; trackCount: number }> = {};
+  for (var j = 0; j < incomingShares.length; j++) {
+    var inc = incomingShares[j];
+    var srcId = inc.source_workspace_id;
+    if (!incomingBySource[srcId]) incomingBySource[srcId] = { fullCatalog: false, trackCount: 0 };
+    if (inc.track_id === null) {
+      incomingBySource[srcId].fullCatalog = true;
+    } else {
+      incomingBySource[srcId].trackCount += 1;
+    }
+  }
+  var incomingEntries = Object.entries(incomingBySource);
+
+  // Workspaces available for new shares (not already shared to)
+  var sharedWsIds = new Set(Object.keys(sharesByWs));
+  var availableWorkspaces = workspaces.filter(function (ws) {
+    return ws.id !== (activeWorkspace?.id || "") && !sharedWsIds.has(ws.id);
+  });
+
+  function getWsInitials(name: string) {
+    return name.split(/\s+/).map(function (w) { return w[0] || ""; }).join("").toUpperCase().slice(0, 2);
+  }
+
+  var hasAnyShares = wsEntries.length > 0 || incomingEntries.length > 0;
+
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title={t("settings.catalogSharing")} subtitle={t("settings.catalogSharingDesc")} icon={Move}>
+      <SectionBlock title={t("settings.catalogSharing")} subtitle={t("settings.catalogSharingDesc")} icon={ArrowRightLeft}>
+        {/* Share Catalog button */}
+        {availableWorkspaces.length > 0 && (
+          <div className="relative mb-4" ref={shareDropdownRef}>
+            <button
+              onClick={function () { setShareDropdownOpen(!shareDropdownOpen); }}
+              className="btn-brand flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold min-h-[44px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              {t("catalogSharing.shareCatalog")}
+            </button>
+
+            {shareDropdownOpen && (
+              <div className="absolute left-0 top-full mt-2 z-50 bg-card border border-border rounded-xl shadow-xl min-w-[280px] py-2 max-h-[300px] overflow-y-auto">
+                <p className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  {t("catalogSharing.selectWorkspace")}
+                </p>
+                {availableWorkspaces.map(function (ws) {
+                  return (
+                    <button
+                      key={ws.id}
+                      onClick={function () { handleShareFullCatalog(ws.id); }}
+                      disabled={submitting}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-secondary/50 transition-colors"
+                    >
+                      {ws.logo_url ? (
+                        <img src={ws.logo_url} alt="" className="w-7 h-7 rounded-lg object-contain shrink-0" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                          <span className="text-[9px] font-bold text-white">{getWsInitials(ws.name)}</span>
+                        </div>
+                      )}
+                      <span className="text-sm font-medium text-foreground truncate flex-1">{ws.name}</span>
+                      <span className="text-[11px] font-semibold text-brand-orange shrink-0 flex items-center gap-1">
+                        {submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Library className="w-3 h-3" />}
+                        {t("catalogSharing.shareFullCatalog")}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="w-5 h-5 border-2 border-brand-orange/30 border-t-brand-orange rounded-full animate-spin" />
           </div>
-        ) : wsEntries.length === 0 ? (
+        ) : !hasAnyShares ? (
           <div className="py-8 text-center">
-            <Move className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">{t("catalogSharing.noShares")}</p>
+            <ArrowRightLeft className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground mb-1">{t("catalogSharing.noShares")}</p>
+            <p className="text-[11px] text-muted-foreground/60">{t("catalogSharing.noSharesHint")}</p>
+            {availableWorkspaces.length > 0 && (
+              <button
+                onClick={function () { setShareDropdownOpen(true); }}
+                className="btn-brand flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold min-h-[44px] mx-auto mt-4"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {t("catalogSharing.shareCatalog")}
+              </button>
+            )}
           </div>
         ) : (
-          <div className="space-y-2">
-            {wsEntries.map(function ([targetWsId, info]) {
-              var ws = workspaces.find(function (w) { return w.id === targetWsId; });
-              var wsName = ws?.name || targetWsId;
-              var fullCatalogShare = info.shares.find(function (sh) { return sh.track_id === null; });
+          <>
+            {/* Outgoing shares */}
+            {wsEntries.length > 0 && (
+              <div className="space-y-2">
+                {wsEntries.map(function ([targetWsId, info]) {
+                  var ws = workspaces.find(function (w) { return w.id === targetWsId; });
+                  var wsName = ws?.name || targetWsId;
 
-              return (
-                <div key={targetWsId} className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-secondary/20">
-                  {ws?.logo_url ? (
-                    <img src={ws.logo_url} alt="" className="w-8 h-8 rounded-lg object-contain shrink-0" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
-                      <span className="text-[10px] font-bold text-white">
-                        {wsName.split(/\s+/).map(function (w) { return w[0] || ""; }).join("").toUpperCase().slice(0, 2)}
-                      </span>
+                  return (
+                    <div key={targetWsId} className="p-3 rounded-xl border border-border/50 bg-secondary/20">
+                      <div className="flex items-center gap-3">
+                        {ws?.logo_url ? (
+                          <img src={ws.logo_url} alt="" className="w-8 h-8 rounded-lg object-contain shrink-0" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                            <span className="text-[10px] font-bold text-white">{getWsInitials(wsName)}</span>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{wsName}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {info.fullCatalog
+                              ? t("catalogSharing.fullCatalogShared")
+                              : t("catalogSharing.tracksSharedCount", { count: info.trackCount })}
+                          </p>
+                        </div>
+                        {info.fullCatalog ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/12 text-emerald-400 shrink-0">
+                            <CheckCircle2 className="w-3 h-3" /> {t("catalogSharing.fullCatalog")}
+                          </span>
+                        ) : (
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/10 text-brand-purple shrink-0">
+                            {info.trackCount + " tracks"}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 mt-2.5 pl-11">
+                        {!info.fullCatalog && (
+                          <button
+                            onClick={function () { handleUpgradeToFullCatalog(targetWsId); }}
+                            disabled={submitting}
+                            className="btn-brand inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold min-h-[44px]"
+                          >
+                            {submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Library className="w-3 h-3" />}
+                            {t("catalogSharing.upgradeToFull")}
+                          </button>
+                        )}
+                        <button
+                          onClick={function () { setRevokeConfirmWsId(targetWsId); }}
+                          disabled={submitting}
+                          className="text-[11px] text-destructive hover:text-destructive/80 font-semibold transition-colors min-h-[44px] px-2"
+                        >
+                          {t("catalogSharing.revokeAccess")}
+                        </button>
+                      </div>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{wsName}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {info.fullCatalog
-                        ? t("catalogSharing.fullCatalogShared")
-                        : t("catalogSharing.tracksSharedCount", { count: info.trackCount })}
-                    </p>
-                  </div>
-                  {info.fullCatalog ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/12 text-emerald-400 shrink-0">
-                      {t("catalogSharing.fullCatalog")}
-                    </span>
-                  ) : (
-                    <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/10 text-brand-purple shrink-0">
-                      {info.trackCount + " tracks"}
-                    </span>
-                  )}
-                  {fullCatalogShare ? (
-                    <button
-                      onClick={function () { handleRevoke(fullCatalogShare.id, true, wsName); }}
-                      className="text-[11px] text-destructive hover:text-destructive/80 font-semibold transition-colors min-h-[44px] px-2 shrink-0"
-                    >
-                      {t("catalogSharing.revoke")}
-                    </button>
-                  ) : null}
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Incoming shares */}
+            {incomingEntries.length > 0 && (
+              <div className="mt-6">
+                <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  {t("catalogSharing.incomingTitle")}
+                </p>
+                <div className="space-y-2">
+                  {incomingEntries.map(function ([sourceWsId, info]) {
+                    var ws = workspaces.find(function (w) { return w.id === sourceWsId; });
+                    var wsName = ws?.name || sourceWsId;
+                    return (
+                      <div key={sourceWsId} className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-secondary/20">
+                        {ws?.logo_url ? (
+                          <img src={ws.logo_url} alt="" className="w-8 h-8 rounded-lg object-contain shrink-0" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                            <span className="text-[10px] font-bold text-white">{getWsInitials(wsName)}</span>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{wsName}</p>
+                        </div>
+                        {info.fullCatalog ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/12 text-emerald-400 shrink-0">
+                            {t("catalogSharing.fullCatalog")}
+                          </span>
+                        ) : (
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/10 text-brand-purple shrink-0">
+                            {info.trackCount + " tracks"}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            )}
+          </>
         )}
       </SectionBlock>
 
-      {/* Full catalog shared TO this workspace */}
-      <CatalogSharingIncomingBlock />
-    </motion.div>
-  );
-}
-
-function CatalogSharingIncomingBlock() {
-  const { t } = useTranslation();
-  const { activeWorkspace, workspaces } = useWorkspace();
-  const [incomingShares, setIncomingShares] = useState<{ id: string; source_workspace_id: string; track_id: string | null }[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(function () {
-    if (!activeWorkspace) return;
-    supabase
-      .from("catalog_shares")
-      .select("id, source_workspace_id, track_id")
-      .eq("target_workspace_id", activeWorkspace.id)
-      .eq("status", "active")
-      .then(function (res) {
-        if (res.data) setIncomingShares(res.data as any[]);
-        setLoading(false);
-      });
-  }, [activeWorkspace]);
-
-  // Group by source workspace
-  var bySource: Record<string, { fullCatalog: boolean; trackCount: number }> = {};
-  for (var i = 0; i < incomingShares.length; i++) {
-    var s = incomingShares[i];
-    var wsId = s.source_workspace_id;
-    if (!bySource[wsId]) bySource[wsId] = { fullCatalog: false, trackCount: 0 };
-    if (s.track_id === null) {
-      bySource[wsId].fullCatalog = true;
-    } else {
-      bySource[wsId].trackCount += 1;
-    }
-  }
-
-  var entries = Object.entries(bySource);
-  if (loading || entries.length === 0) return null;
-
-  return (
-    <SectionBlock title={t("catalogSharing.incomingTitle")} subtitle={t("catalogSharing.incomingSubtitle")} icon={Move}>
-      <div className="space-y-2">
-        {entries.map(function ([sourceWsId, info]) {
-          var ws = workspaces.find(function (w) { return w.id === sourceWsId; });
-          var wsName = ws?.name || sourceWsId;
-          return (
-            <div key={sourceWsId} className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-secondary/20">
-              {ws?.logo_url ? (
-                <img src={ws.logo_url} alt="" className="w-8 h-8 rounded-lg object-contain shrink-0" />
-              ) : (
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
-                  <span className="text-[10px] font-bold text-white">
-                    {wsName.split(/\s+/).map(function (w) { return w[0] || ""; }).join("").toUpperCase().slice(0, 2)}
-                  </span>
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">{wsName}</p>
+      {/* Revoke confirmation dialog */}
+      {revokeConfirmWsId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={function () { setRevokeConfirmWsId(null); }}>
+          <div className="bg-card border border-border rounded-2xl shadow-xl p-6 max-w-sm mx-4" onClick={function (e) { e.stopPropagation(); }}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
               </div>
-              {info.fullCatalog ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/12 text-emerald-400 shrink-0">
-                  {t("catalogSharing.fullCatalog")}
-                </span>
-              ) : (
-                <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/10 text-brand-purple shrink-0">
-                  {info.trackCount + " tracks"}
-                </span>
-              )}
+              <div>
+                <p className="text-[14px] font-bold text-foreground">{t("catalogSharing.revokeConfirmTitle")}</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">
+                  {t("catalogSharing.revokeConfirmDesc", {
+                    name: (workspaces.find(function (w) { return w.id === revokeConfirmWsId; }) || { name: "" }).name
+                  })}
+                </p>
+              </div>
             </div>
-          );
-        })}
-      </div>
-    </SectionBlock>
+            <div className="flex items-center gap-2 justify-end">
+              <button
+                onClick={function () { setRevokeConfirmWsId(null); }}
+                className="px-4 py-2 rounded-lg text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+              >
+                {t("catalogSharing.cancel")}
+              </button>
+              <button
+                onClick={function () { handleRevokeAll(revokeConfirmWsId); }}
+                disabled={submitting}
+                className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors min-h-[44px]"
+              >
+                {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t("catalogSharing.revokeAccess")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </motion.div>
   );
 }
 
