@@ -4,6 +4,7 @@ import { ChevronDown, CheckCircle2, Plus, LayoutGrid } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
+import { useTrack } from "@/contexts/TrackContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
 import { useTranslation } from "react-i18next";
@@ -11,6 +12,7 @@ import { useTranslation } from "react-i18next";
 export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean; onSwitch?: () => void }) {
   const { activeWorkspace, workspaces, switchWorkspace } = useWorkspace();
   const { pause } = useAudioPlayer();
+  const { tracks } = useTrack();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -108,7 +110,7 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
         )}
         <div className="flex-1 min-w-0 text-left">
           <div className="text-sm font-semibold text-foreground truncate">{activeWorkspace.name}</div>
-          <div className="text-[10px] text-muted-foreground">{trackCounts[activeWorkspace.id] || 0} tracks</div>
+          <div className="text-[10px] text-muted-foreground">{tracks.length} tracks</div>
         </div>
         <motion.div
           animate={{ rotate: open ? 180 : 0 }}
@@ -149,7 +151,7 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
                   )}
                   <div className="flex-1 min-w-0 text-left">
                     <div className="text-sm font-medium text-foreground truncate">{ws.name}</div>
-                    <div className="text-[10px] text-muted-foreground">{trackCounts[ws.id] || 0} tracks</div>
+                    <div className="text-[10px] text-muted-foreground">{isActive ? tracks.length : (trackCounts[ws.id] || 0)} tracks</div>
                   </div>
                   {isActive && <CheckCircle2 className="w-4 h-4 text-brand-orange shrink-0" />}
                 </button>

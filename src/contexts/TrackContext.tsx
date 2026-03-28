@@ -312,9 +312,13 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           return mapRowToTrack(r, i, trackStems);
         });
 
-        // Fetch shared tracks if any (individual shares)
+        // Collect share info and pre-fetched track row data
         const shareInfoMap: Record<string, { sharedFrom: string; accessLevel: string; shareId: string }> = {};
         const sharedTrackIds: string[] = [];
+        // Store already-fetched row data from full catalog cascade (avoids RLS issues on re-fetch)
+        const prefetchedRows: Record<string, Record<string, unknown>> = {};
+
+        // Individual shares
         if (!sharedRes.error && sharedRes.data && sharedRes.data.length > 0) {
           for (const share of sharedRes.data) {
             const s = share as any;
@@ -327,16 +331,17 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // Fetch full catalog shares — all tracks from source workspaces
-        // This includes: own tracks of source + tracks shared TO source (1 level cascade, no infinite loops)
+        // Full catalog shares — all tracks from source workspaces
+        // Includes: own tracks of source + tracks shared TO source (1 level cascade, no infinite loops)
         if (!fullCatalogRes.error && fullCatalogRes.data && fullCatalogRes.data.length > 0) {
           const fullCatalogFetches = fullCatalogRes.data.map(async function (share) {
             const s = share as any;
             const sourceWsId = s.source_workspace_id as string;
+            const sourceWsName = s.workspaces?.name || "";
             const accessLevel = s.access_level || "viewer";
             const shareId = s.id;
 
-            // Fetch in parallel: own tracks + individual shares to source + full catalog shares to source
+            // Fetch in parallel: own tracks + shares to source (for cascade)
             const [ownTracksRes, sourceIndividualRes, sourceFullCatalogRes] = await Promise.all([
               // 1. Own tracks of source workspace
               supabase
@@ -350,7 +355,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
                 .eq("target_workspace_id", sourceWsId)
                 .eq("status", "active")
                 .not("track_id", "is", null),
-              // 3. Full catalog shares TO the source workspace (1 level only — don't cascade further)
+              // 3. Full catalog shares TO the source workspace (1 level — no further cascade)
               supabase
                 .from("catalog_shares")
                 .select("source_workspace_id, workspaces!catalog_shares_source_workspace_id_fkey(name)")
@@ -359,9 +364,15 @@ export function TrackProvider({ children }: { children: ReactNode }) {
                 .is("track_id", null),
             ]);
 
-            var allTrackRows: Record<string, unknown>[] = (ownTracksRes.data || []) as any[];
+            // All rows we collect, with their original workspace name
+            var collectedRows: { row: Record<string, unknown>; originalWsName: string }[] = [];
 
-            // Collect track IDs from individual shares to source (to fetch later)
+            // 1. Own tracks of source — badge shows source workspace name
+            for (const row of (ownTracksRes.data || [])) {
+              collectedRows.push({ row: row as any, originalWsName: sourceWsName });
+            }
+
+            // 2. Individual shares TO source — fetch track rows
             var cascadeTrackIds: string[] = [];
             var cascadeOriginalWs: Record<string, string> = {};
             if (sourceIndividualRes.data) {
@@ -374,7 +385,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
               }
             }
 
-            // Collect all tracks from full catalog shares TO source (1 level — no further cascade)
+            // 3. Full catalog shares TO source — collect upstream workspace IDs
             var cascadeFullWsIds: { wsId: string; wsName: string }[] = [];
             if (sourceFullCatalogRes.data) {
               for (const cs of sourceFullCatalogRes.data) {
@@ -386,15 +397,20 @@ export function TrackProvider({ children }: { children: ReactNode }) {
               }
             }
 
-            // Fetch cascaded tracks in parallel
-            var cascadeFetches: Promise<{ tracks: Record<string, unknown>[]; wsName: string }>[] = [];
+            // Fetch cascade track rows in parallel
+            var cascadeFetches: Promise<void>[] = [];
             if (cascadeTrackIds.length > 0) {
               cascadeFetches.push(
                 supabase
                   .from("tracks")
                   .select("*")
                   .in("id", cascadeTrackIds)
-                  .then(function (res) { return { tracks: (res.data || []) as any[], wsName: "" }; })
+                  .then(function (res) {
+                    for (const row of (res.data || [])) {
+                      var tid = (row as any).id as string;
+                      collectedRows.push({ row: row as any, originalWsName: cascadeOriginalWs[tid] || "" });
+                    }
+                  })
               );
             }
             for (const cfw of cascadeFullWsIds) {
@@ -403,51 +419,34 @@ export function TrackProvider({ children }: { children: ReactNode }) {
                   .from("tracks")
                   .select("*")
                   .eq("workspace_id", cfw.wsId)
-                  .then(function (res) { return { tracks: (res.data || []) as any[], wsName: cfw.wsName }; })
+                  .then(function (res) {
+                    for (const row of (res.data || [])) {
+                      collectedRows.push({ row: row as any, originalWsName: cfw.wsName });
+                    }
+                  })
               );
             }
-
             if (cascadeFetches.length > 0) {
-              const cascadeResults = await Promise.all(cascadeFetches);
-              for (const cr of cascadeResults) {
-                for (const row of cr.tracks) {
-                  allTrackRows.push(row as any);
-                }
-              }
+              await Promise.all(cascadeFetches);
             }
 
-            return { tracks: allTrackRows, accessLevel: accessLevel, shareId: shareId, cascadeOriginalWs: cascadeOriginalWs, cascadeFullWsNames: cascadeFullWsIds };
+            return { collected: collectedRows, accessLevel: accessLevel, shareId: shareId };
           });
+
           const fullCatalogResults = await Promise.all(fullCatalogFetches);
           const seenTrackIds = new Set<string>();
           for (const result of fullCatalogResults) {
-            for (const row of result.tracks) {
-              const trackId = (row as any).id as string;
-              const trackWsId = (row as any).workspace_id as string;
+            for (const item of result.collected) {
+              const trackId = item.row.id as string;
               if (seenTrackIds.has(trackId)) continue;
               seenTrackIds.add(trackId);
 
-              // Determine the original workspace name for the badge
-              var originalWsName = "";
-              // Check if this track came via individual cascade share
-              if (result.cascadeOriginalWs[trackId]) {
-                originalWsName = result.cascadeOriginalWs[trackId];
-              } else {
-                // Check if it came from a full catalog cascade
-                var cascadeMatch = result.cascadeFullWsNames.find(function (c) { return c.wsId === trackWsId; });
-                if (cascadeMatch) {
-                  originalWsName = cascadeMatch.wsName;
-                } else {
-                  // It's an own track of the source workspace — find source ws name
-                  var sourceShare = fullCatalogRes.data!.find(function (fcs: any) { return fcs.source_workspace_id === trackWsId; }) as any;
-                  originalWsName = sourceShare?.workspaces?.name || "";
-                }
-              }
+              // Store the pre-fetched row so we don't need to re-fetch later
+              prefetchedRows[trackId] = item.row;
 
-              // Don't override individual share info if already present
               if (!shareInfoMap[trackId]) {
                 shareInfoMap[trackId] = {
-                  sharedFrom: originalWsName,
+                  sharedFrom: item.originalWsName,
                   accessLevel: result.accessLevel,
                   shareId: result.shareId,
                 };
@@ -459,23 +458,43 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // Fetch the actual track rows for shared tracks (excluding ones we already own)
+        // Build shared tracks from pre-fetched data + re-fetch any missing ones
         if (sharedTrackIds.length > 0) {
           const ownTrackIds = new Set(mapped.map(function (t) { return t.uuid; }));
           const idsToFetch = sharedTrackIds.filter(function (id) { return !ownTrackIds.has(id); });
 
           if (idsToFetch.length > 0) {
-            const { data: sharedTrackRows } = await supabase
-              .from("tracks")
-              .select("*")
-              .in("id", idsToFetch);
+            // Split into already-fetched (from full catalog cascade) and needs-fetch (individual shares)
+            var alreadyHaveRows: Record<string, unknown>[] = [];
+            var needFetchIds: string[] = [];
+            for (const id of idsToFetch) {
+              if (prefetchedRows[id]) {
+                alreadyHaveRows.push(prefetchedRows[id]);
+              } else {
+                needFetchIds.push(id);
+              }
+            }
 
-            if (sharedTrackRows) {
+            // Re-fetch only tracks we don't already have row data for
+            var fetchedRows: Record<string, unknown>[] = [];
+            if (needFetchIds.length > 0) {
+              const { data: sharedTrackRows } = await supabase
+                .from("tracks")
+                .select("*")
+                .in("id", needFetchIds);
+              fetchedRows = (sharedTrackRows || []) as any[];
+            }
+
+            var allSharedRows = alreadyHaveRows.concat(fetchedRows);
+
+            if (allSharedRows.length > 0) {
+              var allSharedIds = allSharedRows.map(function (r) { return (r as any).id as string; });
+
               // Fetch stems for shared tracks
               const { data: sharedStemsData } = await supabase
                 .from("stems")
                 .select("*")
-                .in("track_id", idsToFetch)
+                .in("track_id", allSharedIds)
                 .order("created_at", { ascending: true });
 
               const sharedStemsByTrack: Record<string, TrackStem[]> = {};
@@ -486,8 +505,8 @@ export function TrackProvider({ children }: { children: ReactNode }) {
               }
 
               const baseIndex = mapped.length;
-              for (let i = 0; i < sharedTrackRows.length; i++) {
-                const r = sharedTrackRows[i] as unknown as Record<string, unknown>;
+              for (let i = 0; i < allSharedRows.length; i++) {
+                const r = allSharedRows[i] as Record<string, unknown>;
                 const trackId = r.id as string;
                 const trackStems = sharedStemsByTrack[trackId] || [];
                 const sharedTrack = mapRowToTrack(r, baseIndex + i, trackStems);
