@@ -66,8 +66,8 @@ function ProtectedApp({ children }: { children: React.ReactNode }) {
   return (
     <ProtectedRoute>
       <OnboardingProvider>
-      <RoleProvider>
       <WorkspaceProvider>
+      <RoleProvider>
       <TeamProvider>
       <TrackProvider>
       <AudioPlayerProvider>
@@ -89,8 +89,8 @@ function ProtectedApp({ children }: { children: React.ReactNode }) {
       </AudioPlayerProvider>
       </TrackProvider>
       </TeamProvider>
-      </WorkspaceProvider>
       </RoleProvider>
+      </WorkspaceProvider>
       </OnboardingProvider>
     </ProtectedRoute>
   );
