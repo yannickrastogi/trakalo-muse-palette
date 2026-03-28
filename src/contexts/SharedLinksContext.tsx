@@ -55,11 +55,13 @@ export interface SharedLink extends WorkspaceScoped {
   packItems?: string[];
   // Download permissions
   allowDownload: boolean;
+  allowSave?: boolean;
   downloadQuality?: "hi-res" | "low-res";
   // Event stats
   views?: number;
   plays?: number;
   downloadCount?: number;
+  saveCount?: number;
 }
 
 interface SharedLinksContextValue {
@@ -108,6 +110,7 @@ function mapRowToSharedLink(row: Record<string, unknown>): SharedLink {
     playlistId: (row.playlist_id as string) || undefined,
     packItems: packItems && Array.isArray(packItems) ? packItems as unknown as string[] : undefined,
     allowDownload: (row.allow_download as boolean) || false,
+    allowSave: (row.allow_save as boolean) !== false,
     downloadQuality: (row.download_quality as "hi-res" | "low-res") || undefined,
   };
 }
@@ -136,7 +139,7 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
       setSharedLinks([]);
     } else {
       var linkIds = (data || []).map(function(r) { return r.id; });
-      var statsMap: Record<string, { views: number; plays: number; downloads: number }> = {};
+      var statsMap: Record<string, { views: number; plays: number; downloads: number; saves: number }> = {};
 
       if (linkIds.length > 0) {
         var { data: events } = await supabase
@@ -145,19 +148,21 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
           .in("link_id", linkIds);
 
         (events || []).forEach(function(e: { link_id: string; event_type: string }) {
-          if (!statsMap[e.link_id]) statsMap[e.link_id] = { views: 0, plays: 0, downloads: 0 };
+          if (!statsMap[e.link_id]) statsMap[e.link_id] = { views: 0, plays: 0, downloads: 0, saves: 0 };
           if (e.event_type === "view") statsMap[e.link_id].views++;
           if (e.event_type === "play") statsMap[e.link_id].plays++;
           if (e.event_type === "download") statsMap[e.link_id].downloads++;
+          if (e.event_type === "save") statsMap[e.link_id].saves++;
         });
       }
 
       setSharedLinks((data || []).map(function(row) {
         var link = mapRowToSharedLink(row as unknown as Record<string, unknown>);
-        var stats = statsMap[row.id] || { views: 0, plays: 0, downloads: 0 };
+        var stats = statsMap[row.id] || { views: 0, plays: 0, downloads: 0, saves: 0 };
         link.views = stats.views;
         link.plays = stats.plays;
         link.downloadCount = stats.downloads;
+        link.saveCount = stats.saves;
         return link;
       }));
     }
@@ -213,6 +218,7 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
         password_hash: hashedPassword,
         message: link.message || null,
         allow_download: link.allowDownload,
+        allow_save: link.allowSave !== false,
         download_quality: link.downloadQuality || null,
         expires_at: link.expirationDate || null,
         status: "active",

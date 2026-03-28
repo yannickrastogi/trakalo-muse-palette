@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Link2, Lock, Copy, Check, Music, ListMusic, Download, ShieldOff } from "lucide-react";
+import { X, Link2, Lock, Copy, Check, Music, ListMusic, Download, ShieldOff, Bookmark } from "lucide-react";
 import { useSharedLinks, type SharedLink, type ShareType } from "@/contexts/SharedLinksContext";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -48,6 +48,7 @@ export function ShareModal({
   const [expirationDate, setExpirationDate] = useState("");
   const [message, setMessage] = useState("");
   const [allowDownload, setAllowDownload] = useState(false);
+  const [allowSave, setAllowSave] = useState(true);
   const [downloadQuality, setDownloadQuality] = useState<"hi-res" | "low-res">("low-res");
   const [copied, setCopied] = useState(false);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
@@ -116,6 +117,7 @@ export function ShareModal({
       playlistTracks: playlistTracks || undefined,
       packItems: packItems || undefined,
       allowDownload: shareType === "pack" ? true : allowDownload,
+      allowSave: allowSave,
       downloadQuality: (shareType === "pack" || allowDownload) ? downloadQuality : undefined,
     };
 
@@ -352,6 +354,23 @@ export function ShareModal({
                   </div>
                 </div>
                 )}
+
+                {/* Save to Trakalog Permission */}
+                <div className="space-y-3 mt-4">
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">Save Permission</label>
+                  <div className={"rounded-xl border transition-all " + (allowSave ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/30") + " p-3.5"}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <Bookmark className="w-4 h-4 text-primary" />
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">{allowSave ? "Save to Trakalog enabled" : "Save to Trakalog disabled"}</p>
+                          <p className="text-[10px] text-muted-foreground">{allowSave ? "Recipients with a Trakalog account can save this track to their catalog" : "Recipients cannot save this track"}</p>
+                        </div>
+                      </div>
+                      <Switch checked={allowSave} onCheckedChange={setAllowSave} />
+                    </div>
+                  </div>
+                </div>
 
                 {/* Item count */}
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 border border-border">

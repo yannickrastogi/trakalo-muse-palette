@@ -18,6 +18,7 @@ import {
   ShieldOff,
   Link2,
   Lock,
+  Bookmark,
 } from "lucide-react";
 import {
   Dialog,
@@ -44,6 +45,7 @@ export interface PitchEntry {
   trackUuid?: string;
   playlistUuid?: string;
   allowDownload?: boolean;
+  allowSave?: boolean;
   downloadQuality?: "hi-res" | "low-res";
   linkType?: "public" | "secured";
   password?: string;
@@ -86,6 +88,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate, initialPlaylist
   const [recipientEmail, setRecipientEmail] = useState(initialRecipientEmail || "");
   const [message, setMessage] = useState("");
   const [allowDownload, setAllowDownload] = useState(false);
+  const [allowSave, setAllowSave] = useState(true);
   const [downloadQuality, setDownloadQuality] = useState<"hi-res" | "low-res">("low-res");
   const [linkType, setLinkType] = useState<"public" | "secured">("public");
   const [password, setPassword] = useState("");
@@ -203,6 +206,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate, initialPlaylist
       trackUuid: selectedItem!.trackUuid,
       playlistUuid: selectedItem!.playlistUuid,
       allowDownload,
+      allowSave,
       downloadQuality: allowDownload ? downloadQuality : undefined,
       linkType,
       password: linkType === "secured" ? password : undefined,
@@ -669,6 +673,23 @@ export function CreatePitchModal({ open, onOpenChange, onCreate, initialPlaylist
                         </motion.div>
                       )}
                     </AnimatePresence>
+                  </div>
+                </div>
+
+                {/* Save to Trakalog Permission */}
+                <div className="space-y-3 mt-4">
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">Save Permission</label>
+                  <div className={"rounded-xl border transition-all " + (allowSave ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/30") + " p-3.5"}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <Bookmark className="w-4 h-4 text-primary" />
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">{allowSave ? "Save to Trakalog enabled" : "Save to Trakalog disabled"}</p>
+                          <p className="text-[10px] text-muted-foreground">{allowSave ? "Recipients with a Trakalog account can save this track to their catalog" : "Recipients cannot save this track"}</p>
+                        </div>
+                      </div>
+                      <Switch checked={allowSave} onCheckedChange={setAllowSave} />
+                    </div>
                   </div>
                 </div>
               </motion.div>

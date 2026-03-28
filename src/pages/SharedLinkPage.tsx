@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
-import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare } from "lucide-react";
+import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark } from "lucide-react";
 import { DEFAULT_COVER } from "@/lib/constants";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import JSZip from "jszip";
@@ -27,6 +27,7 @@ interface SharedLinkData {
   password_hash: string | null;
   message: string | null;
   allow_download: boolean;
+  allow_save: boolean;
   download_quality: string | null;
   expires_at: string | null;
   status: string;
@@ -280,6 +281,10 @@ export default function SharedLinkPage() {
 
   // Pack download state
   var [packDownloading, setPackDownloading] = useState(false);
+  var [savedToTrakalog, setSavedToTrakalog] = useState(false);
+  var [savingToTrakalog, setSavingToTrakalog] = useState(false);
+  var [currentUserSession, setCurrentUserSession] = useState<any>(null);
+  var [currentUserWorkspace, setCurrentUserWorkspace] = useState<string | null>(null);
 
   // Workspace branding
   var [branding, setBranding] = useState<WorkspaceBranding | null>(null);
@@ -404,6 +409,40 @@ export default function SharedLinkPage() {
       setLoading(false);
     });
   }, [slug]);
+
+  // Detect if visitor is a logged-in Trakalog user
+  useEffect(function() {
+    if (!linkData?.allow_save) return;
+    var anonClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    anonClient.auth.getSession().then(function(res) {
+      if (res.data.session) {
+        setCurrentUserSession(res.data.session);
+        // Fetch user's first workspace
+        anonClient
+          .from("workspace_members")
+          .select("workspace_id")
+          .eq("user_id", res.data.session.user.id)
+          .limit(1)
+          .then(function(wsRes) {
+            if (wsRes.data && wsRes.data.length > 0) {
+              setCurrentUserWorkspace((wsRes.data[0] as any).workspace_id);
+              // Check if already saved
+              anonClient
+                .from("catalog_shares")
+                .select("id")
+                .eq("track_id", linkData!.track_id!)
+                .eq("target_workspace_id", (wsRes.data[0] as any).workspace_id)
+                .eq("status", "active")
+                .then(function(shareRes) {
+                  if (shareRes.data && shareRes.data.length > 0) {
+                    setSavedToTrakalog(true);
+                  }
+                });
+            }
+          });
+      }
+    });
+  }, [linkData]);
 
   // Auto-skip gate screen if valid visitor cookie exists
   useEffect(function() {
@@ -656,6 +695,25 @@ export default function SharedLinkPage() {
       },
       body: JSON.stringify({ slug: slug, track_id: trackId, visitor_email: visitorEmailRef.current, event_type: eventType }),
     }).catch(function(err) { console.error("Failed to log event:", err); });
+  };
+
+  var handleSaveToTrakalog = async function() {
+    if (!currentUserSession || !currentUserWorkspace || !linkData?.track_id) return;
+    setSavingToTrakalog(true);
+    var anonClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    var { error } = await anonClient.from("catalog_shares").insert({
+      track_id: linkData.track_id,
+      source_workspace_id: linkData.workspace_id,
+      target_workspace_id: currentUserWorkspace,
+      shared_by: currentUserSession.user.id,
+      access_level: "viewer",
+      status: "active",
+    });
+    if (!error) {
+      setSavedToTrakalog(true);
+      logEvent(linkData.track_id, "save");
+    }
+    setSavingToTrakalog(false);
   };
 
   // Fetch comments for the current track
@@ -1592,6 +1650,34 @@ export default function SharedLinkPage() {
                   <Download className="w-4 h-4" />
                   {"Download " + (linkData.download_quality === "hi-res" ? "(Hi-Res)" : "(Low-Res)")}
                 </button>
+              </div>
+            )}
+
+            {linkData?.allow_save && linkData.track_id && (
+              <div className={"px-6 py-4 " + (immersive ? "border-t border-white/10" : "border-t border-border")}>
+                {savedToTrakalog ? (
+                  <div className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold " + (immersive ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20" : "bg-emerald-500/10 text-emerald-500")}>
+                    <Bookmark className="w-4 h-4" />
+                    Saved to your Trakalog
+                  </div>
+                ) : currentUserSession ? (
+                  <button
+                    onClick={handleSaveToTrakalog}
+                    disabled={savingToTrakalog}
+                    className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] " + (immersive ? "bg-white/10 backdrop-blur-xl border border-white/15 text-white hover:bg-white/20" : "btn-brand")}
+                  >
+                    <Bookmark className="w-4 h-4" />
+                    {savingToTrakalog ? "Saving..." : "Save to your Trakalog"}
+                  </button>
+                ) : (
+                  <a
+                    href={"/auth?redirect=" + encodeURIComponent("/share/" + slug)}
+                    className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] " + (immersive ? "bg-white/10 backdrop-blur-xl border border-white/15 text-white hover:bg-white/20" : "border border-border bg-card text-foreground hover:bg-secondary")}
+                  >
+                    <Bookmark className="w-4 h-4" />
+                    Save to your Trakalog — Sign up free
+                  </a>
+                )}
               </div>
             )}
 

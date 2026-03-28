@@ -23,6 +23,7 @@ import {
   Bell,
   Filter,
   Users,
+  Bookmark,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,7 @@ const activityMeta: Record<ActivityType, { icon: LucideIcon; color: string; bg: 
   recipient_downloaded: { icon: Download, color: "text-blue-400", bg: "bg-blue-400/10", badgeCls: "bg-blue-400/10 text-blue-400 border-blue-400/20" },
   recipient_pack: { icon: Package, color: "text-orange-400", bg: "bg-orange-400/10", badgeCls: "bg-orange-400/10 text-orange-400 border-orange-400/20" },
   recipient_stems: { icon: Layers, color: "text-purple-400", bg: "bg-purple-400/10", badgeCls: "bg-purple-400/10 text-purple-400 border-purple-400/20" },
+  recipient_saved: { icon: Bookmark, color: "text-brand-purple", bg: "bg-brand-purple/10", badgeCls: "bg-brand-purple/10 text-brand-purple border-brand-purple/20" },
 };
 
 const timeFilters: { key: TimeFilter; label: string }[] = [
@@ -147,11 +149,13 @@ export default function NotificationCenter() {
           play: "recipient_played",
           download: "recipient_downloaded",
           view: "recipient_opened",
+          save: "recipient_saved" as ActivityType,
         };
         var messageMap: Record<string, string> = {
           play: "listened to your track",
           download: "downloaded your track",
           view: "viewed your shared link",
+          save: "saved your track to their Trakalog",
         };
         var linkName = linkNameMap[evt.link_id] || "";
         return {
@@ -245,6 +249,7 @@ export default function NotificationCenter() {
     recipient_downloaded: "Downloaded",
     recipient_pack: "Pack Downloaded",
     recipient_stems: "Stems Downloaded",
+    recipient_saved: "Saved to Trakalog",
   };
 
   return (

@@ -83,6 +83,7 @@ import {
   Link2,
   PenLine,
   MessageCircle,
+  Bookmark,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -438,9 +439,29 @@ export default function TrackDetail() {
             {track.isShared && (
               <motion.div variants={item} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-purple/8 border border-brand-purple/20">
                 <Info className="w-4 h-4 text-brand-purple shrink-0" />
-                <p className="text-sm text-foreground">
-                  {t("catalogSharing.sharedFromBanner", { workspace: track.sharedFrom || "" })}
+                <p className="text-sm text-foreground flex-1">
+                  {track.shareAccessLevel === "viewer"
+                    ? t("catalogSharing.savedFromBanner", { workspace: track.sharedFrom || "" })
+                    : t("catalogSharing.sharedFromBanner", { workspace: track.sharedFrom || "" })}
                 </p>
+                {track.shareAccessLevel === "viewer" && track.shareId && (
+                  <button
+                    onClick={async function() {
+                      var { error } = await supabase
+                        .from("catalog_shares")
+                        .update({ status: "revoked", revoked_at: new Date().toISOString() })
+                        .eq("id", track.shareId);
+                      if (!error) {
+                        toast.success(t("catalogSharing.removedFromTrakalog"));
+                        refreshTracks();
+                        navigate("/tracks");
+                      }
+                    }}
+                    className="text-[11px] text-destructive hover:text-destructive/80 font-semibold transition-colors min-h-[44px] px-2 shrink-0"
+                  >
+                    {t("catalogSharing.removeFromTrakalog")}
+                  </button>
+                )}
               </motion.div>
             )}
 
@@ -558,12 +579,14 @@ export default function TrackDetail() {
                             <Edit3 className="w-4 h-4" /> Edit Track
                           </button>
                         )}
-                        <button
-                          onClick={() => setShareExpanded(true)}
-                          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px] col-span-1"
-                        >
-                          <Share2 className="w-4 h-4" /> Share
-                        </button>
+                        {track.shareAccessLevel !== "viewer" && (
+                          <button
+                            onClick={() => setShareExpanded(true)}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px] col-span-1"
+                          >
+                            <Share2 className="w-4 h-4" /> Share
+                          </button>
+                        )}
                         <button
                           onClick={() => setDownloadModalOpen(true)}
                           className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
@@ -2966,6 +2989,7 @@ function EngagementTab({ trackId, onSeek }: { trackId: number; onSeek?: (seconds
 
   var linkPlays = linkEvents.filter(function(e) { return e.event_type === "play"; }).length;
   var linkDownloads = linkEvents.filter(function(e) { return e.event_type === "download"; }).length;
+  var linkSaves = linkEvents.filter(function(e) { return e.event_type === "save"; }).length;
   var uniqueListeners = new Set(linkEvents.filter(function(e) { return e.visitor_email; }).map(function(e) { return e.visitor_email; })).size;
 
   // Build comment engagement events
@@ -3019,6 +3043,19 @@ function EngagementTab({ trackId, onSeek }: { trackId: number; onSeek?: (seconds
               </div>
             </div>
           </div>
+          {linkSaves > 0 && (
+            <div className="card-premium p-4 rounded-xl">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-brand-purple/12 flex items-center justify-center">
+                  <Bookmark className="w-4 h-4 text-brand-purple" />
+                </div>
+                <div>
+                  <p className="text-2xs text-muted-foreground font-medium uppercase tracking-wider">Saves</p>
+                  <p className="text-xl font-bold text-foreground">{linkSaves}</p>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="card-premium p-4 rounded-xl">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-lg bg-brand-purple/12 flex items-center justify-center">

@@ -120,6 +120,7 @@ export default function SharedLinks() {
   const totalViews = sharedLinks.reduce((s, l) => s + (l.views || 0), 0);
   const totalPlays = sharedLinks.reduce((s, l) => s + (l.plays || 0), 0);
   const totalDownloads = sharedLinks.reduce((s, l) => s + (l.downloadCount || 0), 0);
+  const totalSaves = sharedLinks.reduce((s, l) => s + (l.saveCount || 0), 0);
 
   const activityLink = activityLinkId ? sharedLinks.find((l) => l.id === activityLinkId) : null;
 
@@ -149,6 +150,11 @@ export default function SharedLinks() {
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
               {totalDownloads} downloads
             </span>
+            {totalSaves > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
+                {totalSaves} saves
+              </span>
+            )}
           </div>
         </motion.div>
 
@@ -226,7 +232,7 @@ export default function SharedLinks() {
                         {/* Engagement compact */}
                         <td className="px-4 py-3.5">
                           <span className="text-xs text-muted-foreground">
-                            {link.views || 0} views · {link.plays || 0} plays · {link.downloadCount || 0} dl
+                            {link.views || 0} views · {link.plays || 0} plays · {link.downloadCount || 0} dl{(link.saveCount || 0) > 0 ? " · " + link.saveCount + " saves" : ""}
                           </span>
                         </td>
                         {/* Created */}
@@ -311,7 +317,7 @@ export default function SharedLinks() {
                   </div>
                   {/* Stats */}
                   <div className="text-xs text-muted-foreground">
-                    {link.views || 0} views · {link.plays || 0} plays · {link.downloadCount || 0} dl
+                    {link.views || 0} views · {link.plays || 0} plays · {link.downloadCount || 0} dl{(link.saveCount || 0) > 0 ? " · " + link.saveCount + " saves" : ""}
                   </div>
                   {/* Actions */}
                   <div className="flex items-center gap-1 pt-1 border-t border-border/30">
