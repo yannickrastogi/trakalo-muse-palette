@@ -4,7 +4,6 @@ import { ChevronDown, CheckCircle2, Plus, LayoutGrid } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
-import { useTrack } from "@/contexts/TrackContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
 import { useTranslation } from "react-i18next";
@@ -12,7 +11,6 @@ import { useTranslation } from "react-i18next";
 export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean; onSwitch?: () => void }) {
   const { activeWorkspace, workspaces, switchWorkspace } = useWorkspace();
   const { pause } = useAudioPlayer();
-  const { tracks } = useTrack();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -20,36 +18,98 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
   const [trackCounts, setTrackCounts] = useState<Record<string, number>>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch track counts per workspace (own tracks + shared tracks via catalog_shares)
+  // Fetch accurate track counts per workspace (own + individual shares + full catalog shares resolved to actual tracks)
   useEffect(() => {
     if (workspaces.length === 0) return;
     var ids = workspaces.map(function (w) { return w.id; });
 
     Promise.all([
+      // All tracks from user's workspaces
       supabase
         .from("tracks")
-        .select("workspace_id", { count: "exact", head: false })
+        .select("id, workspace_id")
         .in("workspace_id", ids),
+      // All active catalog_shares targeting user's workspaces
       supabase
         .from("catalog_shares")
-        .select("target_workspace_id", { count: "exact", head: false })
+        .select("target_workspace_id, track_id, source_workspace_id")
         .in("target_workspace_id", ids)
         .eq("status", "active"),
-    ]).then(function (results) {
-      var counts: Record<string, number> = {};
-      var ownData = results[0].data;
-      if (ownData) {
-        for (var i = 0; i < ownData.length; i++) {
-          var wsId = (ownData[i] as any).workspace_id;
-          counts[wsId] = (counts[wsId] || 0) + 1;
+    ]).then(async function (results) {
+      var tracksData = results[0].data || [];
+      var sharesData = results[1].data || [];
+
+      // Build a Set of track IDs per workspace (for dedup)
+      var trackSets: Record<string, Set<string>> = {};
+      for (var k = 0; k < ids.length; k++) {
+        trackSets[ids[k]] = new Set();
+      }
+
+      // Index tracks by workspace for full catalog resolution
+      var trackIdsBySourceWs: Record<string, string[]> = {};
+      for (var i = 0; i < tracksData.length; i++) {
+        var row = tracksData[i] as any;
+        // Own tracks
+        if (trackSets[row.workspace_id]) {
+          trackSets[row.workspace_id].add(row.id);
+        }
+        if (!trackIdsBySourceWs[row.workspace_id]) trackIdsBySourceWs[row.workspace_id] = [];
+        trackIdsBySourceWs[row.workspace_id].push(row.id);
+      }
+
+      // Separate individual shares and full catalog shares
+      var fullCatalogShares: { target_workspace_id: string; source_workspace_id: string }[] = [];
+      for (var j = 0; j < sharesData.length; j++) {
+        var share = sharesData[j] as any;
+        if (share.track_id) {
+          // Individual share — add track ID directly
+          if (trackSets[share.target_workspace_id]) {
+            trackSets[share.target_workspace_id].add(share.track_id);
+          }
+        } else {
+          fullCatalogShares.push({ target_workspace_id: share.target_workspace_id, source_workspace_id: share.source_workspace_id });
         }
       }
-      var sharedData = results[1].data;
-      if (sharedData) {
-        for (var j = 0; j < sharedData.length; j++) {
-          var targetId = (sharedData[j] as any).target_workspace_id;
-          counts[targetId] = (counts[targetId] || 0) + 1;
+
+      // For full catalog shares, resolve source tracks
+      // Some sources may be external (not in user's workspaces) — fetch those
+      var externalSourceIds: string[] = [];
+      for (var f = 0; f < fullCatalogShares.length; f++) {
+        var srcId = fullCatalogShares[f].source_workspace_id;
+        if (!trackIdsBySourceWs[srcId] && externalSourceIds.indexOf(srcId) === -1) {
+          externalSourceIds.push(srcId);
         }
+      }
+
+      if (externalSourceIds.length > 0) {
+        var extRes = await supabase
+          .from("tracks")
+          .select("id, workspace_id")
+          .in("workspace_id", externalSourceIds);
+        if (extRes.data) {
+          for (var e = 0; e < extRes.data.length; e++) {
+            var extRow = extRes.data[e] as any;
+            if (!trackIdsBySourceWs[extRow.workspace_id]) trackIdsBySourceWs[extRow.workspace_id] = [];
+            trackIdsBySourceWs[extRow.workspace_id].push(extRow.id);
+          }
+        }
+      }
+
+      // Add full catalog source tracks to target sets
+      for (var fc = 0; fc < fullCatalogShares.length; fc++) {
+        var fcs = fullCatalogShares[fc];
+        var sourceTracks = trackIdsBySourceWs[fcs.source_workspace_id] || [];
+        var targetSet = trackSets[fcs.target_workspace_id];
+        if (targetSet) {
+          for (var t = 0; t < sourceTracks.length; t++) {
+            targetSet.add(sourceTracks[t]);
+          }
+        }
+      }
+
+      var counts: Record<string, number> = {};
+      for (var c = 0; c < ids.length; c++) {
+        counts[ids[c]] = trackSets[ids[c]].size;
       }
       setTrackCounts(counts);
     });
@@ -110,7 +170,7 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
         )}
         <div className="flex-1 min-w-0 text-left">
           <div className="text-sm font-semibold text-foreground truncate">{activeWorkspace.name}</div>
-          <div className="text-[10px] text-muted-foreground">{tracks.length} tracks</div>
+          <div className="text-[10px] text-muted-foreground">{trackCounts[activeWorkspace.id] || 0} tracks</div>
         </div>
         <motion.div
           animate={{ rotate: open ? 180 : 0 }}
@@ -151,7 +211,7 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
                   )}
                   <div className="flex-1 min-w-0 text-left">
                     <div className="text-sm font-medium text-foreground truncate">{ws.name}</div>
-                    <div className="text-[10px] text-muted-foreground">{isActive ? tracks.length : (trackCounts[ws.id] || 0)} tracks</div>
+                    <div className="text-[10px] text-muted-foreground">{trackCounts[ws.id] || 0} tracks</div>
                   </div>
                   {isActive && <CheckCircle2 className="w-4 h-4 text-brand-orange shrink-0" />}
                 </button>
