@@ -328,26 +328,126 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         }
 
         // Fetch full catalog shares — all tracks from source workspaces
+        // This includes: own tracks of source + tracks shared TO source (1 level cascade, no infinite loops)
         if (!fullCatalogRes.error && fullCatalogRes.data && fullCatalogRes.data.length > 0) {
           const fullCatalogFetches = fullCatalogRes.data.map(async function (share) {
             const s = share as any;
-            const wsName = s.workspaces?.name || "";
+            const sourceWsId = s.source_workspace_id as string;
             const accessLevel = s.access_level || "viewer";
             const shareId = s.id;
-            const { data: sourceTracks } = await supabase
-              .from("tracks")
-              .select("*")
-              .eq("workspace_id", s.source_workspace_id);
-            return { tracks: sourceTracks || [], wsName: wsName, accessLevel: accessLevel, shareId: shareId };
+
+            // Fetch in parallel: own tracks + individual shares to source + full catalog shares to source
+            const [ownTracksRes, sourceIndividualRes, sourceFullCatalogRes] = await Promise.all([
+              // 1. Own tracks of source workspace
+              supabase
+                .from("tracks")
+                .select("*")
+                .eq("workspace_id", sourceWsId),
+              // 2. Individual track shares TO the source workspace
+              supabase
+                .from("catalog_shares")
+                .select("track_id, source_workspace_id, workspaces!catalog_shares_source_workspace_id_fkey(name)")
+                .eq("target_workspace_id", sourceWsId)
+                .eq("status", "active")
+                .not("track_id", "is", null),
+              // 3. Full catalog shares TO the source workspace (1 level only — don't cascade further)
+              supabase
+                .from("catalog_shares")
+                .select("source_workspace_id, workspaces!catalog_shares_source_workspace_id_fkey(name)")
+                .eq("target_workspace_id", sourceWsId)
+                .eq("status", "active")
+                .is("track_id", null),
+            ]);
+
+            var allTrackRows: Record<string, unknown>[] = (ownTracksRes.data || []) as any[];
+
+            // Collect track IDs from individual shares to source (to fetch later)
+            var cascadeTrackIds: string[] = [];
+            var cascadeOriginalWs: Record<string, string> = {};
+            if (sourceIndividualRes.data) {
+              for (const cs of sourceIndividualRes.data) {
+                const csd = cs as any;
+                if (csd.track_id) {
+                  cascadeTrackIds.push(csd.track_id);
+                  cascadeOriginalWs[csd.track_id] = csd.workspaces?.name || "";
+                }
+              }
+            }
+
+            // Collect all tracks from full catalog shares TO source (1 level — no further cascade)
+            var cascadeFullWsIds: { wsId: string; wsName: string }[] = [];
+            if (sourceFullCatalogRes.data) {
+              for (const cs of sourceFullCatalogRes.data) {
+                const csd = cs as any;
+                // Prevent loop: don't cascade back to our own workspace
+                if (csd.source_workspace_id !== activeWorkspace.id) {
+                  cascadeFullWsIds.push({ wsId: csd.source_workspace_id, wsName: csd.workspaces?.name || "" });
+                }
+              }
+            }
+
+            // Fetch cascaded tracks in parallel
+            var cascadeFetches: Promise<{ tracks: Record<string, unknown>[]; wsName: string }>[] = [];
+            if (cascadeTrackIds.length > 0) {
+              cascadeFetches.push(
+                supabase
+                  .from("tracks")
+                  .select("*")
+                  .in("id", cascadeTrackIds)
+                  .then(function (res) { return { tracks: (res.data || []) as any[], wsName: "" }; })
+              );
+            }
+            for (const cfw of cascadeFullWsIds) {
+              cascadeFetches.push(
+                supabase
+                  .from("tracks")
+                  .select("*")
+                  .eq("workspace_id", cfw.wsId)
+                  .then(function (res) { return { tracks: (res.data || []) as any[], wsName: cfw.wsName }; })
+              );
+            }
+
+            if (cascadeFetches.length > 0) {
+              const cascadeResults = await Promise.all(cascadeFetches);
+              for (const cr of cascadeResults) {
+                for (const row of cr.tracks) {
+                  allTrackRows.push(row as any);
+                }
+              }
+            }
+
+            return { tracks: allTrackRows, accessLevel: accessLevel, shareId: shareId, cascadeOriginalWs: cascadeOriginalWs, cascadeFullWsNames: cascadeFullWsIds };
           });
           const fullCatalogResults = await Promise.all(fullCatalogFetches);
+          const seenTrackIds = new Set<string>();
           for (const result of fullCatalogResults) {
             for (const row of result.tracks) {
               const trackId = (row as any).id as string;
+              const trackWsId = (row as any).workspace_id as string;
+              if (seenTrackIds.has(trackId)) continue;
+              seenTrackIds.add(trackId);
+
+              // Determine the original workspace name for the badge
+              var originalWsName = "";
+              // Check if this track came via individual cascade share
+              if (result.cascadeOriginalWs[trackId]) {
+                originalWsName = result.cascadeOriginalWs[trackId];
+              } else {
+                // Check if it came from a full catalog cascade
+                var cascadeMatch = result.cascadeFullWsNames.find(function (c) { return c.wsId === trackWsId; });
+                if (cascadeMatch) {
+                  originalWsName = cascadeMatch.wsName;
+                } else {
+                  // It's an own track of the source workspace — find source ws name
+                  var sourceShare = fullCatalogRes.data!.find(function (fcs: any) { return fcs.source_workspace_id === trackWsId; }) as any;
+                  originalWsName = sourceShare?.workspaces?.name || "";
+                }
+              }
+
               // Don't override individual share info if already present
               if (!shareInfoMap[trackId]) {
                 shareInfoMap[trackId] = {
-                  sharedFrom: result.wsName,
+                  sharedFrom: originalWsName,
                   accessLevel: result.accessLevel,
                   shareId: result.shareId,
                 };
