@@ -71,31 +71,106 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
         }
       }
 
-      // For full catalog shares, resolve source tracks
-      // Some sources may be external (not in user's workspaces) — fetch those
-      var externalSourceIds: string[] = [];
+      // For full catalog shares, resolve source tracks with cascade
+      // Step 1: collect all unique source workspace IDs
+      var allSourceIds: string[] = [];
       for (var f = 0; f < fullCatalogShares.length; f++) {
         var srcId = fullCatalogShares[f].source_workspace_id;
-        if (!trackIdsBySourceWs[srcId] && externalSourceIds.indexOf(srcId) === -1) {
-          externalSourceIds.push(srcId);
+        if (allSourceIds.indexOf(srcId) === -1) {
+          allSourceIds.push(srcId);
         }
       }
 
-      if (externalSourceIds.length > 0) {
-        var extRes = await supabase
-          .from("tracks")
-          .select("id, workspace_id")
-          .in("workspace_id", externalSourceIds);
-        if (extRes.data) {
-          for (var e = 0; e < extRes.data.length; e++) {
-            var extRow = extRes.data[e] as any;
+      if (allSourceIds.length > 0) {
+        // Fetch in parallel: own tracks of sources + catalog_shares targeting sources (for cascade)
+        var fetchExternalSourceIds = allSourceIds.filter(function (id) { return !trackIdsBySourceWs[id]; });
+        var [extTracksRes, sourceSharesRes] = await Promise.all([
+          // Own tracks of source workspaces we don't already have
+          fetchExternalSourceIds.length > 0
+            ? supabase.from("tracks").select("id, workspace_id").in("workspace_id", fetchExternalSourceIds)
+            : Promise.resolve({ data: [] as any[] }),
+          // Catalog shares targeting source workspaces (for cascade)
+          supabase
+            .from("catalog_shares")
+            .select("target_workspace_id, track_id, source_workspace_id")
+            .in("target_workspace_id", allSourceIds)
+            .eq("status", "active"),
+        ]);
+
+        // Add external source own tracks
+        if (extTracksRes.data) {
+          for (var e = 0; e < extTracksRes.data.length; e++) {
+            var extRow = (extTracksRes.data as any[])[e];
             if (!trackIdsBySourceWs[extRow.workspace_id]) trackIdsBySourceWs[extRow.workspace_id] = [];
             trackIdsBySourceWs[extRow.workspace_id].push(extRow.id);
           }
         }
+
+        // Process cascade: shares targeting source workspaces
+        var cascadeIndividualTrackIds: string[] = [];
+        var cascadeFullSources: string[] = [];
+        if (sourceSharesRes.data) {
+          for (var cs = 0; cs < sourceSharesRes.data.length; cs++) {
+            var cShare = (sourceSharesRes.data as any[])[cs];
+            if (cShare.track_id) {
+              // Individual share to source — collect track ID
+              cascadeIndividualTrackIds.push(cShare.track_id);
+              // Map: which target workspace gets this track via cascade
+              // The target of the original full catalog share gets the cascaded track
+              for (var fci = 0; fci < fullCatalogShares.length; fci++) {
+                if (fullCatalogShares[fci].source_workspace_id === cShare.target_workspace_id) {
+                  var tgtSet = trackSets[fullCatalogShares[fci].target_workspace_id];
+                  if (tgtSet) tgtSet.add(cShare.track_id);
+                }
+              }
+            } else {
+              // Full catalog share to source (1 level cascade) — collect upstream source
+              if (cascadeFullSources.indexOf(cShare.source_workspace_id) === -1) {
+                cascadeFullSources.push(cShare.source_workspace_id);
+              }
+            }
+          }
+        }
+
+        // Fetch upstream full catalog source tracks (1 level cascade max)
+        var upstreamSourceIdsToFetch = cascadeFullSources.filter(function (id) { return !trackIdsBySourceWs[id]; });
+        if (upstreamSourceIdsToFetch.length > 0) {
+          var upstreamRes = await supabase
+            .from("tracks")
+            .select("id, workspace_id")
+            .in("workspace_id", upstreamSourceIdsToFetch);
+          if (upstreamRes.data) {
+            for (var u = 0; u < upstreamRes.data.length; u++) {
+              var uRow = (upstreamRes.data as any[])[u];
+              if (!trackIdsBySourceWs[uRow.workspace_id]) trackIdsBySourceWs[uRow.workspace_id] = [];
+              trackIdsBySourceWs[uRow.workspace_id].push(uRow.id);
+            }
+          }
+        }
+
+        // Add upstream full catalog tracks via cascade
+        if (sourceSharesRes.data) {
+          for (var cs2 = 0; cs2 < sourceSharesRes.data.length; cs2++) {
+            var cShare2 = (sourceSharesRes.data as any[])[cs2];
+            if (!cShare2.track_id) {
+              // Full catalog share to a source workspace — add upstream tracks
+              var upstreamTracks = trackIdsBySourceWs[cShare2.source_workspace_id] || [];
+              for (var fci2 = 0; fci2 < fullCatalogShares.length; fci2++) {
+                if (fullCatalogShares[fci2].source_workspace_id === cShare2.target_workspace_id) {
+                  var tgtSet2 = trackSets[fullCatalogShares[fci2].target_workspace_id];
+                  if (tgtSet2) {
+                    for (var ut = 0; ut < upstreamTracks.length; ut++) {
+                      tgtSet2.add(upstreamTracks[ut]);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
 
-      // Add full catalog source tracks to target sets
+      // Add direct full catalog source own tracks to target sets
       for (var fc = 0; fc < fullCatalogShares.length; fc++) {
         var fcs = fullCatalogShares[fc];
         var sourceTracks = trackIdsBySourceWs[fcs.source_workspace_id] || [];
