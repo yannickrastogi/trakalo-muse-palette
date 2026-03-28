@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, CheckCircle2, Plus, LayoutGrid } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
 import { useTranslation } from "react-i18next";
 
 export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean; onSwitch?: () => void }) {
   const { activeWorkspace, workspaces, switchWorkspace } = useWorkspace();
+  const { pause } = useAudioPlayer();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -64,10 +66,12 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
   }, [open]);
 
   const handleSwitch = useCallback(function (wsId: string) {
+    pause();
     switchWorkspace(wsId);
+    navigate("/dashboard");
     setOpen(false);
     if (onSwitch) onSwitch();
-  }, [switchWorkspace, onSwitch]);
+  }, [switchWorkspace, pause, navigate, onSwitch]);
 
   function getInitials(name: string) {
     return name.split(/\s+/).map(function (w) { return w[0]; }).join("").toUpperCase().slice(0, 2);
