@@ -28,6 +28,8 @@ interface WorkspaceStats {
   memberCount: number;
   pitchCount: number;
   members: { id: string; firstName: string; lastName: string }[];
+  sharedCatalogs: number;
+  sharedTracks: number;
 }
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
@@ -77,6 +79,13 @@ export default function Workspaces() {
       .select("workspace_id")
       .in("workspace_id", ids);
 
+    // Fetch catalog shares TO each workspace
+    var sharesRes = await supabase
+      .from("catalog_shares")
+      .select("target_workspace_id, track_id")
+      .in("target_workspace_id", ids)
+      .eq("status", "active");
+
     var newStats: Record<string, WorkspaceStats> = {};
 
     for (var i = 0; i < ids.length; i++) {
@@ -84,6 +93,8 @@ export default function Workspaces() {
       var trackCount = 0;
       var memberCount = 0;
       var pitchCount = 0;
+      var sharedCatalogs = 0;
+      var sharedTracks = 0;
       var members: { id: string; firstName: string; lastName: string }[] = [];
 
       if (trackRes.data) {
@@ -107,7 +118,18 @@ export default function Workspaces() {
         pitchCount = pitchRes.data.filter(function (r: any) { return r.workspace_id === wsId; }).length;
       }
 
-      newStats[wsId] = { trackCount: trackCount, memberCount: memberCount, pitchCount: pitchCount, members: members };
+      if (sharesRes.data) {
+        var wsShares = sharesRes.data.filter(function (r: any) { return r.target_workspace_id === wsId; });
+        for (var j = 0; j < wsShares.length; j++) {
+          if ((wsShares[j] as any).track_id === null) {
+            sharedCatalogs += 1;
+          } else {
+            sharedTracks += 1;
+          }
+        }
+      }
+
+      newStats[wsId] = { trackCount: trackCount, memberCount: memberCount, pitchCount: pitchCount, members: members, sharedCatalogs: sharedCatalogs, sharedTracks: sharedTracks };
     }
 
     setStats(newStats);
@@ -203,7 +225,7 @@ export default function Workspaces() {
         <motion.div variants={item} className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {workspaces.map(function (ws) {
             var isActive = ws.id === activeWorkspace.id;
-            var s = stats[ws.id] || { trackCount: 0, memberCount: 0, pitchCount: 0, members: [] };
+            var s = stats[ws.id] || { trackCount: 0, memberCount: 0, pitchCount: 0, members: [], sharedCatalogs: 0, sharedTracks: 0 };
 
             return (
               <div
@@ -280,6 +302,14 @@ export default function Workspaces() {
                 <p className="text-xs text-muted-foreground mt-1.5">
                   {s.trackCount + " tracks · " + s.memberCount + " members" + (s.pitchCount > 0 ? " · " + s.pitchCount + " pitches" : "")}
                 </p>
+                {(s.sharedCatalogs > 0 || s.sharedTracks > 0) && (
+                  <p className="text-[10px] text-brand-purple mt-0.5 flex items-center gap-1">
+                    <ArrowRightLeft className="w-3 h-3" />
+                    {s.sharedCatalogs > 0
+                      ? s.sharedCatalogs + " " + t("workspaces.sharedCatalogs")
+                      : s.sharedTracks + " " + t("workspaces.sharedTracks")}
+                  </p>
+                )}
 
                 {/* Member avatars */}
                 <div className="flex items-center gap-2 mt-3">

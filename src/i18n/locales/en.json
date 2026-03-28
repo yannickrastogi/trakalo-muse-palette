@@ -234,7 +234,9 @@
     "pitches": "{{count}} pitches",
     "newActivity": "{{count}} new",
     "singleWorkspace": "You have one workspace. Create additional workspaces to manage multiple projects, artists, or labels.",
-    "created": "Created {{date}}"
+    "created": "Created {{date}}",
+    "sharedCatalogs": "shared catalogs",
+    "sharedTracks": "shared tracks"
   },
   "catalogSharing": {
     "title": "Share to Workspace",
@@ -258,7 +260,17 @@
     "revokeFailed": "Failed to revoke share",
     "noOtherWorkspaces": "You need at least two workspaces to share tracks between them.",
     "sharedFromBanner": "This track is shared from {{workspace}}",
-    "sharedWith": "Shared with"
+    "sharedWith": "Shared with",
+    "fullCatalog": "Full Catalog",
+    "fullCatalogShared": "Full catalog shared",
+    "fullCatalogShareSuccess": "Full catalog shared with {{name}}. All current and future tracks will be available.",
+    "fullCatalogRevoked": "Catalog access revoked from {{name}}",
+    "thisTrackOnly": "This track only",
+    "notShared": "Not shared",
+    "tracksSharedCount": "{{count}} tracks shared",
+    "noShares": "Your catalog is not shared with any workspace",
+    "incomingTitle": "Incoming Shared Catalogs",
+    "incomingSubtitle": "Catalogs shared with your workspace by others"
   },
   "trackDetail": {
     "editTrack": "Edit Track",
@@ -551,6 +563,8 @@
     "workspaceDesc": "Team settings & defaults",
     "branding": "Branding",
     "brandingDesc": "Hero image, logo & brand color",
+    "catalogSharing": "Catalog Sharing",
+    "catalogSharingDesc": "Manage which workspaces have access to your catalog",
     "security": "Security",
     "securityDesc": "Password & authentication",
     "restartOnboarding": "Restart Onboarding",

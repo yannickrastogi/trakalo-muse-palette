@@ -267,8 +267,8 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     try {
-      // Fetch own tracks, stems, and shared tracks in parallel
-      const [tracksRes, stemsRes, sharedRes] = await Promise.all([
+      // Fetch own tracks, stems, individual shares, and full catalog shares in parallel
+      const [tracksRes, stemsRes, sharedRes, fullCatalogRes] = await Promise.all([
         supabase
           .from("tracks")
           .select("*")
@@ -279,12 +279,20 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           .select("*")
           .eq("workspace_id", activeWorkspace.id)
           .order("created_at", { ascending: true }),
-        // Fetch tracks shared TO this workspace
+        // Fetch individual track shares TO this workspace
         supabase
           .from("catalog_shares")
           .select("id, track_id, source_workspace_id, access_level, workspaces!catalog_shares_source_workspace_id_fkey(name)")
           .eq("target_workspace_id", activeWorkspace.id)
-          .eq("status", "active"),
+          .eq("status", "active")
+          .not("track_id", "is", null),
+        // Fetch full catalog shares TO this workspace
+        supabase
+          .from("catalog_shares")
+          .select("id, source_workspace_id, access_level, workspaces!catalog_shares_source_workspace_id_fkey(name)")
+          .eq("target_workspace_id", activeWorkspace.id)
+          .eq("status", "active")
+          .is("track_id", null),
       ]);
 
       if (tracksRes.error) {
@@ -304,9 +312,9 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           return mapRowToTrack(r, i, trackStems);
         });
 
-        // Fetch shared tracks if any
-        const sharedTrackIds: string[] = [];
+        // Fetch shared tracks if any (individual shares)
         const shareInfoMap: Record<string, { sharedFrom: string; accessLevel: string; shareId: string }> = {};
+        const sharedTrackIds: string[] = [];
         if (!sharedRes.error && sharedRes.data && sharedRes.data.length > 0) {
           for (const share of sharedRes.data) {
             const s = share as any;
@@ -317,8 +325,42 @@ export function TrackProvider({ children }: { children: ReactNode }) {
               shareId: s.id,
             };
           }
+        }
 
-          // Fetch the actual track rows for shared tracks (excluding ones we already own)
+        // Fetch full catalog shares — all tracks from source workspaces
+        if (!fullCatalogRes.error && fullCatalogRes.data && fullCatalogRes.data.length > 0) {
+          const fullCatalogFetches = fullCatalogRes.data.map(async function (share) {
+            const s = share as any;
+            const wsName = s.workspaces?.name || "";
+            const accessLevel = s.access_level || "viewer";
+            const shareId = s.id;
+            const { data: sourceTracks } = await supabase
+              .from("tracks")
+              .select("*")
+              .eq("workspace_id", s.source_workspace_id);
+            return { tracks: sourceTracks || [], wsName: wsName, accessLevel: accessLevel, shareId: shareId };
+          });
+          const fullCatalogResults = await Promise.all(fullCatalogFetches);
+          for (const result of fullCatalogResults) {
+            for (const row of result.tracks) {
+              const trackId = (row as any).id as string;
+              // Don't override individual share info if already present
+              if (!shareInfoMap[trackId]) {
+                shareInfoMap[trackId] = {
+                  sharedFrom: result.wsName,
+                  accessLevel: result.accessLevel,
+                  shareId: result.shareId,
+                };
+              }
+              if (!sharedTrackIds.includes(trackId)) {
+                sharedTrackIds.push(trackId);
+              }
+            }
+          }
+        }
+
+        // Fetch the actual track rows for shared tracks (excluding ones we already own)
+        if (sharedTrackIds.length > 0) {
           const ownTrackIds = new Set(mapped.map(function (t) { return t.uuid; }));
           const idsToFetch = sharedTrackIds.filter(function (id) { return !ownTrackIds.has(id); });
 

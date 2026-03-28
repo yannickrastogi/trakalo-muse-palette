@@ -234,7 +234,9 @@
     "pitches": "{{count}} pitches",
     "newActivity": "{{count}} nouveau(x)",
     "singleWorkspace": "Vous avez un seul espace de travail. Créez-en d'autres pour gérer plusieurs projets, artistes ou labels.",
-    "created": "Créé le {{date}}"
+    "created": "Créé le {{date}}",
+    "sharedCatalogs": "catalogues partagés",
+    "sharedTracks": "morceaux partagés"
   },
   "catalogSharing": {
     "title": "Partager vers un espace",
@@ -258,7 +260,17 @@
     "revokeFailed": "Échec de la révocation",
     "noOtherWorkspaces": "Vous avez besoin d'au moins deux espaces de travail pour partager des morceaux.",
     "sharedFromBanner": "Ce morceau est partagé depuis {{workspace}}",
-    "sharedWith": "Partagé avec"
+    "sharedWith": "Partagé avec",
+    "fullCatalog": "Catalogue complet",
+    "fullCatalogShared": "Catalogue complet partagé",
+    "fullCatalogShareSuccess": "Catalogue complet partagé avec {{name}}. Tous les morceaux actuels et futurs seront accessibles.",
+    "fullCatalogRevoked": "Accès au catalogue révoqué pour {{name}}",
+    "thisTrackOnly": "Ce morceau uniquement",
+    "notShared": "Non partagé",
+    "tracksSharedCount": "{{count}} morceaux partagés",
+    "noShares": "Votre catalogue n'est partagé avec aucun espace de travail",
+    "incomingTitle": "Catalogues partagés entrants",
+    "incomingSubtitle": "Catalogues partagés avec votre espace par d'autres"
   },
   "trackDetail": {
     "editTrack": "Modifier le morceau",
@@ -551,6 +563,8 @@
     "workspaceDesc": "Paramètres d'équipe et valeurs par défaut",
     "branding": "Branding",
     "brandingDesc": "Image hero, logo et couleur de marque",
+    "catalogSharing": "Partage de catalogue",
+    "catalogSharingDesc": "Gérer quels espaces ont accès à votre catalogue",
     "security": "Sécurité",
     "securityDesc": "Mot de passe et authentification",
     "restartOnboarding": "Relancer l'intégration",

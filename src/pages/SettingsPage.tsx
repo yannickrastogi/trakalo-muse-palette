@@ -52,12 +52,13 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
 };
 
-type SettingsSection = "profile" | "workspace" | "branding" | "notifications" | "appearance" | "security";
+type SettingsSection = "profile" | "workspace" | "branding" | "catalogSharing" | "notifications" | "appearance" | "security";
 
 const sections: { id: SettingsSection; labelKey: string; icon: React.ElementType; descKey: string }[] = [
   { id: "profile", labelKey: "settings.profile", icon: User, descKey: "settings.profileDesc" },
   { id: "workspace", labelKey: "settings.workspace", icon: Building2, descKey: "settings.workspaceDesc" },
   { id: "branding", labelKey: "settings.branding", icon: Palette, descKey: "settings.brandingDesc" },
+  { id: "catalogSharing", labelKey: "settings.catalogSharing", icon: Move, descKey: "settings.catalogSharingDesc" },
   { id: "notifications", labelKey: "settings.notifications", icon: Bell, descKey: "settings.notificationsDesc" },
   { id: "appearance", labelKey: "settings.appearance", icon: Palette, descKey: "settings.appearanceDesc" },
   { id: "security", labelKey: "settings.security", icon: Shield, descKey: "settings.securityDesc" },
@@ -864,6 +865,213 @@ function BrandingSection() {
 }
 
 /* ═══════════════════════════════════════════════════════
+   SECTION: CATALOG SHARING
+   ═══════════════════════════════════════════════════════ */
+
+function CatalogSharingSection() {
+  const { t } = useTranslation();
+  const { activeWorkspace, workspaces } = useWorkspace();
+  const [shares, setShares] = useState<{ id: string; target_workspace_id: string | null; source_workspace_id: string | null; track_id: string | null; status: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  var fetchCatalogShares = useCallback(async function () {
+    if (!activeWorkspace) return;
+    setLoading(true);
+
+    // Fetch all active shares FROM this workspace
+    var { data, error } = await supabase
+      .from("catalog_shares")
+      .select("id, target_workspace_id, source_workspace_id, track_id, status")
+      .eq("source_workspace_id", activeWorkspace.id)
+      .eq("status", "active");
+
+    if (!error && data) {
+      setShares(data as any[]);
+    }
+    setLoading(false);
+  }, [activeWorkspace]);
+
+  useEffect(function () {
+    fetchCatalogShares();
+  }, [fetchCatalogShares]);
+
+  var handleRevoke = async function (shareId: string, isFullCatalog: boolean, wsName: string) {
+    var { error } = await supabase
+      .from("catalog_shares")
+      .update({ status: "revoked", revoked_at: new Date().toISOString() })
+      .eq("id", shareId);
+
+    if (error) {
+      toast.error(t("catalogSharing.revokeFailed"));
+    } else {
+      if (isFullCatalog) {
+        toast.success(t("catalogSharing.fullCatalogRevoked", { name: wsName }));
+      } else {
+        toast.success(t("catalogSharing.revoked"));
+      }
+      fetchCatalogShares();
+    }
+  };
+
+  // Group shares by target workspace
+  var sharesByWs: Record<string, { fullCatalog: boolean; trackCount: number; shares: typeof shares }> = {};
+  for (var i = 0; i < shares.length; i++) {
+    var s = shares[i];
+    var wsId = s.target_workspace_id || "";
+    if (!sharesByWs[wsId]) {
+      sharesByWs[wsId] = { fullCatalog: false, trackCount: 0, shares: [] };
+    }
+    if (s.track_id === null) {
+      sharesByWs[wsId].fullCatalog = true;
+    } else {
+      sharesByWs[wsId].trackCount += 1;
+    }
+    sharesByWs[wsId].shares.push(s);
+  }
+
+  var wsEntries = Object.entries(sharesByWs);
+
+  return (
+    <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+      <SectionBlock title={t("settings.catalogSharing")} subtitle={t("settings.catalogSharingDesc")} icon={Move}>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-5 h-5 border-2 border-brand-orange/30 border-t-brand-orange rounded-full animate-spin" />
+          </div>
+        ) : wsEntries.length === 0 ? (
+          <div className="py-8 text-center">
+            <Move className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">{t("catalogSharing.noShares")}</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {wsEntries.map(function ([targetWsId, info]) {
+              var ws = workspaces.find(function (w) { return w.id === targetWsId; });
+              var wsName = ws?.name || targetWsId;
+              var fullCatalogShare = info.shares.find(function (sh) { return sh.track_id === null; });
+
+              return (
+                <div key={targetWsId} className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-secondary/20">
+                  {ws?.logo_url ? (
+                    <img src={ws.logo_url} alt="" className="w-8 h-8 rounded-lg object-contain shrink-0" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                      <span className="text-[10px] font-bold text-white">
+                        {wsName.split(/\s+/).map(function (w) { return w[0] || ""; }).join("").toUpperCase().slice(0, 2)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{wsName}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {info.fullCatalog
+                        ? t("catalogSharing.fullCatalogShared")
+                        : t("catalogSharing.tracksSharedCount", { count: info.trackCount })}
+                    </p>
+                  </div>
+                  {info.fullCatalog ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/12 text-emerald-400 shrink-0">
+                      {t("catalogSharing.fullCatalog")}
+                    </span>
+                  ) : (
+                    <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/10 text-brand-purple shrink-0">
+                      {info.trackCount + " tracks"}
+                    </span>
+                  )}
+                  {fullCatalogShare ? (
+                    <button
+                      onClick={function () { handleRevoke(fullCatalogShare.id, true, wsName); }}
+                      className="text-[11px] text-destructive hover:text-destructive/80 font-semibold transition-colors min-h-[44px] px-2 shrink-0"
+                    >
+                      {t("catalogSharing.revoke")}
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </SectionBlock>
+
+      {/* Full catalog shared TO this workspace */}
+      <CatalogSharingIncomingBlock />
+    </motion.div>
+  );
+}
+
+function CatalogSharingIncomingBlock() {
+  const { t } = useTranslation();
+  const { activeWorkspace, workspaces } = useWorkspace();
+  const [incomingShares, setIncomingShares] = useState<{ id: string; source_workspace_id: string; track_id: string | null }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(function () {
+    if (!activeWorkspace) return;
+    supabase
+      .from("catalog_shares")
+      .select("id, source_workspace_id, track_id")
+      .eq("target_workspace_id", activeWorkspace.id)
+      .eq("status", "active")
+      .then(function (res) {
+        if (res.data) setIncomingShares(res.data as any[]);
+        setLoading(false);
+      });
+  }, [activeWorkspace]);
+
+  // Group by source workspace
+  var bySource: Record<string, { fullCatalog: boolean; trackCount: number }> = {};
+  for (var i = 0; i < incomingShares.length; i++) {
+    var s = incomingShares[i];
+    var wsId = s.source_workspace_id;
+    if (!bySource[wsId]) bySource[wsId] = { fullCatalog: false, trackCount: 0 };
+    if (s.track_id === null) {
+      bySource[wsId].fullCatalog = true;
+    } else {
+      bySource[wsId].trackCount += 1;
+    }
+  }
+
+  var entries = Object.entries(bySource);
+  if (loading || entries.length === 0) return null;
+
+  return (
+    <SectionBlock title={t("catalogSharing.incomingTitle")} subtitle={t("catalogSharing.incomingSubtitle")} icon={Move}>
+      <div className="space-y-2">
+        {entries.map(function ([sourceWsId, info]) {
+          var ws = workspaces.find(function (w) { return w.id === sourceWsId; });
+          var wsName = ws?.name || sourceWsId;
+          return (
+            <div key={sourceWsId} className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-secondary/20">
+              {ws?.logo_url ? (
+                <img src={ws.logo_url} alt="" className="w-8 h-8 rounded-lg object-contain shrink-0" />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                  <span className="text-[10px] font-bold text-white">
+                    {wsName.split(/\s+/).map(function (w) { return w[0] || ""; }).join("").toUpperCase().slice(0, 2)}
+                  </span>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{wsName}</p>
+              </div>
+              {info.fullCatalog ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/12 text-emerald-400 shrink-0">
+                  {t("catalogSharing.fullCatalog")}
+                </span>
+              ) : (
+                <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/10 text-brand-purple shrink-0">
+                  {info.trackCount + " tracks"}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </SectionBlock>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
    SECTION: NOTIFICATIONS
    ═══════════════════════════════════════════════════════ */
 
@@ -1277,6 +1485,7 @@ const sectionComponents: Record<SettingsSection, React.FC> = {
   profile: ProfileSection,
   workspace: WorkspaceSection,
   branding: BrandingSection,
+  catalogSharing: CatalogSharingSection,
   notifications: NotificationsSection,
   appearance: AppearanceSection,
   security: SecuritySection,
