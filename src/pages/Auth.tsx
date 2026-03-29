@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,20 +17,55 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [checkingSetup, setCheckingSetup] = useState(false);
+  const setupDoneRef = useRef(false);
 
   const redirectParam = searchParams.get("redirect");
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!session || setupDoneRef.current) return;
+    setupDoneRef.current = true;
+    setCheckingSetup(true);
 
-  if (session) {
-    const target = redirectParam || "/dashboard";
-    window.location.href = target;
+    (async () => {
+      try {
+        // Check if user has workspaces
+        const { data: memberships } = await supabase
+          .from("workspace_members")
+          .select("workspace_id")
+          .eq("user_id", session.user.id)
+          .limit(1);
+
+        if (!memberships || memberships.length === 0) {
+          // Create workspace before redirecting
+          const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split("@")[0] || "My";
+          await supabase.rpc("create_workspace_with_member", {
+            _name: userName + "'s Workspace",
+            _description: null,
+          });
+          console.log("Auto-created workspace in Auth page");
+        }
+      } catch (err) {
+        console.error("Setup error:", err);
+      }
+
+      // Redirect
+      const storedRedirect = localStorage.getItem("trakalog_auth_redirect");
+      if (storedRedirect) {
+        localStorage.removeItem("trakalog_auth_redirect");
+        window.location.href = storedRedirect;
+      } else {
+        const pendingSave = localStorage.getItem("trakalog_auto_save");
+        if (pendingSave) {
+          window.location.href = "/share/" + pendingSave;
+        } else {
+          window.location.href = redirectParam || "/dashboard";
+        }
+      }
+    })();
+  }, [session]);
+
+  if (loading || session || checkingSetup) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
