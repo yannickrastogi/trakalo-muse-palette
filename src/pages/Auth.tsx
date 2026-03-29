@@ -26,32 +26,8 @@ export default function Auth() {
     if (!session || setupDoneRef.current) return;
     setupDoneRef.current = true;
     setCheckingSetup(true);
-
-    (async () => {
-      try {
-        const { data: memberships } = await supabase
-          .from("workspace_members")
-          .select("workspace_id")
-          .eq("user_id", session.user.id)
-          .limit(1);
-
-        if (!memberships || memberships.length === 0) {
-          const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split("@")[0] || "My";
-          await supabase.rpc("create_workspace_with_member", {
-            _name: userName + "'s Workspace",
-            _description: null,
-            _user_id: session.user.id,
-          });
-          console.log("Auto-created workspace in Auth page");
-        }
-      } catch (err) {
-        console.error("Setup error:", err);
-      }
-
-      // Simple redirect — session is already in React state so Supabase has persisted it
-      localStorage.setItem("trakalog_was_auth", "1");
-      window.location.href = "/dashboard";
-    })();
+    localStorage.setItem("trakalog_was_auth", "1");
+    window.location.href = "/dashboard";
   }, [session]);
 
   if (loading || session || checkingSetup) {
