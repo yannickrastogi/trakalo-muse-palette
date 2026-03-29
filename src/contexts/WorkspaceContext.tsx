@@ -56,6 +56,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             const { data, error } = await supabase.rpc("create_workspace_with_member", {
               _name: wsName,
               _description: null,
+              _user_id: user.id,
             });
             if (error) {
               console.error("[WS] Auto-create RPC failed:", error);
