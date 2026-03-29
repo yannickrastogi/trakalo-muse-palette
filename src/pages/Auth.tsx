@@ -42,6 +42,7 @@ export default function Auth() {
           await supabase.rpc("create_workspace_with_member", {
             _name: userName + "'s Workspace",
             _description: null,
+            _user_id: session.user.id,
           });
           console.log("Auto-created workspace in Auth page");
         }
