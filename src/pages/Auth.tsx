@@ -27,15 +27,10 @@ export default function Auth() {
     setupDoneRef.current = true;
     setCheckingSetup(true);
     localStorage.setItem("trakalog_was_auth", "1");
-
-    // Force Supabase to persist the session properly
-    supabase.auth.setSession({
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-    }).then(() => {
-      // Now the session is guaranteed to be in localStorage
+    // Wait 1 second for Supabase to naturally persist session to localStorage
+    setTimeout(() => {
       window.location.href = "/dashboard";
-    });
+    }, 1000);
   }, [session]);
 
   if (loading || session || checkingSetup) {
