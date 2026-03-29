@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { createContext, useContext, useState, useCallback, useEffect, lazy, Suspense, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+const Onboarding = lazy(() => import("@/pages/Onboarding"));
 import { useAuth } from "@/contexts/AuthContext";
 import type { Workspace, WorkspaceSettings } from "@/types/workspace";
 
@@ -188,9 +188,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // c) Fetch completed with 0 workspaces → redirect to onboarding
+  // c) Fetch completed with 0 workspaces → render onboarding inline
   if (hasFetched && workspaces.length === 0) {
-    return <Navigate to="/onboarding" replace />;
+    return (
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}>
+        <Onboarding />
+      </Suspense>
+    );
   }
 
   // d) No session and no workspace ready → ProtectedRoute handles real redirect
