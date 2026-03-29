@@ -46,6 +46,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
 
       if (!memberships || memberships.length === 0) {
+        console.log("[WS] fetchWorkspaces: memberships empty, setting hasFetched=true");
         setWorkspaces([]);
         setActiveId(null);
         return;
@@ -104,6 +105,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
       setHasFetched(true);
+      console.log("[WS] fetchWorkspaces done, hasFetched=true, workspaces count:", mapped?.length ?? 0);
     }
   }, [user]);
 
@@ -116,8 +118,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // Auto-create a workspace for new users who have none
   useEffect(() => {
+    console.log("[WS] Auto-create check:", { hasFetched, wsCount: workspaces.length, hasUser: !!user, attempted: autoCreateAttemptedRef.current });
     if (!hasFetched || workspaces.length > 0 || !user || autoCreateAttemptedRef.current) return;
     autoCreateAttemptedRef.current = true;
+    console.log("[WS] Attempting auto-create workspace for:", user.email);
 
     const wsName = (user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "My") + "'s Workspace";
 
