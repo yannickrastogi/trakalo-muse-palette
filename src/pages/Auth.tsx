@@ -28,16 +28,14 @@ export default function Auth() {
     setCheckingSetup(true);
     localStorage.setItem("trakalog_was_auth", "1");
 
-    // Wait for Supabase to persist the session token in localStorage
-    const waitForToken = () => {
-      const key = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
-      if (key && localStorage.getItem(key)) {
-        window.location.href = "/dashboard";
-      } else {
-        setTimeout(waitForToken, 100);
-      }
-    };
-    waitForToken();
+    // Manually persist the session to localStorage in case Supabase doesn't
+    const storageKey = "sb-" + "xhmeitivkclbeziqavxw" + "-auth-token";
+    localStorage.setItem(storageKey, JSON.stringify(session));
+
+    // Small delay to ensure localStorage is written
+    setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 200);
   }, [session]);
 
   if (loading || session || checkingSetup) {
