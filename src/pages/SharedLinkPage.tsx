@@ -219,7 +219,7 @@ function KaraokeLyrics({ segments, currentTime, isPlaying, onSeek, className, da
 
 // Anon-only client: never picks up a stored user session, so RLS anon policies always apply
 var anonSupabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false }
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
 });
 
 function setVisitorCookie(data: { name: string; email: string; role: string; company: string }) {
@@ -414,7 +414,7 @@ export default function SharedLinkPage() {
   // Detect if visitor is a logged-in Trakalog user
   useEffect(function() {
     if (!linkData?.allow_save) return;
-    var anonClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    var anonClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
     var pendingAutoSave = localStorage.getItem("trakalog_auto_save");
     var autoSave = pendingAutoSave === slug;
     anonClient.auth.getSession().then(function(res) {
@@ -730,7 +730,7 @@ export default function SharedLinkPage() {
   var handleSaveToTrakalog = async function() {
     if (!currentUserSession || !currentUserWorkspace || !linkData?.track_id) return;
     setSavingToTrakalog(true);
-    var anonClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    var anonClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
     var { error } = await anonClient.from("catalog_shares").insert({
       track_id: linkData.track_id,
       source_workspace_id: linkData.workspace_id,

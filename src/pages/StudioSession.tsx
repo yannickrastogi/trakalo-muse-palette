@@ -8,7 +8,7 @@ import { DEFAULT_COVER } from "@/lib/constants";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import { Music, User, Mail, Briefcase, DollarSign, CheckCircle, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
 
-var anonClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+var anonClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
 
 var PRO_SUGGESTIONS = ["ASCAP", "BMI", "SESAC", "SOCAN", "SACEM", "PRS", "GEMA", "JASRAC", "APRA"];
 

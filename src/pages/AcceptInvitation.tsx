@@ -7,7 +7,7 @@ import trakalogLogo from "@/assets/trakalog-logo.png";
 
 // Anon client to read invitations via RLS anon policy
 var anonSupabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false }
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
 });
 
 interface InvitationData {
