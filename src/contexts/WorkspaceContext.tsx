@@ -30,6 +30,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [hasFetched, setHasFetched] = useState(false);
   const autoCreateAttemptedRef = useRef(false);
   const autoCreatedWorkspaceRef = useRef<Workspace | null>(null);
+  const isFetchingRef = useRef(false);
 
   const fetchWorkspaces = useCallback(async (opts?: { switchTo?: string }) => {
     if (!user) return;
@@ -39,6 +40,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
+    if (isFetchingRef.current) {
+      console.log("[WS] Already fetching, skipping");
+      return;
+    }
+    isFetchingRef.current = true;
     setLoading(true);
     try {
       // Get workspace IDs the user is a member of
@@ -157,6 +163,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
       setHasFetched(true);
+      isFetchingRef.current = false;
       console.log("[WS] fetchWorkspaces done, hasFetched=true, workspaces count:", workspaces.length);
     }
   }, [user]);
