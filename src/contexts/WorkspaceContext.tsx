@@ -32,6 +32,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const fetchWorkspaces = useCallback(async (opts?: { switchTo?: string }) => {
     if (!user) return;
+    console.log("WS_DEBUG: fetching workspaces for user:", user?.email);
     // Don't show loading spinner if we already have data (re-fetch in background)
     if (workspaces.length === 0) setLoading(true);
     try {
@@ -48,6 +49,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
 
       if (!memberships || memberships.length === 0) {
+        console.log("WS_DEBUG: no memberships found, setting workspaces to []");
         setWorkspaces([]);
         setActiveId(null);
         setLoading(false);
@@ -88,6 +90,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         brand_color: (ws as any).brand_color || null,
       }));
 
+      console.log("WS_DEBUG: workspaces found:", mapped.length, "loading set to false");
       setWorkspaces(mapped);
 
       // If switchTo is specified (e.g. after creating a new workspace), use it
@@ -113,6 +116,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // Fetch workspaces the user belongs to
   useEffect(() => {
+    console.log("WS_DEBUG: useEffect triggered. user=", user?.email, "authLoading=", authLoading, "hasFetched=", hasFetchedRef.current);
     if (!user) {
       // Don't reset if we already have workspaces (tab switch revalidation)
       // Also stay in loading state if auth is still loading (initial page load)
@@ -181,6 +185,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // Don't render children until we have an active workspace
   if (loading) {
+    console.log("WS_DEBUG: showing spinner, loading=", loading, "user=", user?.email, "authLoading=", authLoading, "hasFetched=", hasFetchedRef.current);
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -190,11 +195,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // No workspaces at all → redirect to onboarding (declarative, not async useEffect)
   if (workspaces.length === 0 && user) {
+    console.log("WS_DEBUG: no workspaces, should redirect to onboarding. workspaces=", workspaces.length, "user=", user?.email);
     return <Navigate to="/onboarding" replace />;
   }
 
   // Workspaces exist but activeId not resolved yet → spinner
   if (!activeWorkspace) {
+    console.log("WS_DEBUG: workspaces exist but no activeWorkspace. workspaces=", workspaces.length, "activeId=", activeId);
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
