@@ -62,43 +62,30 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
               console.error("[WS] Auto-create RPC failed:", error);
             } else {
               console.log("[WS] Auto-created workspace:", data);
-              // Re-fetch to load the new workspace
-              const { data: newMemberships } = await supabase
-                .from("workspace_members")
-                .select("workspace_id")
-                .eq("user_id", user.id);
-              if (newMemberships && newMemberships.length > 0) {
-                const newIds = newMemberships.map((m) => m.workspace_id);
-                const { data: newWsData } = await supabase
-                  .from("workspaces")
-                  .select("*")
-                  .in("id", newIds);
-                if (newWsData && newWsData.length > 0) {
-                  const mapped: Workspace[] = newWsData.map((ws) => ({
-                    id: ws.id,
-                    name: ws.name,
-                    slug: ws.slug,
-                    owner_id: ws.owner_id,
-                    plan: (ws.plan as Workspace["plan"]) || "free",
-                    created_at: ws.created_at,
-                    settings: (ws.settings as WorkspaceSettings) || {
-                      defaultLanguage: "en",
-                      allowPublicLinks: true,
-                      requireApproval: false,
-                      maxMembers: 5,
-                      storageQuotaMB: 2048,
-                    },
-                    hero_image_url: (ws as any).hero_image_url || null,
-                    hero_position: (ws as any).hero_position ?? null,
-                    logo_url: (ws as any).logo_url || null,
-                    brand_color: (ws as any).brand_color || null,
-                  }));
-                  setWorkspaces(mapped);
-                  setActiveId(mapped[0].id);
-                  localStorage.setItem("trakalog_active_workspace", mapped[0].id);
-                  return; // skip the rest, workspace is ready
-                }
-              }
+              // Build workspace object directly — don't re-fetch (RLS/auth.uid() issue)
+              const newWorkspace: Workspace = {
+                id: data as string,
+                name: wsName,
+                slug: "",
+                owner_id: user.id,
+                plan: "free",
+                created_at: new Date().toISOString(),
+                settings: {
+                  defaultLanguage: "en",
+                  allowPublicLinks: true,
+                  requireApproval: false,
+                  maxMembers: 5,
+                  storageQuotaMB: 2048,
+                },
+                hero_image_url: null,
+                hero_position: null,
+                logo_url: null,
+                brand_color: null,
+              };
+              setWorkspaces([newWorkspace]);
+              setActiveId(newWorkspace.id);
+              localStorage.setItem("trakalog_active_workspace", newWorkspace.id);
+              return;
             }
           } catch (err) {
             console.error("[WS] Auto-create error:", err);
