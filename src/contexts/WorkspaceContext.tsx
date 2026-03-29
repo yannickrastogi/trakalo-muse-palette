@@ -32,6 +32,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const fetchWorkspaces = useCallback(async (opts?: { switchTo?: string }) => {
     if (!user) return;
+    // Skip re-fetch if workspace was just auto-created (RLS blocks reads)
+    if (autoCreateAttemptedRef.current && workspaces.length > 0) {
+      console.log("[WS] Skipping fetch — workspace was auto-created");
+      return;
+    }
     setLoading(true);
     try {
       // Get workspace IDs the user is a member of
