@@ -122,7 +122,7 @@ const App = () => (
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/" element={<HomeRoute />} />
-            <Route path="/onboarding" element={<ProtectedRoute><Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><Onboarding /></Suspense></ProtectedRoute>} />
+            <Route path="/onboarding" element={<Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><Onboarding /></Suspense>} />
             <Route path="/dashboard" element={<ProtectedApp><Index /></ProtectedApp>} />
             <Route path="/tracks" element={<ProtectedApp><Catalog /></ProtectedApp>} />
             <Route path="/track/:id" element={<ProtectedApp><TrackDetail /></ProtectedApp>} />
