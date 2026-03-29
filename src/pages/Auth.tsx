@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,28 +16,19 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [checkingSetup, setCheckingSetup] = useState(false);
-  const setupDoneRef = useRef(false);
 
   const redirectParam = searchParams.get("redirect");
 
-  useEffect(() => {
-    if (!session || setupDoneRef.current) return;
-    setupDoneRef.current = true;
-    setCheckingSetup(true);
-    localStorage.setItem("trakalog_was_auth", "1");
-    // Wait 1 second for Supabase to naturally persist session to localStorage
-    setTimeout(() => {
-      window.location.href = "/dashboard";
-    }, 1000);
-  }, [session]);
-
-  if (loading || session || checkingSetup) {
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
+  }
+
+  if (session) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   const handleLogin = async (e: React.FormEvent) => {
