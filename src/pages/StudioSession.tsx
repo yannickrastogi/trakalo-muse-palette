@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -7,8 +7,6 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/
 import { DEFAULT_COVER } from "@/lib/constants";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import { Music, User, Mail, Briefcase, DollarSign, CheckCircle, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
-
-var anonClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
 
 var PRO_SUGGESTIONS = ["ASCAP", "BMI", "SESAC", "SOCAN", "SACEM", "PRS", "GEMA", "JASRAC", "APRA"];
 
@@ -29,6 +27,7 @@ var ROLE_OPTIONS = [
 var inputClass = "h-11 w-full px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors";
 
 export default function StudioSession() {
+  var anonClient = useRef(createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } })).current;
   var { token } = useParams();
   var { t } = useTranslation();
 

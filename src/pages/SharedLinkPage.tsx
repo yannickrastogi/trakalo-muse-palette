@@ -217,11 +217,6 @@ function KaraokeLyrics({ segments, currentTime, isPlaying, onSeek, className, da
   );
 }
 
-// Anon-only client: never picks up a stored user session, so RLS anon policies always apply
-var anonSupabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-});
-
 function setVisitorCookie(data: { name: string; email: string; role: string; company: string }) {
   var value = JSON.stringify({ name: data.name, email: data.email, role: data.role, company: data.company, timestamp: Date.now() });
   document.cookie = "trakalog_visitor=" + encodeURIComponent(value) + "; max-age=172800; path=/; SameSite=Lax; Secure";
@@ -238,6 +233,7 @@ function getVisitorCookie(): { name: string; email: string; role: string; compan
 }
 
 export default function SharedLinkPage() {
+  var anonSupabase = useRef(createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } })).current;
   var { slug } = useParams<{ slug: string }>();
 
   var [loading, setLoading] = useState(true);

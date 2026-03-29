@@ -9,8 +9,6 @@ import trakalogLogo from "@/assets/trakalog-logo.png";
 import SignatureCanvas from "react-signature-canvas";
 import { CheckCircle, AlertCircle, Loader2, Eraser, FileSignature } from "lucide-react";
 
-var anonClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
-
 interface SignatureRequest {
   id: string;
   track_id: string;
@@ -44,6 +42,7 @@ interface TrackInfo {
 }
 
 export default function SignAgreement() {
+  var anonClient = useRef(createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } })).current;
   var { token } = useParams();
   var { t } = useTranslation();
 

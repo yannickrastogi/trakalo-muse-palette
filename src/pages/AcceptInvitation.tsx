@@ -1,14 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, supabase } from "@/integrations/supabase/client";
 import { AlertCircle, Mail, Users, Loader2, CheckCircle2 } from "lucide-react";
 import trakalogLogo from "@/assets/trakalog-logo.png";
-
-// Anon client to read invitations via RLS anon policy
-var anonSupabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-});
 
 interface InvitationData {
   id: string;
@@ -49,6 +44,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 export default function AcceptInvitation() {
+  var anonSupabase = useRef(createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } })).current;
   var { token } = useParams<{ token: string }>();
   var navigate = useNavigate();
 
