@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,12 @@ export default function Auth() {
 
   if (session) {
     const target = redirectParam || "/dashboard";
-    return <Navigate to={target} replace />;
+    window.location.href = target;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
   const handleLogin = async (e: React.FormEvent) => {
