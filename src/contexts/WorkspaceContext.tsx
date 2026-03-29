@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,16 +24,15 @@ interface WorkspaceContextValue {
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const hasFetchedRef = useRef(false);
+  const [loading, setLoading] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
 
   const fetchWorkspaces = useCallback(async (opts?: { switchTo?: string }) => {
     if (!user) return;
-    // Don't show loading spinner if we already have data (re-fetch in background)
-    if (workspaces.length === 0) setLoading(true);
+    setLoading(true);
     try {
       // Get workspace IDs the user is a member of
       const { data: memberships, error: memberError } = await supabase
@@ -43,14 +42,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
       if (memberError) {
         console.error("Error fetching memberships:", memberError);
-        setLoading(false);
         return;
       }
 
       if (!memberships || memberships.length === 0) {
         setWorkspaces([]);
         setActiveId(null);
-        setLoading(false);
         return;
       }
 
@@ -64,7 +61,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
       if (wsError) {
         console.error("Error fetching workspaces:", wsError);
-        setLoading(false);
         return;
       }
 
@@ -107,20 +103,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       console.error("Unexpected error fetching workspaces:", err);
     } finally {
       setLoading(false);
-      hasFetchedRef.current = true;
+      setHasFetched(true);
     }
   }, [user]);
 
-  // Fetch workspaces the user belongs to
+  // Fetch workspaces when user becomes available
   useEffect(() => {
-    if (!user) {
-      // Don't reset if we already have workspaces (tab switch revalidation)
-      // Also stay in loading state if auth is still loading (initial page load)
-      if (!authLoading && hasFetchedRef.current) setLoading(false);
-      return;
+    if (user) {
+      fetchWorkspaces();
     }
-
-    fetchWorkspaces();
   }, [user]);
 
   const activeWorkspace = workspaces.find((w) => w.id === activeId) || null;
@@ -179,8 +170,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [activeWorkspace]
   );
 
-  // a) Still loading auth or workspaces → spinner
-  if (loading || authLoading) {
+  console.log("WS_RENDER: authLoading=", authLoading, "session=", !!session, "wsLoading=", loading, "hasFetched=", hasFetched, "wsCount=", workspaces.length, "active=", !!activeWorkspace);
+
+  // a) Auth still loading → spinner
+  if (authLoading) {
+    console.log("WS_RENDER: → spinner (authLoading)");
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -188,9 +182,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // b) No user yet (transient null during auth revalidation) → spinner
-  //    ProtectedRoute already handles the real "not logged in" redirect
-  if (!user) {
+  // b) Not logged in → ProtectedRoute handles redirect, but show spinner as safety net
+  if (!session) {
+    console.log("WS_RENDER: → spinner (no session, ProtectedRoute handles redirect)");
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -198,19 +192,34 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // c) No workspaces → redirect to onboarding
+  // c) Workspace fetch not completed yet → spinner
+  if (!hasFetched) {
+    console.log("WS_RENDER: → spinner (workspace fetch in progress)");
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  // d) Authenticated but no workspaces → redirect to onboarding
   if (workspaces.length === 0) {
+    console.log("WS_RENDER: → Navigate to /onboarding");
     return <Navigate to="/onboarding" replace />;
   }
 
-  // d) Workspaces exist but activeId not resolved yet → spinner
+  // e) Workspaces exist but activeId not resolved yet → spinner
   if (!activeWorkspace) {
+    console.log("WS_RENDER: → spinner (no activeWorkspace, wsCount=", workspaces.length, "activeId=", activeId, ")");
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
+
+  // f) All good → render children
+  console.log("WS_RENDER: → rendering children");
 
   return (
     <WorkspaceContext.Provider
