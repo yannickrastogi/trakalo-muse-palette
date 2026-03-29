@@ -27,7 +27,17 @@ export default function Auth() {
     setupDoneRef.current = true;
     setCheckingSetup(true);
     localStorage.setItem("trakalog_was_auth", "1");
-    window.location.href = "/dashboard";
+
+    // Wait for Supabase to persist the session token in localStorage
+    const waitForToken = () => {
+      const key = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
+      if (key && localStorage.getItem(key)) {
+        window.location.href = "/dashboard";
+      } else {
+        setTimeout(waitForToken, 100);
+      }
+    };
+    waitForToken();
   }, [session]);
 
   if (loading || session || checkingSetup) {
