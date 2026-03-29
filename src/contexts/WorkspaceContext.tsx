@@ -188,9 +188,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // b) Not logged in → redirect to login
+  // b) No user yet (transient null during auth revalidation) → spinner
+  //    ProtectedRoute already handles the real "not logged in" redirect
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
   // c) No workspaces → redirect to onboarding
