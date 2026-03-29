@@ -271,8 +271,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // d) No session (and not already redirected by c) → ProtectedRoute handles real redirect
-  if (!session) {
+  // d) No session and no workspace ready → ProtectedRoute handles real redirect
+  if (!session && !activeWorkspace) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
