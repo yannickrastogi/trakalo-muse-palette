@@ -28,8 +28,21 @@ export default function Auth() {
     setCheckingSetup(true);
 
     (async () => {
+      // 1. Wait for session to be persisted in localStorage
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          const key = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
+          if (key && localStorage.getItem(key)) {
+            resolve();
+          } else {
+            setTimeout(check, 100);
+          }
+        };
+        check();
+      });
+
+      // 2. Check/create workspace
       try {
-        // Check if user has workspaces
         const { data: memberships } = await supabase
           .from("workspace_members")
           .select("workspace_id")
@@ -50,7 +63,7 @@ export default function Auth() {
         console.error("Setup error:", err);
       }
 
-      // Redirect
+      // 3. Redirect
       const storedRedirect = localStorage.getItem("trakalog_auth_redirect");
       if (storedRedirect) {
         localStorage.removeItem("trakalog_auth_redirect");
