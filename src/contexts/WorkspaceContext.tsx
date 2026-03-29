@@ -233,6 +233,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [activeWorkspace]
   );
 
+  console.log("[WS] RENDER CHECK:", {
+    authLoading,
+    hasFetched,
+    hasSession: !!session,
+    wsCount: workspaces.length,
+    effectiveWsCount: effectiveWorkspaces.length,
+    activeWs: !!activeWorkspace,
+    activeId: effectiveActiveId,
+    autoCreatedRef: !!autoCreatedWorkspaceRef.current
+  });
+
   // a) Auth still loading → spinner
   if (authLoading) {
     return (
