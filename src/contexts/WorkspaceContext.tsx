@@ -162,7 +162,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
       setHasFetched(true);
-      console.log("[WS] fetchWorkspaces done, hasFetched=true, workspaces count:", mapped?.length ?? 0);
+      console.log("[WS] fetchWorkspaces done, hasFetched=true, workspaces count:", workspaces.length);
     }
   }, [user]);
 
