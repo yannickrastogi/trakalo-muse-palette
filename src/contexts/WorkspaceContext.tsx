@@ -29,12 +29,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
   const autoCreateAttemptedRef = useRef(false);
+  const autoCreatedWorkspaceRef = useRef<Workspace | null>(null);
 
   const fetchWorkspaces = useCallback(async (opts?: { switchTo?: string }) => {
     if (!user) return;
     // Skip re-fetch if workspace was just auto-created (RLS blocks reads)
-    if (autoCreateAttemptedRef.current && workspaces.length > 0) {
+    if (autoCreatedWorkspaceRef.current) {
       console.log("[WS] Skipping fetch — workspace was auto-created");
+      setLoading(false);
       return;
     }
     setLoading(true);
@@ -87,6 +89,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                 logo_url: null,
                 brand_color: null,
               };
+              autoCreatedWorkspaceRef.current = newWorkspace;
               setWorkspaces([newWorkspace]);
               setActiveId(newWorkspace.id);
               localStorage.setItem("trakalog_active_workspace", newWorkspace.id);
