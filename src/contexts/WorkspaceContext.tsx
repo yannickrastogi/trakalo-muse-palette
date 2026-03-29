@@ -1,5 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Workspace, WorkspaceSettings } from "@/types/workspace";
@@ -29,6 +28,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
+  const autoCreateAttemptedRef = useRef(false);
 
   const fetchWorkspaces = useCallback(async (opts?: { switchTo?: string }) => {
     if (!user) return;
@@ -114,6 +114,31 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  // Auto-create a workspace for new users who have none
+  useEffect(() => {
+    if (!hasFetched || workspaces.length > 0 || !user || autoCreateAttemptedRef.current) return;
+    autoCreateAttemptedRef.current = true;
+
+    const wsName = (user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "My") + "'s Workspace";
+
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc("create_workspace_with_member", {
+          _name: wsName,
+          _description: null,
+        });
+        if (error) {
+          console.error("Auto-create workspace RPC failed:", error);
+          return;
+        }
+        console.log("Auto-created workspace for new user");
+        await fetchWorkspaces({ switchTo: data as string });
+      } catch (err) {
+        console.error("Auto-create workspace error:", err);
+      }
+    })();
+  }, [hasFetched, workspaces.length, user, fetchWorkspaces]);
+
   const activeWorkspace = workspaces.find((w) => w.id === activeId) || null;
 
   const switchWorkspace = useCallback((workspaceId: string) => {
@@ -188,9 +213,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // c) Fetch completed with 0 workspaces → onboarding (BEFORE session check to survive auth flicker)
+  // c) Fetch completed with 0 workspaces → auto-create in progress, show spinner
   if (hasFetched && workspaces.length === 0) {
-    return <Navigate to="/onboarding" replace />;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
   // d) No session (and not already redirected by c) → ProtectedRoute handles real redirect
