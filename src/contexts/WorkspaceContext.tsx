@@ -175,7 +175,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  const activeWorkspace = workspaces.find((w) => w.id === activeId) || null;
+  const effectiveWorkspaces = workspaces.length > 0 ? workspaces : (autoCreatedWorkspaceRef.current ? [autoCreatedWorkspaceRef.current] : []);
+  const effectiveActiveId = activeId || (autoCreatedWorkspaceRef.current?.id ?? null);
+  const activeWorkspace = effectiveWorkspaces.find((w) => w.id === effectiveActiveId) || effectiveWorkspaces[0] || null;
 
   const switchWorkspace = useCallback((workspaceId: string) => {
     setActiveId(workspaceId);
@@ -250,7 +252,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }
 
   // c) Fetch completed with 0 workspaces → auto-create in progress, show spinner
-  if (hasFetched && workspaces.length === 0) {
+  if (hasFetched && workspaces.length === 0 && !autoCreatedWorkspaceRef.current) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -280,7 +282,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   return (
     <WorkspaceContext.Provider
-      value={{ activeWorkspace, workspaces, loading, switchWorkspace, updateWorkspaceSettings, createWorkspace, refreshWorkspaces }}
+      value={{ activeWorkspace, workspaces: effectiveWorkspaces, loading, switchWorkspace, updateWorkspaceSettings, createWorkspace, refreshWorkspaces }}
     >
       {children}
     </WorkspaceContext.Provider>
