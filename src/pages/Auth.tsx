@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,12 @@ import { useTranslation } from "react-i18next";
 export default function Auth() {
   const { t } = useTranslation();
   const { session, loading, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const redirectParam = searchParams.get("redirect");
 
   if (loading) {
     return (
@@ -24,7 +27,10 @@ export default function Auth() {
     );
   }
 
-  if (session) return <Navigate to="/dashboard" replace />;
+  if (session) {
+    const target = redirectParam || "/dashboard";
+    return <Navigate to={target} replace />;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +54,10 @@ export default function Auth() {
 
   const handleGoogle = async () => {
     setSubmitting(true);
+    // Store redirect URL so we can use it after OAuth callback
+    if (redirectParam) {
+      localStorage.setItem("trakalog_auth_redirect", redirectParam);
+    }
     const { error } = await signInWithGoogle();
     if (error) toast.error(error.message);
     setSubmitting(false);

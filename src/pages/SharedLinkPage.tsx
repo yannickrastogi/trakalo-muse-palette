@@ -414,6 +414,8 @@ export default function SharedLinkPage() {
   useEffect(function() {
     if (!linkData?.allow_save) return;
     var anonClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    var urlParams = new URLSearchParams(window.location.search);
+    var autoSave = urlParams.get("auto_save") === "true";
     anonClient.auth.getSession().then(function(res) {
       if (res.data.session) {
         setCurrentUserSession(res.data.session);
@@ -426,17 +428,34 @@ export default function SharedLinkPage() {
           .limit(1)
           .then(function(wsRes) {
             if (wsRes.data && wsRes.data.length > 0) {
-              setCurrentUserWorkspace((wsRes.data[0] as any).id);
+              var wsId = (wsRes.data[0] as any).id;
+              setCurrentUserWorkspace(wsId);
               // Check if already saved
               anonClient
                 .from("catalog_shares")
                 .select("id")
                 .eq("track_id", linkData!.track_id!)
-                .eq("target_workspace_id", (wsRes.data[0] as any).id)
+                .eq("target_workspace_id", wsId)
                 .eq("status", "active")
                 .then(function(shareRes) {
                   if (shareRes.data && shareRes.data.length > 0) {
                     setSavedToTrakalog(true);
+                  } else if (autoSave && linkData!.track_id) {
+                    // Auto-save the track after signup/login flow
+                    setSavingToTrakalog(true);
+                    anonClient.from("catalog_shares").insert({
+                      track_id: linkData!.track_id,
+                      source_workspace_id: linkData!.workspace_id,
+                      target_workspace_id: wsId,
+                      shared_by: res.data.session!.user.id,
+                      access_level: "viewer",
+                      status: "active",
+                    }).then(function(insertRes) {
+                      if (!insertRes.error) {
+                        setSavedToTrakalog(true);
+                      }
+                      setSavingToTrakalog(false);
+                    });
                   }
                 });
             }
@@ -1672,7 +1691,7 @@ export default function SharedLinkPage() {
                   </button>
                 ) : (
                   <a
-                    href={"/auth?redirect=" + encodeURIComponent("/share/" + slug)}
+                    href={"/auth?redirect=" + encodeURIComponent("/share/" + slug + "?auto_save=true")}
                     className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] " + (immersive ? "bg-white/10 backdrop-blur-xl border border-white/15 text-white hover:bg-white/20" : "border border-border bg-card text-foreground hover:bg-secondary")}
                   >
                     <Bookmark className="w-4 h-4" />

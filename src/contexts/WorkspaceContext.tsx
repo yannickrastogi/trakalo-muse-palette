@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Workspace, WorkspaceSettings } from "@/types/workspace";
@@ -24,6 +25,7 @@ const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -187,10 +189,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  // No workspace → redirect to onboarding
+  useEffect(() => {
+    if (!loading && workspaces.length === 0 && user) {
+      navigate("/onboarding", { replace: true });
+    }
+  }, [loading, workspaces.length, user, navigate]);
+
   if (!activeWorkspace) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-muted-foreground">No workspace found.</p>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
