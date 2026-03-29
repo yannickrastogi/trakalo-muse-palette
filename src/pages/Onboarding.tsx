@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ const ROLES = [
 ];
 
 export default function Onboarding() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -39,7 +39,11 @@ export default function Onboarding() {
 
   // Check if user already has a workspace → redirect to dashboard
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
+    if (!user) {
+      setCheckingWorkspace(false);
+      return;
+    }
     supabase
       .from("workspace_members")
       .select("workspace_id")
@@ -52,7 +56,7 @@ export default function Onboarding() {
           setCheckingWorkspace(false);
         }
       });
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   // Auto-update workspace name when typing name (unless manually edited)
   const handleNameChange = (value: string) => {
@@ -120,6 +124,10 @@ export default function Onboarding() {
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
+  }
+
+  if (!authLoading && !user) {
+    return <Navigate to="/auth" replace />;
   }
 
   return (
