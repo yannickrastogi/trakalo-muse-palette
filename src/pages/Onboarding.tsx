@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
@@ -41,8 +41,12 @@ export default function Onboarding() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      setCheckingWorkspace(false);
-      return;
+      // Wait 3 seconds for session to stabilize before giving up
+      const timeout = setTimeout(() => {
+        setCheckingWorkspace(false);
+        window.location.href = "/auth";
+      }, 3000);
+      return () => clearTimeout(timeout);
     }
     supabase
       .from("workspace_members")
@@ -124,10 +128,6 @@ export default function Onboarding() {
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
-  }
-
-  if (!authLoading && !user) {
-    return <Navigate to="/auth" replace />;
   }
 
   return (
