@@ -28,20 +28,6 @@ export default function Auth() {
     setCheckingSetup(true);
 
     (async () => {
-      // 1. Wait for session to be persisted in localStorage
-      await new Promise<void>((resolve) => {
-        const check = () => {
-          const key = Object.keys(localStorage).find(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
-          if (key && localStorage.getItem(key)) {
-            resolve();
-          } else {
-            setTimeout(check, 100);
-          }
-        };
-        check();
-      });
-
-      // 2. Check/create workspace
       try {
         const { data: memberships } = await supabase
           .from("workspace_members")
@@ -50,7 +36,6 @@ export default function Auth() {
           .limit(1);
 
         if (!memberships || memberships.length === 0) {
-          // Create workspace before redirecting
           const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split("@")[0] || "My";
           await supabase.rpc("create_workspace_with_member", {
             _name: userName + "'s Workspace",
@@ -63,19 +48,8 @@ export default function Auth() {
         console.error("Setup error:", err);
       }
 
-      // 3. Redirect
-      const storedRedirect = localStorage.getItem("trakalog_auth_redirect");
-      if (storedRedirect) {
-        localStorage.removeItem("trakalog_auth_redirect");
-        window.location.href = storedRedirect;
-      } else {
-        const pendingSave = localStorage.getItem("trakalog_auto_save");
-        if (pendingSave) {
-          window.location.href = "/share/" + pendingSave;
-        } else {
-          window.location.href = redirectParam || "/dashboard";
-        }
-      }
+      // Simple redirect — session is already in React state so Supabase has persisted it
+      window.location.href = "/dashboard";
     })();
   }, [session]);
 

@@ -1,5 +1,4 @@
 import { useRef } from "react";
-import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -16,9 +15,13 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Don't redirect if we were previously authenticated (transient null during revalidation)
   if (!session && !wasAuthenticatedRef.current) {
-    return <Navigate to="/auth" replace />;
+    window.location.href = "/auth";
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
   return <>{children}</>;
