@@ -285,6 +285,7 @@ export default function SharedLinkPage() {
   var [savingToTrakalog, setSavingToTrakalog] = useState(false);
   var [currentUserSession, setCurrentUserSession] = useState<any>(null);
   var [currentUserWorkspace, setCurrentUserWorkspace] = useState<string | null>(null);
+  var [userHasNoWorkspace, setUserHasNoWorkspace] = useState(false);
 
   // Workspace branding
   var [branding, setBranding] = useState<WorkspaceBranding | null>(null);
@@ -459,6 +460,9 @@ export default function SharedLinkPage() {
                     });
                   }
                 });
+            } else {
+              // User is logged in but has no workspace yet
+              setUserHasNoWorkspace(true);
             }
           });
       }
@@ -1681,7 +1685,7 @@ export default function SharedLinkPage() {
                     <Bookmark className="w-4 h-4" />
                     Saved to your Trakalog
                   </div>
-                ) : currentUserSession ? (
+                ) : currentUserSession && !userHasNoWorkspace ? (
                   <button
                     onClick={handleSaveToTrakalog}
                     disabled={savingToTrakalog}
@@ -1690,6 +1694,15 @@ export default function SharedLinkPage() {
                     <Bookmark className="w-4 h-4" />
                     {savingToTrakalog ? "Saving..." : "Save to your Trakalog"}
                   </button>
+                ) : currentUserSession && userHasNoWorkspace ? (
+                  <a
+                    href={"/onboarding?return=" + encodeURIComponent("/share/" + slug)}
+                    onClick={function() { localStorage.setItem("trakalog_auto_save", slug!); }}
+                    className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] " + (immersive ? "bg-white/10 backdrop-blur-xl border border-white/15 text-white hover:bg-white/20" : "btn-brand")}
+                  >
+                    <Bookmark className="w-4 h-4" />
+                    Save to your Trakalog
+                  </a>
                 ) : (
                   <a
                     href={"/auth?redirect=" + encodeURIComponent("/share/" + slug)}
