@@ -126,6 +126,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const activeWorkspace = workspaces.find((w) => w.id === activeId) || null;
 
+  // No workspace → redirect to onboarding (must be before any early return to avoid React #310)
+  useEffect(() => {
+    if (!loading && workspaces.length === 0 && user) {
+      navigate("/onboarding", { replace: true });
+    }
+  }, [loading, workspaces.length, user, navigate]);
+
   const switchWorkspace = useCallback((workspaceId: string) => {
     setActiveId(workspaceId);
     localStorage.setItem("trakalog_active_workspace", workspaceId);
@@ -188,13 +195,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       </div>
     );
   }
-
-  // No workspace → redirect to onboarding
-  useEffect(() => {
-    if (!loading && workspaces.length === 0 && user) {
-      navigate("/onboarding", { replace: true });
-    }
-  }, [loading, workspaces.length, user, navigate]);
 
   if (!activeWorkspace) {
     return (
