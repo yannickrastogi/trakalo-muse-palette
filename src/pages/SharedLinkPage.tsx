@@ -417,21 +417,22 @@ export default function SharedLinkPage() {
     anonClient.auth.getSession().then(function(res) {
       if (res.data.session) {
         setCurrentUserSession(res.data.session);
-        // Fetch user's first workspace
+        // Fetch user's personal workspace (the first one created by handle_new_user trigger)
         anonClient
-          .from("workspace_members")
-          .select("workspace_id")
-          .eq("user_id", res.data.session.user.id)
+          .from("workspaces")
+          .select("id")
+          .eq("owner_id", res.data.session.user.id)
+          .order("created_at", { ascending: true })
           .limit(1)
           .then(function(wsRes) {
             if (wsRes.data && wsRes.data.length > 0) {
-              setCurrentUserWorkspace((wsRes.data[0] as any).workspace_id);
+              setCurrentUserWorkspace((wsRes.data[0] as any).id);
               // Check if already saved
               anonClient
                 .from("catalog_shares")
                 .select("id")
                 .eq("track_id", linkData!.track_id!)
-                .eq("target_workspace_id", (wsRes.data[0] as any).workspace_id)
+                .eq("target_workspace_id", (wsRes.data[0] as any).id)
                 .eq("status", "active")
                 .then(function(shareRes) {
                   if (shareRes.data && shareRes.data.length > 0) {
