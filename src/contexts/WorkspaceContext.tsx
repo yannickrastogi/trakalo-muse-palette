@@ -170,11 +170,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [activeWorkspace]
   );
 
-  console.log("WS_RENDER: authLoading=", authLoading, "session=", !!session, "wsLoading=", loading, "hasFetched=", hasFetched, "wsCount=", workspaces.length, "active=", !!activeWorkspace);
-
   // a) Auth still loading → spinner
   if (authLoading) {
-    console.log("WS_RENDER: → spinner (authLoading)");
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -182,9 +179,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // b) Not logged in → ProtectedRoute handles redirect, but show spinner as safety net
-  if (!session) {
-    console.log("WS_RENDER: → spinner (no session, ProtectedRoute handles redirect)");
+  // b) Fetch in progress (session exists, waiting for result) → spinner
+  if (!hasFetched && session) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -192,25 +188,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // c) Workspace fetch not completed yet → spinner
-  if (!hasFetched) {
-    console.log("WS_RENDER: → spinner (workspace fetch in progress)");
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
-  // d) Authenticated but no workspaces → redirect to onboarding
-  if (workspaces.length === 0) {
-    console.log("WS_RENDER: → Navigate to /onboarding");
+  // c) Fetch completed with 0 workspaces → onboarding (BEFORE session check to survive auth flicker)
+  if (hasFetched && workspaces.length === 0) {
     return <Navigate to="/onboarding" replace />;
+  }
+
+  // d) No session (and not already redirected by c) → ProtectedRoute handles real redirect
+  if (!session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
   // e) Workspaces exist but activeId not resolved yet → spinner
   if (!activeWorkspace) {
-    console.log("WS_RENDER: → spinner (no activeWorkspace, wsCount=", workspaces.length, "activeId=", activeId, ")");
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -219,7 +212,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }
 
   // f) All good → render children
-  console.log("WS_RENDER: → rendering children");
 
   return (
     <WorkspaceContext.Provider
