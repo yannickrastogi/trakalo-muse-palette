@@ -102,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    localStorage.removeItem("trakalog_was_auth");
     await supabase.auth.signOut();
   }, []);
 
