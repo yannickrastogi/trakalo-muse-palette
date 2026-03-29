@@ -18,7 +18,6 @@ import { CommentMarkerLayer } from "@/components/CommentMarkerLayer";
 import { TrackReviewPanel } from "@/components/TrackReviewPanel";
 import { TimecodedCommentComposer } from "@/components/TimecodedCommentComposer";
 import { ShareModal } from "@/components/ShareModal";
-import { ShareWithTeamModal } from "@/components/ShareWithTeamModal";
 import { ShareToWorkspaceModal } from "@/components/ShareToWorkspaceModal";
 import { StudioQRModal } from "@/components/StudioQRModal";
 import { usePitches } from "@/contexts/PitchContext";
@@ -221,7 +220,6 @@ export default function TrackDetail() {
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
   const [sharePackModalOpen, setSharePackModalOpen] = useState(false);
   const [editTrackModalOpen, setEditTrackModalOpen] = useState(shouldAutoEdit);
-  const [shareWithTeamOpen, setShareWithTeamOpen] = useState(false);
   const [studioQrOpen, setStudioQrOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -738,12 +736,6 @@ export default function TrackDetail() {
                         >
                           <Package className="w-4 h-4" /> Share Trakalog Pack
                         </button>
-                        <button
-                          onClick={() => { setShareWithTeamOpen(true); setShareExpanded(false); }}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px]"
-                        >
-                          <Users className="w-4 h-4" /> Share with Team
-                        </button>
                         {workspaces.length > 1 && !track.isShared && (
                           <button
                             onClick={() => { setShareToWorkspaceOpen(true); setShareExpanded(false); }}
@@ -978,13 +970,6 @@ export default function TrackDetail() {
         onClose={() => setEditTrackModalOpen(false)}
         trackId={track.id}
       />
-      {track && (
-        <ShareWithTeamModal
-          open={shareWithTeamOpen}
-          onClose={() => setShareWithTeamOpen(false)}
-          trackTitle={track.title}
-        />
-      )}
       {track && workspaces.length > 1 && (
         <ShareToWorkspaceModal
           open={shareToWorkspaceOpen}
