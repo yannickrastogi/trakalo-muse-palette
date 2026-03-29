@@ -47,6 +47,62 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
       if (!memberships || memberships.length === 0) {
         console.log("[WS] fetchWorkspaces: memberships empty, setting hasFetched=true");
+        // Auto-create workspace for new users
+        if (!autoCreateAttemptedRef.current) {
+          autoCreateAttemptedRef.current = true;
+          const wsName = (user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "My") + "'s Workspace";
+          console.log("[WS] Auto-creating workspace for:", user.email);
+          try {
+            const { data, error } = await supabase.rpc("create_workspace_with_member", {
+              _name: wsName,
+              _description: null,
+            });
+            if (error) {
+              console.error("[WS] Auto-create RPC failed:", error);
+            } else {
+              console.log("[WS] Auto-created workspace:", data);
+              // Re-fetch to load the new workspace
+              const { data: newMemberships } = await supabase
+                .from("workspace_members")
+                .select("workspace_id")
+                .eq("user_id", user.id);
+              if (newMemberships && newMemberships.length > 0) {
+                const newIds = newMemberships.map((m) => m.workspace_id);
+                const { data: newWsData } = await supabase
+                  .from("workspaces")
+                  .select("*")
+                  .in("id", newIds);
+                if (newWsData && newWsData.length > 0) {
+                  const mapped: Workspace[] = newWsData.map((ws) => ({
+                    id: ws.id,
+                    name: ws.name,
+                    slug: ws.slug,
+                    owner_id: ws.owner_id,
+                    plan: (ws.plan as Workspace["plan"]) || "free",
+                    created_at: ws.created_at,
+                    settings: (ws.settings as WorkspaceSettings) || {
+                      defaultLanguage: "en",
+                      allowPublicLinks: true,
+                      requireApproval: false,
+                      maxMembers: 5,
+                      storageQuotaMB: 2048,
+                    },
+                    hero_image_url: (ws as any).hero_image_url || null,
+                    hero_position: (ws as any).hero_position ?? null,
+                    logo_url: (ws as any).logo_url || null,
+                    brand_color: (ws as any).brand_color || null,
+                  }));
+                  setWorkspaces(mapped);
+                  setActiveId(mapped[0].id);
+                  localStorage.setItem("trakalog_active_workspace", mapped[0].id);
+                  return; // skip the rest, workspace is ready
+                }
+              }
+            }
+          } catch (err) {
+            console.error("[WS] Auto-create error:", err);
+          }
+        }
         setWorkspaces([]);
         setActiveId(null);
         return;
@@ -115,33 +171,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       fetchWorkspaces();
     }
   }, [user]);
-
-  // Auto-create a workspace for new users who have none
-  useEffect(() => {
-    console.log("[WS] Auto-create check:", { hasFetched, wsCount: workspaces.length, hasUser: !!user, attempted: autoCreateAttemptedRef.current });
-    if (!hasFetched || workspaces.length > 0 || !user || autoCreateAttemptedRef.current) return;
-    autoCreateAttemptedRef.current = true;
-    console.log("[WS] Attempting auto-create workspace for:", user.email);
-
-    const wsName = (user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "My") + "'s Workspace";
-
-    (async () => {
-      try {
-        const { data, error } = await supabase.rpc("create_workspace_with_member", {
-          _name: wsName,
-          _description: null,
-        });
-        if (error) {
-          console.error("Auto-create workspace RPC failed:", error);
-          return;
-        }
-        console.log("Auto-created workspace for new user");
-        await fetchWorkspaces({ switchTo: data as string });
-      } catch (err) {
-        console.error("Auto-create workspace error:", err);
-      }
-    })();
-  }, [hasFetched, workspaces.length, user, fetchWorkspaces]);
 
   const activeWorkspace = workspaces.find((w) => w.id === activeId) || null;
 
