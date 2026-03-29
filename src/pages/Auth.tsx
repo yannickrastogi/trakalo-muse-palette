@@ -49,6 +49,7 @@ export default function Auth() {
       }
 
       // Simple redirect — session is already in React state so Supabase has persisted it
+      localStorage.setItem("trakalog_was_auth", "1");
       window.location.href = "/dashboard";
     })();
   }, [session]);
