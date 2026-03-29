@@ -190,7 +190,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   // b) Not logged in → redirect to login
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   // c) No workspaces → redirect to onboarding
