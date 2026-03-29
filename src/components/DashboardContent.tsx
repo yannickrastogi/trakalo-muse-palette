@@ -96,6 +96,14 @@ export function DashboardContent() {
   const { activeWorkspace } = useWorkspace();
   const engagementStats = getTotalStats();
 
+  // Redirect to shared link if there's a pending auto-save
+  useEffect(function() {
+    var pendingSave = localStorage.getItem("trakalog_auto_save");
+    if (pendingSave) {
+      window.location.href = "/share/" + pendingSave;
+    }
+  }, []);
+
   // Fetch link_events from Supabase
   const [linkEvents, setLinkEvents] = useState<{ event_type: string; visitor_email: string | null; created_at: string; track_id: string | null }[]>([]);
   useEffect(function() {
