@@ -34,7 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      if (!initializedRef.current) return;
+      // Allow INITIAL_SESSION through to capture OAuth callback tokens
+      if (!initializedRef.current && event !== "INITIAL_SESSION") return;
       if (!newSession && event !== "SIGNED_OUT") {
         return;
       }
@@ -43,9 +44,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!allowed) return;
       }
       setSession(newSession);
+      // If this is the first event (OAuth callback), also mark as initialized
+      if (!initializedRef.current) {
+        setLoading(false);
+        initializedRef.current = true;
+      }
     });
 
     supabase.auth.getSession().then(async ({ data: { session: initSession } }) => {
+      // Skip if onAuthStateChange already handled initialization (OAuth flow)
+      if (initializedRef.current) return;
       if (initSession) {
         const allowed = await checkWhitelist(initSession);
         if (!allowed) return;
@@ -55,8 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       initializedRef.current = true;
     }).catch(function (err) {
       console.error("Error getting session:", err);
-      setLoading(false);
-      initializedRef.current = true;
+      if (!initializedRef.current) {
+        setLoading(false);
+        initializedRef.current = true;
+      }
     });
 
     return () => subscription.unsubscribe();
