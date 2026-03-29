@@ -462,6 +462,11 @@ export default function SharedLinkPage() {
                 });
             } else {
               // User is logged in but has no workspace yet
+              if (autoSave) {
+                console.log("Auto-save: no workspace found, redirecting to onboarding");
+                window.location.href = "/onboarding?return=" + encodeURIComponent("/share/" + slug);
+                return;
+              }
               setUserHasNoWorkspace(true);
             }
           });

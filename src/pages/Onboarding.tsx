@@ -90,11 +90,17 @@ export default function Onboarding() {
       return;
     }
 
-    // 3. Check for return URL
+    // 3. Check for return URL or pending auto-save
     const returnUrl = searchParams.get("return");
+    const pendingAutoSave = localStorage.getItem("trakalog_auto_save");
     if (returnUrl) {
       setSubmitting(false);
       window.location.href = returnUrl;
+      return;
+    }
+    if (pendingAutoSave) {
+      setSubmitting(false);
+      window.location.href = "/share/" + pendingAutoSave;
       return;
     }
 
