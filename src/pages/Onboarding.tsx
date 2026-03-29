@@ -21,7 +21,7 @@ const ROLES = [
 ];
 
 export default function Onboarding() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -39,15 +39,7 @@ export default function Onboarding() {
 
   // Check if user already has a workspace → redirect to dashboard
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      // Wait 3 seconds for session to stabilize before giving up
-      const timeout = setTimeout(() => {
-        setCheckingWorkspace(false);
-        window.location.href = "/auth";
-      }, 3000);
-      return () => clearTimeout(timeout);
-    }
+    if (!user) return;
     supabase
       .from("workspace_members")
       .select("workspace_id")
@@ -55,12 +47,12 @@ export default function Onboarding() {
       .limit(1)
       .then(function (res) {
         if (res.data && res.data.length > 0) {
-          navigate("/dashboard", { replace: true });
+          window.location.href = "/dashboard";
         } else {
           setCheckingWorkspace(false);
         }
       });
-  }, [user, authLoading, navigate]);
+  }, [user]);
 
   // Auto-update workspace name when typing name (unless manually edited)
   const handleNameChange = (value: string) => {
