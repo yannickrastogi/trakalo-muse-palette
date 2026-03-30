@@ -58,7 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (backup) {
           try {
             const backupSession = JSON.parse(backup);
-            if (backupSession?.access_token) {
+            if (backupSession?.refresh_token) {
+              // Re-establish session in Supabase client
+              supabase.auth.setSession({
+                access_token: backupSession.access_token,
+                refresh_token: backupSession.refresh_token,
+              }).catch(() => {});
               return;
             }
           } catch (e) {}
