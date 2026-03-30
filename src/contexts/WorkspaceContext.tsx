@@ -116,7 +116,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       } else if (!activeId || !mapped.some((w) => w.id === activeId)) {
         // Set active workspace: use stored preference or first workspace
         // Always prefer the user's own workspace (owner_id matches user.id)
-        const ownWorkspace = mapped.find((w) => w.owner_id === user.id);
+        // Personal workspace = oldest workspace owned by user (created at signup)
+        const ownWorkspaces = mapped.filter((w) => w.owner_id === user.id);
+        ownWorkspaces.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        const ownWorkspace = ownWorkspaces[0] || null;
         const stored = localStorage.getItem("trakalog_active_workspace");
         const justLoggedIn = localStorage.getItem("trakalog_just_logged_in");
 
