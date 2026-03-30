@@ -44,13 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!allowed) return;
       }
       setSession(newSession);
-      // Force persist the session so supabase.auth.getSession() works
-      if (newSession && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
-        supabase.auth.setSession({
-          access_token: newSession.access_token,
-          refresh_token: newSession.refresh_token,
-        }).catch(err => console.error("Failed to persist session:", err));
-      }
       // If this is the first event (OAuth callback), also mark as initialized
       if (!initializedRef.current) {
         setLoading(false);

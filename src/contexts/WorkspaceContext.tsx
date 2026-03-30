@@ -34,25 +34,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     setLoading(true);
     try {
-      // Wait for Supabase session to be available (may take a moment after OAuth)
-      let supaSession = null;
-      for (let i = 0; i < 30; i++) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          supaSession = data.session;
-          break;
-        }
-        await new Promise(r => setTimeout(r, 200));
+      // If Supabase client doesn't have a session, set it from AuthContext
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession && session) {
+        console.log("[WS-DEBUG] No internal session, setting from AuthContext");
+        await supabase.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        });
       }
-      console.log("[WS-DEBUG] session email:", supaSession?.user?.email, "after waiting");
-      if (!supaSession) {
-        console.log("[WS-DEBUG] No session after 6s, aborting fetch");
-        setWorkspaces([]);
-        setActiveId(null);
-        setLoading(false);
-        setHasFetched(true);
-        return;
-      }
+      console.log("[WS-DEBUG] session ready, querying workspaces");
 
       // Get workspace IDs the user is a member of
       const { data: memberships, error: memberError } = await supabase
