@@ -89,6 +89,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               });
               if (refreshed?.session && !refreshError) {
                 localStorage.setItem("trakalog_session_backup", JSON.stringify(refreshed.session));
+                // Also write to Supabase's native storage key so the client has it
+                const supabaseKey = 'sb-xhmeitivkclbeziqavxw-auth-token';
+                localStorage.setItem(supabaseKey, JSON.stringify(refreshed.session));
                 const allowed = await checkWhitelist(refreshed.session);
                 if (!allowed) return;
                 setSession(refreshed.session);
