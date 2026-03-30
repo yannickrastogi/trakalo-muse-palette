@@ -44,6 +44,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const allowed = await checkWhitelist(newSession);
         if (!allowed) return;
       }
+      // Manually persist session to localStorage — Supabase sometimes fails to do this
+      if (newSession && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')) {
+        try {
+          const storageKey = 'sb-xhmeitivkclbeziqavxw-auth-token';
+          localStorage.setItem(storageKey, JSON.stringify(newSession));
+          console.log("[AUTH] Manually persisted session to localStorage");
+        } catch (e) {
+          console.error("[AUTH] Failed to persist session:", e);
+        }
+      }
+
+      // Protect against false SIGNED_OUT events
+      if (event === 'SIGNED_OUT' && !newSession) {
+        const storageKey = 'sb-xhmeitivkclbeziqavxw-auth-token';
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          try {
+            const storedSession = JSON.parse(stored);
+            if (storedSession?.access_token) {
+              console.log("[AUTH] Ignoring false SIGNED_OUT — session still in localStorage");
+              return;
+            }
+          } catch (e) {}
+        }
+      }
+
       setSession(newSession);
       // If this is the first event (OAuth callback), also mark as initialized
       if (!initializedRef.current) {
