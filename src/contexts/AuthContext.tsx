@@ -34,7 +34,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log("[AUTH-DEBUG] onAuthStateChange:", event, "session:", !!newSession, "initializedRef:", initializedRef.current);
       // Allow INITIAL_SESSION through to capture OAuth callback tokens
       if (!initializedRef.current && event !== "INITIAL_SESSION") return;
       if (!newSession && event !== "SIGNED_OUT") {
@@ -52,7 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (e) {}
       }
 
-      console.log("[AUTH-DEBUG] setSession:", !!newSession, "loading will be:", !initializedRef.current ? false : loading);
       setSession(newSession);
       if (!initializedRef.current) {
         setLoading(false);
@@ -61,7 +59,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     supabase.auth.getSession().then(async ({ data: { session: initSession } }) => {
-      console.log("[AUTH-DEBUG] getSession result:", !!initSession, "initializedRef:", initializedRef.current);
       // Skip if onAuthStateChange already handled initialization (OAuth flow)
       if (initializedRef.current) return;
       if (!initSession) {
@@ -74,12 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession({
                 refresh_token: backupSession.refresh_token,
               });
-              console.log("[AUTH-DEBUG] backup refresh result:", !!refreshed?.session, "error:", refreshError?.message);
               if (refreshed?.session && !refreshError) {
                 localStorage.setItem("trakalog_session_backup", JSON.stringify(refreshed.session));
                 const allowed = await checkWhitelist(refreshed.session);
                 if (!allowed) return;
-                console.log("[AUTH-DEBUG] setSession:", !!refreshed.session, "loading will be:", false);
                 setSession(refreshed.session);
                 setLoading(false);
                 initializedRef.current = true;
@@ -97,7 +92,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const allowed = await checkWhitelist(initSession);
         if (!allowed) return;
       }
-      console.log("[AUTH-DEBUG] setSession:", !!initSession, "loading will be:", false);
       setSession(initSession);
       setLoading(false);
       initializedRef.current = true;
