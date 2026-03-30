@@ -203,14 +203,14 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       return updated;
     });
 
-    // Also persist to track_comments table
-    supabase.from("track_comments").insert({
-      track_id: data.trackId,
-      author_name: data.authorName,
-      author_email: data.authorEmail || null,
-      author_type: data.authorType,
-      timestamp_sec: data.timestampSeconds,
-      content: data.commentText,
+    // Also persist to track_comments table via RPC (SECURITY DEFINER) to bypass RLS
+    supabase.rpc("add_track_comment", {
+      _track_id: data.trackId,
+      _author_name: data.authorName,
+      _author_email: data.authorEmail || null,
+      _author_type: data.authorType,
+      _timestamp_sec: data.timestampSeconds,
+      _content: data.commentText,
     }).then(({ error: insertErr }) => {
       if (insertErr) console.error("Error inserting to track_comments:", insertErr);
     }).catch(function (err) { console.error("Error:", err); });
@@ -265,8 +265,8 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       return updated;
     });
 
-    // Also delete from track_comments table
-    supabase.from("track_comments").delete().eq("id", commentId)
+    // Also delete from track_comments table via RPC (SECURITY DEFINER) to bypass RLS
+    supabase.rpc("delete_track_comment", { _comment_id: commentId })
       .then(({ error: delErr }) => {
         if (delErr) console.error("Error deleting from track_comments:", delErr);
       }).catch(function (err) { console.error("Error:", err); });
