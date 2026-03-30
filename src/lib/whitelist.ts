@@ -1,11 +1,18 @@
-export const WHITELISTED_EMAILS = [
-  "yannick.rastogi@gmail.com",
-  "kny.factory@gmail.com",
-];
+import { supabase } from "@/integrations/supabase/client";
 
-export function isEmailWhitelisted(email: string): boolean {
-  return WHITELISTED_EMAILS.includes(email.toLowerCase());
+const cache = new Map<string, boolean>();
+
+export async function isEmailWhitelisted(email: string): Promise<boolean> {
+  const key = email.toLowerCase();
+  if (cache.has(key)) return cache.get(key)!;
+
+  const { data, error } = await supabase.rpc("is_email_whitelisted", { _email: key });
+  if (error) {
+    console.error("Whitelist RPC error:", error);
+    return false;
+  }
+
+  const result = !!data;
+  cache.set(key, result);
+  return result;
 }
-
-// Server-side whitelist for Edge Functions (duplicated for Deno runtime)
-export const WHITELISTED_EMAILS_SERVER = WHITELISTED_EMAILS;

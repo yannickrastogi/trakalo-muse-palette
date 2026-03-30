@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const checkWhitelist = async (sess: Session | null) => {
-      if (sess?.user?.email && !isEmailWhitelisted(sess.user.email)) {
+      if (sess?.user?.email && !(await isEmailWhitelisted(sess.user.email))) {
         await supabase.auth.signOut();
         toast.error("Trakalog is currently in private beta. Request access at hello@trakalog.com");
         setSession(null);
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUpWithEmail = useCallback(async (email: string, password: string) => {
-    if (!isEmailWhitelisted(email)) {
+    if (!(await isEmailWhitelisted(email))) {
       return { error: new Error("Trakalog is currently in private beta. Request access at hello@trakalog.com") };
     }
     const { data, error } = await supabase.auth.signUp({ email, password });
