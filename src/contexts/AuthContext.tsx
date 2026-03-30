@@ -36,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       // Allow INITIAL_SESSION through to capture OAuth callback tokens
       if (!initializedRef.current && event !== "INITIAL_SESSION") return;
+      console.log("[AUTH] onAuthStateChange:", event, "hasSession:", !!newSession);
       if (!newSession && event !== "SIGNED_OUT") {
         return;
       }
@@ -52,13 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     supabase.auth.getSession().then(async ({ data: { session: initSession } }) => {
+      console.log("[AUTH] getSession:", !!initSession);
       // Skip if onAuthStateChange already handled initialization (OAuth flow)
       if (initializedRef.current) return;
       if (initSession) {
         const allowed = await checkWhitelist(initSession);
         if (!allowed) return;
+        setSession(initSession);
       }
-      setSession(initSession);
       setLoading(false);
       initializedRef.current = true;
     }).catch(function (err) {
