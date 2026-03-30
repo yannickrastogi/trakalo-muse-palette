@@ -154,6 +154,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [activeWorkspace]
   );
 
+  console.log("[WS-RENDER]", { authLoading, hasFetched, wsCount: workspaces.length, activeId, activeWs: !!activeWorkspace });
+
   // a) Auth still loading → spinner
   if (authLoading) {
     return (
