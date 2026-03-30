@@ -268,7 +268,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       // Fetch own tracks, stems, individual shares, and full catalog shares in parallel
-      const [tracksRes, stemsRes, sharedRes, fullCatalogRes] = await Promise.all([
+      const [tracksRes, stemsRes, catalogSharesRes] = await Promise.all([
         supabase
           .from("tracks")
           .select("*")
@@ -279,21 +279,14 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           .select("*")
           .eq("workspace_id", activeWorkspace.id)
           .order("created_at", { ascending: true }),
-        // Fetch individual track shares TO this workspace
-        supabase
-          .from("catalog_shares")
-          .select("id, track_id, source_workspace_id, access_level, workspaces!catalog_shares_source_workspace_id_fkey(name)")
-          .eq("target_workspace_id", activeWorkspace.id)
-          .eq("status", "active")
-          .not("track_id", "is", null),
-        // Fetch full catalog shares TO this workspace
-        supabase
-          .from("catalog_shares")
-          .select("id, source_workspace_id, access_level, workspaces!catalog_shares_source_workspace_id_fkey(name)")
-          .eq("target_workspace_id", activeWorkspace.id)
-          .eq("status", "active")
-          .is("track_id", null),
+        // Fetch all active catalog shares TO this workspace via RPC (bypasses RLS)
+        supabase.rpc("get_workspace_catalog_shares", { _workspace_id: activeWorkspace.id }),
       ]);
+
+      // Split catalog shares into individual (track_id set) and full catalog (track_id null)
+      const allShares = (!catalogSharesRes.error && catalogSharesRes.data) ? catalogSharesRes.data as any[] : [];
+      const sharedRes = { error: catalogSharesRes.error, data: allShares.filter(function (s: any) { return s.track_id != null; }) };
+      const fullCatalogRes = { error: catalogSharesRes.error, data: allShares.filter(function (s: any) { return s.track_id == null; }) };
 
       if (tracksRes.error) {
         console.error("Error fetching tracks:", tracksRes.error);
@@ -324,7 +317,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
             const s = share as any;
             sharedTrackIds.push(s.track_id);
             shareInfoMap[s.track_id] = {
-              sharedFrom: s.workspaces?.name || "",
+              sharedFrom: s.source_workspace_name || "",
               accessLevel: s.access_level || "viewer",
               shareId: s.id,
             };
@@ -337,32 +330,25 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           const fullCatalogFetches = fullCatalogRes.data.map(async function (share) {
             const s = share as any;
             const sourceWsId = s.source_workspace_id as string;
-            const sourceWsName = s.workspaces?.name || "";
+            const sourceWsName = s.source_workspace_name || "";
             const accessLevel = s.access_level || "viewer";
             const shareId = s.id;
 
-            // Fetch in parallel: own tracks + shares to source (for cascade)
-            const [ownTracksRes, sourceIndividualRes, sourceFullCatalogRes] = await Promise.all([
+            // Fetch in parallel: own tracks + shares to source (for cascade, via RPC)
+            const [ownTracksRes, sourceCatalogSharesRes] = await Promise.all([
               // 1. Own tracks of source workspace
               supabase
                 .from("tracks")
                 .select("*")
                 .eq("workspace_id", sourceWsId),
-              // 2. Individual track shares TO the source workspace
-              supabase
-                .from("catalog_shares")
-                .select("track_id, source_workspace_id, workspaces!catalog_shares_source_workspace_id_fkey(name)")
-                .eq("target_workspace_id", sourceWsId)
-                .eq("status", "active")
-                .not("track_id", "is", null),
-              // 3. Full catalog shares TO the source workspace (1 level — no further cascade)
-              supabase
-                .from("catalog_shares")
-                .select("source_workspace_id, workspaces!catalog_shares_source_workspace_id_fkey(name)")
-                .eq("target_workspace_id", sourceWsId)
-                .eq("status", "active")
-                .is("track_id", null),
+              // 2+3. All active catalog shares TO the source workspace via RPC
+              supabase.rpc("get_workspace_catalog_shares", { _workspace_id: sourceWsId }),
             ]);
+
+            // Split source shares into individual (track_id set) and full catalog (track_id null)
+            const sourceAllShares = (!sourceCatalogSharesRes.error && sourceCatalogSharesRes.data) ? sourceCatalogSharesRes.data as any[] : [];
+            const sourceIndividualRes = { data: sourceAllShares.filter(function (cs: any) { return cs.track_id != null; }) };
+            const sourceFullCatalogRes = { data: sourceAllShares.filter(function (cs: any) { return cs.track_id == null; }) };
 
             // All rows we collect, with their original workspace name
             var collectedRows: { row: Record<string, unknown>; originalWsName: string }[] = [];
@@ -380,7 +366,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
                 const csd = cs as any;
                 if (csd.track_id) {
                   cascadeTrackIds.push(csd.track_id);
-                  cascadeOriginalWs[csd.track_id] = csd.workspaces?.name || "";
+                  cascadeOriginalWs[csd.track_id] = csd.source_workspace_name || "";
                 }
               }
             }
@@ -392,7 +378,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
                 const csd = cs as any;
                 // Prevent loop: don't cascade back to our own workspace
                 if (csd.source_workspace_id !== activeWorkspace.id) {
-                  cascadeFullWsIds.push({ wsId: csd.source_workspace_id, wsName: csd.workspaces?.name || "" });
+                  cascadeFullWsIds.push({ wsId: csd.source_workspace_id, wsName: csd.source_workspace_name || "" });
                 }
               }
             }
