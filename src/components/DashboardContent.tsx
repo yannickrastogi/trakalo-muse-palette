@@ -108,15 +108,22 @@ export function DashboardContent() {
   const [linkEvents, setLinkEvents] = useState<{ event_type: string; visitor_email: string | null; created_at: string; track_id: string | null }[]>([]);
   useEffect(function() {
     if (!activeWorkspace) return;
+    // Get track IDs for this workspace to filter events
+    const workspaceTrackIds = allTracks.map(function(t) { return t.uuid; }).filter(Boolean);
+    if (workspaceTrackIds.length === 0) {
+      setLinkEvents([]);
+      return;
+    }
     supabase
       .from("link_events")
       .select("event_type, visitor_email, created_at, track_id")
+      .in("track_id", workspaceTrackIds)
       .order("created_at", { ascending: false })
       .limit(200)
       .then(function(res) {
         if (res.data) setLinkEvents(res.data);
       }).catch(function(err) { console.error("Error fetching link events:", err); });
-  }, [activeWorkspace]);
+  }, [activeWorkspace, allTracks]);
 
   const linkPlays = linkEvents.filter(function(e) { return e.event_type === "play"; });
   const linkDownloads = linkEvents.filter(function(e) { return e.event_type === "download"; });
