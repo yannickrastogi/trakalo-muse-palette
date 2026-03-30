@@ -40,14 +40,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         _user_id: user.id,
       });
 
-      console.log("[WS-DEBUG] RPC result:", wsData?.length, "workspaces, error:", wsError?.message);
-
       if (wsError || !wsData || wsData.length === 0) {
         // Auto-create workspace for new users
         if (!autoCreateAttemptedRef.current && user) {
           autoCreateAttemptedRef.current = true;
           const userName = (user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "My");
-          console.log("[WS] Auto-creating workspace for:", user.email);
           try {
             const { data: newWsId, error: createError } = await supabase.rpc("create_workspace_with_member", {
               _name: userName + "'s Workspace",
@@ -55,7 +52,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
               _user_id: user.id,
             });
             if (!createError && newWsId) {
-              console.log("[WS] Workspace created:", newWsId);
               // Re-fetch to get the new workspace
               const { data: newWsData } = await supabase.rpc("get_user_workspaces", { _user_id: user.id });
               if (newWsData && newWsData.length > 0) {
@@ -83,12 +79,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                 localStorage.setItem("trakalog_active_workspace", mapped[0].id);
                 return;
               }
-            } else {
-              console.error("[WS] Create failed:", createError);
             }
-          } catch (err) {
-            console.error("[WS] Auto-create error:", err);
-          }
+          } catch (err) {}
         }
         setWorkspaces([]);
         setActiveId(null);
@@ -206,8 +198,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     },
     [activeWorkspace]
   );
-
-  console.log("[WS-RENDER]", { authLoading, hasFetched, wsCount: workspaces.length, activeId, activeWs: !!activeWorkspace });
 
   // a) Auth still loading → spinner
   if (authLoading) {
