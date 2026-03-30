@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, lazy, Suspense, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, lazy, Suspense, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,6 +29,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
+  const autoCreateAttemptedRef = useRef(false);
 
   const fetchWorkspaces = useCallback(async (opts?: { switchTo?: string }) => {
     if (!user) return;
@@ -42,7 +43,53 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       console.log("[WS-DEBUG] RPC result:", wsData?.length, "workspaces, error:", wsError?.message);
 
       if (wsError || !wsData || wsData.length === 0) {
-        // No workspaces found — will show onboarding
+        // Auto-create workspace for new users
+        if (!autoCreateAttemptedRef.current && user) {
+          autoCreateAttemptedRef.current = true;
+          const userName = (user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "My");
+          console.log("[WS] Auto-creating workspace for:", user.email);
+          try {
+            const { data: newWsId, error: createError } = await supabase.rpc("create_workspace_with_member", {
+              _name: userName + "'s Workspace",
+              _description: null,
+              _user_id: user.id,
+            });
+            if (!createError && newWsId) {
+              console.log("[WS] Workspace created:", newWsId);
+              // Re-fetch to get the new workspace
+              const { data: newWsData } = await supabase.rpc("get_user_workspaces", { _user_id: user.id });
+              if (newWsData && newWsData.length > 0) {
+                const mapped: Workspace[] = newWsData.map((ws: any) => ({
+                  id: ws.id,
+                  name: ws.name,
+                  slug: ws.slug,
+                  owner_id: ws.owner_id,
+                  plan: (ws.plan as Workspace["plan"]) || "free",
+                  created_at: ws.created_at,
+                  settings: (ws.settings as WorkspaceSettings) || {
+                    defaultLanguage: "en",
+                    allowPublicLinks: true,
+                    requireApproval: false,
+                    maxMembers: 5,
+                    storageQuotaMB: 2048,
+                  },
+                  hero_image_url: ws.hero_image_url || null,
+                  hero_position: ws.hero_position ?? null,
+                  logo_url: ws.logo_url || null,
+                  brand_color: ws.brand_color || null,
+                }));
+                setWorkspaces(mapped);
+                setActiveId(mapped[0].id);
+                localStorage.setItem("trakalog_active_workspace", mapped[0].id);
+                return;
+              }
+            } else {
+              console.error("[WS] Create failed:", createError);
+            }
+          } catch (err) {
+            console.error("[WS] Auto-create error:", err);
+          }
+        }
         setWorkspaces([]);
         setActiveId(null);
         return;
