@@ -120,6 +120,22 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       return cached.url;
     }
 
+    // Ensure Supabase has a session for signed URLs
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    if (!currentSession) {
+      try {
+        const backup = localStorage.getItem("trakalog_session_backup");
+        if (backup) {
+          const backupSession = JSON.parse(backup);
+          if (backupSession?.refresh_token) {
+            await supabase.auth.refreshSession({ refresh_token: backupSession.refresh_token });
+          }
+        }
+      } catch (e) {
+        console.error("Failed to restore session for audio:", e);
+      }
+    }
+
     const { data, error } = await supabase.storage
       .from("tracks")
       .createSignedUrl(rawUrl, 3600);
