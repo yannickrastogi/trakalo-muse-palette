@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const storageKey = 'sb-xhmeitivkclbeziqavxw-auth-token';
           localStorage.setItem(storageKey, JSON.stringify(newSession));
+          localStorage.setItem("trakalog_session_backup", JSON.stringify(newSession));
           console.log("[AUTH] Manually persisted session to localStorage");
         } catch (e) {
           console.error("[AUTH] Failed to persist session:", e);
@@ -57,13 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Protect against false SIGNED_OUT events
       if (event === 'SIGNED_OUT' && !newSession) {
-        const storageKey = 'sb-xhmeitivkclbeziqavxw-auth-token';
-        const stored = localStorage.getItem(storageKey);
-        if (stored) {
+        const backup = localStorage.getItem("trakalog_session_backup");
+        if (backup) {
           try {
-            const storedSession = JSON.parse(stored);
-            if (storedSession?.access_token) {
-              console.log("[AUTH] Ignoring false SIGNED_OUT — session still in localStorage");
+            const backupSession = JSON.parse(backup);
+            if (backupSession?.access_token) {
+              console.log("[AUTH] Ignoring false SIGNED_OUT — backup session exists");
               return;
             }
           } catch (e) {}
@@ -82,11 +82,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[AUTH] getSession:", !!initSession);
       // Skip if onAuthStateChange already handled initialization (OAuth flow)
       if (initializedRef.current) return;
+      if (!initSession) {
+        // Try to restore from backup
+        try {
+          const backup = localStorage.getItem("trakalog_session_backup");
+          if (backup) {
+            const backupSession = JSON.parse(backup);
+            if (backupSession?.access_token && backupSession?.refresh_token) {
+              console.log("[AUTH] Restoring session from backup");
+              const { data: restored, error: restoreError } = await supabase.auth.setSession({
+                access_token: backupSession.access_token,
+                refresh_token: backupSession.refresh_token,
+              });
+              if (restored?.session && !restoreError) {
+                const allowed = await checkWhitelist(restored.session);
+                if (!allowed) return;
+                setSession(restored.session);
+                setLoading(false);
+                initializedRef.current = true;
+                return;
+              }
+            }
+          }
+        } catch (e) {
+          console.error("[AUTH] Backup restore failed:", e);
+        }
+      }
       if (initSession) {
         const allowed = await checkWhitelist(initSession);
         if (!allowed) return;
-        setSession(initSession);
       }
+      setSession(initSession);
       setLoading(false);
       initializedRef.current = true;
     }).catch(function (err) {
@@ -134,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     localStorage.removeItem("trakalog_was_auth");
+    localStorage.removeItem("trakalog_session_backup");
     await supabase.auth.signOut();
   }, []);
 
