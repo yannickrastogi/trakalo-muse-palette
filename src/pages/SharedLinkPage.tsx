@@ -427,33 +427,22 @@ export default function SharedLinkPage() {
             if (wsRes.data && wsRes.data.length > 0) {
               var wsId = (wsRes.data[0] as any).id;
               setCurrentUserWorkspace(wsId);
-              // Check if already saved
-              supabase
-                .from("catalog_shares")
-                .select("id")
-                .eq("track_id", linkData!.track_id!)
-                .eq("target_workspace_id", wsId)
-                .eq("status", "active")
-                .then(function(shareRes) {
-                  if (shareRes.data && shareRes.data.length > 0) {
+              if (autoSave && linkData!.track_id) {
+                // Auto-save the track after signup/login flow
+                localStorage.removeItem("trakalog_auto_save");
+                setSavingToTrakalog(true);
+                supabase.rpc("save_track_to_trakalog", {
+                  _track_id: linkData!.track_id,
+                  _source_workspace_id: linkData!.workspace_id,
+                  _target_workspace_id: wsId,
+                  _user_id: res.data.session!.user.id,
+                }).then(function(rpcRes) {
+                  if (!rpcRes.error) {
                     setSavedToTrakalog(true);
-                  } else if (autoSave && linkData!.track_id) {
-                    // Auto-save the track after signup/login flow
-                    localStorage.removeItem("trakalog_auto_save");
-                    setSavingToTrakalog(true);
-                    supabase.rpc("save_track_to_trakalog", {
-                      _track_id: linkData!.track_id,
-                      _source_workspace_id: linkData!.workspace_id,
-                      _target_workspace_id: wsId,
-                      _user_id: res.data.session!.user.id,
-                    }).then(function(rpcRes) {
-                      if (!rpcRes.error) {
-                        setSavedToTrakalog(true);
-                      }
-                      setSavingToTrakalog(false);
-                    });
                   }
+                  setSavingToTrakalog(false);
                 });
+              }
             } else {
               // User is logged in but has no workspace yet
               if (autoSave) {
@@ -488,32 +477,21 @@ export default function SharedLinkPage() {
                 if (wsRes.data && wsRes.data.length > 0) {
                   var wsId = (wsRes.data[0] as any).id;
                   setCurrentUserWorkspace(wsId);
-                  // Check if already saved
-                  supabase
-                    .from("catalog_shares")
-                    .select("id")
-                    .eq("track_id", linkData!.track_id!)
-                    .eq("target_workspace_id", wsId)
-                    .eq("status", "active")
-                    .then(function(shareRes) {
-                      if (shareRes.data && shareRes.data.length > 0) {
+                  if (autoSave && linkData!.track_id) {
+                    localStorage.removeItem("trakalog_auto_save");
+                    setSavingToTrakalog(true);
+                    supabase.rpc("save_track_to_trakalog", {
+                      _track_id: linkData!.track_id,
+                      _source_workspace_id: linkData!.workspace_id,
+                      _target_workspace_id: wsId,
+                      _user_id: backupSession.user.id,
+                    }).then(function(rpcRes) {
+                      if (!rpcRes.error) {
                         setSavedToTrakalog(true);
-                      } else if (autoSave && linkData!.track_id) {
-                        localStorage.removeItem("trakalog_auto_save");
-                        setSavingToTrakalog(true);
-                        supabase.rpc("save_track_to_trakalog", {
-                          _track_id: linkData!.track_id,
-                          _source_workspace_id: linkData!.workspace_id,
-                          _target_workspace_id: wsId,
-                          _user_id: backupSession.user.id,
-                        }).then(function(rpcRes) {
-                          if (!rpcRes.error) {
-                            setSavedToTrakalog(true);
-                          }
-                          setSavingToTrakalog(false);
-                        });
                       }
+                      setSavingToTrakalog(false);
                     });
+                  }
                 } else {
                   if (autoSave) {
                     console.log("Auto-save: no workspace found, redirecting to onboarding");
