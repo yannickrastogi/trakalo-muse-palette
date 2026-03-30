@@ -34,6 +34,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     setLoading(true);
     try {
+      const { data: { session: debugSession } } = await supabase.auth.getSession();
+      console.log("[WS-DEBUG] session email:", debugSession?.user?.email, "user.id:", user.id);
+
       // Get workspace IDs the user is a member of
       const { data: memberships, error: memberError } = await supabase
         .from("workspace_members")
