@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!allowed) return;
       }
       // Manually persist session to localStorage — Supabase sometimes fails to do this
-      if (newSession && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')) {
+      if (newSession) {
         try {
           const storageKey = 'sb-xhmeitivkclbeziqavxw-auth-token';
           localStorage.setItem(storageKey, JSON.stringify(newSession));
