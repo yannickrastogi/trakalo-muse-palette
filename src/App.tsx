@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -105,22 +105,33 @@ function ProtectedApp({ children }: { children: React.ReactNode }) {
   );
 }
 
+function AuthLayout() {
+  return (
+    <AuthProvider>
+      <Outlet />
+    </AuthProvider>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
+        <Routes>
+          {/* Public routes — no AuthProvider */}
+          <Route path="/share/:slug" element={<SharedLinkPage />} />
+          <Route path="/shared/:linkId" element={<SharedStemAccess />} />
+          <Route path="/invite/:token" element={<AcceptInvitation />} />
+          <Route path="/studio/:token" element={<StudioSession />} />
+          <Route path="/sign/:token" element={<SignAgreement />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+
+          {/* Auth-wrapped routes */}
+          <Route element={<AuthLayout />}>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/share/:slug" element={<SharedLinkPage />} />
-            <Route path="/shared/:linkId" element={<SharedStemAccess />} />
-            <Route path="/invite/:token" element={<AcceptInvitation />} />
-            <Route path="/studio/:token" element={<StudioSession />} />
-            <Route path="/sign/:token" element={<SignAgreement />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<TermsOfService />} />
             <Route path="/" element={<HomeRoute />} />
             <Route path="/onboarding" element={<Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><Onboarding /></Suspense>} />
             <Route path="/dashboard" element={<ProtectedApp><Index /></ProtectedApp>} />
@@ -141,9 +152,10 @@ const App = () => (
             <Route path="/settings" element={<ProtectedApp><SettingsPage /></ProtectedApp>} />
             <Route path="/notifications" element={<ProtectedApp><NotificationCenter /></ProtectedApp>} />
             <Route path="/approvals" element={<ProtectedApp><ApprovalQueue /></ProtectedApp>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
+          </Route>
+
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
