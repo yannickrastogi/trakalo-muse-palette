@@ -802,6 +802,7 @@ export default function SharedLinkPage() {
     });
     if (!error) {
       setSavedToTrakalog(true);
+      localStorage.removeItem("trakalog_auto_save");
       logEvent(linkData.track_id, "save");
     }
     setSavingToTrakalog(false);
