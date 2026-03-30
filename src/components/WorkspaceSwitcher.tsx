@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, CheckCircle2, Plus, LayoutGrid } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
@@ -10,6 +11,7 @@ import { useTranslation } from "react-i18next";
 
 export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean; onSwitch?: () => void }) {
   const { activeWorkspace, workspaces, switchWorkspace } = useWorkspace();
+  const { user } = useAuth();
   const { pause } = useAudioPlayer();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -269,7 +271,14 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
               Workspaces
             </div>
 
-            {workspaces.map(function (ws) {
+            {[...workspaces].sort(function (a, b) {
+              var aIsPersonal = a.owner_id === (user == null ? undefined : user.id);
+              var bIsPersonal = b.owner_id === (user == null ? undefined : user.id);
+              if (aIsPersonal && bIsPersonal) return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+              if (aIsPersonal) return -1;
+              if (bIsPersonal) return 1;
+              return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+            }).map(function (ws) {
               var isActive = ws.id === activeWorkspace.id;
               return (
                 <button
