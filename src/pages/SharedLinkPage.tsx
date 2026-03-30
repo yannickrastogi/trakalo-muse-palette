@@ -410,101 +410,52 @@ export default function SharedLinkPage() {
   // Detect if visitor is a logged-in Trakalog user
   useEffect(function() {
     if (!linkData?.allow_save) return;
-    var anonClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+    var backup = localStorage.getItem("trakalog_session_backup");
+    if (!backup) return;
+    var backupSession: any;
+    try {
+      backupSession = JSON.parse(backup);
+    } catch (e) {
+      console.error("Error reading backup session:", e);
+      return;
+    }
+    if (!backupSession || !backupSession.user || !backupSession.user.id) return;
+    var userId = backupSession.user.id;
+    setCurrentUserSession(backupSession);
     var pendingAutoSave = localStorage.getItem("trakalog_auto_save");
     var autoSave = pendingAutoSave === slug;
-    anonClient.auth.getSession().then(function(res) {
-      if (res.data.session) {
-        setCurrentUserSession(res.data.session);
-        // Fetch user's personal workspace (the first one created by handle_new_user trigger)
-        anonClient
-          .from("workspaces")
-          .select("id")
-          .eq("owner_id", res.data.session.user.id)
-          .order("created_at", { ascending: true })
-          .limit(1)
-          .then(function(wsRes) {
-            if (wsRes.data && wsRes.data.length > 0) {
-              var wsId = (wsRes.data[0] as any).id;
-              setCurrentUserWorkspace(wsId);
-              if (autoSave && linkData!.track_id) {
-                // Auto-save the track after signup/login flow
-                localStorage.removeItem("trakalog_auto_save");
-                setSavingToTrakalog(true);
-                supabase.rpc("save_track_to_trakalog", {
-                  _track_id: linkData!.track_id,
-                  _source_workspace_id: linkData!.workspace_id,
-                  _target_workspace_id: wsId,
-                  _user_id: res.data.session!.user.id,
-                }).then(function(rpcRes) {
-                  if (!rpcRes.error) {
-                    setSavedToTrakalog(true);
-                  }
-                  setSavingToTrakalog(false);
-                });
-              }
-            } else {
-              // User is logged in but has no workspace yet
-              if (autoSave) {
-                console.log("Auto-save: no workspace found, redirecting to onboarding");
-                window.location.href = "/onboarding?return=" + encodeURIComponent("/share/" + slug);
-                return;
-              }
-              setUserHasNoWorkspace(true);
-            }
-          });
+    supabase.rpc("get_user_workspaces", { _user_id: userId }).then(function(wsRes) {
+      if (wsRes.error) {
+        console.error("Error fetching workspaces:", wsRes.error);
         return;
       }
-      // Also check backup session from main app (anon client has persistSession: false so it misses the logged-in user)
-      var backup = localStorage.getItem("trakalog_session_backup");
-      if (backup) {
-        try {
-          var backupSession = JSON.parse(backup);
-          if (backupSession && backupSession.user && backupSession.user.id) {
-            setCurrentUserSession(backupSession);
-            // Use a client with the backup access token to query as the user
-            var backupClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-              auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-              global: { headers: { Authorization: "Bearer " + backupSession.access_token } }
-            });
-            backupClient
-              .from("workspaces")
-              .select("id, owner_id, created_at")
-              .eq("owner_id", backupSession.user.id)
-              .order("created_at", { ascending: true })
-              .limit(1)
-              .then(function(wsRes) {
-                if (wsRes.data && wsRes.data.length > 0) {
-                  var wsId = (wsRes.data[0] as any).id;
-                  setCurrentUserWorkspace(wsId);
-                  if (autoSave && linkData!.track_id) {
-                    localStorage.removeItem("trakalog_auto_save");
-                    setSavingToTrakalog(true);
-                    supabase.rpc("save_track_to_trakalog", {
-                      _track_id: linkData!.track_id,
-                      _source_workspace_id: linkData!.workspace_id,
-                      _target_workspace_id: wsId,
-                      _user_id: backupSession.user.id,
-                    }).then(function(rpcRes) {
-                      if (!rpcRes.error) {
-                        setSavedToTrakalog(true);
-                      }
-                      setSavingToTrakalog(false);
-                    });
-                  }
-                } else {
-                  if (autoSave) {
-                    console.log("Auto-save: no workspace found, redirecting to onboarding");
-                    window.location.href = "/onboarding?return=" + encodeURIComponent("/share/" + slug);
-                    return;
-                  }
-                  setUserHasNoWorkspace(true);
-                }
-              });
-          }
-        } catch (e) {
-          console.error("Error reading backup session:", e);
+      var workspaces = wsRes.data || [];
+      var personalWs = workspaces.find(function(w: any) { return w.is_personal === true; });
+      var ws = personalWs || (workspaces.length > 0 ? workspaces[0] : null);
+      if (ws) {
+        setCurrentUserWorkspace(ws.id);
+        if (autoSave && linkData!.track_id) {
+          localStorage.removeItem("trakalog_auto_save");
+          setSavingToTrakalog(true);
+          supabase.rpc("save_track_to_trakalog", {
+            _track_id: linkData!.track_id,
+            _source_workspace_id: linkData!.workspace_id,
+            _target_workspace_id: ws.id,
+            _user_id: userId,
+          }).then(function(rpcRes) {
+            if (!rpcRes.error) {
+              setSavedToTrakalog(true);
+            }
+            setSavingToTrakalog(false);
+          });
         }
+      } else {
+        if (autoSave) {
+          console.log("Auto-save: no workspace found, redirecting to onboarding");
+          window.location.href = "/onboarding?return=" + encodeURIComponent("/share/" + slug);
+          return;
+        }
+        setUserHasNoWorkspace(true);
       }
     });
   }, [linkData]);
