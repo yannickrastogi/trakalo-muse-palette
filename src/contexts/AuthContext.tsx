@@ -20,6 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const initializedRef = useRef(false);
+  const restorationAttemptedRef = useRef(false);
 
   useEffect(() => {
     const checkWhitelist = async (sess: Session | null) => {
@@ -45,6 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       // Manually persist session to localStorage — Supabase sometimes fails to do this
       if (newSession) {
+        // Reset circuit breaker on genuine auth events with valid session
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+          restorationAttemptedRef.current = false;
+        }
         try {
           const storageKey = 'sb-xhmeitivkclbeziqavxw-auth-token';
           localStorage.setItem(storageKey, JSON.stringify(newSession));
@@ -59,6 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const backupSession = JSON.parse(backup);
             if (backupSession?.refresh_token) {
+              // Circuit breaker: don't re-attempt if already tried
+              if (restorationAttemptedRef.current) {
+                localStorage.removeItem("trakalog_session_backup");
+                window.location.href = "/auth";
+                return;
+              }
+              restorationAttemptedRef.current = true;
               // Re-establish session in Supabase client
               supabase.auth.setSession({
                 access_token: backupSession.access_token,
@@ -88,6 +100,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (backup) {
             const backupSession = JSON.parse(backup);
             if (backupSession?.access_token && backupSession?.refresh_token) {
+              // Circuit breaker: don't re-attempt if already tried
+              if (restorationAttemptedRef.current) {
+                localStorage.removeItem("trakalog_session_backup");
+                setLoading(false);
+                initializedRef.current = true;
+                window.location.href = "/auth";
+                return;
+              }
+              restorationAttemptedRef.current = true;
               // Try refreshing with the refresh token first
               const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession({
                 refresh_token: backupSession.refresh_token,
