@@ -404,7 +404,7 @@ export default function TrackDetail() {
     { id: "review", label: commentCount ? "Review (" + commentCount + ")" : "Review" },
   ];
   const tabs = isViewerShared
-    ? allTabs.filter(function (tab) { return tab.id !== "stems" && tab.id !== "details"; })
+    ? allTabs.filter(function (tab) { return tab.id !== "stems"; })
     : allTabs;
 
   return (
@@ -444,7 +444,7 @@ export default function TrackDetail() {
                 <Info className="w-4 h-4 text-brand-purple shrink-0" />
                 <p className="text-sm text-foreground flex-1">
                   {track.shareAccessLevel === "viewer"
-                    ? t("catalogSharing.savedFromBanner", { workspace: track.sharedFrom || "" }) + " · " + t("catalogSharing.viewOnly", "View only.")
+                    ? t("catalogSharing.savedFromBanner", { workspace: track.sharedFrom || "" })
                     : t("catalogSharing.sharedFromBanner", { workspace: track.sharedFrom || "" })}
                 </p>
                 {track.shareAccessLevel === "viewer" && track.shareId && (
@@ -604,6 +604,24 @@ export default function TrackDetail() {
                         >
                           <Download className="w-4 h-4" /> Download
                         </button>
+                        {isViewerShared && track.shareId && (
+                          <button
+                            onClick={async function() {
+                              var { error } = await supabase
+                                .from("catalog_shares")
+                                .update({ status: "revoked", revoked_at: new Date().toISOString() })
+                                .eq("id", track.shareId);
+                              if (!error) {
+                                toast.success(t("catalogSharing.removedFromTrakalog"));
+                                refreshTracks();
+                                navigate("/tracks");
+                              }
+                            }}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-destructive/30 bg-card text-destructive hover:bg-destructive/10 transition-all duration-200 min-h-[44px]"
+                          >
+                            <X className="w-4 h-4" /> {t("catalogSharing.removeFromTrakalog")}
+                          </button>
+                        )}
                         {permissions.canEditOwnTracks && !isViewerShared && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -853,18 +871,22 @@ export default function TrackDetail() {
                  <div className="space-y-10">
                    <section>
                      <h3 className="text-lg font-semibold text-foreground mb-4">Splits</h3>
-                     <SplitsTab trackId={track.id} trackUuid={track.uuid} />
+                     <SplitsTab trackId={track.id} trackUuid={track.uuid} readOnly={isViewerShared} />
                    </section>
                    <div className="border-t border-border" />
                    <section>
                      <h3 className="text-lg font-semibold text-foreground mb-4">Metadata</h3>
-                     <OverviewTab trackId={track.id} onEdit={() => setEditTrackModalOpen(true)} />
+                     <OverviewTab trackId={track.id} onEdit={() => setEditTrackModalOpen(true)} readOnly={isViewerShared} />
                    </section>
+                   {!isViewerShared && (
+                   <>
                    <div className="border-t border-border" />
                    <section>
                      <h3 className="text-lg font-semibold text-foreground mb-4">Paperwork</h3>
                      <PaperworkTab trackUuid={track.uuid} workspaceId={activeWorkspace.id} />
                    </section>
+                   </>
+                   )}
                  </div>
                )}
                {activeTab === "activity" && (
@@ -1058,7 +1080,7 @@ function SectionCard({ title, icon: Icon, children, action }: { title: string; i
   );
 }
 
-function OverviewTab({ trackId, onEdit }: { trackId: number; onEdit: () => void }) {
+function OverviewTab({ trackId, onEdit, readOnly }: { trackId: number; onEdit: () => void; readOnly?: boolean }) {
   const { t } = useTranslation();
   const { getTrack } = useTrack();
   const trackData = getTrack(trackId);
@@ -1076,9 +1098,11 @@ function OverviewTab({ trackId, onEdit }: { trackId: number; onEdit: () => void 
       icon={FileText}
       action={
         <div className="flex items-center gap-2">
+          {!readOnly && (
           <button onClick={onEdit} className="flex items-center gap-1.5 text-xs text-foreground hover:text-foreground/80 bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-lg font-semibold transition-colors">
             <Edit3 className="w-3.5 h-3.5" /> Edit Metadata
           </button>
+          )}
           <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg font-semibold transition-colors">
             <Download className="w-3.5 h-3.5" /> Download PDF
           </button>
@@ -1672,7 +1696,7 @@ interface StudioSubmission {
   created_at: string;
 }
 
-function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string }) {
+function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUuid?: string; readOnly?: boolean }) {
   const { t } = useTranslation();
   const { getTrack, updateTrackSplits } = useTrack();
   const trackData = getTrack(trackId);
@@ -2188,14 +2212,16 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
           </div>
           <div>
             <p className="text-sm font-medium text-foreground mb-1">No splits configured yet</p>
-            <p className="text-xs text-muted-foreground">Add collaborators and assign ownership percentages</p>
+            {!readOnly && <p className="text-xs text-muted-foreground">Add collaborators and assign ownership percentages</p>}
           </div>
+          {!readOnly && (
           <button onClick={startEditing} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold btn-brand">
             <Plus className="w-3.5 h-3.5" /> Add Splits
           </button>
+          )}
         </div>
       </SectionCard>
-      {renderStudioSubmissions()}
+      {!readOnly && renderStudioSubmissions()}
       </div>
     );
   }
@@ -2211,7 +2237,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
             <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:underline">
               <Download className="w-3.5 h-3.5" /> {t("signature.downloadUnsignedPdf")}
             </button>
-            <button onClick={startEditing} className="text-xs text-primary hover:underline">{t("signature.editSplits")}</button>
+            {!readOnly && <button onClick={startEditing} className="text-xs text-primary hover:underline">{t("signature.editSplits")}</button>}
           </div>
         }
       >
@@ -2310,7 +2336,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
           <span className="text-muted-foreground">Total</span>
           <span className={"font-bold " + (totalShares === 100 ? "text-emerald-400" : "text-destructive")}>{totalShares}%</span>
         </div>
-        {totalShares === 100 && splits.length >= 1 && (
+        {totalShares === 100 && splits.length >= 1 && !readOnly && (
           <TooltipProvider delayDuration={200}>
             <div className="px-5 py-3 border-t border-border flex flex-wrap items-center gap-2">
               {/* Download Signed Splits PDF */}
@@ -2414,7 +2440,7 @@ function SplitsTab({ trackId, trackUuid }: { trackId: number; trackUuid?: string
         </div>
       )}
 
-      {renderStudioSubmissions()}
+      {!readOnly && renderStudioSubmissions()}
     </div>
   );
 }
