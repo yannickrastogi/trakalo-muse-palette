@@ -50,6 +50,17 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { applyTheme, applyAccent, getStoredTheme, getStoredAccent, watchSystemTheme, applyCompactMode, applyReduceMotion, setSidebarCollapsed, getStoredCompact, getStoredReduceMotion, getStoredSidebarCollapsed, type ThemeMode, type AccentPalette } from "@/lib/theme";
 
+/* ─── Helpers ─── */
+async function ensureSession(session: { access_token: string; refresh_token: string } | null | undefined) {
+  const { data: { session: currentSession } } = await supabase.auth.getSession();
+  if (!currentSession && session) {
+    await supabase.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    });
+  }
+}
+
 /* ─── Animations ─── */
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 const fadeUp = {
@@ -258,7 +269,7 @@ function SectionBlock({ title, subtitle, icon: Icon, children, onSave, saveLabel
 
 function ProfileSection() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [firstName, setFirstName] = useState(user?.user_metadata?.first_name || "");
   const [lastName, setLastName] = useState(user?.user_metadata?.last_name || "");
   const [email] = useState(user?.email || "");
@@ -271,6 +282,7 @@ function ProfileSection() {
   const initials = ((user?.user_metadata?.first_name || "")[0] || "") + ((user?.user_metadata?.last_name || "")[0] || "") || "?";
 
   const handleSave = async () => {
+    await ensureSession(session);
     const { error } = await supabase.auth.updateUser({
       data: { first_name: firstName, last_name: lastName, phone, bio }
     });
@@ -279,6 +291,7 @@ function ProfileSection() {
   };
 
   const handlePrivacySave = async () => {
+    await ensureSession(session);
     const { error } = await supabase.auth.updateUser({
       data: { profile_visible: profileVisible, show_email: showEmail }
     });
@@ -302,6 +315,7 @@ function ProfileSection() {
       if (uploadErr) { toast.error(uploadErr.message); return; }
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
       const publicUrl = urlData.publicUrl + "?t=" + Date.now();
+      await ensureSession(session);
       await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
       setAvatarUrl(publicUrl);
       toast.success(t("settings.photoUpdated"));
@@ -310,6 +324,7 @@ function ProfileSection() {
   };
 
   const handleAvatarRemove = async () => {
+    await ensureSession(session);
     await supabase.auth.updateUser({ data: { avatar_url: null } });
     setAvatarUrl(null);
     toast.success(t("settings.photoRemoved"));
@@ -1263,7 +1278,7 @@ function CatalogSharingSection() {
 
 function NotificationsSection() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const prefs = user?.user_metadata?.notification_prefs || {};
   const [emailPitch, setEmailPitch] = useState(prefs.email_pitch !== false);
   const [emailUpload, setEmailUpload] = useState(prefs.email_upload !== false);
@@ -1275,6 +1290,7 @@ function NotificationsSection() {
   const [pushMention, setPushMention] = useState(prefs.push_mention !== false);
 
   const savePrefs = async (updates: Record<string, boolean>) => {
+    await ensureSession(session);
     const current = user?.user_metadata?.notification_prefs || {};
     await supabase.auth.updateUser({ data: { notification_prefs: { ...current, ...updates } } });
   };
@@ -1330,21 +1346,24 @@ function NotificationsSection() {
 
 function AppearanceSection() {
   const { t } = useTranslation();
+  const { session } = useAuth();
   const [theme, setThemeState] = useState<ThemeMode>(getStoredTheme);
   const [accent, setAccentState] = useState<AccentPalette>(getStoredAccent);
   const [compactMode, setCompactMode] = useState(getStoredCompact);
   const [sidebarCollapsed, setSidebarCollapsedState] = useState(getStoredSidebarCollapsed);
   const [animations, setAnimations] = useState(() => !getStoredReduceMotion());
 
-  const handleThemeChange = (newTheme: ThemeMode) => {
+  const handleThemeChange = async (newTheme: ThemeMode) => {
     setThemeState(newTheme);
     applyTheme(newTheme);
+    await ensureSession(session);
     supabase.auth.updateUser({ data: { theme: newTheme } }).catch(() => {});
   };
 
-  const handleAccentChange = (newAccent: AccentPalette) => {
+  const handleAccentChange = async (newAccent: AccentPalette) => {
     setAccentState(newAccent);
     applyAccent(newAccent);
+    await ensureSession(session);
     supabase.auth.updateUser({ data: { accent: newAccent } }).catch(() => {});
   };
 
@@ -1440,11 +1459,11 @@ function AppearanceSection() {
       </SectionBlock>
 
       <SectionBlock title="Layout & Display" subtitle="Fine-tune your workspace layout" icon={Monitor} onSave={handleSave} saveLabel="Save Layout">
-        <SettingToggleRow icon={Laptop} label="Compact Mode" description="Reduce padding and spacing for information-dense views" enabled={compactMode} onToggle={() => { const next = !compactMode; setCompactMode(next); applyCompactMode(next); supabase.auth.updateUser({ data: { compact_mode: next } }).catch(() => {}); }} />
+        <SettingToggleRow icon={Laptop} label="Compact Mode" description="Reduce padding and spacing for information-dense views" enabled={compactMode} onToggle={async () => { const next = !compactMode; setCompactMode(next); applyCompactMode(next); await ensureSession(session); supabase.auth.updateUser({ data: { compact_mode: next } }).catch(() => {}); }} />
         <Divider />
-        <SettingToggleRow icon={ChevronDown} label="Collapsed Sidebar" description="Start with the sidebar collapsed by default" enabled={sidebarCollapsed} onToggle={() => { const next = !sidebarCollapsed; setSidebarCollapsedState(next); setSidebarCollapsed(next); supabase.auth.updateUser({ data: { sidebar_collapsed: next } }).catch(() => {}); }} />
+        <SettingToggleRow icon={ChevronDown} label="Collapsed Sidebar" description="Start with the sidebar collapsed by default" enabled={sidebarCollapsed} onToggle={async () => { const next = !sidebarCollapsed; setSidebarCollapsedState(next); setSidebarCollapsed(next); await ensureSession(session); supabase.auth.updateUser({ data: { sidebar_collapsed: next } }).catch(() => {}); }} />
         <Divider />
-        <SettingToggleRow icon={Sparkles} label="Motion & Animations" description="Enable entrance animations and micro-interactions" enabled={animations} onToggle={() => { const next = !animations; setAnimations(next); applyReduceMotion(!next); supabase.auth.updateUser({ data: { reduce_motion: !next } }).catch(() => {}); }} />
+        <SettingToggleRow icon={Sparkles} label="Motion & Animations" description="Enable entrance animations and micro-interactions" enabled={animations} onToggle={async () => { const next = !animations; setAnimations(next); applyReduceMotion(!next); await ensureSession(session); supabase.auth.updateUser({ data: { reduce_motion: !next } }).catch(() => {}); }} />
       </SectionBlock>
 
       <ResetOnboardingBlock />
@@ -1481,7 +1500,7 @@ function ResetOnboardingBlock() {
 
 function SecuritySection() {
   const { t } = useTranslation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, session } = useAuth();
   const isOAuth = user?.app_metadata?.provider === "google";
   const [twoFa, setTwoFa] = useState(false);
   const [showPw, setShowPw] = useState(false);
@@ -1501,6 +1520,7 @@ function SecuritySection() {
       toast.error("Password must be at least 6 characters");
       return;
     }
+    await ensureSession(session);
     const { error } = await supabase.auth.updateUser({ password: newPw });
     if (error) toast.error(error.message);
     else {
