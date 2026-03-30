@@ -1,17 +1,27 @@
-import { useRef } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
-  const hasEverHadSessionRef = useRef(false);
+  const [timedOut, setTimedOut] = useState(false);
 
+  // Safety timeout: if loading takes more than 5 seconds, stop waiting
+  useEffect(() => {
+    if (!loading) {
+      setTimedOut(false);
+      return;
+    }
+    const timer = setTimeout(() => setTimedOut(true), 5000);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  // Session exists — render app
   if (session) {
-    hasEverHadSessionRef.current = true;
-    localStorage.setItem("trakalog_was_auth", "1");
+    return <>{children}</>;
   }
 
-  // Still loading auth — show spinner
-  if (loading) {
+  // Still loading (and not timed out) — show spinner
+  if (loading && !timedOut) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -19,17 +29,11 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Never had a session and not loading — redirect
-  if (!session && !hasEverHadSessionRef.current && !localStorage.getItem("trakalog_was_auth")) {
-    window.location.href = "/auth";
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
-  // KEY FIX: Always render children. If session is temporarily null but we had one before,
-  // keep children mounted so WorkspaceProvider doesn't lose its state.
-  return <>{children}</>;
+  // No session and either loading=false or timed out — redirect to auth
+  window.location.href = "/auth";
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+  );
 }
