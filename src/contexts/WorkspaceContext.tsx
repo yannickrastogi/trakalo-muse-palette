@@ -123,9 +123,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("trakalog_active_workspace", opts.switchTo);
       } else if (!activeId || !mapped.some((w) => w.id === activeId)) {
         // Set active workspace: use stored preference or first workspace
+        // Always prefer the user's own workspace (owner_id matches user.id)
+        const ownWorkspace = mapped.find((w) => w.owner_id === user.id);
         const stored = localStorage.getItem("trakalog_active_workspace");
+
         if (stored && mapped.some((w) => w.id === stored)) {
           setActiveId(stored);
+        } else if (ownWorkspace) {
+          setActiveId(ownWorkspace.id);
+          localStorage.setItem("trakalog_active_workspace", ownWorkspace.id);
         } else if (mapped.length > 0) {
           setActiveId(mapped[0].id);
         }
