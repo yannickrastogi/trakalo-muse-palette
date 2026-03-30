@@ -90,18 +90,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const backupSession = JSON.parse(backup);
             if (backupSession?.access_token && backupSession?.refresh_token) {
               console.log("[AUTH] Restoring session from backup");
-              const { data: restored, error: restoreError } = await supabase.auth.setSession({
-                access_token: backupSession.access_token,
+              // Try refreshing with the refresh token first
+              const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession({
                 refresh_token: backupSession.refresh_token,
               });
-              if (restored?.session && !restoreError) {
-                const allowed = await checkWhitelist(restored.session);
+              if (refreshed?.session && !refreshError) {
+                console.log("[AUTH] Session refreshed from backup");
+                localStorage.setItem("trakalog_session_backup", JSON.stringify(refreshed.session));
+                const allowed = await checkWhitelist(refreshed.session);
                 if (!allowed) return;
-                setSession(restored.session);
+                setSession(refreshed.session);
                 setLoading(false);
                 initializedRef.current = true;
                 return;
               }
+              // If refresh fails too, use backup session directly in React state (RPCs don't need Supabase auth)
+              console.log("[AUTH] Refresh failed, using backup session directly");
+              const allowed = await checkWhitelist(backupSession);
+              if (!allowed) return;
+              setSession(backupSession as Session);
+              setLoading(false);
+              initializedRef.current = true;
+              return;
             }
           }
         } catch (e) {
