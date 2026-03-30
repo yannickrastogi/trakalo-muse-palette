@@ -428,7 +428,7 @@ export default function SharedLinkPage() {
               var wsId = (wsRes.data[0] as any).id;
               setCurrentUserWorkspace(wsId);
               // Check if already saved
-              anonClient
+              supabase
                 .from("catalog_shares")
                 .select("id")
                 .eq("track_id", linkData!.track_id!)
@@ -489,7 +489,7 @@ export default function SharedLinkPage() {
                   var wsId = (wsRes.data[0] as any).id;
                   setCurrentUserWorkspace(wsId);
                   // Check if already saved
-                  backupClient
+                  supabase
                     .from("catalog_shares")
                     .select("id")
                     .eq("track_id", linkData!.track_id!)
