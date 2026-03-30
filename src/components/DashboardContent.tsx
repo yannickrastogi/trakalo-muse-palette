@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -99,10 +99,14 @@ export function DashboardContent() {
   const { user } = useAuth();
   const engagementStats = getTotalStats();
 
+  var autoSaveAttemptedRef = useRef(false);
+
   // Auto-save track to trakalog if pending
   useEffect(function() {
     var pendingSave = localStorage.getItem("trakalog_auto_save");
     if (!pendingSave || !activeWorkspace || !user) return;
+    if (autoSaveAttemptedRef.current) return;
+    autoSaveAttemptedRef.current = true;
 
     var doSave = async function() {
       var parsed: { slug?: string; track_id?: string; source_workspace_id?: string } | null = null;
@@ -142,6 +146,8 @@ export function DashboardContent() {
       if (!error) {
         toast.success("Track saved to your Trakalog!");
         refreshTracks();
+      } else if (error.code === "23505" || error.code === "409" || (error.message && error.message.toLowerCase().includes("already"))) {
+        toast.success("Track already in your Trakalog");
       }
     };
 
