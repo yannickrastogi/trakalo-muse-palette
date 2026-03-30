@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark } from "lucide-react";
 import { DEFAULT_COVER } from "@/lib/constants";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
@@ -441,15 +441,13 @@ export default function SharedLinkPage() {
                     // Auto-save the track after signup/login flow
                     localStorage.removeItem("trakalog_auto_save");
                     setSavingToTrakalog(true);
-                    anonClient.from("catalog_shares").insert({
-                      track_id: linkData!.track_id,
-                      source_workspace_id: linkData!.workspace_id,
-                      target_workspace_id: wsId,
-                      shared_by: res.data.session!.user.id,
-                      access_level: "viewer",
-                      status: "active",
-                    }).then(function(insertRes) {
-                      if (!insertRes.error) {
+                    supabase.rpc("save_track_to_trakalog", {
+                      _track_id: linkData!.track_id,
+                      _source_workspace_id: linkData!.workspace_id,
+                      _target_workspace_id: wsId,
+                      _user_id: res.data.session!.user.id,
+                    }).then(function(rpcRes) {
+                      if (!rpcRes.error) {
                         setSavedToTrakalog(true);
                       }
                       setSavingToTrakalog(false);
@@ -503,15 +501,13 @@ export default function SharedLinkPage() {
                       } else if (autoSave && linkData!.track_id) {
                         localStorage.removeItem("trakalog_auto_save");
                         setSavingToTrakalog(true);
-                        backupClient.from("catalog_shares").insert({
-                          track_id: linkData!.track_id,
-                          source_workspace_id: linkData!.workspace_id,
-                          target_workspace_id: wsId,
-                          shared_by: backupSession.user.id,
-                          access_level: "viewer",
-                          status: "active",
-                        }).then(function(insertRes) {
-                          if (!insertRes.error) {
+                        supabase.rpc("save_track_to_trakalog", {
+                          _track_id: linkData!.track_id,
+                          _source_workspace_id: linkData!.workspace_id,
+                          _target_workspace_id: wsId,
+                          _user_id: backupSession.user.id,
+                        }).then(function(rpcRes) {
+                          if (!rpcRes.error) {
                             setSavedToTrakalog(true);
                           }
                           setSavingToTrakalog(false);
@@ -791,14 +787,11 @@ export default function SharedLinkPage() {
   var handleSaveToTrakalog = async function() {
     if (!currentUserSession || !currentUserWorkspace || !linkData?.track_id) return;
     setSavingToTrakalog(true);
-    var anonClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
-    var { error } = await anonClient.from("catalog_shares").insert({
-      track_id: linkData.track_id,
-      source_workspace_id: linkData.workspace_id,
-      target_workspace_id: currentUserWorkspace,
-      shared_by: currentUserSession.user.id,
-      access_level: "viewer",
-      status: "active",
+    var { data: shareId, error } = await supabase.rpc("save_track_to_trakalog", {
+      _track_id: linkData.track_id,
+      _source_workspace_id: linkData.workspace_id,
+      _target_workspace_id: currentUserWorkspace,
+      _user_id: currentUserSession.user.id,
     });
     if (!error) {
       setSavedToTrakalog(true);
