@@ -47,8 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (newSession) {
         localStorage.setItem("trakalog_was_auth", "1");
         try {
-          const storageKey = 'sb-xhmeitivkclbeziqavxw-auth-token';
-          localStorage.setItem(storageKey, JSON.stringify(newSession));
           localStorage.setItem("trakalog_session_backup", JSON.stringify(newSession));
         } catch (e) {}
       }
@@ -75,8 +73,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               });
               if (refreshed?.session && !refreshError) {
                 localStorage.setItem("trakalog_session_backup", JSON.stringify(refreshed.session));
-                const supabaseKey = 'sb-xhmeitivkclbeziqavxw-auth-token';
-                localStorage.setItem(supabaseKey, JSON.stringify(refreshed.session));
                 const allowed = await checkWhitelist(refreshed.session);
                 if (!allowed) return;
                 setSession(refreshed.session);
