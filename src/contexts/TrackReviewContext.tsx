@@ -145,6 +145,54 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    // 3. Comments from shared tracks via catalog_shares
+    try {
+      const { data: shares, error: sharesError } = await supabase.rpc(
+        "get_workspace_catalog_shares",
+        { _workspace_id: activeWorkspace.id }
+      );
+
+      if (!sharesError && shares && shares.length > 0) {
+        const sharedTrackIds: string[] = shares
+          .map((s: any) => s.track_id)
+          .filter((id: string) => id && !trackUuids.includes(id));
+
+        if (sharedTrackIds.length > 0) {
+          const sharedRpcResults = await Promise.all(
+            sharedTrackIds.map((uuid) =>
+              supabase.rpc("get_track_comments", { _track_id: uuid })
+            )
+          );
+
+          for (const { data: dbComments } of sharedRpcResults) {
+            if (dbComments) {
+              for (const c of dbComments as any[]) {
+                if (allComments.some((existing) => existing.id === c.id)) continue;
+                allComments.push({
+                  id: c.id,
+                  trackId: c.track_id,
+                  authorName: c.author_name,
+                  authorEmail: c.author_email || undefined,
+                  authorType: (c.author_type || "guest_recipient") as AuthorType,
+                  commentText: c.content,
+                  timestampSeconds: Number(c.timestamp_sec),
+                  timestampLabel: formatTimestamp(Number(c.timestamp_sec)),
+                  createdAt: c.created_at,
+                  updatedAt: c.created_at,
+                  isEdited: false,
+                  sourceContext: "shared_link_review" as SourceContext,
+                  sharedLinkId: c.shared_link_id || undefined,
+                  sharedLinkName: undefined,
+                });
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching shared track comments:", err);
+    }
+
     setComments(allComments);
   }, [activeWorkspace, user]);
 
