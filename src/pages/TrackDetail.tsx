@@ -394,13 +394,18 @@ export default function TrackDetail() {
     setWaveformComposerOpen(false);
   };
 
-  const tabs = [
+  const isViewerShared = track?.isShared && track?.shareAccessLevel === "viewer";
+
+  const allTabs = [
     { id: "lyrics", label: "Lyrics" },
     { id: "stems", label: "Stems" },
     { id: "details", label: "Details" },
     { id: "activity", label: engagement ? "Activity (" + engagement.totalPlays + ")" : "Activity" },
     { id: "review", label: commentCount ? "Review (" + commentCount + ")" : "Review" },
   ];
+  const tabs = isViewerShared
+    ? allTabs.filter(function (tab) { return tab.id !== "stems" && tab.id !== "details"; })
+    : allTabs;
 
   return (
     <PageShell>
@@ -439,7 +444,7 @@ export default function TrackDetail() {
                 <Info className="w-4 h-4 text-brand-purple shrink-0" />
                 <p className="text-sm text-foreground flex-1">
                   {track.shareAccessLevel === "viewer"
-                    ? t("catalogSharing.savedFromBanner", { workspace: track.sharedFrom || "" })
+                    ? t("catalogSharing.savedFromBanner", { workspace: track.sharedFrom || "" }) + " · " + t("catalogSharing.viewOnly", "View only.")
                     : t("catalogSharing.sharedFromBanner", { workspace: track.sharedFrom || "" })}
                 </p>
                 {track.shareAccessLevel === "viewer" && track.shareId && (
@@ -492,12 +497,14 @@ export default function TrackDetail() {
                       e.target.value = "";
                     }}
                   />
+                  {!isViewerShared && (
                   <button
                     onClick={() => coverInputRef.current?.click()}
                     className="absolute bottom-3 right-3 p-2 rounded-lg bg-card/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground transition-all duration-200 opacity-0 group-hover:opacity-100"
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
+                  )}
                 </div>
               </div>
 
@@ -505,6 +512,11 @@ export default function TrackDetail() {
               <div className="flex-1 min-w-0 space-y-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
+                    {isViewerShared ? (
+                      <span className={"inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium " + (statusColorMap[track.status] || "bg-emerald-500/15 text-emerald-400")}>
+                        {track.status}
+                      </span>
+                    ) : (
                     <Popover open={statusPopoverOpen} onOpenChange={setStatusPopoverOpen}>
                       <PopoverTrigger asChild>
                         <button className={"inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity " + (statusColorMap[track.status] || "bg-emerald-500/15 text-emerald-400")}>
@@ -530,6 +542,7 @@ export default function TrackDetail() {
                         ))}
                       </PopoverContent>
                     </Popover>
+                    )}
                     {track.isrc && <span className="text-xs text-muted-foreground">{track.isrc}</span>}
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{track.title}</h1>
@@ -569,7 +582,7 @@ export default function TrackDetail() {
                         transition={{ duration: 0.2 }}
                         className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2"
                       >
-                        {permissions.canEditOwnTracks && (
+                        {permissions.canEditOwnTracks && !isViewerShared && (
                           <button
                             onClick={() => setEditTrackModalOpen(true)}
                             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 min-h-[44px] col-span-1"
@@ -591,7 +604,7 @@ export default function TrackDetail() {
                         >
                           <Download className="w-4 h-4" /> Download
                         </button>
-                        {permissions.canEditOwnTracks && (
+                        {permissions.canEditOwnTracks && !isViewerShared && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <button className="flex items-center justify-center w-10 h-10 rounded-lg border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200">
@@ -834,7 +847,7 @@ export default function TrackDetail() {
 
             {/* Tab content */}
             <motion.div variants={item}>
-              {activeTab === "lyrics" && <LyricsTab trackId={track.id} trackUuid={track.uuid} fallbackTrack={track} />}
+              {activeTab === "lyrics" && <LyricsTab trackId={track.id} trackUuid={track.uuid} fallbackTrack={track} readOnly={isViewerShared} />}
                {activeTab === "stems" && <StemsTab trackId={track.id} autoOpenUpload={shouldAutoUpload} />}
                {activeTab === "details" && (
                  <div className="space-y-10">
@@ -1215,7 +1228,7 @@ function CreditsTab({ trackId, onEdit }: { trackId: number; onEdit: () => void }
   );
 }
 
-function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; trackUuid: string; fallbackTrack?: TrackData }) {
+function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: number; trackUuid: string; fallbackTrack?: TrackData; readOnly?: boolean }) {
   const { getTrack, updateTrackLyrics, refreshTracks } = useTrack();
   const { currentTrack, currentTime, isPlaying, seekToTime, playTrack } = useAudioPlayer();
   const contextTrack = getTrack(trackId);
@@ -1401,6 +1414,7 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
       title="Lyrics"
       icon={FileText}
       action={
+        readOnly ? undefined :
         <div className="flex items-center gap-2">
           {hasLyrics && !isEditing && (
             <>
@@ -1594,8 +1608,9 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">No lyrics yet</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Write lyrics or import from a file</p>
+              {!readOnly && <p className="text-xs text-muted-foreground/60 mt-1">Write lyrics or import from a file</p>}
             </div>
+            {!readOnly && (
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={() => setIsEditing(true)}
@@ -1623,6 +1638,7 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack }: { trackId: number; tra
                 onChange={handlePdfUpload}
               />
             </div>
+            )}
           </div>
         )}
       </div>
