@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import { useTranslation } from "react-i18next";
 
@@ -16,8 +17,39 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [settingUp, setSettingUp] = useState(false);
+  const setupDoneRef = useRef(false);
 
   const redirectParam = searchParams.get("redirect");
+
+  useEffect(() => {
+    if (!session || setupDoneRef.current) return;
+    setupDoneRef.current = true;
+    setSettingUp(true);
+
+    (async () => {
+      try {
+        // Check if user has workspaces via RPC (bypasses RLS)
+        const { data: workspaces } = await supabase.rpc("get_user_workspaces", {
+          _user_id: session.user.id,
+        });
+
+        if (!workspaces || workspaces.length === 0) {
+          // Create workspace
+          const userName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split("@")[0] || "My";
+          await supabase.rpc("create_workspace_with_member", {
+            _name: userName + "'s Workspace",
+            _description: null,
+            _user_id: session.user.id,
+          });
+          console.log("Auto-created workspace for new user");
+        }
+      } catch (err) {
+        console.error("Setup error:", err);
+      }
+      setSettingUp(false);
+    })();
+  }, [session]);
 
   if (loading) {
     return (
@@ -27,8 +59,16 @@ export default function Auth() {
     );
   }
 
-  if (session) {
+  if (session && !settingUp) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  if (settingUp) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
   const handleLogin = async (e: React.FormEvent) => {
