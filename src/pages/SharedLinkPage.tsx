@@ -466,6 +466,71 @@ export default function SharedLinkPage() {
               setUserHasNoWorkspace(true);
             }
           });
+        return;
+      }
+      // Also check backup session from main app (anon client has persistSession: false so it misses the logged-in user)
+      var backup = localStorage.getItem("trakalog_session_backup");
+      if (backup) {
+        try {
+          var backupSession = JSON.parse(backup);
+          if (backupSession && backupSession.user && backupSession.user.id) {
+            setCurrentUserSession(backupSession);
+            // Use a client with the backup access token to query as the user
+            var backupClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+              auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+              global: { headers: { Authorization: "Bearer " + backupSession.access_token } }
+            });
+            backupClient
+              .from("workspaces")
+              .select("id, owner_id, created_at")
+              .eq("owner_id", backupSession.user.id)
+              .order("created_at", { ascending: true })
+              .limit(1)
+              .then(function(wsRes) {
+                if (wsRes.data && wsRes.data.length > 0) {
+                  var wsId = (wsRes.data[0] as any).id;
+                  setCurrentUserWorkspace(wsId);
+                  // Check if already saved
+                  backupClient
+                    .from("catalog_shares")
+                    .select("id")
+                    .eq("track_id", linkData!.track_id!)
+                    .eq("target_workspace_id", wsId)
+                    .eq("status", "active")
+                    .then(function(shareRes) {
+                      if (shareRes.data && shareRes.data.length > 0) {
+                        setSavedToTrakalog(true);
+                      } else if (autoSave && linkData!.track_id) {
+                        localStorage.removeItem("trakalog_auto_save");
+                        setSavingToTrakalog(true);
+                        backupClient.from("catalog_shares").insert({
+                          track_id: linkData!.track_id,
+                          source_workspace_id: linkData!.workspace_id,
+                          target_workspace_id: wsId,
+                          shared_by: backupSession.user.id,
+                          access_level: "viewer",
+                          status: "active",
+                        }).then(function(insertRes) {
+                          if (!insertRes.error) {
+                            setSavedToTrakalog(true);
+                          }
+                          setSavingToTrakalog(false);
+                        });
+                      }
+                    });
+                } else {
+                  if (autoSave) {
+                    console.log("Auto-save: no workspace found, redirecting to onboarding");
+                    window.location.href = "/onboarding?return=" + encodeURIComponent("/share/" + slug);
+                    return;
+                  }
+                  setUserHasNoWorkspace(true);
+                }
+              });
+          }
+        } catch (e) {
+          console.error("Error reading backup session:", e);
+        }
       }
     });
   }, [linkData]);
