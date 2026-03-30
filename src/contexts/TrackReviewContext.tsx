@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -80,6 +80,8 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [comments, setComments] = useState<TimecodedComment[]>([]);
   const [notifications, setNotifications] = useState<CommentNotification[]>([]);
+  const commentsRef = useRef<TimecodedComment[]>(comments);
+  commentsRef.current = comments;
 
   // Load comments from waveform_data + track_comments table
   const fetchComments = useCallback(async () => {
@@ -240,16 +242,12 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       isEdited: false,
     };
 
-    setComments((prev) => {
-      const updated = [...prev, newComment];
+    setComments((prev) => [...prev, newComment]);
 
-      // Persist to waveform_data (legacy)
-      const trackComments = updated.filter((c) => c.trackId === data.trackId);
-      persistCommentsForTrack(data.trackId, trackComments)
-        .catch(function (err) { console.error("Error:", err); });
-
-      return updated;
-    });
+    // Persist to waveform_data (legacy) — after state update, not inside the updater
+    const allTrackComments = [...commentsRef.current.filter(function (c) { return c.trackId === data.trackId; }), newComment];
+    persistCommentsForTrack(data.trackId, allTrackComments)
+      .catch(function (err) { console.error("Error persisting to waveform_data:", err); });
 
     // Also persist to track_comments table via RPC (SECURITY DEFINER) to bypass RLS
     supabase.rpc("add_track_comment", {
@@ -283,35 +281,39 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
   }, [persistCommentsForTrack]);
 
   const editComment = useCallback((commentId: string, newText: string) => {
-    setComments((prev) => {
-      const updated = prev.map((c) =>
+    setComments((prev) =>
+      prev.map((c) =>
+        c.id === commentId ? { ...c, commentText: newText, updatedAt: new Date().toISOString(), isEdited: true } : c
+      )
+    );
+
+    // Persist to waveform_data (legacy) — outside the state updater
+    const target = commentsRef.current.find((c) => c.id === commentId);
+    if (target) {
+      const updated = commentsRef.current.map((c) =>
         c.id === commentId ? { ...c, commentText: newText, updatedAt: new Date().toISOString(), isEdited: true } : c
       );
-
-      const target = updated.find((c) => c.id === commentId);
-      if (target) {
-        persistCommentsForTrack(target.trackId, updated.filter((c) => c.trackId === target.trackId))
-          .catch(function (err) { console.error("Error:", err); });
-      }
-
-      return updated;
-    });
+      persistCommentsForTrack(target.trackId, updated.filter((c) => c.trackId === target.trackId))
+        .catch(function (err) { console.error("Error:", err); });
+    }
   }, [persistCommentsForTrack]);
 
   const deleteComment = useCallback((commentId: string) => {
-    setComments((prev) => {
-      const updated = prev.map((c) =>
+    setComments((prev) =>
+      prev.map((c) =>
+        c.id === commentId ? { ...c, deletedAt: new Date().toISOString() } : c
+      )
+    );
+
+    // Persist to waveform_data (legacy) — outside the state updater
+    const target = commentsRef.current.find((c) => c.id === commentId);
+    if (target) {
+      const updated = commentsRef.current.map((c) =>
         c.id === commentId ? { ...c, deletedAt: new Date().toISOString() } : c
       );
-
-      const target = updated.find((c) => c.id === commentId);
-      if (target) {
-        persistCommentsForTrack(target.trackId, updated.filter((c) => c.trackId === target.trackId))
-          .catch(function (err) { console.error("Error:", err); });
-      }
-
-      return updated;
-    });
+      persistCommentsForTrack(target.trackId, updated.filter((c) => c.trackId === target.trackId))
+        .catch(function (err) { console.error("Error:", err); });
+    }
 
     // Also delete from track_comments table via RPC (SECURITY DEFINER) to bypass RLS
     supabase.rpc("delete_track_comment", { _comment_id: commentId })
