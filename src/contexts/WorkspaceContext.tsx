@@ -34,48 +34,21 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     setLoading(true);
     try {
-      // If Supabase client doesn't have a session, set it from AuthContext
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession && session) {
-        console.log("[WS-DEBUG] No internal session, setting from AuthContext");
-        await supabase.auth.setSession({
-          access_token: session.access_token,
-          refresh_token: session.refresh_token,
-        });
-      }
-      console.log("[WS-DEBUG] session ready, querying workspaces");
+      // Use RPC to bypass RLS issues with session
+      const { data: wsData, error: wsError } = await supabase.rpc("get_user_workspaces", {
+        _user_id: user.id,
+      });
 
-      // Get workspace IDs the user is a member of
-      const { data: memberships, error: memberError } = await supabase
-        .from("workspace_members")
-        .select("workspace_id")
-        .eq("user_id", user.id);
+      console.log("[WS-DEBUG] RPC result:", wsData?.length, "workspaces, error:", wsError?.message);
 
-      if (memberError) {
-        console.error("Error fetching memberships:", memberError);
-        return;
-      }
-
-      if (!memberships || memberships.length === 0) {
+      if (wsError || !wsData || wsData.length === 0) {
+        // No workspaces found — will show onboarding
         setWorkspaces([]);
         setActiveId(null);
         return;
       }
 
-      const workspaceIds = memberships.map((m) => m.workspace_id);
-
-      // Fetch workspace details
-      const { data: wsData, error: wsError } = await supabase
-        .from("workspaces")
-        .select("*")
-        .in("id", workspaceIds);
-
-      if (wsError) {
-        console.error("Error fetching workspaces:", wsError);
-        return;
-      }
-
-      const mapped: Workspace[] = (wsData || []).map((ws) => ({
+      const mapped: Workspace[] = wsData.map((ws: any) => ({
         id: ws.id,
         name: ws.name,
         slug: ws.slug,
@@ -89,10 +62,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           maxMembers: 5,
           storageQuotaMB: 2048,
         },
-        hero_image_url: (ws as any).hero_image_url || null,
-        hero_position: (ws as any).hero_position ?? null,
-        logo_url: (ws as any).logo_url || null,
-        brand_color: (ws as any).brand_color || null,
+        hero_image_url: ws.hero_image_url || null,
+        hero_position: ws.hero_position ?? null,
+        logo_url: ws.logo_url || null,
+        brand_color: ws.brand_color || null,
       }));
 
       setWorkspaces(mapped);
