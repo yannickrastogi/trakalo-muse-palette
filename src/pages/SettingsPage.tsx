@@ -282,9 +282,13 @@ function ProfileSection() {
   const initials = ((user?.user_metadata?.first_name || "")[0] || "") + ((user?.user_metadata?.last_name || "")[0] || "") || "?";
 
   const handleSave = async () => {
-    await ensureSession(session);
-    const { error } = await supabase.auth.updateUser({
-      data: { first_name: firstName, last_name: lastName, phone, bio }
+    const { error } = await supabase.rpc("update_user_profile", {
+      _user_id: user!.id,
+      _first_name: firstName,
+      _last_name: lastName,
+      _phone: phone || null,
+      _bio: bio || null,
+      _avatar_url: user?.user_metadata?.avatar_url || null,
     });
     if (error) toast.error(error.message);
     else toast.success(t("settings.profileSaved"));
@@ -315,8 +319,15 @@ function ProfileSection() {
       if (uploadErr) { toast.error(uploadErr.message); return; }
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
       const publicUrl = urlData.publicUrl + "?t=" + Date.now();
-      await ensureSession(session);
-      await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
+      const { error } = await supabase.rpc("update_user_profile", {
+        _user_id: user!.id,
+        _first_name: user?.user_metadata?.first_name || null,
+        _last_name: user?.user_metadata?.last_name || null,
+        _phone: user?.user_metadata?.phone || null,
+        _bio: user?.user_metadata?.bio || null,
+        _avatar_url: publicUrl,
+      });
+      if (error) { toast.error(error.message); return; }
       setAvatarUrl(publicUrl);
       toast.success(t("settings.photoUpdated"));
     };
@@ -324,8 +335,15 @@ function ProfileSection() {
   };
 
   const handleAvatarRemove = async () => {
-    await ensureSession(session);
-    await supabase.auth.updateUser({ data: { avatar_url: null } });
+    const { error } = await supabase.rpc("update_user_profile", {
+      _user_id: user!.id,
+      _first_name: user?.user_metadata?.first_name || null,
+      _last_name: user?.user_metadata?.last_name || null,
+      _phone: user?.user_metadata?.phone || null,
+      _bio: user?.user_metadata?.bio || null,
+      _avatar_url: null,
+    });
+    if (error) { toast.error(error.message); return; }
     setAvatarUrl(null);
     toast.success(t("settings.photoRemoved"));
   };
