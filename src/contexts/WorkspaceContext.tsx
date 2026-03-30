@@ -163,8 +163,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // b) Fetch in progress (session exists, waiting for result) → spinner
-  if (!hasFetched && session) {
+  // b) Fetch in progress, waiting for result → spinner
+  if (!hasFetched) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -181,16 +181,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // d) No session and no workspace ready → ProtectedRoute handles real redirect
-  if (!session && !activeWorkspace) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
-  // e) Workspaces exist but activeId not resolved yet → spinner
+  // d) Workspaces exist but activeId not resolved yet → spinner
   if (!activeWorkspace) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
