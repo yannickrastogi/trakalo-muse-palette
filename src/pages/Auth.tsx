@@ -28,6 +28,7 @@ export default function Auth() {
   }
 
   if (session) {
+    localStorage.setItem("trakalog_just_logged_in", "1");
     return <Navigate to="/dashboard" replace />;
   }
 
