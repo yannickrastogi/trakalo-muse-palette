@@ -34,8 +34,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     setLoading(true);
     try {
-      const { data: { session: debugSession } } = await supabase.auth.getSession();
-      console.log("[WS-DEBUG] session email:", debugSession?.user?.email, "user.id:", user.id);
+      // Wait for Supabase session to be available (may take a moment after OAuth)
+      let supaSession = null;
+      for (let i = 0; i < 30; i++) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          supaSession = data.session;
+          break;
+        }
+        await new Promise(r => setTimeout(r, 200));
+      }
+      console.log("[WS-DEBUG] session email:", supaSession?.user?.email, "after waiting");
+      if (!supaSession) {
+        console.log("[WS-DEBUG] No session after 6s, aborting fetch");
+        setWorkspaces([]);
+        setActiveId(null);
+        setLoading(false);
+        setHasFetched(true);
+        return;
+      }
 
       // Get workspace IDs the user is a member of
       const { data: memberships, error: memberError } = await supabase
