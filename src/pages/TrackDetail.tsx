@@ -451,9 +451,7 @@ export default function TrackDetail() {
                   <button
                     onClick={async function() {
                       var { error } = await supabase
-                        .from("catalog_shares")
-                        .update({ status: "revoked", revoked_at: new Date().toISOString() })
-                        .eq("id", track.shareId);
+                        .rpc("remove_track_from_trakalog", { _track_id: track.uuid, _user_id: user.id });
                       if (!error) {
                         toast.success(t("catalogSharing.removedFromTrakalog"));
                         refreshTracks();
@@ -608,9 +606,7 @@ export default function TrackDetail() {
                           <button
                             onClick={async function() {
                               var { error } = await supabase
-                                .from("catalog_shares")
-                                .update({ status: "revoked", revoked_at: new Date().toISOString() })
-                                .eq("id", track.shareId);
+                                .rpc("remove_track_from_trakalog", { _track_id: track.uuid, _user_id: user.id });
                               if (!error) {
                                 toast.success(t("catalogSharing.removedFromTrakalog"));
                                 refreshTracks();
