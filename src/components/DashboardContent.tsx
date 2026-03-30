@@ -36,6 +36,8 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { useRole } from "@/contexts/RoleContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 
@@ -87,22 +89,64 @@ export function DashboardContent() {
   const { t } = useTranslation();
   const { permissions } = useRole();
   const { getTotalStats, trackEngagement } = useEngagement();
-  const { tracks: allTracks } = useTrack();
+  const { tracks: allTracks, refreshTracks } = useTrack();
   const { playlists: allPlaylists, addPlaylist } = usePlaylists();
   const { contacts: allContacts } = useContacts();
   const { pitches: allPitches, addPitch } = usePitches();
   const navigate = useNavigate();
   const { completeStep } = useOnboarding();
   const { activeWorkspace } = useWorkspace();
+  const { user } = useAuth();
   const engagementStats = getTotalStats();
 
-  // Redirect to shared link if there's a pending auto-save
+  // Auto-save track to trakalog if pending
   useEffect(function() {
     var pendingSave = localStorage.getItem("trakalog_auto_save");
-    if (pendingSave) {
-      window.location.href = "/share/" + pendingSave;
-    }
-  }, []);
+    if (!pendingSave || !activeWorkspace || !user) return;
+
+    var doSave = async function() {
+      var parsed: { slug?: string; track_id?: string; source_workspace_id?: string } | null = null;
+      try {
+        parsed = JSON.parse(pendingSave!);
+      } catch (e) {
+        // Old format: just a slug string
+      }
+
+      var trackId = parsed?.track_id;
+      var sourceWorkspaceId = parsed?.source_workspace_id;
+      var slug = parsed?.slug || pendingSave;
+
+      // Fallback: if no track_id/source_workspace_id, look up from shared_links
+      if (!trackId || !sourceWorkspaceId) {
+        var { data: linkRow } = await supabase
+          .from("shared_links")
+          .select("track_id, workspace_id")
+          .eq("slug", slug!)
+          .maybeSingle();
+        if (!linkRow) {
+          localStorage.removeItem("trakalog_auto_save");
+          return;
+        }
+        trackId = linkRow.track_id;
+        sourceWorkspaceId = linkRow.workspace_id;
+      }
+
+      var { error } = await supabase.rpc("save_track_to_trakalog", {
+        _track_id: trackId,
+        _source_workspace_id: sourceWorkspaceId,
+        _target_workspace_id: activeWorkspace.id,
+        _user_id: user.id,
+      });
+
+      localStorage.removeItem("trakalog_auto_save");
+      if (!error) {
+        toast.success("Track saved to your Trakalog!");
+        refreshTracks();
+      }
+    };
+
+    doSave();
+  }, [activeWorkspace, user]);
 
   // Fetch link_events from Supabase
   const [linkEvents, setLinkEvents] = useState<{ event_type: string; visitor_email: string | null; created_at: string; track_id: string | null }[]>([]);

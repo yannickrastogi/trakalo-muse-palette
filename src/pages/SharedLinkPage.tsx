@@ -1686,7 +1686,7 @@ export default function SharedLinkPage() {
                 ) : currentUserSession && userHasNoWorkspace ? (
                   <a
                     href="/onboarding"
-                    onClick={function() { localStorage.setItem("trakalog_auto_save", slug!); }}
+                    onClick={function() { localStorage.setItem("trakalog_auto_save", JSON.stringify({ slug: slug!, track_id: linkData?.track_id, source_workspace_id: linkData?.workspace_id })); }}
                     className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] " + (immersive ? "bg-white/10 backdrop-blur-xl border border-white/15 text-white hover:bg-white/20" : "btn-brand")}
                   >
                     <Bookmark className="w-4 h-4" />
@@ -1695,7 +1695,7 @@ export default function SharedLinkPage() {
                 ) : (
                   <a
                     href="/auth"
-                    onClick={function() { localStorage.setItem("trakalog_auto_save", slug!); }}
+                    onClick={function() { localStorage.setItem("trakalog_auto_save", JSON.stringify({ slug: slug!, track_id: linkData?.track_id, source_workspace_id: linkData?.workspace_id })); }}
                     className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] " + (immersive ? "bg-white/10 backdrop-blur-xl border border-white/15 text-white hover:bg-white/20" : "border border-border bg-card text-foreground hover:bg-secondary")}
                   >
                     <Bookmark className="w-4 h-4" />
