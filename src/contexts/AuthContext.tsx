@@ -46,9 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       // Manually persist session to localStorage — Supabase sometimes fails to do this
       if (newSession) {
-        // Reset circuit breaker on genuine auth events with valid session
+        // Reset circuit breaker on genuine auth events (fresh login, not backup restoration)
         if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
           restorationAttemptedRef.current = false;
+          localStorage.setItem("trakalog_was_auth", "1");
         }
         try {
           const storageKey = 'sb-xhmeitivkclbeziqavxw-auth-token';
