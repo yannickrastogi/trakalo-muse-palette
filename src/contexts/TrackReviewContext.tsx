@@ -114,33 +114,33 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
     // 2. Comments from track_comments table
     const trackUuids = (data || []).map((r) => r.id);
     if (trackUuids.length > 0) {
-      const { data: dbComments } = await supabase
-        .from("track_comments")
-        .select("*, shared_links:shared_link_id(link_name, link_slug)")
-        .in("track_id", trackUuids)
-        .order("created_at", { ascending: true });
+      // Fetch comments via RPC (SECURITY DEFINER) to bypass RLS when auth.uid() is null
+      const rpcResults = await Promise.all(
+        trackUuids.map((uuid) => supabase.rpc("get_track_comments", { _track_id: uuid }))
+      );
 
-      if (dbComments) {
-        for (const c of dbComments) {
-          // Skip if already exists (by id)
-          if (allComments.some((existing) => existing.id === c.id)) continue;
-          const linkInfo = c.shared_links as { link_name: string; link_slug: string } | null;
-          allComments.push({
-            id: c.id,
-            trackId: c.track_id,
-            authorName: c.author_name,
-            authorEmail: c.author_email || undefined,
-            authorType: (c.author_type || "guest_recipient") as AuthorType,
-            commentText: c.content,
-            timestampSeconds: Number(c.timestamp_sec),
-            timestampLabel: formatTimestamp(Number(c.timestamp_sec)),
-            createdAt: c.created_at,
-            updatedAt: c.created_at,
-            isEdited: false,
-            sourceContext: "shared_link_review" as SourceContext,
-            sharedLinkId: c.shared_link_id || undefined,
-            sharedLinkName: linkInfo ? (linkInfo.link_name || linkInfo.link_slug) : undefined,
-          });
+      for (const { data: dbComments } of rpcResults) {
+        if (dbComments) {
+          for (const c of dbComments as any[]) {
+            // Skip if already exists (by id)
+            if (allComments.some((existing) => existing.id === c.id)) continue;
+            allComments.push({
+              id: c.id,
+              trackId: c.track_id,
+              authorName: c.author_name,
+              authorEmail: c.author_email || undefined,
+              authorType: (c.author_type || "guest_recipient") as AuthorType,
+              commentText: c.content,
+              timestampSeconds: Number(c.timestamp_sec),
+              timestampLabel: formatTimestamp(Number(c.timestamp_sec)),
+              createdAt: c.created_at,
+              updatedAt: c.created_at,
+              isEdited: false,
+              sourceContext: "shared_link_review" as SourceContext,
+              sharedLinkId: c.shared_link_id || undefined,
+              sharedLinkName: undefined,
+            });
+          }
         }
       }
     }
