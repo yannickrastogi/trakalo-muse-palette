@@ -29,7 +29,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
-  const autoCreateAttemptedRef = useRef(false);
+  const creatingWorkspaceRef = useRef(false);
 
   const fetchWorkspaces = useCallback(async (opts?: { switchTo?: string }) => {
     if (!user) return;
@@ -42,8 +42,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
       if (wsError || !wsData || wsData.length === 0) {
         // Auto-create workspace for new users
-        if (!autoCreateAttemptedRef.current && user) {
-          autoCreateAttemptedRef.current = true;
+        if (!creatingWorkspaceRef.current && user) {
+          creatingWorkspaceRef.current = true;
           const userName = (user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "My");
           try {
             const { data: newWsId, error: createError } = await supabase.rpc("create_workspace_with_member", {
@@ -52,6 +52,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
               _user_id: user.id,
             });
             if (!createError && newWsId) {
+              // Mark as personal workspace
+              await supabase.from("workspaces").update({ is_personal: true } as any).eq("id", newWsId);
               // Re-fetch to get the new workspace
               const { data: newWsData } = await supabase.rpc("get_user_workspaces", { _user_id: user.id });
               if (newWsData && newWsData.length > 0) {
@@ -73,6 +75,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                   hero_position: ws.hero_position ?? null,
                   logo_url: ws.logo_url || null,
                   brand_color: ws.brand_color || null,
+                  is_personal: !!ws.is_personal,
                 }));
                 setWorkspaces(mapped);
                 setActiveId(mapped[0].id);
@@ -80,7 +83,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                 return;
               }
             }
-          } catch (err) {}
+          } catch (err) {
+          } finally {
+            creatingWorkspaceRef.current = false;
+          }
         }
         setWorkspaces([]);
         setActiveId(null);
@@ -105,6 +111,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         hero_position: ws.hero_position ?? null,
         logo_url: ws.logo_url || null,
         brand_color: ws.brand_color || null,
+        is_personal: !!ws.is_personal,
       }));
 
       setWorkspaces(mapped);
@@ -115,11 +122,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("trakalog_active_workspace", opts.switchTo);
       } else if (!activeId || !mapped.some((w) => w.id === activeId)) {
         // Set active workspace: use stored preference or first workspace
-        // Always prefer the user's own workspace (owner_id matches user.id)
-        // Personal workspace = oldest workspace owned by user (created at signup)
-        const ownWorkspaces = mapped.filter((w) => w.owner_id === user.id);
-        ownWorkspaces.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-        const ownWorkspace = ownWorkspaces[0] || null;
+        // Always prefer the user's personal workspace (is_personal = true)
+        const personalWorkspace = mapped.find((w) => w.is_personal && w.owner_id === user.id) || null;
+        const ownWorkspace = personalWorkspace;
         const stored = localStorage.getItem("trakalog_active_workspace");
         const justLoggedIn = localStorage.getItem("trakalog_just_logged_in");
 

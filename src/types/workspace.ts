@@ -24,6 +24,7 @@ export interface Workspace {
   hero_position: number | null;
   logo_url: string | null;
   brand_color: string | null;
+  is_personal: boolean;
 }
 
 // ── Tenant-scoped entity base ──
