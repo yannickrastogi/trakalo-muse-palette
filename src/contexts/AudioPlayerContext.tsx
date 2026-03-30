@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { TrackData } from "@/contexts/TrackContext";
 
@@ -106,7 +106,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   // Cache of signed URLs by storage path to avoid re-signing
   const signedUrlCache = useRef<Record<string, { url: string; expires: number }>>({});
 
-  const resolveAudioUrl = useCallback(async (rawUrl: string): Promise<string | null> => {
+  const resolveAudioUrl = useCallback(async (rawUrl: string, trackUuid?: string): Promise<string | null> => {
     // Already a full URL (signed or external)
     if (rawUrl.startsWith("http")) {
       // Check if it's a Supabase signed URL that might be expired
@@ -120,22 +120,32 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       return cached.url;
     }
 
-    // Ensure Supabase has a session for signed URLs
-    const { data: { session: currentSession } } = await supabase.auth.getSession();
-    if (!currentSession) {
-      try {
-        const backup = localStorage.getItem("trakalog_session_backup");
-        if (backup) {
-          const backupSession = JSON.parse(backup);
-          if (backupSession?.refresh_token) {
-            await supabase.auth.refreshSession({ refresh_token: backupSession.refresh_token });
-          }
+    // Try Edge Function first (works without session)
+    try {
+      if (trackUuid) {
+        const res = await fetch(SUPABASE_URL + "/functions/v1/get-audio-url", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+            "apikey": SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ track_id: trackUuid, quality: "preview" }),
+        });
+        const data = await res.json();
+        if (data.url) {
+          signedUrlCache.current[rawUrl] = {
+            url: data.url,
+            expires: Date.now() + 3500 * 1000,
+          };
+          return data.url;
         }
-      } catch (e) {
-        console.error("Failed to restore session for audio:", e);
       }
+    } catch (e) {
+      // fallback to createSignedUrl
     }
 
+    // Fallback: direct storage signing
     const { data, error } = await supabase.storage
       .from("tracks")
       .createSignedUrl(rawUrl, 3600);
@@ -147,7 +157,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
     signedUrlCache.current[rawUrl] = {
       url: data.signedUrl,
-      expires: Date.now() + 3500 * 1000, // slight buffer before actual expiry
+      expires: Date.now() + 3500 * 1000,
     };
     return data.signedUrl;
   }, []);
@@ -173,7 +183,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       duration: 0,
     }));
 
-    const signedUrl = await resolveAudioUrl(rawUrl);
+    const signedUrl = await resolveAudioUrl(rawUrl, track.uuid);
     if (!signedUrl) {
       toast.error("Could not load audio. Please try again.");
       setState((prev) => ({ ...prev, isPlaying: false }));
