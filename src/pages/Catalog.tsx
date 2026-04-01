@@ -160,6 +160,7 @@ export default function Catalog() {
       {activeTab === "stems" ? (
         <StemsContent />
       ) : (
+      <>
       <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
         {/* Header */}
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -595,6 +596,7 @@ export default function Catalog() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </>
       )}
     </PageShell>
   );
