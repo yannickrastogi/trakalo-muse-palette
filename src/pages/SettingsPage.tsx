@@ -2035,7 +2035,12 @@ const sectionComponents: Record<SettingsSection, React.FC> = {
 
 export default function SettingsPage() {
   const { t } = useTranslation();
-  const [activeSection, setActiveSection] = useState<SettingsSection>("profile");
+  const [activeSection, setActiveSection] = useState<SettingsSection>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const s = params.get("section");
+    const valid: SettingsSection[] = ["profile", "workspace", "branding", "catalogSharing", "notifications", "appearance", "security"];
+    return s && valid.includes(s as SettingsSection) ? s as SettingsSection : "profile";
+  });
   const isMobile = useIsMobile();
   const ActiveComponent = sectionComponents[activeSection];
   const activeInfo = sections.find((s) => s.id === activeSection)!;

@@ -114,6 +114,7 @@ export function UserMenu() {
               {[
                 { icon: User, label: t("userMenu.profile"), path: "/settings" },
                 { icon: Settings, label: t("userMenu.settings"), path: "/settings" },
+                { icon: Shield, label: "Security", path: "/settings?section=security" },
                 { icon: CreditCard, label: t("userMenu.billing"), path: "/settings" },
               ].map((item) => (
                 <button
