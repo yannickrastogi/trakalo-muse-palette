@@ -1,0 +1,15 @@
+{
+  "name": "trakalog-watermark-service",
+  "version": "1.0.0",
+  "description": "Audio watermarking service using audiowmark",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^10.0.0"
+  }
+}
