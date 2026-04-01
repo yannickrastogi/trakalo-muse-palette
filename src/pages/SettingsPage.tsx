@@ -1633,9 +1633,26 @@ function SecuritySection() {
     }
   };
 
+  const [signingOut, setSigningOut] = useState(false);
+
   const handleSignOutEverywhere = async () => {
-    await supabase.auth.signOut({ scope: "global" });
-    toast.success("Signed out from all devices");
+    setSigningOut(true);
+    try {
+      const { error } = await supabase.auth.signOut({ scope: "global" });
+      if (error) {
+        toast.error(error.message);
+        setSigningOut(false);
+        return;
+      }
+      localStorage.removeItem("trakalog_was_auth");
+      localStorage.removeItem("trakalog_session_backup");
+      localStorage.removeItem("trakalog_active_workspace");
+      toast.success("Signed out from all devices");
+      window.location.href = "/auth";
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to sign out");
+      setSigningOut(false);
+    }
   };
 
   return (
@@ -1799,8 +1816,8 @@ function SecuritySection() {
             <p className="text-[13px] font-semibold text-foreground">Sign out everywhere</p>
             <p className="text-[11px] text-muted-foreground/50 mt-0.5">This will sign you out from all devices and sessions</p>
           </div>
-          <button onClick={handleSignOutEverywhere} className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-destructive/30 text-destructive hover:bg-destructive/10 transition-all min-h-[40px] flex items-center gap-2 shrink-0">
-            <LogOut className="w-3.5 h-3.5" /> Sign Out All
+          <button onClick={handleSignOutEverywhere} disabled={signingOut} className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-destructive/30 text-destructive hover:bg-destructive/10 transition-all min-h-[40px] flex items-center gap-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+            <LogOut className="w-3.5 h-3.5" /> {signingOut ? "Signing out…" : "Sign Out All"}
           </button>
         </div>
       </SectionBlock>
