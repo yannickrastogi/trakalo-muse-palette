@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
-import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark } from "lucide-react";
+import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark, ShieldCheck } from "lucide-react";
 import { DEFAULT_COVER } from "@/lib/constants";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import JSZip from "jszip";
@@ -266,6 +266,7 @@ export default function SharedLinkPage() {
   var [currentTime, setCurrentTime] = useState(0);
   var [duration, setDuration] = useState(0);
   var [volume, setVolume] = useState(0.8);
+  var [isWatermarked, setIsWatermarked] = useState(false);
 
   // Comments
   var [comments, setComments] = useState<TrackComment[]>([]);
@@ -577,6 +578,7 @@ export default function SharedLinkPage() {
     setPlayingTrackId(track.id);
     setCurrentTime(0);
     setDuration(0);
+    setIsWatermarked(false);
     fetchAudioUrl(track.id, "preview").then(function(url) {
       if (!url) {
         console.error("No audio URL returned for track", track.id);
@@ -584,10 +586,49 @@ export default function SharedLinkPage() {
         setPlayingTrackId(null);
         return;
       }
+      // Try to get watermarked version, fallback to original on error/timeout
+      var storagePath = track.audio_url;
+      var currentLinkId = linkData?.id;
+      var currentVisitorEmail = visitorEmailRef.current;
+      var currentVisitorName = visitorName;
+      if (storagePath && currentLinkId && currentVisitorEmail) {
+        var wmAbort = new AbortController();
+        var wmTimeout = setTimeout(function() { wmAbort.abort(); }, 15000);
+        fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/get-watermarked-audio", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+            "apikey": SUPABASE_PUBLISHABLE_KEY
+          },
+          body: JSON.stringify({
+            storage_path: storagePath,
+            link_id: currentLinkId,
+            visitor_email: currentVisitorEmail,
+            visitor_name: currentVisitorName || ""
+          }),
+          signal: wmAbort.signal
+        }).then(function(wmRes) {
+          clearTimeout(wmTimeout);
+          if (!wmRes.ok) throw new Error("Watermark request failed");
+          return wmRes.json();
+        }).then(function(wmJson) {
+          if (wmJson.url && loadedTrackIdRef.current === track.id) {
+            audio.src = wmJson.url;
+            setIsWatermarked(true);
+            audio.play().catch(function(err) { console.error("Play error:", err); });
+          }
+        }).catch(function(wmErr) {
+          clearTimeout(wmTimeout);
+          console.warn("Watermarking unavailable, using original audio:", wmErr);
+          // Fallback: already playing original URL
+        });
+      }
+      // Play original URL immediately while watermarked version loads
       audio.src = url;
       audio.play().catch(function(err) { console.error("Play error:", err); });
     }).catch(function (err) { console.error("Error:", err); });
-  }, [fetchAudioUrl]);
+  }, [fetchAudioUrl, linkData, visitorName]);
 
   // Keep ref in sync so onEnded can call it without stale closure
   useEffect(function() { loadAndPlayTrackRef.current = loadAndPlayTrack; }, [loadAndPlayTrack]);
@@ -1591,9 +1632,17 @@ export default function SharedLinkPage() {
                 )}
 
                 <div className="flex items-center justify-between">
-                  <span className={"text-[11px] font-mono tabular-nums " + (immersive ? "text-white/50" : "text-muted-foreground")}>
-                    {formatDuration(currentTime)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={"text-[11px] font-mono tabular-nums " + (immersive ? "text-white/50" : "text-muted-foreground")}>
+                      {formatDuration(currentTime)}
+                    </span>
+                    {isWatermarked && (
+                      <span className={"inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full " + (immersive ? "bg-white/10 text-white/50" : "bg-muted text-muted-foreground")}>
+                        <ShieldCheck className="w-3 h-3" />
+                        Protected
+                      </span>
+                    )}
+                  </div>
                   <button
                     onClick={function() { handlePlayTrack(trackData!); }}
                     className="w-11 h-11 rounded-full btn-brand flex items-center justify-center"
