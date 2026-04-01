@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark, ShieldCheck } from "lucide-react";
 import { DEFAULT_COVER } from "@/lib/constants";
@@ -233,7 +232,9 @@ function getVisitorCookie(): { name: string; email: string; role: string; compan
 }
 
 export default function SharedLinkPage() {
-  var anonSupabase = useRef(createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: "sb-trakalog-anon-shared" } })).current;
+  var REST_URL = SUPABASE_URL + "/rest/v1";
+  var STORAGE_URL = SUPABASE_URL + "/storage/v1";
+  var SB_HEADERS: Record<string, string> = { "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY };
   var { slug } = useParams<{ slug: string }>();
 
   var [loading, setLoading] = useState(true);
@@ -306,11 +307,9 @@ export default function SharedLinkPage() {
     }
 
     async function fetchLink() {
-      var { data, error: fetchErr } = await anonSupabase
-        .from("shared_links")
-        .select("*")
-        .eq("link_slug", slug!)
-        .single();
+      var slRes = await fetch(REST_URL + "/shared_links?select=*&link_slug=eq." + encodeURIComponent(slug!), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } });
+      var data = slRes.ok ? await slRes.json() : null;
+      var fetchErr = slRes.ok ? null : { message: slRes.statusText };
 
       if (fetchErr || !data) {
         setError("This link does not exist or has been removed.");
@@ -348,29 +347,21 @@ export default function SharedLinkPage() {
 
       if (link.share_type === "playlist" && link.playlist_id) {
         // Fetch playlist metadata
-        var { data: pl } = await anonSupabase
-          .from("playlists")
-          .select("id, name, description, cover_url")
-          .eq("id", link.playlist_id)
-          .single();
+        var plRes = await fetch(REST_URL + "/playlists?select=id,name,description,cover_url&id=eq." + encodeURIComponent(link.playlist_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } });
+        var pl = plRes.ok ? await plRes.json() : null;
 
         if (pl) {
           setPlaylistData(pl as unknown as PlaylistData);
         }
 
         // Fetch playlist tracks via playlist_tracks join
-        var { data: ptRows } = await anonSupabase
-          .from("playlist_tracks")
-          .select("track_id, position")
-          .eq("playlist_id", link.playlist_id)
-          .order("position", { ascending: true });
+        var ptRes = await fetch(REST_URL + "/playlist_tracks?select=track_id,position&playlist_id=eq." + encodeURIComponent(link.playlist_id) + "&order=position.asc", { headers: SB_HEADERS });
+        var ptRows = ptRes.ok ? await ptRes.json() : null;
 
         if (ptRows && ptRows.length > 0) {
           var trackIds = ptRows.map(function(r) { return r.track_id; });
-          var { data: tracks } = await anonSupabase
-            .from("tracks")
-            .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood, waveform_data, lyrics, lyrics_segments")
-            .in("id", trackIds);
+          var tracksRes = await fetch(REST_URL + "/tracks?select=id,title,artist,featuring,genre,bpm,key,duration_sec,cover_url,audio_url,mood,waveform_data,lyrics,lyrics_segments&id=in.(" + trackIds.map(encodeURIComponent).join(",") + ")", { headers: SB_HEADERS });
+          var tracks = tracksRes.ok ? await tracksRes.json() : null;
 
           if (tracks) {
             // Sort tracks by playlist position
@@ -384,11 +375,9 @@ export default function SharedLinkPage() {
         }
       } else if (link.track_id) {
         // Single track (also used by stems and pack share types)
-        var { data: track, error: trackErr } = await anonSupabase
-          .from("tracks")
-          .select("id, title, artist, featuring, genre, bpm, key, duration_sec, cover_url, audio_url, mood, waveform_data, lyrics, lyrics_segments, splits, isrc, labels, publishers, language, gender, released_at")
-          .eq("id", link.track_id)
-          .single();
+        var trackRes = await fetch(REST_URL + "/tracks?select=id,title,artist,featuring,genre,bpm,key,duration_sec,cover_url,audio_url,mood,waveform_data,lyrics,lyrics_segments,splits,isrc,labels,publishers,language,gender,released_at&id=eq." + encodeURIComponent(link.track_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } });
+        var track = trackRes.ok ? await trackRes.json() : null;
+        var trackErr = trackRes.ok ? null : { message: trackRes.statusText };
 
         if (trackErr) {
           console.error("Failed to fetch track for shared link:", trackErr, "track_id:", link.track_id, "share_type:", link.share_type);
@@ -489,18 +478,11 @@ export default function SharedLinkPage() {
   // Fetch workspace branding when link data is available
   useEffect(function() {
     if (!linkData || !linkData.workspace_id) return;
-    anonSupabase
-      .from("workspaces")
-      .select("hero_image_url, hero_position, logo_url, brand_color")
-      .eq("id", linkData.workspace_id)
-      .single()
-      .then(function(res) {
-        if (res.error) {
-          console.error("Workspace branding fetch error:", res.error);
-          return;
-        }
-        if (res.data) {
-          setBranding(res.data as WorkspaceBranding);
+    fetch(REST_URL + "/workspaces?select=hero_image_url,hero_position,logo_url,brand_color&id=eq." + encodeURIComponent(linkData.workspace_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } })
+      .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then(function(data) {
+        if (data) {
+          setBranding(data as WorkspaceBranding);
         }
       }).catch(function(err) { console.error("Failed to fetch workspace branding:", err); });
   }, [linkData]);
@@ -789,14 +771,10 @@ export default function SharedLinkPage() {
 
   // Fetch comments for the current track
   var fetchComments = useCallback(function(trackId: string, linkId: string) {
-    anonSupabase
-      .from("track_comments")
-      .select("*")
-      .eq("track_id", trackId)
-      .eq("shared_link_id", linkId)
-      .order("timestamp_sec", { ascending: true })
-      .then(function(res) {
-        if (res.data) setComments(res.data as TrackComment[]);
+    fetch(REST_URL + "/track_comments?select=*&track_id=eq." + encodeURIComponent(trackId) + "&shared_link_id=eq." + encodeURIComponent(linkId) + "&order=timestamp_sec.asc", { headers: SB_HEADERS })
+      .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then(function(data) {
+        if (data) setComments(data as TrackComment[]);
       }).catch(function (err) { console.error("Error:", err); });
   }, []);
 
@@ -836,9 +814,10 @@ export default function SharedLinkPage() {
     var tId = trackData?.id || playingTrackId;
     if (!tId || !linkData || !commentText.trim() || submittingComment) return;
     setSubmittingComment(true);
-    anonSupabase
-      .from("track_comments")
-      .insert({
+    fetch(REST_URL + "/track_comments", {
+      method: "POST",
+      headers: { ...SB_HEADERS, "Content-Type": "application/json", "Prefer": "return=representation", "Accept": "application/vnd.pgrst.object+json" },
+      body: JSON.stringify({
         track_id: tId,
         shared_link_id: linkData.id,
         author_name: visitorName || "Anonymous",
@@ -847,16 +826,16 @@ export default function SharedLinkPage() {
         timestamp_sec: Math.round(commentTimestamp * 100) / 100,
         content: commentText.trim(),
       })
-      .select()
-      .single()
-      .then(function(res) {
+    })
+      .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then(function(data) {
         setSubmittingComment(false);
-        if (res.data) {
-          setComments(function(prev) { return prev.concat([res.data as TrackComment]); });
+        if (data) {
+          setComments(function(prev) { return prev.concat([data as TrackComment]); });
           setCommentComposerOpen(false);
           setCommentText("");
         }
-      }).catch(function (err) { console.error("Error:", err); });
+      }).catch(function (err) { setSubmittingComment(false); console.error("Error:", err); });
   }, [trackData, playingTrackId, linkData, commentText, commentTimestamp, submittingComment, visitorName]);
 
   var handleDownloadPack = useCallback(async function() {
@@ -897,19 +876,17 @@ export default function SharedLinkPage() {
 
       // Stems — real files from storage
       if (items.indexOf("stems") >= 0) {
-        var { data: stems } = await anonSupabase
-          .from("stems")
-          .select("*")
-          .eq("track_id", trackData.id);
+        var stemsRes = await fetch(REST_URL + "/stems?select=*&track_id=eq." + encodeURIComponent(trackData.id), { headers: SB_HEADERS });
+        var stems = stemsRes.ok ? await stemsRes.json() : null;
         if (stems && stems.length > 0) {
           var stemsFolder = root.folder("Stems")!;
           for (var si = 0; si < stems.length; si++) {
             var stem = stems[si] as Record<string, unknown>;
             var stemPath = stem.file_path as string;
             if (!stemPath) continue;
-            var { data: stemSigned } = await anonSupabase.storage
-              .from("stems")
-              .createSignedUrl(stemPath, 3600);
+            var stemSignRes = await fetch(STORAGE_URL + "/object/sign/stems/" + stemPath, { method: "POST", headers: { ...SB_HEADERS, "Content-Type": "application/json" }, body: JSON.stringify({ expiresIn: 3600 }) });
+            var stemSignJson = stemSignRes.ok ? await stemSignRes.json() : null;
+            var stemSigned = stemSignJson ? { signedUrl: SUPABASE_URL + "/storage/v1" + stemSignJson.signedURL } : null;
             if (stemSigned?.signedUrl) {
               var stemBytes = await fetch(stemSigned.signedUrl).then(function(r) { return r.arrayBuffer(); });
               stemsFolder.file((stem.file_name as string) || ("stem-" + si), stemBytes);
@@ -945,10 +922,8 @@ export default function SharedLinkPage() {
 
       // Signed Split Agreement
       if (items.indexOf("metadata") >= 0 && trackData.id) {
-        var { data: signatures } = await anonSupabase
-          .from("signature_requests")
-          .select("collaborator_name, collaborator_email, status, signed_at, signature_data, split_share")
-          .eq("track_id", trackData.id);
+        var sigRes = await fetch(REST_URL + "/signature_requests?select=collaborator_name,collaborator_email,status,signed_at,signature_data,split_share&track_id=eq." + encodeURIComponent(trackData.id), { headers: SB_HEADERS });
+        var signatures = sigRes.ok ? await sigRes.json() : null;
 
         if (signatures) {
           var signedEntries = signatures
@@ -987,19 +962,17 @@ export default function SharedLinkPage() {
 
       // Paperwork — real documents with TRAKALOG watermark on PDFs
       if (items.indexOf("paperwork") >= 0) {
-        var { data: docs } = await anonSupabase
-          .from("track_documents")
-          .select("*")
-          .eq("track_id", trackData.id);
+        var docsRes = await fetch(REST_URL + "/track_documents?select=*&track_id=eq." + encodeURIComponent(trackData.id), { headers: SB_HEADERS });
+        var docs = docsRes.ok ? await docsRes.json() : null;
         if (docs && docs.length > 0) {
           var paperworkFolder = root.folder("Paperwork")!;
           for (var di = 0; di < docs.length; di++) {
             var doc = docs[di] as Record<string, unknown>;
             var docPath = doc.file_path as string;
             if (!docPath) continue;
-            var { data: docSigned } = await anonSupabase.storage
-              .from("documents")
-              .createSignedUrl(docPath, 3600);
+            var docSignRes = await fetch(STORAGE_URL + "/object/sign/documents/" + docPath, { method: "POST", headers: { ...SB_HEADERS, "Content-Type": "application/json" }, body: JSON.stringify({ expiresIn: 3600 }) });
+            var docSignJson = docSignRes.ok ? await docSignRes.json() : null;
+            var docSigned = docSignJson ? { signedUrl: SUPABASE_URL + "/storage/v1" + docSignJson.signedURL } : null;
             if (!docSigned?.signedUrl) continue;
             var docBytes = await fetch(docSigned.signedUrl).then(function(r) { return r.arrayBuffer(); });
             var mimeType = (doc.mime_type as string) || "";
