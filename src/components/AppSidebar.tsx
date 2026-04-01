@@ -15,6 +15,8 @@ import {
   BookUser,
   CheckCircle,
   MoreHorizontal,
+  Sparkles,
+  Radio,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -127,7 +129,11 @@ export function MobileBottomNav() {
   });
 
   const primaryItems = allVisible.filter((item) => bottomNavKeys.has(item.titleKey));
-  const secondaryItems = allVisible.filter((item) => !bottomNavKeys.has(item.titleKey));
+  const secondaryItems = [
+    ...allVisible.filter((item) => !bottomNavKeys.has(item.titleKey)),
+    { titleKey: "nav.smartAr", icon: Sparkles, url: "/smart-ar", permKey: null },
+    { titleKey: "nav.radio", icon: Radio, url: "/radio", permKey: null },
+  ];
 
   return (
     <>

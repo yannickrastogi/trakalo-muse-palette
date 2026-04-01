@@ -246,14 +246,14 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         <button
           onClick={() => navigate("/smart-ar")}
           title="Smart A&R"
-          className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
+          className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] hidden sm:flex items-center justify-center"
         >
           <Sparkles className="w-[17px] h-[17px]" />
         </button>
         <button
           onClick={() => navigate("/radio")}
           title="Radio"
-          className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
+          className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] hidden sm:flex items-center justify-center"
         >
           <Radio className="w-[17px] h-[17px]" />
         </button>
@@ -264,7 +264,9 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           <Bell className="w-[17px] h-[17px]" />
           <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full ring-2 ring-background" style={{ background: 'var(--gradient-brand-horizontal)' }} />
         </button>
-        <LanguageSwitcher />
+        <div className="hidden sm:block">
+          <LanguageSwitcher />
+        </div>
         <div className="w-px h-6 bg-border/60 mx-0.5 sm:mx-1 hidden sm:block" />
         <UserMenu />
       </div>
