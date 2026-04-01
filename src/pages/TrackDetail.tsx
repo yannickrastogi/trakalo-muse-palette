@@ -453,6 +453,7 @@ export default function TrackDetail() {
                       var { error } = await supabase
                         .rpc("remove_track_from_trakalog", { _track_id: track.uuid, _user_id: user.id });
                       if (!error) {
+                        supabase.rpc("write_audit_log", { _user_id: user.id, _workspace_id: activeWorkspace?.id || null, _action: "track.removed_from_share", _entity_type: "track", _entity_id: track.uuid }).then(() => {}).catch(() => {});
                         toast.success(t("catalogSharing.removedFromTrakalog"));
                         refreshTracks();
                         navigate("/tracks");
@@ -608,6 +609,7 @@ export default function TrackDetail() {
                               var { error } = await supabase
                                 .rpc("remove_track_from_trakalog", { _track_id: track.uuid, _user_id: user.id });
                               if (!error) {
+                                supabase.rpc("write_audit_log", { _user_id: user.id, _workspace_id: activeWorkspace?.id || null, _action: "track.removed_from_share", _entity_type: "track", _entity_id: track.uuid }).then(() => {}).catch(() => {});
                                 toast.success(t("catalogSharing.removedFromTrakalog"));
                                 refreshTracks();
                                 navigate("/tracks");

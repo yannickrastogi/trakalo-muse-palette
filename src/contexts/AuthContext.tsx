@@ -51,6 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (e) {}
       }
 
+      if (event === "SIGNED_IN" && newSession) {
+        supabase.rpc("write_audit_log", { _user_id: newSession.user.id, _workspace_id: null, _action: "user.login", _metadata: JSON.stringify({ provider: newSession.user.app_metadata?.provider || "email" }) }).then(() => {}).catch(() => {});
+      }
+
       setSession(newSession);
       if (!initializedRef.current) {
         setLoading(false);
@@ -139,6 +143,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    const currentUser = session?.user;
+    if (currentUser) {
+      supabase.rpc("write_audit_log", { _user_id: currentUser.id, _workspace_id: null, _action: "user.logout" }).then(() => {}).catch(() => {});
+    }
     localStorage.removeItem("trakalog_was_auth");
     localStorage.removeItem("trakalog_session_backup");
     localStorage.removeItem("trakalog_active_workspace");

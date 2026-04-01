@@ -444,6 +444,7 @@ export default function SharedLinkPage() {
             _user_id: userId,
           }).then(function(rpcRes) {
             if (!rpcRes.error) {
+              supabase.rpc("write_audit_log", { _user_id: userId, _workspace_id: ws.id, _action: "track.saved_from_share", _entity_type: "track", _entity_id: linkData!.track_id }).then(function() {}).catch(function() {});
               setSavedToTrakalog(true);
             }
             setSavingToTrakalog(false);

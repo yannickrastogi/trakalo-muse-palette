@@ -144,6 +144,7 @@ export function DashboardContent() {
 
       localStorage.removeItem("trakalog_auto_save");
       if (!error) {
+        supabase.rpc("write_audit_log", { _user_id: user.id, _workspace_id: activeWorkspace.id, _action: "track.saved_from_share", _entity_type: "track", _entity_id: trackId }).then(() => {}).catch(() => {});
         toast.success("Track saved to your Trakalog!");
         refreshTracks();
       } else if (error.code === "23505" || error.code === "409" || (error.message && error.message.toLowerCase().includes("already"))) {
