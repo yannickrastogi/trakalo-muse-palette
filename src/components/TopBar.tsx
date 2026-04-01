@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { Search, Bell, Menu, X, Music, ListMusic, User } from "lucide-react";
+import { Search, Bell, Menu, X, Music, ListMusic, User, Sparkles, Radio } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { UserMenu } from "./UserMenu";
 import { FirstUseTooltip } from "@/components/FirstUseTooltip";
@@ -243,7 +243,20 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             <Search className="w-[17px] h-[17px]" />
           </button>
         )}
-        <LanguageSwitcher />
+        <button
+          onClick={() => navigate("/smart-ar")}
+          title="Smart A&R"
+          className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
+        >
+          <Sparkles className="w-[17px] h-[17px]" />
+        </button>
+        <button
+          onClick={() => navigate("/radio")}
+          title="Radio"
+          className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
+        >
+          <Radio className="w-[17px] h-[17px]" />
+        </button>
         <button
           onClick={() => navigate("/notifications")}
           className="relative p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
@@ -251,6 +264,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           <Bell className="w-[17px] h-[17px]" />
           <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full ring-2 ring-background" style={{ background: 'var(--gradient-brand-horizontal)' }} />
         </button>
+        <LanguageSwitcher />
         <div className="w-px h-6 bg-border/60 mx-0.5 sm:mx-1 hidden sm:block" />
         <UserMenu />
       </div>
