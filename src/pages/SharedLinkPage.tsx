@@ -594,14 +594,14 @@ export default function SharedLinkPage() {
         setPlayingTrackId(null);
         return;
       }
-      // Try to get watermarked version, fallback to original on error/timeout
+      // Try to get watermarked version first, wait up to 5s, then fallback to original
       var storagePath = track.audio_url;
       var currentLinkId = linkData?.id;
       var currentVisitorEmail = visitorEmailRef.current;
       var currentVisitorName = visitorName;
       if (storagePath && currentLinkId && currentVisitorEmail) {
         var wmAbort = new AbortController();
-        var wmTimeout = setTimeout(function() { wmAbort.abort(); }, 15000);
+        var wmTimeout = setTimeout(function() { wmAbort.abort(); }, 5000);
         fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/get-watermarked-audio", {
           method: "POST",
           headers: {
@@ -624,17 +624,23 @@ export default function SharedLinkPage() {
           if (wmJson.url && loadedTrackIdRef.current === track.id) {
             audio.src = wmJson.url;
             setIsWatermarked(true);
-            audio.play().catch(function(err) { console.error("Play error:", err); });
+          } else {
+            audio.src = url;
           }
+          audio.play().catch(function(err) { console.error("Play error:", err); });
         }).catch(function(wmErr) {
           clearTimeout(wmTimeout);
           console.warn("Watermarking unavailable, using original audio:", wmErr);
-          // Fallback: already playing original URL
+          if (loadedTrackIdRef.current === track.id) {
+            audio.src = url;
+            audio.play().catch(function(err) { console.error("Play error:", err); });
+          }
         });
+      } else {
+        // No watermark possible, play original directly
+        audio.src = url;
+        audio.play().catch(function(err) { console.error("Play error:", err); });
       }
-      // Play original URL immediately while watermarked version loads
-      audio.src = url;
-      audio.play().catch(function(err) { console.error("Play error:", err); });
     }).catch(function (err) { console.error("Error:", err); });
   }, [fetchAudioUrl, linkData, visitorName]);
 
