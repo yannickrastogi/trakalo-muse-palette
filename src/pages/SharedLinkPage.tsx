@@ -234,14 +234,6 @@ function getVisitorCookie(): { name: string; email: string; role: string; compan
 
 export default function SharedLinkPage() {
   var anonSupabase = useRef(createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } })).current;
-  // Create a temporary authenticated client for RPC calls that need user context (save_track_to_trakalog, etc.)
-  var createAuthClient = useCallback(function(session: any) {
-    var client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-      global: { headers: { Authorization: "Bearer " + session.access_token } }
-    });
-    return client;
-  }, []);
   var { slug } = useParams<{ slug: string }>();
 
   var [loading, setLoading] = useState(true);
@@ -291,6 +283,7 @@ export default function SharedLinkPage() {
   var [currentUserSession, setCurrentUserSession] = useState<any>(null);
   var [currentUserWorkspace, setCurrentUserWorkspace] = useState<string | null>(null);
   var [userHasNoWorkspace, setUserHasNoWorkspace] = useState(false);
+  var wsCheckedRef = useRef(false);
 
   // Workspace branding
   var [branding, setBranding] = useState<WorkspaceBranding | null>(null);
@@ -416,30 +409,34 @@ export default function SharedLinkPage() {
     });
   }, [slug]);
 
-  // Detect if visitor is a logged-in Trakalog user
+  // Detect if visitor is a logged-in Trakalog user (runs once, no retry on failure)
   useEffect(function() {
     if (!linkData?.allow_save) return;
+    if (wsCheckedRef.current) return;
     var backup = localStorage.getItem("trakalog_session_backup");
     if (!backup) return;
     var backupSession: any;
     try {
       backupSession = JSON.parse(backup);
-    } catch (e) {
-      console.error("Error reading backup session:", e);
+    } catch (_e) {
       return;
     }
-    if (!backupSession || !backupSession.user || !backupSession.user.id) return;
+    if (!backupSession || !backupSession.user || !backupSession.user.id || !backupSession.access_token) return;
+    wsCheckedRef.current = true;
     var userId = backupSession.user.id;
+    var token = backupSession.access_token;
     setCurrentUserSession(backupSession);
     var pendingAutoSave = localStorage.getItem("trakalog_auto_save");
     var autoSave = pendingAutoSave === slug;
-    var authClient = createAuthClient(backupSession);
-    authClient.rpc("get_user_workspaces", { _user_id: userId }).then(function(wsRes) {
-      if (wsRes.error) {
-        console.error("Error fetching workspaces:", wsRes.error);
-        return;
-      }
-      var workspaces = wsRes.data || [];
+    var rpcHeaders = { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + token };
+    fetch(SUPABASE_URL + "/rest/v1/rpc/get_user_workspaces", {
+      method: "POST",
+      headers: rpcHeaders,
+      body: JSON.stringify({ _user_id: userId }),
+    }).then(function(res) {
+      if (!res.ok) throw new Error("get_user_workspaces failed: " + res.status);
+      return res.json();
+    }).then(function(workspaces: any[]) {
       var personalWs = workspaces.find(function(w: any) { return w.is_personal === true; });
       var ws = personalWs || (workspaces.length > 0 ? workspaces[0] : null);
       if (ws) {
@@ -447,28 +444,30 @@ export default function SharedLinkPage() {
         if (autoSave && linkData!.track_id) {
           localStorage.removeItem("trakalog_auto_save");
           setSavingToTrakalog(true);
-          authClient.rpc("save_track_to_trakalog", {
-            _track_id: linkData!.track_id,
-            _source_workspace_id: linkData!.workspace_id,
-            _target_workspace_id: ws.id,
-            _user_id: userId,
-          }).then(function(rpcRes) {
-            if (!rpcRes.error) {
-              authClient.rpc("write_audit_log", { _user_id: userId, _workspace_id: ws.id, _action: "track.saved_from_share", _entity_type: "track", _entity_id: linkData!.track_id }).then(function() {}).catch(function() {});
+          fetch(SUPABASE_URL + "/rest/v1/rpc/save_track_to_trakalog", {
+            method: "POST",
+            headers: rpcHeaders,
+            body: JSON.stringify({ _track_id: linkData!.track_id, _source_workspace_id: linkData!.workspace_id, _target_workspace_id: ws.id, _user_id: userId }),
+          }).then(function(saveRes) {
+            if (saveRes.ok) {
+              fetch(SUPABASE_URL + "/rest/v1/rpc/write_audit_log", {
+                method: "POST",
+                headers: rpcHeaders,
+                body: JSON.stringify({ _user_id: userId, _workspace_id: ws.id, _action: "track.saved_from_share", _entity_type: "track", _entity_id: linkData!.track_id }),
+              }).catch(function() {});
               setSavedToTrakalog(true);
             }
             setSavingToTrakalog(false);
-          });
+          }).catch(function() { setSavingToTrakalog(false); });
         }
       } else {
         if (autoSave) {
-          console.log("Auto-save: no workspace found, redirecting to onboarding");
           window.location.href = "/onboarding?return=" + encodeURIComponent("/share/" + slug);
           return;
         }
         setUserHasNoWorkspace(true);
       }
-    });
+    }).catch(function() { /* JWT expired or network error — silent, no retry */ });
   }, [linkData]);
 
   // Auto-skip gate screen if valid visitor cookie exists
@@ -767,18 +766,18 @@ export default function SharedLinkPage() {
   var handleSaveToTrakalog = async function() {
     if (!currentUserSession || !currentUserWorkspace || !linkData?.track_id) return;
     setSavingToTrakalog(true);
-    var authClient = createAuthClient(currentUserSession);
-    var { data: shareId, error } = await authClient.rpc("save_track_to_trakalog", {
-      _track_id: linkData.track_id,
-      _source_workspace_id: linkData.workspace_id,
-      _target_workspace_id: currentUserWorkspace,
-      _user_id: currentUserSession.user.id,
-    });
-    if (!error) {
-      setSavedToTrakalog(true);
-      localStorage.removeItem("trakalog_auto_save");
-      logEvent(linkData.track_id, "save");
-    }
+    try {
+      var res = await fetch(SUPABASE_URL + "/rest/v1/rpc/save_track_to_trakalog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + currentUserSession.access_token },
+        body: JSON.stringify({ _track_id: linkData.track_id, _source_workspace_id: linkData.workspace_id, _target_workspace_id: currentUserWorkspace, _user_id: currentUserSession.user.id }),
+      });
+      if (res.ok) {
+        setSavedToTrakalog(true);
+        localStorage.removeItem("trakalog_auto_save");
+        logEvent(linkData.track_id, "save");
+      }
+    } catch (_e) { /* silent */ }
     setSavingToTrakalog(false);
   };
 
