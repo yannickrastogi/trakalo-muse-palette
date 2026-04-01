@@ -37,6 +37,9 @@ import {
   CheckCircle2,
   Loader2,
   ArrowRightLeft,
+  Search,
+  FileAudio,
+  AlertCircle,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useTranslation } from "react-i18next";
@@ -48,6 +51,7 @@ import { RotateCcw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { applyTheme, applyAccent, getStoredTheme, getStoredAccent, watchSystemTheme, applyCompactMode, applyReduceMotion, setSidebarCollapsed, getStoredCompact, getStoredReduceMotion, getStoredSidebarCollapsed, type ThemeMode, type AccentPalette } from "@/lib/theme";
 
 /* ─── Helpers ─── */
@@ -1519,6 +1523,7 @@ function ResetOnboardingBlock() {
 function SecuritySection() {
   const { t } = useTranslation();
   const { user, signOut, session } = useAuth();
+  const { activeWorkspace } = useWorkspace();
   const isOAuth = user?.app_metadata?.provider === "google";
   const [twoFa, setTwoFa] = useState(false);
   const [mfaEnrolling, setMfaEnrolling] = useState(false);
@@ -1529,6 +1534,13 @@ function SecuritySection() {
   const [showPw, setShowPw] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
+
+  // Leak tracing state
+  const [leakAnalyzing, setLeakAnalyzing] = useState(false);
+  const [leakResult, setLeakResult] = useState<{ match: boolean; visitor_email?: string | null; visitor_name?: string | null; link_id?: string | null; confidence?: number; hash_hex?: string | null } | null>(null);
+  const [leakTraces, setLeakTraces] = useState<{ id: string; file_name: string; created_at: string; match: boolean; visitor_email: string | null; confidence: number }[]>([]);
+  const [leakDragOver, setLeakDragOver] = useState(false);
+  const leakInputRef = useRef<HTMLInputElement>(null);
 
   // Check MFA status on mount
   useEffect(() => {
@@ -1653,6 +1665,64 @@ function SecuritySection() {
       toast.error(err?.message || "Failed to sign out");
       setSigningOut(false);
     }
+  };
+
+  const REST_URL = SUPABASE_URL + "/rest/v1";
+  const SB_HEADERS: Record<string, string> = { "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY };
+
+  // Load recent leak traces
+  const loadLeakTraces = useCallback(async () => {
+    if (!activeWorkspace?.id) return;
+    try {
+      const res = await fetch(REST_URL + "/leak_traces?select=id,file_name,created_at,match,visitor_email,confidence&workspace_id=eq." + encodeURIComponent(activeWorkspace.id) + "&order=created_at.desc&limit=10", { headers: SB_HEADERS });
+      if (res.ok) {
+        const data = await res.json();
+        setLeakTraces(data || []);
+      }
+    } catch (_e) { /* silent */ }
+  }, [activeWorkspace?.id]);
+
+  useEffect(() => { loadLeakTraces(); }, [loadLeakTraces]);
+
+  const handleLeakFile = async (file: File) => {
+    if (!user?.id || !activeWorkspace?.id) return;
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error("File too large. Maximum size is 100MB.");
+      return;
+    }
+    const validTypes = [".wav", ".mp3", ".aiff", ".flac"];
+    const ext = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
+    if (!validTypes.includes(ext)) {
+      toast.error("Unsupported format. Use WAV, MP3, AIFF or FLAC.");
+      return;
+    }
+    setLeakAnalyzing(true);
+    setLeakResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("audio", file);
+      formData.append("workspace_id", activeWorkspace.id);
+      formData.append("user_id", user.id);
+      formData.append("file_name", file.name);
+      const res = await fetch(SUPABASE_URL + "/functions/v1/trace-leak", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY, "apikey": SUPABASE_PUBLISHABLE_KEY },
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Analysis failed" }));
+        toast.error(err.error || "Analysis failed");
+        setLeakAnalyzing(false);
+        return;
+      }
+      const result = await res.json();
+      setLeakResult(result);
+      loadLeakTraces();
+    } catch (_e) {
+      toast.error("Failed to analyze audio");
+    }
+    setLeakAnalyzing(false);
   };
 
   return (
@@ -1820,6 +1890,108 @@ function SecuritySection() {
             <LogOut className="w-3.5 h-3.5" /> {signingOut ? "Signing out…" : "Sign Out All"}
           </button>
         </div>
+      </SectionBlock>
+
+      <SectionBlock title="Leak Tracing" subtitle="Detect watermarks in leaked audio files" icon={Search}>
+        <div
+          onDragOver={(e) => { e.preventDefault(); setLeakDragOver(true); }}
+          onDragLeave={() => setLeakDragOver(false)}
+          onDrop={(e) => { e.preventDefault(); setLeakDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleLeakFile(f); }}
+          onClick={() => leakInputRef.current?.click()}
+          className={`relative flex flex-col items-center justify-center gap-3 p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all ${leakDragOver ? "border-brand-orange bg-brand-orange/5" : "border-border/40 hover:border-border/70 bg-secondary/20 hover:bg-secondary/30"}`}
+        >
+          <input
+            ref={leakInputRef}
+            type="file"
+            accept=".wav,.mp3,.aiff,.flac"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleLeakFile(f); e.target.value = ""; }}
+          />
+          {leakAnalyzing ? (
+            <>
+              <Loader2 className="w-8 h-8 text-brand-orange animate-spin" />
+              <p className="text-[13px] font-semibold text-foreground">Analyzing audio watermark...</p>
+              <p className="text-[11px] text-muted-foreground/50">This may take a moment</p>
+            </>
+          ) : (
+            <>
+              <div className="w-12 h-12 rounded-xl bg-secondary/60 flex items-center justify-center">
+                <FileAudio className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div className="text-center">
+                <p className="text-[13px] font-semibold text-foreground">Drop an audio file here or click to browse</p>
+                <p className="text-[11px] text-muted-foreground/50 mt-1">WAV, MP3, AIFF, FLAC — Max 100MB</p>
+              </div>
+            </>
+          )}
+        </div>
+
+        <AnimatePresence>
+          {leakResult && (
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mt-4">
+              {leakResult.match ? (
+                <div className="p-4 rounded-xl border border-destructive/30" style={{ background: "hsl(0 70% 50% / 0.04)" }}>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-destructive/15 flex items-center justify-center shrink-0 mt-0.5">
+                      <AlertCircle className="w-4 h-4 text-destructive" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13px] text-destructive font-semibold">Watermark detected — Leak source identified</p>
+                      <div className="mt-2 space-y-1">
+                        {leakResult.visitor_name && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">Name:</span> {leakResult.visitor_name}</p>}
+                        {leakResult.visitor_email && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">Email:</span> {leakResult.visitor_email}</p>}
+                        {leakResult.link_id && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">Shared Link:</span> {leakResult.link_id}</p>}
+                        {leakResult.confidence != null && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">Confidence:</span> {Math.round(leakResult.confidence * 100)}%</p>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl border border-emerald-500/20" style={{ background: "hsl(160 60% 45% / 0.04)" }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] text-emerald-400 font-semibold">No watermark detected in this file</p>
+                      <p className="text-[11px] text-emerald-400/50 mt-0.5">The audio appears clean or the watermark could not be read</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {leakTraces.length > 0 && (
+          <>
+            <Divider />
+            <div className="pt-2">
+              <p className="text-[12px] font-semibold text-muted-foreground/60 uppercase tracking-wider mb-3">Recent Traces</p>
+              <div className="space-y-2">
+                {leakTraces.map((trace) => (
+                  <div key={trace.id} className="flex items-center justify-between gap-3 py-2.5 px-3 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${trace.match ? "bg-destructive/12" : "bg-emerald-500/10"}`}>
+                        {trace.match ? <AlertCircle className="w-3.5 h-3.5 text-destructive" /> : <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-medium text-foreground truncate">{trace.file_name}</p>
+                        <p className="text-[10px] text-muted-foreground/40 mt-0.5">
+                          {new Date(trace.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          {trace.match && trace.visitor_email && <span className="text-destructive/70 ml-2">{trace.visitor_email}</span>}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${trace.match ? "text-destructive bg-destructive/10" : "text-emerald-400 bg-emerald-500/10"}`}>
+                      {trace.match ? "Leak" : "Clean"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </SectionBlock>
 
       <SectionBlock title="Data & Privacy" subtitle="Export or delete your data" icon={Download}>
