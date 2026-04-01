@@ -8,6 +8,7 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
+    const visitor_ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
     const { slug, name, email, role, company } = await req.json();
 
     if (!slug || !name || !email) {
@@ -50,6 +51,7 @@ serve(async (req) => {
         organization: company || null,
         role: role || null,
         downloaded_at: new Date().toISOString(),
+        visitor_ip,
       });
 
     if (dlError) {

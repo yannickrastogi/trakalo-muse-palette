@@ -8,6 +8,7 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
+    const visitor_ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
     const { slug, track_id, visitor_email, event_type } = await req.json();
 
     if (!slug || !event_type) {
@@ -51,6 +52,7 @@ serve(async (req) => {
         track_id: track_id || null,
         visitor_email: visitor_email || null,
         event_type: event_type,
+        visitor_ip,
       });
 
     if (insertError) {
