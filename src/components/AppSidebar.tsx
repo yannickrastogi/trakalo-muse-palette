@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Music,
-  Layers,
   ListMusic,
   Send,
   Users,
@@ -33,7 +32,6 @@ import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 const navItems = [
   { titleKey: "nav.dashboard", icon: LayoutDashboard, url: "/dashboard", permKey: null },
   { titleKey: "nav.tracks", icon: Music, url: "/tracks", permKey: null },
-  { titleKey: "nav.stems", icon: Layers, url: "/stems", permKey: null },
   { titleKey: "nav.playlists", icon: ListMusic, url: "/playlists", permKey: null },
   { titleKey: "nav.pitch", icon: Send, url: "/pitch", permKey: "canSendPitches" as const },
   { titleKey: "nav.smartAr", icon: Sparkles, url: "/smart-ar", permKey: null },
