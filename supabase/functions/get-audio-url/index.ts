@@ -127,11 +127,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 4. Generate a signed URL (1 hour validity)
+    // 4. Generate a signed URL (5 min validity — DRM: short-lived URLs)
     const { data: signedData, error: signErr } = await supabaseAdmin
       .storage
       .from("tracks")
-      .createSignedUrl(audioPath, 3600);
+      .createSignedUrl(audioPath, 300);
 
     if (signErr || !signedData?.signedUrl) {
       return new Response(JSON.stringify({ error: "Failed to generate audio URL" }), {

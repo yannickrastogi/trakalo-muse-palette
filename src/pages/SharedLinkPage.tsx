@@ -1792,7 +1792,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col" data-drm="protected" onContextMenu={(e) => e.preventDefault()}>
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="max-w-2xl mx-auto px-4 flex items-center justify-center relative z-10 py-5">
           <div className="flex flex-col items-center">

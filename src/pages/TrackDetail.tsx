@@ -409,6 +409,7 @@ export default function TrackDetail() {
 
   return (
     <PageShell>
+      <div data-drm="protected" onContextMenu={(e: React.MouseEvent) => e.preventDefault()}>
       {!track ? (
         hadTrackRef.current ? (
           <div className="p-8 flex items-center justify-center gap-3 text-muted-foreground">
@@ -1049,6 +1050,7 @@ export default function TrackDetail() {
       </AlertDialog>
         </>
       )}
+      </div>
     </PageShell>
   );
 }
