@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
-import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark, ShieldCheck } from "lucide-react";
 import { DEFAULT_COVER } from "@/lib/constants";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
@@ -234,6 +234,14 @@ function getVisitorCookie(): { name: string; email: string; role: string; compan
 
 export default function SharedLinkPage() {
   var anonSupabase = useRef(createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } })).current;
+  // Create a temporary authenticated client for RPC calls that need user context (save_track_to_trakalog, etc.)
+  var createAuthClient = useCallback(function(session: any) {
+    var client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      global: { headers: { Authorization: "Bearer " + session.access_token } }
+    });
+    return client;
+  }, []);
   var { slug } = useParams<{ slug: string }>();
 
   var [loading, setLoading] = useState(true);
@@ -425,7 +433,8 @@ export default function SharedLinkPage() {
     setCurrentUserSession(backupSession);
     var pendingAutoSave = localStorage.getItem("trakalog_auto_save");
     var autoSave = pendingAutoSave === slug;
-    supabase.rpc("get_user_workspaces", { _user_id: userId }).then(function(wsRes) {
+    var authClient = createAuthClient(backupSession);
+    authClient.rpc("get_user_workspaces", { _user_id: userId }).then(function(wsRes) {
       if (wsRes.error) {
         console.error("Error fetching workspaces:", wsRes.error);
         return;
@@ -438,14 +447,14 @@ export default function SharedLinkPage() {
         if (autoSave && linkData!.track_id) {
           localStorage.removeItem("trakalog_auto_save");
           setSavingToTrakalog(true);
-          supabase.rpc("save_track_to_trakalog", {
+          authClient.rpc("save_track_to_trakalog", {
             _track_id: linkData!.track_id,
             _source_workspace_id: linkData!.workspace_id,
             _target_workspace_id: ws.id,
             _user_id: userId,
           }).then(function(rpcRes) {
             if (!rpcRes.error) {
-              supabase.rpc("write_audit_log", { _user_id: userId, _workspace_id: ws.id, _action: "track.saved_from_share", _entity_type: "track", _entity_id: linkData!.track_id }).then(function() {}).catch(function() {});
+              authClient.rpc("write_audit_log", { _user_id: userId, _workspace_id: ws.id, _action: "track.saved_from_share", _entity_type: "track", _entity_id: linkData!.track_id }).then(function() {}).catch(function() {});
               setSavedToTrakalog(true);
             }
             setSavingToTrakalog(false);
@@ -758,7 +767,8 @@ export default function SharedLinkPage() {
   var handleSaveToTrakalog = async function() {
     if (!currentUserSession || !currentUserWorkspace || !linkData?.track_id) return;
     setSavingToTrakalog(true);
-    var { data: shareId, error } = await supabase.rpc("save_track_to_trakalog", {
+    var authClient = createAuthClient(currentUserSession);
+    var { data: shareId, error } = await authClient.rpc("save_track_to_trakalog", {
       _track_id: linkData.track_id,
       _source_workspace_id: linkData.workspace_id,
       _target_workspace_id: currentUserWorkspace,
