@@ -5,7 +5,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install build dependencies for audiowmark and Node.js
 RUN apt-get update && apt-get install -y \
     build-essential \
-    cmake \
+    autoconf \
+    automake \
+    libtool \
     libfftw3-dev \
     libsndfile1-dev \
     libgcrypt20-dev \
@@ -19,8 +21,8 @@ RUN apt-get update && apt-get install -y \
 # Build audiowmark from source
 RUN git clone https://github.com/swesterfeld/audiowmark.git /tmp/audiowmark \
     && cd /tmp/audiowmark \
-    && mkdir build && cd build \
-    && cmake .. \
+    && ./autogen.sh \
+    && ./configure \
     && make -j$(nproc) \
     && make install \
     && ldconfig \
