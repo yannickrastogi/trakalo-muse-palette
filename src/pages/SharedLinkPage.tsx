@@ -233,7 +233,7 @@ function getVisitorCookie(): { name: string; email: string; role: string; compan
 }
 
 export default function SharedLinkPage() {
-  var anonSupabase = useRef(createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } })).current;
+  var anonSupabase = useRef(createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: "sb-trakalog-anon-shared" } })).current;
   var { slug } = useParams<{ slug: string }>();
 
   var [loading, setLoading] = useState(true);
