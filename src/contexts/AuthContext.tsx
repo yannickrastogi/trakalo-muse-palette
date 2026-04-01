@@ -81,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setSession(newSession);
       if (newSession && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+        supabase.auth.startAutoRefresh();
         await checkMfa(newSession);
       }
       if (!initializedRef.current) {
@@ -106,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 localStorage.setItem("trakalog_session_backup", JSON.stringify(refreshed.session));
                 const allowed = await checkWhitelist(refreshed.session);
                 if (!allowed) return;
+                supabase.auth.startAutoRefresh();
                 setSession(refreshed.session);
                 await checkMfa(refreshed.session);
                 setLoading(false);
@@ -126,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setSession(initSession);
       if (initSession) {
+        supabase.auth.startAutoRefresh();
         await checkMfa(initSession);
       }
       setLoading(false);
@@ -199,6 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (currentUser) {
       supabase.rpc("write_audit_log", { _user_id: currentUser.id, _workspace_id: null, _action: "user.logout" }).then(() => {}).catch(() => {});
     }
+    supabase.auth.stopAutoRefresh();
     localStorage.removeItem("trakalog_was_auth");
     localStorage.removeItem("trakalog_session_backup");
     localStorage.removeItem("trakalog_active_workspace");

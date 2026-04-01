@@ -28,6 +28,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   auth: {
     storage: customStorage,
     persistSession: true,
-    autoRefreshToken: true,
+    autoRefreshToken: false,
   }
 });
