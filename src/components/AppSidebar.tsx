@@ -40,7 +40,6 @@ const navItems = [
   { titleKey: "nav.radio", icon: Radio, url: "/radio", permKey: null },
   { titleKey: "nav.contacts", icon: Users, url: "/contacts", permKey: null },
   { titleKey: "nav.sharedLinks", icon: Link2, url: "/shared-links", permKey: null },
-  { titleKey: "nav.members", icon: UserCog, url: "/team", permKey: null },
   { titleKey: "nav.workspaces", icon: LayoutGrid, url: "/workspaces", permKey: null },
   { titleKey: "nav.notifications", icon: Bell, url: "/notifications", permKey: null },
   { titleKey: "nav.approvals", icon: CheckCircle, url: "/approvals", permKey: "canManageTeam" as const },

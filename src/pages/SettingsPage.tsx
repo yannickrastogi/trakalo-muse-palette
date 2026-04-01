@@ -40,6 +40,9 @@ import {
   Search,
   FileAudio,
   AlertCircle,
+  Users,
+  UserPlus,
+  Send,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useSearchParams } from "react-router-dom";
@@ -52,6 +55,18 @@ import { RotateCcw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useTeams } from "@/contexts/TeamContext";
+import { InviteMemberModal, type InvitePayload } from "@/components/InviteMemberModal";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { AccessLevel } from "@/contexts/RoleContext";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { applyTheme, applyAccent, getStoredTheme, getStoredAccent, watchSystemTheme, applyCompactMode, applyReduceMotion, setSidebarCollapsed, getStoredCompact, getStoredReduceMotion, getStoredSidebarCollapsed, type ThemeMode, type AccentPalette } from "@/lib/theme";
 
@@ -424,6 +439,215 @@ function ProfileSection() {
    SECTION: WORKSPACE
    ═══════════════════════════════════════════════════════ */
 
+const WS_ACCESS_LEVELS: AccessLevel[] = ["viewer", "pitcher", "editor", "admin"];
+const wsAccessLabels: Record<AccessLevel, string> = { viewer: "Viewer", pitcher: "Pitcher", editor: "Editor", admin: "Admin" };
+const wsAccessColors: Record<AccessLevel, string> = {
+  admin: "bg-brand-orange/12 text-brand-orange",
+  editor: "bg-brand-purple/12 text-brand-purple",
+  pitcher: "bg-brand-pink/12 text-brand-pink",
+  viewer: "bg-muted-foreground/12 text-muted-foreground",
+};
+const wsAccessGradients: Record<AccessLevel, string> = {
+  admin: "from-brand-orange to-brand-pink",
+  editor: "from-brand-purple to-brand-pink",
+  pitcher: "from-brand-pink to-brand-orange",
+  viewer: "from-muted-foreground/40 to-muted-foreground/20",
+};
+const wsAccessIcons: Record<AccessLevel, React.ElementType> = {
+  admin: Shield,
+  editor: Edit3,
+  pitcher: Send,
+  viewer: Eye,
+};
+
+const WS_PROFESSIONAL_TITLES = [
+  "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer",
+  "Manager", "Publisher", "A&R", "Assistant", "Artist",
+];
+
+function getWsInitials(first: string, last: string) {
+  return ((first[0] || "") + (last[0] || "")).toUpperCase() || "?";
+}
+
+function WorkspaceMembersBlock() {
+  const { t } = useTranslation();
+  const { permissions } = useRole();
+  const { teams, removeMember, updateMemberAccess } = useTeams();
+  const { activeWorkspace } = useWorkspace();
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const team = teams[0] || null;
+  const teamId = team?.id || null;
+
+  const handleInvite = (payload: InvitePayload) => {
+    toast.success(t("inviteMember.inviteSent", { email: payload.email }));
+  };
+
+  const handleRemove = (memberId: string) => {
+    if (!teamId) return;
+    removeMember(teamId, memberId);
+    toast.success(t("team.memberRemoved"));
+  };
+
+  const handleAccessChange = (memberId: string, newLevel: AccessLevel, currentTitle: string | null) => {
+    if (!teamId) return;
+    updateMemberAccess(teamId, memberId, newLevel, currentTitle);
+    toast.success(t("team.roleUpdated"));
+  };
+
+  const handleTitleChange = (memberId: string, currentLevel: AccessLevel, newTitle: string | null) => {
+    if (!teamId) return;
+    updateMemberAccess(teamId, memberId, currentLevel, newTitle);
+    toast.success(t("team.roleUpdated"));
+  };
+
+  const members = team?.members || [];
+  const filtered = members.filter(
+    (m) =>
+      (m.firstName + " " + m.lastName).toLowerCase().includes(search.toLowerCase()) ||
+      m.email.toLowerCase().includes(search.toLowerCase()) ||
+      wsAccessLabels[m.accessLevel].toLowerCase().includes(search.toLowerCase()) ||
+      (m.professionalTitle || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <>
+      <SectionBlock title={"Members (" + members.length + ")"} subtitle="Manage workspace members and their access levels" icon={Users}>
+        <div className="space-y-4">
+          {/* Header row: search + invite */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search members…"
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-secondary/50 border border-border/50 text-foreground text-[13px] placeholder:text-muted-foreground focus:outline-none focus-brand min-h-[40px]"
+              />
+            </div>
+            {permissions.canInviteMembers && (
+              <button
+                onClick={() => setInviteOpen(true)}
+                className="btn-brand flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold shrink-0 min-h-[40px]"
+              >
+                <UserPlus className="w-3.5 h-3.5" /> Invite Member
+              </button>
+            )}
+          </div>
+
+          {/* Members table */}
+          <div className="rounded-xl border border-border/40 overflow-hidden">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Member</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Access</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Status</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Joined</th>
+                  <th className="px-4 py-2.5 w-10"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((m) => {
+                  const AccessIcon = wsAccessIcons[m.accessLevel];
+                  const isOwner = m.id === activeWorkspace?.owner_id;
+                  return (
+                    <tr key={m.id} className="border-b border-border/40 last:border-0 hover:bg-secondary/30 transition-colors group">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar className="w-7 h-7 shrink-0">
+                            <AvatarFallback className={"bg-gradient-to-br " + wsAccessGradients[m.accessLevel] + " text-primary-foreground text-2xs font-bold"}>
+                              {getWsInitials(m.firstName, m.lastName)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground text-[13px] tracking-tight truncate">
+                              {m.firstName} {m.lastName}
+                            </p>
+                            {m.email && <p className="text-[11px] text-muted-foreground truncate">{m.email}</p>}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {isOwner || !permissions.canManageTeam ? (
+                          <div>
+                            <span className={"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold uppercase tracking-wider " + wsAccessColors[m.accessLevel]}>
+                              <AccessIcon className="w-3 h-3" /> {wsAccessLabels[m.accessLevel]}
+                            </span>
+                            {m.professionalTitle && (
+                              <p className="text-[11px] text-muted-foreground mt-0.5">{m.professionalTitle}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <Select value={m.accessLevel} onValueChange={(v) => handleAccessChange(m.id, v as AccessLevel, m.professionalTitle)}>
+                              <SelectTrigger className="h-7 w-auto min-w-[110px] bg-secondary/50 border-border text-2xs gap-1">
+                                <AccessIcon className="w-3 h-3 shrink-0" />
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-card border-border">
+                                {WS_ACCESS_LEVELS.map((level) => {
+                                  const LvlIcon = wsAccessIcons[level];
+                                  return (
+                                    <SelectItem key={level} value={level} className="text-2xs">
+                                      <span className="flex items-center gap-1.5">
+                                        <LvlIcon className="w-3 h-3" /> {wsAccessLabels[level]}
+                                      </span>
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                            <Select value={m.professionalTitle || "__none__"} onValueChange={(v) => handleTitleChange(m.id, m.accessLevel, v === "__none__" ? null : v)}>
+                              <SelectTrigger className="h-6 w-auto min-w-[110px] bg-transparent border-border/50 text-2xs text-muted-foreground gap-1">
+                                <SelectValue placeholder="Title (optional)" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-card border-border">
+                                <SelectItem value="__none__" className="text-2xs text-muted-foreground">No title</SelectItem>
+                                {WS_PROFESSIONAL_TITLES.map((title) => (
+                                  <SelectItem key={title} value={title} className="text-2xs">{title}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        <span className={"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold " + (m.status === "active" ? "bg-emerald-500/12 text-emerald-400" : m.status === "pending" ? "bg-brand-orange/12 text-brand-orange" : "bg-destructive/12 text-destructive")}>
+                          {m.status === "active" ? "Active" : m.status === "pending" ? "Pending" : "Expired"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground text-[11px] hidden lg:table-cell">
+                        {m.joinedAt ? new Date(m.joinedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
+                      </td>
+                      <td className="px-4 py-3">
+                        {!isOwner && permissions.canManageTeam && (
+                          <button
+                            onClick={() => handleRemove(m.id)}
+                            className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {filtered.length === 0 && (
+              <div className="py-8 text-center text-muted-foreground text-sm">No members found</div>
+            )}
+          </div>
+        </div>
+      </SectionBlock>
+
+      <InviteMemberModal open={inviteOpen} onOpenChange={setInviteOpen} onInvite={handleInvite} preselectedTeamId={teamId || undefined} />
+    </>
+  );
+}
+
 function WorkspaceSection() {
   const { t } = useTranslation();
   const { activeWorkspace } = useWorkspace();
@@ -497,6 +721,8 @@ function WorkspaceSection() {
           </FieldGroup>
         </div>
       </SectionBlock>
+
+      <WorkspaceMembersBlock />
 
       <motion.div variants={fadeUp} className="rounded-2xl border border-destructive/15 bg-destructive/[0.02] overflow-hidden">
         <div className="px-6 py-5 flex items-center gap-3.5">
