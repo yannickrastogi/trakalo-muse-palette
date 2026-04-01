@@ -5,6 +5,8 @@ const { v4: uuidv4 } = require("uuid");
 const { execFile } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+const https = require("https");
+const http = require("http");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -62,23 +64,58 @@ function cleanup(...files) {
   }
 }
 
+// Download a file from URL to a local path
+function downloadToFile(url, destPath) {
+  return new Promise((resolve, reject) => {
+    const proto = url.startsWith("https") ? https : http;
+    proto.get(url, (response) => {
+      if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+        return downloadToFile(response.headers.location, destPath).then(resolve).catch(reject);
+      }
+      if (response.statusCode !== 200) {
+        return reject(new Error(`Download failed with status ${response.statusCode}`));
+      }
+      const file = fs.createWriteStream(destPath);
+      response.pipe(file);
+      file.on("finish", () => { file.close(); resolve(); });
+      file.on("error", (err) => { fs.unlinkSync(destPath); reject(err); });
+    }).on("error", reject);
+  });
+}
+
 // POST /encode
 app.post(
   "/encode",
   requireApiKey,
   upload.single("audio"),
   async (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ error: "No audio file provided" });
+    const payload = req.body.payload;
+    const sourceUrl = req.body.source_url;
+
+    // Determine input: uploaded file or download from source_url
+    let inputPath = null;
+    let downloadedFile = false;
+
+    if (req.file) {
+      inputPath = req.file.path;
+    } else if (sourceUrl) {
+      inputPath = path.join(tmpDir, `${uuidv4()}-download`);
+      downloadedFile = true;
+      try {
+        await downloadToFile(sourceUrl, inputPath);
+      } catch (err) {
+        cleanup(inputPath);
+        return res.status(400).json({ error: "Failed to download source_url", details: err.message });
+      }
+    } else {
+      return res.status(400).json({ error: "No audio file or source_url provided" });
     }
 
-    const payload = req.body.payload;
     if (!payload) {
-      cleanup(req.file.path);
+      cleanup(inputPath);
       return res.status(400).json({ error: "No payload provided" });
     }
 
-    const inputPath = req.file.path;
     const outputPath = path.join(tmpDir, `${uuidv4()}.wav`);
 
     const timeout = setTimeout(() => {
