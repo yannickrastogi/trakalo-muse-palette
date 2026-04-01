@@ -84,9 +84,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Build watermark payload (truncated to 64 chars for audiowmark)
+    // 2. Build watermark payload — hash to 128-bit hex for audiowmark
     const rawPayload = `lid_${link_id}_v_${visitor_email}`;
-    const payload = rawPayload.substring(0, 64);
+    const payloadHashFull = await sha256Hex(rawPayload);
+    const payload = payloadHashFull.substring(0, 32); // 128 bits = 16 bytes = 32 hex chars
+
+    // Store mapping hash_hex → original payload for leak tracing
+    await supabaseAdmin
+      .from("watermark_payloads")
+      .upsert({ hash_hex: payload, raw_payload: rawPayload, link_id, visitor_email, visitor_name: visitor_name || null }, { onConflict: "hash_hex" });
 
     // 3. Call watermark service with source_url
     const wmResponse = await fetch(`${WATERMARK_API_URL}/encode`, {

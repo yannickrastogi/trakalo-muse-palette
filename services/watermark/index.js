@@ -116,6 +116,12 @@ app.post(
       return res.status(400).json({ error: "No payload provided" });
     }
 
+    // audiowmark expects a 128-bit hex payload (32 hex chars)
+    if (!/^[0-9a-f]{32}$/i.test(payload)) {
+      cleanup(inputPath);
+      return res.status(400).json({ error: "Payload must be a 128-bit hex string (32 hex chars)" });
+    }
+
     const outputPath = path.join(tmpDir, `${uuidv4()}.wav`);
 
     const timeout = setTimeout(() => {
