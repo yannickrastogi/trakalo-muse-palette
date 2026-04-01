@@ -47,6 +47,7 @@ import {
 import { PageShell } from "@/components/PageShell";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { StemsContent } from "@/pages/Stems";
 
 
 const statuses = ["Available", "On Hold", "Released"];
@@ -90,6 +91,7 @@ export default function Catalog() {
   const [deleteTarget, setDeleteTarget] = useState<TrackData | null>(null);
   const [deleting, setDeleting] = useState(false);
   const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState<"tracks" | "stems">("tracks");
   // Force grid on mobile
   const effectiveViewMode = isMobile ? "grid" : viewMode;
 
@@ -137,6 +139,27 @@ export default function Catalog() {
 
   return (
     <PageShell>
+      {/* Tab switcher */}
+      <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 max-w-[1400px]">
+        <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-secondary/60 border border-border/50">
+          <button
+            onClick={() => setActiveTab("tracks")}
+            className={"px-4 py-2 rounded-lg text-sm font-medium transition-all " + (activeTab === "tracks" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+          >
+            Tracks
+          </button>
+          <button
+            onClick={() => setActiveTab("stems")}
+            className={"px-4 py-2 rounded-lg text-sm font-medium transition-all " + (activeTab === "stems" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+          >
+            Stems
+          </button>
+        </div>
+      </div>
+
+      {activeTab === "stems" ? (
+        <StemsContent />
+      ) : (
       <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
         {/* Header */}
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -572,6 +595,7 @@ export default function Catalog() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      )}
     </PageShell>
   );
 }

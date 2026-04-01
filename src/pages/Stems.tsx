@@ -106,7 +106,19 @@ function FilterSelect({ label, value, onChange, options }: {
   );
 }
 
+export function StemsContent() {
+  return <StemsInner />;
+}
+
 export default function Stems() {
+  return (
+    <PageShell>
+      <StemsInner />
+    </PageShell>
+  );
+}
+
+function StemsInner() {
   const { tracks } = useTrack();
   const navigate = useNavigate();
   const { currentTrack, isPlaying: globalIsPlaying, togglePlay, playTrack } = useAudioPlayer();
@@ -296,7 +308,7 @@ export default function Stems() {
   }, [allStems, search, trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax]);
 
   return (
-    <PageShell>
+    <>
       <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
         {/* Header */}
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -687,7 +699,7 @@ export default function Stems() {
         )}
       </motion.div>
       <SelectTrackForStemsModal open={showTrackPicker} onClose={() => setShowTrackPicker(false)} />
-    </PageShell>
+    </>
   );
 }
 
