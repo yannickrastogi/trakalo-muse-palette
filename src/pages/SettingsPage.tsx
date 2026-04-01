@@ -1521,9 +1521,94 @@ function SecuritySection() {
   const { user, signOut, session } = useAuth();
   const isOAuth = user?.app_metadata?.provider === "google";
   const [twoFa, setTwoFa] = useState(false);
+  const [mfaEnrolling, setMfaEnrolling] = useState(false);
+  const [mfaQrCode, setMfaQrCode] = useState<string | null>(null);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaLoading, setMfaLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
+
+  // Check MFA status on mount
+  useEffect(() => {
+    const checkMfa = async () => {
+      const { data, error } = await supabase.auth.mfa.listFactors();
+      if (error) return;
+      const verified = data.totp?.find((f: any) => f.status === "verified");
+      if (verified) {
+        setTwoFa(true);
+        setMfaFactorId(verified.id);
+      }
+    };
+    checkMfa();
+  }, []);
+
+  const handleToggle2FA = async () => {
+    if (twoFa) {
+      // Disable 2FA
+      if (!mfaFactorId) return;
+      setMfaLoading(true);
+      const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
+      setMfaLoading(false);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("2FA disabled");
+        setTwoFa(false);
+        setMfaFactorId(null);
+      }
+    } else {
+      // Start enrollment
+      setMfaLoading(true);
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
+      setMfaLoading(false);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      setMfaQrCode(data.totp.qr_code);
+      setMfaFactorId(data.id);
+      setMfaEnrolling(true);
+      setMfaCode("");
+    }
+  };
+
+  const handleVerifyMfa = async () => {
+    if (!mfaFactorId || !mfaCode) return;
+    setMfaLoading(true);
+    const challenge = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+    if (challenge.error) {
+      setMfaLoading(false);
+      toast.error(challenge.error.message);
+      return;
+    }
+    const { error } = await supabase.auth.mfa.verify({
+      factorId: mfaFactorId,
+      challengeId: challenge.data.id,
+      code: mfaCode,
+    });
+    setMfaLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("2FA enabled!");
+      setTwoFa(true);
+      setMfaEnrolling(false);
+      setMfaQrCode(null);
+      setMfaCode("");
+    }
+  };
+
+  const handleCancelEnroll = async () => {
+    if (mfaFactorId) {
+      await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
+    }
+    setMfaEnrolling(false);
+    setMfaQrCode(null);
+    setMfaFactorId(null);
+    setMfaCode("");
+  };
 
   const currentSession = {
     device: navigator.userAgent.includes("Mac") ? "Mac" : navigator.userAgent.includes("Windows") ? "Windows" : navigator.userAgent.includes("Linux") ? "Linux" : "Unknown Device",
@@ -1627,19 +1712,63 @@ function SecuritySection() {
               <p className="text-[11px] text-muted-foreground/50 mt-0.5">Use an app like Google Authenticator or Authy</p>
             </div>
           </div>
-          <ToggleSwitch enabled={twoFa} onToggle={() => setTwoFa(!twoFa)} />
+          <ToggleSwitch enabled={twoFa || mfaEnrolling} onToggle={mfaEnrolling ? handleCancelEnroll : handleToggle2FA} />
         </div>
         <AnimatePresence>
-          {twoFa && (
+          {mfaEnrolling && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-4 overflow-hidden">
-              <div className="flex items-center gap-3 p-4 rounded-xl border border-emerald-500/20" style={{ background: "hsl(160 60% 45% / 0.04)" }}>
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
-                  <Check className="w-4 h-4 text-emerald-400" />
+              <div className="p-4 rounded-xl border border-border/40 bg-secondary/30 space-y-4">
+                <p className="text-[13px] text-foreground font-semibold">Scan this QR code with your authenticator app</p>
+                {mfaQrCode && (
+                  <div className="flex justify-center">
+                    <img src={mfaQrCode} alt="TOTP QR Code" className="w-48 h-48 rounded-lg" />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <p className="text-[11px] text-muted-foreground/50">Enter the 6-digit code from your app</p>
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={mfaCode}
+                      onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
+                      placeholder="000000"
+                      className="flex-1 h-10 px-3 rounded-lg border border-border/40 bg-background text-foreground text-center text-lg tracking-[0.3em] font-mono focus:outline-none focus:ring-2 focus:ring-brand-orange/50"
+                    />
+                    <button
+                      onClick={handleVerifyMfa}
+                      disabled={mfaCode.length !== 6 || mfaLoading}
+                      className="h-10 px-4 rounded-lg bg-brand-orange text-white text-[13px] font-semibold hover:bg-brand-orange/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {mfaLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      Verify
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[13px] text-emerald-400 font-semibold">2FA is active</p>
-                  <p className="text-[11px] text-emerald-400/50 mt-0.5">Your account has an extra layer of protection</p>
+              </div>
+            </motion.div>
+          )}
+          {twoFa && !mfaEnrolling && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-4 overflow-hidden">
+              <div className="flex items-center justify-between gap-3 p-4 rounded-xl border border-emerald-500/20" style={{ background: "hsl(160 60% 45% / 0.04)" }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                    <Check className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] text-emerald-400 font-semibold">2FA is active</p>
+                    <p className="text-[11px] text-emerald-400/50 mt-0.5">Your account has an extra layer of protection</p>
+                  </div>
                 </div>
+                <button
+                  onClick={handleToggle2FA}
+                  disabled={mfaLoading}
+                  className="text-[11px] text-destructive/70 hover:text-destructive font-medium transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {mfaLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                  Disable 2FA
+                </button>
               </div>
             </motion.div>
           )}
