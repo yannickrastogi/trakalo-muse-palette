@@ -138,6 +138,73 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       console.error("Error fetching workspace tracks:", tErr);
     }
 
+    // Fetch recent audit_logs
+    const { data: auditData } = await supabase
+      .from("audit_logs")
+      .select("id, user_id, action, resource_type, resource_id, metadata, created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    // Fetch recent link_events for workspace tracks
+    const trackIds = (tracks || []).map(t => t.id);
+    let linkEventsData: any[] | null = null;
+    if (trackIds.length > 0) {
+      const { data } = await supabase
+        .from("link_events")
+        .select("id, event_type, visitor_email, track_id, created_at")
+        .in("track_id", trackIds)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      linkEventsData = data;
+    }
+
+    // Map audit_logs to TeamActivity
+    const auditActionMap: Record<string, { type: ActivityType; message: string }> = {
+      "user.login": { type: "member", message: "logged in" },
+      "track.saved_from_share": { type: "link", message: "saved a track from shared link" },
+      "track.removed_from_share": { type: "link", message: "removed a track from catalog" },
+    };
+
+    const auditActivities: TeamActivity[] = (auditData || [])
+      .filter(a => auditActionMap[a.action])
+      .map(a => {
+        const mapped = auditActionMap[a.action];
+        const member = teamMembers.find(m => m.id === a.user_id);
+        const userName = member ? `${member.firstName} ${member.lastName}`.trim() : "User";
+        return {
+          id: a.id,
+          type: mapped.type,
+          message: mapped.message,
+          user: userName,
+          date: a.created_at || "",
+        };
+      });
+
+    // Map link_events to TeamActivity
+    const linkEventMap: Record<string, { type: ActivityType; message: string }> = {
+      play: { type: "recipient_played", message: "played a track" },
+      download: { type: "recipient_downloaded", message: "downloaded a track" },
+      open: { type: "recipient_opened", message: "opened a shared link" },
+    };
+
+    const linkActivities: TeamActivity[] = (linkEventsData || [])
+      .filter(e => linkEventMap[e.event_type])
+      .map(e => {
+        const mapped = linkEventMap[e.event_type];
+        return {
+          id: e.id,
+          type: mapped.type,
+          message: mapped.message,
+          user: e.visitor_email || "Anonymous",
+          date: e.created_at || "",
+        };
+      });
+
+    // Combine, sort by date desc, limit to 50
+    const allActivities = [...auditActivities, ...linkActivities]
+      .sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0))
+      .slice(0, 50);
+
     // Model workspace as a single team
     const team: Team = {
       id: activeWorkspace.id,
@@ -146,7 +213,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       createdAt: activeWorkspace.created_at ? activeWorkspace.created_at.split("T")[0] : "",
       members: teamMembers,
       sharedTrackIds: (tracks || []).map(t => t.id),
-      activities: [],
+      activities: allActivities,
     };
 
     setTeams([team]);
