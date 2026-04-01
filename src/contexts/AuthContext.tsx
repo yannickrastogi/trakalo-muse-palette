@@ -8,10 +8,12 @@ interface AuthContextValue {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  needsMfaVerification: boolean;
   signInWithGoogle: () => Promise<{ error?: Error }>;
   signInWithEmail: (email: string, password: string) => Promise<{ error?: Error }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error?: Error; needsConfirmation?: boolean }>;
   signOut: () => Promise<void>;
+  verifyMfa: (code: string) => Promise<{ error?: Error }>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -19,9 +21,31 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsMfaVerification, setNeedsMfaVerification] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const initializedRef = useRef(false);
 
   useEffect(() => {
+    const checkMfa = async (sess: Session): Promise<boolean> => {
+      try {
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (!aalData) return false;
+        // If already aal2, no verification needed
+        if (aalData.currentLevel === "aal2") return false;
+        // If next level requires aal2, user has enrolled TOTP factors
+        if (aalData.nextLevel === "aal2" && aalData.currentLevel === "aal1") {
+          const { data: factorsData } = await supabase.auth.mfa.listFactors();
+          const verifiedTotp = factorsData?.totp?.find((f) => f.status === "verified");
+          if (verifiedTotp) {
+            setMfaFactorId(verifiedTotp.id);
+            setNeedsMfaVerification(true);
+            return true;
+          }
+        }
+      } catch (e) {}
+      return false;
+    };
+
     const checkWhitelist = async (sess: Session | null) => {
       if (sess?.user?.email && !(await isEmailWhitelisted(sess.user.email))) {
         await supabase.auth.signOut();
@@ -56,6 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setSession(newSession);
+      if (newSession && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+        await checkMfa(newSession);
+      }
       if (!initializedRef.current) {
         setLoading(false);
         initializedRef.current = true;
@@ -80,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const allowed = await checkWhitelist(refreshed.session);
                 if (!allowed) return;
                 setSession(refreshed.session);
+                await checkMfa(refreshed.session);
                 setLoading(false);
                 initializedRef.current = true;
                 return;
@@ -97,6 +125,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!allowed) return;
       }
       setSession(initSession);
+      if (initSession) {
+        await checkMfa(initSession);
+      }
       setLoading(false);
       initializedRef.current = true;
     }).catch(function (err) {
@@ -142,6 +173,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {};
   }, []);
 
+  const verifyMfa = useCallback(async (code: string) => {
+    if (!mfaFactorId) return { error: new Error("No MFA factor found") };
+    try {
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+      if (challengeError || !challenge) return { error: challengeError || new Error("Failed to create MFA challenge") };
+      const { error: verifyError } = await supabase.auth.mfa.verify({ factorId: mfaFactorId, challengeId: challenge.id, code });
+      if (verifyError) return { error: verifyError };
+      setNeedsMfaVerification(false);
+      setMfaFactorId(null);
+      // Refresh session to get aal2
+      const { data: { session: refreshedSession } } = await supabase.auth.getSession();
+      if (refreshedSession) {
+        setSession(refreshedSession);
+        localStorage.setItem("trakalog_session_backup", JSON.stringify(refreshedSession));
+      }
+      return {};
+    } catch (e) {
+      return { error: e instanceof Error ? e : new Error("MFA verification failed") };
+    }
+  }, [mfaFactorId]);
+
   const signOut = useCallback(async () => {
     const currentUser = session?.user;
     if (currentUser) {
@@ -155,7 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, needsMfaVerification, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, verifyMfa }}>
       {children}
     </AuthContext.Provider>
   );
