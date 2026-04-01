@@ -128,6 +128,16 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       };
     });
 
+    // Fetch tracks for this workspace
+    const { data: tracks, error: tErr } = await supabase
+      .from("tracks")
+      .select("id")
+      .eq("workspace_id", activeWorkspace.id);
+
+    if (tErr) {
+      console.error("Error fetching workspace tracks:", tErr);
+    }
+
     // Model workspace as a single team
     const team: Team = {
       id: activeWorkspace.id,
@@ -135,7 +145,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       name: activeWorkspace.name,
       createdAt: activeWorkspace.created_at ? activeWorkspace.created_at.split("T")[0] : "",
       members: teamMembers,
-      sharedTrackIds: [],
+      sharedTrackIds: (tracks || []).map(t => t.id),
       activities: [],
     };
 
