@@ -27,6 +27,11 @@ serve(async function(req) {
       return new Response(JSON.stringify({ valid: false, error: "Slug and password are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", { _key: "verify-link-password:" + ip, _max_requests: 5, _window_seconds: 300 });
+    if (rateLimitOk === false) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     const result = await supabaseAdmin.from("shared_links").select("password_hash").eq("link_slug", slug).single();
     if (result.error || !result.data || !result.data.password_hash) {
       return new Response(JSON.stringify({ valid: false, error: "Link not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });

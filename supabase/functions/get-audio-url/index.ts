@@ -39,6 +39,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", { _key: "get-audio-url:" + ip, _max_requests: 60, _window_seconds: 60 });
+    if (rateLimitOk === false) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // If slug is provided, validate the shared link (public access flow)
     if (slug) {
       // 1. Verify the shared link exists and is active

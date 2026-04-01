@@ -1,10 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
   if (corsRes) return corsRes;
   const corsHeaders = getCorsHeaders(req);
+
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", { _key: "send-invitation-email:" + ip, _max_requests: 10, _window_seconds: 3600 });
+  if (rateLimitOk === false) {
+    return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 
   try {
     const { to_email, to_name, inviter_name, workspace_name, role, invite_link } = await req.json();
