@@ -42,6 +42,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRole } from "@/contexts/RoleContext";
@@ -2035,12 +2036,16 @@ const sectionComponents: Record<SettingsSection, React.FC> = {
 
 export default function SettingsPage() {
   const { t } = useTranslation();
-  const [activeSection, setActiveSection] = useState<SettingsSection>(() => {
-    const params = new URLSearchParams(window.location.search);
-    const s = params.get("section");
-    const valid: SettingsSection[] = ["profile", "workspace", "branding", "catalogSharing", "notifications", "appearance", "security"];
-    return s && valid.includes(s as SettingsSection) ? s as SettingsSection : "profile";
-  });
+  const [searchParams] = useSearchParams();
+  const validSections: SettingsSection[] = ["profile", "workspace", "branding", "catalogSharing", "notifications", "appearance", "security"];
+  const [activeSection, setActiveSection] = useState<SettingsSection>("profile");
+
+  useEffect(() => {
+    const s = searchParams.get("section");
+    if (s && validSections.includes(s as SettingsSection)) {
+      setActiveSection(s as SettingsSection);
+    }
+  }, [searchParams]);
   const isMobile = useIsMobile();
   const ActiveComponent = sectionComponents[activeSection];
   const activeInfo = sections.find((s) => s.id === activeSection)!;
