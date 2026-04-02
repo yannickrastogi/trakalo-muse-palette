@@ -436,6 +436,7 @@ export default function Catalog() {
                              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
                           </td>
                           <td className="px-4 py-3">
+                            {!permissions.isReadOnly && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <button className="p-1.5 rounded-lg hover:bg-muted transition-all duration-200 text-muted-foreground hover:text-foreground opacity-0 group-hover/row:opacity-100" onClick={(e) => e.stopPropagation()}>
@@ -443,16 +444,21 @@ export default function Catalog() {
                                 </button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-40">
+                                {permissions.canEditTracks && (
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate("/track/" + track.uuid + "?edit=true"); }}>
                                   <Edit3 className="w-3.5 h-3.5 mr-2" />
                                   Edit
                                 </DropdownMenuItem>
+                                )}
+                                {permissions.canDeleteTracks && (
                                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteTarget(track); }}>
                                   <Trash2 className="w-3.5 h-3.5 mr-2" />
                                   Delete
                                 </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
+                            )}
                           </td>
                         </tr>
                       );

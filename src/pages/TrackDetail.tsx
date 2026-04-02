@@ -582,7 +582,7 @@ export default function TrackDetail() {
                         transition={{ duration: 0.2 }}
                         className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2"
                       >
-                        {permissions.canEditOwnTracks && !isViewerShared && (
+                        {permissions.canEditTracks && !isViewerShared && (
                           <button
                             onClick={() => setEditTrackModalOpen(true)}
                             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 min-h-[44px] col-span-1"
@@ -590,7 +590,7 @@ export default function TrackDetail() {
                             <Edit3 className="w-4 h-4" /> Edit Track
                           </button>
                         )}
-                        {track.shareAccessLevel !== "viewer" && (
+                        {permissions.canCreateSharedLinks && track.shareAccessLevel !== "viewer" && (
                           <button
                             onClick={() => setShareExpanded(true)}
                             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200 min-h-[44px] col-span-1"
@@ -621,7 +621,7 @@ export default function TrackDetail() {
                             <X className="w-4 h-4" /> {t("catalogSharing.removeFromTrakalog")}
                           </button>
                         )}
-                        {permissions.canEditOwnTracks && !isViewerShared && (
+                        {permissions.canEditTracks && !isViewerShared && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <button className="flex items-center justify-center w-10 h-10 rounded-lg border border-border bg-card text-foreground hover:bg-secondary transition-all duration-200">
@@ -721,7 +721,7 @@ export default function TrackDetail() {
                               <DropdownMenuItem onClick={() => setStudioQrOpen(true)}>
                                 <QrCode className="w-4 h-4 mr-2" /> Studio QR
                               </DropdownMenuItem>
-                              {!track.isShared && (
+                              {!track.isShared && permissions.canDeleteTracks && (
                                 <>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} className="text-destructive focus:text-destructive">
@@ -1698,6 +1698,7 @@ interface StudioSubmission {
 
 function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUuid?: string; readOnly?: boolean }) {
   const { t } = useTranslation();
+  const { permissions: splitsPermissions } = useRole();
   const { getTrack, updateTrackSplits } = useTrack();
   const trackData = getTrack(trackId);
   const splits = trackData?.splits || [];
@@ -2237,7 +2238,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
             <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:underline">
               <Download className="w-3.5 h-3.5" /> {t("signature.downloadUnsignedPdf")}
             </button>
-            {!readOnly && <button onClick={startEditing} className="text-xs text-primary hover:underline">{t("signature.editSplits")}</button>}
+            {!readOnly && splitsPermissions.canManageSplits && <button onClick={startEditing} className="text-xs text-primary hover:underline">{t("signature.editSplits")}</button>}
           </div>
         }
       >
@@ -2336,7 +2337,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
           <span className="text-muted-foreground">Total</span>
           <span className={"font-bold " + (totalShares === 100 ? "text-emerald-400" : "text-destructive")}>{totalShares}%</span>
         </div>
-        {totalShares === 100 && splits.length >= 1 && !readOnly && (
+        {totalShares === 100 && splits.length >= 1 && !readOnly && splitsPermissions.canManageSplits && (
           <TooltipProvider delayDuration={200}>
             <div className="px-5 py-3 border-t border-border flex flex-wrap items-center gap-2">
               {/* Download Signed Splits PDF */}

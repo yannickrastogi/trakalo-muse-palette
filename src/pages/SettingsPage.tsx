@@ -2263,7 +2263,21 @@ const sectionComponents: Record<SettingsSection, React.FC> = {
 export default function SettingsPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
-  const validSections: SettingsSection[] = ["profile", "workspace", "branding", "catalogSharing", "notifications", "appearance", "security"];
+  const { permissions: settingsPermissions } = useRole();
+
+  // Filter sections based on permissions
+  const restrictedSections: Record<string, keyof typeof settingsPermissions> = {
+    workspace: "canAccessSettings",
+    branding: "canAccessSettings",
+    catalogSharing: "canAccessSettings",
+  };
+  const visibleSections = sections.filter((s) => {
+    const requiredPerm = restrictedSections[s.id];
+    if (requiredPerm) return settingsPermissions[requiredPerm];
+    return true;
+  });
+
+  const validSections: SettingsSection[] = visibleSections.map((s) => s.id);
   const [activeSection, setActiveSection] = useState<SettingsSection>("profile");
 
   useEffect(() => {
@@ -2292,7 +2306,7 @@ export default function SettingsPage() {
               ? "flex gap-1.5 overflow-x-auto pb-3 -mx-1 px-1"
               : "space-y-0.5 sticky top-20"
             }>
-              {sections.map((s) => {
+              {visibleSections.map((s) => {
                 const isActive = activeSection === s.id;
                 return (
                   <button

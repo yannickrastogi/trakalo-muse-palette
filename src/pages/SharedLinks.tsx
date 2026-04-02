@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Link2, Copy, Lock, Globe, Eye, EyeOff, BarChart3, ChevronDown, X } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useSharedLinks } from "@/contexts/SharedLinksContext";
+import { useRole } from "@/contexts/RoleContext";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -85,6 +86,7 @@ function FilterSelect({ label, value, options, onChange }: {
 
 export default function SharedLinks() {
   const { sharedLinks, updateLinkStatus } = useSharedLinks();
+  const { permissions } = useRole();
   const [search, setSearch] = useState("");
   const [activityLinkId, setActivityLinkId] = useState<string | null>(null);
   const [shareTypeFilter, setShareTypeFilter] = useState("All");
@@ -249,6 +251,7 @@ export default function SharedLinks() {
                             <button onClick={() => copyLink(link.linkSlug || link.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Copy Link">
                               <Copy className="w-3.5 h-3.5" />
                             </button>
+                            {permissions.canCreateSharedLinks && (
                             <button
                               onClick={() => updateLinkStatus(link.id, status === "disabled" ? "active" : "disabled")}
                               className={"p-1.5 rounded-lg transition-colors " + (status === "disabled" ? "text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-400" : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive")}
@@ -256,6 +259,7 @@ export default function SharedLinks() {
                             >
                               {status === "disabled" ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                             </button>
+                            )}
                             <button
                               onClick={() => setActivityLinkId(link.id)}
                               className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -324,6 +328,7 @@ export default function SharedLinks() {
                     <button onClick={() => copyLink(link.linkSlug || link.id)} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Copy Link">
                       <Copy className="w-4 h-4" />
                     </button>
+                    {permissions.canCreateSharedLinks && (
                     <button
                       onClick={() => updateLinkStatus(link.id, status === "disabled" ? "active" : "disabled")}
                       className={"p-2 rounded-lg transition-colors " + (status === "disabled" ? "text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-400" : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive")}
@@ -331,6 +336,7 @@ export default function SharedLinks() {
                     >
                       {status === "disabled" ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                     </button>
+                    )}
                     <button
                       onClick={() => setActivityLinkId(link.id)}
                       className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
