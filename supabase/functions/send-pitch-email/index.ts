@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { buildEmail } from "../_shared/email-template.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -25,16 +26,14 @@ serve(async (req) => {
     }
 
     // Fetch workspace branding
-    let heroImageUrl = "";
     let logoUrl = "";
-    let brandColor = "#8b5cf6";
+    let brandColor = "";
     let workspaceName = "";
     if (workspace_id) {
-      const { data: ws } = await supabaseAdmin.from("workspaces").select("hero_image_url, logo_url, brand_color, name").eq("id", workspace_id).single();
+      const { data: ws } = await supabaseAdmin.from("workspaces").select("logo_url, brand_color, name").eq("id", workspace_id).single();
       if (ws) {
-        heroImageUrl = ws.hero_image_url || "";
         logoUrl = ws.logo_url || "";
-        brandColor = ws.brand_color || "#8b5cf6";
+        brandColor = ws.brand_color || "";
         workspaceName = ws.name || "";
       }
     }
@@ -47,49 +46,34 @@ serve(async (req) => {
       });
     }
 
-    const trackList = tracks && tracks.length > 0
-      ? tracks.map((t: { title: string; artist: string }) => "<li style=\"padding:8px 0;border-bottom:1px solid #eee;\">" + t.title + " &mdash; <span style=\"color:#666;\">" + t.artist + "</span></li>").join("")
-      : "";
+    const greeting = to_name ? "<p>Hi " + to_name + ",</p>" : "<p>Hi,</p>";
 
     const messageBlock = message
-      ? "<blockquote style=\"border-left:3px solid " + brandColor + ";padding:12px 16px;margin:20px 0;background:#f9f7ff;color:#444;font-style:italic;border-radius:0 8px 8px 0;\">" + message + "</blockquote>"
-      : "";
+      ? '<p style="border-left:3px solid ' + (brandColor || '#ec4899') + ';padding:12px 16px;margin:20px 0;background:rgba(255,255,255,0.03);color:#d4d4d8;font-style:italic;border-radius:0 8px 8px 0;">' + message + '</p>'
+      : '';
 
-    const trackSection = trackList
-      ? "<div style=\"margin:24px 0;\"><h3 style=\"color:#333;margin-bottom:12px;\">Tracks</h3><ul style=\"list-style:none;padding:0;margin:0;\">" + trackList + "</ul></div>"
-      : "";
+    const trackList = tracks && tracks.length > 0
+      ? '<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:20px 0;">'
+        + '<tr><td style="font-family:Arial,sans-serif;font-size:13px;font-weight:bold;color:#ffffff;padding:0 0 8px 0;text-transform:uppercase;letter-spacing:1px;">Tracks</td></tr>'
+        + tracks.map((t: { title: string; artist: string }) =>
+          '<tr><td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-family:Arial,sans-serif;font-size:14px;color:#d4d4d8;">'
+          + t.title + ' <span style="color:#71717a;">&mdash; ' + t.artist + '</span></td></tr>'
+        ).join('')
+        + '</table>'
+      : '';
 
-    const buttonSection = share_link
-      ? "<div style=\"text-align:center;margin:32px 0;\"><a href=\"" + share_link + "\" style=\"display:inline-block;background:" + brandColor + ";color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;font-size:16px;\">Listen Now</a></div>"
-      : "";
+    const bodyContent = greeting + messageBlock + trackList;
 
-    const greeting = to_name ? "Hi " + to_name + "," : "Hi,";
-
-    const heroBanner = heroImageUrl
-      ? "<img src=\"" + heroImageUrl + "\" alt=\"\" style=\"width:100%;max-width:600px;height:200px;object-fit:cover;border-radius:12px 12px 0 0;display:block;\" />"
-      : "";
-
-    const headerContent = logoUrl
-      ? "<div style=\"text-align:center;margin-bottom:24px;display:flex;align-items:center;justify-content:center;gap:12px;\"><img src=\"" + logoUrl + "\" alt=\"\" style=\"max-height:40px;\" /><span style=\"color:" + brandColor + ";font-size:22px;font-weight:bold;\">" + (workspaceName || "Trakalog") + "</span></div>"
-      : "<div style=\"text-align:center;margin-bottom:24px;\"><h1 style=\"color:" + brandColor + ";margin:0;font-size:28px;\">" + (workspaceName || "Trakalog") + "</h1></div>";
-
-    const topRadius = heroImageUrl ? "0" : "12px";
-
-    const htmlBody = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head>"
-      + "<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f5f5f5;\">"
-      + heroBanner
-      + "<div style=\"background:#ffffff;border-radius:" + topRadius + " " + topRadius + " 12px 12px;padding:32px;margin:" + (heroImageUrl ? "0" : "20px") + " 0 20px 0;\">"
-      + headerContent
-      + "<p style=\"color:#333;font-size:16px;line-height:1.6;\">" + greeting + "</p>"
-      + "<p style=\"color:#333;font-size:16px;line-height:1.6;\"><strong>" + (from_name || "Someone") + "</strong> sent you a pitch.</p>"
-      + messageBlock
-      + trackSection
-      + buttonSection
-      + "<hr style=\"border:none;border-top:1px solid #eee;margin:32px 0;\">"
-      + (logoUrl
-        ? "<div style=\"text-align:center;\"><img src=\"" + logoUrl + "\" alt=\"\" style=\"max-height:24px;margin-bottom:8px;\" /><p style=\"color:#999;font-size:12px;margin:0;\">Sent via Trakalog</p></div>"
-        : "<p style=\"text-align:center;color:#999;font-size:12px;\">Sent via Trakalog</p>")
-      + "</div></body></html>";
+    const htmlBody = buildEmail({
+      workspaceName: workspaceName || undefined,
+      workspaceLogoUrl: logoUrl || null,
+      brandColor: brandColor || null,
+      preheader: (from_name || "Someone") + " sent you a pitch",
+      heading: (from_name || "Someone") + " sent you a pitch",
+      body: bodyContent,
+      ctaLabel: share_link ? "Listen Now" : undefined,
+      ctaUrl: share_link || undefined,
+    });
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",

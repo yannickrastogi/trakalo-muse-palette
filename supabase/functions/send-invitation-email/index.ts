@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { buildEmail } from "../_shared/email-template.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -15,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { to_email, to_name, inviter_name, workspace_name, role, invite_link } = await req.json();
+    const { to_email, to_name, inviter_name, workspace_name, workspace_id, role, invite_link } = await req.json();
 
     if (!to_email || !workspace_name || !invite_link) {
       return new Response(JSON.stringify({ error: "to_email, workspace_name, and invite_link required" }), {
@@ -32,25 +33,35 @@ serve(async (req) => {
       });
     }
 
-    const greeting = to_name ? "Hi " + to_name + "," : "Hi,";
+    // Fetch workspace branding
+    let logoUrl = "";
+    let brandColor = "";
+    if (workspace_id) {
+      const { data: ws } = await supabaseAdmin.from("workspaces").select("logo_url, brand_color").eq("id", workspace_id).single();
+      if (ws) {
+        logoUrl = ws.logo_url || "";
+        brandColor = ws.brand_color || "";
+      }
+    }
+
+    const greeting = to_name ? "<p>Hi " + to_name + ",</p>" : "<p>Hi,</p>";
     const inviter = inviter_name || "Someone";
     const roleLine = role ? " as <strong>" + role + "</strong>" : "";
 
-    const htmlBody = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head>"
-      + "<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f5f5f5;\">"
-      + "<div style=\"background:#ffffff;border-radius:12px;padding:32px;margin:20px 0;\">"
-      + "<div style=\"text-align:center;margin-bottom:24px;\">"
-      + "<h1 style=\"color:#8b5cf6;margin:0;font-size:28px;\">Trakalog</h1>"
-      + "</div>"
-      + "<p style=\"color:#333;font-size:16px;line-height:1.6;\">" + greeting + "</p>"
-      + "<p style=\"color:#333;font-size:16px;line-height:1.6;\"><strong>" + inviter + "</strong> has invited you to join <strong>" + workspace_name + "</strong>" + roleLine + ".</p>"
-      + "<div style=\"text-align:center;margin:32px 0;\">"
-      + "<a href=\"" + invite_link + "\" style=\"display:inline-block;background:#8b5cf6;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;font-size:16px;\">Join Workspace</a>"
-      + "</div>"
-      + "<p style=\"color:#666;font-size:14px;line-height:1.6;\">If you didn't expect this invitation, you can safely ignore this email.</p>"
-      + "<hr style=\"border:none;border-top:1px solid #eee;margin:32px 0;\">"
-      + "<p style=\"text-align:center;color:#999;font-size:12px;\">Sent via Trakalog</p>"
-      + "</div></body></html>";
+    const bodyContent = greeting
+      + "<p><strong>" + inviter + "</strong> has invited you to join <strong>" + workspace_name + "</strong>" + roleLine + ".</p>"
+      + '<p style="color:#52525b;font-size:13px;margin-top:24px;">If you didn\'t expect this invitation, you can safely ignore this email.</p>';
+
+    const htmlBody = buildEmail({
+      workspaceName: workspace_name,
+      workspaceLogoUrl: logoUrl || null,
+      brandColor: brandColor || null,
+      preheader: inviter + " invited you to join " + workspace_name,
+      heading: "You're invited to join " + workspace_name,
+      body: bodyContent,
+      ctaLabel: "Join Workspace",
+      ctaUrl: invite_link,
+    });
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
