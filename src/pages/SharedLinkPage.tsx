@@ -1717,7 +1717,7 @@ export default function SharedLinkPage() {
               </div>
             )}
 
-            {linkData?.allow_save && linkData.track_id && (
+            {linkData?.track_id && (
               <div className={"px-6 py-4 " + (immersive ? "border-t border-white/10" : "border-t border-border")}>
                 {savedToTrakalog ? (
                   <div className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold " + (immersive ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20" : "bg-emerald-500/10 text-emerald-500")}>
