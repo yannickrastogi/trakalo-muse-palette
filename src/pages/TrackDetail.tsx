@@ -2213,9 +2213,9 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
           </div>
           <div>
             <p className="text-sm font-medium text-foreground mb-1">No splits configured yet</p>
-            {!readOnly && <p className="text-xs text-muted-foreground">Add collaborators and assign ownership percentages</p>}
+            {!readOnly && splitsPermissions.canManageSplits && <p className="text-xs text-muted-foreground">Add collaborators and assign ownership percentages</p>}
           </div>
-          {!readOnly && (
+          {!readOnly && splitsPermissions.canManageSplits && (
           <button onClick={startEditing} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold btn-brand">
             <Plus className="w-3.5 h-3.5" /> Add Splits
           </button>
@@ -2270,7 +2270,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
                   <div className={"w-2.5 h-2.5 rounded-full shrink-0 " + dotColors[i % dotColors.length]} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground">{s.name}</p>
-                    {isEditingThisEmail ? (
+                    {splitsPermissions.canManageSplits && isEditingThisEmail ? (
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <input
                           type="email"
@@ -2287,6 +2287,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
                         />
                       </div>
                     ) : s.email ? (
+                      splitsPermissions.canManageSplits ? (
                       <button
                         onClick={function () { setEditingEmailId(s.id); setEditingEmailValue(s.email || ""); }}
                         className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 hover:text-foreground transition-colors"
@@ -2294,7 +2295,13 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
                         <Mail className="w-3 h-3" />
                         {s.email}
                       </button>
-                    ) : (
+                      ) : (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                        <Mail className="w-3 h-3" />
+                        {s.email}
+                      </span>
+                      )
+                    ) : splitsPermissions.canManageSplits ? (
                       <button
                         onClick={function () { setEditingEmailId(s.id); setEditingEmailValue(""); }}
                         className="flex items-center gap-1 text-xs text-brand-orange mt-0.5 hover:underline"
@@ -2302,7 +2309,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
                         <Mail className="w-3 h-3" />
                         {t("signature.addEmail")}
                       </button>
-                    )}
+                    ) : null}
                     <p className="text-[11px] text-muted-foreground">{s.role} · {s.pro || "—"} · IPI: {s.ipi || "—"}</p>
                     {sigStatus && (
                       sigStatus.status === "signed" ? (
@@ -2327,7 +2334,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
             );
           })}
         </div>
-        {!allSplitsHaveEmail && totalShares === 100 && splits.length >= 1 && (
+        {!allSplitsHaveEmail && totalShares === 100 && splits.length >= 1 && splitsPermissions.canManageSplits && (
           <div className="px-5 py-2.5 bg-brand-orange/8 border-t border-brand-orange/20 flex items-center gap-2">
             <AlertTriangle className="w-3.5 h-3.5 text-brand-orange shrink-0" />
             <span className="text-xs text-brand-orange">{t("signature.missingEmails")}</span>
