@@ -19,6 +19,7 @@ export default function Auth() {
   const [mfaCode, setMfaCode] = useState("");
 
   const redirectParam = searchParams.get("redirect");
+  const inviteParam = searchParams.get("invite");
 
   if (loading) {
     return (
@@ -30,6 +31,9 @@ export default function Auth() {
 
   if (session && !needsMfaVerification) {
     localStorage.setItem("trakalog_just_logged_in", "1");
+    if (inviteParam) {
+      return <Navigate to={"/invite/" + inviteParam} replace />;
+    }
     return <Navigate to="/dashboard" replace />;
   }
 
