@@ -74,6 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem("trakalog_session_backup", JSON.stringify(newSession));
         } catch (e) {}
       }
+      // On explicit SIGNED_OUT, clear the backup
+      if (event === "SIGNED_OUT") {
+        localStorage.removeItem("trakalog_session_backup");
+      }
 
       if (event === "SIGNED_IN" && newSession) {
         supabase.rpc("write_audit_log", { _user_id: newSession.user.id, _workspace_id: null, _action: "user.login", _metadata: JSON.stringify({ provider: newSession.user.app_metadata?.provider || "email" }) }).then(() => {}).catch(() => {});
@@ -115,11 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 return;
               }
             }
-            // Refresh failed or no tokens — clear stale backup
-            localStorage.removeItem("trakalog_session_backup");
           }
         } catch (e) {
-          localStorage.removeItem("trakalog_session_backup");
         }
       }
       if (initSession) {

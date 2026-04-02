@@ -15,7 +15,7 @@ const customStorage = {
   },
   setItem: (key: string, value: string) => {
     localStorage.setItem(key, value);
-    if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+    if (key.startsWith('sb-') && key.endsWith('-auth-token') && value) {
       localStorage.setItem('trakalog_session_backup', value);
     }
   },
