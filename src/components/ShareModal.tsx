@@ -380,7 +380,8 @@ export function ShareModal({
                 </div>
                 )}
 
-                {/* Save to Trakalog Permission */}
+                {/* Save to Trakalog Permission — only for track/playlist */}
+                {shareType !== "stems" && shareType !== "pack" && (
                 <div className="space-y-3 mt-4">
                   <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">Save Permission</label>
                   <div className={"rounded-xl border transition-all " + (allowSave ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/30") + " p-3.5"}>
@@ -396,6 +397,7 @@ export function ShareModal({
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* Item count */}
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 border border-border">
