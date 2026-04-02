@@ -176,6 +176,7 @@ export function PitchProvider({ children }: { children: ReactNode }) {
           message: pitch.notes || "",
           tracks: [{ title: pitch.itemName, artist: pitch.artist }],
           share_link: shareLink,
+          workspace_id: activeWorkspace.id,
         }),
       }).catch(function(err) { console.error("Failed to send pitch email:", err); });
 
