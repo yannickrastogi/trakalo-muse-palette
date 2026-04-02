@@ -62,7 +62,7 @@ export function buildEmail(options: {
     + '<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">'
     + '<tr><td align="center" style="padding:0;">'
     + '<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="display:inline-table;"><tr>'
-    + '<td style="vertical-align:middle;padding-right:12px;"><img src="' + trakalogLogoUrl + '" alt="Trakalog" style="height:40px;display:block;" /></td>'
+    + '<td style="vertical-align:middle;padding-right:12px;"><img src="' + trakalogLogoUrl + '" alt="Trakalog" style="height:48px;display:block;" /></td>'
     + '<td style="vertical-align:middle;">'
     + '<div style="font-family:\'Sora\',Arial,Helvetica,sans-serif;font-size:28px;font-weight:700;letter-spacing:4px;line-height:1;">'
     + '<span style="color:#f97316;">T</span>'
