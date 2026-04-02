@@ -32,7 +32,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { storage_path, link_id, visitor_email, visitor_name } = await req.json();
+    const { storage_path: rawStoragePath, link_id, visitor_email, visitor_name } = await req.json();
+
+    // Extract relative path if a full signed URL was sent instead of a relative path
+    let storage_path = rawStoragePath;
+    if (storage_path && storage_path.includes("/object/sign/tracks/")) {
+      storage_path = decodeURIComponent(storage_path.split("/object/sign/tracks/")[1].split("?")[0]);
+    }
 
     if (!storage_path || !link_id || !visitor_email) {
       return new Response(
