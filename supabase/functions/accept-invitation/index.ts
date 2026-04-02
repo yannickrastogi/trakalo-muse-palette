@@ -79,19 +79,7 @@ serve(async (req) => {
       });
     }
 
-    // 5. Insert into user_roles
-    const { error: roleError } = await supabase
-      .from("user_roles")
-      .upsert({ user_id: userId, workspace_id: workspaceId, role: role.toLowerCase() }, { onConflict: "user_id,workspace_id,role" });
-
-    if (roleError) {
-      return new Response(JSON.stringify({ error: "Failed to assign role: " + roleError.message }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // 6. Mark invitation as accepted
+    // 5. Mark invitation as accepted
     const { error: updateError } = await supabase
       .from("invitations")
       .update({ status: "accepted" })
