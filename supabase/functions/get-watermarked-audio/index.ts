@@ -33,9 +33,15 @@ Deno.serve(async (req) => {
 
   try {
     // Validate apikey header (verify_jwt is off, so we check manually)
-    const apikey = req.headers.get("apikey") || req.headers.get("authorization")?.replace("Bearer ", "");
+    const apikeyHeader = req.headers.get("apikey");
+    const authHeader = req.headers.get("authorization");
+    const apikey = apikeyHeader || authHeader?.replace("Bearer ", "");
     const expectedKey = Deno.env.get("SUPABASE_ANON_KEY");
-    if (!apikey || apikey !== expectedKey) {
+    // DEBUG — remove after confirming fix
+    console.log("[get-watermarked-audio] apikey header:", apikeyHeader ? apikeyHeader.substring(0, 20) + "..." : "null");
+    console.log("[get-watermarked-audio] authorization header:", authHeader ? authHeader.substring(0, 30) + "..." : "null");
+    console.log("[get-watermarked-audio] SUPABASE_ANON_KEY env:", expectedKey ? expectedKey.substring(0, 20) + "..." : "NOT SET");
+    if (!apikey || (expectedKey && apikey !== expectedKey)) {
       return new Response(JSON.stringify({ error: "Invalid or missing apikey" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
