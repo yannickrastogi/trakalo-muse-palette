@@ -336,11 +336,11 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
             // Fetch in parallel: own tracks + shares to source (for cascade, via RPC)
             const [ownTracksRes, sourceCatalogSharesRes] = await Promise.all([
-              // 1. Own tracks of source workspace
-              supabase
-                .from("tracks")
-                .select("*")
-                .eq("workspace_id", sourceWsId),
+              // 1. Own tracks of source workspace (via RPC to bypass RLS)
+              supabase.rpc("get_shared_workspace_tracks", {
+                _source_workspace_id: sourceWsId,
+                _target_workspace_id: activeWorkspace.id,
+              }),
               // 2+3. All active catalog shares TO the source workspace via RPC
               supabase.rpc("get_workspace_catalog_shares", { _workspace_id: sourceWsId }),
             ]);
