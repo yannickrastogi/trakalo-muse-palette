@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Link2, Lock, Copy, Check, Music, ListMusic, Download, ShieldOff, Bookmark } from "lucide-react";
+import { X, Link2, Lock, Copy, Check, Music, ListMusic, Download, ShieldOff, Bookmark, Layers, Upload } from "lucide-react";
 import { useSharedLinks, type SharedLink, type ShareType } from "@/contexts/SharedLinksContext";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -40,7 +41,9 @@ export function ShareModal({
   packItems,
 }: ShareModalProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { createSharedLink } = useSharedLinks();
+  const hasNoStems = shareType === "stems" && (!stems || stems.length === 0);
 
   const [linkType, setLinkType] = useState<"public" | "secured">("public");
   const [password, setPassword] = useState("");
@@ -183,7 +186,29 @@ export function ShareModal({
               </div>
             </div>
 
-            {createdLink ? (
+            {hasNoStems ? (
+              /* No stems state */
+              <div className="flex-1 overflow-y-auto min-h-0 p-6">
+                <div className="text-center py-8 space-y-4">
+                  <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center mx-auto">
+                    <Layers className="w-7 h-7 text-muted-foreground/50" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">No stems uploaded yet</p>
+                    <p className="text-xs text-muted-foreground mt-1.5 max-w-xs mx-auto">Upload your stems first to share them. You can add stems from the track's Stems tab.</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      handleClose();
+                      if (trackUuid) navigate("/track/" + trackUuid + "?tab=stems&upload=true");
+                    }}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold btn-brand"
+                  >
+                    <Upload className="w-3.5 h-3.5" /> Go to Stems
+                  </button>
+                </div>
+              </div>
+            ) : createdLink ? (
               /* Success state */
               <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-4">
                 <div className="text-center py-4">
