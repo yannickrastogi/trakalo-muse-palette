@@ -84,13 +84,21 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
       }
 
       if (allSourceIds.length > 0) {
-        // Fetch in parallel: own tracks of sources + catalog_shares targeting sources (for cascade)
+        // Fetch in parallel: own tracks of sources (via RPC) + catalog_shares targeting sources (for cascade)
         var fetchExternalSourceIds = allSourceIds.filter(function (id) { return !trackIdsBySourceWs[id]; });
-        var [extTracksRes, sourceSharesRes] = await Promise.all([
-          // Own tracks of source workspaces we don't already have
-          fetchExternalSourceIds.length > 0
-            ? supabase.from("tracks").select("id, workspace_id").in("workspace_id", fetchExternalSourceIds)
-            : Promise.resolve({ data: [] as any[] }),
+
+        // Build RPC calls for each full catalog share with external source
+        var rpcCalls = fullCatalogShares
+          .filter(function (fcs) { return fetchExternalSourceIds.indexOf(fcs.source_workspace_id) !== -1; })
+          .map(function (fcs) {
+            return supabase.rpc("get_shared_workspace_tracks", {
+              _source_workspace_id: fcs.source_workspace_id,
+              _target_workspace_id: fcs.target_workspace_id,
+            }).then(function (res) { return { source_workspace_id: fcs.source_workspace_id, data: res.data }; });
+          });
+
+        var [rpcResults, sourceSharesRes] = await Promise.all([
+          Promise.all(rpcCalls),
           // Catalog shares targeting source workspaces (for cascade)
           supabase
             .from("catalog_shares")
@@ -99,12 +107,15 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
             .eq("status", "active"),
         ]);
 
-        // Add external source own tracks
-        if (extTracksRes.data) {
-          for (var e = 0; e < extTracksRes.data.length; e++) {
-            var extRow = (extTracksRes.data as any[])[e];
-            if (!trackIdsBySourceWs[extRow.workspace_id]) trackIdsBySourceWs[extRow.workspace_id] = [];
-            trackIdsBySourceWs[extRow.workspace_id].push(extRow.id);
+        // Add external source own tracks from RPC results
+        for (var ri = 0; ri < rpcResults.length; ri++) {
+          var rpcResult = rpcResults[ri];
+          if (rpcResult.data) {
+            if (!trackIdsBySourceWs[rpcResult.source_workspace_id]) trackIdsBySourceWs[rpcResult.source_workspace_id] = [];
+            for (var re = 0; re < (rpcResult.data as any[]).length; re++) {
+              var rpcRow = (rpcResult.data as any[])[re];
+              trackIdsBySourceWs[rpcResult.source_workspace_id].push(rpcRow.id);
+            }
           }
         }
 
@@ -134,18 +145,33 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
           }
         }
 
-        // Fetch upstream full catalog source tracks (1 level cascade max)
+        // Fetch upstream full catalog source tracks via RPC (1 level cascade max)
         var upstreamSourceIdsToFetch = cascadeFullSources.filter(function (id) { return !trackIdsBySourceWs[id]; });
         if (upstreamSourceIdsToFetch.length > 0) {
-          var upstreamRes = await supabase
-            .from("tracks")
-            .select("id, workspace_id")
-            .in("workspace_id", upstreamSourceIdsToFetch);
-          if (upstreamRes.data) {
-            for (var u = 0; u < upstreamRes.data.length; u++) {
-              var uRow = (upstreamRes.data as any[])[u];
-              if (!trackIdsBySourceWs[uRow.workspace_id]) trackIdsBySourceWs[uRow.workspace_id] = [];
-              trackIdsBySourceWs[uRow.workspace_id].push(uRow.id);
+          // Build RPC calls for upstream cascade: source shares that are full catalog
+          var upstreamRpcCalls: Promise<{ source_workspace_id: string; data: any[] | null }>[] = [];
+          if (sourceSharesRes.data) {
+            for (var ur = 0; ur < sourceSharesRes.data.length; ur++) {
+              var uShare = (sourceSharesRes.data as any[])[ur];
+              if (!uShare.track_id && upstreamSourceIdsToFetch.indexOf(uShare.source_workspace_id) !== -1) {
+                upstreamRpcCalls.push(
+                  supabase.rpc("get_shared_workspace_tracks", {
+                    _source_workspace_id: uShare.source_workspace_id,
+                    _target_workspace_id: uShare.target_workspace_id,
+                  }).then(function (res) { return { source_workspace_id: uShare.source_workspace_id, data: res.data }; })
+                );
+              }
+            }
+          }
+          var upstreamRpcResults = await Promise.all(upstreamRpcCalls);
+          for (var uri = 0; uri < upstreamRpcResults.length; uri++) {
+            var upRpcResult = upstreamRpcResults[uri];
+            if (upRpcResult.data) {
+              if (!trackIdsBySourceWs[upRpcResult.source_workspace_id]) trackIdsBySourceWs[upRpcResult.source_workspace_id] = [];
+              for (var ure = 0; ure < (upRpcResult.data as any[]).length; ure++) {
+                var upRpcRow = (upRpcResult.data as any[])[ure];
+                trackIdsBySourceWs[upRpcResult.source_workspace_id].push(upRpcRow.id);
+              }
             }
           }
         }
