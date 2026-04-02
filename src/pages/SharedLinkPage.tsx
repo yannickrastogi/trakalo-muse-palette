@@ -589,7 +589,6 @@ export default function SharedLinkPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
             "apikey": SUPABASE_PUBLISHABLE_KEY
           },
           body: JSON.stringify({
