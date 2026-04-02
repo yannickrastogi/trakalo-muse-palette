@@ -36,9 +36,7 @@ export function buildEmail(options: {
       + '</td></tr></table>'
     : '';
 
-  const workspaceSubline = workspaceName
-    ? '<tr><td align="center" style="padding:4px 0 0 0;font-family:Arial,sans-serif;font-size:13px;color:#71717a;">' + workspaceName + '</td></tr>'
-    : '';
+  const trakalogLogoUrl = 'https://app.trakalog.com/trakalog-logo.png';
 
   const footerLogo = workspaceLogoUrl
     ? '<tr><td align="center" style="padding:0 0 8px 0;"><img src="' + workspaceLogoUrl + '" alt="" style="max-height:24px;display:block;margin:0 auto;" /></td></tr>'
@@ -61,10 +59,12 @@ export function buildEmail(options: {
     // Header
     + '<tr><td align="center" style="padding:32px 32px 0 32px;">'
     + '<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">'
-    + '<tr><td align="center" style="padding:0 0 4px 0;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;letter-spacing:3px;">'
-    + '<span style="background:linear-gradient(135deg,#f97316,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">TRAKALOG</span>'
+    + '<tr><td align="center" style="padding:0;font-family:Arial,sans-serif;">'
+    + '<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="display:inline-table;"><tr>'
+    + '<td style="vertical-align:middle;padding-right:10px;"><img src="' + trakalogLogoUrl + '" alt="Trakalog" style="height:32px;display:block;" /></td>'
+    + '<td style="vertical-align:middle;font-size:16px;font-weight:bold;letter-spacing:3px;color:#f97316;">TRAKALOG</td>'
+    + '</tr></table>'
     + '</td></tr>'
-    + workspaceSubline
     + '</table>'
     + '</td></tr>'
     // Gradient separator
