@@ -62,11 +62,15 @@ serve(async (req) => {
 
     const workspaceId = invitation.workspace_id;
     const role = invitation.role;
+    const accessLevel = invitation.access_level || "viewer";
+    const professionalTitle = invitation.professional_title || null;
 
     // 4. Insert into workspace_members
+    const memberData: Record<string, unknown> = { user_id: userId, workspace_id: workspaceId, access_level: accessLevel };
+    if (professionalTitle) memberData.professional_title = professionalTitle;
     const { error: memberError } = await supabase
       .from("workspace_members")
-      .upsert({ user_id: userId, workspace_id: workspaceId }, { onConflict: "user_id,workspace_id" });
+      .upsert(memberData, { onConflict: "user_id,workspace_id" });
 
     if (memberError) {
       return new Response(JSON.stringify({ error: "Failed to add workspace member: " + memberError.message }), {

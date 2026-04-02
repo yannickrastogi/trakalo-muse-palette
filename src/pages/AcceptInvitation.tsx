@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, supabase } from "@/integrations/supabase/client";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { AlertCircle, Mail, Users, Loader2, CheckCircle2 } from "lucide-react";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
@@ -61,8 +61,17 @@ export default function AcceptInvitation() {
   }, [token]);
 
   async function checkSession() {
-    var { data } = await supabase.auth.getSession();
-    setSession(data.session);
+    try {
+      var backup = localStorage.getItem("trakalog_session_backup");
+      if (backup) {
+        var parsed = JSON.parse(backup);
+        if (parsed && parsed.user) {
+          setSession(parsed);
+        }
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
   }
 
   async function loadInvitation() {

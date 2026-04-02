@@ -15,7 +15,7 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
-    const { workspace_id, workspace_name, invited_by, inviter_name, email, first_name, last_name, role } = await req.json();
+    const { workspace_id, workspace_name, invited_by, inviter_name, email, first_name, last_name, role, access_level, professional_title } = await req.json();
 
     if (!workspace_id || !email || !invited_by) {
       return new Response(JSON.stringify({ error: "workspace_id, email, and invited_by are required" }), {
@@ -68,6 +68,8 @@ serve(async (req) => {
       first_name: first_name || null,
       last_name: last_name || null,
       role: role || "member",
+      access_level: access_level || "viewer",
+      professional_title: professional_title || null,
       token,
     });
 
