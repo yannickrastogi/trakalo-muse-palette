@@ -497,7 +497,7 @@ export default function TrackDetail() {
                       e.target.value = "";
                     }}
                   />
-                  {!isViewerShared && (
+                  {!isViewerShared && permissions.canEditTracks && (
                   <button
                     onClick={() => coverInputRef.current?.click()}
                     className="absolute bottom-3 right-3 p-2 rounded-lg bg-card/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground transition-all duration-200 opacity-0 group-hover:opacity-100"
@@ -512,7 +512,7 @@ export default function TrackDetail() {
               <div className="flex-1 min-w-0 space-y-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    {isViewerShared ? (
+                    {isViewerShared || !permissions.canEditTracks ? (
                       <span className={"inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium " + (statusColorMap[track.status] || "bg-emerald-500/15 text-emerald-400")}>
                         {track.status}
                       </span>
@@ -864,8 +864,8 @@ export default function TrackDetail() {
 
             {/* Tab content */}
             <motion.div variants={item}>
-              {activeTab === "lyrics" && <LyricsTab trackId={track.id} trackUuid={track.uuid} fallbackTrack={track} readOnly={isViewerShared} />}
-               {activeTab === "stems" && <StemsTab trackId={track.id} autoOpenUpload={shouldAutoUpload} />}
+              {activeTab === "lyrics" && <LyricsTab trackId={track.id} trackUuid={track.uuid} fallbackTrack={track} readOnly={isViewerShared || !permissions.canEditTracks} />}
+               {activeTab === "stems" && <StemsTab trackId={track.id} autoOpenUpload={shouldAutoUpload} readOnly={isViewerShared || !permissions.canEditTracks} />}
                {activeTab === "details" && (
                  <div className="space-y-10">
                    <section>
@@ -875,9 +875,9 @@ export default function TrackDetail() {
                    <div className="border-t border-border" />
                    <section>
                      <h3 className="text-lg font-semibold text-foreground mb-4">Metadata</h3>
-                     <OverviewTab trackId={track.id} onEdit={() => setEditTrackModalOpen(true)} readOnly={isViewerShared} />
+                     <OverviewTab trackId={track.id} onEdit={() => setEditTrackModalOpen(true)} readOnly={isViewerShared || !permissions.canEditTracks} />
                    </section>
-                   {!isViewerShared && (
+                   {!isViewerShared && permissions.canEditTracks && (
                    <>
                    <div className="border-t border-border" />
                    <section>

@@ -100,6 +100,7 @@ type RadioMode = "shuffle" | "genre" | "mood" | "energy" | "chill" | "recent" | 
 export default function RadioPage() {
   var { t } = useTranslation();
   var navigate = useNavigate();
+  var { user } = useAuth();
   var { tracks } = useTrack();
   var { pause } = useAudioPlayer();
   var { playlists } = usePlaylists();
@@ -394,9 +395,10 @@ export default function RadioPage() {
   async function handleAddToPlaylist(playlistId: string) {
     if (!radioState.currentTrack) return;
     try {
-      var { error } = await supabase.from("playlist_tracks").insert({
-        playlist_id: playlistId,
-        track_id: radioState.currentTrack.id,
+      var { error } = await supabase.rpc("add_playlist_tracks", {
+        _user_id: user?.id || "",
+        _playlist_id: playlistId,
+        _track_ids: [radioState.currentTrack.id],
       });
       if (error) throw error;
       toast.success(t("radio.addedToPlaylist", "Added to playlist"));

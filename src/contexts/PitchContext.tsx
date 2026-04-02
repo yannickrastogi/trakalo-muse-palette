@@ -97,20 +97,18 @@ export function PitchProvider({ children }: { children: ReactNode }) {
       const now = new Date().toISOString();
       const dbStatus = mapStatusToDb(pitch.status);
 
-      const { error } = await supabase
-        .from("pitches")
-        .insert({
-          workspace_id: activeWorkspace.id,
-          sent_by: user.id,
-          recipient_name: pitch.recipientName,
-          recipient_email: pitch.recipientEmail,
-          recipient_company: pitch.recipientCompany,
-          subject: pitch.itemName,
-          message: pitch.notes || null,
-          track_ids: pitch.trackUuid ? [pitch.trackUuid] : [],
-          status: dbStatus,
-          sent_at: dbStatus === "sent" ? now : null,
-        });
+      const { error } = await supabase.rpc("create_pitch", {
+        _user_id: user.id,
+        _workspace_id: activeWorkspace.id,
+        _recipient_name: pitch.recipientName,
+        _recipient_email: pitch.recipientEmail,
+        _recipient_company: pitch.recipientCompany || "",
+        _subject: pitch.itemName,
+        _message: pitch.notes || null,
+        _track_ids: pitch.trackUuid ? [pitch.trackUuid] : [],
+        _status: dbStatus,
+        _sent_at: dbStatus === "sent" ? now : null,
+      });
 
       if (error) {
         console.error("Error adding pitch:", error);
@@ -139,22 +137,23 @@ export function PitchProvider({ children }: { children: ReactNode }) {
         if (hashRes.ok) { var hj = await hashRes.json(); hashedPassword = hj.hash || null; }
       }
 
-      var { error: linkError } = await supabase
-        .from("shared_links")
-        .insert({
-          workspace_id: activeWorkspace.id,
-          created_by: user.id,
-          share_type: shareType,
-          track_id: trackUuid,
-          playlist_id: playlistUuid,
-          link_name: pitch.itemName,
-          link_slug: slug,
-          link_type: pitch.linkType || "public",
-          password_hash: hashedPassword,
-          status: "active",
-          allow_download: pitch.allowDownload || false,
-          download_quality: pitch.downloadQuality || null,
-        });
+      var { error: linkError } = await supabase.rpc("create_shared_link", {
+        _user_id: user.id,
+        _workspace_id: activeWorkspace.id,
+        _share_type: shareType,
+        _track_id: trackUuid,
+        _playlist_id: playlistUuid,
+        _link_name: pitch.itemName,
+        _link_slug: slug,
+        _link_type: pitch.linkType || "public",
+        _password_hash: hashedPassword,
+        _message: null,
+        _allow_download: pitch.allowDownload || false,
+        _allow_save: false,
+        _download_quality: pitch.downloadQuality || null,
+        _expires_at: null,
+        _pack_items: null,
+      });
 
       if (linkError) {
         console.error("Error creating shared link for pitch:", linkError);

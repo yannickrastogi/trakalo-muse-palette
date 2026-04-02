@@ -47,6 +47,7 @@ interface StemRecord {
 interface StemsTabProps {
   trackId: number;
   autoOpenUpload?: boolean;
+  readOnly?: boolean;
 }
 
 function formatFileSize(bytes: number): string {
@@ -95,7 +96,7 @@ function stemTypeIcon(type: StemType) {
   }
 }
 
-export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
+export function StemsTab({ trackId, autoOpenUpload = false, readOnly = false }: StemsTabProps) {
   const { t } = useTranslation();
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
@@ -354,6 +355,7 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
           <h3 className="text-sm font-semibold text-foreground">{t("stemsTab.title", { count: stems.length })}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">{t("stemsTab.subtitle")}</p>
         </div>
+        {!readOnly && (
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowUploadModal(true)}
@@ -362,13 +364,14 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
             <Upload className="w-3.5 h-3.5" /> {t("stemsTab.uploadStems")}
           </button>
         </div>
+        )}
       </div>
 
       {/* Drop zone */}
       <div
-        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-        onDragLeave={() => setIsDragOver(false)}
-        onDrop={handleFileDrop}
+        onDragOver={readOnly ? undefined : (e) => { e.preventDefault(); setIsDragOver(true); }}
+        onDragLeave={readOnly ? undefined : () => setIsDragOver(false)}
+        onDrop={readOnly ? undefined : handleFileDrop}
         className={"relative rounded-xl border-2 border-dashed transition-all duration-200 " + (isDragOver ? "border-primary bg-primary/5 scale-[1.005]" : "border-border hover:border-muted-foreground/30")}
       >
         {/* Drop overlay */}
@@ -389,6 +392,14 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
         </AnimatePresence>
 
         {stems.length === 0 ? (
+          readOnly ? (
+            <div className="w-full py-16 flex flex-col items-center justify-center gap-3 text-center">
+              <div className="w-12 h-12 rounded-2xl icon-brand flex items-center justify-center">
+                <Layers className="w-5 h-5 text-primary" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">{t("stemsTab.noStems")}</p>
+            </div>
+          ) : (
           <button
             onClick={() => setShowUploadModal(true)}
             className="w-full py-16 flex flex-col items-center justify-center gap-3 text-center"
@@ -401,6 +412,7 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
               <p className="text-xs text-muted-foreground mt-0.5">{t("stemsTab.dragDrop")}</p>
             </div>
           </button>
+          )
         ) : (
           <div className="bg-card rounded-xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
             {/* Table header */}
@@ -481,6 +493,7 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
                         >
                           {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                         </button>
+                        {!readOnly && (
                         <button
                           onClick={() => setDeleteConfirmId(stem.id)}
                           className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
@@ -488,6 +501,7 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
+                        )}
                       </div>
                     </motion.div>
                   );
@@ -496,6 +510,7 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
             </div>
 
             {/* Footer */}
+            {!readOnly && (
             <button
               onClick={() => setShowUploadModal(true)}
               className="w-full py-3 flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground border-t border-border hover:bg-secondary/30 transition-colors"
@@ -503,6 +518,7 @@ export function StemsTab({ trackId, autoOpenUpload = false }: StemsTabProps) {
               <Upload className="w-3.5 h-3.5" />
               {t("stemsTab.uploadMore")}
             </button>
+            )}
           </div>
         )}
       </div>

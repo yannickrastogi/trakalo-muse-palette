@@ -204,28 +204,23 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    var { data, error } = await supabase
-      .from("shared_links")
-      .insert({
-        workspace_id: activeWorkspace.id,
-        created_by: user.id,
-        share_type: link.shareType,
-        track_id: trackUuid || null,
-        playlist_id: link.playlistId || null,
-        link_name: link.linkName,
-        link_slug: slug,
-        link_type: link.linkType,
-        password_hash: hashedPassword,
-        message: link.message || null,
-        allow_download: link.allowDownload,
-        allow_save: link.allowSave !== false,
-        download_quality: link.downloadQuality || null,
-        expires_at: link.expirationDate || null,
-        status: "active",
-        pack_items: link.packItems ? link.packItems as unknown as Record<string, unknown> : null,
-      })
-      .select()
-      .single();
+    var { data, error } = await supabase.rpc("create_shared_link", {
+      _user_id: user.id,
+      _workspace_id: activeWorkspace.id,
+      _share_type: link.shareType,
+      _track_id: trackUuid || null,
+      _playlist_id: link.playlistId || null,
+      _link_name: link.linkName,
+      _link_slug: slug,
+      _link_type: link.linkType,
+      _password_hash: hashedPassword,
+      _message: link.message || null,
+      _allow_download: link.allowDownload,
+      _allow_save: link.allowSave !== false,
+      _download_quality: link.downloadQuality || null,
+      _expires_at: link.expirationDate || null,
+      _pack_items: link.packItems ? JSON.stringify(link.packItems) : null,
+    });
 
     if (error) {
       console.error("Error creating shared link:", error);

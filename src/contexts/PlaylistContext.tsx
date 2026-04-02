@@ -150,50 +150,41 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
       if (!activeWorkspace || !user) return undefined;
 
       const { data, error } = await supabase
-        .from("playlists")
-        .insert({
-          workspace_id: activeWorkspace.id,
-          created_by: user.id,
-          name: pl.name,
-          description: pl.description || "",
-          cover_url: pl.coverImage || null,
-        })
-        .select()
-        .single();
+        .rpc("create_playlist", {
+          _user_id: user.id,
+          _workspace_id: activeWorkspace.id,
+          _name: pl.name,
+          _description: pl.description || "",
+          _cover_url: pl.coverImage || null,
+        });
 
       if (error) {
         console.error("Error adding playlist:", error);
         return undefined;
       }
 
+      const playlistId = data as unknown as string;
+
       // Insert track associations if any — map numeric IDs to UUIDs
-      if (pl.trackIds && pl.trackIds.length > 0 && data) {
-        const ptInserts = pl.trackIds
-          .map((numericId, idx) => {
+      if (pl.trackIds && pl.trackIds.length > 0 && playlistId) {
+        const trackUuids = pl.trackIds
+          .map((numericId) => {
             const t = tracks.find((tr) => tr.id === numericId);
-            if (!t) return null;
-            return {
-              playlist_id: data.id,
-              track_id: t.uuid,
-              position: idx,
-              added_by: user.id,
-            };
+            return t ? t.uuid : null;
           })
-          .filter(Boolean);
+          .filter((uuid): uuid is string => uuid !== null);
 
-        if (ptInserts.length > 0) {
-          const { error: ptError } = await supabase
-            .from("playlist_tracks")
-            .insert(ptInserts);
-
-          if (ptError) {
-            console.error("Error adding playlist tracks:", ptError);
-          }
+        if (trackUuids.length > 0) {
+          await supabase.rpc("add_playlist_tracks", {
+            _user_id: user.id,
+            _playlist_id: playlistId,
+            _track_ids: trackUuids,
+          });
         }
       }
 
       await fetchPlaylists();
-      return data?.id;
+      return playlistId;
     },
     [activeWorkspace, user, tracks, fetchPlaylists]
   );
@@ -210,17 +201,19 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
         prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
       );
 
-      // Build Supabase payload (only persist DB-backed fields)
-      const payload: Record<string, unknown> = {};
-      if (updates.name !== undefined) payload.name = updates.name;
-      if (updates.description !== undefined) payload.description = updates.description;
-      if (updates.coverImage !== undefined) payload.cover_url = updates.coverImage || null;
+      // Persist DB-backed fields via RPC
+      const hasName = updates.name !== undefined;
+      const hasDesc = updates.description !== undefined;
+      const hasCover = updates.coverImage !== undefined;
 
-      if (Object.keys(payload).length > 0) {
-        const { error } = await supabase
-          .from("playlists")
-          .update(payload)
-          .eq("id", id);
+      if (hasName || hasDesc || hasCover) {
+        const { error } = await supabase.rpc("update_playlist", {
+          _user_id: user?.id || "",
+          _playlist_id: id,
+          _name: hasName ? updates.name! : null,
+          _description: hasDesc ? updates.description! : null,
+          _cover_url: hasCover ? (updates.coverImage || null) : null,
+        });
 
         if (error) {
           console.error("Error updating playlist:", error);
@@ -229,38 +222,18 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
 
       // Sync trackIds to playlist_tracks if provided
       if (updates.trackIds !== undefined && user) {
-        // Replace all tracks: delete existing, insert new
-        const { error: delError } = await supabase
-          .from("playlist_tracks")
-          .delete()
-          .eq("playlist_id", id);
+        const trackUuids = updates.trackIds
+          .map((numericId) => {
+            const t = tracks.find((tr) => tr.id === numericId);
+            return t ? t.uuid : null;
+          })
+          .filter((uuid): uuid is string => uuid !== null);
 
-        if (delError) {
-          console.error("Error clearing playlist tracks:", delError);
-        } else if (updates.trackIds.length > 0) {
-          const ptInserts = updates.trackIds
-            .map((numericId, idx) => {
-              const t = tracks.find((tr) => tr.id === numericId);
-              if (!t) return null;
-              return {
-                playlist_id: id,
-                track_id: t.uuid,
-                position: idx,
-                added_by: user.id,
-              };
-            })
-            .filter(Boolean);
-
-          if (ptInserts.length > 0) {
-            const { error: insError } = await supabase
-              .from("playlist_tracks")
-              .insert(ptInserts);
-
-            if (insError) {
-              console.error("Error updating playlist tracks:", insError);
-            }
-          }
-        }
+        await supabase.rpc("replace_playlist_tracks", {
+          _user_id: user.id,
+          _playlist_id: id,
+          _track_ids: trackUuids,
+        });
       }
     },
     [user, tracks]
@@ -272,19 +245,10 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
       setPlaylists((prev) => prev.filter((p) => p.id !== id));
 
       // Delete playlist_tracks first (may not cascade automatically)
-      const { error: ptErr } = await supabase
-        .from("playlist_tracks")
-        .delete()
-        .eq("playlist_id", id);
-
-      if (ptErr) {
-        console.error("Error deleting playlist tracks:", ptErr);
-      }
-
-      const { error } = await supabase
-        .from("playlists")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.rpc("delete_playlist", {
+        _user_id: user?.id || "",
+        _playlist_id: id,
+      });
 
       if (error) {
         console.error("Error deleting playlist:", error);
