@@ -584,7 +584,7 @@ export default function SharedLinkPage() {
       var currentVisitorName = visitorName;
       if (storagePath && currentLinkId && currentVisitorEmail) {
         var wmAbort = new AbortController();
-        var wmTimeout = setTimeout(function() { wmAbort.abort(); }, 5000);
+        var wmTimeout = setTimeout(function() { wmAbort.abort(); }, 30000);
         fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/get-watermarked-audio", {
           method: "POST",
           headers: {
