@@ -32,6 +32,16 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Validate apikey header (verify_jwt is off, so we check manually)
+    const apikey = req.headers.get("apikey") || req.headers.get("authorization")?.replace("Bearer ", "");
+    const expectedKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!apikey || apikey !== expectedKey) {
+      return new Response(JSON.stringify({ error: "Invalid or missing apikey" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { storage_path, link_id, visitor_email, visitor_name } = await req.json();
 
     if (!storage_path || !link_id || !visitor_email) {
