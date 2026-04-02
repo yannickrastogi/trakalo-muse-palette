@@ -267,6 +267,7 @@ export default function SharedLinkPage() {
   var [currentTime, setCurrentTime] = useState(0);
   var [duration, setDuration] = useState(0);
   var [volume, setVolume] = useState(0.8);
+  var prevVolumeRef = useRef(0.8);
   var [isWatermarked, setIsWatermarked] = useState(false);
 
   // Comments
@@ -1392,9 +1393,15 @@ export default function SharedLinkPage() {
                     <div className="flex items-center gap-1.5 w-10 justify-end sm:w-auto">
                       <button
                         onClick={function() {
-                          var newVol = volume === 0 ? 0.8 : 0;
-                          if (audioRef.current) audioRef.current.volume = newVol;
-                          setVolume(newVol);
+                          if (volume === 0) {
+                            var restore = prevVolumeRef.current || 0.8;
+                            if (audioRef.current) audioRef.current.volume = restore;
+                            setVolume(restore);
+                          } else {
+                            prevVolumeRef.current = volume;
+                            if (audioRef.current) audioRef.current.volume = 0;
+                            setVolume(0);
+                          }
                         }}
                         className={"p-1 rounded-lg transition-colors " + (plImmersive ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                       >
@@ -1641,9 +1648,15 @@ export default function SharedLinkPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={function() {
-                        var newVol = volume === 0 ? 0.8 : 0;
-                        if (audioRef.current) audioRef.current.volume = newVol;
-                        setVolume(newVol);
+                        if (volume === 0) {
+                          var restore = prevVolumeRef.current || 0.8;
+                          if (audioRef.current) audioRef.current.volume = restore;
+                          setVolume(restore);
+                        } else {
+                          prevVolumeRef.current = volume;
+                          if (audioRef.current) audioRef.current.volume = 0;
+                          setVolume(0);
+                        }
                       }}
                       className={"p-1 rounded-lg transition-colors " + (immersive ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-foreground")}
                     >

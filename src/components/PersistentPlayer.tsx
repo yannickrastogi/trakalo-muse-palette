@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -37,6 +37,7 @@ export function PersistentPlayer() {
   const [showVolume, setShowVolume] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const prevVolumeRef = useRef(0.8);
 
   // Hide persistent player when Radio page is active
   if (location.pathname === "/radio") return null;
@@ -139,13 +140,21 @@ export function PersistentPlayer() {
           </button>
         </div>
 
-        {/* Volume slider */}
-        <div className="flex items-center gap-3 px-6 pb-8" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2rem)" }}>
-          <VolumeX className="w-4 h-4 text-muted-foreground shrink-0" />
-          <div className="flex-1 h-1.5 bg-secondary rounded-full cursor-pointer" onClick={handleVolumeClick}>
-            <div className="h-full rounded-full bg-primary transition-[width] duration-75" style={{ width: volume * 100 + "%" }} />
-          </div>
-          <Volume2 className="w-4 h-4 text-muted-foreground shrink-0" />
+        {/* Mute toggle (mobile — no volume slider) */}
+        <div className="flex items-center justify-center pb-8" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2rem)" }}>
+          <button
+            onClick={() => {
+              if (volume === 0) {
+                setVolume(prevVolumeRef.current || 0.8);
+              } else {
+                prevVolumeRef.current = volume;
+                setVolume(0);
+              }
+            }}
+            className="p-3 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+          >
+            {volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          </button>
         </div>
       </motion.div>
     );
