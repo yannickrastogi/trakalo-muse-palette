@@ -1817,35 +1817,35 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
 
   if (immersive) {
     return (
-      <div className="min-h-screen overflow-x-hidden max-w-[100vw]" style={{ backgroundColor: "#0a0a0b" }}>
-        {/* Hero image section — in normal document flow */}
-        <div className="relative w-full overflow-hidden h-[35vh] min-h-[220px] max-h-[350px] md:h-[55vh] md:min-h-[400px] md:max-h-[600px]">
-          <img
-            src={heroUrl!}
-            alt=""
-            className="w-full h-full object-cover"
-            style={{ objectPosition: heroFocalPoint }}
-          />
-          {/* Subtle bottom gradient — only lower 40% */}
-          <div className="absolute bottom-0 left-0 right-0 pointer-events-none" style={{ height: "40%", background: "linear-gradient(to top, #0a0a0b 0%, transparent 100%)" }} />
-          {/* Logo + branding at bottom of hero */}
-          <div className="absolute bottom-4 md:bottom-6 left-0 right-0 flex flex-col items-center gap-1 z-10">
-            <img src={logoUrl || trakalogLogo} alt="Logo" className="object-contain max-h-[50px] md:max-h-[80px]" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
-            <div className="flex flex-col items-center" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>
-              <span className="text-base md:text-xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
-              <span className="text-[7px] md:text-[10px] tracking-[0.2em] text-white/40 font-medium block mt-0.5">CATALOG MANAGER</span>
+      <div className="min-h-screen overflow-x-hidden max-w-[100vw]">
+        {/* Fixed full-page background image */}
+        <img
+          src={heroUrl!}
+          alt=""
+          className="fixed inset-0 w-full h-full object-cover"
+          style={{ objectPosition: heroFocalPoint, zIndex: 0 }}
+        />
+        {/* Dark overlay for readability */}
+        <div className="fixed inset-0" style={{ backgroundColor: "rgba(0,0,0,0.35)", zIndex: 1 }} />
+        {/* All content floats above */}
+        <div className="relative min-h-screen flex flex-col" style={{ zIndex: 2 }}>
+          {/* Logo header */}
+          <header className="py-6 sm:py-8">
+            <div className="flex flex-col items-center gap-1">
+              <img src={logoUrl || trakalogLogo} alt="Logo" className="object-contain max-h-[50px] md:max-h-[80px]" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
+              <div className="flex flex-col items-center">
+                <span className="text-base md:text-xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+                <span className="text-[7px] md:text-[10px] tracking-[0.2em] text-white/30 font-medium block mt-0.5">CATALOG MANAGER</span>
+              </div>
             </div>
-          </div>
+          </header>
+          <div className="flex-1">{children}</div>
+          <footer className="py-6 text-center">
+            <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] hover:opacity-80 transition-opacity" style={{ color: "#f97316" }}>
+              {"Powered by Trakalog \u2726"}
+            </a>
+          </footer>
         </div>
-        {/* Content directly after hero */}
-        <div className="pt-6 md:pt-8" style={{ backgroundColor: "#0a0a0b" }}>
-          {children}
-        </div>
-        <footer className="py-6 text-center" style={{ backgroundColor: "#0a0a0b" }}>
-          <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] hover:opacity-80 transition-opacity" style={{ color: "#f97316" }}>
-            {"Powered by Trakalog \u2726"}
-          </a>
-        </footer>
       </div>
     );
   }
