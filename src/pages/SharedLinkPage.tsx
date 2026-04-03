@@ -1543,7 +1543,7 @@ export default function SharedLinkPage() {
           <div className={immersive ? "rounded-2xl p-px bg-gradient-to-br from-brand-orange/15 via-brand-pink/15 to-brand-purple/15 hover:from-brand-orange/25 hover:via-brand-pink/25 hover:to-brand-purple/25 transition-all duration-500" : ""}>
           <div className={"rounded-2xl overflow-hidden " + (immersive ? "bg-white/8 backdrop-blur-xl border border-white/10" : "bg-card border border-border")} style={immersive ? { boxShadow: "0 0 40px rgba(255,255,255,0.03), 0 8px 32px rgba(0,0,0,0.4)" } : { boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 p-4 sm:p-6">
-              <div className={"w-full max-w-[220px] sm:w-32 md:w-40 aspect-square sm:h-32 md:h-40 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50 " + (immersive ? "ring-1 ring-white/20 shadow-xl" : "")}>
+              <div className={"w-full max-w-[150px] sm:w-32 md:w-40 aspect-square sm:h-32 md:h-40 rounded-xl overflow-hidden shrink-0 bg-secondary border border-border/50 " + (immersive ? "ring-1 ring-white/20 shadow-xl" : "")}>
                 <img src={trackData.cover_url || DEFAULT_COVER} alt={trackData.title} className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1 pt-1">
@@ -1829,8 +1829,8 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
         <div className="fixed inset-0" style={{ backgroundColor: "rgba(0,0,0,0.35)", zIndex: 1 }} />
         {/* All content floats above */}
         <div className="relative min-h-screen flex flex-col" style={{ zIndex: 2 }}>
-          {/* Logo header */}
-          <header className="py-6 sm:py-8">
+          {/* Logo header — pushed down to leave hero image visible */}
+          <header className="pt-[35vh] md:pt-[25vh] pb-4">
             <div className="flex flex-col items-center gap-1">
               <img src={logoUrl || trakalogLogo} alt="Logo" className="object-contain max-h-[50px] md:max-h-[80px]" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
               <div className="flex flex-col items-center">
