@@ -15,7 +15,8 @@
     "radio": "Radio",
     "members": "Members",
     "workspaces": "Workspaces",
-    "more": "More"
+    "more": "More",
+    "workspace": "Workspace"
   },
   "topbar": {
     "search": "Search tracks, artists, playlists…",

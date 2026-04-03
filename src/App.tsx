@@ -32,6 +32,7 @@ import { lazy, Suspense } from "react";
 const Workspaces = lazy(() => import("./pages/Workspaces"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 import SettingsPage from "./pages/SettingsPage";
+import WorkspaceSettings from "./pages/WorkspaceSettings";
 import Contacts from "./pages/Contacts";
 import SharedLinks from "./pages/SharedLinks";
 import SharedStemAccess from "./pages/SharedStemAccess";
@@ -150,6 +151,7 @@ const App = () => (
             <Route path="/contacts" element={<ProtectedApp><Contacts /></ProtectedApp>} />
             <Route path="/shared-links" element={<ProtectedApp><SharedLinks /></ProtectedApp>} />
             <Route path="/settings" element={<ProtectedApp><SettingsPage /></ProtectedApp>} />
+            <Route path="/workspace-settings" element={<ProtectedApp><WorkspaceSettings /></ProtectedApp>} />
             <Route path="/notifications" element={<ProtectedApp><NotificationCenter /></ProtectedApp>} />
             <Route path="/approvals" element={<ProtectedApp><ApprovalQueue /></ProtectedApp>} />
           </Route>

@@ -17,6 +17,7 @@ import {
   MoreHorizontal,
   Sparkles,
   Radio,
+  Building2,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -33,6 +34,7 @@ const navItems = [
   { titleKey: "nav.pitch", icon: Send, url: "/pitch", permKey: "canSendPitches" as const },
   { titleKey: "nav.contacts", icon: Users, url: "/contacts", permKey: null },
   { titleKey: "nav.sharedLinks", icon: Link2, url: "/shared-links", permKey: null },
+  { titleKey: "nav.workspace", icon: Building2, url: "/workspace-settings", permKey: "canAccessSettings" as const },
   { titleKey: "nav.approvals", icon: CheckCircle, url: "/approvals", permKey: "canManageTeam" as const },
 ];
 
