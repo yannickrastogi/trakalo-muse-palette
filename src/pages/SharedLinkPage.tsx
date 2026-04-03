@@ -1819,11 +1819,20 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
     return (
       <div className="min-h-screen flex flex-col overflow-x-hidden max-w-[100vw]" style={{ backgroundColor: "#0a0a0b" }}>
         {/* Hero banner */}
-        <div className="relative w-full h-[250px] sm:h-[350px] lg:h-[400px] overflow-hidden">
+        <div className="relative w-full h-[250px] md:h-auto md:max-h-[500px] overflow-hidden">
+          {/* Blurred backdrop — fills sides on desktop when image is contain */}
           <img
             src={heroUrl!}
             alt=""
-            className="w-full h-full object-cover"
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover hidden md:block"
+            style={{ filter: "blur(30px) saturate(1.2)", transform: "scale(1.2)", opacity: 0.5 }}
+          />
+          {/* Main image — cover on mobile, contain on desktop */}
+          <img
+            src={heroUrl!}
+            alt=""
+            className="relative w-full h-full object-cover md:object-contain md:h-auto md:max-h-[500px]"
             style={{ objectPosition: heroFocalPoint }}
           />
           {/* Subtle darkening overlay */}
