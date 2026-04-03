@@ -299,6 +299,14 @@ export default function SharedLinkPage() {
 
   useEffect(function() { playlistTracksRef.current = playlistTracks; }, [playlistTracks]);
 
+  // Prevent horizontal overflow on mobile
+  useEffect(function() {
+    var html = document.documentElement;
+    var prevOverflow = html.style.overflowX;
+    html.style.overflowX = "hidden";
+    return function() { html.style.overflowX = prevOverflow; };
+  }, []);
+
   // Fetch link data
   useEffect(function() {
     if (!slug) {
