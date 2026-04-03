@@ -1817,28 +1817,32 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
 
   if (immersive) {
     return (
-      <div className="min-h-screen bg-black flex flex-col overflow-x-hidden max-w-[100vw]">
-        {/* Hero banner with constrained height */}
-        <div className="relative w-full h-[180px] sm:h-[250px] lg:h-[300px] overflow-hidden">
+      <div className="min-h-screen flex flex-col overflow-x-hidden max-w-[100vw]" style={{ backgroundColor: "#0a0a0b" }}>
+        {/* Hero banner */}
+        <div className="relative w-full h-[250px] sm:h-[350px] lg:h-[400px] overflow-hidden">
           <img
             src={heroUrl!}
             alt=""
             className="w-full h-full object-cover"
             style={{ objectPosition: heroFocalPoint }}
           />
-          <div className="absolute inset-0 bg-black/35" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/70" />
-          {/* Logo centered on hero */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-            <img src={logoUrl || trakalogLogo} alt="Logo" className="object-contain max-h-[40px] sm:max-h-[60px] lg:max-h-[80px]" style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.6))" }} />
+          {/* Subtle darkening overlay */}
+          <div className="absolute inset-0 bg-black/25" />
+          {/* Vignette — radial gradient for cinematic side fade */}
+          <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, transparent 50%, rgba(10,10,11,0.6) 100%)" }} />
+          {/* Bottom gradient fade into page background */}
+          <div className="absolute bottom-0 left-0 right-0 h-[60%]" style={{ background: "linear-gradient(to top, #0a0a0b 0%, rgba(10,10,11,0.85) 30%, rgba(10,10,11,0.4) 60%, transparent 100%)" }} />
+          {/* Logo centered on hero — above all overlays */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 z-10">
+            <img src={logoUrl || trakalogLogo} alt="Logo" className="object-contain max-h-[50px] sm:max-h-[70px] lg:max-h-[80px]" style={{ filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.7))" }} />
             <div className="flex flex-col items-center">
-              <span className="text-base sm:text-xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
-              <span className="text-[8px] sm:text-[10px] tracking-[0.2em] text-white/30 font-medium block mt-0.5">CATALOG MANAGER</span>
+              <span className="text-lg sm:text-xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.5))" }}>TRAKALOG</span>
+              <span className="text-[8px] sm:text-[10px] tracking-[0.2em] text-white/40 font-medium block mt-0.5">CATALOG MANAGER</span>
             </div>
           </div>
         </div>
-        {/* Content below hero */}
-        <div className="flex-1 relative z-10">{children}</div>
+        {/* Content overlapping into the gradient fade zone */}
+        <div className="flex-1 relative z-10 -mt-12 sm:-mt-16">{children}</div>
         <footer className="py-6 text-center">
           <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] hover:opacity-80 transition-opacity" style={{ color: "#f97316" }}>
             {"Powered by Trakalog \u2726"}
