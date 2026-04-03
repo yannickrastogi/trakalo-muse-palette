@@ -1819,18 +1819,13 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
     return (
       <div className="min-h-screen flex flex-col overflow-x-hidden max-w-[100vw]" style={{ backgroundColor: "#0a0a0b" }}>
         {/* Hero banner */}
-        <div className="relative w-full h-[300px] sm:h-[400px] lg:h-[450px] overflow-hidden">
-          <img
-            src={heroUrl!}
-            alt=""
-            className="w-full h-full object-cover"
-            style={{ objectPosition: heroFocalPoint }}
-          />
-          {/* Vignette — cinematic edge fade */}
-          <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at center, transparent 50%, rgba(10,10,11,0.7) 100%)" }} />
-          {/* Bottom gradient fade into page background */}
-          <div className="absolute bottom-0 left-0 right-0 h-[60%] pointer-events-none" style={{ background: "linear-gradient(to top, #0a0a0b 0%, #0a0a0b 5%, transparent 60%)" }} />
-          {/* Logo positioned at bottom of hero, inside gradient zone */}
+        <div
+          className="relative w-full h-[300px] sm:h-[400px] lg:h-[500px]"
+          style={{ backgroundImage: "url(" + heroUrl! + ")", backgroundSize: "cover", backgroundPosition: heroFocalPoint, backgroundRepeat: "no-repeat" }}
+        >
+          {/* Bottom gradient fade */}
+          <div className="absolute bottom-0 left-0 right-0 h-1/2 pointer-events-none" style={{ background: "linear-gradient(to top, #0a0a0b, transparent)" }} />
+          {/* Logo at bottom of hero */}
           <div className="absolute bottom-6 sm:bottom-8 left-0 right-0 flex flex-col items-center gap-1 z-10">
             <img src={logoUrl || trakalogLogo} alt="Logo" className="object-contain max-h-[50px] sm:max-h-[70px] lg:max-h-[80px]" style={{ filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.7))" }} />
             <div className="flex flex-col items-center">
