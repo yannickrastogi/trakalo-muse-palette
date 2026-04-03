@@ -43,6 +43,7 @@ import {
   Users,
   UserPlus,
   Send,
+  Crosshair,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useSearchParams } from "react-router-dom";
@@ -777,6 +778,8 @@ function BrandingSection() {
   const [dragPosition, setDragPosition] = useState<number>(50);
   const dragRef = useRef<{ startY: number; startPos: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [focalPoint, setFocalPoint] = useState<string>(activeWorkspace?.hero_focal_point || "50% 50%");
+  const [editingFocal, setEditingFocal] = useState(false);
 
   useEffect(() => {
     if (activeWorkspace) {
@@ -784,6 +787,7 @@ function BrandingSection() {
       setLogoUrl(activeWorkspace.logo_url || null);
       setBrandColor(activeWorkspace.brand_color || "");
       setHeroPosition(activeWorkspace.hero_position ?? 50);
+      setFocalPoint(activeWorkspace.hero_focal_point || "50% 50%");
     }
   }, [activeWorkspace]);
 
@@ -840,6 +844,21 @@ function BrandingSection() {
   const handleCancelReposition = () => {
     setDragPosition(heroPosition);
     setRepositioning(false);
+  };
+
+  const handleFocalClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+    setFocalPoint(x + "% " + y + "%");
+  };
+
+  const handleSaveFocalPoint = async () => {
+    if (!activeWorkspace) return;
+    const { error } = await supabase.from("workspaces").update({ hero_focal_point: focalPoint }).eq("id", activeWorkspace.id);
+    if (error) { toast.error(error.message); return; }
+    setEditingFocal(false);
+    toast.success("Focal point saved");
   };
 
   const handleUpload = (type: "hero" | "logo") => {
@@ -1010,7 +1029,7 @@ function BrandingSection() {
                   </div>
                 )}
                 {/* Hover overlay with actions (not in reposition mode) */}
-                {!repositioning && (
+                {!repositioning && !editingFocal && (
                   <div className="absolute inset-0 bg-black/0 group-hover/hero:bg-black/40 transition-all duration-200">
                     <div className="absolute top-2.5 right-2.5 flex items-center gap-2 opacity-0 group-hover/hero:opacity-100 transition-opacity duration-200">
                       <button
@@ -1019,6 +1038,13 @@ function BrandingSection() {
                         title="Reposition"
                       >
                         <Move className="w-3.5 h-3.5 text-gray-700" />
+                      </button>
+                      <button
+                        onClick={() => setEditingFocal(true)}
+                        className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm"
+                        title="Set focal point"
+                      >
+                        <Crosshair className="w-3.5 h-3.5 text-gray-700" />
                       </button>
                       <button
                         onClick={() => handleUpload("hero")}
@@ -1034,6 +1060,25 @@ function BrandingSection() {
                       >
                         <Trash2 className="w-3.5 h-3.5 text-red-500" />
                       </button>
+                    </div>
+                  </div>
+                )}
+                {/* Focal point editing overlay */}
+                {editingFocal && (
+                  <div
+                    className="absolute inset-0 cursor-crosshair"
+                    onClick={handleFocalClick}
+                  >
+                    <div className="absolute inset-0 bg-black/30" />
+                    <div
+                      className="absolute w-6 h-6 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                      style={{ left: focalPoint.split(" ")[0], top: focalPoint.split(" ")[1] }}
+                    >
+                      <div className="w-full h-full rounded-full border-2 border-white shadow-lg" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white" />
+                    </div>
+                    <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg backdrop-blur-sm">
+                      Click to set focal point ({focalPoint})
                     </div>
                   </div>
                 )}
@@ -1055,6 +1100,23 @@ function BrandingSection() {
                   </button>
                   <button
                     onClick={handleCancelReposition}
+                    className="px-4 py-2 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+              {editingFocal && (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleSaveFocalPoint}
+                    className="px-4 py-2 text-[12px] font-bold rounded-lg text-white transition-opacity hover:opacity-90"
+                    style={{ background: "var(--gradient-brand-horizontal)" }}
+                  >
+                    Save Focal Point
+                  </button>
+                  <button
+                    onClick={() => { setFocalPoint(activeWorkspace?.hero_focal_point || "50% 50%"); setEditingFocal(false); }}
                     className="px-4 py-2 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Cancel

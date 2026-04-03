@@ -73,6 +73,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                   },
                   hero_image_url: ws.hero_image_url || null,
                   hero_position: ws.hero_position ?? null,
+                  hero_focal_point: ws.hero_focal_point || null,
                   logo_url: ws.logo_url || null,
                   brand_color: ws.brand_color || null,
                   is_personal: !!ws.is_personal,

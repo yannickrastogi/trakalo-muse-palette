@@ -38,6 +38,7 @@ interface SharedLinkData {
 interface WorkspaceBranding {
   hero_image_url: string | null;
   hero_position: number | null;
+  hero_focal_point: string | null;
   logo_url: string | null;
   brand_color: string | null;
 }
@@ -488,7 +489,7 @@ export default function SharedLinkPage() {
   // Fetch workspace branding when link data is available
   useEffect(function() {
     if (!linkData || !linkData.workspace_id) return;
-    fetch(REST_URL + "/workspaces?select=hero_image_url,hero_position,logo_url,brand_color&id=eq." + encodeURIComponent(linkData.workspace_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } })
+    fetch(REST_URL + "/workspaces?select=hero_image_url,hero_position,hero_focal_point,logo_url,brand_color&id=eq." + encodeURIComponent(linkData.workspace_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } })
       .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
       .then(function(data) {
         if (data) {
@@ -1810,7 +1811,7 @@ export default function SharedLinkPage() {
 
 function Shell({ children, branding }: { children: React.ReactNode; branding?: WorkspaceBranding | null }) {
   var heroUrl = branding?.hero_image_url || null;
-  var heroPos = branding?.hero_position ?? 50;
+  var heroFocalPoint = branding?.hero_focal_point || "50% 50%";
   var logoUrl = branding?.logo_url || null;
   var immersive = !!heroUrl;
 
@@ -1823,7 +1824,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
             src={heroUrl!}
             alt=""
             className="w-full h-full object-cover"
-            style={{ objectPosition: "center " + heroPos + "%" }}
+            style={{ objectPosition: heroFocalPoint }}
           />
           <div className="absolute inset-0 bg-black/35" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/70" />
