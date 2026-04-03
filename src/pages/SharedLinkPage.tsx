@@ -1805,7 +1805,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
 
   if (immersive) {
     return (
-      <div className="min-h-screen bg-black flex flex-col">
+      <div className="min-h-screen bg-black flex flex-col overflow-x-hidden max-w-[100vw]">
         {/* Hero banner with constrained height */}
         <div className="relative w-full h-[180px] sm:h-[250px] lg:h-[300px] overflow-hidden">
           <img
@@ -1837,7 +1837,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col" data-drm="protected" onContextMenu={(e) => e.preventDefault()}>
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden max-w-[100vw]" data-drm="protected" onContextMenu={(e) => e.preventDefault()}>
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="max-w-2xl mx-auto px-4 flex items-center justify-center relative z-10 py-5">
           <div className="flex flex-col items-center">
