@@ -22,10 +22,10 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Find the shared link by slug
+    // Find the shared link by slug (include track title for notification)
     const { data: link, error: linkError } = await supabase
       .from("shared_links")
-      .select("id, workspace_id")
+      .select("id, workspace_id, track_id, link_name")
       .eq("link_slug", slug)
       .single();
 
@@ -83,6 +83,30 @@ serve(async (req) => {
           console.error("Error inserting contact:", contactError);
         }
       }
+    }
+
+    // Send notification email to workspace owner (fire-and-forget)
+    try {
+      const { data: ws } = await supabase.from("workspaces").select("owner_id").eq("id", link.workspace_id).maybeSingle();
+      if (ws?.owner_id) {
+        // Get track title if available
+        let trackTitle = link.link_name || "";
+        if (link.track_id && !trackTitle) {
+          const { data: track } = await supabase.from("tracks").select("title").eq("id", link.track_id).maybeSingle();
+          if (track?.title) trackTitle = track.title;
+        }
+        fetch(supabaseUrl + "/functions/v1/send-notification-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + serviceRoleKey },
+          body: JSON.stringify({
+            event_type: "link_activity",
+            user_id: ws.owner_id,
+            data: { visitor_name: name, visitor_email: email, track_title: trackTitle, link_slug: slug },
+          }),
+        }).catch((e) => console.error("Notification email error:", e));
+      }
+    } catch (e) {
+      console.error("Notification lookup error:", e);
     }
 
     return new Response(JSON.stringify({ success: true }), {
