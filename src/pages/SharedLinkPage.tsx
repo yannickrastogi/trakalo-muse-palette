@@ -1819,30 +1819,19 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
     return (
       <div className="min-h-screen flex flex-col overflow-x-hidden max-w-[100vw]" style={{ backgroundColor: "#0a0a0b" }}>
         {/* Hero banner */}
-        <div className="relative w-full h-[250px] md:h-auto md:max-h-[500px] overflow-hidden">
-          {/* Blurred backdrop — fills sides on desktop when image is contain */}
+        <div className="relative w-full h-[300px] sm:h-[400px] lg:h-[450px] overflow-hidden">
           <img
             src={heroUrl!}
             alt=""
-            aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover hidden md:block"
-            style={{ filter: "blur(30px) saturate(1.2)", transform: "scale(1.2)", opacity: 0.5 }}
-          />
-          {/* Main image — cover on mobile, contain on desktop */}
-          <img
-            src={heroUrl!}
-            alt=""
-            className="relative w-full h-full object-cover md:object-contain md:h-auto md:max-h-[500px]"
+            className="w-full h-full object-cover"
             style={{ objectPosition: heroFocalPoint }}
           />
-          {/* Subtle darkening overlay */}
-          <div className="absolute inset-0 bg-black/25" />
-          {/* Vignette — radial gradient for cinematic side fade */}
-          <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, transparent 50%, rgba(10,10,11,0.6) 100%)" }} />
+          {/* Vignette — cinematic edge fade */}
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at center, transparent 50%, rgba(10,10,11,0.7) 100%)" }} />
           {/* Bottom gradient fade into page background */}
-          <div className="absolute bottom-0 left-0 right-0 h-[60%]" style={{ background: "linear-gradient(to top, #0a0a0b 0%, rgba(10,10,11,0.85) 30%, rgba(10,10,11,0.4) 60%, transparent 100%)" }} />
-          {/* Logo centered on hero — above all overlays */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 z-10">
+          <div className="absolute bottom-0 left-0 right-0 h-[60%] pointer-events-none" style={{ background: "linear-gradient(to top, #0a0a0b 0%, #0a0a0b 5%, transparent 60%)" }} />
+          {/* Logo positioned at bottom of hero, inside gradient zone */}
+          <div className="absolute bottom-6 sm:bottom-8 left-0 right-0 flex flex-col items-center gap-1 z-10">
             <img src={logoUrl || trakalogLogo} alt="Logo" className="object-contain max-h-[50px] sm:max-h-[70px] lg:max-h-[80px]" style={{ filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.7))" }} />
             <div className="flex flex-col items-center">
               <span className="text-lg sm:text-xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.5))" }}>TRAKALOG</span>
