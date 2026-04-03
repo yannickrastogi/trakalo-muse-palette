@@ -107,19 +107,50 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       roleMap[r.user_id] = r.role;
     }
 
+    // Fetch profiles for all member user_ids
+    const memberUserIds = (members || []).map((m) => m.user_id);
+    const profileMap: Record<string, { full_name: string | null; email: string | null; avatar_url: string | null }> = {};
+    if (memberUserIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, avatar_url")
+        .in("id", memberUserIds);
+      for (const p of profiles || []) {
+        profileMap[p.id] = p;
+      }
+    }
+
     // Build TeamMember list
     const teamMembers: TeamMember[] = (members || []).map((m) => {
       const isCurrentUser = m.user_id === user.id;
       const dbRole = roleMap[m.user_id] || "viewer";
       const meta = user.user_metadata || {};
+      const profile = profileMap[m.user_id];
       const memberAccessLevel = ((m as any).access_level as AccessLevel) || "viewer";
       const memberProfTitle = (m as any).professional_title as string | null;
 
+      let firstName: string;
+      let lastName: string;
+      let email: string;
+      if (isCurrentUser) {
+        firstName = meta.first_name || meta.full_name?.split(" ")[0] || profile?.full_name?.split(" ")[0] || "You";
+        lastName = meta.last_name || meta.full_name?.split(" ").slice(1).join(" ") || profile?.full_name?.split(" ").slice(1).join(" ") || "";
+        email = user.email || profile?.email || "";
+      } else if (profile) {
+        firstName = profile.full_name?.split(" ")[0] || profile.email?.split("@")[0] || "Member";
+        lastName = profile.full_name?.split(" ").slice(1).join(" ") || "";
+        email = profile.email || "";
+      } else {
+        firstName = "Member";
+        lastName = m.user_id.slice(0, 8);
+        email = "";
+      }
+
       return {
         id: m.user_id,
-        firstName: isCurrentUser ? (meta.first_name || meta.full_name?.split(" ")[0] || "You") : "Member",
-        lastName: isCurrentUser ? (meta.last_name || meta.full_name?.split(" ").slice(1).join(" ") || "") : m.user_id.slice(0, 8),
-        email: isCurrentUser ? (user.email || "") : "",
+        firstName,
+        lastName,
+        email,
         role: dbRoleToUi[dbRole] || "Viewer",
         accessLevel: memberAccessLevel,
         professionalTitle: memberProfTitle || null,
