@@ -486,27 +486,29 @@ function LanguageSection() {
    SECTION: NOTIFICATIONS
    ═══════════════════════════════════════════════════════ */
 
-const NOTIF_STORAGE_KEY = "trakalog_notification_prefs";
-const NOTIF_DEFAULTS: Record<string, boolean> = { link_activity: true, comments: true, signatures: true, new_member: true, track_uploads: true };
-
-function loadNotifPrefs(): Record<string, boolean> {
-  try {
-    const raw = localStorage.getItem(NOTIF_STORAGE_KEY);
-    if (raw) return { ...NOTIF_DEFAULTS, ...JSON.parse(raw) };
-  } catch (e) {}
-  return { ...NOTIF_DEFAULTS };
-}
+const NOTIF_DEFAULTS = { link_activity: true, comments: true, signatures: true, new_member_joined: true, track_uploads: true };
 
 function NotificationsSection() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [prefs, setPrefs] = useState(loadNotifPrefs);
+  const [prefs, setPrefs] = useState(NOTIF_DEFAULTS);
+  const [loaded, setLoaded] = useState(false);
 
-  const toggle = (key: string) => {
-    setPrefs((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
-      try { localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
-      return next;
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("notification_preferences").select("link_activity, comments, signatures, new_member_joined, track_uploads")
+      .eq("user_id", user.id).maybeSingle().then(({ data }) => {
+        if (data) setPrefs({ link_activity: data.link_activity ?? true, comments: data.comments ?? true, signatures: data.signatures ?? true, new_member_joined: data.new_member_joined ?? true, track_uploads: data.track_uploads ?? true });
+        setLoaded(true);
+      });
+  }, [user]);
+
+  const toggle = (column: keyof typeof NOTIF_DEFAULTS) => {
+    if (!user) return;
+    const next = !prefs[column];
+    setPrefs((prev) => ({ ...prev, [column]: next }));
+    supabase.from("notification_preferences").upsert({ user_id: user.id, [column]: next, updated_at: new Date().toISOString() }, { onConflict: "user_id" }).then(({ error }) => {
+      if (error) toast.error(error.message);
     });
   };
 
@@ -519,7 +521,7 @@ function NotificationsSection() {
         <Divider />
         <SettingToggleRow label={t("settings.notifSignatures")} description={t("settings.notifSignaturesDesc")} enabled={prefs.signatures} onToggle={() => toggle("signatures")} />
         <Divider />
-        <SettingToggleRow label={t("settings.notifNewMember")} description={t("settings.notifNewMemberDesc")} enabled={prefs.new_member} onToggle={() => toggle("new_member")} />
+        <SettingToggleRow label={t("settings.notifNewMember")} description={t("settings.notifNewMemberDesc")} enabled={prefs.new_member_joined} onToggle={() => toggle("new_member_joined")} />
         <Divider />
         <SettingToggleRow label={t("settings.notifTrackUploads")} description={t("settings.notifTrackUploadsDesc")} enabled={prefs.track_uploads} onToggle={() => toggle("track_uploads")} />
       </SectionBlock>
