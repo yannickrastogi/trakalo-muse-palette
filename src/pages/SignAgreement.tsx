@@ -152,6 +152,33 @@ export default function SignAgreement() {
       return;
     }
 
+    // Send signature notification to workspace owner
+    if (request.collaborator_email && request.track_id) {
+      var { data: trackForNotif } = await anonClient
+        .from("tracks")
+        .select("workspace_id, title")
+        .eq("id", request.track_id)
+        .single();
+      if (trackForNotif?.workspace_id) {
+        var { data: wsForNotif } = await anonClient
+          .from("workspaces")
+          .select("owner_id")
+          .eq("id", trackForNotif.workspace_id)
+          .maybeSingle();
+        if (wsForNotif?.owner_id) {
+          fetch(SUPABASE_URL + "/functions/v1/send-notification-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
+            body: JSON.stringify({
+              event_type: "signature",
+              user_id: wsForNotif.owner_id,
+              data: { track_title: trackForNotif.title || "", signer_name: request.collaborator_name, signer_email: request.collaborator_email },
+            }),
+          }).catch(function() {});
+        }
+      }
+    }
+
     // Auto-add signer to admin's contacts
     if (request.collaborator_email && request.track_id) {
       var { data: trackForWs } = await anonClient

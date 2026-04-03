@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -260,6 +261,24 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
     }).then(({ error: insertErr }) => {
       if (insertErr) console.error("Error inserting to track_comments:", insertErr);
     }).catch(function (err) { console.error("Error:", err); });
+
+    // Send email notification for non-owner comments
+    if (data.authorType !== "owner" && activeWorkspace?.owner_id) {
+      fetch(SUPABASE_URL + "/functions/v1/send-notification-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
+        body: JSON.stringify({
+          event_type: "comment",
+          user_id: activeWorkspace.owner_id,
+          data: {
+            track_title: data.trackId,
+            commenter_name: data.authorName,
+            commenter_email: data.authorEmail || null,
+            comment_text: data.commentText.slice(0, 100),
+          },
+        }),
+      }).catch(() => {});
+    }
 
     // Generate notification for non-owner comments
     if (data.authorType !== "owner") {

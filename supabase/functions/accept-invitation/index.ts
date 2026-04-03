@@ -92,6 +92,25 @@ serve(async (req) => {
       });
     }
 
+    // Send notification to workspace owner (fire-and-forget)
+    try {
+      const { data: ws } = await supabase.from("workspaces").select("owner_id, name").eq("id", workspaceId).maybeSingle();
+      if (ws?.owner_id && ws.owner_id !== userId) {
+        const { data: memberProfile } = await supabase.from("profiles").select("full_name, email").eq("id", userId).maybeSingle();
+        fetch(SUPABASE_URL + "/functions/v1/send-notification-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_SERVICE_ROLE_KEY },
+          body: JSON.stringify({
+            event_type: "new_member",
+            user_id: ws.owner_id,
+            data: { member_name: memberProfile?.full_name || invitation.email, member_email: memberProfile?.email || invitation.email, workspace_name: ws.name },
+          }),
+        }).catch((e) => console.error("Notification error:", e));
+      }
+    } catch (e) {
+      console.error("Notification lookup error:", e);
+    }
+
     return new Response(JSON.stringify({ success: true, workspace_id: workspaceId }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { detectChapters } from "@/lib/chapter-detection";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -614,6 +615,23 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error("Error adding track:", error);
         return null;
+      }
+
+      // Send notification to workspace owner if uploader is not the owner
+      if (activeWorkspace.owner_id && activeWorkspace.owner_id !== user.id) {
+        fetch(SUPABASE_URL + "/functions/v1/send-notification-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
+          body: JSON.stringify({
+            event_type: "track_upload",
+            user_id: activeWorkspace.owner_id,
+            data: {
+              track_title: trackInput.title,
+              uploader_name: (user.user_metadata?.full_name || user.user_metadata?.first_name || user.email || "A member"),
+              uploader_email: user.email || "",
+            },
+          }),
+        }).catch(() => {});
       }
 
       // Refresh tracks to get the new one with correct index
