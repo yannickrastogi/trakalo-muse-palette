@@ -72,9 +72,7 @@ export function UserMenu() {
 
             <div className="border-t border-border mt-1.5 pt-1.5">
               {[
-                { icon: User, label: t("userMenu.profile"), path: "/settings" },
                 { icon: Settings, label: t("userMenu.settings"), path: "/settings" },
-                { icon: Shield, label: "Security", path: "/settings?section=security" },
                 { icon: CreditCard, label: t("userMenu.billing"), path: "/settings" },
               ].map((item) => (
                 <button

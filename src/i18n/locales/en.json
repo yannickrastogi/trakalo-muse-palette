@@ -560,7 +560,7 @@
   },
   "settings": {
     "title": "Settings",
-    "subtitle": "Manage your workspace and account preferences",
+    "subtitle": "Manage your account preferences",
     "profile": "Profile",
     "profileDesc": "Account details & public identity",
     "notifications": "Notifications",
