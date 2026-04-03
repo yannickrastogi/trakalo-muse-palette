@@ -486,65 +486,42 @@ function LanguageSection() {
    SECTION: NOTIFICATIONS
    ═══════════════════════════════════════════════════════ */
 
+const NOTIF_STORAGE_KEY = "trakalog_notification_prefs";
+const NOTIF_DEFAULTS: Record<string, boolean> = { link_activity: true, comments: true, signatures: true, new_member: true, track_uploads: true };
+
+function loadNotifPrefs(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(NOTIF_STORAGE_KEY);
+    if (raw) return { ...NOTIF_DEFAULTS, ...JSON.parse(raw) };
+  } catch (e) {}
+  return { ...NOTIF_DEFAULTS };
+}
+
 function NotificationsSection() {
   const { t } = useTranslation();
-  const { user, session } = useAuth();
-  const prefs = user?.user_metadata?.notification_prefs || {};
-  const [emailPitch, setEmailPitch] = useState(prefs.email_pitch !== false);
-  const [emailUpload, setEmailUpload] = useState(prefs.email_upload !== false);
-  const [emailTeam, setEmailTeam] = useState(prefs.email_team === true);
-  const [emailDigest, setEmailDigest] = useState(prefs.email_digest !== false);
-  const [pushPitch, setPushPitch] = useState(prefs.push_pitch !== false);
-  const [pushUpload, setPushUpload] = useState(prefs.push_upload === true);
-  const [pushComment, setPushComment] = useState(prefs.push_comment !== false);
-  const [pushMention, setPushMention] = useState(prefs.push_mention !== false);
+  const { user } = useAuth();
+  const [prefs, setPrefs] = useState(loadNotifPrefs);
 
-  const savePrefs = async (updates: Record<string, boolean>) => {
-    await ensureSession(session);
-    const current = user?.user_metadata?.notification_prefs || {};
-    await supabase.auth.updateUser({ data: { notification_prefs: { ...current, ...updates } } });
-  };
-
-  const handleSave = async () => {
-    await savePrefs({
-      email_pitch: emailPitch,
-      email_upload: emailUpload,
-      email_team: emailTeam,
-      email_digest: emailDigest,
-      push_pitch: pushPitch,
-      push_upload: pushUpload,
-      push_comment: pushComment,
-      push_mention: pushMention,
+  const toggle = (key: string) => {
+    setPrefs((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(next)); } catch (e) {}
+      return next;
     });
-    toast.success(t("settings.profileSaved"));
-  };
-
-  const toggleAndSave = (key: string, current: boolean, setter: (v: boolean) => void) => {
-    const next = !current;
-    setter(next);
-    savePrefs({ [key]: next }).catch(() => {});
   };
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title={t("settings.emailNotifications")} subtitle={user?.email ? "Delivered to " + user.email : ""} icon={Mail} onSave={handleSave} saveLabel={t("settings.saveChanges")} changesHint={t("settings.changesHint")}>
-        <SettingToggleRow label="Pitch Responses" description="When a recipient opens or responds to your pitch" enabled={emailPitch} onToggle={() => toggleAndSave("email_pitch", emailPitch, setEmailPitch)} />
+      <SectionBlock title={t("settings.emailNotifications")} subtitle={user?.email ? "Delivered to " + user.email : ""} icon={Mail}>
+        <SettingToggleRow label={t("settings.notifLinkActivity")} description={t("settings.notifLinkActivityDesc")} enabled={prefs.link_activity} onToggle={() => toggle("link_activity")} />
         <Divider />
-        <SettingToggleRow label="Track Uploads" description="When a collaborator uploads a new track to the catalog" enabled={emailUpload} onToggle={() => toggleAndSave("email_upload", emailUpload, setEmailUpload)} />
+        <SettingToggleRow label={t("settings.notifComments")} description={t("settings.notifCommentsDesc")} enabled={prefs.comments} onToggle={() => toggle("comments")} />
         <Divider />
-        <SettingToggleRow label="Team Changes" description="When members join, leave, or have their roles updated" enabled={emailTeam} onToggle={() => toggleAndSave("email_team", emailTeam, setEmailTeam)} />
+        <SettingToggleRow label={t("settings.notifSignatures")} description={t("settings.notifSignaturesDesc")} enabled={prefs.signatures} onToggle={() => toggle("signatures")} />
         <Divider />
-        <SettingToggleRow label="Weekly Digest" description="A curated summary of your workspace activity every Monday" enabled={emailDigest} onToggle={() => toggleAndSave("email_digest", emailDigest, setEmailDigest)} />
-      </SectionBlock>
-
-      <SectionBlock title={t("settings.pushNotifications")} subtitle={t("settings.realTimeAlertsDesc")} icon={Bell} onSave={handleSave} saveLabel={t("settings.saveChanges")} changesHint={t("settings.changesHint")}>
-        <SettingToggleRow label="Pitch Status Updates" description="Real-time alerts when pitches are opened, read, or replied to" enabled={pushPitch} onToggle={() => toggleAndSave("push_pitch", pushPitch, setPushPitch)} />
+        <SettingToggleRow label={t("settings.notifNewMember")} description={t("settings.notifNewMemberDesc")} enabled={prefs.new_member} onToggle={() => toggle("new_member")} />
         <Divider />
-        <SettingToggleRow label="New Catalog Uploads" description="When tracks or stems are added to the catalog" enabled={pushUpload} onToggle={() => toggleAndSave("push_upload", pushUpload, setPushUpload)} />
-        <Divider />
-        <SettingToggleRow label="Comments & Feedback" description="When someone leaves feedback or a note on your track" enabled={pushComment} onToggle={() => toggleAndSave("push_comment", pushComment, setPushComment)} />
-        <Divider />
-        <SettingToggleRow label="Mentions" description="When you're @mentioned in a comment or note" enabled={pushMention} onToggle={() => toggleAndSave("push_mention", pushMention, setPushMention)} />
+        <SettingToggleRow label={t("settings.notifTrackUploads")} description={t("settings.notifTrackUploadsDesc")} enabled={prefs.track_uploads} onToggle={() => toggle("track_uploads")} />
       </SectionBlock>
     </motion.div>
   );
