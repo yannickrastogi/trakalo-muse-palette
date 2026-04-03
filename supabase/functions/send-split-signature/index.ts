@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { buildEmail } from "../_shared/email-template.ts";
 
 function generateToken(length = 32): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -129,18 +130,12 @@ serve(async (req) => {
         }
       }
 
-      const htmlBody = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head>"
-        + "<body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f5f5f5;\">"
-        + "<div style=\"background:#ffffff;border-radius:12px;padding:32px;margin:20px 0;\">"
-        + "<div style=\"text-align:center;margin-bottom:24px;\">"
-        + "<h1 style=\"color:#f97316;margin:0;font-size:28px;\">Trakalog</h1>"
-        + "</div>"
-        + "<p style=\"color:#333;font-size:16px;line-height:1.6;\">Hi " + split.name + ",</p>"
-        + "<p style=\"color:#333;font-size:16px;line-height:1.6;\">You are invited to review and sign the split agreement for <strong>" + trackTitle + "</strong>.</p>"
+      const emailBody = "<p>Hi " + split.name + ",</p>"
+        + "<p>You are invited to review and sign the split agreement for <strong>" + trackTitle + "</strong>.</p>"
         + "<div style=\"margin:24px 0;\">"
-        + "<h3 style=\"color:#333;margin-bottom:12px;\">Split Breakdown</h3>"
+        + "<h3 style=\"margin-bottom:12px;color:#ffffff;\">Split Breakdown</h3>"
         + "<table style=\"width:100%;border-collapse:collapse;font-size:14px;\">"
-        + "<thead><tr style=\"background:#fff7ed;\">"
+        + "<thead><tr style=\"background:rgba(249,115,22,0.15);\">"
         + "<th style=\"padding:10px 12px;text-align:left;color:#f97316;font-weight:600;\">Name</th>"
         + "<th style=\"padding:10px 12px;text-align:left;color:#f97316;font-weight:600;\">Role</th>"
         + "<th style=\"padding:10px 12px;text-align:right;color:#f97316;font-weight:600;\">Share</th>"
@@ -148,13 +143,15 @@ serve(async (req) => {
         + "<tbody>" + splitsRows + "</tbody>"
         + "</table>"
         + "</div>"
-        + "<div style=\"text-align:center;margin:32px 0;\">"
-        + "<a href=\"" + signUrl + "\" style=\"display:inline-block;background:#f97316;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;font-size:16px;\">Review &amp; Sign</a>"
-        + "</div>"
-        + "<p style=\"color:#999;font-size:13px;line-height:1.5;\">This agreement was prepared via Trakalog. If you disagree with these splits, please contact the track owner directly before signing.</p>"
-        + "<hr style=\"border:none;border-top:1px solid #eee;margin:32px 0;\">"
-        + "<p style=\"text-align:center;color:#999;font-size:12px;\">Sent via Trakalog</p>"
-        + "</div></body></html>";
+        + "<p style=\"color:#71717a;font-size:13px;line-height:1.5;\">This agreement was prepared via Trakalog. If you disagree with these splits, please contact the track owner directly before signing.</p>";
+
+      const htmlBody = buildEmail({
+        preheader: "Split agreement for " + trackTitle,
+        heading: "Split Agreement — Signature Required",
+        body: emailBody,
+        ctaLabel: "Review & Sign",
+        ctaUrl: signUrl,
+      });
 
       // Send email to THIS collaborator's email address
       const res = await fetch("https://api.resend.com/emails", {

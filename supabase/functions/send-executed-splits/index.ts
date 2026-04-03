@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { buildEmail } from "../_shared/email-template.ts";
 
 const maskIpi = (ipi: string | undefined) => ipi ? "***" + ipi.slice(-3) : "\u2014";
 
@@ -106,21 +107,15 @@ serve(async (req) => {
 
       console.log("Sending executed copy to:", sig.collaborator_email);
 
-      const htmlBody = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head>"
-        + "<body style=\"font-family:Arial,sans-serif;max-width:700px;margin:0 auto;padding:20px;background:#f5f5f5;\">"
-        + "<div style=\"background:#ffffff;border-radius:12px;padding:32px;margin:20px 0;\">"
-        + "<div style=\"text-align:center;margin-bottom:24px;\">"
-        + "<h1 style=\"color:#f97316;margin:0;font-size:28px;\">Trakalog</h1>"
+      const emailBody = "<div style=\"text-align:center;margin-bottom:24px;padding:16px;background:rgba(16,185,129,0.1);border-radius:8px;border:1px solid rgba(16,185,129,0.2);\">"
+        + "<p style=\"color:#10b981;font-size:18px;font-weight:bold;margin:0;\">\u2705 Agreement Fully Executed</p>"
         + "</div>"
-        + "<div style=\"text-align:center;margin-bottom:24px;padding:16px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;\">"
-        + "<p style=\"color:#16a34a;font-size:18px;font-weight:bold;margin:0;\">\u2705 Agreement Fully Executed</p>"
-        + "</div>"
-        + "<p style=\"color:#333;font-size:16px;line-height:1.6;\">Hi " + sig.collaborator_name + ",</p>"
-        + "<p style=\"color:#333;font-size:16px;line-height:1.6;\">The split agreement for <strong>" + trackTitle + "</strong> by <strong>" + trackArtist + "</strong> has been fully executed. All parties have signed.</p>"
+        + "<p>Hi " + sig.collaborator_name + ",</p>"
+        + "<p>The split agreement for <strong>" + trackTitle + "</strong> by <strong>" + trackArtist + "</strong> has been fully executed. All parties have signed.</p>"
         + "<div style=\"margin:24px 0;\">"
-        + "<h3 style=\"color:#333;margin-bottom:12px;\">Final Split Breakdown</h3>"
+        + "<h3 style=\"margin-bottom:12px;color:#ffffff;\">Final Split Breakdown</h3>"
         + "<table style=\"width:100%;border-collapse:collapse;font-size:14px;\">"
-        + "<thead><tr style=\"background:#fff7ed;\">"
+        + "<thead><tr style=\"background:rgba(249,115,22,0.15);\">"
         + "<th style=\"padding:10px 12px;text-align:left;color:#f97316;font-weight:600;\">Name</th>"
         + "<th style=\"padding:10px 12px;text-align:left;color:#f97316;font-weight:600;\">Role</th>"
         + "<th style=\"padding:10px 12px;text-align:right;color:#f97316;font-weight:600;\">Share</th>"
@@ -132,15 +127,17 @@ serve(async (req) => {
         + "<tbody>" + splitsRows + "</tbody>"
         + "</table>"
         + "</div>"
-        + "<div style=\"margin:24px 0;padding:16px;background:#fafafa;border-radius:8px;border:1px solid #eee;\">"
-        + "<p style=\"color:#333;font-size:14px;line-height:1.6;margin:0;\">This document serves as confirmation of the agreed ownership splits for <strong>" + trackTitle + "</strong>. All listed parties have reviewed and signed this agreement.</p>"
-        + "</div>"
-        + "<div style=\"text-align:center;margin:24px 0;\">"
-        + "<a href=\"https://trakalog.com\" style=\"display:inline-block;padding:12px 24px;background:#f97316;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px;\">Download the full agreement PDF on Trakalog</a>"
-        + "</div>"
-        + "<hr style=\"border:none;border-top:1px solid #eee;margin:32px 0;\">"
-        + "<p style=\"text-align:center;color:#999;font-size:12px;\">This agreement was executed via Trakalog \u2014 trakalog.com</p>"
-        + "</div></body></html>";
+        + "<div style=\"margin:24px 0;padding:16px;background:rgba(255,255,255,0.05);border-radius:8px;border:1px solid rgba(255,255,255,0.1);\">"
+        + "<p style=\"color:#a1a1aa;font-size:14px;line-height:1.6;margin:0;\">This document serves as confirmation of the agreed ownership splits for <strong>" + trackTitle + "</strong>. All listed parties have reviewed and signed this agreement.</p>"
+        + "</div>";
+
+      const htmlBody = buildEmail({
+        preheader: "Executed split agreement for " + trackTitle,
+        heading: "Executed Split Agreement",
+        body: emailBody,
+        ctaLabel: "View on Trakalog",
+        ctaUrl: "https://app.trakalog.com/tracks",
+      });
 
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
