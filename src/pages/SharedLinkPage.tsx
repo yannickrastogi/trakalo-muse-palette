@@ -474,6 +474,7 @@ export default function SharedLinkPage() {
     if (!savedVisitor) return;
     // Skip the gate (both public and secured — secured will still show password screen)
     setGateCompleted(true);
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
     visitorEmailRef.current = savedVisitor.email;
     // Log access with cookie data
     fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/log-link-access", {
@@ -714,6 +715,7 @@ export default function SharedLinkPage() {
       var json = await res.json();
       if (json.valid) {
         setPasswordVerified(true);
+        window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
         setPasswordError(false);
       } else {
         setPasswordError(true);
@@ -735,6 +737,7 @@ export default function SharedLinkPage() {
     }
     setGateError("");
     setGateCompleted(true);
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
     visitorEmailRef.current = visitorEmail;
     setVisitorCookie({ name: visitorName.trim(), email: visitorEmail.trim(), role: visitorRole.trim(), company: visitorCompany.trim() });
 
