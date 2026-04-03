@@ -1818,35 +1818,34 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
   if (immersive) {
     return (
       <div className="min-h-screen overflow-x-hidden max-w-[100vw]" style={{ backgroundColor: "#0a0a0b" }}>
-        {/* Fixed full-page background image */}
-        <div
-          className="fixed inset-0 w-full h-screen"
-          style={{ backgroundImage: "url(" + heroUrl! + ")", backgroundSize: "cover", backgroundPosition: heroFocalPoint, backgroundRepeat: "no-repeat", zIndex: 0 }}
-        />
-        {/* Fixed gradient overlay — long progressive fade */}
-        <div
-          className="fixed inset-0 w-full h-screen pointer-events-none"
-          style={{ background: "linear-gradient(to bottom, transparent 0%, rgba(10,10,11,0.3) 30%, rgba(10,10,11,0.7) 50%, #0a0a0b 75%)", zIndex: 1 }}
-        />
-        {/* Scrollable content above background */}
-        <div className="relative flex flex-col min-h-screen" style={{ zIndex: 2 }}>
-          {/* Logo header */}
-          <header className="pt-8 sm:pt-12 pb-4">
-            <div className="flex flex-col items-center gap-1">
-              <img src={logoUrl || trakalogLogo} alt="Logo" className="object-contain max-h-[50px] sm:max-h-[70px] lg:max-h-[80px]" style={{ filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.7))" }} />
-              <div className="flex flex-col items-center">
-                <span className="text-lg sm:text-xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.5))" }}>TRAKALOG</span>
-                <span className="text-[8px] sm:text-[10px] tracking-[0.2em] text-white/40 font-medium block mt-0.5">CATALOG MANAGER</span>
-              </div>
+        {/* Hero image section — in normal document flow */}
+        <div className="relative w-full overflow-hidden h-[35vh] min-h-[220px] max-h-[350px] md:h-[55vh] md:min-h-[400px] md:max-h-[600px]">
+          <img
+            src={heroUrl!}
+            alt=""
+            className="w-full h-full object-cover"
+            style={{ objectPosition: heroFocalPoint }}
+          />
+          {/* Subtle bottom gradient — only lower 40% */}
+          <div className="absolute bottom-0 left-0 right-0 pointer-events-none" style={{ height: "40%", background: "linear-gradient(to top, #0a0a0b 0%, transparent 100%)" }} />
+          {/* Logo + branding at bottom of hero */}
+          <div className="absolute bottom-4 md:bottom-6 left-0 right-0 flex flex-col items-center gap-1 z-10">
+            <img src={logoUrl || trakalogLogo} alt="Logo" className="object-contain max-h-[50px] md:max-h-[80px]" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
+            <div className="flex flex-col items-center" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>
+              <span className="text-base md:text-xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+              <span className="text-[7px] md:text-[10px] tracking-[0.2em] text-white/40 font-medium block mt-0.5">CATALOG MANAGER</span>
             </div>
-          </header>
-          <div className="flex-1">{children}</div>
-          <footer className="py-6 text-center">
-            <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] hover:opacity-80 transition-opacity" style={{ color: "#f97316" }}>
-              {"Powered by Trakalog \u2726"}
-            </a>
-          </footer>
+          </div>
         </div>
+        {/* Content directly after hero */}
+        <div className="pt-6 md:pt-8" style={{ backgroundColor: "#0a0a0b" }}>
+          {children}
+        </div>
+        <footer className="py-6 text-center" style={{ backgroundColor: "#0a0a0b" }}>
+          <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] hover:opacity-80 transition-opacity" style={{ color: "#f97316" }}>
+            {"Powered by Trakalog \u2726"}
+          </a>
+        </footer>
       </div>
     );
   }
