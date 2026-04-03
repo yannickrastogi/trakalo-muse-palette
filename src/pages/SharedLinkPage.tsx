@@ -1807,12 +1807,12 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
     return (
       <div className="min-h-screen relative">
         {/* Fixed full-screen background */}
-        <div className="fixed inset-0 z-0">
+        <div className="fixed inset-0 z-0 overflow-hidden">
           <img
             src={heroUrl!}
             alt=""
             className="w-full h-full object-cover"
-            style={{ objectPosition: "center " + heroPos + "%", transform: "scale(1.05)" }}
+            style={{ objectPosition: "center " + heroPos + "%" }}
           />
           <div className="absolute inset-0 bg-black/35" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/70" />
@@ -1822,7 +1822,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
           {/* Logo header */}
           <header className="py-6 sm:py-8">
             <div className="flex flex-col items-center gap-1.5">
-              <img src={logoUrl || trakalogLogo} alt="Logo" style={{ maxHeight: 70, filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.6))" }} className="object-contain" />
+              <img src={logoUrl || trakalogLogo} alt="Logo" className="object-contain max-h-[60px] sm:max-h-[80px]" style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.6))" }} />
               <div className="flex flex-col items-center">
                 <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
                 <span className="text-[10px] tracking-[0.2em] text-white/30 font-medium block mt-0.5">CATALOG MANAGER</span>
@@ -1847,7 +1847,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
           <div className="flex flex-col items-center">
             <div className="flex items-center gap-3">
               {logoUrl ? (
-                <img src={logoUrl} alt="Logo" style={{ maxHeight: 40 }} className="object-contain" />
+                <img src={logoUrl} alt="Logo" className="object-contain max-h-[40px] sm:max-h-[50px]" />
               ) : (
                 <>
                   <img src={trakalogLogo} alt="Trakalog" className="h-10" />
