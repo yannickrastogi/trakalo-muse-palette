@@ -7,7 +7,6 @@ structure, mood, spectral features, intro clearance, and tempo stability.
 
 import numpy as np
 import librosa
-import madmom
 
 
 # Krumhansl-Kessler key profiles
@@ -42,98 +41,57 @@ def _detect_key(y, sr):
     return {"key": _KEY_NAMES[best_key], "mode": best_mode, "confidence": round(confidence, 3)}
 
 
-def _detect_bpm(y, sr, audio_path):
-    """Detect BPM using madmom (primary) + librosa (backup) with consensus."""
-    hop = 512
+def _detect_bpm(y, sr):
+    """Detect BPM with librosa multi-method consensus and double/half correction."""
+    # Method 1: librosa beat_track
+    tempo1, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=512)
+    tempo1 = float(np.atleast_1d(tempo1)[0])
 
-    # Method 1 — madmom RNN beat processor (most accurate for syncopated genres)
-    try:
-        act = madmom.features.beats.RNNBeatProcessor()(audio_path)
-        proc = madmom.features.tempo.TempoEstimationProcessor(fps=100)
-        tempos = proc(act)
-        # tempos is array of (bpm, strength) sorted by strength
-        madmom_bpm = float(tempos[0][0])
-        madmom_strength = float(tempos[0][1])
-        # Collect additional madmom candidates
-        madmom_alts = [float(t[0]) for t in tempos[:3]] if len(tempos) > 1 else [madmom_bpm]
-    except Exception:
-        madmom_bpm = None
-        madmom_strength = 0.0
-        madmom_alts = []
-
-    # Method 2 — librosa beat_track (backup)
-    tempo_librosa, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=hop)
-    librosa_bpm = float(np.atleast_1d(tempo_librosa)[0])
-
-    # Build candidate list
-    raw_tempos = [librosa_bpm]
-    if madmom_bpm is not None:
-        raw_tempos = [madmom_bpm] + madmom_alts + [librosa_bpm]
-
-    candidates = []
-    for t in raw_tempos:
-        for mult in [t / 2.0, t, t * 2.0]:
-            if 60.0 <= mult <= 200.0:
-                candidates.append(mult)
-
-    if not candidates:
-        candidates = raw_tempos
-
-    # If madmom succeeded, use it as primary
-    if madmom_bpm is not None:
-        bpm = madmom_bpm
-        # Ensure madmom result is in plausible range
-        if bpm > 200.0:
-            bpm /= 2.0
-        elif bpm < 60.0:
-            bpm *= 2.0
-
-        # Check if librosa agrees (within ±10% or its double/half)
-        librosa_agrees = False
-        for mult in [librosa_bpm / 2.0, librosa_bpm, librosa_bpm * 2.0]:
-            ratio = bpm / mult if mult > 0 else 999
-            if 0.90 <= ratio <= 1.10:
-                librosa_agrees = True
-                break
-
-        confidence = 0.85 if librosa_agrees else 0.75
-        # Boost if madmom strength is high
-        if madmom_strength > 0.5:
-            confidence = min(1.0, confidence + 0.1)
-        method = "madmom"
+    # Method 2: onset envelope + tempogram peak
+    oenv = librosa.onset.onset_strength(y=y, sr=sr)
+    tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=sr)
+    tempo_freqs = librosa.tempo_frequencies(tempogram.shape[0], sr=sr)
+    mean_tempogram = np.mean(tempogram, axis=1)
+    valid = (tempo_freqs >= 40) & (tempo_freqs <= 220)
+    if np.any(valid):
+        best_idx = np.argmax(mean_tempogram[valid])
+        tempo2 = float(tempo_freqs[valid][best_idx])
     else:
-        # Fallback to librosa with basic correction
-        bpm = librosa_bpm
-        if bpm > 200.0:
-            bpm /= 2.0
-        elif bpm < 60.0:
-            bpm *= 2.0
-        # Prefer 100-170 range
-        if 60.0 <= bpm <= 85.0 and 120.0 <= bpm * 2.0 <= 200.0:
-            bpm *= 2.0
+        tempo2 = tempo1
 
-        # Confidence from beat consistency
-        beat_times = librosa.frames_to_time(beat_frames, sr=sr)
-        if len(beat_times) > 2:
-            intervals = np.diff(beat_times)
-            median_interval = np.median(intervals)
-            if median_interval > 0:
-                deviations = np.abs(intervals - median_interval) / median_interval
-                confidence = max(0.0, 1.0 - float(np.mean(deviations)))
-            else:
-                confidence = 0.5
-        else:
-            confidence = 0.3
-        method = "librosa_fallback"
+    # Collect all candidates with multiples/sub-multiples
+    candidates = []
+    for t in [tempo1, tempo2]:
+        for mult in [0.5, 1.0, 2.0]:
+            c = t * mult
+            if 60 <= c <= 200:
+                candidates.append(c)
 
-    # Collect unique alternatives in plausible range
-    alternatives = sorted(set([round(c, 1) for c in [bpm / 2.0, bpm, bpm * 2.0] if 40.0 <= c <= 300.0]))
+    # Group candidates within ±5%
+    groups = []
+    for c in sorted(candidates):
+        placed = False
+        for g in groups:
+            if abs(c - g[0]) / g[0] < 0.05:
+                g.append(c)
+                placed = True
+                break
+        if not placed:
+            groups.append([c])
+
+    # The group with the most votes wins
+    # Bonus for 100-170 BPM range (covers most popular music)
+    best_group = max(groups, key=lambda g: len(g) + (0.5 if 100 <= np.mean(g) <= 170 else 0))
+    bpm = round(float(np.mean(best_group)), 1)
+    confidence = min(1.0, len(best_group) / 4.0 + 0.5)
+
+    alternatives = sorted(set([round(bpm / 2, 1), bpm, round(bpm * 2, 1)]))
 
     return {
-        "bpm": round(bpm, 1),
+        "bpm": bpm,
         "confidence": round(confidence, 3),
         "alternatives": alternatives,
-        "method": method,
+        "method": "librosa_consensus",
     }, beat_frames
 
 
@@ -348,7 +306,7 @@ def analyze(audio_path: str) -> dict:
     duration = float(len(y) / sr)
 
     # BPM
-    bpm_result, beat_frames = _detect_bpm(y, sr, audio_path)
+    bpm_result, beat_frames = _detect_bpm(y, sr)
 
     # Key
     key_result = _detect_key(y, sr)
