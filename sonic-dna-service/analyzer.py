@@ -7,6 +7,7 @@ structure, mood, spectral features, intro clearance, and tempo stability.
 
 import numpy as np
 import librosa
+import essentia.standard as es
 
 
 # Krumhansl-Kessler key profiles
@@ -41,57 +42,27 @@ def _detect_key(y, sr):
     return {"key": _KEY_NAMES[best_key], "mode": best_mode, "confidence": round(confidence, 3)}
 
 
-def _detect_bpm(y, sr):
-    """Detect BPM with librosa multi-method consensus and double/half correction."""
-    # Method 1: librosa beat_track
-    tempo1, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=512)
-    tempo1 = float(np.atleast_1d(tempo1)[0])
+def _detect_bpm(y, sr, audio_path):
+    """Detect BPM using essentia RhythmExtractor2013."""
+    # Essentia RhythmExtractor2013 — DJ/production-grade algorithm
+    audio = es.MonoLoader(filename=audio_path, sampleRate=44100)()
+    rhythm_extractor = es.RhythmExtractor2013(method="multifeature")
+    bpm, ticks, confidence, estimates, bpmIntervals = rhythm_extractor(audio)
 
-    # Method 2: onset envelope + tempogram peak
-    oenv = librosa.onset.onset_strength(y=y, sr=sr)
-    tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=sr)
-    tempo_freqs = librosa.tempo_frequencies(tempogram.shape[0], sr=sr)
-    mean_tempogram = np.mean(tempogram, axis=1)
-    valid = (tempo_freqs >= 40) & (tempo_freqs <= 220)
-    if np.any(valid):
-        best_idx = np.argmax(mean_tempogram[valid])
-        tempo2 = float(tempo_freqs[valid][best_idx])
-    else:
-        tempo2 = tempo1
+    bpm = round(float(bpm), 1)
+    confidence = round(float(confidence), 3)
 
-    # Collect all candidates with multiples/sub-multiples
-    candidates = []
-    for t in [tempo1, tempo2]:
-        for mult in [0.5, 1.0, 2.0]:
-            c = t * mult
-            if 60 <= c <= 200:
-                candidates.append(c)
-
-    # Group candidates within ±5%
-    groups = []
-    for c in sorted(candidates):
-        placed = False
-        for g in groups:
-            if abs(c - g[0]) / g[0] < 0.05:
-                g.append(c)
-                placed = True
-                break
-        if not placed:
-            groups.append([c])
-
-    # The group with the most votes wins
-    # Bonus for 100-170 BPM range (covers most popular music)
-    best_group = max(groups, key=lambda g: len(g) + (0.5 if 100 <= np.mean(g) <= 170 else 0))
-    bpm = round(float(np.mean(best_group)), 1)
-    confidence = min(1.0, len(best_group) / 4.0 + 0.5)
-
+    # Alternatives: half and double
     alternatives = sorted(set([round(bpm / 2, 1), bpm, round(bpm * 2, 1)]))
+
+    # Beat frames from librosa for tempo_stability (used downstream)
+    _, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=512)
 
     return {
         "bpm": bpm,
-        "confidence": round(confidence, 3),
+        "confidence": confidence,
         "alternatives": alternatives,
-        "method": "librosa_consensus",
+        "method": "essentia_rhythm_extractor",
     }, beat_frames
 
 
@@ -306,7 +277,7 @@ def analyze(audio_path: str) -> dict:
     duration = float(len(y) / sr)
 
     # BPM
-    bpm_result, beat_frames = _detect_bpm(y, sr)
+    bpm_result, beat_frames = _detect_bpm(y, sr, audio_path)
 
     # Key
     key_result = _detect_key(y, sr)
