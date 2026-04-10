@@ -98,3 +98,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/send-notification-email/deno.json"
 entrypoint = "./functions/send-notification-email/index.ts"
+
+[functions.analyze-sonic-dna]
+enabled = true
+verify_jwt = false
+import_map = "./functions/analyze-sonic-dna/deno.json"
+entrypoint = "./functions/analyze-sonic-dna/index.ts"
