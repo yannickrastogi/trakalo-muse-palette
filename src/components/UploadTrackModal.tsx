@@ -1032,7 +1032,7 @@ function StepBulkUpload({
                     )}
                     {entry.analysisResult && !entry.analyzing && (
                       <span className="flex items-center gap-1 text-emerald-400">
-                        <Check className="w-2.5 h-2.5" /> {entry.analysisResult.bpm} BPM · {entry.analysisResult.key}
+                        <Check className="w-2.5 h-2.5" /> {t("uploadTrack.analysisComplete", "Analysis complete")}
                       </span>
                     )}
                     {entry.analysisError && (
