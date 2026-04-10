@@ -636,11 +636,14 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
       // Fire-and-forget: trigger Sonic DNA analysis in background
       if (data?.id && trackInput.originalFileUrl) {
+        console.log('[SonicDNA] Triggering analysis for track:', data.id, 'path:', trackInput.originalFileUrl);
         fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
           method: "POST",
           headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
           body: JSON.stringify({ track_id: data.id, storage_path: trackInput.originalFileUrl }),
-        }).catch(() => {});
+        })
+          .then(res => res.json().then(d => console.log('[SonicDNA] Result:', d)))
+          .catch(err => console.error('[SonicDNA] Error:', err));
       }
 
       // Refresh tracks to get the new one with correct index
