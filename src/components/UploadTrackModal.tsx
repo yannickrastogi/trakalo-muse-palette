@@ -1162,11 +1162,13 @@ function StepInfo({
               )}
             </div>
             <span className="text-2xs font-semibold text-foreground">
-              {analyzing ? t("uploadTrack.analyzingAudio", "Analyzing audio...") : t("uploadTrack.smartAnalysisComplete", "Smart Analysis Complete")}
+              {analyzing ? t("uploadTrack.analyzingAudio", "Analyzing audio...") : t("uploadTrack.audioReady", "Audio Ready")}
             </span>
           </div>
           {!analyzing && (
+            <>
             <div className="grid grid-cols-3 gap-2">
+              {bpm ? (
               <div className="rounded-lg bg-secondary p-2 text-center group/bpm cursor-text">
                 <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.bpm")}</p>
                 <input
@@ -1177,6 +1179,8 @@ function StepInfo({
                   placeholder="—"
                 />
               </div>
+              ) : null}
+              {trackKey ? (
               <div className="rounded-lg bg-secondary p-2 text-center">
                 <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.key")}</p>
                 <select
@@ -1188,11 +1192,16 @@ function StepInfo({
                   {KEYS.map(function (k) { return <option key={k} value={k}>{k}</option>; })}
                 </select>
               </div>
+              ) : null}
               <div className="rounded-lg bg-secondary p-2 text-center">
                 <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.duration", "Duration")}</p>
                 <p className="text-sm font-bold text-brand-purple">{analysisResult?.duration || "—"}</p>
               </div>
             </div>
+            {(!bpm || !trackKey) && (
+              <p className="text-2xs text-muted-foreground">{t("uploadTrack.autoDetectNote", "BPM & Key will be detected automatically after upload")}</p>
+            )}
+            </>
           )}
         </div>
       )}
