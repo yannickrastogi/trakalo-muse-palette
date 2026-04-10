@@ -634,26 +634,28 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         }).catch(() => {});
       }
 
-      // Fire-and-forget: trigger Sonic DNA analysis in background
-      if (data?.id && trackInput.originalFileUrl) {
-        console.log('[SonicDNA] Triggering analysis for track:', data.id, 'path:', trackInput.originalFileUrl);
-        fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
-          body: JSON.stringify({ track_id: data.id, storage_path: trackInput.originalFileUrl }),
-        })
-          .then(res => res.json().then(d => console.log('[SonicDNA] Result:', d)))
-          .catch(err => console.error('[SonicDNA] Error:', err));
-
-        // Poll once after 30s to pick up BPM/key/genre from Sonic DNA analysis
-        setTimeout(() => {
-          console.log('[SonicDNA] Auto-refreshing tracks after analysis delay');
-          fetchTracks();
-        }, 30000);
-      }
-
       // Refresh tracks to get the new one with correct index
       await fetchTracks();
+
+      // Await Sonic DNA analysis and refresh tracks with real BPM/key/genre
+      if (data?.id && trackInput.originalFileUrl) {
+        console.log('[SonicDNA] Triggering analysis for track:', data.id, 'path:', trackInput.originalFileUrl);
+        try {
+          const dnaRes = await fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
+            body: JSON.stringify({ track_id: data.id, storage_path: trackInput.originalFileUrl }),
+            signal: AbortSignal.timeout(120000),
+          });
+          const dnaResult = await dnaRes.json();
+          console.log('[SonicDNA] Result:', dnaResult);
+          if (dnaResult?.success) {
+            await fetchTracks();
+          }
+        } catch (err) {
+          console.error('[SonicDNA] Error:', err);
+        }
+      }
 
       // Return the newly created track
       const newTrack = mapRowToTrack(data as unknown as Record<string, unknown>, tracks.length);
