@@ -110,29 +110,46 @@ Deno.serve(async (req) => {
 
     const sonicDna = await analyzeResponse.json();
 
+    console.log('[SonicDNA] Sonic DNA result keys:', Object.keys(sonicDna));
+    console.log('[SonicDNA] BPM:', JSON.stringify(sonicDna.bpm));
+    console.log('[SonicDNA] Saving to DB for track:', track_id);
+
     // 3. Build update payload: always set sonic_dna, conditionally update bpm/key
+    // BPM and key are nested objects: sonicDna.bpm = { bpm, confidence, ... }, sonicDna.key = { key, mode, confidence }
     const updatePayload: Record<string, unknown> = { sonic_dna: sonicDna };
 
-    if (sonicDna.bpm && sonicDna.bpm_confidence > 0.7) {
-      updatePayload.bpm = Math.round(sonicDna.bpm);
+    const bpmData = sonicDna.bpm;
+    if (bpmData && typeof bpmData === "object" && bpmData.bpm && bpmData.confidence > 0.7) {
+      updatePayload.bpm = Math.round(bpmData.bpm);
     }
-    if (sonicDna.key && sonicDna.key_confidence > 0.7) {
-      updatePayload.key = sonicDna.key;
+    const keyData = sonicDna.key;
+    if (keyData && typeof keyData === "object" && keyData.key && keyData.confidence > 0.7) {
+      updatePayload.key = keyData.key;
     }
 
     // 4. Update the track in DB
-    const { error: updateErr } = await supabaseAdmin
-      .from("tracks")
-      .update(updatePayload)
-      .eq("id", track_id);
+    try {
+      const { error: updateErr } = await supabaseAdmin
+        .from("tracks")
+        .update(updatePayload)
+        .eq("id", track_id);
 
-    if (updateErr) {
-      return new Response(JSON.stringify({ error: "Failed to update track: " + updateErr.message }), {
+      if (updateErr) {
+        console.log('[SonicDNA] DB update error:', updateErr.message);
+        return new Response(JSON.stringify({ error: "Failed to update track: " + updateErr.message }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } catch (dbErr) {
+      console.log('[SonicDNA] DB update exception:', dbErr);
+      return new Response(JSON.stringify({ error: "DB update exception: " + String(dbErr) }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    console.log('[SonicDNA] Successfully saved sonic_dna for track:', track_id);
     return new Response(JSON.stringify({ success: true, sonic_dna: sonicDna }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
