@@ -42,15 +42,83 @@ def _detect_key(y, sr):
 
 
 def _detect_bpm(y, sr):
-    """Detect BPM with double/half correction."""
-    tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
-    bpm = float(np.atleast_1d(tempo)[0])
+    """Detect BPM with multi-method consensus and double/half correction."""
+    # Method 1: beat_track with hop_length=512
+    tempo1, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=512)
+    bpm1 = float(np.atleast_1d(tempo1)[0])
 
-    # Double/half correction for plausible range
-    if bpm > 160:
-        bpm /= 2.0
-    elif bpm < 70:
-        bpm *= 2.0
+    # Method 2: beat_track with hop_length=1024
+    tempo2, _ = librosa.beat.beat_track(y=y, sr=sr, hop_length=1024)
+    bpm2 = float(np.atleast_1d(tempo2)[0])
+
+    # Method 3: tempogram peak
+    oenv = librosa.onset.onset_strength(y=y, sr=sr)
+    tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=sr)
+    # Average tempogram across time, find dominant tempo
+    avg_tempogram = np.mean(tempogram, axis=1)
+    # BPM axis for tempogram
+    bpm_axis = librosa.tempo_frequencies(tempogram.shape[0], sr=sr)
+    # Only consider 30-300 BPM range
+    valid_mask = (bpm_axis >= 30) & (bpm_axis <= 300)
+    if np.any(valid_mask):
+        valid_tempos = avg_tempogram[valid_mask]
+        valid_bpms = bpm_axis[valid_mask]
+        bpm3 = float(valid_bpms[np.argmax(valid_tempos)])
+    else:
+        bpm3 = bpm1
+
+    # Method 4: autocorrelation of onset envelope for confirmation
+    ac = librosa.autocorrelate(oenv, max_size=len(oenv))
+    # Convert lag to BPM, skip lag 0
+    hop_length_default = 512
+    fps = sr / hop_length_default  # frames per second
+    # Find peak in autocorrelation in plausible tempo range (40-200 BPM)
+    min_lag = int(fps * 60.0 / 200.0)  # 200 BPM
+    max_lag = int(fps * 60.0 / 40.0)   # 40 BPM
+    max_lag = min(max_lag, len(ac) - 1)
+    if min_lag < max_lag and max_lag < len(ac):
+        ac_segment = ac[min_lag:max_lag + 1]
+        best_lag = min_lag + int(np.argmax(ac_segment))
+        bpm_ac = 60.0 * fps / best_lag if best_lag > 0 else bpm1
+    else:
+        bpm_ac = bpm1
+
+    # Build candidate list with multiples/sub-multiples
+    raw_tempos = [bpm1, bpm2, bpm3, bpm_ac]
+    candidates = []
+    for t in raw_tempos:
+        candidates.extend([t / 2.0, t, t * 2.0])
+
+    # Filter to plausible range 60-200 BPM
+    candidates = [c for c in candidates if 60.0 <= c <= 200.0]
+    if not candidates:
+        # Fallback: use raw tempos with basic correction
+        candidates = raw_tempos
+
+    # Score candidates by proximity consensus
+    # For each candidate, count how many raw tempos (or their multiples) agree
+    def _score_candidate(candidate):
+        score = 0.0
+        for t in raw_tempos:
+            for mult in [t / 2.0, t, t * 2.0]:
+                ratio = candidate / mult if mult > 0 else 999
+                if 0.95 <= ratio <= 1.05:
+                    score += 1.0
+                    break
+                elif 0.90 <= ratio <= 1.10:
+                    score += 0.5
+                    break
+        # Prefer the sweet spot 90-150 BPM (covers most popular music)
+        if 90.0 <= candidate <= 150.0:
+            score += 0.5
+        return score
+
+    scored = [(c, _score_candidate(c)) for c in candidates]
+    scored.sort(key=lambda x: -x[1])
+    bpm = scored[0][0]
+
+    # Collect unique alternatives in plausible range
+    alternatives = sorted(set([round(c, 1) for c in [bpm / 2.0, bpm, bpm * 2.0] if 40.0 <= c <= 300.0]))
 
     # Confidence from beat strength consistency
     beat_times = librosa.frames_to_time(beat_frames, sr=sr)
@@ -65,7 +133,19 @@ def _detect_bpm(y, sr):
     else:
         confidence = 0.3
 
-    return {"bpm": round(bpm, 1), "confidence": round(confidence, 3)}, beat_frames
+    # Boost confidence if multiple methods agree
+    top_score = scored[0][1]
+    if top_score >= 3.0:
+        confidence = min(1.0, confidence + 0.1)
+    elif top_score <= 1.0:
+        confidence = max(0.0, confidence - 0.1)
+
+    return {
+        "bpm": round(bpm, 1),
+        "confidence": round(confidence, 3),
+        "alternatives": alternatives,
+        "method": "consensus",
+    }, beat_frames
 
 
 def _energy_curve(y, sr):
