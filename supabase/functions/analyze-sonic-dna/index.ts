@@ -129,20 +129,20 @@ Deno.serve(async (req) => {
       updatePayload.key = keyData.key + " " + mode;
     }
 
-    // Genre from mood descriptors — only if track has no genre set by user
-    const firstDescriptor = sonicDna.mood?.descriptors?.[0];
-    if (firstDescriptor) {
+    // Mood descriptors — only if track has no mood set
+    const moodDescriptors = sonicDna.mood?.descriptors;
+    if (Array.isArray(moodDescriptors) && moodDescriptors.length > 0) {
       const { data: trackRow } = await supabaseAdmin
         .from("tracks")
-        .select("genre")
+        .select("mood")
         .eq("id", track_id)
         .single();
-      if (!trackRow?.genre) {
-        updatePayload.genre = firstDescriptor;
+      if (!trackRow?.mood || (Array.isArray(trackRow.mood) && trackRow.mood.length === 0)) {
+        updatePayload.mood = moodDescriptors;
       }
     }
 
-    console.log('[SonicDNA] Updating track BPM:', updatePayload.bpm ?? 'skipped', 'Key:', updatePayload.key ?? 'skipped', 'Genre:', updatePayload.genre ?? 'skipped');
+    console.log('[SonicDNA] Updating track BPM:', updatePayload.bpm ?? 'skipped', 'Key:', updatePayload.key ?? 'skipped', 'Mood:', updatePayload.mood ?? 'skipped');
 
     // 4. Update the track in DB
     try {
