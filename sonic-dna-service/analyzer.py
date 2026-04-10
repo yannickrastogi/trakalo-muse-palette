@@ -52,11 +52,11 @@ def _detect_bpm(y, sr, audio_path):
     raw_bpm = round(float(bpm), 1)
     confidence = round(float(confidence), 3)
 
-    # Normalize BPM into musical range 80-170
+    # Normalize BPM into musical range 80-180
     normalized_bpm = raw_bpm
     while normalized_bpm < 80:
         normalized_bpm *= 2
-    while normalized_bpm > 170:
+    while normalized_bpm > 180:
         normalized_bpm /= 2
     normalized_bpm = round(normalized_bpm, 1)
 
