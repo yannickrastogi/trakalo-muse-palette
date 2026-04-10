@@ -644,6 +644,12 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         })
           .then(res => res.json().then(d => console.log('[SonicDNA] Result:', d)))
           .catch(err => console.error('[SonicDNA] Error:', err));
+
+        // Poll once after 30s to pick up BPM/key/genre from Sonic DNA analysis
+        setTimeout(() => {
+          console.log('[SonicDNA] Auto-refreshing tracks after analysis delay');
+          fetchTracks();
+        }, 30000);
       }
 
       // Refresh tracks to get the new one with correct index
