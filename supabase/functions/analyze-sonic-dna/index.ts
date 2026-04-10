@@ -124,8 +124,12 @@ Deno.serve(async (req) => {
     }
     const keyData = sonicDna.key;
     if (keyData && typeof keyData === "object" && keyData.key && keyData.confidence > 0.7) {
-      updatePayload.key = keyData.key;
+      // Format key to match DB format: "A Min", "C# Maj", etc.
+      const mode = keyData.mode === "Minor" ? "Min" : "Maj";
+      updatePayload.key = keyData.key + " " + mode;
     }
+
+    console.log('[SonicDNA] Updating track BPM:', updatePayload.bpm ?? 'skipped', 'Key:', updatePayload.key ?? 'skipped');
 
     // 4. Update the track in DB
     try {
