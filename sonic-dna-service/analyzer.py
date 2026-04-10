@@ -49,20 +49,36 @@ def _detect_bpm(y, sr, audio_path):
     rhythm_extractor = es.RhythmExtractor2013(method="multifeature")
     bpm, ticks, confidence, estimates, bpmIntervals = rhythm_extractor(audio)
 
-    bpm = round(float(bpm), 1)
+    raw_bpm = round(float(bpm), 1)
     confidence = round(float(confidence), 3)
 
-    # Alternatives: half and double
-    alternatives = sorted(set([round(bpm / 2, 1), bpm, round(bpm * 2, 1)]))
+    # Normalize BPM into musical range 80-170
+    normalized_bpm = raw_bpm
+    while normalized_bpm < 80:
+        normalized_bpm *= 2
+    while normalized_bpm > 170:
+        normalized_bpm /= 2
+    normalized_bpm = round(normalized_bpm, 1)
+
+    was_adjusted = normalized_bpm != raw_bpm
+    primary_bpm = normalized_bpm
+
+    # Alternatives: raw essentia BPM + normalized + half/double of normalized, deduplicated and sorted
+    alternatives = sorted(set([
+        raw_bpm,
+        normalized_bpm,
+        round(normalized_bpm / 2, 1),
+        round(normalized_bpm * 2, 1),
+    ]))
 
     # Beat frames from librosa for tempo_stability (used downstream)
     _, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=512)
 
     return {
-        "bpm": bpm,
+        "bpm": primary_bpm,
         "confidence": confidence,
         "alternatives": alternatives,
-        "method": "essentia_rhythm_extractor",
+        "method": "essentia_rhythm_extractor_normalized" if was_adjusted else "essentia_rhythm_extractor",
     }, beat_frames
 
 
