@@ -42,16 +42,20 @@ def _detect_key(y, sr):
 
 
 def _detect_bpm(y, sr):
-    """Detect BPM with multi-method consensus and double/half correction."""
-    # Method 1: beat_track with hop_length=512
-    tempo1, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=512)
+    """Detect BPM with multi-method consensus, onset autocorrelation, and double/half correction."""
+    hop = 512
+
+    # Method 1: beat_track
+    tempo1, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=hop)
     bpm1 = float(np.atleast_1d(tempo1)[0])
 
+    # Onset envelope (shared by methods 2, 3, 4)
+    oenv = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop)
+
     # Method 2: tempogram peak
-    oenv = librosa.onset.onset_strength(y=y, sr=sr)
-    tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=sr)
+    tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=sr, hop_length=hop)
     avg_tempogram = np.mean(tempogram, axis=1)
-    bpm_axis = librosa.tempo_frequencies(tempogram.shape[0], sr=sr)
+    bpm_axis = librosa.tempo_frequencies(tempogram.shape[0], sr=sr, hop_length=hop)
     valid_mask = (bpm_axis >= 30) & (bpm_axis <= 300)
     if np.any(valid_mask):
         valid_tempos = avg_tempogram[valid_mask]
@@ -60,39 +64,67 @@ def _detect_bpm(y, sr):
     else:
         bpm2 = bpm1
 
-    # Build candidate list with multiples/sub-multiples
-    raw_tempos = [bpm1, bpm2]
+    # Method 3: tempo distribution mode
+    tempo_dist = librosa.beat.tempo(onset_envelope=oenv, sr=sr, hop_length=hop, aggregate=None)
+    if len(tempo_dist) > 0:
+        # Histogram to find mode — bin into 1-BPM buckets
+        hist, bin_edges = np.histogram(tempo_dist, bins=np.arange(30, 301, 1))
+        bpm3 = float(bin_edges[np.argmax(hist)] + 0.5)
+    else:
+        bpm3 = bpm1
+
+    # Method 4: onset autocorrelation
+    fps = sr / hop  # onset frames per second
+    max_lag = int(fps * 60.0 / 40.0)   # 40 BPM lower bound
+    max_lag = min(max_lag, len(oenv) - 1)
+    ac = librosa.autocorrelate(oenv, max_size=max_lag)
+    min_lag = int(fps * 60.0 / 200.0)  # 200 BPM upper bound
+    if min_lag < max_lag and max_lag < len(ac):
+        ac_segment = ac[min_lag:max_lag + 1]
+        best_lag = min_lag + int(np.argmax(ac_segment))
+        bpm4 = 60.0 * fps / best_lag if best_lag > 0 else bpm1
+    else:
+        bpm4 = bpm1
+
+    # Build candidate list with multiples/sub-multiples for each method
+    raw_tempos = [bpm1, bpm2, bpm3, bpm4]
     candidates = []
     for t in raw_tempos:
-        candidates.extend([t / 2.0, t, t * 2.0])
+        for mult in [t / 2.0, t / 1.5, t, t * 1.5, t * 2.0]:
+            if 60.0 <= mult <= 200.0:
+                candidates.append(mult)
 
-    # Filter to plausible range 60-200 BPM
-    candidates = [c for c in candidates if 60.0 <= c <= 200.0]
     if not candidates:
-        # Fallback: use raw tempos with basic correction
         candidates = raw_tempos
 
-    # Score candidates by proximity consensus
-    # For each candidate, count how many raw tempos (or their multiples) agree
-    def _score_candidate(candidate):
-        score = 0.0
-        for t in raw_tempos:
-            for mult in [t / 2.0, t, t * 2.0]:
-                ratio = candidate / mult if mult > 0 else 999
-                if 0.95 <= ratio <= 1.05:
-                    score += 1.0
-                    break
-                elif 0.90 <= ratio <= 1.10:
-                    score += 0.5
-                    break
-        # Prefer the sweet spot 90-150 BPM (covers most popular music)
-        if 90.0 <= candidate <= 150.0:
+    # Group candidates within ±5% of each other and vote
+    groups = []  # list of (representative, [members])
+    for c in candidates:
+        placed = False
+        for g in groups:
+            ratio = c / g[0] if g[0] > 0 else 999
+            if 0.95 <= ratio <= 1.05:
+                g[1].append(c)
+                placed = True
+                break
+        if not placed:
+            groups.append((c, [c]))
+
+    # Score each group
+    def _group_score(rep, members):
+        score = float(len(members))
+        # Bonus for 100-170 BPM range (covers most popular music)
+        if 100.0 <= rep <= 170.0:
+            score += 1.0
+        # Bonus for round tempos (within ±2 BPM of a multiple of 5)
+        nearest_5 = round(rep / 5.0) * 5.0
+        if abs(rep - nearest_5) <= 2.0:
             score += 0.5
         return score
 
-    scored = [(c, _score_candidate(c)) for c in candidates]
-    scored.sort(key=lambda x: -x[1])
-    bpm = scored[0][0]
+    scored_groups = [(np.mean(g[1]), _group_score(np.mean(g[1]), g[1])) for g in groups]
+    scored_groups.sort(key=lambda x: -x[1])
+    bpm = float(scored_groups[0][0])
 
     # Collect unique alternatives in plausible range
     alternatives = sorted(set([round(c, 1) for c in [bpm / 2.0, bpm, bpm * 2.0] if 40.0 <= c <= 300.0]))
@@ -110,11 +142,13 @@ def _detect_bpm(y, sr):
     else:
         confidence = 0.3
 
-    # Boost confidence if multiple methods agree
-    top_score = scored[0][1]
-    if top_score >= 3.0:
+    # Boost confidence based on group consensus strength
+    top_score = scored_groups[0][1]
+    if top_score >= 5.0:
+        confidence = min(1.0, confidence + 0.15)
+    elif top_score >= 3.0:
         confidence = min(1.0, confidence + 0.1)
-    elif top_score <= 1.0:
+    elif top_score <= 1.5:
         confidence = max(0.0, confidence - 0.1)
 
     return {
