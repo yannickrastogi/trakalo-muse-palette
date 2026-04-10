@@ -47,44 +47,21 @@ def _detect_bpm(y, sr):
     tempo1, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=512)
     bpm1 = float(np.atleast_1d(tempo1)[0])
 
-    # Method 2: beat_track with hop_length=1024
-    tempo2, _ = librosa.beat.beat_track(y=y, sr=sr, hop_length=1024)
-    bpm2 = float(np.atleast_1d(tempo2)[0])
-
-    # Method 3: tempogram peak
+    # Method 2: tempogram peak
     oenv = librosa.onset.onset_strength(y=y, sr=sr)
     tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=sr)
-    # Average tempogram across time, find dominant tempo
     avg_tempogram = np.mean(tempogram, axis=1)
-    # BPM axis for tempogram
     bpm_axis = librosa.tempo_frequencies(tempogram.shape[0], sr=sr)
-    # Only consider 30-300 BPM range
     valid_mask = (bpm_axis >= 30) & (bpm_axis <= 300)
     if np.any(valid_mask):
         valid_tempos = avg_tempogram[valid_mask]
         valid_bpms = bpm_axis[valid_mask]
-        bpm3 = float(valid_bpms[np.argmax(valid_tempos)])
+        bpm2 = float(valid_bpms[np.argmax(valid_tempos)])
     else:
-        bpm3 = bpm1
-
-    # Method 4: autocorrelation of onset envelope for confirmation
-    ac = librosa.autocorrelate(oenv, max_size=len(oenv))
-    # Convert lag to BPM, skip lag 0
-    hop_length_default = 512
-    fps = sr / hop_length_default  # frames per second
-    # Find peak in autocorrelation in plausible tempo range (40-200 BPM)
-    min_lag = int(fps * 60.0 / 200.0)  # 200 BPM
-    max_lag = int(fps * 60.0 / 40.0)   # 40 BPM
-    max_lag = min(max_lag, len(ac) - 1)
-    if min_lag < max_lag and max_lag < len(ac):
-        ac_segment = ac[min_lag:max_lag + 1]
-        best_lag = min_lag + int(np.argmax(ac_segment))
-        bpm_ac = 60.0 * fps / best_lag if best_lag > 0 else bpm1
-    else:
-        bpm_ac = bpm1
+        bpm2 = bpm1
 
     # Build candidate list with multiples/sub-multiples
-    raw_tempos = [bpm1, bpm2, bpm3, bpm_ac]
+    raw_tempos = [bpm1, bpm2]
     candidates = []
     for t in raw_tempos:
         candidates.extend([t / 2.0, t, t * 2.0])
@@ -355,7 +332,7 @@ def _tempo_stability(beat_frames, sr):
 
 def analyze(audio_path: str) -> dict:
     """Run full Sonic DNA analysis on an audio file."""
-    y, sr = librosa.load(audio_path, sr=22050, mono=True)
+    y, sr = librosa.load(audio_path, sr=22050, mono=True, duration=180)
     duration = float(len(y) / sr)
 
     # BPM
