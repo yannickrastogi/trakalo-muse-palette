@@ -59,6 +59,9 @@ Deno.serve(async (req) => {
     console.log('[SonicDNA] API URL:', sonicDnaApiUrl);
     console.log('[SonicDNA] API KEY exists:', !!sonicDnaApiKey);
     console.log('[SonicDNA] API KEY length:', sonicDnaApiKey?.length);
+    if (sonicDnaApiKey) {
+      console.log('[SonicDNA] Key preview:', sonicDnaApiKey.substring(0, 6) + '...' + sonicDnaApiKey.substring(sonicDnaApiKey.length - 6));
+    }
 
     if (!sonicDnaApiUrl || !sonicDnaApiKey) {
       return new Response(JSON.stringify({ error: "Sonic DNA API not configured" }), {
@@ -69,6 +72,8 @@ Deno.serve(async (req) => {
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 120000); // 120s timeout
+
+    console.log('[SonicDNA] Calling Railway:', sonicDnaApiUrl + '/analyze');
 
     let analyzeResponse: Response;
     try {
@@ -93,8 +98,10 @@ Deno.serve(async (req) => {
     }
     clearTimeout(timeout);
 
+    console.log('[SonicDNA] Railway response status:', analyzeResponse.status);
     if (!analyzeResponse.ok) {
       const errText = await analyzeResponse.text().catch(() => "Unknown error");
+      console.log('[SonicDNA] Railway error body:', errText);
       return new Response(JSON.stringify({ error: "Sonic DNA API error: " + errText }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
