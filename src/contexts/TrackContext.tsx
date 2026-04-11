@@ -637,24 +637,23 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       // Refresh tracks to get the new one with correct index
       await fetchTracks();
 
-      // Await Sonic DNA analysis and refresh tracks with real BPM/key/genre
+      // Fire-and-forget Sonic DNA analysis — auto-refresh when done
       if (data?.id && trackInput.originalFileUrl) {
         console.log('[SonicDNA] Triggering analysis for track:', data.id, 'path:', trackInput.originalFileUrl);
-        try {
-          const dnaRes = await fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
-            body: JSON.stringify({ track_id: data.id, storage_path: trackInput.originalFileUrl }),
-            signal: AbortSignal.timeout(120000),
-          });
-          const dnaResult = await dnaRes.json();
-          console.log('[SonicDNA] Result:', dnaResult);
-          if (dnaResult?.success) {
-            await fetchTracks();
-          }
-        } catch (err) {
-          console.error('[SonicDNA] Error:', err);
-        }
+        fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
+          body: JSON.stringify({ track_id: data.id, storage_path: trackInput.originalFileUrl }),
+          signal: AbortSignal.timeout(120000),
+        })
+          .then(res => res.json())
+          .then(dnaResult => {
+            console.log('[SonicDNA] Result:', dnaResult);
+            if (dnaResult?.success) {
+              fetchTracks();
+            }
+          })
+          .catch(err => console.error('[SonicDNA] Error:', err));
       }
 
       // Return the newly created track
