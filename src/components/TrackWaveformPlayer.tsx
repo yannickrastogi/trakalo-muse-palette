@@ -210,6 +210,32 @@ export function TrackWaveformPlayer({
 
   return (
     <div className={`space-y-1 ${className}`}>
+      {/* Edit/Done bar above waveform */}
+      {displayChapters.length > 0 && editable && (
+        <div className="flex items-center justify-end gap-2">
+          {editMode ? (
+            <>
+              <span className="text-xs text-muted-foreground mr-auto">
+                Double-click waveform to add a marker · Double-click label to rename
+              </span>
+              <button
+                className="h-6 px-3 flex-shrink-0 rounded-md bg-primary text-primary-foreground text-[10px] font-medium hover:bg-primary/90 transition-colors"
+                onClick={exitEditMode}
+              >
+                Done
+              </button>
+            </>
+          ) : (
+            <button
+              className="h-6 px-2 flex-shrink-0 flex items-center gap-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors text-[10px] font-medium"
+              onClick={enterEditMode}
+            >
+              <Pencil className="w-3 h-3" />
+              Edit Sections
+            </button>
+          )}
+        </div>
+      )}
       {/* Waveform */}
       <div
         className={`relative group ${editMode ? "ring-1 ring-primary/30 rounded cursor-crosshair" : "cursor-pointer"}`}
@@ -375,29 +401,7 @@ export function TrackWaveformPlayer({
               );
             })}
           </div>
-          {editable && !editMode && (
-            <button
-              className="h-6 px-2 flex-shrink-0 flex items-center gap-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors text-[10px] font-medium"
-              onClick={enterEditMode}
-            >
-              <Pencil className="w-3 h-3" />
-              Edit Sections
-            </button>
-          )}
-          {editMode && (
-            <button
-              className="h-6 px-3 flex-shrink-0 rounded-md bg-primary text-primary-foreground text-[10px] font-medium hover:bg-primary/90 transition-colors"
-              onClick={exitEditMode}
-            >
-              Done
-            </button>
-          )}
         </div>
-        {editMode && (
-          <span className="text-xs text-muted-foreground">
-            Double-click waveform to add a marker · Double-click label to rename
-          </span>
-        )}
         </>
       )}
 
