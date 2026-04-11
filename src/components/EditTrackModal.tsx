@@ -350,7 +350,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 </div>
                 <div className="space-y-1.5">
                   <FieldLabel>{t("editTrack.key")}</FieldLabel>
-                  <FieldSelect value={trackKey} onChange={setTrackKey} options={KEYS} placeholder={t("editTrack.selectKey")} />
+                  <FieldSelect value={trackKey} onChange={setTrackKey} options={trackKey && !(KEYS as readonly string[]).includes(trackKey) ? [trackKey, ...KEYS] : KEYS} placeholder={t("editTrack.selectKey")} />
                   {initialKey && trackKey !== initialKey && (
                     <p className="text-2xs text-amber-500 mt-0.5">⚠️ Sonic DNA detected {initialKey}. Are you sure you want to change this?</p>
                   )}

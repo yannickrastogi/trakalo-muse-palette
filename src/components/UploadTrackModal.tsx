@@ -1237,7 +1237,7 @@ function StepInfo({
           </div>
           <div className="space-y-1.5">
             <FieldLabel>{t("uploadTrack.key")}</FieldLabel>
-            <FieldSelect value={trackKey} onChange={setTrackKey} options={KEYS} placeholder={t("uploadTrack.selectKey")} />
+            <FieldSelect value={trackKey} onChange={setTrackKey} options={trackKey && !(KEYS as readonly string[]).includes(trackKey) ? [trackKey, ...KEYS] : KEYS} placeholder={t("uploadTrack.selectKey")} />
           </div>
         </div>
       )}
