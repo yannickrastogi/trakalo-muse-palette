@@ -805,8 +805,53 @@ export default function TrackDetail() {
                   chapters={track.chapters || []}
                   isPlaying={isThisTrackPlaying}
                   editable={!isViewerShared && permissions.canEditTracks}
-                  onChaptersChange={(newChapters) => {
+                  onChaptersChange={async (newChapters) => {
                     updateTrack(track.id, { chapters: newChapters });
+
+                    // Sync to sonic_dna.structure if sonic_dna exists
+                    const { data: row } = await supabase
+                      .from("tracks")
+                      .select("sonic_dna")
+                      .eq("id", track.uuid)
+                      .single();
+
+                    const existingSonicDna = row?.sonic_dna as Record<string, unknown> | null;
+                    if (!existingSonicDna) {
+                      toast.success("Sections saved");
+                      return;
+                    }
+
+                    toast("Updating Sonic DNA...");
+                    const durationSec = totalDurationSeconds || 1;
+                    const oldStructure = (existingSonicDna.structure as Array<{ start_sec?: number; end_sec?: number; energy_avg?: number | null }>) || [];
+
+                    const newStructure = newChapters.map((ch) => {
+                      const startSec = ch.startSec ?? (ch.startPercent * durationSec) / 100;
+                      const endSec = ch.endSec ?? (ch.endPercent * durationSec) / 100;
+                      // Try to find a matching old segment to preserve energy_avg
+                      const match = oldStructure.find(
+                        (old) => old.start_sec != null && old.end_sec != null && Math.abs(old.start_sec - startSec) < 2 && Math.abs(old.end_sec - endSec) < 2
+                      );
+                      return {
+                        type: ch.label.toLowerCase().replace(/\s+\d+$/, ""),
+                        start_sec: Math.round(startSec * 100) / 100,
+                        end_sec: Math.round(endSec * 100) / 100,
+                        energy_avg: match?.energy_avg ?? null,
+                      };
+                    });
+
+                    const updatedSonicDna = { ...existingSonicDna, structure: newStructure };
+                    const { error } = await supabase
+                      .from("tracks")
+                      .update({ sonic_dna: updatedSonicDna })
+                      .eq("id", track.uuid);
+
+                    if (error) {
+                      console.error("Failed to update sonic_dna.structure:", error);
+                      toast.error("Failed to update Sonic DNA");
+                    } else {
+                      toast.success("Sections saved to Sonic DNA");
+                    }
                   }}
                 />
                 <CommentMarkerLayer
