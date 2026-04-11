@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import type { TrackChapter } from "@/contexts/TrackContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { X, Pencil } from "lucide-react";
+import { X, Pencil, Scissors } from "lucide-react";
 
 const COLOR_PALETTE = [
   "hsl(var(--primary))",
@@ -209,7 +209,7 @@ export function TrackWaveformPlayer({
     <div className={`space-y-1 ${className}`}>
       {/* Waveform */}
       <div
-        className={`relative cursor-pointer group ${editMode ? "ring-1 ring-primary/30 rounded" : ""}`}
+        className={`relative group ${editMode ? "ring-1 ring-primary/30 rounded cursor-crosshair" : "cursor-pointer"}`}
         onClick={handleClick}
         onDoubleClick={(e) => {
           if (!editMode && onDoubleClick) {
@@ -284,6 +284,7 @@ export function TrackWaveformPlayer({
 
       {/* Chapter lane */}
       {displayChapters.length > 0 && (
+        <>
         <div className="flex items-center gap-1">
           <div className="relative h-6 flex rounded-md overflow-hidden border border-border/50 flex-1">
             {displayChapters.map((ch) => {
@@ -370,48 +371,59 @@ export function TrackWaveformPlayer({
             })}
           </div>
           {editable && !editMode && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  className="h-6 w-6 flex-shrink-0 flex items-center justify-center rounded-md border border-border/50 text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
-                  onClick={enterEditMode}
-                >
-                  <Pencil className="w-3 h-3" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">
-                Edit sections
-              </TooltipContent>
-            </Tooltip>
-          )}
-          {editMode && (
             <button
-              className="h-6 px-2 flex-shrink-0 flex items-center justify-center rounded-md border border-primary/50 text-primary text-[10px] font-medium hover:bg-primary/10 transition-colors"
-              onClick={exitEditMode}
+              className="h-6 px-2 flex-shrink-0 flex items-center gap-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors text-[10px] font-medium"
+              onClick={enterEditMode}
             >
-              Done
+              <Pencil className="w-3 h-3" />
+              Edit Sections
             </button>
           )}
         </div>
-      )}
-
-      {/* Empty state: Add Sections button or Done button */}
-      {displayChapters.length === 0 && editable && (
-        <div>
-          {!editMode ? (
+        {editMode && (
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              Click waveform to add a marker · Double-click label to rename
+            </span>
             <button
-              className="h-6 px-3 text-[10px] font-medium text-muted-foreground border border-border/50 rounded-md hover:text-foreground hover:bg-secondary/80 transition-colors"
-              onClick={enterEditMode}
-            >
-              Add Sections
-            </button>
-          ) : (
-            <button
-              className="h-6 px-3 text-[10px] font-medium text-primary border border-primary/50 rounded-md hover:bg-primary/10 transition-colors"
+              className="h-6 px-3 flex-shrink-0 rounded-md bg-primary text-primary-foreground text-[10px] font-medium hover:bg-primary/90 transition-colors"
               onClick={exitEditMode}
             >
               Done
             </button>
+          </div>
+        )}
+        </>
+      )}
+
+      {/* Empty state: Add Sections button or edit mode instructions */}
+      {displayChapters.length === 0 && editable && (
+        <div>
+          {!editMode ? (
+            <div className="flex flex-col items-center gap-1 py-1">
+              <button
+                className="h-7 px-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md transition-colors"
+                onClick={enterEditMode}
+              >
+                <Scissors className="w-3.5 h-3.5" />
+                Add Sections
+              </button>
+              <span className="text-[10px] text-muted-foreground">
+                Click on the waveform to mark sections
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                Click waveform to add a marker · Double-click label to rename
+              </span>
+              <button
+                className="h-6 px-3 flex-shrink-0 rounded-md bg-primary text-primary-foreground text-[10px] font-medium hover:bg-primary/90 transition-colors"
+                onClick={exitEditMode}
+              >
+                Done
+              </button>
+            </div>
           )}
         </div>
       )}
