@@ -152,32 +152,60 @@ def _detect_structure(y, sr, energy_curve_data):
         else:
             seg_energy = 0.0
 
-        # Heuristic section type
-        is_first = idx == 0
-        is_last = idx == len(boundaries) - 2
-        seg_duration = end_sec - start_sec
-
-        if is_first and seg_energy < 0.4 and seg_duration < 20:
-            seg_type = "intro"
-        elif is_last and seg_energy < 0.4 and seg_duration < 15:
-            seg_type = "outro"
-        elif seg_energy > 0.7:
-            seg_type = "chorus"
-        elif seg_energy > 0.4:
-            seg_type = "verse"
-        elif seg_energy < 0.3:
-            seg_type = "bridge"
-        else:
-            seg_type = "verse"
-
         segments.append({
-            "type": seg_type,
             "start_sec": round(float(start_sec), 2),
             "end_sec": round(float(end_sec), 2),
             "energy_avg": round(seg_energy, 3),
         })
 
+    # --- Labeling pass: relative energy + position heuristics ---
+    if not segments:
+        return segments
+
+    avg_energy = float(np.mean([s["energy_avg"] for s in segments]))
+    num_segments = len(segments)
+
+    for idx, seg in enumerate(segments):
+        seg_duration = seg["end_sec"] - seg["start_sec"]
+        is_first = idx == 0
+        is_last = idx == num_segments - 1
+
+        if is_first:
+            seg["type"] = "intro" if seg_duration < 20 else "verse"
+        elif is_last:
+            seg["type"] = "outro" if seg_duration < 15 else _label_by_energy(seg["energy_avg"], avg_energy)
+        else:
+            seg["type"] = _label_by_energy(seg["energy_avg"], avg_energy)
+
+    # Short segments (< 5s) between two high-energy sections → "break"
+    for idx in range(1, num_segments - 1):
+        seg_duration = segments[idx]["end_sec"] - segments[idx]["start_sec"]
+        if seg_duration < 5:
+            prev_high = segments[idx - 1]["energy_avg"] > avg_energy
+            next_high = segments[idx + 1]["energy_avg"] > avg_energy
+            if prev_high and next_high:
+                segments[idx]["type"] = "break"
+
+    # Alternation rule: resolve consecutive duplicate labels
+    for idx in range(1, num_segments):
+        if segments[idx]["type"] == segments[idx - 1]["type"] and segments[idx]["type"] in ("verse", "chorus", "bridge"):
+            if idx + 1 < num_segments and segments[idx + 1]["type"] == "chorus":
+                segments[idx]["type"] = "pre-chorus"
+            elif segments[idx - 1]["type"] == "chorus":
+                segments[idx]["type"] = "verse"
+
     return segments
+
+
+def _label_by_energy(energy: float, avg_energy: float) -> str:
+    """Label a segment based on its energy relative to the track average."""
+    if avg_energy <= 0:
+        return "verse"
+    if energy > 1.15 * avg_energy:
+        return "chorus"
+    if energy < 0.7 * avg_energy:
+        return "bridge"
+    return "verse"
 
 
 def _detect_mood(y, sr, bpm, key_info):
