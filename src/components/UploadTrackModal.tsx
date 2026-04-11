@@ -85,6 +85,7 @@ interface TrackEntry {
   trackKey: string;
   genre: string;
   mood: string[];
+  trackType: string;
   voice: string;
   language: string;
   notes: string;
@@ -138,6 +139,7 @@ function createTrackEntry(file: File): TrackEntry {
     trackKey: "",
     genre: "",
     mood: [],
+    trackType: "Song",
     voice: "",
     language: "",
     notes: "",
@@ -475,7 +477,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         status: "Available",
         language: currentTrack.language || "",
         voice: currentTrack.voice || "N/A",
-        type: "Song",
+        type: currentTrack.trackType || "Song",
         originalFileUrl: audioUrl,
         previewFileUrl: undefined,
         originalFileName: currentTrack.fileName,
@@ -778,6 +780,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   trackKey={currentTrack.trackKey} setTrackKey={(v) => updateCurrent({ trackKey: v })}
                   genre={currentTrack.genre} setGenre={(v) => updateCurrent({ genre: v })}
                   mood={currentTrack.mood} toggleMood={toggleMood} addCustomMood={addCustomMood}
+                  trackType={currentTrack.trackType} setTrackType={(v) => updateCurrent({ trackType: v })}
                   voice={currentTrack.voice} setVoice={(v) => updateCurrent({ voice: v })}
                   language={currentTrack.language} setLanguage={(v) => updateCurrent({ language: v })}
                   notes={currentTrack.notes} setNotes={(v) => updateCurrent({ notes: v })}
@@ -818,6 +821,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   title={currentTrack.title} artist={currentTrack.artist}
                   bpm={currentTrack.bpm} trackKey={currentTrack.trackKey}
                   genre={currentTrack.genre} mood={currentTrack.mood}
+                  trackType={currentTrack.trackType}
                   voice={currentTrack.voice}
                   language={currentTrack.language} notes={currentTrack.notes}
                   audioFile={currentTrack.file} stems={currentTrack.stems}
@@ -1098,6 +1102,7 @@ function StepBulkUpload({
 function StepInfo({
   title, setTitle, artist, setArtist, bpm, setBpm,
   trackKey, setTrackKey, genre, setGenre, mood, toggleMood, addCustomMood,
+  trackType, setTrackType,
   voice, setVoice,
   language, setLanguage, notes, setNotes,
   details, updateDetail, addDetailEntry, removeDetailEntry,
@@ -1110,6 +1115,7 @@ function StepInfo({
   trackKey: string; setTrackKey: (v: string) => void;
   genre: string; setGenre: (v: string) => void;
   mood: string[]; toggleMood: (v: string) => void; addCustomMood: (v: string) => void;
+  trackType: string; setTrackType: (v: string) => void;
   voice: string; setVoice: (v: string) => void;
   language: string; setLanguage: (v: string) => void;
   notes: string; setNotes: (v: string) => void;
@@ -1339,9 +1345,15 @@ function StepInfo({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
+          <FieldLabel>{t("uploadTrack.type", "Type")}</FieldLabel>
+          <FieldSelect value={trackType} onChange={setTrackType} options={["Song", "Instrumental", "Sample", "Acapella"]} placeholder={t("uploadTrack.selectType", "Select type")} />
+        </div>
+        <div className="space-y-1.5">
           <FieldLabel>{t("editTrack.gender", "Gender")}</FieldLabel>
           <FieldSelect value={voice} onChange={setVoice} options={["Male", "Female", "Duet", "N/A"]} placeholder={t("uploadTrack.selectGender", "Select gender")} />
         </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <FieldLabel>{t("uploadTrack.language")}</FieldLabel>
           <FieldSelect value={language} onChange={setLanguage} options={LANGUAGES} placeholder={t("uploadTrack.selectLanguage")} />
@@ -1601,11 +1613,11 @@ function StepLyrics({
 /* ─── Review Step ─── */
 
 function StepReview({
-  title, artist, bpm, trackKey, genre, mood, voice, language, notes,
+  title, artist, bpm, trackKey, genre, mood, trackType, voice, language, notes,
   audioFile, stems, splits, totalSplit, details, lyrics, coverFile,
 }: {
   title: string; artist: string; bpm: string; trackKey: string;
-  genre: string; mood: string[]; voice: string; language: string; notes: string;
+  genre: string; mood: string[]; trackType: string; voice: string; language: string; notes: string;
   audioFile: File | null; stems: StemFile[]; splits: Split[]; totalSplit: number;
   details: Record<string, string[]>;
   lyrics?: string;
@@ -1657,6 +1669,7 @@ function StepReview({
           <ReviewRow label={t("uploadTrack.bpm")} value={bpm || "—"} />
           <ReviewRow label={t("uploadTrack.key")} value={trackKey || "—"} />
           <ReviewRow label={t("uploadTrack.genre")} value={genre || "—"} />
+          <ReviewRow label={t("uploadTrack.type", "Type")} value={trackType || "—"} />
           <ReviewRow label={t("editTrack.gender", "Gender")} value={voice || "—"} />
           <ReviewRow label={t("uploadTrack.language")} value={language || "—"} />
         </div>
