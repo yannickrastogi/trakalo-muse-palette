@@ -142,7 +142,50 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log('[SonicDNA] Updating track BPM:', updatePayload.bpm ?? 'skipped', 'Key:', updatePayload.key ?? 'skipped', 'Mood:', updatePayload.mood ?? 'skipped');
+    // Convert structure segments to chapters format
+    const structureSegments = sonicDna.structure;
+    const durationSec = sonicDna.duration_sec;
+    if (Array.isArray(structureSegments) && structureSegments.length > 0 && durationSec > 0) {
+      const colorPalette = [
+        "hsl(var(--primary))",
+        "hsl(var(--brand-pink))",
+        "hsl(var(--brand-purple))",
+        "hsl(var(--brand-orange))",
+        "hsl(var(--accent))",
+        "hsl(var(--chart-4))",
+        "hsl(var(--chart-5))",
+      ];
+
+      // Count occurrences of each type to decide numbering
+      const typeCounts: Record<string, number> = {};
+      for (const seg of structureSegments) {
+        const t = seg.type ?? "section";
+        typeCounts[t] = (typeCounts[t] || 0) + 1;
+      }
+
+      const typeIndexes: Record<string, number> = {};
+      const chapters = structureSegments.map((seg: { type?: string; start_sec: number; end_sec: number }, index: number) => {
+        const rawType = seg.type ?? "section";
+        const capitalized = rawType.charAt(0).toUpperCase() + rawType.slice(1);
+        typeIndexes[rawType] = (typeIndexes[rawType] || 0) + 1;
+        const label = typeCounts[rawType] > 1
+          ? `${capitalized} ${typeIndexes[rawType]}`
+          : capitalized;
+
+        return {
+          id: "ch-" + index,
+          label,
+          startPercent: Math.round((seg.start_sec / durationSec) * 10000) / 100,
+          endPercent: Math.round((seg.end_sec / durationSec) * 10000) / 100,
+          startSec: seg.start_sec,
+          color: colorPalette[index % colorPalette.length],
+        };
+      });
+
+      updatePayload.chapters = chapters;
+    }
+
+    console.log('[SonicDNA] Updating track BPM:', updatePayload.bpm ?? 'skipped', 'Key:', updatePayload.key ?? 'skipped', 'Mood:', updatePayload.mood ?? 'skipped', 'Chapters:', updatePayload.chapters ? (updatePayload.chapters as unknown[]).length : 'skipped');
 
     // 4. Update the track in DB
     try {
