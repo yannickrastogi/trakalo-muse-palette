@@ -102,8 +102,6 @@ import { STEM_TYPES, DEFAULT_COVER } from "@/lib/constants";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { generateWaveform } from "@/lib/waveformGenerator";
 import { toast } from "sonner";
-import { analyzeWithEssentia } from "@/lib/audioAnalyzer";
-import { analyzeAudio } from "@/lib/audio-analysis";
 import type { StemType } from "@/lib/constants";
 
 interface StemFile {
@@ -668,7 +666,7 @@ export default function TrackDetail() {
                               )}
                               <DropdownMenuItem onClick={async () => {
                                 try {
-                                  toast.info("Analyzing audio…");
+                                  toast.info("Sonic DNA analysis in progress…");
 
                                   // 1. Fetch raw storage path from DB
                                   const { data: row, error: fetchErr } = await supabase
@@ -679,38 +677,24 @@ export default function TrackDetail() {
                                   if (fetchErr) throw new Error("Could not fetch track: " + fetchErr.message);
                                   if (!row?.audio_url) throw new Error("No audio file linked to this track");
 
-                                  // 2. Download from Storage
-                                  const { data: fileData, error: dlErr } = await supabase.storage
-                                    .from("tracks")
-                                    .download(row.audio_url as string);
-                                  if (dlErr) throw new Error("Download failed: " + dlErr.message);
-                                  if (!fileData) throw new Error("Download returned empty data");
-
-                                  // 3. Analyze with Essentia + structure detection in parallel
-                                  const audioFile = new File([fileData], "audio.wav", { type: fileData.type || "audio/wav" });
-                                  const [features, structureResult] = await Promise.all([
-                                    analyzeWithEssentia(audioFile),
-                                    analyzeAudio(audioFile).catch(function () { return null; }),
-                                  ]);
-
-                                  // 4. Persist results (including chapters from structure analysis)
-                                  const updatePayload: Record<string, unknown> = {
-                                    bpm: features.bpm,
-                                    key: features.key,
-                                    genre: features.genre,
-                                    mood: features.mood,
-                                  };
-                                  if (structureResult && structureResult.chapters) {
-                                    updatePayload.chapters = structureResult.chapters;
-                                  }
-                                  const { error: updateErr } = await supabase
-                                    .from("tracks")
-                                    .update(updatePayload)
-                                    .eq("id", track.uuid);
-                                  if (updateErr) throw new Error("DB update failed: " + updateErr.message);
+                                  // 2. Call Sonic DNA Edge Function
+                                  const res = await fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+                                    },
+                                    body: JSON.stringify({ track_id: track.uuid, storage_path: row.audio_url }),
+                                  });
+                                  const result = await res.json();
+                                  if (!res.ok) throw new Error(result.error || "Sonic DNA analysis failed");
 
                                   refreshTracks();
-                                  toast.success("Analysis complete: " + features.bpm + " BPM, " + features.key + (structureResult ? " · " + (structureResult.chapters?.length || 0) + " sections" : ""));
+                                  const bpm = result.sonic_dna?.bpm?.bpm;
+                                  const key = result.sonic_dna?.key?.key;
+                                  const mode = result.sonic_dna?.key?.mode;
+                                  const keyLabel = key ? key + " " + (mode === "Minor" ? "Min" : "Maj") : null;
+                                  toast.success("Sonic DNA complete" + (bpm ? ": " + Math.round(bpm) + " BPM" : "") + (keyLabel ? ", " + keyLabel : ""));
                                 } catch (err: any) {
                                   console.error("Re-analyze failed:", err);
                                   toast.error("Re-analysis failed: " + (err?.message || "unknown error"));
@@ -819,6 +803,10 @@ export default function TrackDetail() {
                   onDoubleClick={handleWaveformDoubleClick}
                   chapters={track.chapters || []}
                   isPlaying={isThisTrackPlaying}
+                  editable={!isViewerShared && permissions.canEditTracks}
+                  onChaptersChange={(newChapters) => {
+                    updateTrack(track.id, { chapters: newChapters });
+                  }}
                 />
                 <CommentMarkerLayer
                   comments={trackComments}

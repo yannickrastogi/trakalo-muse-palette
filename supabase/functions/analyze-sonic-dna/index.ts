@@ -129,47 +129,7 @@ Deno.serve(async (req) => {
       updatePayload.key = keyData.key + " " + mode;
     }
 
-    // Convert structure segments to chapters format
-    const structureSegments = sonicDna.structure;
-    const durationSec = sonicDna.duration_sec;
-    if (Array.isArray(structureSegments) && structureSegments.length > 0 && durationSec > 0) {
-      const colorPalette = [
-        "hsl(var(--primary))",
-        "hsl(var(--brand-pink))",
-        "hsl(var(--brand-purple))",
-        "hsl(var(--brand-orange))",
-        "hsl(var(--accent))",
-        "hsl(var(--chart-4))",
-        "hsl(var(--chart-5))",
-      ];
-
-      let sectionCounter = 0;
-      const chapters = structureSegments.map((seg: { type?: string; start_sec: number; end_sec: number }, index: number) => {
-        const rawType = seg.type ?? "section";
-        let label: string;
-        if (rawType === "intro") {
-          label = "Intro";
-        } else if (rawType === "outro") {
-          label = "Outro";
-        } else {
-          sectionCounter++;
-          label = `Section ${sectionCounter}`;
-        }
-
-        return {
-          id: "ch-" + index,
-          label,
-          startPercent: Math.round((seg.start_sec / durationSec) * 10000) / 100,
-          endPercent: Math.round((seg.end_sec / durationSec) * 10000) / 100,
-          startSec: seg.start_sec,
-          color: colorPalette[index % colorPalette.length],
-        };
-      });
-
-      updatePayload.chapters = chapters;
-    }
-
-    console.log('[SonicDNA] Updating track BPM:', updatePayload.bpm ?? 'skipped', 'Key:', updatePayload.key ?? 'skipped', 'Chapters:', updatePayload.chapters ? (updatePayload.chapters as unknown[]).length : 'skipped');
+    console.log('[SonicDNA] Updating track BPM:', updatePayload.bpm ?? 'skipped', 'Key:', updatePayload.key ?? 'skipped');
 
     // 4. Update the track in DB
     try {
