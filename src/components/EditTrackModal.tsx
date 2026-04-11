@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -98,16 +98,28 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
   const [details, setDetails] = useState<Record<string, string[]>>({});
   const [showDetails, setShowDetails] = useState(false);
   const [splits, setSplits] = useState<TrackSplit[]>([]);
+  const [initialBpm, setInitialBpm] = useState("");
+  const [initialKey, setInitialKey] = useState("");
+  const populatedRef = useRef(false);
 
-  // Populate form when modal opens
+  // Reset populated flag when modal closes
   useEffect(() => {
-    if (open && trackData) {
+    if (!open) populatedRef.current = false;
+  }, [open]);
+
+  // Populate form when modal opens (or when trackData arrives)
+  useEffect(() => {
+    if (open && trackData && !populatedRef.current) {
+      populatedRef.current = true;
       setTitle(trackData.title);
       setArtist(trackData.artist);
       setFeaturedArtists(trackData.featuredArtists.join(", "));
       setAlbum(trackData.album);
-      setBpm(String(trackData.bpm || ""));
+      const bpmStr = String(trackData.bpm || "");
+      setBpm(bpmStr);
+      setInitialBpm(bpmStr);
       setTrackKey(trackData.key);
+      setInitialKey(trackData.key);
       setGenre(trackData.genre);
       setMood([...trackData.mood]);
       setVoice(trackData.voice || "");
@@ -124,7 +136,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       setDetails(JSON.parse(JSON.stringify(trackData.details || {})));
       setSplits(trackData.splits?.length ? trackData.splits.map(s => ({ ...s })) : [{ id: "1", name: "", role: "", share: 100, pro: "", ipi: "", publisher: "" }]);
     }
-  }, [open, trackId]);
+  }, [open, trackId, trackData]);
 
   const toggleMood = (m: string) => {
     setMood((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : prev.length < 8 ? [...prev, m] : prev);
@@ -332,10 +344,16 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 <div className="space-y-1.5">
                   <FieldLabel>{t("editTrack.bpm")}</FieldLabel>
                   <FieldInput value={bpm} onChange={setBpm} placeholder="120" type="number" />
+                  {initialBpm && bpm !== initialBpm && (
+                    <p className="text-2xs text-amber-500 mt-0.5">⚠️ Sonic DNA detected {initialBpm}. Are you sure you want to change this?</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <FieldLabel>{t("editTrack.key")}</FieldLabel>
                   <FieldSelect value={trackKey} onChange={setTrackKey} options={KEYS} placeholder={t("editTrack.selectKey")} />
+                  {initialKey && trackKey !== initialKey && (
+                    <p className="text-2xs text-amber-500 mt-0.5">⚠️ Sonic DNA detected {initialKey}. Are you sure you want to change this?</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <FieldLabel>{t("editTrack.genre")}</FieldLabel>
