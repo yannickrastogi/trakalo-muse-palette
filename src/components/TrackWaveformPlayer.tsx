@@ -384,19 +384,19 @@ export function TrackWaveformPlayer({
               Edit Sections
             </button>
           )}
-        </div>
-        {editMode && (
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
-              Double-click waveform to add a marker · Double-click label to rename
-            </span>
+          {editMode && (
             <button
               className="h-6 px-3 flex-shrink-0 rounded-md bg-primary text-primary-foreground text-[10px] font-medium hover:bg-primary/90 transition-colors"
               onClick={exitEditMode}
             >
               Done
             </button>
-          </div>
+          )}
+        </div>
+        {editMode && (
+          <span className="text-xs text-muted-foreground">
+            Double-click waveform to add a marker · Double-click label to rename
+          </span>
         )}
         </>
       )}
