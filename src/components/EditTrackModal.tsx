@@ -11,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useTrack, type TrackData, type TrackSplit } from "@/contexts/TrackContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 import { GENRES, KEYS, MOODS, LANGUAGES } from "@/lib/constants";
@@ -126,7 +127,17 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
   }, [open, trackId]);
 
   const toggleMood = (m: string) => {
-    setMood((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]);
+    setMood((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : prev.length < 8 ? [...prev, m] : prev);
+  };
+
+  const addCustomMood = (tag: string) => {
+    const normalized = tag.trim().toLowerCase().replace(/^#/, "");
+    if (!normalized) return;
+    setMood((prev) => {
+      if (prev.includes(normalized)) return prev;
+      if (prev.length >= 8) return prev;
+      return [...prev, normalized];
+    });
   };
 
   const updateDetail = (key: string, index: number, value: string) => {
@@ -194,7 +205,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
 
   const totalSplit = splits.reduce((sum, s) => sum + (Number(s.share) || 0), 0);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim() || !artist.trim()) {
       toast.error(t("editTrack.titleRequired"));
       return;
@@ -225,6 +236,35 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
 
     updateTrack(trackId, updates);
     updateTrackSplits(trackId, splits.filter(s => s.name.trim()));
+
+    // Sync mood tags to sonic_dna.mood.descriptors
+    if (trackData?.uuid) {
+      try {
+        const { data: row } = await supabase
+          .from("tracks")
+          .select("sonic_dna")
+          .eq("id", trackData.uuid)
+          .single();
+
+        const existingSonicDna = row?.sonic_dna as Record<string, unknown> | null;
+        if (existingSonicDna) {
+          const updatedSonicDna = {
+            ...existingSonicDna,
+            mood: {
+              ...(existingSonicDna.mood as Record<string, unknown> || {}),
+              descriptors: mood,
+            },
+          };
+          await supabase
+            .from("tracks")
+            .update({ sonic_dna: updatedSonicDna })
+            .eq("id", trackData.uuid);
+        }
+      } catch (err) {
+        console.error("Failed to sync mood to sonic_dna:", err);
+      }
+    }
+
     toast.success(t("editTrack.trackUpdated"));
     onClose();
   };
@@ -348,7 +388,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
 
               {/* Mood Tags */}
               <div className="space-y-1.5">
-                <FieldLabel>{t("editTrack.mood")}</FieldLabel>
+                <FieldLabel>{t("editTrack.mood")} <span className="text-muted-foreground/50 normal-case tracking-normal font-normal">({mood.length}/8)</span></FieldLabel>
                 <div className="flex flex-wrap gap-1.5">
                   {MOODS.map((m) => (
                     <button
@@ -363,7 +403,29 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                       #{m}
                     </button>
                   ))}
+                  {mood.filter((m) => !(MOODS as readonly string[]).includes(m)).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => toggleMood(m)}
+                      className="px-2.5 py-1 rounded-full text-2xs font-semibold transition-all bg-brand-orange/15 text-brand-orange border border-brand-orange/30 flex items-center gap-1"
+                    >
+                      #{m}
+                      <X className="w-3 h-3" />
+                    </button>
+                  ))}
                 </div>
+                <input
+                  type="text"
+                  placeholder="Add custom tag..."
+                  className="h-7 px-2.5 rounded-full bg-secondary border border-border text-2xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40 w-36"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addCustomMood((e.target as HTMLInputElement).value);
+                      (e.target as HTMLInputElement).value = "";
+                    }
+                  }}
+                />
               </div>
 
               {/* ISRC, UPC, Release Date */}

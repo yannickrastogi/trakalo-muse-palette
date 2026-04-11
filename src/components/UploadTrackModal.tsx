@@ -259,8 +259,20 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   const toggleMood = useCallback((m: string) => {
     if (!currentTrack) return;
-    const mood = currentTrack.mood.includes(m) ? currentTrack.mood.filter((x) => x !== m) : [...currentTrack.mood, m];
-    updateCurrent({ mood });
+    if (currentTrack.mood.includes(m)) {
+      updateCurrent({ mood: currentTrack.mood.filter((x) => x !== m) });
+    } else if (currentTrack.mood.length < 8) {
+      updateCurrent({ mood: [...currentTrack.mood, m] });
+    }
+  }, [currentTrack, updateCurrent]);
+
+  const addCustomMood = useCallback((tag: string) => {
+    if (!currentTrack) return;
+    const normalized = tag.trim().toLowerCase().replace(/^#/, "");
+    if (!normalized) return;
+    if (currentTrack.mood.includes(normalized)) return;
+    if (currentTrack.mood.length >= 8) return;
+    updateCurrent({ mood: [...currentTrack.mood, normalized] });
   }, [currentTrack, updateCurrent]);
 
   const updateDetail = useCallback((key: string, index: number, value: string) => {
@@ -742,7 +754,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   bpm={currentTrack.bpm} setBpm={(v) => updateCurrent({ bpm: v })}
                   trackKey={currentTrack.trackKey} setTrackKey={(v) => updateCurrent({ trackKey: v })}
                   genre={currentTrack.genre} setGenre={(v) => updateCurrent({ genre: v })}
-                  mood={currentTrack.mood} toggleMood={toggleMood}
+                  mood={currentTrack.mood} toggleMood={toggleMood} addCustomMood={addCustomMood}
                   voice={currentTrack.voice} setVoice={(v) => updateCurrent({ voice: v })}
                   language={currentTrack.language} setLanguage={(v) => updateCurrent({ language: v })}
                   notes={currentTrack.notes} setNotes={(v) => updateCurrent({ notes: v })}
@@ -1062,7 +1074,7 @@ function StepBulkUpload({
 
 function StepInfo({
   title, setTitle, artist, setArtist, bpm, setBpm,
-  trackKey, setTrackKey, genre, setGenre, mood, toggleMood,
+  trackKey, setTrackKey, genre, setGenre, mood, toggleMood, addCustomMood,
   voice, setVoice,
   language, setLanguage, notes, setNotes,
   details, updateDetail, addDetailEntry, removeDetailEntry,
@@ -1074,7 +1086,7 @@ function StepInfo({
   bpm: string; setBpm: (v: string) => void;
   trackKey: string; setTrackKey: (v: string) => void;
   genre: string; setGenre: (v: string) => void;
-  mood: string[]; toggleMood: (v: string) => void;
+  mood: string[]; toggleMood: (v: string) => void; addCustomMood: (v: string) => void;
   voice: string; setVoice: (v: string) => void;
   language: string; setLanguage: (v: string) => void;
   notes: string; setNotes: (v: string) => void;
@@ -1263,7 +1275,7 @@ function StepInfo({
         </div>
       </div>
       <div className="space-y-1.5">
-        <FieldLabel>{t("uploadTrack.mood")}</FieldLabel>
+        <FieldLabel>{t("uploadTrack.mood")} <span className="text-muted-foreground/50 normal-case tracking-normal font-normal">({mood.length}/8)</span></FieldLabel>
         <div className="flex flex-wrap gap-1.5">
           {MOODS.map((m) => (
             <button
@@ -1278,7 +1290,29 @@ function StepInfo({
               #{m}
             </button>
           ))}
+          {mood.filter((m) => !(MOODS as readonly string[]).includes(m)).map((m) => (
+            <button
+              key={m}
+              onClick={() => toggleMood(m)}
+              className="px-2.5 py-1 rounded-full text-2xs font-semibold transition-all bg-brand-orange/15 text-brand-orange border border-brand-orange/30 flex items-center gap-1"
+            >
+              #{m}
+              <X className="w-3 h-3" />
+            </button>
+          ))}
         </div>
+        <input
+          type="text"
+          placeholder="Add custom tag..."
+          className="h-7 px-2.5 rounded-full bg-secondary border border-border text-2xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40 w-36"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addCustomMood((e.target as HTMLInputElement).value);
+              (e.target as HTMLInputElement).value = "";
+            }
+          }}
+        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
