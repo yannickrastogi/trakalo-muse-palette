@@ -53,6 +53,14 @@ export function TrackWaveformPlayer({
   const [editingLabelValue, setEditingLabelValue] = useState("");
   const [draftChapters, setDraftChapters] = useState<TrackChapter[]>([]);
   const editInputRef = useRef<HTMLInputElement>(null);
+  const [showPulse, setShowPulse] = useState(true);
+
+  useEffect(() => {
+    if (showPulse) {
+      const timer = setTimeout(() => setShowPulse(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showPulse]);
 
   // The chapters to display: draft when editing, props otherwise
   const displayChapters = editMode ? draftChapters : chapters;
@@ -133,14 +141,9 @@ export function TrackWaveformPlayer({
     (e: React.MouseEvent<HTMLDivElement>) => {
       const rect = e.currentTarget.getBoundingClientRect();
       const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-
-      if (editMode) {
-        addBoundaryAt(pct);
-      } else {
-        onSeek(pct);
-      }
+      onSeek(pct);
     },
-    [editMode, onSeek, addBoundaryAt]
+    [onSeek]
   );
 
   const handleDeleteSection = useCallback((chapterId: string) => {
@@ -212,9 +215,11 @@ export function TrackWaveformPlayer({
         className={`relative group ${editMode ? "ring-1 ring-primary/30 rounded cursor-crosshair" : "cursor-pointer"}`}
         onClick={handleClick}
         onDoubleClick={(e) => {
-          if (!editMode && onDoubleClick) {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+          const rect = e.currentTarget.getBoundingClientRect();
+          const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+          if (editMode) {
+            addBoundaryAt(pct);
+          } else if (onDoubleClick) {
             onDoubleClick(pct);
           }
         }}
@@ -383,7 +388,7 @@ export function TrackWaveformPlayer({
         {editMode && (
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              Click waveform to add a marker · Double-click label to rename
+              Double-click waveform to add a marker · Double-click label to rename
             </span>
             <button
               className="h-6 px-3 flex-shrink-0 rounded-md bg-primary text-primary-foreground text-[10px] font-medium hover:bg-primary/90 transition-colors"
@@ -402,7 +407,7 @@ export function TrackWaveformPlayer({
           {!editMode ? (
             <div className="flex flex-col items-center gap-1 py-1">
               <button
-                className="h-7 px-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-md transition-colors"
+                className={`h-7 px-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-primary/10 border border-primary/30 hover:bg-primary/20 rounded-md transition-colors ${showPulse ? "animate-pulse" : ""}`}
                 onClick={enterEditMode}
               >
                 <Scissors className="w-3.5 h-3.5" />
@@ -415,7 +420,7 @@ export function TrackWaveformPlayer({
           ) : (
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
-                Click waveform to add a marker · Double-click label to rename
+                Double-click waveform to add a marker · Double-click label to rename
               </span>
               <button
                 className="h-6 px-3 flex-shrink-0 rounded-md bg-primary text-primary-foreground text-[10px] font-medium hover:bg-primary/90 transition-colors"
