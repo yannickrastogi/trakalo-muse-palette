@@ -1485,6 +1485,31 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
         setLocalLyrics(undefined);
         refreshTracks();
         toast.success("Lyrics transcribed!");
+
+        // Sync transcribed lyrics to sonic_dna.user_metadata
+        try {
+          const { data: freshRow } = await supabase
+            .from("tracks")
+            .select("lyrics, sonic_dna")
+            .eq("id", trackUuid)
+            .single();
+          const freshSonicDna = freshRow?.sonic_dna as Record<string, unknown> | null;
+          const freshLyrics = freshRow?.lyrics as string | null;
+          if (freshSonicDna && freshLyrics) {
+            const rawText = freshLyrics.replace(/^\[auto-transcribed\]\n/, "");
+            const updatedSonicDna = {
+              ...freshSonicDna,
+              user_metadata: {
+                ...(freshSonicDna.user_metadata as Record<string, unknown> || {}),
+                lyrics: rawText,
+              },
+            };
+            await supabase.from("tracks").update({ sonic_dna: updatedSonicDna }).eq("id", trackUuid);
+            toast.success("Sonic DNA updated with lyrics");
+          }
+        } catch (err) {
+          console.error("Failed to sync transcribed lyrics to sonic_dna:", err);
+        }
       } else {
         throw new Error(json.error || "Transcription failed");
       }
