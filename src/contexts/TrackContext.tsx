@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
-import { detectChapters } from "@/lib/chapter-detection";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import type { WorkspaceScoped } from "@/types/workspace";
@@ -587,22 +586,14 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
   const getTrack = useCallback(
     (id: number) => {
-      const track = tracks.find((t) => t.id === id);
-      if (track && !track.chapters) {
-        return { ...track, chapters: detectChapters(track.type, track.bpm, track.id) };
-      }
-      return track;
+      return tracks.find((t) => t.id === id);
     },
     [tracks]
   );
 
   const getTrackByUuid = useCallback(
     (uuid: string) => {
-      const track = tracks.find((t) => t.uuid === uuid);
-      if (track && !track.chapters) {
-        return { ...track, chapters: detectChapters(track.type, track.bpm, track.id) };
-      }
-      return track;
+      return tracks.find((t) => t.uuid === uuid);
     },
     [tracks]
   );
