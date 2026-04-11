@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { detectChapters } from "@/lib/chapter-detection";
@@ -257,6 +257,10 @@ export function TrackProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [tracks, setTracks] = useState<TrackData[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Sonic DNA sequential queue to prevent Railway OOM on bulk uploads
+  const sonicDnaQueueRef = useRef<Array<{ track_id: string; storage_path: string }>>([]);
+  const sonicDnaProcessingRef = useRef(false);
 
   // Fetch tracks from Supabase when workspace changes
   const fetchTracks = useCallback(async () => {
@@ -552,6 +556,35 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     fetchTracks();
   }, [fetchTracks]);
 
+  // Process Sonic DNA queue sequentially — one at a time
+  const processSonicDnaQueue = useCallback(async () => {
+    if (sonicDnaProcessingRef.current) return;
+    sonicDnaProcessingRef.current = true;
+    try {
+      while (sonicDnaQueueRef.current.length > 0) {
+        const task = sonicDnaQueueRef.current.shift()!;
+        console.log('[SonicDNA] Queue processing:', task.track_id, 'path:', task.storage_path, '| remaining:', sonicDnaQueueRef.current.length);
+        try {
+          const res = await fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
+            body: JSON.stringify({ track_id: task.track_id, storage_path: task.storage_path }),
+            signal: AbortSignal.timeout(120000),
+          });
+          const dnaResult = await res.json();
+          console.log('[SonicDNA] Result for', task.track_id, ':', dnaResult);
+          if (dnaResult?.success) {
+            await fetchTracks();
+          }
+        } catch (err) {
+          console.error('[SonicDNA] Error for', task.track_id, ':', err);
+        }
+      }
+    } finally {
+      sonicDnaProcessingRef.current = false;
+    }
+  }, [fetchTracks]);
+
   const getTrack = useCallback(
     (id: number) => {
       const track = tracks.find((t) => t.id === id);
@@ -637,30 +670,18 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       // Refresh tracks to get the new one with correct index
       await fetchTracks();
 
-      // Fire-and-forget Sonic DNA analysis — auto-refresh when done
+      // Queue Sonic DNA analysis — processed sequentially to prevent Railway OOM
       if (data?.id && trackInput.originalFileUrl) {
-        console.log('[SonicDNA] Triggering analysis for track:', data.id, 'path:', trackInput.originalFileUrl);
-        fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
-          body: JSON.stringify({ track_id: data.id, storage_path: trackInput.originalFileUrl }),
-          signal: AbortSignal.timeout(120000),
-        })
-          .then(res => res.json())
-          .then(dnaResult => {
-            console.log('[SonicDNA] Result:', dnaResult);
-            if (dnaResult?.success) {
-              fetchTracks();
-            }
-          })
-          .catch(err => console.error('[SonicDNA] Error:', err));
+        console.log('[SonicDNA] Queuing analysis for track:', data.id, 'path:', trackInput.originalFileUrl);
+        sonicDnaQueueRef.current.push({ track_id: data.id, storage_path: trackInput.originalFileUrl });
+        processSonicDnaQueue();
       }
 
       // Return the newly created track
       const newTrack = mapRowToTrack(data as unknown as Record<string, unknown>, tracks.length);
       return newTrack;
     },
-    [activeWorkspace, user, fetchTracks, tracks.length]
+    [activeWorkspace, user, fetchTracks, processSonicDnaQueue, tracks.length]
   );
 
   const updateTrack = useCallback(
