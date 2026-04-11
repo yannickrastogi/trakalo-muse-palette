@@ -1484,7 +1484,7 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
         setDbLyrics(undefined);
         setLocalLyrics(undefined);
         refreshTracks();
-        toast.success("Lyrics transcribed!");
+        toast.success("Lyrics transcribed! Please review and edit if needed — auto-transcription may contain errors.", { duration: 6000 });
 
         // Sync transcribed lyrics to sonic_dna.user_metadata
         try {
