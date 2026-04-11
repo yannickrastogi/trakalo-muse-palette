@@ -156,21 +156,18 @@ Deno.serve(async (req) => {
         "hsl(var(--chart-5))",
       ];
 
-      // Count occurrences of each type to decide numbering
-      const typeCounts: Record<string, number> = {};
-      for (const seg of structureSegments) {
-        const t = seg.type ?? "section";
-        typeCounts[t] = (typeCounts[t] || 0) + 1;
-      }
-
-      const typeIndexes: Record<string, number> = {};
+      let sectionCounter = 0;
       const chapters = structureSegments.map((seg: { type?: string; start_sec: number; end_sec: number }, index: number) => {
         const rawType = seg.type ?? "section";
-        const capitalized = rawType.charAt(0).toUpperCase() + rawType.slice(1);
-        typeIndexes[rawType] = (typeIndexes[rawType] || 0) + 1;
-        const label = typeCounts[rawType] > 1
-          ? `${capitalized} ${typeIndexes[rawType]}`
-          : capitalized;
+        let label: string;
+        if (rawType === "intro") {
+          label = "Intro";
+        } else if (rawType === "outro") {
+          label = "Outro";
+        } else {
+          sectionCounter++;
+          label = `Section ${sectionCounter}`;
+        }
 
         return {
           id: "ch-" + index,
