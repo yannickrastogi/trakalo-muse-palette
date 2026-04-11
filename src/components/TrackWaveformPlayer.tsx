@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import type { TrackChapter } from "@/contexts/TrackContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, X } from "lucide-react";
+import { X, Pencil } from "lucide-react";
 
 const COLOR_PALETTE = [
   "hsl(var(--primary))",
@@ -48,9 +48,14 @@ export function TrackWaveformPlayer({
 }: TrackWaveformPlayerProps) {
   const [hoveredChapter, setHoveredChapter] = useState<string | null>(null);
   const [hoverPercent, setHoverPercent] = useState<number | null>(null);
+  const [editMode, setEditMode] = useState(false);
   const [editingLabelId, setEditingLabelId] = useState<string | null>(null);
   const [editingLabelValue, setEditingLabelValue] = useState("");
+  const [draftChapters, setDraftChapters] = useState<TrackChapter[]>([]);
   const editInputRef = useRef<HTMLInputElement>(null);
+
+  // The chapters to display: draft when editing, props otherwise
+  const displayChapters = editMode ? draftChapters : chapters;
 
   useEffect(() => {
     if (editingLabelId && editInputRef.current) {
@@ -88,18 +93,101 @@ export function TrackWaveformPlayer({
   }, [seed, bars, peaks]);
 
   const getChapterAt = useCallback(
-    (percent: number) => chapters.find((c) => percent >= c.startPercent && percent < c.endPercent),
-    [chapters]
+    (percent: number) => displayChapters.find((c) => percent >= c.startPercent && percent < c.endPercent),
+    [displayChapters]
   );
+
+  const addBoundaryAt = useCallback((splitAt: number) => {
+    setDraftChapters((prev) => {
+      if (prev.length === 0) {
+        // First click — create two sections
+        const rounded = Math.round(splitAt * 100) / 100;
+        return renumberAndColor([
+          { id: "ch-0", label: "Section 1", startPercent: 0, endPercent: rounded, color: COLOR_PALETTE[0] },
+          { id: "ch-1", label: "Section 2", startPercent: rounded, endPercent: 100, color: COLOR_PALETTE[1] },
+        ]);
+      }
+
+      const targetIdx = prev.findIndex((c) => splitAt >= c.startPercent && splitAt < c.endPercent);
+      if (targetIdx === -1) return prev;
+
+      const target = prev[targetIdx];
+      // Don't split if it would create a tiny section (< 2%)
+      if (splitAt - target.startPercent < 2 || target.endPercent - splitAt < 2) return prev;
+
+      const rounded = Math.round(splitAt * 100) / 100;
+      const updated = [...prev];
+      updated[targetIdx] = { ...target, endPercent: rounded };
+      updated.splice(targetIdx + 1, 0, {
+        id: "ch-" + Date.now(),
+        label: "Section",
+        startPercent: rounded,
+        endPercent: target.endPercent,
+        color: COLOR_PALETTE[0],
+      });
+      return renumberAndColor(updated);
+    });
+  }, []);
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const rect = e.currentTarget.getBoundingClientRect();
       const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-      onSeek(pct);
+
+      if (editMode) {
+        addBoundaryAt(pct);
+      } else {
+        onSeek(pct);
+      }
     },
-    [onSeek]
+    [editMode, onSeek, addBoundaryAt]
   );
+
+  const handleDeleteSection = useCallback((chapterId: string) => {
+    setDraftChapters((prev) => {
+      if (prev.length <= 1) return prev;
+      const idx = prev.findIndex((c) => c.id === chapterId);
+      if (idx === -1) return prev;
+
+      const updated = [...prev];
+      if (idx > 0) {
+        updated[idx - 1] = { ...updated[idx - 1], endPercent: updated[idx].endPercent };
+      } else {
+        updated[1] = { ...updated[1], startPercent: updated[0].startPercent };
+      }
+      updated.splice(idx, 1);
+      return renumberAndColor(updated);
+    });
+  }, []);
+
+  const handleRenameCommit = useCallback(() => {
+    if (!editingLabelId) {
+      setEditingLabelId(null);
+      return;
+    }
+    const trimmed = editingLabelValue.trim();
+    if (!trimmed) {
+      setEditingLabelId(null);
+      return;
+    }
+    setDraftChapters((prev) =>
+      prev.map((ch) => (ch.id === editingLabelId ? { ...ch, label: trimmed } : ch))
+    );
+    setEditingLabelId(null);
+  }, [editingLabelId, editingLabelValue]);
+
+  const enterEditMode = useCallback(() => {
+    setDraftChapters([...chapters]);
+    setEditMode(true);
+  }, [chapters]);
+
+  const exitEditMode = useCallback(() => {
+    setEditMode(false);
+    setEditingLabelId(null);
+    if (onChaptersChange) {
+      onChaptersChange(draftChapters);
+    }
+  }, [draftChapters, onChaptersChange]);
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -112,81 +200,6 @@ export function TrackWaveformPlayer({
     [getChapterAt]
   );
 
-  const handleAddSection = useCallback(() => {
-    if (!onChaptersChange) return;
-    const splitAt = progress > 0 && progress < 100 ? progress : 50;
-
-    if (chapters.length === 0) {
-      // No chapters yet — create two sections split at cursor
-      const newChapters: TrackChapter[] = [
-        { id: "ch-0", label: "Section 1", startPercent: 0, endPercent: Math.round(splitAt * 100) / 100, color: COLOR_PALETTE[0] },
-        { id: "ch-1", label: "Section 2", startPercent: Math.round(splitAt * 100) / 100, endPercent: 100, color: COLOR_PALETTE[1] },
-      ];
-      onChaptersChange(newChapters);
-      return;
-    }
-
-    // Find which chapter the cursor is in
-    const targetIdx = chapters.findIndex((c) => splitAt >= c.startPercent && splitAt < c.endPercent);
-    if (targetIdx === -1) return;
-
-    const target = chapters[targetIdx];
-    // Don't split if it would create a tiny section (< 2%)
-    if (splitAt - target.startPercent < 2 || target.endPercent - splitAt < 2) return;
-
-    const newChapters = [...chapters];
-    const newId = "ch-" + Date.now();
-    const newSection: TrackChapter = {
-      id: newId,
-      label: "Section",
-      startPercent: Math.round(splitAt * 100) / 100,
-      endPercent: target.endPercent,
-      color: COLOR_PALETTE[(targetIdx + 1) % COLOR_PALETTE.length],
-    };
-    newChapters[targetIdx] = { ...target, endPercent: Math.round(splitAt * 100) / 100 };
-    newChapters.splice(targetIdx + 1, 0, newSection);
-
-    // Re-assign colors
-    const recolored = newChapters.map((ch, i) => ({ ...ch, color: COLOR_PALETTE[i % COLOR_PALETTE.length] }));
-    onChaptersChange(recolored);
-  }, [chapters, progress, onChaptersChange]);
-
-  const handleDeleteSection = useCallback((chapterId: string) => {
-    if (!onChaptersChange || chapters.length <= 1) return;
-    const idx = chapters.findIndex((c) => c.id === chapterId);
-    if (idx === -1) return;
-
-    const newChapters = [...chapters];
-    if (idx > 0) {
-      // Merge into previous section
-      newChapters[idx - 1] = { ...newChapters[idx - 1], endPercent: newChapters[idx].endPercent };
-    } else {
-      // First section: merge into next
-      newChapters[1] = { ...newChapters[1], startPercent: newChapters[0].startPercent };
-    }
-    newChapters.splice(idx, 1);
-
-    const recolored = newChapters.map((ch, i) => ({ ...ch, color: COLOR_PALETTE[i % COLOR_PALETTE.length] }));
-    onChaptersChange(recolored);
-  }, [chapters, onChaptersChange]);
-
-  const handleRenameCommit = useCallback(() => {
-    if (!editingLabelId || !onChaptersChange) {
-      setEditingLabelId(null);
-      return;
-    }
-    const trimmed = editingLabelValue.trim();
-    if (!trimmed) {
-      setEditingLabelId(null);
-      return;
-    }
-    const updated = chapters.map((ch) =>
-      ch.id === editingLabelId ? { ...ch, label: trimmed } : ch
-    );
-    onChaptersChange(updated);
-    setEditingLabelId(null);
-  }, [editingLabelId, editingLabelValue, chapters, onChaptersChange]);
-
   const barWidth = 2.5;
   const barGap = 1;
   const totalWidth = bars * (barWidth + barGap);
@@ -196,10 +209,10 @@ export function TrackWaveformPlayer({
     <div className={`space-y-1 ${className}`}>
       {/* Waveform */}
       <div
-        className="relative cursor-pointer group"
+        className={`relative cursor-pointer group ${editMode ? "ring-1 ring-primary/30 rounded" : ""}`}
         onClick={handleClick}
         onDoubleClick={(e) => {
-          if (onDoubleClick) {
+          if (!editMode && onDoubleClick) {
             const rect = e.currentTarget.getBoundingClientRect();
             const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
             onDoubleClick(pct);
@@ -214,7 +227,7 @@ export function TrackWaveformPlayer({
         {/* Hover position indicator */}
         {hoverPercent !== null && (
           <div
-            className="absolute top-0 bottom-0 w-px bg-foreground/30 z-10 pointer-events-none"
+            className={`absolute top-0 bottom-0 w-px z-10 pointer-events-none ${editMode ? "bg-primary/60" : "bg-foreground/30"}`}
             style={{ left: `${hoverPercent}%` }}
           />
         )}
@@ -270,14 +283,14 @@ export function TrackWaveformPlayer({
       </div>
 
       {/* Chapter lane */}
-      {(chapters.length > 0 || editable) && (
+      {displayChapters.length > 0 && (
         <div className="flex items-center gap-1">
           <div className="relative h-6 flex rounded-md overflow-hidden border border-border/50 flex-1">
-            {chapters.map((ch) => {
+            {displayChapters.map((ch) => {
               const width = ch.endPercent - ch.startPercent;
               const isHovered = hoveredChapter === ch.id;
               const isActive = progress >= ch.startPercent && progress < ch.endPercent;
-              const isEditing = editingLabelId === ch.id;
+              const isEditingLabel = editingLabelId === ch.id;
 
               return (
                 <Tooltip key={ch.id}>
@@ -297,10 +310,10 @@ export function TrackWaveformPlayer({
                       onMouseLeave={() => setHoveredChapter(null)}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (!isEditing) onSeek(ch.startPercent);
+                        if (!editMode && !isEditingLabel) onSeek(ch.startPercent);
                       }}
                     >
-                      {isEditing ? (
+                      {isEditingLabel ? (
                         <input
                           ref={editInputRef}
                           className="w-full h-full bg-transparent text-center text-[9px] font-semibold uppercase tracking-wide outline-none border-none px-0.5"
@@ -315,9 +328,9 @@ export function TrackWaveformPlayer({
                         />
                       ) : (
                         <span
-                          className={`truncate px-0.5 leading-none select-none ${editable ? "cursor-text" : ""}`}
-                          onClick={(e) => {
-                            if (editable && onChaptersChange) {
+                          className={`truncate px-0.5 leading-none select-none`}
+                          onDoubleClick={(e) => {
+                            if (editMode) {
                               e.stopPropagation();
                               setEditingLabelId(ch.id);
                               setEditingLabelValue(ch.label);
@@ -327,7 +340,7 @@ export function TrackWaveformPlayer({
                           {width > 6 ? ch.label : ch.label.charAt(0)}
                         </span>
                       )}
-                      {editable && !isEditing && chapters.length > 1 && (
+                      {editMode && !isEditingLabel && displayChapters.length > 1 && (
                         <button
                           className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover/section:opacity-100 transition-opacity z-10"
                           onClick={(e) => {
@@ -356,23 +369,65 @@ export function TrackWaveformPlayer({
               );
             })}
           </div>
-          {editable && (
+          {editable && !editMode && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   className="h-6 w-6 flex-shrink-0 flex items-center justify-center rounded-md border border-border/50 text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
-                  onClick={handleAddSection}
+                  onClick={enterEditMode}
                 >
-                  <Plus className="w-3 h-3" />
+                  <Pencil className="w-3 h-3" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">
-                Add section at playhead
+                Edit sections
               </TooltipContent>
             </Tooltip>
+          )}
+          {editMode && (
+            <button
+              className="h-6 px-2 flex-shrink-0 flex items-center justify-center rounded-md border border-primary/50 text-primary text-[10px] font-medium hover:bg-primary/10 transition-colors"
+              onClick={exitEditMode}
+            >
+              Done
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Empty state: Add Sections button or Done button */}
+      {displayChapters.length === 0 && editable && (
+        <div>
+          {!editMode ? (
+            <button
+              className="h-6 px-3 text-[10px] font-medium text-muted-foreground border border-border/50 rounded-md hover:text-foreground hover:bg-secondary/80 transition-colors"
+              onClick={enterEditMode}
+            >
+              Add Sections
+            </button>
+          ) : (
+            <button
+              className="h-6 px-3 text-[10px] font-medium text-primary border border-primary/50 rounded-md hover:bg-primary/10 transition-colors"
+              onClick={exitEditMode}
+            >
+              Done
+            </button>
           )}
         </div>
       )}
     </div>
   );
+}
+
+/** Re-number section labels that still have default names and re-assign colors */
+function renumberAndColor(chapters: TrackChapter[]): TrackChapter[] {
+  let sectionNum = 0;
+  return chapters.map((ch, i) => {
+    const isDefaultLabel = /^Section(\s+\d+)?$/.test(ch.label);
+    if (isDefaultLabel) {
+      sectionNum++;
+      return { ...ch, label: `Section ${sectionNum}`, color: COLOR_PALETTE[i % COLOR_PALETTE.length] };
+    }
+    return { ...ch, color: COLOR_PALETTE[i % COLOR_PALETTE.length] };
+  });
 }

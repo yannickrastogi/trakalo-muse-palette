@@ -683,6 +683,7 @@ export default function TrackDetail() {
                                     headers: {
                                       "Content-Type": "application/json",
                                       "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+                                      "apikey": SUPABASE_PUBLISHABLE_KEY,
                                     },
                                     body: JSON.stringify({ track_id: track.uuid, storage_path: row.audio_url }),
                                   });
