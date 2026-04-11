@@ -26,8 +26,10 @@ export const STATUSES = ["Available", "On Hold", "Released"] as const;
 export const GENDERS = ["Male", "Female", "Duet", "N/A"] as const;
 
 export const KEYS = [
-  "Ab Maj", "A Min", "Bb Maj", "B Min", "C Min", "C# Min",
-  "D Maj", "Eb Maj", "E Min", "F Maj", "F# Min", "G Maj",
+  "C Maj", "C Min", "C# Maj", "C# Min", "D Maj", "D Min",
+  "D# Maj", "D# Min", "E Maj", "E Min", "F Maj", "F Min",
+  "F# Maj", "F# Min", "G Maj", "G Min", "G# Maj", "G# Min",
+  "A Maj", "A Min", "A# Maj", "A# Min", "B Maj", "B Min",
 ] as const;
 
 export const MOODS = [
