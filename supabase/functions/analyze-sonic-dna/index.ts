@@ -129,19 +129,6 @@ Deno.serve(async (req) => {
       updatePayload.key = keyData.key + " " + mode;
     }
 
-    // Mood descriptors — only if track has no mood set
-    const moodDescriptors = sonicDna.mood?.descriptors;
-    if (Array.isArray(moodDescriptors) && moodDescriptors.length > 0) {
-      const { data: trackRow } = await supabaseAdmin
-        .from("tracks")
-        .select("mood")
-        .eq("id", track_id)
-        .single();
-      if (!trackRow?.mood || (Array.isArray(trackRow.mood) && trackRow.mood.length === 0)) {
-        updatePayload.mood = moodDescriptors;
-      }
-    }
-
     // Convert structure segments to chapters format
     const structureSegments = sonicDna.structure;
     const durationSec = sonicDna.duration_sec;
@@ -182,7 +169,7 @@ Deno.serve(async (req) => {
       updatePayload.chapters = chapters;
     }
 
-    console.log('[SonicDNA] Updating track BPM:', updatePayload.bpm ?? 'skipped', 'Key:', updatePayload.key ?? 'skipped', 'Mood:', updatePayload.mood ?? 'skipped', 'Chapters:', updatePayload.chapters ? (updatePayload.chapters as unknown[]).length : 'skipped');
+    console.log('[SonicDNA] Updating track BPM:', updatePayload.bpm ?? 'skipped', 'Key:', updatePayload.key ?? 'skipped', 'Chapters:', updatePayload.chapters ? (updatePayload.chapters as unknown[]).length : 'skipped');
 
     // 4. Update the track in DB
     try {
