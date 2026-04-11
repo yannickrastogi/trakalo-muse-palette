@@ -1397,6 +1397,33 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
         refreshTracks();
       }
     }
+
+    // Sync lyrics to sonic_dna.user_metadata
+    try {
+      const { data: row } = await supabase
+        .from("tracks")
+        .select("sonic_dna")
+        .eq("id", trackUuid)
+        .single();
+      const existingSonicDna = row?.sonic_dna as Record<string, unknown> | null;
+      if (existingSonicDna) {
+        const savedLyrics = syncedEditMode
+          ? editLines.filter((l) => l.text.trim() !== "").map((s) => s.text).join("\n")
+          : editValue;
+        const rawLyrics = savedLyrics.replace(/^\[auto-transcribed\]\n/, "");
+        const updatedSonicDna = {
+          ...existingSonicDna,
+          user_metadata: {
+            ...(existingSonicDna.user_metadata as Record<string, unknown> || {}),
+            lyrics: rawLyrics,
+          },
+        };
+        await supabase.from("tracks").update({ sonic_dna: updatedSonicDna }).eq("id", trackUuid);
+      }
+    } catch (err) {
+      console.error("Failed to sync lyrics to sonic_dna:", err);
+    }
+
     setIsEditing(false);
     setSyncedEditMode(false);
   };

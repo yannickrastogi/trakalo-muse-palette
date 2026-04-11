@@ -586,6 +586,29 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             } else if (json.success) {
               toast.success(t("uploadTrack.lyricsTranscribed", "Lyrics transcribed!"));
               refreshTracks();
+
+              // Sync transcribed lyrics to sonic_dna.user_metadata
+              try {
+                const { data: row } = await supabase
+                  .from("tracks")
+                  .select("sonic_dna, lyrics")
+                  .eq("id", bgTrackUuid)
+                  .single();
+                const existingSonicDna = row?.sonic_dna as Record<string, unknown> | null;
+                if (existingSonicDna && row?.lyrics) {
+                  const rawLyrics = (row.lyrics as string).replace(/^\[auto-transcribed\]\n/, "");
+                  const updatedSonicDna = {
+                    ...existingSonicDna,
+                    user_metadata: {
+                      ...(existingSonicDna.user_metadata as Record<string, unknown> || {}),
+                      lyrics: rawLyrics,
+                    },
+                  };
+                  await supabase.from("tracks").update({ sonic_dna: updatedSonicDna }).eq("id", bgTrackUuid);
+                }
+              } catch (err) {
+                console.error("Failed to sync lyrics to sonic_dna:", err);
+              }
             }
           } catch (err) {
             console.error("Lyrics transcription failed:", err);
@@ -1566,6 +1589,11 @@ function StepLyrics({
         placeholder={"[Verse 1]\nYour lyrics here...\n\n[Chorus]\nYour chorus here..."}
         className="w-full min-h-[300px] px-4 py-3 rounded-xl bg-secondary border border-border text-sm text-foreground font-mono leading-relaxed outline-none focus:border-brand-orange/30 transition-all resize-y placeholder:text-muted-foreground/40"
       />
+      {lyrics === "" && (
+        <p className="text-2xs text-muted-foreground italic mt-2">
+          {t("uploadTrack.autoTranscribeHint", "💡 No lyrics? You can always auto-transcribe them later in Track Details")}
+        </p>
+      )}
     </div>
   );
 }
