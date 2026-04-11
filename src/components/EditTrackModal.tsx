@@ -249,7 +249,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
     updateTrack(trackId, updates);
     updateTrackSplits(trackId, splits.filter(s => s.name.trim()));
 
-    // Sync mood tags to sonic_dna.mood.descriptors
+    // Sync user metadata + mood descriptors to sonic_dna
     if (trackData?.uuid) {
       try {
         const { data: row } = await supabase
@@ -266,14 +266,32 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
               ...(existingSonicDna.mood as Record<string, unknown> || {}),
               descriptors: mood,
             },
+            user_metadata: {
+              genre,
+              type: trackType,
+              gender: voice,
+              language,
+              mood,
+              bpm: Number(bpm) || 0,
+              key: trackKey,
+              title: title.trim(),
+              artist: artist.trim(),
+              featuring: featuredArtists.split(",").map((s) => s.trim()).filter(Boolean),
+            },
           };
-          await supabase
+          const { error } = await supabase
             .from("tracks")
             .update({ sonic_dna: updatedSonicDna })
             .eq("id", trackData.uuid);
+
+          if (!error) {
+            toast.success("Sonic DNA updated");
+          } else {
+            console.error("Failed to sync sonic_dna:", error);
+          }
         }
       } catch (err) {
-        console.error("Failed to sync mood to sonic_dna:", err);
+        console.error("Failed to sync sonic_dna:", err);
       }
     }
 
