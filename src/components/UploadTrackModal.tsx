@@ -974,6 +974,70 @@ function FieldSelect({ value, onChange, options, placeholder }: { value: string;
   );
 }
 
+function LanguageMultiSelect({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const selected = value ? value.split(", ").filter(Boolean) : [];
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = LANGUAGES.filter((l) => !selected.includes(l) && l.toLowerCase().includes(search.toLowerCase()));
+
+  const add = (lang: string) => {
+    const next = [...selected, lang].join(", ");
+    onChange(next);
+    setSearch("");
+  };
+  const remove = (lang: string) => {
+    const next = selected.filter((s) => s !== lang).join(", ");
+    onChange(next);
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-1.5">
+          {selected.map((lang) => (
+            <span key={lang} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-orange/10 text-brand-orange">
+              {lang}
+              <button type="button" onClick={() => remove(lang)} className="hover:text-foreground transition-colors"><X className="w-3 h-3" /></button>
+            </span>
+          ))}
+        </div>
+      )}
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => { setSearch(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder={selected.length > 0 ? "" : placeholder}
+        className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-lg bg-secondary border border-border shadow-lg">
+          {filtered.map((lang) => (
+            <button
+              key={lang}
+              type="button"
+              onClick={() => add(lang)}
+              className="w-full text-left px-3 py-1.5 text-[13px] text-foreground hover:bg-accent/10 transition-colors font-medium"
+            >
+              {lang}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Bulk Upload Step ─── */
 
 function StepBulkUpload({
@@ -1356,7 +1420,7 @@ function StepInfo({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <FieldLabel>{t("uploadTrack.language")}</FieldLabel>
-          <FieldSelect value={language} onChange={setLanguage} options={LANGUAGES} placeholder={t("uploadTrack.selectLanguage")} />
+          <LanguageMultiSelect value={language} onChange={setLanguage} placeholder={t("uploadTrack.selectLanguage")} />
         </div>
       </div>
       <div className="space-y-1.5">
@@ -1595,17 +1659,17 @@ function StepLyrics({
         </button>
       </div>
 
+      {lyrics === "" && (
+        <p className="text-2xs text-muted-foreground italic mb-2">
+          {t("uploadTrack.autoTranscribeHint", "💡 No lyrics? You can always auto-transcribe them later in Track Details")}
+        </p>
+      )}
       <textarea
         value={lyrics}
         onChange={(e) => onUpdate(e.target.value)}
         placeholder={"[Verse 1]\nYour lyrics here...\n\n[Chorus]\nYour chorus here..."}
         className="w-full min-h-[300px] px-4 py-3 rounded-xl bg-secondary border border-border text-sm text-foreground font-mono leading-relaxed outline-none focus:border-brand-orange/30 transition-all resize-y placeholder:text-muted-foreground/40"
       />
-      {lyrics === "" && (
-        <p className="text-2xs text-muted-foreground italic mt-2">
-          {t("uploadTrack.autoTranscribeHint", "💡 No lyrics? You can always auto-transcribe them later in Track Details")}
-        </p>
-      )}
     </div>
   );
 }
