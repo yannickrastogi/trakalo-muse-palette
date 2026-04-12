@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { track_id, storage_path } = await req.json();
+    const { track_id, storage_path, force } = await req.json();
 
     if (!track_id || !storage_path) {
       return new Response(JSON.stringify({ error: "Missing track_id or storage_path" }), {
@@ -125,8 +125,8 @@ Deno.serve(async (req) => {
       .eq("id", track_id)
       .single();
 
-    const hasUserBpm = existingTrack?.bpm != null && existingTrack.bpm > 0;
-    const hasUserKey = existingTrack?.key != null && existingTrack.key !== "";
+    const hasUserBpm = !force && existingTrack?.bpm != null && existingTrack.bpm > 0;
+    const hasUserKey = !force && existingTrack?.key != null && existingTrack.key !== "";
 
     const bpmData = sonicDna.bpm;
     if (bpmData && typeof bpmData === "object" && bpmData.bpm && bpmData.confidence > 0.7 && !hasUserBpm) {

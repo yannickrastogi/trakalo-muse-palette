@@ -691,7 +691,7 @@ export default function TrackDetail() {
                                       "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
                                       "apikey": SUPABASE_PUBLISHABLE_KEY,
                                     },
-                                    body: JSON.stringify({ track_id: track.uuid, storage_path: row.audio_url }),
+                                    body: JSON.stringify({ track_id: track.uuid, storage_path: row.audio_url, force: true }),
                                   });
                                   const result = await res.json();
                                   if (!res.ok) throw new Error(result.error || "Sonic DNA analysis failed");
