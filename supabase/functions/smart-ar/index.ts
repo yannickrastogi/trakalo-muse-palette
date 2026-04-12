@@ -33,16 +33,59 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log("smart-ar: workspace_id=" + workspace_id + " tracks_found=" + (tracks?.length || 0));
+    // Fetch shared tracks via catalog_shares
+    const allTracks = [...(tracks || [])];
 
-    if (!tracks || tracks.length === 0) {
+    const { data: shares } = await supabase
+      .from("catalog_shares")
+      .select("source_workspace_id, track_id")
+      .eq("target_workspace_id", workspace_id)
+      .eq("status", "active");
+
+    if (shares && shares.length > 0) {
+      // Individual track shares (track_id is set)
+      const individualTrackIds = shares.filter(s => s.track_id).map(s => s.track_id);
+      if (individualTrackIds.length > 0) {
+        const { data: individualTracks } = await supabase
+          .from("tracks")
+          .select("id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language")
+          .in("id", individualTrackIds);
+        if (individualTracks) {
+          allTracks.push(...individualTracks);
+        }
+      }
+
+      // Full catalog shares (track_id is null)
+      const fullCatalogWsIds = [...new Set(shares.filter(s => !s.track_id).map(s => s.source_workspace_id))];
+      for (const wsId of fullCatalogWsIds) {
+        const { data: wsTracks } = await supabase
+          .from("tracks")
+          .select("id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language")
+          .eq("workspace_id", wsId);
+        if (wsTracks) {
+          allTracks.push(...wsTracks);
+        }
+      }
+    }
+
+    // Deduplicate by track id
+    const seenIds = new Set<string>();
+    const dedupedTracks = allTracks.filter(t => {
+      if (seenIds.has(t.id)) return false;
+      seenIds.add(t.id);
+      return true;
+    });
+
+    console.log("smart-ar: workspace_id=" + workspace_id + " own_tracks=" + (tracks?.length || 0) + " shared_tracks=" + (dedupedTracks.length - (tracks?.length || 0)) + " total=" + dedupedTracks.length);
+
+    if (dedupedTracks.length === 0) {
       return new Response(
         JSON.stringify({ error: "No tracks found in workspace" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const formattedTracks = tracks
+    const formattedTracks = dedupedTracks
       .map(
         (t, i) =>
           (i + 1) +
@@ -98,7 +141,7 @@ Deno.serve(async (req) => {
               "Brief: " +
               brief +
               "\n\nCatalog (" +
-              tracks.length +
+              dedupedTracks.length +
               " tracks):\n" +
               formattedTracks +
               "\n\n" +
