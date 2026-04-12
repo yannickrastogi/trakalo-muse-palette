@@ -30,6 +30,7 @@ import {
   ImagePlus,
   CheckCircle2,
   ArrowRightLeft,
+  Zap,
 } from "lucide-react";
 import { PerformerCreditsSection } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
@@ -681,6 +682,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     setEditStep(0);
     setIsDragOver(false);
     setIsPlayingPreview(false);
+    setQuickUploadIdx(-1);
+    setQuickUploadDone(false);
   };
 
   const canProceedEdit = () => {
@@ -695,6 +698,171 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   };
 
   const allProcessing = queue.some((e) => e.analyzing);
+
+  // ─── Quick Upload ───────────────────────────────────────────
+
+  const [quickUploadIdx, setQuickUploadIdx] = useState(-1);
+  const [quickUploadDone, setQuickUploadDone] = useState(false);
+
+  const handleQuickUpload = useCallback(async () => {
+    if (queue.length === 0 || isSaving) return;
+    setIsSaving(true);
+    setQuickUploadDone(false);
+
+    try {
+      for (let qi = 0; qi < queue.length; qi++) {
+        const entry = queue[qi];
+        setQuickUploadIdx(qi);
+        setUploadProgress(0);
+        setUploadStage(
+          queue.length === 1
+            ? "Uploading your track... Please wait"
+            : "Uploading track " + (qi + 1) + " of " + queue.length + "... Please wait"
+        );
+
+        // ── Upload audio ──
+        let audioUrl: string | undefined;
+        let waveformData: number[] | undefined;
+        if (entry.file && activeWorkspace) {
+          const fileExt = entry.file.name.split(".").pop() || "wav";
+          const filePath = activeWorkspace.id + "/" + crypto.randomUUID() + "." + fileExt;
+
+          const { error: uploadError } = await uploadFileWithProgress(
+            "tracks",
+            filePath,
+            entry.file,
+            entry.file.type || "audio/wav",
+            (pct) => setUploadProgress(Math.round(pct * 0.6)),
+          );
+
+          if (uploadError) {
+            console.error("Error uploading audio:", uploadError);
+          } else {
+            audioUrl = filePath;
+          }
+        }
+        setUploadProgress(60);
+
+        // ── Waveform ──
+        setUploadProgress(65);
+        if (audioUrl && entry.file) {
+          try {
+            waveformData = await generateWaveform(entry.file, 200);
+          } catch (e) { console.error("Waveform generation error:", e); }
+        }
+        setUploadProgress(85);
+
+        // ── Save to DB ──
+        const savedTrack = await addTrack({
+          title: entry.title.trim() || "Untitled",
+          artist: entry.artist.trim() || "",
+          genre: "",
+          bpm: 0,
+          key: "",
+          duration: entry.analysisResult?.duration || "0:00",
+          mood: [],
+          status: "Available",
+          language: "",
+          voice: "N/A",
+          type: "Song",
+          originalFileUrl: audioUrl,
+          previewFileUrl: undefined,
+          originalFileName: entry.fileName,
+          originalFileSize: entry.file.size,
+          notes: "",
+          lyrics: undefined,
+          waveformData: waveformData,
+          chapters: null,
+          splits: [],
+        });
+        setUploadProgress(100);
+
+        // ── Fire-and-forget: MP3 + lyrics transcription ──
+        if (savedTrack && audioUrl && entry.file) {
+          const bgFile = entry.file;
+          const bgTrackUuid = savedTrack.uuid;
+          const bgAudioPath = audioUrl;
+          (async () => {
+            try {
+              toast.info(t("uploadTrack.compressingPreview", "Compressing MP3 preview..."));
+              const mp3Blob = await encodeToMp3(bgFile);
+              const previewPath = bgAudioPath.replace(/\.[^.]+$/, "_preview.mp3");
+              const { error: upErr } = await supabase.storage
+                .from("tracks")
+                .upload(previewPath, mp3Blob, { contentType: "audio/mp3", upsert: true });
+              if (upErr) throw upErr;
+              await supabase
+                .from("tracks")
+                .update({ audio_preview_url: previewPath })
+                .eq("id", bgTrackUuid);
+              toast.success(t("uploadTrack.mp3PreviewReady", "MP3 preview ready"));
+            } catch (err) {
+              console.error("Background MP3 compression failed:", err);
+              toast.warning(t("uploadTrack.mp3PreviewFailed", "MP3 preview failed — track is still available"));
+            }
+
+            try {
+              toast.info(t("uploadTrack.transcribingLyrics", "Transcribing lyrics..."));
+              const res = await fetch(SUPABASE_URL + "/functions/v1/transcribe-lyrics", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+                  "apikey": SUPABASE_PUBLISHABLE_KEY,
+                },
+                body: JSON.stringify({ track_id: bgTrackUuid }),
+              });
+              const json = await res.json();
+              if (json.empty) {
+                toast.info(t("uploadTrack.noVocalsDetected", "No vocals detected"));
+              } else if (json.success) {
+                toast.success(t("uploadTrack.lyricsTranscribed", "Lyrics transcribed!"));
+                refreshTracks();
+                try {
+                  const { data: row } = await supabase
+                    .from("tracks")
+                    .select("sonic_dna, lyrics")
+                    .eq("id", bgTrackUuid)
+                    .single();
+                  const existingSonicDna = row?.sonic_dna as Record<string, unknown> | null;
+                  if (existingSonicDna && row?.lyrics) {
+                    const rawLyrics = (row.lyrics as string).replace(/^\[auto-transcribed\]\n/, "");
+                    const updatedSonicDna = {
+                      ...existingSonicDna,
+                      user_metadata: {
+                        ...(existingSonicDna.user_metadata as Record<string, unknown> || {}),
+                        lyrics: rawLyrics,
+                      },
+                    };
+                    await supabase.from("tracks").update({ sonic_dna: updatedSonicDna }).eq("id", bgTrackUuid);
+                  }
+                } catch (err) {
+                  console.error("Failed to sync lyrics to sonic_dna:", err);
+                }
+              }
+            } catch (err) {
+              console.error("Lyrics transcription failed:", err);
+            }
+          })();
+        }
+      }
+
+      // Show success screen
+      setQuickUploadDone(true);
+      await new Promise((r) => setTimeout(r, 2000));
+
+      onOpenChange(false);
+      handleReset();
+    } catch (err) {
+      console.error("Quick upload error:", err);
+    } finally {
+      setIsSaving(false);
+      setUploadProgress(0);
+      setUploadStage("");
+      setQuickUploadIdx(-1);
+      setQuickUploadDone(false);
+    }
+  }, [queue, isSaving, addTrack, activeWorkspace, uploadFileWithProgress, onOpenChange]);
 
   // ─── Render ────────────────────────────────────────────────
 
@@ -899,7 +1067,35 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-border">
-          {isSaving ? (
+          {isSaving && quickUploadIdx >= 0 ? (
+            <div className="space-y-3">
+              {quickUploadDone ? (
+                <div className="text-center py-2">
+                  <p className="text-sm font-semibold text-emerald-400">
+                    {queue.length === 1
+                      ? "Track uploaded successfully! BPM & Key analysis is in progress — check back in a minute."
+                      : queue.length + " tracks uploaded successfully! BPM & Key analysis is in progress — check back in a minute."}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-brand-orange" />
+                      <span className="text-[13px] font-semibold text-foreground">
+                        {uploadStage}
+                      </span>
+                    </div>
+                    <span className="text-[13px] font-bold tabular-nums text-foreground">{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    Your tracks will appear in your catalog shortly. Sonic DNA analysis will detect BPM & Key automatically.
+                  </p>
+                </>
+              )}
+            </div>
+          ) : isSaving ? (
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -917,23 +1113,58 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               <Progress value={uploadProgress} className="h-2" />
             </div>
           ) : (
-            <div className="flex items-center justify-between">
+            <div>
               {phase === "upload" ? (
                 <>
-                  <span className="text-2xs text-muted-foreground">
-                    {queue.length} / {MAX_TRACKS} {t("common.tracks")}
-                  </span>
-                  <button
-                    onClick={startEditing}
-                    disabled={queue.length === 0 || allProcessing}
-                    className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {allProcessing ? (
-                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("uploadTrack.processing", "Processing...")}</>
-                    ) : (
-                      <>{t("uploadTrack.continue", "Continue")} <ChevronRight className="w-3.5 h-3.5" /></>
-                    )}
-                  </button>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-2xs text-muted-foreground">
+                      {queue.length} / {MAX_TRACKS} {t("common.tracks")}
+                    </span>
+                  </div>
+                  {queue.length > 0 && !allProcessing && (
+                    <div className="flex gap-3">
+                      {/* Quick Upload */}
+                      <div className="flex-1">
+                        <button
+                          onClick={handleQuickUpload}
+                          disabled={queue.length === 0 || allProcessing}
+                          className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-brand-orange text-brand-orange hover:bg-brand-orange/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <Zap className="w-3.5 h-3.5" /> Quick Upload
+                        </button>
+                        <p className="text-xs text-muted-foreground mt-2 max-w-[260px]">
+                          Skip all steps — upload now. BPM, Key & audio analysis will run automatically. You can always add lyrics, splits, credits and all other details later in Track Details.
+                        </p>
+                      </div>
+                      {/* Continue with details */}
+                      <div className="flex-1">
+                        <button
+                          onClick={startEditing}
+                          disabled={queue.length === 0 || allProcessing}
+                          className="w-full btn-brand flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Continue with details <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Fill in metadata, lyrics, splits & credits step by step
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {(queue.length === 0 || allProcessing) && (
+                    <div className="flex justify-end">
+                      <button
+                        disabled
+                        className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {allProcessing ? (
+                          <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("uploadTrack.processing", "Processing...")}</>
+                        ) : (
+                          <>{t("uploadTrack.continue", "Continue")} <ChevronRight className="w-3.5 h-3.5" /></>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
