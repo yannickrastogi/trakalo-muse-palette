@@ -198,25 +198,17 @@ export function ShareToWorkspaceModal({ open, onClose, trackId, sourceWorkspaceI
       console.error("Error revoking share:", error);
       toast.error(t("catalogSharing.revokeFailed"));
     } else {
-      // Clean up playlist_tracks in target workspace
+      // Clean up playlist_tracks in target workspace via RPC
       var revokedShare = existingShares.find(function (s) { return s.id === shareId; });
       var playlistMsg = "";
       if (revokedShare && revokedShare.track_id) {
-        var plRes = await supabase
-          .from("playlists")
-          .select("id")
-          .eq("workspace_id", revokedShare.target_workspace_id);
-        if (plRes.data && plRes.data.length > 0) {
-          var plIds = plRes.data.map(function (p: any) { return p.id; });
-          var delRes = await supabase
-            .from("playlist_tracks")
-            .delete()
-            .in("playlist_id", plIds)
-            .eq("track_id", revokedShare.track_id);
-          if (!delRes.error && delRes.data && (delRes.data as any[]).length > 0) {
-            var affectedPlaylists = new Set((delRes.data as any[]).map(function (d: any) { return d.playlist_id; }));
-            playlistMsg = " — Track removed from " + affectedPlaylists.size + " playlist" + (affectedPlaylists.size > 1 ? "s" : "");
-          }
+        var { data: deletedCount } = await supabase.rpc("clean_revoked_playlist_tracks", {
+          _source_workspace_id: sourceWorkspaceId,
+          _target_workspace_id: revokedShare.target_workspace_id,
+          _track_id: revokedShare.track_id
+        });
+        if (deletedCount && deletedCount > 0) {
+          playlistMsg = " — Track removed from playlists";
         }
       }
       toast.success(t("catalogSharing.revoked") + playlistMsg);
