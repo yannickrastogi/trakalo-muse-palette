@@ -177,7 +177,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const stemsInputRef = useRef<HTMLInputElement>(null);
   const lyricsFileInputRef = useRef<HTMLInputElement>(null);
 
-  const EDIT_STEPS = [t("uploadTrack.info"), t("uploadTrack.stems"), t("uploadTrack.lyrics"), t("uploadTrack.splits"), t("uploadTrack.review"), t("uploadTrack.workspacesStep", "Workspaces")];
+  const EDIT_STEPS = [t("uploadTrack.info"), t("uploadTrack.lyrics"), t("uploadTrack.stems"), t("uploadTrack.details", "Details"), t("uploadTrack.review"), t("uploadTrack.workspacesStep", "Workspaces")];
 
   const currentTrack = queue[currentIdx] || null;
 
@@ -784,8 +784,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   voice={currentTrack.voice} setVoice={(v) => updateCurrent({ voice: v })}
                   language={currentTrack.language} setLanguage={(v) => updateCurrent({ language: v })}
                   notes={currentTrack.notes} setNotes={(v) => updateCurrent({ notes: v })}
-                  details={currentTrack.details} updateDetail={updateDetail}
-                  addDetailEntry={addDetailEntry} removeDetailEntry={removeDetailEntry}
                   analysisResult={currentTrack.analysisResult}
                   analyzing={currentTrack.analyzing}
                   coverFile={currentTrack.coverFile}
@@ -793,6 +791,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                 />
               )}
               {phase === "edit" && currentTrack && editStep === 1 && (
+                <StepLyrics
+                  lyrics={currentTrack.lyrics}
+                  onUpdate={(v: string) => updateCurrent({ lyrics: v })}
+                  fileInputRef={lyricsFileInputRef}
+                />
+              )}
+              {phase === "edit" && currentTrack && editStep === 2 && (
                 <StepStems
                   stems={currentTrack.stems}
                   stemsInputRef={stemsInputRef}
@@ -800,20 +805,17 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   onRemove={removeStem}
                 />
               )}
-              {phase === "edit" && currentTrack && editStep === 2 && (
-                <StepLyrics
-                  lyrics={currentTrack.lyrics}
-                  onUpdate={(v: string) => updateCurrent({ lyrics: v })}
-                  fileInputRef={lyricsFileInputRef}
-                />
-              )}
               {phase === "edit" && currentTrack && editStep === 3 && (
-                <StepSplits
+                <StepDetails
                   splits={currentTrack.splits}
                   totalSplit={totalSplit}
                   onAdd={addSplit}
                   onUpdate={updateSplit}
                   onRemove={removeSplit}
+                  details={currentTrack.details}
+                  updateDetail={updateDetail}
+                  addDetailEntry={addDetailEntry}
+                  removeDetailEntry={removeDetailEntry}
                 />
               )}
               {phase === "edit" && currentTrack && editStep === 4 && (
@@ -1170,7 +1172,6 @@ function StepInfo({
   trackType, setTrackType,
   voice, setVoice,
   language, setLanguage, notes, setNotes,
-  details, updateDetail, addDetailEntry, removeDetailEntry,
   analysisResult, analyzing,
   coverFile, setCoverFile,
 }: {
@@ -1184,15 +1185,12 @@ function StepInfo({
   voice: string; setVoice: (v: string) => void;
   language: string; setLanguage: (v: string) => void;
   notes: string; setNotes: (v: string) => void;
-  details: Record<string, string[]>; updateDetail: (key: string, index: number, value: string) => void;
-  addDetailEntry: (key: string) => void; removeDetailEntry: (key: string, index: number) => void;
   analysisResult: AudioAnalysisResult | null;
   analyzing: boolean;
   coverFile: File | null;
   setCoverFile: (f: File | null) => void;
 }) {
   const { t } = useTranslation();
-  const [showDetails, setShowDetails] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const coverPreviewUrl = coverFile ? URL.createObjectURL(coverFile) : null;
 
@@ -1435,37 +1433,6 @@ function StepInfo({
         />
       </div>
 
-      {/* Credits */}
-      <div className="border-t border-border pt-4">
-        <button
-          onClick={() => setShowDetails(!showDetails)}
-          className="flex items-center gap-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showDetails ? "rotate-90" : ""}`} />
-          {t("uploadTrack.credits", "Credits")}
-          <span className="text-2xs text-muted-foreground/50 font-normal">{t("uploadTrack.creditsSubtitle", "— performers, production, studios")}</span>
-        </button>
-        {showDetails && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            className="mt-4 space-y-3"
-          >
-            <PerformerCreditsSection
-              details={details}
-              updateDetail={updateDetail}
-              addDetailEntry={addDetailEntry}
-              removeDetailEntry={removeDetailEntry}
-            />
-            <ProductionCreditsSection
-              details={details}
-              updateDetail={updateDetail}
-              addDetailEntry={addDetailEntry}
-              removeDetailEntry={removeDetailEntry}
-            />
-          </motion.div>
-        )}
-      </div>
     </div>
   );
 }
@@ -1599,6 +1566,74 @@ function StepSplits({
       >
         <Plus className="w-3.5 h-3.5" /> {t("editTrack.addCollaborator")}
       </button>
+    </div>
+  );
+}
+
+/* ─── Details Step (Splits + Credits) ─── */
+
+function StepDetails({
+  splits, totalSplit, onAdd, onUpdate, onRemove,
+  details, updateDetail, addDetailEntry, removeDetailEntry,
+}: {
+  splits: Split[];
+  totalSplit: number;
+  onAdd: () => void;
+  onUpdate: (id: string, field: keyof Split, value: string | number) => void;
+  onRemove: (id: string) => void;
+  details: Record<string, string[]>;
+  updateDetail: (key: string, index: number, value: string) => void;
+  addDetailEntry: (key: string) => void;
+  removeDetailEntry: (key: string, index: number) => void;
+}) {
+  const { t } = useTranslation();
+  const [showCredits, setShowCredits] = useState(false);
+
+  return (
+    <div className="space-y-5">
+      {/* Splits */}
+      <StepSplits
+        splits={splits}
+        totalSplit={totalSplit}
+        onAdd={onAdd}
+        onUpdate={onUpdate}
+        onRemove={onRemove}
+      />
+
+      {/* Separator */}
+      <div className="border-t border-border" />
+
+      {/* Credits */}
+      <div>
+        <button
+          onClick={() => setShowCredits(!showCredits)}
+          className="flex items-center gap-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showCredits ? "rotate-90" : ""}`} />
+          {t("uploadTrack.credits", "Credits")}
+          <span className="text-2xs text-muted-foreground/50 font-normal">{t("uploadTrack.creditsSubtitle", "— performers, production, studios")}</span>
+        </button>
+        {showCredits && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mt-4 space-y-3"
+          >
+            <PerformerCreditsSection
+              details={details}
+              updateDetail={updateDetail}
+              addDetailEntry={addDetailEntry}
+              removeDetailEntry={removeDetailEntry}
+            />
+            <ProductionCreditsSection
+              details={details}
+              updateDetail={updateDetail}
+              addDetailEntry={addDetailEntry}
+              removeDetailEntry={removeDetailEntry}
+            />
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1749,17 +1784,17 @@ function StepReview({
         {notes && <p className="text-2xs text-muted-foreground pt-1 italic">"{notes}"</p>}
       </div>
 
-      {/* Credits */}
-      {filledDetails.length > 0 && (
-        <div className="rounded-xl bg-secondary/50 border border-border p-4 space-y-2">
-          <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">{t("uploadTrack.creditsAndDetails", "Credits & Details")}</p>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[13px]">
-            {filledDetails.map((f) => (
-              <ReviewRow key={f.key} label={f.label} value={details[f.key].filter((v) => v.trim()).join(", ")} />
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Lyrics */}
+      <div className="rounded-xl bg-secondary/50 border border-border p-4">
+        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">{t("uploadTrack.lyrics")}</p>
+        {lyrics?.trim() ? (
+          <pre className="whitespace-pre-wrap text-xs text-foreground/80 font-mono leading-relaxed max-h-32 overflow-y-auto">
+            {lyrics}
+          </pre>
+        ) : (
+          <p className="text-2xs text-muted-foreground italic">{t("uploadTrack.noLyrics", "No lyrics added")}</p>
+        )}
+      </div>
 
       {/* Audio */}
       <div className="rounded-xl bg-secondary/50 border border-border p-4">
@@ -1793,18 +1828,6 @@ function StepReview({
         )}
       </div>
 
-      {/* Lyrics */}
-      <div className="rounded-xl bg-secondary/50 border border-border p-4">
-        <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">{t("uploadTrack.lyrics")}</p>
-        {lyrics?.trim() ? (
-          <pre className="whitespace-pre-wrap text-xs text-foreground/80 font-mono leading-relaxed max-h-32 overflow-y-auto">
-            {lyrics}
-          </pre>
-        ) : (
-          <p className="text-2xs text-muted-foreground italic">{t("uploadTrack.noLyrics", "No lyrics added")}</p>
-        )}
-      </div>
-
       {/* Splits */}
       <div className="rounded-xl bg-secondary/50 border border-border p-4">
         <div className="flex items-center justify-between mb-2">
@@ -1828,6 +1851,18 @@ function StepReview({
           <p className="text-2xs text-muted-foreground italic">{t("uploadTrack.noContributors", "No contributors added")}</p>
         )}
       </div>
+
+      {/* Credits */}
+      {filledDetails.length > 0 && (
+        <div className="rounded-xl bg-secondary/50 border border-border p-4 space-y-2">
+          <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">{t("uploadTrack.creditsAndDetails", "Credits & Details")}</p>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[13px]">
+            {filledDetails.map((f) => (
+              <ReviewRow key={f.key} label={f.label} value={details[f.key].filter((v) => v.trim()).join(", ")} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
