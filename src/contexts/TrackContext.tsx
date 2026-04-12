@@ -4,6 +4,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import type { WorkspaceScoped } from "@/types/workspace";
+import { toast } from "sonner";
 
 export interface TrackStem {
   id: string;
@@ -665,6 +666,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (data?.id && trackInput.originalFileUrl) {
         console.log('[SonicDNA] Queuing analysis for track:', data.id, 'path:', trackInput.originalFileUrl);
         sonicDnaQueueRef.current.push({ track_id: data.id, storage_path: trackInput.originalFileUrl });
+        toast.info("Analyzing audio — BPM, key & mood will appear shortly...", { duration: 5000 });
         processSonicDnaQueue();
       }
 
