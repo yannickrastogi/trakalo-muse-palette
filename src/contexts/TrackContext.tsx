@@ -261,6 +261,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
   // Sonic DNA sequential queue to prevent Railway OOM on bulk uploads
   const sonicDnaQueueRef = useRef<Array<{ track_id: string; storage_path: string }>>([]);
   const sonicDnaProcessingRef = useRef(false);
+  const fetchTracksRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   // Fetch tracks from Supabase when workspace changes
   const fetchTracks = useCallback(async () => {
@@ -552,6 +553,9 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     }
   }, [activeWorkspace, user]);
 
+  // Keep ref in sync so the long-running queue always calls the latest fetchTracks
+  fetchTracksRef.current = fetchTracks;
+
   useEffect(() => {
     fetchTracks();
   }, [fetchTracks]);
@@ -574,7 +578,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           const dnaResult = await res.json();
           console.log('[SonicDNA] Result for', task.track_id, ':', dnaResult);
           if (dnaResult?.success) {
-            await fetchTracks();
+            await fetchTracksRef.current();
           }
         } catch (err) {
           console.error('[SonicDNA] Error for', task.track_id, ':', err);
@@ -583,7 +587,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     } finally {
       sonicDnaProcessingRef.current = false;
     }
-  }, [fetchTracks]);
+  }, []);
 
   const getTrack = useCallback(
     (id: number) => {

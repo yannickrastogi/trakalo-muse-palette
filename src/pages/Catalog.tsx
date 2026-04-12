@@ -407,7 +407,7 @@ export default function Catalog() {
                                 const parts = [track.type, track.genre, track.bpm ? track.bpm + " BPM" : null, track.key].filter(Boolean).join(" · ");
                                 if (parts) return parts;
                                 const isRecent = track.createdAt && (Date.now() - new Date(track.createdAt).getTime()) < 5 * 60 * 1000;
-                                if (isRecent) return <span className="animate-pulse">⏳ Analyzing...</span>;
+                                if (isRecent) return <span className="animate-pulse text-brand-orange">⏳ Analyzing...</span>;
                                 return "—";
                               })()}
                             </span>
@@ -546,9 +546,17 @@ export default function Catalog() {
                          <div className="flex items-center gap-2 pt-1 flex-wrap">
                            <span className="text-2xs text-muted-foreground shrink-0">{track.genre || "—"}</span>
                            <span className="w-px h-3 bg-border shrink-0" />
-                           <span className="text-2xs font-mono text-foreground/50 tabular-nums shrink-0">{track.bpm ? `${track.bpm} BPM` : "—"}</span>
-                           <span className="w-px h-3 bg-border shrink-0" />
-                           <span className="text-2xs font-semibold text-foreground/50 shrink-0">{track.key || "—"}</span>
+                           {(() => {
+                             const isRecent = track.createdAt && (Date.now() - new Date(track.createdAt).getTime()) < 5 * 60 * 1000;
+                             if (!track.bpm && !track.key && isRecent) {
+                               return <span className="text-2xs font-semibold text-brand-orange animate-pulse shrink-0">⏳ Analyzing...</span>;
+                             }
+                             return <>
+                               <span className="text-2xs font-mono text-foreground/50 tabular-nums shrink-0">{track.bpm ? `${track.bpm} BPM` : "—"}</span>
+                               <span className="w-px h-3 bg-border shrink-0" />
+                               <span className="text-2xs font-semibold text-foreground/50 shrink-0">{track.key || "—"}</span>
+                             </>;
+                           })()}
                            {track.voice && (
                              <>
                                <span className="w-px h-3 bg-border shrink-0" />

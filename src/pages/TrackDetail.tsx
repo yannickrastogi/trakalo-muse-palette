@@ -559,7 +559,7 @@ export default function TrackDetail() {
                   {!isEmptyValue(track.bpm) && <MetaChip icon={Activity} label={track.bpm + " BPM"} />}
                   {!isEmptyValue(track.key) && <MetaChip icon={({ className }: { className?: string }) => <span className={className}>#</span>} label={track.key} />}
                   {isEmptyValue(track.bpm) && isEmptyValue(track.key) && track.createdAt && (Date.now() - new Date(track.createdAt).getTime()) < 5 * 60 * 1000 && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary text-xs font-medium text-muted-foreground animate-pulse">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-orange/10 text-xs font-medium text-brand-orange animate-pulse">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       Analyzing...
                     </span>
