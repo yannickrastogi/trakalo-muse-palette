@@ -44,8 +44,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         // Auto-create workspace for new users
         if (!creatingWorkspaceRef.current && user) {
           creatingWorkspaceRef.current = true;
-          const userName = (user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "My");
           try {
+            // DB-level guard: re-check workspaces exist before creating
+            const { data: existingWs } = await supabase.rpc("get_user_workspaces", { _user_id: user.id });
+            if (existingWs && existingWs.length > 0) {
+              // Workspaces already exist (created by concurrent call), just use them
+              creatingWorkspaceRef.current = false;
+              await fetchWorkspaces();
+              return;
+            }
+
+            const userName = (user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "My");
             const { data: newWsId, error: createError } = await supabase.rpc("create_workspace_with_member", {
               _name: userName + "'s Workspace",
               _description: null,
@@ -54,6 +63,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             if (!createError && newWsId) {
               // Mark as personal workspace
               await supabase.from("workspaces").update({ is_personal: true } as any).eq("id", newWsId);
+
+              // Deduplicate: if multiple personal workspaces were created, remove extras
+              const { data: personalWsList } = await supabase
+                .from("workspaces")
+                .select("id, created_at")
+                .eq("owner_id", user.id)
+                .eq("is_personal", true)
+                .order("created_at", { ascending: true }) as any;
+              if (personalWsList && personalWsList.length > 1) {
+                // Keep the oldest, soft-delete the rest
+                const duplicateIds = personalWsList.slice(1).map((w: any) => w.id);
+                await supabase.from("workspaces").update({ is_personal: false } as any).in("id", duplicateIds);
+              }
+
               // Re-fetch to get the new workspace
               const { data: newWsData } = await supabase.rpc("get_user_workspaces", { _user_id: user.id });
               if (newWsData && newWsData.length > 0) {
