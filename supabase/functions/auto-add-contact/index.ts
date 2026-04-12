@@ -8,7 +8,7 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
-    const { workspace_id, email, first_name, last_name, role, company } = await req.json();
+    const { workspace_id, email, first_name, last_name, role, company, pro, ipi, publisher } = await req.json();
 
     if (!workspace_id || !email || !first_name) {
       return new Response(JSON.stringify({ error: "workspace_id, email, and first_name are required" }), {
@@ -38,13 +38,22 @@ serve(async (req) => {
     // Check if contact with this email already exists in this workspace
     const { data: existing } = await supabase
       .from("contacts")
-      .select("id")
+      .select("id, pro, ipi, publisher")
       .eq("workspace_id", workspace_id)
       .eq("email", email)
       .maybeSingle();
 
     if (existing) {
-      return new Response(JSON.stringify({ success: true, action: "already_exists", id: existing.id }), {
+      // Update empty fields with new values
+      const updates: Record<string, string> = {};
+      if (!existing.pro && pro) updates.pro = pro;
+      if (!existing.ipi && ipi) updates.ipi = ipi;
+      if (!existing.publisher && publisher) updates.publisher = publisher;
+      if (Object.keys(updates).length > 0) {
+        updates.updated_at = new Date().toISOString();
+        await supabase.from("contacts").update(updates).eq("id", existing.id);
+      }
+      return new Response(JSON.stringify({ success: true, action: "updated", id: existing.id }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -60,6 +69,9 @@ serve(async (req) => {
         last_name: last_name || null,
         role: role || null,
         company: company || null,
+        pro: pro || null,
+        ipi: ipi || null,
+        publisher: publisher || null,
       })
       .select("id")
       .single();

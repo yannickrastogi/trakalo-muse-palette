@@ -140,6 +140,9 @@ export default function StudioSession() {
             last_name: lastName,
             role: roles.length > 0 ? roles.join(", ") : null,
             company: publisherName.trim() || null,
+            pro: proName.trim() || null,
+            ipi: ipiNumber.trim() || null,
+            publisher: publisherName.trim() || null,
           },
         });
         setMode("success");

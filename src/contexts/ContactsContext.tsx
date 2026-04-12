@@ -11,6 +11,9 @@ export interface Contact extends WorkspaceScoped {
   email: string;
   organization: string;
   role: string;
+  pro: string;
+  ipi: string;
+  publisher: string;
   firstInteraction: string;
   lastDownload: string;
   tracksDownloaded: string[];
@@ -21,6 +24,7 @@ interface ContactsContextValue {
   contacts: Contact[];
   addOrUpdateContact: (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => void;
   getContact: (email: string) => Contact | undefined;
+  upsertCollaborator: (data: { firstName: string; lastName: string; email?: string; pro?: string; ipi?: string; publisher?: string }) => void;
 }
 
 const ContactsContext = createContext<ContactsContextValue | null>(null);
@@ -34,6 +38,9 @@ function mapRowToContact(row: Record<string, unknown>): Contact {
     email: (row.email as string) || "",
     organization: (row.company as string) || "",
     role: (row.role as string) || "",
+    pro: (row.pro as string) || "",
+    ipi: (row.ipi as string) || "",
+    publisher: (row.publisher as string) || "",
     firstInteraction: (row.created_at as string) || "",
     lastDownload: (row.updated_at as string) || "",
     tracksDownloaded: [],
@@ -122,6 +129,48 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
     [activeWorkspace, user, contacts, fetchContacts]
   );
 
+  const upsertCollaborator = useCallback(
+    async (data: { firstName: string; lastName: string; email?: string; pro?: string; ipi?: string; publisher?: string }) => {
+      if (!activeWorkspace || !user) return;
+      var fullName = ((data.firstName || "") + " " + (data.lastName || "")).trim();
+      if (!fullName) return;
+
+      // Find existing contact by name (case-insensitive)
+      var existing = contacts.find(function (c) {
+        var cFull = ((c.firstName || "") + " " + (c.lastName || "")).trim().toLowerCase();
+        return cFull === fullName.toLowerCase();
+      });
+
+      if (existing) {
+        // Only update fields that were empty and now have a value
+        var updates: Record<string, string> = {};
+        if (!existing.pro && data.pro) updates.pro = data.pro;
+        if (!existing.ipi && data.ipi) updates.ipi = data.ipi;
+        if (!existing.publisher && data.publisher) updates.publisher = data.publisher;
+        if (!existing.email && data.email) updates.email = data.email;
+        if (Object.keys(updates).length > 0) {
+          updates.updated_at = new Date().toISOString();
+          await supabase.from("contacts").update(updates).eq("id", existing.id);
+          await fetchContacts();
+        }
+      } else {
+        // Insert new contact
+        await supabase.from("contacts").insert({
+          workspace_id: activeWorkspace.id,
+          created_by: user.id,
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email || null,
+          pro: data.pro || null,
+          ipi: data.ipi || null,
+          publisher: data.publisher || null,
+        });
+        await fetchContacts();
+      }
+    },
+    [activeWorkspace, user, contacts, fetchContacts]
+  );
+
   const getContact = useCallback(
     (email: string) => {
       return contacts.find((c) => c.email.toLowerCase() === email.toLowerCase());
@@ -130,7 +179,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <ContactsContext.Provider value={{ contacts, addOrUpdateContact, getContact }}>
+    <ContactsContext.Provider value={{ contacts, addOrUpdateContact, getContact, upsertCollaborator }}>
       {children}
     </ContactsContext.Provider>
   );

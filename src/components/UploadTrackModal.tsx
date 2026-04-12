@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -32,6 +32,9 @@ import {
   ArrowRightLeft,
   Zap,
 } from "lucide-react";
+import { CollaboratorAutocomplete, type CollaboratorSuggestion } from "@/components/CollaboratorAutocomplete";
+import { useContacts, type Contact } from "@/contexts/ContactsContext";
+import { useTrack as useTrackContext } from "@/contexts/TrackContext";
 import { PerformerCreditsSection } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
 import {
@@ -183,6 +186,8 @@ function createTrackEntry(file: File): TrackEntry {
 export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) {
   const { t } = useTranslation();
   const { tracks, addTrack, updateTrack, refreshTracks } = useTrack();
+  const { tracks: allTracks } = useTrackContext();
+  const { contacts, upsertCollaborator } = useContacts();
   const { teams } = useTeams();
   const { activeWorkspace, workspaces } = useWorkspace();
   const { user } = useAuth();
@@ -206,6 +211,18 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const EDIT_STEPS = [t("uploadTrack.info"), t("uploadTrack.lyrics"), t("uploadTrack.stems"), t("uploadTrack.details", "Details"), t("uploadTrack.review"), t("uploadTrack.workspacesStep", "Workspaces")];
 
   const currentTrack = queue[currentIdx] || null;
+
+  // Existing split names from all workspace tracks (for autocomplete)
+  const existingSplitNames = useMemo(function () {
+    var names = new Set<string>();
+    for (var i = 0; i < allTracks.length; i++) {
+      var s = allTracks[i].splits;
+      if (s) for (var j = 0; j < s.length; j++) {
+        if (s[j].name) names.add(s[j].name);
+      }
+    }
+    return Array.from(names);
+  }, [allTracks]);
 
   // ─── File handling ──────────────────────────────────────────
 
@@ -561,6 +578,20 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             access_level: "pitcher",
           });
         }
+      }
+
+      // ── Auto-save collaborators to contacts ──
+      for (var si = 0; si < currentTrack.splits.length; si++) {
+        var sp = currentTrack.splits[si];
+        if (!sp.name.trim()) continue;
+        var parts = sp.name.trim().split(" ");
+        upsertCollaborator({
+          firstName: parts[0] || "",
+          lastName: parts.slice(1).join(" ") || "",
+          pro: sp.pro || undefined,
+          ipi: sp.ipi || undefined,
+          publisher: sp.publisher || undefined,
+        });
       }
 
       setUploadProgress(100);
@@ -1026,6 +1057,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   copyright={currentTrack.copyright}
                   explicit={currentTrack.explicit}
                   onMetadataChange={(field: string, value: string | boolean) => updateCurrent({ [field]: value })}
+                  contacts={contacts}
+                  existingSplitNames={existingSplitNames}
                 />
               )}
               {phase === "edit" && currentTrack && editStep === 4 && (
@@ -1755,13 +1788,15 @@ function StepStems({
 /* ─── Splits Step ─── */
 
 function StepSplits({
-  splits, totalSplit, onAdd, onUpdate, onRemove,
+  splits, totalSplit, onAdd, onUpdate, onRemove, contacts, existingSplitNames,
 }: {
   splits: Split[];
   totalSplit: number;
   onAdd: () => void;
   onUpdate: (id: string, field: keyof Split, value: string | number) => void;
   onRemove: (id: string) => void;
+  contacts: Contact[];
+  existingSplitNames: string[];
 }) {
   const { t } = useTranslation();
   return (
@@ -1794,7 +1829,7 @@ function StepSplits({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.name", "Name")}</label>
-                <input value={split.name} onChange={(e) => onUpdate(split.id, "name", e.target.value)} placeholder={t("uploadTrack.fullName", "Full name")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                <CollaboratorAutocomplete value={split.name} onChange={(v) => onUpdate(split.id, "name", v)} onSelect={(s) => { onUpdate(split.id, "name", s.fullName); if (s.pro) onUpdate(split.id, "pro", s.pro); if (s.ipi) onUpdate(split.id, "ipi", s.ipi); if (s.publisher) onUpdate(split.id, "publisher", s.publisher); }} contacts={contacts} existingSplitNames={existingSplitNames} placeholder={t("uploadTrack.fullName", "Full name")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.role", "Role")}</label>
@@ -1840,7 +1875,7 @@ function StepDetails({
   details, updateDetail, addDetailEntry, removeDetailEntry,
   isrc, upc, album, label, publisher, releaseDate,
   writtenBy, producedBy, mixedBy, masteredBy, copyright, explicit: isExplicit,
-  onMetadataChange,
+  onMetadataChange, contacts, existingSplitNames,
 }: {
   splits: Split[];
   totalSplit: number;
@@ -1855,6 +1890,8 @@ function StepDetails({
   releaseDate: string; writtenBy: string; producedBy: string; mixedBy: string;
   masteredBy: string; copyright: string; explicit: boolean;
   onMetadataChange: (field: string, value: string | boolean) => void;
+  contacts: Contact[];
+  existingSplitNames: string[];
 }) {
   const { t } = useTranslation();
   const [showCredits, setShowCredits] = useState(false);
@@ -1869,6 +1906,8 @@ function StepDetails({
         onAdd={onAdd}
         onUpdate={onUpdate}
         onRemove={onRemove}
+        contacts={contacts}
+        existingSplitNames={existingSplitNames}
       />
 
       {/* Separator */}

@@ -98,6 +98,8 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbP
 import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
 import { StemsTab } from "@/components/StemsTab";
+import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
+import { useContacts } from "@/contexts/ContactsContext";
 import { STEM_TYPES, DEFAULT_COVER, PROS } from "@/lib/constants";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { generateWaveform } from "@/lib/waveformGenerator";
@@ -1850,12 +1852,25 @@ interface StudioSubmission {
 function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUuid?: string; readOnly?: boolean }) {
   const { t } = useTranslation();
   const { permissions: splitsPermissions } = useRole();
-  const { getTrack, updateTrackSplits } = useTrack();
+  const { getTrack, updateTrackSplits, tracks: allTracks } = useTrack();
+  const { contacts, upsertCollaborator } = useContacts();
   const trackData = getTrack(trackId);
   const splits = trackData?.splits || [];
   const totalShares = splits.reduce((sum, s) => sum + s.share, 0);
   const [editing, setEditing] = useState(false);
   const [editSplits, setEditSplits] = useState<TrackSplit[]>([]);
+
+  // Existing split names from all workspace tracks (for autocomplete)
+  const existingSplitNames = useMemo(function () {
+    var names = new Set<string>();
+    for (var i = 0; i < allTracks.length; i++) {
+      var s = allTracks[i].splits;
+      if (s) for (var j = 0; j < s.length; j++) {
+        if (s[j].name) names.add(s[j].name);
+      }
+    }
+    return Array.from(names);
+  }, [allTracks]);
 
   // Studio submissions
   const [submissions, setSubmissions] = useState<StudioSubmission[]>([]);
@@ -2253,6 +2268,19 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
       return;
     }
     updateTrackSplits(trackId, filtered);
+    // Auto-save collaborators to contacts
+    for (var i = 0; i < filtered.length; i++) {
+      var sp = filtered[i];
+      var parts = sp.name.trim().split(" ");
+      upsertCollaborator({
+        firstName: parts[0] || "",
+        lastName: parts.slice(1).join(" ") || "",
+        email: sp.email || undefined,
+        pro: sp.pro || undefined,
+        ipi: sp.ipi || undefined,
+        publisher: sp.publisher || undefined,
+      });
+    }
     setEditing(false);
   };
 
@@ -2314,7 +2342,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <label className="text-2xs text-muted-foreground font-medium">Name</label>
-                  <input value={split.name} onChange={(e) => updateSplit(split.id, "name", e.target.value)} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                  <CollaboratorAutocomplete value={split.name} onChange={(v) => updateSplit(split.id, "name", v)} onSelect={(s) => { updateSplit(split.id, "name", s.fullName); if (s.pro) updateSplit(split.id, "pro", s.pro); if (s.ipi) updateSplit(split.id, "ipi", s.ipi); if (s.publisher) updateSplit(split.id, "publisher", s.publisher); if (s.email) updateSplit(split.id, "email", s.email); }} contacts={contacts} existingSplitNames={existingSplitNames} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-2xs text-muted-foreground font-medium">Email</label>
