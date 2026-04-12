@@ -99,6 +99,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                   hero_focal_point: ws.hero_focal_point || null,
                   logo_url: ws.logo_url || null,
                   brand_color: ws.brand_color || null,
+                  social_instagram: ws.social_instagram || null,
+                  social_tiktok: ws.social_tiktok || null,
+                  social_youtube: ws.social_youtube || null,
+                  social_facebook: ws.social_facebook || null,
+                  social_x: ws.social_x || null,
                   is_personal: !!ws.is_personal,
                 }));
                 setWorkspaces(mapped);

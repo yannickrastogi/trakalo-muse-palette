@@ -25,6 +25,11 @@ export interface Workspace {
   hero_focal_point: string | null;
   logo_url: string | null;
   brand_color: string | null;
+  social_instagram: string | null;
+  social_tiktok: string | null;
+  social_youtube: string | null;
+  social_facebook: string | null;
+  social_x: string | null;
   is_personal: boolean;
 }
 
