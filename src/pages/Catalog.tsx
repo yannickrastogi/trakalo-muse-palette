@@ -403,7 +403,13 @@ export default function Catalog() {
                           </td>
                           <td className="px-4 py-3 hidden sm:table-cell">
                             <span className="text-xs text-muted-foreground">
-                              {[track.type, track.genre, track.bpm ? track.bpm + " BPM" : null, track.key].filter(Boolean).join(" · ") || "—"}
+                              {(() => {
+                                const parts = [track.type, track.genre, track.bpm ? track.bpm + " BPM" : null, track.key].filter(Boolean).join(" · ");
+                                if (parts) return parts;
+                                const isRecent = track.createdAt && (Date.now() - new Date(track.createdAt).getTime()) < 5 * 60 * 1000;
+                                if (isRecent) return <span className="animate-pulse">⏳ Analyzing...</span>;
+                                return "—";
+                              })()}
                             </span>
                           </td>
                           <td className="px-4 py-3 hidden md:table-cell">

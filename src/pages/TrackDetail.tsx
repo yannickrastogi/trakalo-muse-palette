@@ -558,6 +558,12 @@ export default function TrackDetail() {
                   {!isEmptyValue(track.genre) && <MetaChip icon={Disc3} label={track.genre} />}
                   {!isEmptyValue(track.bpm) && <MetaChip icon={Activity} label={track.bpm + " BPM"} />}
                   {!isEmptyValue(track.key) && <MetaChip icon={({ className }: { className?: string }) => <span className={className}>#</span>} label={track.key} />}
+                  {isEmptyValue(track.bpm) && isEmptyValue(track.key) && track.createdAt && (Date.now() - new Date(track.createdAt).getTime()) < 5 * 60 * 1000 && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary text-xs font-medium text-muted-foreground animate-pulse">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Analyzing...
+                    </span>
+                  )}
                   {!isEmptyValue(track.language) && <MetaChip icon={Mic} label={track.language} />}
                   {!isEmptyValue(track.voice) && <MetaChip icon={Mic} label={track.voice} />}
                   {!isEmptyValue(track.duration) && <MetaChip icon={Clock} label={track.duration} />}
