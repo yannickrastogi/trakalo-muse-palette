@@ -226,6 +226,8 @@ export default function TrackDetail() {
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
   const [commentFilterAuthor, setCommentFilterAuthor] = useState<string | null>(null);
   const [commentFilterLink, setCommentFilterLink] = useState<string | null>(null);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [editNotesValue, setEditNotesValue] = useState("");
   const { teams } = useTeams();
   const currentUserName = user?.user_metadata?.full_name || user?.email || "Unknown";
 
@@ -937,10 +939,55 @@ export default function TrackDetail() {
                  {track.notes && track.notes.trim() !== "" && (
                    <>
                      <div>
-                       <p className="text-sm font-semibold text-foreground mb-2">Track Notes</p>
-                       <div className="bg-secondary rounded-lg p-4 text-sm text-foreground whitespace-pre-wrap">
-                         {track.notes}
+                       <div className="flex items-center justify-between mb-2">
+                         <p className="text-sm font-semibold text-foreground">Track Notes</p>
+                         {!isViewerShared && permissions.canEditTracks && !editingNotes && (
+                           <div className="flex items-center gap-1">
+                             <button
+                               onClick={() => { setEditNotesValue(track.notes || ""); setEditingNotes(true); }}
+                               className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                               title="Edit notes"
+                             >
+                               <PenLine className="w-3.5 h-3.5" />
+                             </button>
+                             <button
+                               onClick={() => { updateTrack(track.id, { notes: "" }); toast.success("Notes deleted"); }}
+                               className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                               title="Delete notes"
+                             >
+                               <Trash2 className="w-3.5 h-3.5" />
+                             </button>
+                           </div>
+                         )}
                        </div>
+                       {editingNotes ? (
+                         <div className="space-y-2">
+                           <Textarea
+                             value={editNotesValue}
+                             onChange={(e) => setEditNotesValue(e.target.value)}
+                             className="min-h-[80px] text-sm"
+                             autoFocus
+                           />
+                           <div className="flex gap-2 justify-end">
+                             <button
+                               onClick={() => setEditingNotes(false)}
+                               className="px-3 py-1.5 text-xs rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
+                             >
+                               Cancel
+                             </button>
+                             <button
+                               onClick={() => { updateTrack(track.id, { notes: editNotesValue.trim() }); setEditingNotes(false); toast.success("Notes updated"); }}
+                               className="px-3 py-1.5 text-xs rounded-md bg-brand-orange text-white hover:bg-brand-orange/90 transition-colors"
+                             >
+                               Save
+                             </button>
+                           </div>
+                         </div>
+                       ) : (
+                         <div className="bg-secondary rounded-lg p-4 text-sm text-foreground whitespace-pre-wrap">
+                           {track.notes}
+                         </div>
+                       )}
                      </div>
                      <div className="border-t border-border my-4" />
                    </>
