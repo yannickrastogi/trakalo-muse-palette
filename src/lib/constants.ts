@@ -66,6 +66,17 @@ export const LANGUAGES = [
   "Zulu",
 ] as const;
 
+export const SPLIT_ROLES = [
+  "Songwriter", "Producer", "Artist", "Musician",
+] as const;
+
+export const INDUSTRY_ROLES = [
+  "Songwriter", "Producer", "Artist", "A&R", "Manager", "Musician",
+  "Mix Engineer", "Mastering Engineer", "Publisher", "DJ",
+  "Label Representative", "Booking Agent", "Music Director",
+  "Music Supervisor", "PR", "Assistant", "Lawyer", "Photographer", "Videographer",
+] as const;
+
 export const PROS = [
   "ABRAMUS (Brazil)", "ACDAM (Cuba)", "ACUM (Israel)", "AEPI (Greece)", "AGADU (Uruguay)",
   "AKKA/LAA (Latvia)", "AKM (Austria)", "APDAYC (Peru)", "APRA AMCOS (Australia/NZ)",

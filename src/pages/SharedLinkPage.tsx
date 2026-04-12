@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark, ShieldCheck } from "lucide-react";
-import { DEFAULT_COVER } from "@/lib/constants";
+import { DEFAULT_COVER, INDUSTRY_ROLES } from "@/lib/constants";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import JSZip from "jszip";
 import {
@@ -1105,7 +1105,7 @@ export default function SharedLinkPage() {
                   className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium appearance-none cursor-pointer"
                 >
                   <option value="">Select role...</option>
-                  {["Artist", "Manager", "Producer", "A&R", "Music Director", "Publisher", "Sync Agent", "Songwriter", "Musician", "Assistant", "Mix Engineer", "Mastering Engineer", "PR", "Video Director", "Other"].map(function(r) { return <option key={r} value={r}>{r}</option>; })}
+                  {INDUSTRY_ROLES.map(function(r) { return <option key={r} value={r}>{r}</option>; })}
                 </select>
               </div>
               <div className="space-y-1.5">

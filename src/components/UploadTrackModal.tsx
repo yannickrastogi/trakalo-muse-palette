@@ -49,7 +49,7 @@ const MAX_TRACKS = 20;
 
 const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
-import { GENRES, KEYS, MOODS, LANGUAGES, PROS } from "@/lib/constants";
+import { GENRES, KEYS, MOODS, LANGUAGES, PROS, SPLIT_ROLES } from "@/lib/constants";
 
 interface Split {
   id: string;
@@ -1833,7 +1833,10 @@ function StepSplits({
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.role", "Role")}</label>
-                <input value={split.role} onChange={(e) => onUpdate(split.id, "role", e.target.value)} placeholder={t("uploadTrack.rolePlaceholder", "e.g. Producer")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                <select value={split.role} onChange={(e) => onUpdate(split.id, "role", e.target.value)} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium appearance-none cursor-pointer" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center" }}>
+                  <option value="">{t("uploadTrack.selectRole", "Select role")}</option>
+                  {SPLIT_ROLES.map(function (r) { return <option key={r} value={r}>{r}</option>; })}
+                </select>
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.share", "Split %")}</label>

@@ -4,23 +4,11 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
-import { DEFAULT_COVER, PROS } from "@/lib/constants";
+import { DEFAULT_COVER, PROS, SPLIT_ROLES } from "@/lib/constants";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import { Music, User, Mail, Briefcase, DollarSign, CheckCircle, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
 
-var ROLE_OPTIONS = [
-  { value: "Songwriter", labelKey: "studioQr.songwriter" },
-  { value: "Producer", labelKey: "studioQr.producer" },
-  { value: "Composer", labelKey: "studioQr.composer" },
-  { value: "Topliner", labelKey: "studioQr.topliner" },
-  { value: "Beat Maker", labelKey: "studioQr.beatMaker" },
-  { value: "Musician", labelKey: "studioQr.musician" },
-  { value: "Mix Engineer", labelKey: "studioQr.mixEngineer" },
-  { value: "Mastering Engineer", labelKey: "studioQr.masteringEngineer" },
-  { value: "Featured Artist", labelKey: "studioQr.featuredArtist" },
-  { value: "Background Vocalist", labelKey: "studioQr.backgroundVocalist" },
-  { value: "Other", labelKey: "studioQr.other" },
-];
+var ROLE_OPTIONS = SPLIT_ROLES.map(function (r) { return { value: r, label: r }; });
 
 var inputClass = "h-11 w-full px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors";
 
@@ -390,7 +378,7 @@ export default function StudioSession() {
                       }
                       onClick={function () { toggleRole(opt.value); }}
                     >
-                      {t(opt.labelKey)}
+                      {opt.label}
                     </button>
                   );
                 })}
