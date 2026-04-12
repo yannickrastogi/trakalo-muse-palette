@@ -933,6 +933,18 @@ export default function TrackDetail() {
                )}
                {activeTab === "review" && (
                  <div className="space-y-4">
+                 {/* Track notes */}
+                 {track.notes && track.notes.trim() !== "" && (
+                   <>
+                     <div>
+                       <p className="text-sm font-semibold text-foreground mb-2">Track Notes</p>
+                       <div className="bg-secondary rounded-lg p-4 text-sm text-foreground whitespace-pre-wrap">
+                         {track.notes}
+                       </div>
+                     </div>
+                     <div className="border-t border-border my-4" />
+                   </>
+                 )}
                  {/* Recipient feedback filter pills */}
                  {commentCount > 0 && (
                    <div className="px-0 py-3">
