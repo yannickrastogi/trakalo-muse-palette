@@ -1322,6 +1322,7 @@ function StepInfo({
       </div>
       {/* BPM and Key fields when no analysis available */}
       {!analyzing && !analysisResult && (
+        <>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <FieldLabel>{t("uploadTrack.bpm")}</FieldLabel>
@@ -1332,6 +1333,10 @@ function StepInfo({
             <FieldSelect value={trackKey} onChange={setTrackKey} options={trackKey && !(KEYS as readonly string[]).includes(trackKey) ? [trackKey, ...KEYS] : KEYS} placeholder={t("uploadTrack.selectKey")} />
           </div>
         </div>
+        {!bpm && !trackKey && (
+          <p className="text-2xs text-muted-foreground italic">{t("uploadTrack.sonicDnaAutoDetect", "BPM & Key will be auto-detected by Sonic DNA after upload")}</p>
+        )}
+        </>
       )}
       <div className="grid grid-cols-1 gap-4">
         <div className="space-y-1.5">

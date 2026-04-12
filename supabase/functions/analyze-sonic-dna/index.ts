@@ -118,18 +118,29 @@ Deno.serve(async (req) => {
     // BPM and key are nested objects: sonicDna.bpm = { bpm, confidence, ... }, sonicDna.key = { key, mode, confidence }
     const updatePayload: Record<string, unknown> = { sonic_dna: sonicDna };
 
+    // Fetch existing track to check if user already provided BPM/Key
+    const { data: existingTrack } = await supabaseAdmin
+      .from("tracks")
+      .select("bpm, key")
+      .eq("id", track_id)
+      .single();
+
+    const hasUserBpm = existingTrack?.bpm != null && existingTrack.bpm > 0;
+    const hasUserKey = existingTrack?.key != null && existingTrack.key !== "";
+
     const bpmData = sonicDna.bpm;
-    if (bpmData && typeof bpmData === "object" && bpmData.bpm && bpmData.confidence > 0.7) {
+    if (bpmData && typeof bpmData === "object" && bpmData.bpm && bpmData.confidence > 0.7 && !hasUserBpm) {
       updatePayload.bpm = Math.round(bpmData.bpm);
     }
     const keyData = sonicDna.key;
-    if (keyData && typeof keyData === "object" && keyData.key && keyData.confidence > 0.7) {
+    if (keyData && typeof keyData === "object" && keyData.key && keyData.confidence > 0.7 && !hasUserKey) {
       // Format key to match DB format: "A Min", "C# Maj", etc.
       const mode = keyData.mode === "Minor" ? "Min" : "Maj";
       updatePayload.key = keyData.key + " " + mode;
     }
 
-    console.log('[SonicDNA] Updating track BPM:', updatePayload.bpm ?? 'skipped', 'Key:', updatePayload.key ?? 'skipped');
+    console.log('[SonicDNA] Existing BPM:', existingTrack?.bpm, 'Key:', existingTrack?.key);
+    console.log('[SonicDNA] Updating track BPM:', updatePayload.bpm ?? 'skipped (user-provided)', 'Key:', updatePayload.key ?? 'skipped (user-provided)');
 
     // 4. Update the track in DB
     try {
