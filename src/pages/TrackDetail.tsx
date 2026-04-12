@@ -98,7 +98,7 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbP
 import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
 import { StemsTab } from "@/components/StemsTab";
-import { STEM_TYPES, DEFAULT_COVER } from "@/lib/constants";
+import { STEM_TYPES, DEFAULT_COVER, PROS } from "@/lib/constants";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { generateWaveform } from "@/lib/waveformGenerator";
 import { toast } from "sonner";
@@ -2330,7 +2330,10 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
                 </div>
                 <div className="space-y-1">
                   <label className="text-2xs text-muted-foreground font-medium">PRO</label>
-                  <input value={split.pro} onChange={(e) => updateSplit(split.id, "pro", e.target.value)} placeholder="e.g. ASCAP" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                  <select value={split.pro} onChange={(e) => updateSplit(split.id, "pro", e.target.value)} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium appearance-none cursor-pointer" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center" }}>
+                    <option value="">Select PRO</option>
+                    {PROS.map(function (p) { return <option key={p} value={p}>{p}</option>; })}
+                  </select>
                 </div>
                 <div className="space-y-1">
                   <label className="text-2xs text-muted-foreground font-medium">IPI</label>

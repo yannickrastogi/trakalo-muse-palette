@@ -4,11 +4,9 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
-import { DEFAULT_COVER } from "@/lib/constants";
+import { DEFAULT_COVER, PROS } from "@/lib/constants";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import { Music, User, Mail, Briefcase, DollarSign, CheckCircle, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
-
-var PRO_SUGGESTIONS = ["ASCAP", "BMI", "SESAC", "SOCAN", "SACEM", "PRS", "GEMA", "JASRAC", "APRA"];
 
 var ROLE_OPTIONS = [
   { value: "Songwriter", labelKey: "studioQr.songwriter" },
@@ -397,19 +395,17 @@ export default function StudioSession() {
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">{t("studioQr.proName")}</label>
-              <input
-                type="text"
-                className={inputClass}
+              <select
+                className={inputClass + " appearance-none cursor-pointer"}
                 value={proName}
                 onChange={function (e) { setProName(e.target.value); }}
-                list="pro-suggestions"
-                placeholder={t("studioQr.proPlaceholder")}
-              />
-              <datalist id="pro-suggestions">
-                {PRO_SUGGESTIONS.map(function (p) {
-                  return <option key={p} value={p} />;
+                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}
+              >
+                <option value="">{t("studioQr.proPlaceholder")}</option>
+                {PROS.map(function (p) {
+                  return <option key={p} value={p}>{p}</option>;
                 })}
-              </datalist>
+              </select>
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">{t("studioQr.ipiNumber")}</label>

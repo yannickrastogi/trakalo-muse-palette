@@ -65,3 +65,24 @@ export const LANGUAGES = [
   "Yoruba",
   "Zulu",
 ] as const;
+
+export const PROS = [
+  "ABRAMUS (Brazil)", "ACDAM (Cuba)", "ACUM (Israel)", "AEPI (Greece)", "AGADU (Uruguay)",
+  "AKKA/LAA (Latvia)", "AKM (Austria)", "APDAYC (Peru)", "APRA AMCOS (Australia/NZ)",
+  "ARTISJUS (Hungary)", "ASCAP (USA)", "BMI (USA)", "BUMA/STEMRA (Netherlands)",
+  "CAPASSO (South Africa)", "CASH (Hong Kong)", "COMPASS (Singapore)", "COSCAP (Barbados)",
+  "COSON (Nigeria)", "COSOTA (Tanzania)", "EAÜ (Estonia)", "ECAD/UBC (Brazil)",
+  "FILSCAP (Philippines)", "GEMA (Germany)", "GHAMRO (Ghana)", "GMR (USA)",
+  "HDS-ZAMP (Croatia)", "IMRO (Ireland)", "IPRS (India)", "JACAP (Jamaica)",
+  "JASRAC (Japan)", "KODA (Denmark)", "KOMCA (South Korea)", "LATGA (Lithuania)",
+  "MACP (Malaysia)", "MCT (Thailand)", "MCSK (Kenya)", "MESAM (Turkey)", "MSG (Turkey)",
+  "MUST (Taiwan)", "MUSICAUTOR (Bulgaria)", "OSA (Czech Republic)", "PPRS (Pakistan)",
+  "PRS for Music (UK)", "SACM (Mexico)", "SACERAU (Egypt)", "SACVEN (Venezuela)",
+  "SADAIC (Argentina)", "SAMRO (South Africa)", "SABAM (Belgium)", "SACEM (France)",
+  "SAYCO (Colombia)", "SAZAS (Slovenia)", "SCD (Chile)", "SESAC (USA)", "SGAE (Spain)",
+  "SGACEDOM (Dominican Republic)", "SIAE (Italy)", "SOCAN (Canada)", "SODAV (Senegal)",
+  "SOKOJ (Serbia)", "SOZA (Slovakia)", "SPA (Portugal)", "STIM (Sweden)",
+  "SUISA (Switzerland)", "TEOSTO (Finland)", "TONO (Norway)", "TTCSI (Trinidad & Tobago)",
+  "UCMR-ADA (Romania)", "UPRS (Uganda)", "VCPMC (Vietnam)", "ZAIKS (Poland)",
+  "ZAMCOPS (Zambia)", "ZIMURA (Zimbabwe)", "N/A",
+] as const;
