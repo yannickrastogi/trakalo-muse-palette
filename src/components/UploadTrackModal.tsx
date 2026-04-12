@@ -832,7 +832,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               )}
               {phase === "edit" && currentTrack && editStep === 5 && (
                 <StepTeams
-                  otherWorkspaces={workspaces.filter(function (ws) { return ws.id !== activeWorkspace?.id; })}
+                  activeWorkspaceName={activeWorkspace?.name || ""}
+                  otherWorkspaces={workspaces.filter(function (ws, idx, arr) { return ws.id !== activeWorkspace?.id && arr.findIndex(function (w) { return w.id === ws.id; }) === idx; })}
                   selectedWorkspaces={currentTrack.sharedWorkspaces}
                   onToggleWorkspace={function (wsId) {
                     var sharedWorkspaces = currentTrack.sharedWorkspaces.includes(wsId)
@@ -1834,10 +1835,12 @@ function StepReview({
 /* ─── Workspaces Step ─── */
 
 function StepTeams({
+  activeWorkspaceName,
   otherWorkspaces,
   selectedWorkspaces,
   onToggleWorkspace,
 }: {
+  activeWorkspaceName: string;
   otherWorkspaces: { id: string; name: string; logo_url: string | null }[];
   selectedWorkspaces: string[];
   onToggleWorkspace: (wsId: string) => void;
@@ -1851,20 +1854,18 @@ function StepTeams({
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
-          <ArrowRightLeft className="w-4 h-4 text-brand-orange" />
-          {t("uploadTrack.shareInWorkspaces", "Share in Workspaces")}
-        </h3>
+        <p className="text-sm font-medium text-foreground mb-1">
+          {t("uploadTrack.trackSavedTo", { workspace: activeWorkspaceName, defaultValue: "This track will be saved to " + activeWorkspaceName })}
+        </p>
         <p className="text-2xs text-muted-foreground">
-          {t("uploadTrack.shareToWorkspacesDesc", "Make this track available in other workspaces")}
+          {t("uploadTrack.shareToOtherWorkspacesDesc", "You can also share it with your other workspaces:")}
         </p>
       </div>
 
       {otherWorkspaces.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <ArrowRightLeft className="w-10 h-10 text-muted-foreground/30 mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">{t("uploadTrack.noOtherWorkspaces", "No other workspaces")}</p>
-          <p className="text-2xs text-muted-foreground/60 mt-1">{t("uploadTrack.noOtherWorkspacesDesc", "Create another workspace to share tracks between them")}</p>
+          <p className="text-sm italic text-muted-foreground">{t("uploadTrack.noOtherWorkspacesNew", "You don't have any other workspaces to share with. You can create new workspaces later in Settings.")}</p>
         </div>
       ) : (
         <div className="space-y-2">
