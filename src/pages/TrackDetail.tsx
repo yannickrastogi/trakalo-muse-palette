@@ -399,7 +399,7 @@ export default function TrackDetail() {
     { id: "stems", label: "Stems" },
     { id: "details", label: "Details" },
     { id: "activity", label: engagement ? "Activity (" + engagement.totalPlays + ")" : "Activity" },
-    { id: "review", label: commentCount ? "Review (" + commentCount + ")" : "Review" },
+    { id: "review", label: commentCount ? "Notes (" + commentCount + ")" : "Notes" },
   ];
   const tabs = isViewerShared
     ? allTabs.filter(function (tab) { return tab.id !== "stems" && tab.id !== "activity"; })

@@ -1320,7 +1320,6 @@ function StepInfo({
           {!analyzing && (
             <>
             <div className="grid grid-cols-3 gap-2">
-              {bpm ? (
               <div className="rounded-lg bg-secondary p-2 text-center group/bpm cursor-text">
                 <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.bpm")}</p>
                 <input
@@ -1331,8 +1330,6 @@ function StepInfo({
                   placeholder="—"
                 />
               </div>
-              ) : null}
-              {trackKey ? (
               <div className="rounded-lg bg-secondary p-2 text-center">
                 <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.key")}</p>
                 <select
@@ -1344,15 +1341,12 @@ function StepInfo({
                   {KEYS.map(function (k) { return <option key={k} value={k}>{k}</option>; })}
                 </select>
               </div>
-              ) : null}
               <div className="rounded-lg bg-secondary p-2 text-center">
                 <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.duration", "Duration")}</p>
                 <p className="text-sm font-bold text-brand-purple">{analysisResult?.duration || "—"}</p>
               </div>
             </div>
-            {(!bpm || !trackKey) && (
-              <p className="text-2xs text-muted-foreground">{t("uploadTrack.autoDetectNote", "BPM & Key will be detected automatically after upload")}</p>
-            )}
+            <p className="text-2xs text-muted-foreground">{t("uploadTrack.autoDetectNote", "BPM & Key will be auto-detected by Sonic DNA after upload — or enter them now if you already know them")}</p>
             </>
           )}
         </div>
@@ -1368,24 +1362,6 @@ function StepInfo({
           <FieldInput value={artist} onChange={setArtist} placeholder={t("uploadTrack.artistPlaceholder")} />
         </div>
       </div>
-      {/* BPM and Key fields when no analysis available */}
-      {!analyzing && !analysisResult && (
-        <>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <FieldLabel>{t("uploadTrack.bpm")}</FieldLabel>
-            <FieldInput value={bpm} onChange={setBpm} placeholder="120" type="number" />
-          </div>
-          <div className="space-y-1.5">
-            <FieldLabel>{t("uploadTrack.key")}</FieldLabel>
-            <FieldSelect value={trackKey} onChange={setTrackKey} options={trackKey && !(KEYS as readonly string[]).includes(trackKey) ? [trackKey, ...KEYS] : KEYS} placeholder={t("uploadTrack.selectKey")} />
-          </div>
-        </div>
-        {!bpm && !trackKey && (
-          <p className="text-2xs text-muted-foreground italic">{t("uploadTrack.sonicDnaAutoDetect", "BPM & Key will be auto-detected by Sonic DNA after upload")}</p>
-        )}
-        </>
-      )}
       <div className="grid grid-cols-1 gap-4">
         <div className="space-y-1.5">
           <FieldLabel>{t("uploadTrack.genre")}</FieldLabel>
