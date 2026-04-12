@@ -48,9 +48,9 @@ export function MiniWaveform({ seed = 0, bars = 24, peaks, progress, className =
       <svg width={bars * 2} height={24} className="shrink-0">
         <defs>
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="hsl(24 100% 55%)" stopOpacity="0.45" />
-            <stop offset="50%" stopColor="hsl(330 80% 60%)" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="hsl(270 70% 55%)" stopOpacity="0.45" />
+            <stop offset="0%" stopColor="hsl(24 100% 55%)" stopOpacity="0.75" />
+            <stop offset="50%" stopColor="hsl(330 80% 60%)" stopOpacity="0.75" />
+            <stop offset="100%" stopColor="hsl(270 70% 55%)" stopOpacity="0.75" />
           </linearGradient>
           <linearGradient id={playedGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor={accentColor || "hsl(24 100% 55%)"} />
