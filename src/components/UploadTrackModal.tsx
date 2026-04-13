@@ -631,7 +631,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             toast.warning(t("uploadTrack.mp3PreviewFailed", "MP3 preview failed — track is still available"));
           }
 
-          // Step 2: Lyrics transcription (fire-and-forget)
+          // Step 2: Lyrics transcription (fire-and-forget) — only if user didn't provide lyrics
+          if (!currentTrack.lyrics?.trim()) {
           try {
             toast.info(t("uploadTrack.transcribingLyrics", "Transcribing lyrics..."));
             const res = await fetch(SUPABASE_URL + "/functions/v1/transcribe-lyrics", {
@@ -676,6 +677,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           } catch (err) {
             console.error("Lyrics transcription failed:", err);
           }
+          } // end if no user-provided lyrics
         })();
       }
 
@@ -2040,17 +2042,41 @@ function StepLyrics({
       const text = await file.text();
       onUpdate(text);
     } else if (file.name.toLowerCase().endsWith(".pdf")) {
-      // Attempt text extraction from PDF
+      // Extract text from PDF binary by parsing text strings between parentheses (Tj/TJ operators)
       try {
-        const text = await file.text();
-        const cleaned = text
-          .replace(/[^\x20-\x7E\n\r]/g, " ")
-          .replace(/\s{3,}/g, "\n")
+        const buffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        // Decode as latin1 to preserve all byte values as characters
+        let raw = "";
+        for (let i = 0; i < bytes.length; i++) {
+          raw += String.fromCharCode(bytes[i]);
+        }
+        // Extract text between parentheses in PDF content streams
+        const fragments: string[] = [];
+        const pdfTextRe = /\(([^)]*)\)/g;
+        let match: RegExpExecArray | null;
+        while ((match = pdfTextRe.exec(raw)) !== null) {
+          const s = match[1]
+            .replace(/\\n/g, "\n")
+            .replace(/\\r/g, "\r")
+            .replace(/\\t/g, "\t")
+            .replace(/\\\\/g, "\\")
+            .replace(/\\\(/g, "(")
+            .replace(/\\\)/g, ")");
+          if (s.trim().length > 0) fragments.push(s);
+        }
+        const extracted = fragments.join(" ")
+          .replace(/[^\x20-\x7E\n\r\u00C0-\u024F]/g, " ")
+          .replace(/ {2,}/g, " ")
+          .replace(/\n{3,}/g, "\n\n")
           .trim();
-        const extracted = cleaned.length > 20 ? cleaned : `[Lyrics imported from ${file.name}]\n\nPaste your lyrics here to replace this placeholder.`;
-        onUpdate(extracted);
+        if (extracted.length > 20) {
+          onUpdate(extracted);
+        } else {
+          toast.error(t("uploadTrack.pdfExtractFailed", "Could not extract text from PDF — please paste your lyrics manually"));
+        }
       } catch {
-        onUpdate(`[Lyrics imported from ${file.name}]\n\nPaste your lyrics here.`);
+        toast.error(t("uploadTrack.pdfExtractFailed", "Could not extract text from PDF — please paste your lyrics manually"));
       }
     }
     e.target.value = "";
