@@ -20,6 +20,23 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
   const [trackCounts, setTrackCounts] = useState<Record<string, number>>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Restore cached track counts from localStorage immediately while real fetch is in-flight
+  useEffect(function () {
+    if (workspaces.length === 0) return;
+    var cached: Record<string, number> = {};
+    var hasCached = false;
+    try {
+      for (var i = 0; i < workspaces.length; i++) {
+        var val = localStorage.getItem("trakalog_track_count_" + workspaces[i].id);
+        if (val) {
+          cached[workspaces[i].id] = parseInt(val, 10) || 0;
+          hasCached = true;
+        }
+      }
+    } catch (e) { /* ignore */ }
+    if (hasCached) setTrackCounts(cached);
+  }, [workspaces]);
+
   // Fetch accurate track counts per workspace (own + individual shares + full catalog shares resolved to actual tracks)
   useEffect(() => {
     if (workspaces.length === 0) return;
@@ -215,6 +232,12 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
         counts[ids[c]] = trackSets[ids[c]].size;
       }
       setTrackCounts(counts);
+      // Cache counts in localStorage for instant display on next page load
+      try {
+        for (var ci = 0; ci < ids.length; ci++) {
+          localStorage.setItem("trakalog_track_count_" + ids[ci], String(counts[ids[ci]] || 0));
+        }
+      } catch (e) { /* ignore quota errors */ }
     });
   }, [workspaces]);
 
