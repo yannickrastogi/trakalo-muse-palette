@@ -4,6 +4,9 @@ import { Search, Link2, Copy, Lock, Globe, Eye, EyeOff, BarChart3, ChevronDown, 
 import { PageShell } from "@/components/PageShell";
 import { useSharedLinks } from "@/contexts/SharedLinksContext";
 import { useRole } from "@/contexts/RoleContext";
+import { useTeams } from "@/contexts/TeamContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -87,10 +90,46 @@ function FilterSelect({ label, value, options, onChange }: {
 export default function SharedLinks() {
   const { sharedLinks, updateLinkStatus } = useSharedLinks();
   const { permissions } = useRole();
+  const { teams } = useTeams();
+  const { activeWorkspace } = useWorkspace();
+  const isMultiMember = (teams?.length > 0 && teams[0]?.members?.length > 1) || false;
+  const [creatorProfiles, setCreatorProfiles] = useState<Record<string, string>>({});
+  const [linkCreatedBy, setLinkCreatedBy] = useState<Record<string, string | null>>({});
   const [search, setSearch] = useState("");
   const [activityLinkId, setActivityLinkId] = useState<string | null>(null);
   const [shareTypeFilter, setShareTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
+
+  // Fetch created_by for shared links and resolve profile names
+  useEffect(function () {
+    if (!isMultiMember || !activeWorkspace) return;
+    async function fetchCreatedBy() {
+      var { data } = await supabase
+        .from("shared_links")
+        .select("id, created_by")
+        .eq("workspace_id", activeWorkspace!.id);
+      if (!data || data.length === 0) return;
+      var byLink: Record<string, string | null> = {};
+      var userIds: string[] = [];
+      data.forEach(function (row) {
+        byLink[row.id] = row.created_by || null;
+        if (row.created_by && !userIds.includes(row.created_by)) userIds.push(row.created_by);
+      });
+      setLinkCreatedBy(byLink);
+      if (userIds.length === 0) return;
+      var { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+      if (!profiles) return;
+      var map: Record<string, string> = {};
+      profiles.forEach(function (p) {
+        if (p.full_name) map[p.id] = p.full_name;
+      });
+      setCreatorProfiles(map);
+    }
+    fetchCreatedBy();
+  }, [isMultiMember, activeWorkspace, sharedLinks]);
 
   const getEffectiveStatus = (link: typeof sharedLinks[0]) => {
     if (link.status === "disabled") return "disabled";
@@ -217,6 +256,9 @@ export default function SharedLinks() {
                           <div className="text-muted-foreground text-xs mt-0.5">
                             {link.shareType === "playlist" ? link.playlistName : link.trackTitle}
                           </div>
+                          {isMultiMember && linkCreatedBy[link.id] && creatorProfiles[linkCreatedBy[link.id]!] && (
+                            <div className="text-[10px] text-muted-foreground/60 mt-0.5">Created by {creatorProfiles[linkCreatedBy[link.id]!]}</div>
+                          )}
                         </td>
                         {/* Share Type */}
                         <td className="px-4 py-3.5">
@@ -304,6 +346,9 @@ export default function SharedLinks() {
                       <div className="text-muted-foreground text-xs mt-0.5 truncate">
                         {link.shareType === "playlist" ? link.playlistName : link.trackTitle}
                       </div>
+                      {isMultiMember && linkCreatedBy[link.id] && creatorProfiles[linkCreatedBy[link.id]!] && (
+                        <div className="text-[10px] text-muted-foreground/60 mt-0.5">Created by {creatorProfiles[linkCreatedBy[link.id]!]}</div>
+                      )}
                     </div>
                     <span className={"inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium capitalize shrink-0 " + statusColors[status]}>
                       {status}

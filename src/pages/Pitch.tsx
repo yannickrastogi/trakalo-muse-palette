@@ -33,6 +33,7 @@ import { usePitches } from "@/contexts/PitchContext";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack } from "@/contexts/TrackContext";
+import { useTeams } from "@/contexts/TeamContext";
 
 import { DEFAULT_COVER } from "@/lib/constants";
 
@@ -67,6 +68,10 @@ export default function Pitch() {
   const { pitches, addPitch } = usePitches();
   const { activeWorkspace } = useWorkspace();
   const { tracks } = useTrack();
+  const { teams } = useTeams();
+  const isMultiMember = (teams?.length > 0 && teams[0]?.members?.length > 1) || false;
+  const [senderProfiles, setSenderProfiles] = useState<Record<string, string>>({});
+  const [pitchSentBy, setPitchSentBy] = useState<Record<string, string | null>>({});
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PitchStatus | "active" | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -90,6 +95,37 @@ export default function Pitch() {
       }
     };
   }, []);
+
+  // Fetch sent_by for pitches and resolve profile names
+  useEffect(function () {
+    if (!isMultiMember || !activeWorkspace) return;
+    async function fetchSentBy() {
+      var { data } = await supabase
+        .from("pitches")
+        .select("id, sent_by")
+        .eq("workspace_id", activeWorkspace!.id);
+      if (!data || data.length === 0) return;
+      var byPitch: Record<string, string | null> = {};
+      var userIds: string[] = [];
+      data.forEach(function (row) {
+        byPitch[row.id] = row.sent_by || null;
+        if (row.sent_by && !userIds.includes(row.sent_by)) userIds.push(row.sent_by);
+      });
+      setPitchSentBy(byPitch);
+      if (userIds.length === 0) return;
+      var { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", userIds);
+      if (!profiles) return;
+      var map: Record<string, string> = {};
+      profiles.forEach(function (p) {
+        if (p.full_name) map[p.id] = p.full_name;
+      });
+      setSenderProfiles(map);
+    }
+    fetchSentBy();
+  }, [isMultiMember, activeWorkspace, pitches]);
 
   var handlePlayTrack = useCallback(function (trackId: string) {
     if (playingTrackId === trackId) {
@@ -395,6 +431,9 @@ export default function Pitch() {
               audioProgress={audioProgress}
               audioDuration={audioDuration}
               onPlayTrack={handlePlayTrack}
+              isMultiMember={isMultiMember}
+              pitchSentBy={pitchSentBy}
+              senderProfiles={senderProfiles}
             />
           ) : (
             <DesktopPitchTable
@@ -409,6 +448,9 @@ export default function Pitch() {
               audioProgress={audioProgress}
               audioDuration={audioDuration}
               onPlayTrack={handlePlayTrack}
+              isMultiMember={isMultiMember}
+              pitchSentBy={pitchSentBy}
+              senderProfiles={senderProfiles}
             />
           )}
         </motion.div>
@@ -432,6 +474,9 @@ function DesktopPitchTable({
   audioProgress,
   audioDuration,
   onPlayTrack,
+  isMultiMember,
+  pitchSentBy,
+  senderProfiles,
 }: {
   pitches: PitchEntry[];
   tracks: { id: string; coverImage?: string }[];
@@ -444,6 +489,9 @@ function DesktopPitchTable({
   audioProgress: number;
   audioDuration: number;
   onPlayTrack: (trackId: string) => void;
+  isMultiMember: boolean;
+  pitchSentBy: Record<string, string | null>;
+  senderProfiles: Record<string, string>;
 }) {
   return (
     <div className="card-premium overflow-hidden">
@@ -536,6 +584,9 @@ function DesktopPitchTable({
                           )}
                         </div>
                         <p className="text-[11px] text-muted-foreground truncate">{p.artist}</p>
+                        {isMultiMember && pitchSentBy[p.id] && senderProfiles[pitchSentBy[p.id]!] && (
+                          <p className="text-[10px] text-muted-foreground/60 mt-0.5">Sent by {senderProfiles[pitchSentBy[p.id]!]}</p>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -650,6 +701,9 @@ function MobilePitchList({
   audioProgress,
   audioDuration,
   onPlayTrack,
+  isMultiMember,
+  pitchSentBy,
+  senderProfiles,
 }: {
   pitches: PitchEntry[];
   tracks: { id: string; coverImage?: string }[];
@@ -662,6 +716,9 @@ function MobilePitchList({
   audioProgress: number;
   audioDuration: number;
   onPlayTrack: (trackId: string) => void;
+  isMultiMember: boolean;
+  pitchSentBy: Record<string, string | null>;
+  senderProfiles: Record<string, string>;
 }) {
   return (
     <div className="space-y-2.5">
@@ -744,6 +801,9 @@ function MobilePitchList({
                 <p className="text-[11px] text-muted-foreground truncate mt-0.5">
                   → {p.recipientName} · {p.recipientCompany}
                 </p>
+                {isMultiMember && pitchSentBy[p.id] && senderProfiles[pitchSentBy[p.id]!] && (
+                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">Sent by {senderProfiles[pitchSentBy[p.id]!]}</p>
+                )}
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <span className="text-2xs text-muted-foreground/60">{p.date}</span>
                   <span className={"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold " + cfg.color}>
