@@ -4,8 +4,6 @@ import { Search, Link2, Copy, Lock, Globe, Eye, EyeOff, BarChart3, ChevronDown, 
 import { PageShell } from "@/components/PageShell";
 import { useSharedLinks } from "@/contexts/SharedLinksContext";
 import { useRole } from "@/contexts/RoleContext";
-import { useTeams } from "@/contexts/TeamContext";
-import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -89,25 +87,7 @@ function FilterSelect({ label, value, options, onChange }: {
 export default function SharedLinks() {
   const { sharedLinks, updateLinkStatus } = useSharedLinks();
   const { permissions } = useRole();
-  const { teams } = useTeams();
   const [search, setSearch] = useState("");
-  const [profileNames, setProfileNames] = useState<Record<string, string>>({});
-
-  const isMultiMember = teams.length > 0 && teams[0].members.length > 1;
-
-  useEffect(function() {
-    if (!isMultiMember) return;
-    var uniqueIds = Array.from(new Set(sharedLinks.map(function(l) { return (l as any).createdBy; }).filter(Boolean))) as string[];
-    if (uniqueIds.length === 0) return;
-    supabase.from("profiles").select("id, full_name").in("id", uniqueIds).then(function(res) {
-      if (!res.data) return;
-      var map: Record<string, string> = {};
-      res.data.forEach(function(p: { id: string; full_name: string | null }) {
-        if (p.full_name) map[p.id] = p.full_name;
-      });
-      setProfileNames(map);
-    });
-  }, [sharedLinks, isMultiMember]);
   const [activityLinkId, setActivityLinkId] = useState<string | null>(null);
   const [shareTypeFilter, setShareTypeFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -237,9 +217,6 @@ export default function SharedLinks() {
                           <div className="text-muted-foreground text-xs mt-0.5">
                             {link.shareType === "playlist" ? link.playlistName : link.trackTitle}
                           </div>
-                          {isMultiMember && link.createdBy && profileNames[link.createdBy] && (
-                            <div className="text-xs text-muted-foreground mt-0.5">Created by {profileNames[link.createdBy]}</div>
-                          )}
                         </td>
                         {/* Share Type */}
                         <td className="px-4 py-3.5">
@@ -327,9 +304,6 @@ export default function SharedLinks() {
                       <div className="text-muted-foreground text-xs mt-0.5 truncate">
                         {link.shareType === "playlist" ? link.playlistName : link.trackTitle}
                       </div>
-                      {isMultiMember && link.createdBy && profileNames[link.createdBy] && (
-                        <div className="text-xs text-muted-foreground mt-0.5">Created by {profileNames[link.createdBy]}</div>
-                      )}
                     </div>
                     <span className={"inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium capitalize shrink-0 " + statusColors[status]}>
                       {status}

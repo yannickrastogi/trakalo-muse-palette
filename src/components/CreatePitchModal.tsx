@@ -55,7 +55,6 @@ export interface PitchEntry {
   date: string;
   status: string;
   notes: string;
-  sentBy?: string;
 }
 
 interface SelectedItem {
