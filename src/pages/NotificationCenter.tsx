@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useTeams, type TeamActivity, type ActivityType } from "@/contexts/TeamContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/PageShell";
 import {
@@ -107,10 +108,12 @@ export default function NotificationCenter() {
   const { t } = useTranslation();
   const { teams } = useTeams();
   const { activeWorkspace } = useWorkspace();
+  const { user } = useAuth();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [linkEventActivities, setLinkEventActivities] = useState<EnrichedActivity[]>([]);
+  const [creatorActivities, setCreatorActivities] = useState<EnrichedActivity[]>([]);
 
   // Fetch link_events and convert to activities
   useEffect(function() {
@@ -175,7 +178,99 @@ export default function NotificationCenter() {
     fetchLinkEvents();
   }, [activeWorkspace]);
 
-  // Merge all activities from all teams + link events
+  // Fetch pitches (sent_by) and shared_links (created_by) to show creator names
+  useEffect(function () {
+    if (!activeWorkspace) return;
+
+    async function fetchCreatorActivities() {
+      // Fetch pitches with sent_by
+      var { data: pitches } = await supabase
+        .from("pitches")
+        .select("id, subject, recipient_name, sent_by, created_at, status")
+        .eq("workspace_id", activeWorkspace!.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      // Fetch shared_links with created_by
+      var { data: links } = await supabase
+        .from("shared_links")
+        .select("id, link_name, created_by, created_at")
+        .eq("workspace_id", activeWorkspace!.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      // Collect unique user_ids
+      var userIds: string[] = [];
+      (pitches || []).forEach(function (p) {
+        if (p.sent_by && !userIds.includes(p.sent_by)) userIds.push(p.sent_by);
+      });
+      (links || []).forEach(function (l) {
+        if (l.created_by && !userIds.includes(l.created_by)) userIds.push(l.created_by);
+      });
+
+      // Fetch profiles in one batch
+      var profileMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        var { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        (profiles || []).forEach(function (p) {
+          if (p.full_name) profileMap[p.id] = p.full_name;
+        });
+      }
+
+      var currentUserId = user?.id || null;
+      var activities: EnrichedActivity[] = [];
+
+      // Build pitch activities
+      (pitches || []).forEach(function (p) {
+        var creatorId = p.sent_by || null;
+        var creatorName = "Someone";
+        if (creatorId && currentUserId && creatorId === currentUserId) {
+          creatorName = "You";
+        } else if (creatorId && profileMap[creatorId]) {
+          creatorName = profileMap[creatorId];
+        }
+        var recipientName = p.recipient_name || "a contact";
+        activities.push({
+          id: "pitch-" + p.id,
+          type: "pitch" as ActivityType,
+          message: "sent a pitch \"" + (p.subject || "") + "\" to " + recipientName,
+          user: creatorName,
+          date: p.created_at || "",
+          teamName: activeWorkspace!.name || "",
+          teamId: activeWorkspace!.id || "",
+        });
+      });
+
+      // Build shared link activities
+      (links || []).forEach(function (l) {
+        var creatorId = l.created_by || null;
+        var creatorName = "Someone";
+        if (creatorId && currentUserId && creatorId === currentUserId) {
+          creatorName = "You";
+        } else if (creatorId && profileMap[creatorId]) {
+          creatorName = profileMap[creatorId];
+        }
+        activities.push({
+          id: "link-" + l.id,
+          type: "link" as ActivityType,
+          message: "created a shared link \"" + (l.link_name || "") + "\"",
+          user: creatorName,
+          date: l.created_at || "",
+          teamName: activeWorkspace!.name || "",
+          teamId: activeWorkspace!.id || "",
+        });
+      });
+
+      setCreatorActivities(activities);
+    }
+
+    fetchCreatorActivities();
+  }, [activeWorkspace, user]);
+
+  // Merge all activities from all teams + link events + creator activities
   const allActivities = useMemo<EnrichedActivity[]>(() => {
     const merged: EnrichedActivity[] = [];
     teams.forEach((team) => {
@@ -184,8 +279,9 @@ export default function NotificationCenter() {
       });
     });
     linkEventActivities.forEach(function(a) { merged.push(a); });
+    creatorActivities.forEach(function(a) { merged.push(a); });
     return merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [teams, linkEventActivities]);
+  }, [teams, linkEventActivities, creatorActivities]);
 
   // Apply filters
   const filteredActivities = useMemo(() => {
