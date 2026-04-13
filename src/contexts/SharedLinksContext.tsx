@@ -62,6 +62,7 @@ export interface SharedLink extends WorkspaceScoped {
   plays?: number;
   downloadCount?: number;
   saveCount?: number;
+  createdBy?: string;
 }
 
 interface SharedLinksContextValue {
@@ -112,6 +113,7 @@ function mapRowToSharedLink(row: Record<string, unknown>): SharedLink {
     allowDownload: (row.allow_download as boolean) || false,
     allowSave: (row.allow_save as boolean) !== false,
     downloadQuality: (row.download_quality as "hi-res" | "low-res") || undefined,
+    createdBy: (row.created_by as string) || undefined,
   };
 }
 

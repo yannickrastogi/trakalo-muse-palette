@@ -111,6 +111,85 @@ export default function NotificationCenter() {
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [linkEventActivities, setLinkEventActivities] = useState<EnrichedActivity[]>([]);
+  const [creatorActivities, setCreatorActivities] = useState<EnrichedActivity[]>([]);
+
+  // Fetch pitch-sent and link-created activities with creator names
+  useEffect(function() {
+    if (!activeWorkspace) return;
+
+    async function fetchCreatorActivities() {
+      var wsId = activeWorkspace!.id;
+
+      // Check member count
+      var { data: memberData } = await supabase
+        .from("workspace_members")
+        .select("user_id")
+        .eq("workspace_id", wsId);
+
+      if (!memberData || memberData.length <= 1) {
+        setCreatorActivities([]);
+        return;
+      }
+
+      // Fetch pitches and shared_links in parallel
+      var [pitchRes, linkRes] = await Promise.all([
+        supabase.from("pitches").select("id, sent_by, subject, recipient_name, created_at").eq("workspace_id", wsId).order("created_at", { ascending: false }).limit(50),
+        supabase.from("shared_links").select("id, created_by, link_name, created_at").eq("workspace_id", wsId).order("created_at", { ascending: false }).limit(50),
+      ]);
+
+      var pitches = pitchRes.data || [];
+      var links = linkRes.data || [];
+
+      // Collect unique user IDs
+      var userIds = new Set<string>();
+      pitches.forEach(function(p: any) { if (p.sent_by) userIds.add(p.sent_by); });
+      links.forEach(function(l: any) { if (l.created_by) userIds.add(l.created_by); });
+
+      var profileMap: Record<string, string> = {};
+      if (userIds.size > 0) {
+        var { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", Array.from(userIds));
+        (profiles || []).forEach(function(p: { id: string; full_name: string | null }) {
+          if (p.full_name) profileMap[p.id] = p.full_name;
+        });
+      }
+
+      var currentUserId = (await supabase.auth.getUser()).data.user?.id;
+
+      var activities: EnrichedActivity[] = [];
+
+      pitches.forEach(function(p: any) {
+        if (!p.sent_by) return;
+        var userName = p.sent_by === currentUserId ? "You" : (profileMap[p.sent_by] || "A team member");
+        activities.push({
+          id: "pitch-" + p.id,
+          user: userName,
+          message: "sent a pitch to " + (p.recipient_name || "a recipient") + (p.subject ? " — \"" + p.subject + "\"" : ""),
+          type: "pitch" as any,
+          date: p.created_at || "",
+          teamName: activeWorkspace!.name,
+          teamId: activeWorkspace!.id,
+        });
+      });
+
+      links.forEach(function(l: any) {
+        if (!l.created_by) return;
+        var userName = l.created_by === currentUserId ? "You" : (profileMap[l.created_by] || "A team member");
+        activities.push({
+          id: "link-" + l.id,
+          user: userName,
+          message: "created a shared link" + (l.link_name ? " for \"" + l.link_name + "\"" : ""),
+          type: "link" as any,
+          date: l.created_at || "",
+          teamName: activeWorkspace!.name,
+          teamId: activeWorkspace!.id,
+        });
+      });
+
+      setCreatorActivities(activities);
+    }
+
+    fetchCreatorActivities();
+  }, [activeWorkspace]);
 
   // Fetch link_events and convert to activities
   useEffect(function() {
@@ -175,7 +254,7 @@ export default function NotificationCenter() {
     fetchLinkEvents();
   }, [activeWorkspace]);
 
-  // Merge all activities from all teams + link events
+  // Merge all activities from all teams + link events + creator activities
   const allActivities = useMemo<EnrichedActivity[]>(() => {
     const merged: EnrichedActivity[] = [];
     teams.forEach((team) => {
@@ -184,8 +263,9 @@ export default function NotificationCenter() {
       });
     });
     linkEventActivities.forEach(function(a) { merged.push(a); });
+    creatorActivities.forEach(function(a) { merged.push(a); });
     return merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [teams, linkEventActivities]);
+  }, [teams, linkEventActivities, creatorActivities]);
 
   // Apply filters
   const filteredActivities = useMemo(() => {

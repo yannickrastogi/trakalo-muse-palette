@@ -49,6 +49,7 @@ function mapRowToPitch(row: Record<string, unknown>): PitchEntry {
     date: formatDate((row.sent_at as string) || (row.created_at as string) || ""),
     status: mapStatusFromDb((row.status as string) || "draft"),
     notes: (row.response_note as string) || (row.message as string) || "",
+    sentBy: (row.sent_by as string) || undefined,
   };
 }
 

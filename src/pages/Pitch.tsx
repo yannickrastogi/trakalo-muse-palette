@@ -34,6 +34,7 @@ import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack } from "@/contexts/TrackContext";
 
+import { useTeams } from "@/contexts/TeamContext";
 import { DEFAULT_COVER } from "@/lib/constants";
 
 type PitchStatus = "Draft" | "Sent" | "Opened" | "Responded";
@@ -67,7 +68,9 @@ export default function Pitch() {
   const { pitches, addPitch } = usePitches();
   const { activeWorkspace } = useWorkspace();
   const { tracks } = useTrack();
+  const { teams } = useTeams();
   const [search, setSearch] = useState("");
+  const [profileNames, setProfileNames] = useState<Record<string, string>>({});
   const [statusFilter, setStatusFilter] = useState<PitchStatus | "active" | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -206,6 +209,23 @@ export default function Pitch() {
 
     fetchStats();
   }, [activeWorkspace, pitches]);
+
+  // Fetch profile names for sent_by user IDs
+  const isMultiMember = teams.length > 0 && teams[0].members.length > 1;
+
+  useEffect(function() {
+    if (!isMultiMember) return;
+    var uniqueIds = Array.from(new Set(pitches.map(function(p) { return p.sentBy; }).filter(Boolean))) as string[];
+    if (uniqueIds.length === 0) return;
+    supabase.from("profiles").select("id, full_name").in("id", uniqueIds).then(function(res) {
+      if (!res.data) return;
+      var map: Record<string, string> = {};
+      res.data.forEach(function(p: { id: string; full_name: string | null }) {
+        if (p.full_name) map[p.id] = p.full_name;
+      });
+      setProfileNames(map);
+    });
+  }, [pitches, isMultiMember]);
 
   const stats = useMemo(() => {
     const total = pitches.length;
@@ -395,6 +415,8 @@ export default function Pitch() {
               audioProgress={audioProgress}
               audioDuration={audioDuration}
               onPlayTrack={handlePlayTrack}
+              profileNames={profileNames}
+              isMultiMember={isMultiMember}
             />
           ) : (
             <DesktopPitchTable
@@ -409,6 +431,8 @@ export default function Pitch() {
               audioProgress={audioProgress}
               audioDuration={audioDuration}
               onPlayTrack={handlePlayTrack}
+              profileNames={profileNames}
+              isMultiMember={isMultiMember}
             />
           )}
         </motion.div>
@@ -444,6 +468,8 @@ function DesktopPitchTable({
   audioProgress: number;
   audioDuration: number;
   onPlayTrack: (trackId: string) => void;
+  profileNames: Record<string, string>;
+  isMultiMember: boolean;
 }) {
   return (
     <div className="card-premium overflow-hidden">
@@ -536,6 +562,9 @@ function DesktopPitchTable({
                           )}
                         </div>
                         <p className="text-[11px] text-muted-foreground truncate">{p.artist}</p>
+                        {isMultiMember && p.sentBy && profileNames[p.sentBy] && (
+                          <p className="text-xs text-muted-foreground mt-0.5">Sent by {profileNames[p.sentBy]}</p>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -662,6 +691,8 @@ function MobilePitchList({
   audioProgress: number;
   audioDuration: number;
   onPlayTrack: (trackId: string) => void;
+  profileNames: Record<string, string>;
+  isMultiMember: boolean;
 }) {
   return (
     <div className="space-y-2.5">
@@ -744,6 +775,9 @@ function MobilePitchList({
                 <p className="text-[11px] text-muted-foreground truncate mt-0.5">
                   → {p.recipientName} · {p.recipientCompany}
                 </p>
+                {isMultiMember && p.sentBy && profileNames[p.sentBy] && (
+                  <p className="text-xs text-muted-foreground mt-0.5">Sent by {profileNames[p.sentBy]}</p>
+                )}
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <span className="text-2xs text-muted-foreground/60">{p.date}</span>
                   <span className={"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold " + cfg.color}>
