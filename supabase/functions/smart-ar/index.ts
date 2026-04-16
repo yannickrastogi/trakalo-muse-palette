@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
       );
     }
 
+    const isLargeCatalog = dedupedTracks.length > 40;
     const formattedTracks = dedupedTracks
       .map(
         (t, i) => {
@@ -108,26 +109,25 @@ Deno.serve(async (req) => {
             (t.gender || "N/A") +
             " | duration: " +
             (t.duration_sec || "N/A") +
-            "s | status: " +
-            (t.status || "N/A") +
-            " | featuring: " +
-            (t.featuring || "N/A") +
-            " | language: " +
-            (t.language || "N/A");
+            "s";
+          if (!isLargeCatalog) {
+            line +=
+              " | status: " +
+              (t.status || "N/A") +
+              " | featuring: " +
+              (t.featuring || "N/A") +
+              " | language: " +
+              (t.language || "N/A");
+          }
           if (t.sonic_dna) {
             line +=
-              " | energy: " + (t.sonic_dna.mood?.arousal || "N/A") +
-              " | valence: " + (t.sonic_dna.mood?.valence || "N/A") +
-              " | brightness: " + (t.sonic_dna.spectral?.brightness || "N/A") +
-              " | warmth: " + (t.sonic_dna.spectral?.warmth || "N/A") +
-              " | roughness: " + (t.sonic_dna.spectral?.roughness || "N/A") +
-              " | tempo_stability: " + (t.sonic_dna.tempo_stability || "N/A") +
-              " | intro_energy: " + (t.sonic_dna.intro_clearance?.energy || "N/A") +
-              " | intro_vocal: " + (t.sonic_dna.intro_clearance?.vocal_presence || "N/A") +
-              " | sync_ready: " + (t.sonic_dna.intro_clearance?.sync_ready || "N/A") +
-              " | structure: " + (t.sonic_dna.structure ? t.sonic_dna.structure.map((s: any) => s.type + "(" + s.start_sec + "-" + s.end_sec + "s,E:" + s.energy_avg + ")").join(", ") : "N/A") +
-              " | type: " + (t.sonic_dna.user_metadata?.type || "N/A") +
-              " | lyrics_available: " + (t.sonic_dna.user_metadata?.lyrics ? "yes" : "no");
+              " | dna: bpm_conf=" + (t.sonic_dna.bpm?.confidence || "N/A") +
+              " val=" + (t.sonic_dna.mood?.valence || "N/A") +
+              " aro=" + (t.sonic_dna.mood?.arousal || "N/A") +
+              " bright=" + (t.sonic_dna.spectral?.brightness || "N/A") +
+              " warm=" + (t.sonic_dna.spectral?.warmth || "N/A") +
+              " sync=" + (t.sonic_dna.intro_clearance?.sync_ready || "N/A") +
+              " type=" + (t.sonic_dna.user_metadata?.type || "N/A");
           }
           return line;
         }
@@ -139,7 +139,9 @@ Deno.serve(async (req) => {
         ? "Select ALL tracks that match the brief, ranked by relevance."
         : "Select the top " + track_count + " tracks that best match the brief, ranked by relevance.";
 
-    const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    let groqResponse;
+    try {
+    groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": "Bearer " + Deno.env.get("GROQ_API_KEY")!,
@@ -151,7 +153,7 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              "You are a music A&R assistant with deep audio analysis capabilities. Given a brief and a catalog of tracks with metadata AND audio analysis data (energy/valence for mood, brightness/warmth/roughness for sonic character, intro clearance for sync suitability, structure for song arrangement), select the best matching tracks ranked by relevance. Use the audio analysis data to make precise matches — for example, if a brief asks for 'something dark and minimal', look for low valence, low brightness, and high warmth. If a brief needs 'sync-ready with instrumental intro', check sync_ready and intro_vocal. Return valid JSON only, no markdown fences.",
+              "You are a music A&R assistant with deep audio analysis capabilities. Given a brief and a catalog of tracks with metadata AND Sonic DNA data (val=valence, aro=arousal for mood, bright=brightness, warm=warmth for sonic character, sync=sync_ready for sync suitability, bpm_conf=BPM confidence), select the best matching tracks ranked by relevance. Use the audio analysis data to make precise matches — for example, if a brief asks for 'something dark and minimal', look for low valence, low brightness, and high warmth. If a brief needs 'sync-ready', check sync field. Return valid JSON only, no markdown fences.",
           },
           {
             role: "user",
@@ -173,8 +175,17 @@ Deno.serve(async (req) => {
       }),
     });
 
+    } catch (groqFetchError) {
+      console.error("smart-ar: Groq API fetch error:", groqFetchError);
+      return new Response(
+        JSON.stringify({ error: "Groq API fetch failed: " + groqFetchError.message }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (!groqResponse.ok) {
       const errorText = await groqResponse.text();
+      console.error("smart-ar: Groq API returned " + groqResponse.status + ": " + errorText);
       return new Response(
         JSON.stringify({ error: "Groq API error: " + errorText }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
