@@ -912,6 +912,7 @@ export default function TrackDetail() {
                {activeTab === "stems" && <StemsTab trackId={track.id} autoOpenUpload={shouldAutoUpload} readOnly={isViewerShared || !permissions.canEditTracks} />}
                {activeTab === "details" && (
                  <div className="space-y-10">
+                   {track.sonicDna && <AudioDnaSection sonicDna={track.sonicDna} />}
                    <section>
                      <h3 className="text-lg font-semibold text-foreground mb-4">Splits</h3>
                      <SplitsTab trackId={track.id} trackUuid={track.uuid} readOnly={isViewerShared} />
@@ -1178,6 +1179,87 @@ function SectionCard({ title, icon: Icon, children, action }: { title: string; i
       </div>
       {children}
     </div>
+  );
+}
+
+function AudioDnaSection({ sonicDna }: { sonicDna: Record<string, any> }) {
+  const arousal = sonicDna.mood?.arousal;
+  const valence = sonicDna.mood?.valence;
+  const brightness = sonicDna.spectral?.brightness;
+  const warmth = sonicDna.spectral?.warmth;
+  const syncReady = sonicDna.intro_clearance?.sync_ready;
+  const vocalPresence = sonicDna.intro_clearance?.vocal_presence;
+  const tempoStability = sonicDna.tempo_stability;
+  const structure = sonicDna.structure;
+
+  const energyLabel = arousal != null ? (arousal > 0.7 ? "High Energy" : arousal > 0.4 ? "Medium Energy" : "Low Energy") : null;
+  const energyColor = arousal != null ? (arousal > 0.7 ? "bg-orange-500/15 text-orange-600 dark:text-orange-400" : arousal > 0.4 ? "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400" : "bg-blue-500/15 text-blue-600 dark:text-blue-400") : null;
+
+  const valenceLabel = valence != null ? (valence > 0.6 ? "Positive" : valence > 0.4 ? "Neutral" : "Dark") : null;
+  const arousalSuffix = arousal != null ? (arousal > 0.7 ? "Intense" : arousal > 0.4 ? "Moderate" : "Calm") : null;
+  const moodLabel = valenceLabel && arousalSuffix ? valenceLabel + " & " + arousalSuffix : null;
+
+  const warmLabel = warmth != null ? (warmth > 0.6 ? "Warm" : "Cool") : null;
+  const brightLabel = brightness != null ? (brightness > 0.5 ? "Bright" : "Rich") : null;
+  const soundLabel = warmLabel && brightLabel ? warmLabel + " & " + brightLabel : null;
+
+  const vocalLabel = vocalPresence != null ? (vocalPresence > 0.5 ? "High" : vocalPresence > 0.2 ? "Moderate" : "Low") : null;
+
+  const tempoLabel = tempoStability != null ? (tempoStability > 0.9 ? "Very Stable" : tempoStability > 0.7 ? "Stable" : "Variable") : null;
+
+  const structureTypes = structure && Array.isArray(structure) ? structure.map((s: any) => s.type) : null;
+  const uniqueTypes = structureTypes ? [...new Set(structureTypes)] : null;
+  const structureLabel = uniqueTypes ? structureTypes.length + " sections: " + uniqueTypes.join(", ") : null;
+
+  return (
+    <>
+    <section>
+      <div className="flex items-center gap-2 mb-4">
+        <Activity className="w-5 h-5 text-primary" />
+        <h3 className="text-lg font-semibold text-foreground">Audio DNA</h3>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {energyLabel && (
+          <div className={"rounded-lg px-3 py-2.5 " + energyColor}>
+            <p className="text-[10px] uppercase tracking-wider opacity-70 mb-0.5">Energy</p>
+            <p className="text-sm font-medium">{energyLabel}</p>
+          </div>
+        )}
+        {moodLabel && (
+          <div className="rounded-lg px-3 py-2.5 bg-purple-500/15 text-purple-600 dark:text-purple-400">
+            <p className="text-[10px] uppercase tracking-wider opacity-70 mb-0.5">Mood</p>
+            <p className="text-sm font-medium">{moodLabel}</p>
+          </div>
+        )}
+        {soundLabel && (
+          <div className="rounded-lg px-3 py-2.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+            <p className="text-[10px] uppercase tracking-wider opacity-70 mb-0.5">Sound</p>
+            <p className="text-sm font-medium">{soundLabel}</p>
+          </div>
+        )}
+        {syncReady != null && (
+          <div className={"rounded-lg px-3 py-2.5 " + (syncReady ? "bg-green-500/15 text-green-600 dark:text-green-400" : "bg-orange-500/15 text-orange-600 dark:text-orange-400")}>
+            <p className="text-[10px] uppercase tracking-wider opacity-70 mb-0.5">Intro</p>
+            <p className="text-sm font-medium">{syncReady ? "Sync Ready" : "Not Sync-Ready"}</p>
+            {vocalLabel && <p className="text-[10px] opacity-70 mt-0.5">Vocal: {vocalLabel}</p>}
+          </div>
+        )}
+        {tempoLabel && (
+          <div className="rounded-lg px-3 py-2.5 bg-sky-500/15 text-sky-600 dark:text-sky-400">
+            <p className="text-[10px] uppercase tracking-wider opacity-70 mb-0.5">Tempo</p>
+            <p className="text-sm font-medium">{tempoLabel}</p>
+          </div>
+        )}
+        {structureLabel && (
+          <div className="rounded-lg px-3 py-2.5 bg-slate-500/15 text-slate-600 dark:text-slate-400">
+            <p className="text-[10px] uppercase tracking-wider opacity-70 mb-0.5">Structure</p>
+            <p className="text-sm font-medium">{structureLabel}</p>
+          </div>
+        )}
+      </div>
+    </section>
+    <div className="border-t border-border" />
+    </>
   );
 }
 

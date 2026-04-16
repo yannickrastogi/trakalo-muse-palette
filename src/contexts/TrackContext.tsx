@@ -92,6 +92,8 @@ export interface TrackData extends WorkspaceScoped {
   sharedFrom?: string;
   shareAccessLevel?: string;
   shareId?: string;
+  // deno-lint-ignore no-explicit-any
+  sonicDna?: Record<string, any>;
 }
 
 const stemTypeColors: Record<string, string> = {
@@ -181,6 +183,7 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     chapters: Array.isArray(row.chapters) ? (row.chapters as TrackChapter[]) : undefined,
     createdAt: (row.created_at as string) || undefined,
     statusHistory: [],
+    sonicDna: row.sonic_dna ? (row.sonic_dna as Record<string, any>) : undefined,
   };
 }
 

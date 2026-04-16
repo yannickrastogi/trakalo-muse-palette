@@ -116,14 +116,32 @@ Deno.serve(async (req) => {
 
     // 3. Build update payload: always set sonic_dna, conditionally update bpm/key
     // BPM and key are nested objects: sonicDna.bpm = { bpm, confidence, ... }, sonicDna.key = { key, mode, confidence }
-    const updatePayload: Record<string, unknown> = { sonic_dna: sonicDna };
 
-    // Fetch existing track to check if user already provided BPM/Key
+    // Fetch existing track metadata to sync into sonic_dna.user_metadata and check BPM/Key
     const { data: existingTrack } = await supabaseAdmin
       .from("tracks")
-      .select("bpm, key")
+      .select("bpm, key, title, artist, featuring, genre, mood, gender, language, track_type")
       .eq("id", track_id)
       .single();
+
+    // Sync track metadata into sonic_dna.user_metadata
+    if (existingTrack) {
+      sonicDna.user_metadata = {
+        ...(sonicDna.user_metadata || {}),
+        title: existingTrack.title,
+        artist: existingTrack.artist,
+        featuring: existingTrack.featuring,
+        genre: existingTrack.genre,
+        type: existingTrack.track_type || "Song",
+        mood: existingTrack.mood || [],
+        gender: existingTrack.gender,
+        language: existingTrack.language,
+        bpm: existingTrack.bpm,
+        key: existingTrack.key,
+      };
+    }
+
+    const updatePayload: Record<string, unknown> = { sonic_dna: sonicDna };
 
     const hasUserBpm = !force && existingTrack?.bpm != null && existingTrack.bpm > 0;
     const hasUserKey = !force && existingTrack?.key != null && existingTrack.key !== "";
