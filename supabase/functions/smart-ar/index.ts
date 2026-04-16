@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
 
     const { data: tracks, error: tracksError } = await supabase
       .from("tracks")
-      .select("id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language")
+      .select("id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language, sonic_dna")
       .eq("workspace_id", workspace_id);
 
     if (tracksError) {
@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       if (individualTrackIds.length > 0) {
         const { data: individualTracks } = await supabase
           .from("tracks")
-          .select("id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language")
+          .select("id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language, sonic_dna")
           .in("id", individualTrackIds);
         if (individualTracks) {
           allTracks.push(...individualTracks);
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       for (const wsId of fullCatalogWsIds) {
         const { data: wsTracks } = await supabase
           .from("tracks")
-          .select("id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language")
+          .select("id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language, sonic_dna")
           .eq("workspace_id", wsId);
         if (wsTracks) {
           allTracks.push(...wsTracks);
@@ -87,32 +87,50 @@ Deno.serve(async (req) => {
 
     const formattedTracks = dedupedTracks
       .map(
-        (t, i) =>
-          (i + 1) +
-          ". [" +
-          t.id +
-          "] " +
-          t.title +
-          " - " +
-          (t.artist || "Unknown") +
-          " | genre: " +
-          (t.genre || "N/A") +
-          " | bpm: " +
-          (t.bpm || "N/A") +
-          " | key: " +
-          (t.key || "N/A") +
-          " | mood: " +
-          (t.mood || "N/A") +
-          " | voice/gender: " +
-          (t.gender || "N/A") +
-          " | duration: " +
-          (t.duration_sec || "N/A") +
-          "s | status: " +
-          (t.status || "N/A") +
-          " | featuring: " +
-          (t.featuring || "N/A") +
-          " | language: " +
-          (t.language || "N/A")
+        (t, i) => {
+          let line =
+            (i + 1) +
+            ". [" +
+            t.id +
+            "] " +
+            t.title +
+            " - " +
+            (t.artist || "Unknown") +
+            " | genre: " +
+            (t.genre || "N/A") +
+            " | bpm: " +
+            (t.bpm || "N/A") +
+            " | key: " +
+            (t.key || "N/A") +
+            " | mood: " +
+            (t.mood || "N/A") +
+            " | voice/gender: " +
+            (t.gender || "N/A") +
+            " | duration: " +
+            (t.duration_sec || "N/A") +
+            "s | status: " +
+            (t.status || "N/A") +
+            " | featuring: " +
+            (t.featuring || "N/A") +
+            " | language: " +
+            (t.language || "N/A");
+          if (t.sonic_dna) {
+            line +=
+              " | energy: " + (t.sonic_dna.mood?.arousal || "N/A") +
+              " | valence: " + (t.sonic_dna.mood?.valence || "N/A") +
+              " | brightness: " + (t.sonic_dna.spectral?.brightness || "N/A") +
+              " | warmth: " + (t.sonic_dna.spectral?.warmth || "N/A") +
+              " | roughness: " + (t.sonic_dna.spectral?.roughness || "N/A") +
+              " | tempo_stability: " + (t.sonic_dna.tempo_stability || "N/A") +
+              " | intro_energy: " + (t.sonic_dna.intro_clearance?.energy || "N/A") +
+              " | intro_vocal: " + (t.sonic_dna.intro_clearance?.vocal_presence || "N/A") +
+              " | sync_ready: " + (t.sonic_dna.intro_clearance?.sync_ready || "N/A") +
+              " | structure: " + (t.sonic_dna.structure ? t.sonic_dna.structure.map((s: any) => s.type + "(" + s.start_sec + "-" + s.end_sec + "s,E:" + s.energy_avg + ")").join(", ") : "N/A") +
+              " | type: " + (t.sonic_dna.user_metadata?.type || "N/A") +
+              " | lyrics_available: " + (t.sonic_dna.user_metadata?.lyrics ? "yes" : "no");
+          }
+          return line;
+        }
       )
       .join("\n");
 
@@ -133,7 +151,7 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              "You are a music A&R assistant. Given a brief and a catalog of tracks with metadata, select the best matching tracks ranked by relevance. Return valid JSON only, no markdown fences.",
+              "You are a music A&R assistant with deep audio analysis capabilities. Given a brief and a catalog of tracks with metadata AND audio analysis data (energy/valence for mood, brightness/warmth/roughness for sonic character, intro clearance for sync suitability, structure for song arrangement), select the best matching tracks ranked by relevance. Use the audio analysis data to make precise matches — for example, if a brief asks for 'something dark and minimal', look for low valence, low brightness, and high warmth. If a brief needs 'sync-ready with instrumental intro', check sync_ready and intro_vocal. Return valid JSON only, no markdown fences.",
           },
           {
             role: "user",
