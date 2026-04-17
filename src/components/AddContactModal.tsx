@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContacts } from "@/contexts/ContactsContext";
-import { INDUSTRY_ROLES, PROS } from "@/lib/constants";
+import { INDUSTRY_ROLES } from "@/lib/constants";
 import { toast } from "sonner";
 
 interface AddContactModalProps {
@@ -26,9 +26,6 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
   const [role, setRole] = useState("");
   const [company, setCompany] = useState("");
   const [phone, setPhone] = useState("");
-  const [pro, setPro] = useState("");
-  const [ipi, setIpi] = useState("");
-  const [publisher, setPublisher] = useState("");
   const [saving, setSaving] = useState(false);
 
   function resetForm() {
@@ -37,9 +34,6 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
     setRole("");
     setCompany("");
     setPhone("");
-    setPro("");
-    setIpi("");
-    setPublisher("");
   }
 
   function isValidEmail(value: string): boolean {
@@ -85,9 +79,9 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
       _role: role || null,
       _company: company.trim() || null,
       _phone: phone.trim() || null,
-      _pro: pro || null,
-      _ipi: ipi.trim() || null,
-      _publisher: publisher.trim() || null,
+      _pro: null,
+      _ipi: null,
+      _publisher: null,
     });
 
     setSaving(false);
@@ -179,43 +173,6 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+1 555 123 4567"
-            />
-          </div>
-
-          {/* PRO */}
-          <div className="space-y-1.5">
-            <Label>PRO</Label>
-            <Select value={pro} onValueChange={setPro}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select PRO" />
-              </SelectTrigger>
-              <SelectContent>
-                {PROS.map((p) => (
-                  <SelectItem key={p} value={p}>{p}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* IPI */}
-          <div className="space-y-1.5">
-            <Label htmlFor="ac-ipi">IPI Number</Label>
-            <Input
-              id="ac-ipi"
-              value={ipi}
-              onChange={(e) => setIpi(e.target.value)}
-              placeholder="00000000000"
-            />
-          </div>
-
-          {/* Publisher */}
-          <div className="space-y-1.5">
-            <Label htmlFor="ac-publisher">Publisher</Label>
-            <Input
-              id="ac-publisher"
-              value={publisher}
-              onChange={(e) => setPublisher(e.target.value)}
-              placeholder="Publisher name"
             />
           </div>
 
