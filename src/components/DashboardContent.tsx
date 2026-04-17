@@ -40,6 +40,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { EmptyState } from "@/components/EmptyState";
+import { WelcomeOnboarding } from "@/components/onboarding/WelcomeOnboarding";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 
 import { DEFAULT_COVER } from "@/lib/constants";
@@ -408,6 +409,10 @@ export function DashboardContent() {
   ];
 
   const isFirstSaveUser = localStorage.getItem("trakalog_first_save_done") === "true";
+  const [showWelcome, setShowWelcome] = useState(() => {
+    return !isFirstSaveUser && localStorage.getItem("trakalog_onboarding_complete") !== "true";
+  });
+
   const [showSaveBanner, setShowSaveBanner] = useState(() => {
     return isFirstSaveUser && localStorage.getItem("trakalog_first_save_banner_dismissed") !== "true";
   });
@@ -1220,6 +1225,13 @@ export function DashboardContent() {
       <InviteMemberModal open={showInviteModal} onOpenChange={setShowInviteModal} onInvite={() => { completeStep("add_credits"); setShowInviteModal(false); }} />
       <CreatePitchModal open={showPitchModal} onOpenChange={setShowPitchModal} onCreate={(pitch) => { addPitch(pitch); completeStep("share_or_pitch"); setShowPitchModal(false); }} />
       <CreateTeamModal open={showCreateTeamModal} onOpenChange={setShowCreateTeamModal} onCreate={(name) => { createTeam(name); completeStep("create_team"); setShowCreateTeamModal(false); }} />
+
+      {/* Welcome Onboarding overlay */}
+      <AnimatePresence>
+        {showWelcome && (
+          <WelcomeOnboarding onComplete={() => setShowWelcome(false)} />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
