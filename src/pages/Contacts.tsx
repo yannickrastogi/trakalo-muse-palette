@@ -12,6 +12,7 @@ import { format, differenceInDays } from "date-fns";
 import { generateContactListPdf } from "@/lib/pdf-generators";
 import { exportContactsCsv, exportContactsXlsx } from "@/lib/contact-export";
 import { toast } from "sonner";
+import { INDUSTRY_ROLES } from "@/lib/constants";
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
@@ -139,7 +140,7 @@ export default function Contacts() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const roles = useMemo(() => [...new Set(contacts.map((c) => c.role))].sort(), [contacts]);
+  const roles = INDUSTRY_ROLES;
   const roleOptions = useMemo(() => ["All", ...roles], [roles]);
   const organizations = useMemo(() => {
     const orgs = [...new Set(contacts.map((c) => c.organization).filter(Boolean))].sort();
