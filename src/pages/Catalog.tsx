@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { UploadTrackModal } from "@/components/UploadTrackModal";
+import { EmptyState } from "@/components/EmptyState";
 import { useRole } from "@/contexts/RoleContext";
 import { FirstUseTooltip } from "@/components/FirstUseTooltip";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
@@ -323,7 +324,17 @@ export default function Catalog() {
 
         {/* Track Table / Grid */}
         <motion.div variants={item}>
-          {effectiveViewMode === "table" ? (
+          {allTracks.length === 0 ? (
+            <EmptyState
+              icon={Music}
+              title="Your catalog is empty"
+              description="Upload your first track — Sonic DNA will automatically detect BPM, key, and audio characteristics."
+              actionLabel="Upload Track"
+              onAction={() => setUploadOpen(true)}
+              secondaryLabel="Or try Quick Upload for instant bulk import"
+              onSecondaryAction={() => setUploadOpen(true)}
+            />
+          ) : effectiveViewMode === "table" ? (
           <div className="card-premium overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">

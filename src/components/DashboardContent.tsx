@@ -39,6 +39,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
+import { EmptyState } from "@/components/EmptyState";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 
 import { DEFAULT_COVER } from "@/lib/constants";
@@ -144,6 +145,7 @@ export function DashboardContent() {
 
       localStorage.removeItem("trakalog_auto_save");
       if (!error) {
+        localStorage.setItem("trakalog_first_save_done", "true");
         supabase.rpc("write_audit_log", { _user_id: user.id, _workspace_id: activeWorkspace.id, _action: "track.saved_from_share", _entity_type: "track", _entity_id: trackId }).then(() => {}).catch(() => {});
         toast.success("Track saved to your Trakalog!");
         refreshTracks();
@@ -405,6 +407,20 @@ export function DashboardContent() {
     { id: "pitches", label: t("pitch.title"), value: allPitches.length.toLocaleString(), icon: Send, change: t("pitch.active", { count: allPitches.filter(function(p) { return p.status === "Sent" || p.status === "Opened"; }).length }), changeColor: "text-brand-orange", accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", hoverRing: "hover:ring-1 hover:ring-brand-orange/20", clickable: true },
   ];
 
+  const isFirstSaveUser = localStorage.getItem("trakalog_first_save_done") === "true";
+  const [showSaveBanner, setShowSaveBanner] = useState(() => {
+    return isFirstSaveUser && localStorage.getItem("trakalog_first_save_banner_dismissed") !== "true";
+  });
+
+  useEffect(() => {
+    if (!showSaveBanner) return;
+    const timer = setTimeout(() => {
+      setShowSaveBanner(false);
+      localStorage.setItem("trakalog_first_save_banner_dismissed", "true");
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [showSaveBanner]);
+
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -438,6 +454,41 @@ export function DashboardContent() {
 
       {/* Onboarding Checklist */}
       <OnboardingChecklist />
+
+      {/* Save-from-share banner */}
+      {showSaveBanner && allTracks.length > 0 && (
+        <motion.div
+          variants={item}
+          className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-brand-orange/10 border border-brand-orange/20"
+        >
+          <p className="text-sm text-foreground">
+            <span className="mr-1.5">🎵</span>
+            Track saved to your catalog!{" "}
+            <Link to="/tracks" className="font-semibold text-brand-orange hover:underline">
+              Explore your Tracks to see it.
+            </Link>
+          </p>
+          <button
+            onClick={() => { setShowSaveBanner(false); localStorage.setItem("trakalog_first_save_banner_dismissed", "true"); }}
+            className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </motion.div>
+      )}
+
+      {/* Dashboard Empty State */}
+      {allTracks.length === 0 && !isFirstSaveUser && (
+        <motion.div variants={item}>
+          <EmptyState
+            icon={LayoutDashboard}
+            title="Welcome to your Dashboard"
+            description="This is where you'll see your catalog stats, recent activity, and progress. Let's begin by uploading your first track."
+            actionLabel="Upload Track"
+            onAction={() => setShowUploadModal(true)}
+          />
+        </motion.div>
+      )}
 
       {/* Stats — 3×2 grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">

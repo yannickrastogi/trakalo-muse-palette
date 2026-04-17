@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Users, Building2, Download, X, FileText, FileSpreadsheet, ChevronDown, Send } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
+import { EmptyState } from "@/components/EmptyState";
 import { useTranslation } from "react-i18next";
 import { useContacts } from "@/contexts/ContactsContext";
 import { usePitches } from "@/contexts/PitchContext";
@@ -329,14 +330,20 @@ export default function Contacts() {
 
         {/* Desktop Table */}
         <motion.div variants={item} className="card-premium overflow-hidden hidden md:block">
-          {filtered.length === 0 ? (
+          {contacts.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="No contacts yet"
+              description="Your contacts are built automatically when someone listens to your shared links or scans your studio QR code. You can also add them manually."
+            />
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="w-16 h-16 rounded-2xl icon-brand flex items-center justify-center mb-5">
                 <Users className="w-7 h-7 text-primary" />
               </div>
               <h2 className="text-lg font-semibold text-foreground">{t("contacts.noContacts")}</h2>
               <p className="text-sm text-muted-foreground mt-2 max-w-md">
-                {t("contacts.noContactsDesc")}
+                {t("contacts.adjustFilters") || "No contacts match your filters."}
               </p>
             </div>
           ) : (
@@ -420,7 +427,15 @@ export default function Contacts() {
 
         {/* Mobile Cards */}
         <div className="md:hidden space-y-3">
-          {filtered.length === 0 ? (
+          {contacts.length === 0 ? (
+            <motion.div variants={item}>
+              <EmptyState
+                icon={Users}
+                title="No contacts yet"
+                description="Your contacts are built automatically when someone listens to your shared links or scans your studio QR code. You can also add them manually."
+              />
+            </motion.div>
+          ) : filtered.length === 0 ? (
             <motion.div variants={item} className="card-premium">
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <div className="w-16 h-16 rounded-2xl icon-brand flex items-center justify-center mb-5">
@@ -428,7 +443,7 @@ export default function Contacts() {
                 </div>
                 <h2 className="text-lg font-semibold text-foreground">{t("contacts.noContacts")}</h2>
                 <p className="text-sm text-muted-foreground mt-2 max-w-sm px-4">
-                  {t("contacts.noContactsDesc")}
+                  {t("contacts.adjustFilters") || "No contacts match your filters."}
                 </p>
               </div>
             </motion.div>

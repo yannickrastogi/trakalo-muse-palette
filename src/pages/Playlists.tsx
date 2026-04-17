@@ -21,6 +21,7 @@ import {
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
+import { EmptyState } from "@/components/EmptyState";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { DEFAULT_COVER, GENRES } from "@/lib/constants";
 import { useTrack } from "@/contexts/TrackContext";
@@ -446,14 +447,25 @@ export default function Playlists() {
         )}
 
         {/* Playlist Grid */}
-        {filtered.length === 0 ? (
+        {playlists.length === 0 ? (
+          <motion.div variants={item}>
+            <EmptyState
+              icon={ListMusic}
+              title="No playlists yet"
+              description="Create a playlist to organize and pitch your tracks together."
+              actionLabel="Create Playlist"
+              onAction={() => setCreateOpen(true)}
+              note={allTracks.length === 0 ? "You need at least one track to create a playlist." : undefined}
+            />
+          </motion.div>
+        ) : filtered.length === 0 ? (
           <motion.div variants={item} className="card-premium py-20 text-center">
             <div className="w-14 h-14 rounded-2xl icon-brand flex items-center justify-center mx-auto mb-4">
               <ListMusic className="w-7 h-7 text-white" />
             </div>
             <p className="text-sm font-semibold text-foreground">{t("playlists.noPlaylists")}</p>
             <p className="text-xs mt-1.5 text-muted-foreground/70 max-w-sm mx-auto">
-              No playlists yet. Create your first playlist or let Smart A&R curate one for you.
+              No playlists match your filters.
             </p>
           </motion.div>
         ) : (

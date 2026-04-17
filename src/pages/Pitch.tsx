@@ -23,9 +23,11 @@ import {
   Download,
   Users,
   Loader2,
+  Target,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageShell } from "@/components/PageShell";
+import { EmptyState } from "@/components/EmptyState";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePitchModal, type PitchEntry } from "@/components/CreatePitchModal";
 import { useRole } from "@/contexts/RoleContext";
@@ -408,14 +410,23 @@ export default function Pitch() {
 
         {/* Pitch List */}
         <motion.div variants={item}>
-          {filtered.length === 0 ? (
+          {pitches.length === 0 ? (
+            <EmptyState
+              icon={Target}
+              title="No pitches sent yet"
+              description="Start pitching your tracks to A&R, labels, and music supervisors. Trakalog tracks every interaction."
+              actionLabel="Create Pitch"
+              onAction={() => setCreateOpen(true)}
+              note="Your contacts are built automatically when people listen to your shared links."
+            />
+          ) : filtered.length === 0 ? (
             <div className="card-premium py-20 text-center">
               <div className="w-14 h-14 rounded-2xl icon-brand flex items-center justify-center mx-auto mb-4">
                 <Send className="w-6 h-6 text-primary" />
               </div>
               <p className="text-sm font-semibold text-foreground">{t("pitch.noPitches")}</p>
               <p className="text-xs mt-1.5 text-muted-foreground/70 max-w-sm mx-auto">
-                {search || statusFilter ? t("pitch.adjustFilters") : t("pitch.createFirst")}
+                {t("pitch.adjustFilters")}
               </p>
             </div>
           ) : isMobile ? (

@@ -2,9 +2,10 @@ import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  MessageSquare, Search, Clock, ArrowUpDown, MoreHorizontal,
+  MessageSquare, StickyNote, Search, Clock, ArrowUpDown, MoreHorizontal,
   Edit3, Trash2, ChevronDown, ChevronRight
 } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { useTrackReview, type TimecodedComment, type AuthorType, formatTimestamp } from "@/contexts/TrackReviewContext";
 import { TimecodedCommentComposer } from "./TimecodedCommentComposer";
 import {
@@ -238,11 +239,11 @@ export function TrackReviewPanel({
         {/* Grouped comments */}
         <div className="max-h-[600px] overflow-y-auto">
           {commentGroups.length === 0 ? (
-            <div className="text-center py-12">
-              <MessageSquare className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-sm font-medium text-muted-foreground">{t("trackReview.noComments")}</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">{t("trackReview.noCommentsDesc")}</p>
-            </div>
+            <EmptyState
+              icon={StickyNote}
+              title="No notes yet"
+              description="Notes you add during upload or editing appear here. Feedback from shared link recipients will also show up."
+            />
           ) : (
             <div className="divide-y divide-border">
               {commentGroups.map((group) => {

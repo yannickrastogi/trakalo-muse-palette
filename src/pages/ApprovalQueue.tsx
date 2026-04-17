@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Shield, Clock, CheckCircle2, XCircle, Send, Music, ListMusic, Link2,
+  Shield, Clock, CheckCircle, CheckCircle2, XCircle, Send, Music, ListMusic, Link2,
   ChevronRight, Search, Filter, MoreHorizontal, ArrowLeft, User,
   FileText, AlertCircle, Package, MessageSquare, X, Eye,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
+import { EmptyState } from "@/components/EmptyState";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { useApprovals, type SendRecord, type SendStatus, type SendType } from "@/contexts/ApprovalContext";
@@ -300,7 +301,15 @@ export default function ApprovalQueue() {
         </motion.div>
 
         {/* List */}
-        {filteredSends.length === 0 ? (
+        {sends.length === 0 ? (
+          <motion.div variants={item}>
+            <EmptyState
+              icon={CheckCircle}
+              title="No pending approvals"
+              description="When team members submit changes, they'll appear here for review."
+            />
+          </motion.div>
+        ) : filteredSends.length === 0 ? (
           <motion.div variants={item} className="card-premium p-12 text-center">
             <Shield className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground font-medium">

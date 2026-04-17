@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Link2, Copy, Lock, Globe, Eye, EyeOff, BarChart3, ChevronDown, X } from "lucide-react";
+import { Search, Link2, Link as LinkIcon, Copy, Lock, Globe, Eye, EyeOff, BarChart3, ChevronDown, X } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
+import { EmptyState } from "@/components/EmptyState";
 import { useSharedLinks } from "@/contexts/SharedLinksContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useTeams } from "@/contexts/TeamContext";
@@ -88,6 +90,7 @@ function FilterSelect({ label, value, options, onChange }: {
 }
 
 export default function SharedLinks() {
+  const navigate = useNavigate();
   const { sharedLinks, updateLinkStatus } = useSharedLinks();
   const { permissions } = useRole();
   const { teams } = useTeams();
@@ -221,14 +224,22 @@ export default function SharedLinks() {
 
         {/* Desktop Table */}
         <motion.div variants={item} className="card-premium overflow-hidden hidden md:block">
-          {filtered.length === 0 ? (
+          {sharedLinks.length === 0 ? (
+            <EmptyState
+              icon={LinkIcon}
+              title="No shared links yet"
+              description="Share your tracks with secure, branded links. Track who listens and how they engage."
+              actionLabel="Go to Tracks"
+              onAction={() => navigate("/tracks")}
+            />
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-14 h-14 rounded-2xl icon-brand flex items-center justify-center mb-4">
                 <Link2 className="w-6 h-6 text-primary" />
               </div>
-              <h2 className="text-lg font-semibold text-foreground">No shared links yet</h2>
+              <h2 className="text-lg font-semibold text-foreground">No shared links match</h2>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-sm">
-                Create a share link from any track's Stems tab to start sharing.
+                Try adjusting your search or filters.
               </p>
             </div>
           ) : (
@@ -322,15 +333,25 @@ export default function SharedLinks() {
 
         {/* Mobile Cards */}
         <div className="md:hidden space-y-3">
-          {filtered.length === 0 ? (
+          {sharedLinks.length === 0 ? (
+            <motion.div variants={item}>
+              <EmptyState
+                icon={LinkIcon}
+                title="No shared links yet"
+                description="Share your tracks with secure, branded links. Track who listens and how they engage."
+                actionLabel="Go to Tracks"
+                onAction={() => navigate("/tracks")}
+              />
+            </motion.div>
+          ) : filtered.length === 0 ? (
             <motion.div variants={item} className="card-premium">
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="w-14 h-14 rounded-2xl icon-brand flex items-center justify-center mb-4">
                   <Link2 className="w-6 h-6 text-primary" />
                 </div>
-                <h2 className="text-lg font-semibold text-foreground">No shared links yet</h2>
+                <h2 className="text-lg font-semibold text-foreground">No shared links match</h2>
                 <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                  Create a share link from any track's Stems tab to start sharing.
+                  Try adjusting your search or filters.
                 </p>
               </div>
             </motion.div>
