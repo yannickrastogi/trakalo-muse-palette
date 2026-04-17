@@ -38,7 +38,8 @@ import { useTranslation } from "react-i18next";
 import { useRole } from "@/contexts/RoleContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { OnboardingChecklist } from "@/components/OnboardingChecklist";
+import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
+import { useSharedLinks } from "@/contexts/SharedLinksContext";
 import { EmptyState } from "@/components/EmptyState";
 import { WelcomeOnboarding } from "@/components/onboarding/WelcomeOnboarding";
 import { GuidedTour } from "@/components/onboarding/GuidedTour";
@@ -445,7 +446,8 @@ export function DashboardContent() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showPitchModal, setShowPitchModal] = useState(false);
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
-  const { createTeam } = useTeams();
+  const { createTeam, teams } = useTeams();
+  const { sharedLinks } = useSharedLinks();
 
   const quickActions = [
     { label: t("dashboard.uploadTrack"), icon: Upload, primary: true, visible: permissions.canUploadTracks, onClick: () => setShowUploadModal(true) },
@@ -472,7 +474,17 @@ export function DashboardContent() {
       </motion.div>
 
       {/* Onboarding Checklist */}
-      <OnboardingChecklist />
+      <OnboardingChecklist
+        user={user}
+        workspace={activeWorkspace}
+        tracks={allTracks}
+        playlistCount={allPlaylists.length}
+        contactCount={allContacts.length}
+        pitchCount={allPitches.length}
+        sharedLinkCount={sharedLinks.length}
+        memberCount={teams?.[0]?.members?.length || 1}
+        onUpload={() => setShowUploadModal(true)}
+      />
 
       {/* Save-from-share banner */}
       {showSaveBanner && allTracks.length > 0 && (
