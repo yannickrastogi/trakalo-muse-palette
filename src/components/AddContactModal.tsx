@@ -76,18 +76,18 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
     const firstName = spaceIdx > 0 ? trimmedName.slice(0, spaceIdx) : trimmedName;
     const lastName = spaceIdx > 0 ? trimmedName.slice(spaceIdx + 1) : "";
 
-    const { error } = await supabase.from("contacts").insert({
-      workspace_id: activeWorkspace.id,
-      created_by: user.id,
-      first_name: firstName,
-      last_name: lastName || null,
-      email: trimmedEmail,
-      role: role || null,
-      company: company.trim() || null,
-      phone: phone.trim() || null,
-      pro: pro || null,
-      ipi: ipi.trim() || null,
-      publisher: publisher.trim() || null,
+    const { error } = await supabase.rpc("add_contact_manual", {
+      _user_id: user.id,
+      _workspace_id: activeWorkspace.id,
+      _first_name: firstName,
+      _last_name: lastName || null,
+      _email: trimmedEmail,
+      _role: role || null,
+      _company: company.trim() || null,
+      _phone: phone.trim() || null,
+      _pro: pro || null,
+      _ipi: ipi.trim() || null,
+      _publisher: publisher.trim() || null,
     });
 
     setSaving(false);
