@@ -25,6 +25,7 @@ interface ContactsContextValue {
   addOrUpdateContact: (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => void;
   getContact: (email: string) => Contact | undefined;
   upsertCollaborator: (data: { firstName: string; lastName: string; email?: string; pro?: string; ipi?: string; publisher?: string }) => void;
+  refreshContacts: () => Promise<void>;
 }
 
 const ContactsContext = createContext<ContactsContextValue | null>(null);
@@ -179,7 +180,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <ContactsContext.Provider value={{ contacts, addOrUpdateContact, getContact, upsertCollaborator }}>
+    <ContactsContext.Provider value={{ contacts, addOrUpdateContact, getContact, upsertCollaborator, refreshContacts: fetchContacts }}>
       {children}
     </ContactsContext.Provider>
   );

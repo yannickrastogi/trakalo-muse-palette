@@ -1,8 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Users, Building2, Download, X, FileText, FileSpreadsheet, ChevronDown, Send } from "lucide-react";
+import { Search, Users, UserPlus, Building2, Download, X, FileText, FileSpreadsheet, ChevronDown, Send } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { EmptyState } from "@/components/EmptyState";
+import { AddContactModal } from "@/components/AddContactModal";
 import { useTranslation } from "react-i18next";
 import { useContacts } from "@/contexts/ContactsContext";
 import { usePitches } from "@/contexts/PitchContext";
@@ -122,6 +123,7 @@ export default function Contacts() {
   const [orgFilter, setOrgFilter] = useState("All");
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [pitchContact, setPitchContact] = useState<{ name: string; email: string; company: string } | null>(null);
+  const [addContactOpen, setAddContactOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
   // Normalize roles on all contacts
@@ -231,8 +233,17 @@ export default function Contacts() {
                 </span>
               </div>
             </div>
-            {/* Export button */}
-            <div className="relative" ref={exportRef}>
+            <div className="flex items-center gap-2.5">
+              {/* Add Contact button */}
+              <button
+                onClick={() => setAddContactOpen(true)}
+                className="px-5 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 shrink-0 min-h-[44px] bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 hover:from-orange-600 hover:via-pink-600 hover:to-purple-600 text-white transition-all"
+              >
+                <UserPlus className="w-4 h-4" />
+                Add Contact
+              </button>
+              {/* Export button */}
+              <div className="relative" ref={exportRef}>
               <button
                 onClick={() => setShowExportMenu(!showExportMenu)}
                 className="btn-brand px-5 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 shrink-0 min-h-[44px] shadow-lg"
@@ -299,6 +310,7 @@ export default function Contacts() {
                 )}
               </AnimatePresence>
             </div>
+            </div>
           </div>
         </motion.div>
 
@@ -335,6 +347,8 @@ export default function Contacts() {
               icon={Users}
               title="No contacts yet"
               description="Your contacts are built automatically when someone listens to your shared links or scans your studio QR code. You can also add them manually."
+              actionLabel="Add Contact"
+              onAction={() => setAddContactOpen(true)}
             />
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -510,6 +524,7 @@ export default function Contacts() {
         initialRecipientEmail={pitchContact?.email}
         initialRecipientCompany={pitchContact?.company}
       />
+      <AddContactModal open={addContactOpen} onOpenChange={setAddContactOpen} />
     </PageShell>
   );
 }
