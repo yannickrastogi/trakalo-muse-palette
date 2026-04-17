@@ -37,7 +37,7 @@ export function UserMenu() {
   var CurrentIcon = currentLevelConfig.icon;
 
   return (
-    <div className="relative">
+    <div className="relative" data-tour="header-profile">
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-secondary/80 transition-colors"

@@ -28,14 +28,14 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 
 const navItems = [
-  { titleKey: "nav.dashboard", icon: LayoutDashboard, url: "/dashboard", permKey: null },
-  { titleKey: "nav.tracks", icon: Music, url: "/tracks", permKey: null },
-  { titleKey: "nav.playlists", icon: ListMusic, url: "/playlists", permKey: null },
-  { titleKey: "nav.pitch", icon: Send, url: "/pitch", permKey: "canSendPitches" as const },
-  { titleKey: "nav.contacts", icon: Users, url: "/contacts", permKey: null },
-  { titleKey: "nav.sharedLinks", icon: Link2, url: "/shared-links", permKey: null },
-  { titleKey: "nav.workspace", icon: Building2, url: "/workspace-settings", permKey: "canAccessSettings" as const },
-  { titleKey: "nav.approvals", icon: CheckCircle, url: "/approvals", permKey: "canManageTeam" as const },
+  { titleKey: "nav.dashboard", icon: LayoutDashboard, url: "/dashboard", permKey: null, tourKey: "sidebar-dashboard" },
+  { titleKey: "nav.tracks", icon: Music, url: "/tracks", permKey: null, tourKey: "sidebar-tracks" },
+  { titleKey: "nav.playlists", icon: ListMusic, url: "/playlists", permKey: null, tourKey: "sidebar-playlists" },
+  { titleKey: "nav.pitch", icon: Send, url: "/pitch", permKey: "canSendPitches" as const, tourKey: "sidebar-pitch" },
+  { titleKey: "nav.contacts", icon: Users, url: "/contacts", permKey: null, tourKey: "sidebar-contacts" },
+  { titleKey: "nav.sharedLinks", icon: Link2, url: "/shared-links", permKey: null, tourKey: "sidebar-shared-links" },
+  { titleKey: "nav.workspace", icon: Building2, url: "/workspace-settings", permKey: "canAccessSettings" as const, tourKey: "sidebar-workspace-settings" },
+  { titleKey: "nav.approvals", icon: CheckCircle, url: "/approvals", permKey: "canManageTeam" as const, tourKey: "sidebar-approvals" },
 ];
 
 // Primary items for the bottom nav bar (mobile)
@@ -61,6 +61,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           key={item.titleKey}
           to={item.url}
           end={item.url === "/"}
+          data-tour={item.tourKey}
           className="flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all text-sm font-medium group min-h-[44px]"
           activeClassName="nav-active text-foreground"
           onClick={onNavigate}
@@ -241,7 +242,7 @@ export function AppSidebar() {
 
       <div className="mx-5 h-px" style={{ background: "var(--gradient-brand-horizontal)", opacity: 0.15 }} />
 
-      <div className="pt-3">
+      <div className="pt-3" data-tour="workspace-switcher">
         <WorkspaceSwitcher collapsed={collapsed} />
       </div>
 
@@ -251,6 +252,7 @@ export function AppSidebar() {
             key={item.titleKey}
             to={item.url}
             end={item.url === "/"}
+            data-tour={item.tourKey}
             className="flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all text-sm font-medium group"
             activeClassName="nav-active text-foreground"
           >

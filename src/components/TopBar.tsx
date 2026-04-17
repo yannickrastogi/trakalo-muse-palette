@@ -144,7 +144,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         {/* Search — always visible on desktop, expandable on mobile */}
         {(!isMobile || mobileSearchOpen) && (
           <FirstUseTooltip id="search-bar" message="Search tracks, artists, and playlists instantly" position="bottom">
-          <div className={"relative " + (isMobile ? "w-full" : "w-full max-w-md")} ref={wrapperRef}>
+          <div className={"relative " + (isMobile ? "w-full" : "w-full max-w-md")} ref={wrapperRef} data-tour="search-bar">
             <div className="flex items-center gap-2.5 bg-secondary/50 rounded-lg px-3.5 py-2 w-full border border-border/50 focus-within:border-primary/30 transition-all">
               <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <input
@@ -246,6 +246,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         <button
           onClick={() => navigate("/smart-ar")}
           title="Smart A&R"
+          data-tour="header-smart-ar"
           className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] hidden sm:flex items-center justify-center"
         >
           <Sparkles className="w-[17px] h-[17px]" />
@@ -253,12 +254,14 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         <button
           onClick={() => navigate("/radio")}
           title="Radio"
+          data-tour="header-radio"
           className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] hidden sm:flex items-center justify-center"
         >
           <Radio className="w-[17px] h-[17px]" />
         </button>
         <button
           onClick={() => navigate("/notifications")}
+          data-tour="header-notifications"
           className="relative p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
         >
           <Bell className="w-[17px] h-[17px]" />

@@ -41,6 +41,7 @@ import { toast } from "sonner";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { EmptyState } from "@/components/EmptyState";
 import { WelcomeOnboarding } from "@/components/onboarding/WelcomeOnboarding";
+import { GuidedTour } from "@/components/onboarding/GuidedTour";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 
 import { DEFAULT_COVER } from "@/lib/constants";
@@ -412,6 +413,19 @@ export function DashboardContent() {
   const [showWelcome, setShowWelcome] = useState(() => {
     return !isFirstSaveUser && localStorage.getItem("trakalog_onboarding_complete") !== "true";
   });
+
+  const [runTour, setRunTour] = useState(false);
+
+  // Launch tour after welcome is closed (or if welcome was already completed before)
+  useEffect(() => {
+    if (showWelcome) return; // wait for welcome to close
+    if (isFirstSaveUser) return; // shared-link users skip tour
+    if (localStorage.getItem("trakalog_tour_complete") === "true") return;
+    if (localStorage.getItem("trakalog_onboarding_complete") !== "true") return;
+    // Small delay so dashboard renders first and data-tour elements mount
+    const timer = setTimeout(() => setRunTour(true), 600);
+    return () => clearTimeout(timer);
+  }, [showWelcome, isFirstSaveUser]);
 
   const [showSaveBanner, setShowSaveBanner] = useState(() => {
     return isFirstSaveUser && localStorage.getItem("trakalog_first_save_banner_dismissed") !== "true";
@@ -1181,6 +1195,7 @@ export function DashboardContent() {
               <button
                 key={action.label}
                 onClick={action.onClick}
+                {...(action.primary ? { "data-tour": "upload-button" } : {})}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-[13px] group min-h-[72px] shrink-0 w-[120px] sm:w-auto hover:scale-[1.02] ${
                   action.primary
                     ? "border-brand-orange/25 bg-brand-orange/8 text-brand-orange hover:bg-brand-orange/12 hover:border-brand-orange/40 gradient-border hover:shadow-[0_0_20px_rgba(var(--brand-orange-rgb,255,140,50),0.15)]"
@@ -1232,6 +1247,15 @@ export function DashboardContent() {
           <WelcomeOnboarding onComplete={() => setShowWelcome(false)} />
         )}
       </AnimatePresence>
+
+      <GuidedTour
+        run={runTour}
+        onFinish={() => {
+          setRunTour(false);
+          localStorage.setItem("trakalog_tour_complete", "true");
+        }}
+        onUploadClick={() => setShowUploadModal(true)}
+      />
     </motion.div>
   );
 }
