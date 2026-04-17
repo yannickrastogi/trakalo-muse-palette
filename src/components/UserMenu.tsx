@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, LogOut, Settings, CreditCard, ChevronDown, Shield, Eye, Send, Edit3 } from "lucide-react";
+import { User, LogOut, Settings, CreditCard, ChevronDown, Shield, Eye, Send, Edit3, HelpCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useRole, type AccessLevel } from "@/contexts/RoleContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -72,6 +72,7 @@ export function UserMenu() {
 
             <div className="border-t border-border mt-1.5 pt-1.5">
               {[
+                { icon: HelpCircle, label: "Help & Guide", path: "/guide" },
                 { icon: Settings, label: t("userMenu.settings"), path: "/settings" },
                 { icon: CreditCard, label: t("userMenu.billing"), path: "/settings" },
               ].map((item) => (

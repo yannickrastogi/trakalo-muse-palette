@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { Search, Bell, Menu, X, Music, ListMusic, User, Sparkles, Radio } from "lucide-react";
+import { Search, Bell, HelpCircle, Menu, X, Music, ListMusic, User, Sparkles, Radio } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { UserMenu } from "./UserMenu";
 import { FirstUseTooltip } from "@/components/FirstUseTooltip";
@@ -258,6 +258,14 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] hidden sm:flex items-center justify-center"
         >
           <Radio className="w-[17px] h-[17px]" />
+        </button>
+        <button
+          onClick={() => navigate("/guide")}
+          title="Help & Guide"
+          data-tour="header-help"
+          className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] hidden sm:flex items-center justify-center"
+        >
+          <HelpCircle className="w-[17px] h-[17px]" />
         </button>
         <button
           onClick={() => navigate("/notifications")}

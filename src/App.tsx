@@ -45,6 +45,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import SmartAR from "./pages/SmartAR";
 import RadioPage from "./pages/Radio";
+import Guide from "./pages/Guide";
 import StudioSession from "./pages/StudioSession";
 import SignAgreement from "./pages/SignAgreement";
 import LandingPage from "./pages/LandingPage";
@@ -154,6 +155,7 @@ const App = () => (
             <Route path="/workspace-settings" element={<ProtectedApp><WorkspaceSettings /></ProtectedApp>} />
             <Route path="/notifications" element={<ProtectedApp><NotificationCenter /></ProtectedApp>} />
             <Route path="/approvals" element={<ProtectedApp><ApprovalQueue /></ProtectedApp>} />
+            <Route path="/guide" element={<ProtectedApp><Guide /></ProtectedApp>} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
