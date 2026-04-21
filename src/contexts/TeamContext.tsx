@@ -319,12 +319,12 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         )
       );
 
-      if (activeWorkspace && !memberId.startsWith("pending-")) {
-        const { error } = await supabase
-          .from("workspace_members")
-          .delete()
-          .eq("user_id", memberId)
-          .eq("workspace_id", activeWorkspace.id);
+      if (activeWorkspace && user && !memberId.startsWith("pending-")) {
+        const { error } = await supabase.rpc("remove_workspace_member", {
+          _user_id: user.id,
+          _member_user_id: memberId,
+          _workspace_id: activeWorkspace.id,
+        });
 
         if (error) {
           console.error("Error removing member:", error);
@@ -346,27 +346,16 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         )
       );
 
-      if (activeWorkspace && !memberId.startsWith("pending-")) {
+      if (activeWorkspace && user && !memberId.startsWith("pending-")) {
         const dbRole = uiRoleToDb[role] || "viewer";
-        const { data: existing } = await supabase
-          .from("user_roles")
-          .select("id")
-          .eq("user_id", memberId)
-          .eq("workspace_id", activeWorkspace.id)
-          .maybeSingle();
-
-        if (existing) {
-          const { error } = await supabase
-            .from("user_roles")
-            .update({ role: dbRole })
-            .eq("id", existing.id);
-          if (error) console.error("Error updating role:", error);
-        } else {
-          const { error } = await supabase
-            .from("user_roles")
-            .insert({ user_id: memberId, workspace_id: activeWorkspace.id, role: dbRole });
-          if (error) console.error("Error inserting role:", error);
-        }
+        const { error } = await supabase.rpc("update_member_role", {
+          _user_id: user.id,
+          _member_user_id: memberId,
+          _workspace_id: activeWorkspace.id,
+          _access_level: dbRole,
+          _professional_title: null,
+        });
+        if (error) console.error("Error updating role:", error);
       }
     },
     [activeWorkspace]
@@ -390,15 +379,14 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         )
       );
 
-      if (activeWorkspace && !memberId.startsWith("pending-")) {
-        const { error } = await supabase
-          .from("workspace_members")
-          .update({
-            access_level: newAccessLevel,
-            professional_title: newProfessionalTitle,
-          })
-          .eq("user_id", memberId)
-          .eq("workspace_id", activeWorkspace.id);
+      if (activeWorkspace && user && !memberId.startsWith("pending-")) {
+        const { error } = await supabase.rpc("update_member_role", {
+          _user_id: user.id,
+          _member_user_id: memberId,
+          _workspace_id: activeWorkspace.id,
+          _access_level: newAccessLevel,
+          _professional_title: newProfessionalTitle,
+        });
 
         if (error) {
           console.error("Error updating member access:", error);

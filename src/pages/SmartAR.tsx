@@ -322,42 +322,33 @@ export default function SmartAR() {
     try {
       var matchedTracks = results.tracks;
 
-      var { data: playlist, error: plError } = await supabase
-        .from("playlists")
-        .insert({
-          workspace_id: activeWorkspace.id,
-          created_by: user.id,
-          name: playlistName,
-          description: "Created by Smart A&R from brief: " + brief.substring(0, 100),
-          cover_url: matchedTracks[0]?.trackData.coverImage || null,
-        })
-        .select()
-        .single();
+      var { data: playlistId, error: plError } = await supabase.rpc("create_playlist", {
+        _user_id: user.id,
+        _workspace_id: activeWorkspace.id,
+        _name: playlistName,
+        _description: "Created by Smart A&R from brief: " + brief.substring(0, 100),
+        _cover_url: matchedTracks[0]?.trackData.coverImage || null,
+      });
 
-      if (plError || !playlist) {
+      if (plError || !playlistId) {
         throw new Error(plError?.message || "Failed to create playlist");
       }
 
-      var ptInserts = matchedTracks.map(function (t: any, idx: number) {
-        return {
-          playlist_id: playlist.id,
-          track_id: t.id,
-          position: idx,
-          added_by: user.id,
-        };
-      });
+      var trackIds = matchedTracks.map(function (t: any) { return t.id; });
 
-      if (ptInserts.length > 0) {
-        var { error: ptError } = await supabase
-          .from("playlist_tracks")
-          .insert(ptInserts);
+      if (trackIds.length > 0) {
+        var { error: ptError } = await supabase.rpc("add_playlist_tracks", {
+          _user_id: user.id,
+          _playlist_id: playlistId,
+          _track_ids: trackIds,
+        });
 
         if (ptError) {
           throw new Error("Playlist created but tracks failed: " + ptError.message);
         }
       }
 
-      setCreatedPlaylistId(playlist.id);
+      setCreatedPlaylistId(playlistId);
 
       if (audioRef.current) {
         audioRef.current.pause();

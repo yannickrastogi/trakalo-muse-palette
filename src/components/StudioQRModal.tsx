@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, Check, Download, QrCode, Users } from "lucide-react";
 import QRCode from "react-qr-code";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface StudioQRModalProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface StudioQRModalProps {
 
 export function StudioQRModal({ open, onClose, trackId, trackTitle, trackArtist }: StudioQRModalProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [qrToken, setQrToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [submissionCount, setSubmissionCount] = useState(0);
@@ -39,9 +41,11 @@ export function StudioQRModal({ open, onClose, trackId, trackTitle, trackArtist 
           // Generate new token
           var token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").substring(0, 8);
           supabase
-            .from("tracks")
-            .update({ qr_token: token })
-            .eq("id", trackId)
+            .rpc("update_track", {
+              _user_id: user?.id || null,
+              _track_id: trackId,
+              _updates: { qr_token: token },
+            })
             .then(function (updateRes) {
               if (!updateRes.error) {
                 setQrToken(token);

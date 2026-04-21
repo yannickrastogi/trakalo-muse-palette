@@ -62,7 +62,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             });
             if (!createError && newWsId) {
               // Mark as personal workspace
-              await supabase.from("workspaces").update({ is_personal: true } as any).eq("id", newWsId);
+              await supabase.rpc("mark_workspace_personal", { _user_id: user.id, _workspace_id: newWsId });
 
               // Deduplicate: if multiple personal workspaces were created, remove extras
               const { data: personalWsList } = await supabase
@@ -72,9 +72,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                 .eq("is_personal", true)
                 .order("created_at", { ascending: true }) as any;
               if (personalWsList && personalWsList.length > 1) {
-                // Keep the oldest, soft-delete the rest
-                const duplicateIds = personalWsList.slice(1).map((w: any) => w.id);
-                await supabase.from("workspaces").update({ is_personal: false } as any).in("id", duplicateIds);
+                // Keep the oldest as the sole personal workspace (RPC handles dedup)
+                await supabase.rpc("mark_workspace_personal", { _user_id: user.id, _workspace_id: personalWsList[0].id });
               }
 
               // Re-fetch to get the new workspace
@@ -234,17 +233,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         )
       );
 
-      // Persist to Supabase
-      const { error } = await supabase
-        .from("workspaces")
-        .update({ settings: newSettings as unknown as Record<string, unknown> })
-        .eq("id", activeWorkspace.id);
+      // Persist to Supabase via SECURITY DEFINER RPC
+      if (!user) return;
+      const { error } = await supabase.rpc("update_workspace_settings", {
+        _user_id: user.id,
+        _workspace_id: activeWorkspace.id,
+        _settings: newSettings as unknown as Record<string, unknown>,
+      });
 
       if (error) {
         console.error("Error updating workspace settings:", error);
       }
     },
-    [activeWorkspace]
+    [activeWorkspace, user]
   );
 
   // a) Auth still loading → spinner

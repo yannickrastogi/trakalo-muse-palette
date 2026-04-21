@@ -259,15 +259,17 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
       return prev.map(function(l) { return l.id === id ? Object.assign({}, l, { status: status }) : l; });
     });
 
-    var { error } = await supabase
-      .from("shared_links")
-      .update({ status: status })
-      .eq("id", id);
+    if (!user) return;
+    var { error } = await supabase.rpc("update_shared_link_status", {
+      _user_id: user.id,
+      _link_id: id,
+      _disabled: status === "disabled",
+    });
 
     if (error) {
       console.error("Error updating link status:", error);
     }
-  }, []);
+  }, [user]);
 
   var addDownloadEvent = useCallback(function(linkId: string, event: DownloadEvent) {
     setSharedLinks(function(prev) {

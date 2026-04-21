@@ -265,30 +265,13 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
     // Persist to Supabase
     if (activeWorkspace && user) {
       supabase
-        .from("approvals")
-        .insert({
-          workspace_id: activeWorkspace.id,
-          track_id: sendInput.relatedEntityId || sendInput.teamId,
-          requested_by: user.id,
-          status: mapSendStatusToDb(newSend.status),
-          requested_at: now,
-          review_note: null,
-          changes: {
-            send_type: sendInput.sendType,
-            entity_title: sendInput.relatedEntityTitle,
-            recipients: sendInput.recipients,
-            message: sendInput.message,
-            created_by_name: sendInput.createdByName,
-            created_by_role: sendInput.createdByRole,
-            approval_mode: settings.approvalMode,
-            sender_rule: memberRule,
-            auto_approved: !requiresApproval,
-            approval_required: requiresApproval,
-            sent_at: !requiresApproval ? now : null,
-          },
+        .rpc("insert_approval", {
+          _user_id: user.id,
+          _workspace_id: activeWorkspace.id,
+          _track_id: sendInput.relatedEntityId || sendInput.teamId,
+          _send_type: sendInput.sendType,
+          _team_id: sendInput.teamId || null,
         })
-        .select()
-        .single()
         .then(({ data, error }) => {
           if (error) {
             console.error("Error creating approval:", error);
@@ -336,44 +319,16 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
       internalNote: note || s.internalNote,
     } : s));
 
-    // Persist
+    // Persist via SECURITY DEFINER RPC
     supabase
-      .from("approvals")
-      .update({
-        status: "approved",
-        reviewed_by: user?.id || null,
-        reviewed_at: now,
-        review_note: note || null,
-        changes: supabase.rpc ? undefined : undefined, // changes are preserved server-side
+      .rpc("update_approval_status", {
+        _user_id: user?.id || null,
+        _approval_id: sendId,
+        _status: "approved",
+        _note: note || null,
       })
-      .eq("id", sendId)
       .then(({ error }) => {
         if (error) console.error("Error approving:", error);
-      }).catch(function (err) { console.error("Error:", err); });
-
-    // Update changes jsonb with approval info
-    supabase
-      .from("approvals")
-      .select("changes")
-      .eq("id", sendId)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          const changes = (data.changes as Record<string, unknown>) || {};
-          supabase
-            .from("approvals")
-            .update({
-              status: "approved",
-              reviewed_by: user?.id || null,
-              reviewed_at: now,
-              review_note: note || null,
-              changes: { ...changes, approved_by_name: approverName, sent_at: now, internal_note: note },
-            })
-            .eq("id", sendId)
-            .then(({ error }) => {
-              if (error) console.error("Error updating approval changes:", error);
-            }).catch(function (err) { console.error("Error:", err); });
-        }
       }).catch(function (err) { console.error("Error:", err); });
 
     setAuditTrail(prev => [...prev,
@@ -405,27 +360,16 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
       internalNote: note || s.internalNote,
     } : s));
 
-    // Persist
+    // Persist via SECURITY DEFINER RPC
     supabase
-      .from("approvals")
-      .select("changes")
-      .eq("id", sendId)
-      .single()
-      .then(({ data }) => {
-        const changes = ((data?.changes as Record<string, unknown>) || {});
-        supabase
-          .from("approvals")
-          .update({
-            status: "rejected",
-            reviewed_by: user?.id || null,
-            reviewed_at: now,
-            review_note: reason || null,
-            changes: { ...changes, rejected_by_name: rejectorName, internal_note: note },
-          })
-          .eq("id", sendId)
-          .then(({ error }) => {
-            if (error) console.error("Error rejecting:", error);
-          }).catch(function (err) { console.error("Error:", err); });
+      .rpc("update_approval_status", {
+        _user_id: user?.id || null,
+        _approval_id: sendId,
+        _status: "rejected",
+        _note: reason || null,
+      })
+      .then(({ error }) => {
+        if (error) console.error("Error rejecting:", error);
       }).catch(function (err) { console.error("Error:", err); });
 
     setAuditTrail(prev => [...prev,

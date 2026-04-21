@@ -507,7 +507,10 @@ function NotificationsSection() {
     if (!user) return;
     const next = !prefs[column];
     setPrefs((prev) => ({ ...prev, [column]: next }));
-    supabase.from("notification_preferences").upsert({ user_id: user.id, [column]: next, updated_at: new Date().toISOString() }, { onConflict: "user_id" }).then(({ error }) => {
+    supabase.rpc("upsert_notification_preferences", {
+      _user_id: user.id,
+      _preferences: { [column]: next },
+    }).then(({ error }) => {
       if (error) toast.error(error.message);
     });
   };

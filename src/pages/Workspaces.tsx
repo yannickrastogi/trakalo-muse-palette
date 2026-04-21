@@ -8,6 +8,7 @@ import {
 import { PageShell } from "@/components/PageShell";
 import { useTranslation } from "react-i18next";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +53,7 @@ export default function Workspaces() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { activeWorkspace, workspaces, switchWorkspace, refreshWorkspaces } = useWorkspace();
+  const { user } = useAuth();
   const [createOpen, setCreateOpen] = useState(false);
   const [stats, setStats] = useState<Record<string, WorkspaceStats>>({});
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
@@ -166,7 +168,7 @@ export default function Workspaces() {
       return;
     }
 
-    var { error } = await supabase.from("workspaces").delete().eq("id", deleteId);
+    var { error } = await supabase.rpc("delete_workspace", { _user_id: user?.id || null, _workspace_id: deleteId });
     if (error) {
       toast.error("Failed to delete workspace");
       console.error(error);

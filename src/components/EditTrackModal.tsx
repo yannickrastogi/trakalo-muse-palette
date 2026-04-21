@@ -11,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useTrack, type TrackData, type TrackSplit } from "@/contexts/TrackContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -137,6 +138,7 @@ function LanguageMultiSelect({ value, onChange, placeholder }: { value: string; 
 
 export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) {
   const { getTrack, updateTrack, updateTrackSplits } = useTrack();
+  const { user } = useAuth();
   const { t } = useTranslation();
   const trackData = getTrack(trackId);
 
@@ -343,10 +345,11 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
               featuring: featuredArtists.split(",").map((s) => s.trim()).filter(Boolean),
             },
           };
-          const { error } = await supabase
-            .from("tracks")
-            .update({ sonic_dna: updatedSonicDna })
-            .eq("id", trackData.uuid);
+          const { error } = await supabase.rpc("update_track", {
+            _user_id: user?.id || null,
+            _track_id: trackData.uuid,
+            _updates: { sonic_dna: updatedSonicDna },
+          });
 
           if (!error) {
             toast.success("Sonic DNA updated");

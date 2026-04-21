@@ -219,15 +219,16 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       : (raw as WaveformDataWithComments) || {};
     const updated = { ...existing, comments: trackComments };
 
-    const { error } = await supabase
-      .from("tracks")
-      .update({ waveform_data: updated as unknown as Record<string, unknown> })
-      .eq("id", trackUuid);
+    const { error } = await supabase.rpc("update_track", {
+      _user_id: user?.id || null,
+      _track_id: trackUuid,
+      _updates: { waveform_data: updated as unknown as Record<string, unknown> },
+    });
 
     if (error) {
       console.error("Error persisting comments:", error);
     }
-  }, []);
+  }, [user]);
 
   const getCommentsForTrack = useCallback((trackId: string) => {
     return comments.filter((c) => c.trackId === trackId && !c.deletedAt);

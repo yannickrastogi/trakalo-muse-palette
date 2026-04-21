@@ -785,7 +785,7 @@ function CatalogSharingSection() {
                 </div>
                 <button
                   onClick={async () => {
-                    const { error } = await supabase.from("catalog_shares").delete().eq("id", s.id);
+                    const { error } = await supabase.rpc("revoke_catalog_share", { _user_id: user.id, _share_id: s.id });
                     if (error) toast.error(error.message);
                     else { setOutgoing((prev) => prev.filter((x) => x.id !== s.id)); toast.success("Share revoked"); }
                   }}

@@ -1969,9 +1969,11 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
     updateTrackSplits(trackId, balanced);
 
     supabase
-      .from("studio_submissions")
-      .update({ status: "accepted" })
-      .eq("id", sub.id)
+      .rpc("update_studio_submission_status", {
+        _user_id: user?.id || null,
+        _submission_id: sub.id,
+        _status: "accepted",
+      })
       .then(function () {
         fetchSubmissions();
       }).catch(function (err) { console.error("Error:", err); });
@@ -1995,25 +1997,28 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
     updateTrackSplits(trackId, balanced);
 
     // Mark all pending as accepted
-    var ids = pendingSubs.map(function (s) { return s.id; });
-    supabase
-      .from("studio_submissions")
-      .update({ status: "accepted" })
-      .in("id", ids)
-      .then(function () {
-        fetchSubmissions();
-      }).catch(function (err) { console.error("Error:", err); });
+    Promise.all(pendingSubs.map(function (s) {
+      return supabase.rpc("update_studio_submission_status", {
+        _user_id: user?.id || null,
+        _submission_id: s.id,
+        _status: "accepted",
+      });
+    })).then(function () {
+      fetchSubmissions();
+    }).catch(function (err) { console.error("Error:", err); });
   }, [splits, pendingSubs, trackId, updateTrackSplits, fetchSubmissions]);
 
   var handleRejectSubmission = useCallback(function (subId: string) {
     supabase
-      .from("studio_submissions")
-      .update({ status: "rejected" })
-      .eq("id", subId)
+      .rpc("update_studio_submission_status", {
+        _user_id: user?.id || null,
+        _submission_id: subId,
+        _status: "rejected",
+      })
       .then(function () {
         fetchSubmissions();
       }).catch(function (err) { console.error("Error:", err); });
-  }, [fetchSubmissions]);
+  }, [user, fetchSubmissions]);
 
   var allSplitsHaveEmail = splits.length > 0 && splits.every(function (s) { return s.email && s.email.indexOf("@") > 0; });
   var allSigned = signatureStatuses.length > 0 && signatureStatuses.every(function (s) { return s.status === "signed"; });

@@ -170,14 +170,19 @@ export function ShareToWorkspaceModal({ open, onClose, trackId, sourceWorkspaceI
       console.error("Error sharing full catalog:", error);
       toast.error(t("catalogSharing.shareFailed"));
     } else {
-      // Remove individual shares to this workspace (now redundant)
-      await supabase
+      // Remove individual shares to this workspace (now redundant) — revoke each via RPC
+      var { data: individualShares } = await supabase
         .from("catalog_shares")
-        .update({ status: "revoked", revoked_at: new Date().toISOString() } as any)
+        .select("id")
         .eq("source_workspace_id", sourceWorkspaceId)
         .eq("target_workspace_id", targetWsId)
         .eq("status", "active")
         .not("track_id", "is", null);
+      if (individualShares) {
+        for (var iShare of individualShares) {
+          await supabase.rpc("revoke_catalog_share", { _user_id: user.id, _share_id: iShare.id });
+        }
+      }
 
       var ws = workspaces.find(function (w) { return w.id === targetWsId; });
       toast.success(t("catalogSharing.fullCatalogShareSuccess", { name: ws?.name || "" }));
@@ -189,10 +194,10 @@ export function ShareToWorkspaceModal({ open, onClose, trackId, sourceWorkspaceI
 
   var handleRevoke = async function (shareId: string) {
     setSubmitting(true);
-    var { error } = await supabase
-      .from("catalog_shares")
-      .update({ status: "revoked", revoked_at: new Date().toISOString() })
-      .eq("id", shareId);
+    var { error } = await supabase.rpc("revoke_catalog_share", {
+      _user_id: user.id,
+      _share_id: shareId,
+    });
 
     if (error) {
       console.error("Error revoking share:", error);
@@ -222,10 +227,10 @@ export function ShareToWorkspaceModal({ open, onClose, trackId, sourceWorkspaceI
     var share = fullCatalogShares.find(function (s) { return s.target_workspace_id === targetWsId; });
     if (!share) return;
     setSubmitting(true);
-    var { error } = await supabase
-      .from("catalog_shares")
-      .update({ status: "revoked", revoked_at: new Date().toISOString() })
-      .eq("id", share.id);
+    var { error } = await supabase.rpc("revoke_catalog_share", {
+      _user_id: user.id,
+      _share_id: share.id,
+    });
 
     if (error) {
       console.error("Error revoking full catalog share:", error);
