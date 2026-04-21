@@ -105,7 +105,11 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
     if (!trimmed) { finish(); return; }
 
     setSavingWorkspace(true);
-    const { error } = await supabase.from("workspaces").update({ name: trimmed }).eq("id", activeWorkspace.id);
+    const { error } = await supabase.rpc("update_workspace_name", {
+      _user_id: user!.id,
+      _workspace_id: activeWorkspace.id,
+      _name: trimmed,
+    });
     setSavingWorkspace(false);
 
     if (error) {

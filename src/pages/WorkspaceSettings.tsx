@@ -115,6 +115,7 @@ function SectionBlock({ title, subtitle, icon: Icon, children, onSave, saveLabel
 
 function InfoSection() {
   const { activeWorkspace } = useWorkspace();
+  const { user } = useAuth();
   const [name, setName] = useState(activeWorkspace?.name || "");
   const [slug, setSlug] = useState(activeWorkspace?.slug || "");
 
@@ -126,8 +127,12 @@ function InfoSection() {
   }, [activeWorkspace]);
 
   const handleSave = async () => {
-    if (!activeWorkspace) return;
-    const { error } = await supabase.from("workspaces").update({ name }).eq("id", activeWorkspace.id);
+    if (!activeWorkspace || !user) return;
+    const { error } = await supabase.rpc("update_workspace_name", {
+      _user_id: user.id,
+      _workspace_id: activeWorkspace.id,
+      _name: name,
+    });
     if (error) toast.error(error.message);
     else toast.success("Workspace name saved");
   };
