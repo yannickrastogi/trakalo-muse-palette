@@ -82,52 +82,28 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
     async (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => {
       if (!activeWorkspace || !user) return;
 
-      // Check if a contact with this email already exists in this workspace
-      const existing = contacts.find(
-        (c) => c.email.toLowerCase() === data.email.toLowerCase()
-      );
+      const { error } = await supabase.rpc("upsert_contact", {
+        _user_id: user.id,
+        _workspace_id: activeWorkspace.id,
+        _first_name: data.firstName,
+        _last_name: data.lastName,
+        _email: data.email,
+        _role: data.role || null,
+        _company: data.organization || null,
+        _phone: null,
+        _pro: data.pro || null,
+        _ipi: data.ipi || null,
+        _publisher: data.publisher || null,
+      });
 
-      if (existing) {
-        // Update existing contact
-        const { error } = await supabase
-          .from("contacts")
-          .update({
-            first_name: data.firstName,
-            last_name: data.lastName,
-            company: data.organization,
-            role: data.role,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existing.id);
-
-        if (error) {
-          console.error("Error updating contact:", error);
-          return;
-        }
-      } else {
-        // Insert new contact
-        const { error } = await supabase
-          .from("contacts")
-          .insert({
-            workspace_id: activeWorkspace.id,
-            created_by: user.id,
-            first_name: data.firstName,
-            last_name: data.lastName,
-            email: data.email,
-            company: data.organization,
-            role: data.role,
-          });
-
-        if (error) {
-          console.error("Error adding contact:", error);
-          return;
-        }
+      if (error) {
+        console.error("Error upserting contact:", error);
+        return;
       }
 
-      // Refresh contacts from Supabase
       await fetchContacts();
     },
-    [activeWorkspace, user, contacts, fetchContacts]
+    [activeWorkspace, user, fetchContacts]
   );
 
   const upsertCollaborator = useCallback(
@@ -142,32 +118,21 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
         return cFull === fullName.toLowerCase();
       });
 
-      if (existing) {
-        // Only update fields that were empty and now have a value
-        var updates: Record<string, string> = {};
-        if (!existing.pro && data.pro) updates.pro = data.pro;
-        if (!existing.ipi && data.ipi) updates.ipi = data.ipi;
-        if (!existing.publisher && data.publisher) updates.publisher = data.publisher;
-        if (!existing.email && data.email) updates.email = data.email;
-        if (Object.keys(updates).length > 0) {
-          updates.updated_at = new Date().toISOString();
-          await supabase.from("contacts").update(updates).eq("id", existing.id);
-          await fetchContacts();
-        }
-      } else {
-        // Insert new contact
-        await supabase.from("contacts").insert({
-          workspace_id: activeWorkspace.id,
-          created_by: user.id,
-          first_name: data.firstName,
-          last_name: data.lastName,
-          email: data.email || null,
-          pro: data.pro || null,
-          ipi: data.ipi || null,
-          publisher: data.publisher || null,
-        });
-        await fetchContacts();
-      }
+      // Use upsert RPC — handles insert-or-update by email
+      await supabase.rpc("upsert_contact", {
+        _user_id: user.id,
+        _workspace_id: activeWorkspace.id,
+        _first_name: data.firstName,
+        _last_name: data.lastName,
+        _email: data.email || null,
+        _role: null,
+        _company: null,
+        _phone: null,
+        _pro: data.pro || null,
+        _ipi: data.ipi || null,
+        _publisher: data.publisher || null,
+      });
+      await fetchContacts();
     },
     [activeWorkspace, user, contacts, fetchContacts]
   );

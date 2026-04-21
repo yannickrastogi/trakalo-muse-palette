@@ -209,17 +209,14 @@ export function StemsTab({ trackId, autoOpenUpload = false, readOnly = false }: 
         const fileUrl = signedData?.signedUrl || "";
 
         // Insert record in stems table
-        const { error: insertError } = await supabase
-          .from("stems")
-          .insert({
-            workspace_id: activeWorkspace.id,
-            track_id: trackUuid,
-            uploaded_by: user.id,
-            file_name: pf.customName.trim() ? pf.customName.trim() + "." + fileExt : pf.file.name,
-            stem_type: stemTypeToDb(pf.type),
-            file_url: fileUrl,
-            file_size_bytes: pf.file.size,
-          });
+        const { error: insertError } = await supabase.rpc("insert_stem", {
+          _user_id: user.id,
+          _track_id: trackUuid,
+          _name: pf.customName.trim() ? pf.customName.trim() + "." + fileExt : pf.file.name,
+          _file_url: fileUrl,
+          _file_size: pf.file.size,
+          _stem_type: stemTypeToDb(pf.type),
+        });
 
         if (insertError) {
           console.error("Error inserting stem record:", insertError);
@@ -244,10 +241,10 @@ export function StemsTab({ trackId, autoOpenUpload = false, readOnly = false }: 
     if (!stem) return;
 
     // Delete from database
-    const { error } = await supabase
-      .from("stems")
-      .delete()
-      .eq("id", deleteConfirmId);
+    const { error } = await supabase.rpc("delete_stem", {
+      _user_id: user.id,
+      _stem_id: deleteConfirmId,
+    });
 
     if (error) {
       console.error("Error deleting stem:", error);
@@ -320,10 +317,11 @@ export function StemsTab({ trackId, autoOpenUpload = false, readOnly = false }: 
     setStems((prev) => prev.map((s) => s.id === stemId ? { ...s, type: newType } : s));
     setEditingTypeId(null);
 
-    const { error } = await supabase
-      .from("stems")
-      .update({ stem_type: stemTypeToDb(newType) })
-      .eq("id", stemId);
+    const { error } = await supabase.rpc("update_stem_type", {
+      _user_id: user.id,
+      _stem_id: stemId,
+      _stem_type: stemTypeToDb(newType),
+    });
 
     if (error) {
       console.error("Error updating stem type:", error);

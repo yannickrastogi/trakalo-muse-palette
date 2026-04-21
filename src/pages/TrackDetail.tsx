@@ -303,7 +303,7 @@ export default function TrackDetail() {
         if (!peaks || peaks.length === 0) return;
 
         // Persist to DB
-        await supabase.from("tracks").update({ waveform_data: peaks }).eq("id", track.uuid);
+        await supabase.rpc("update_track", { _user_id: user!.id, _track_id: track.uuid, _updates: { waveform_data: peaks } });
         // Update local state
         if (track.id !== undefined) {
           updateTrack(track.id, { waveformData: peaks });
@@ -660,10 +660,7 @@ export default function TrackDetail() {
                                       .from("tracks")
                                       .upload(previewPath, mp3Blob, { contentType: "audio/mp3", upsert: true });
                                     if (upErr) throw upErr;
-                                    await supabase
-                                      .from("tracks")
-                                      .update({ audio_preview_url: previewPath })
-                                      .eq("id", track.uuid);
+                                    await supabase.rpc("update_track", { _user_id: user!.id, _track_id: track.uuid, _updates: { audio_preview_url: previewPath } });
                                     refreshTracks();
                                     toast.success("MP3 preview ready");
                                   } catch (err) {
@@ -851,10 +848,7 @@ export default function TrackDetail() {
                     });
 
                     const updatedSonicDna = { ...existingSonicDna, structure: newStructure };
-                    const { error } = await supabase
-                      .from("tracks")
-                      .update({ sonic_dna: updatedSonicDna })
-                      .eq("id", track.uuid);
+                    const { error } = await supabase.rpc("update_track", { _user_id: user!.id, _track_id: track.uuid, _updates: { sonic_dna: updatedSonicDna } });
 
                     if (error) {
                       console.error("Failed to update sonic_dna.structure:", error);
@@ -1448,7 +1442,7 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
       if (contextTrack) {
         updateTrackLyrics(trackId, newLyrics, newSegments);
       } else {
-        await supabase.from("tracks").update({ lyrics: newLyrics, lyrics_segments: newSegments }).eq("id", trackUuid);
+        await supabase.rpc("update_track", { _user_id: user!.id, _track_id: trackUuid, _updates: { lyrics: newLyrics, lyrics_segments: newSegments } });
         setLocalLyrics(newLyrics);
         setDbLyrics(newLyrics);
         setDbSegments(newSegments);
@@ -1458,7 +1452,7 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
       if (contextTrack) {
         updateTrackLyrics(trackId, editValue);
       } else {
-        await supabase.from("tracks").update({ lyrics: editValue }).eq("id", trackUuid);
+        await supabase.rpc("update_track", { _user_id: user!.id, _track_id: trackUuid, _updates: { lyrics: editValue } });
         setLocalLyrics(editValue);
         setDbLyrics(editValue);
         refreshTracks();
@@ -1485,7 +1479,7 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
             lyrics: rawLyrics,
           },
         };
-        await supabase.from("tracks").update({ sonic_dna: updatedSonicDna }).eq("id", trackUuid);
+        await supabase.rpc("update_track", { _user_id: user!.id, _track_id: trackUuid, _updates: { sonic_dna: updatedSonicDna } });
       }
     } catch (err) {
       console.error("Failed to sync lyrics to sonic_dna:", err);
@@ -1571,7 +1565,7 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
                 lyrics: rawText,
               },
             };
-            await supabase.from("tracks").update({ sonic_dna: updatedSonicDna }).eq("id", trackUuid);
+            await supabase.rpc("update_track", { _user_id: user!.id, _track_id: trackUuid, _updates: { sonic_dna: updatedSonicDna } });
             toast.success("Sonic DNA updated with lyrics");
           }
         } catch (err) {
@@ -2702,19 +2696,14 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
 
       const userId = (await supabase.auth.getSession()).data.session?.user?.id;
 
-      const { error: dbError } = await supabase
-        .from("track_documents")
-        .insert({
-          track_id: trackUuid,
-          workspace_id: workspaceId,
-          uploaded_by: userId,
-          name: file.name.replace(/\.[^/.]+$/, ""),
-          file_name: file.name,
-          file_path: storagePath,
-          file_size: file.size,
-          mime_type: file.type || "application/octet-stream",
-          status: "draft",
-        });
+      const { error: dbError } = await supabase.rpc("insert_track_document", {
+        _user_id: userId,
+        _track_id: trackUuid,
+        _name: file.name.replace(/\.[^/.]+$/, ""),
+        _file_url: storagePath,
+        _file_size: file.size,
+        _doc_type: file.type || "application/octet-stream",
+      });
       if (dbError) {
         alert("Database insert failed: " + dbError.message);
         return;
@@ -2734,10 +2723,10 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
     if (!confirm("Delete \"" + doc.name + "\"?")) return;
     try {
       await supabase.storage.from("documents").remove([doc.file_path]);
-      const { error } = await supabase
-        .from("track_documents")
-        .delete()
-        .eq("id", doc.id);
+      const { error } = await supabase.rpc("delete_track_document", {
+        _user_id: user!.id,
+        _doc_id: doc.id,
+      });
       if (error) throw error;
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
     } catch (err) {
@@ -2848,10 +2837,11 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
     const next: Record<string, string> = { draft: "pending", pending: "signed", signed: "draft" };
     const newStatus = next[doc.status] || "draft";
     try {
-      const { error } = await supabase
-        .from("track_documents")
-        .update({ status: newStatus })
-        .eq("id", doc.id);
+      const { error } = await supabase.rpc("update_track_document_status", {
+        _user_id: user!.id,
+        _doc_id: doc.id,
+        _status: newStatus,
+      });
       if (error) throw error;
       setDocuments((prev) =>
         prev.map((d) => (d.id === doc.id ? { ...d, status: newStatus as TrackDocument["status"] } : d))

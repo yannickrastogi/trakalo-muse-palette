@@ -610,44 +610,50 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     async (trackInput: Partial<TrackData> & { title: string; artist: string }): Promise<TrackData | null> => {
       if (!activeWorkspace || !user) return null;
 
-      const { data, error } = await supabase
-        .from("tracks")
-        .insert({
-          workspace_id: activeWorkspace.id,
-          uploaded_by: user.id,
-          title: trackInput.title,
-          artist: trackInput.artist,
-          featuring: trackInput.featuredArtists?.join(", ") || null,
-          track_type: mapTrackTypeToDb(trackInput.type || "Song"),
-          status: mapStatusToDb(trackInput.status || "Available"),
-          bpm: trackInput.bpm || null,
-          key: trackInput.key || null,
-          duration_sec: trackInput.duration
-            ? parseDurationToSeconds(trackInput.duration)
-            : null,
-          genre: trackInput.genre || null,
-          mood: trackInput.mood || [],
-          language: trackInput.language || null,
-          gender: trackInput.voice?.toLowerCase().replace("n/a", "n_a") || null,
-          labels: trackInput.label ? [trackInput.label] : [],
-          publishers: trackInput.publisher ? [trackInput.publisher] : [],
-          audio_url: trackInput.originalFileUrl || null,
-          audio_preview_url: trackInput.previewFileUrl || null,
-          cover_url: trackInput.coverImage || null,
-          lyrics: trackInput.lyrics || null,
-          notes: trackInput.notes || null,
-          splits: trackInput.splits || [],
-          isrc: trackInput.isrc || null,
-          waveform_data: trackInput.waveformData || null,
-          chapters: trackInput.chapters || null,
-        } as any)
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc("insert_track", {
+        _user_id: user.id,
+        _workspace_id: activeWorkspace.id,
+        _title: trackInput.title,
+        _artist: trackInput.artist,
+        _featuring: trackInput.featuredArtists?.join(", ") || null,
+        _type: mapTrackTypeToDb(trackInput.type || "Song"),
+        _status: mapStatusToDb(trackInput.status || "Available"),
+        _bpm: trackInput.bpm || null,
+        _key: trackInput.key || null,
+        _duration_sec: trackInput.duration ? parseDurationToSeconds(trackInput.duration) : null,
+        _genre: trackInput.genre || null,
+        _mood: trackInput.mood || [],
+        _language: trackInput.language || null,
+        _gender: trackInput.voice?.toLowerCase().replace("n/a", "n_a") || null,
+        _label: trackInput.label || null,
+        _publisher: trackInput.publisher || null,
+        _audio_url: trackInput.originalFileUrl || null,
+        _audio_preview_url: trackInput.previewFileUrl || null,
+        _cover_art_url: trackInput.coverImage || null,
+        _lyrics: trackInput.lyrics || null,
+        _notes: trackInput.notes || null,
+        _splits: trackInput.splits || [],
+        _isrc: trackInput.isrc || null,
+        _waveform_data: trackInput.waveformData || null,
+        _chapters: trackInput.chapters || null,
+        _upc: null,
+        _album: null,
+        _release_date: null,
+        _written_by: null,
+        _produced_by: null,
+        _mixed_by: null,
+        _mastered_by: null,
+        _copyright: null,
+        _explicit: null,
+      });
 
       if (error) {
         console.error("Error adding track:", error);
         return null;
       }
+
+      // RPC returns uuid directly — wrap in object for downstream compat
+      const trackUuid = data as unknown as string;
 
       // Send notification to workspace owner if uploader is not the owner
       if (activeWorkspace.owner_id && activeWorkspace.owner_id !== user.id) {
@@ -670,15 +676,20 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       await fetchTracks();
 
       // Queue Sonic DNA analysis — processed sequentially to prevent Railway OOM
-      if (data?.id && trackInput.originalFileUrl) {
-        console.log('[SonicDNA] Queuing analysis for track:', data.id, 'path:', trackInput.originalFileUrl);
-        sonicDnaQueueRef.current.push({ track_id: data.id, storage_path: trackInput.originalFileUrl });
+      if (trackUuid && trackInput.originalFileUrl) {
+        console.log('[SonicDNA] Queuing analysis for track:', trackUuid, 'path:', trackInput.originalFileUrl);
+        sonicDnaQueueRef.current.push({ track_id: trackUuid, storage_path: trackInput.originalFileUrl });
         toast.info("Analyzing audio — BPM, key & mood will appear shortly...", { duration: 5000 });
         processSonicDnaQueue();
       }
 
-      // Return the newly created track
-      const newTrack = mapRowToTrack(data as unknown as Record<string, unknown>, tracks.length);
+      // Return the newly created track from the refreshed list
+      const newTrack = tracks.find((t) => t.uuid === trackUuid) || {
+        id: tracks.length + 1,
+        uuid: trackUuid,
+        title: trackInput.title,
+        artist: trackInput.artist,
+      } as TrackData;
       return newTrack;
     },
     [activeWorkspace, user, fetchTracks, processSonicDnaQueue, tracks.length]
@@ -718,18 +729,19 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (updates.chapters !== undefined) payload.chapters = updates.chapters || null;
       if (updates.waveformData !== undefined) payload.waveform_data = updates.waveformData || null;
 
-      if (Object.keys(payload).length > 0) {
-        const { error } = await supabase
-          .from("tracks")
-          .update(payload)
-          .eq("id", track.uuid);
+      if (Object.keys(payload).length > 0 && user) {
+        const { error } = await supabase.rpc("update_track", {
+          _user_id: user.id,
+          _track_id: track.uuid,
+          _updates: payload,
+        });
 
         if (error) {
           console.error("Error updating track:", error);
         }
       }
     },
-    [tracks]
+    [tracks, user]
   );
 
   const updateTrackStatus = useCallback(
@@ -754,16 +766,19 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       );
 
       // Persist status to Supabase
-      const { error } = await supabase
-        .from("tracks")
-        .update({ status: mapStatusToDb(newStatus) })
-        .eq("id", track.uuid);
+      if (user) {
+        const { error } = await supabase.rpc("update_track", {
+          _user_id: user.id,
+          _track_id: track.uuid,
+          _updates: { status: mapStatusToDb(newStatus) },
+        });
 
-      if (error) {
-        console.error("Error updating track status:", error);
+        if (error) {
+          console.error("Error updating track status:", error);
+        }
       }
     },
-    [tracks]
+    [tracks, user]
   );
 
   const updateTrackLyrics = useCallback(
@@ -778,16 +793,19 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         updatePayload.lyrics_segments = lyricsSegments;
       }
 
-      const { error } = await supabase
-        .from("tracks")
-        .update(updatePayload)
-        .eq("id", track.uuid);
+      if (user) {
+        const { error } = await supabase.rpc("update_track", {
+          _user_id: user.id,
+          _track_id: track.uuid,
+          _updates: updatePayload,
+        });
 
-      if (error) {
-        console.error("Error updating lyrics:", error);
+        if (error) {
+          console.error("Error updating lyrics:", error);
+        }
       }
     },
-    [tracks]
+    [tracks, user]
   );
 
   const updateTrackStems = useCallback(
@@ -799,32 +817,28 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, stems } : t)));
 
       // Delete existing stems for this track, then insert new ones
-      const { error: delError } = await supabase
+      if (!user) return;
+
+      // Fetch existing stem IDs to delete them via RPC
+      const { data: existingStems } = await supabase
         .from("stems")
-        .delete()
+        .select("id")
         .eq("track_id", track.uuid);
 
-      if (delError) {
-        console.error("Error clearing stems:", delError);
-        return;
+      for (const s of existingStems || []) {
+        await supabase.rpc("delete_stem", { _user_id: user.id, _stem_id: s.id });
       }
 
       if (stems.length > 0) {
-        const inserts = stems.map((s) => ({
-          track_id: track.uuid,
-          workspace_id: activeWorkspace.id,
-          file_name: s.fileName,
-          file_url: "",
-          stem_type: s.type === "background vocal" ? "background_vocal" : s.type,
-          uploaded_by: user?.id || null,
-        }));
-
-        const { error: insError } = await supabase
-          .from("stems")
-          .insert(inserts);
-
-        if (insError) {
-          console.error("Error inserting stems:", insError);
+        for (const s of stems) {
+          await supabase.rpc("insert_stem", {
+            _user_id: user.id,
+            _track_id: track.uuid,
+            _name: s.fileName,
+            _file_url: "",
+            _file_size: 0,
+            _stem_type: s.type === "background vocal" ? "background_vocal" : s.type,
+          });
         }
       }
     },
@@ -842,16 +856,19 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         prev.map((t) => (t.id === id ? { ...t, splits: normalized } : t))
       );
 
-      const { error } = await supabase
-        .from("tracks")
-        .update({ splits: normalized as unknown as Record<string, unknown> })
-        .eq("id", track.uuid);
+      if (user) {
+        const { error } = await supabase.rpc("update_track", {
+          _user_id: user.id,
+          _track_id: track.uuid,
+          _updates: { splits: normalized },
+        });
 
-      if (error) {
-        console.error("Error updating splits:", error);
+        if (error) {
+          console.error("Error updating splits:", error);
+        }
       }
     },
-    [tracks]
+    [tracks, user]
   );
 
   const deleteTrack = useCallback(
@@ -871,7 +888,11 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         if (stemPaths.length > 0) {
           await supabase.storage.from("stems").remove(stemPaths);
         }
-        await supabase.from("stems").delete().eq("track_id", uuid);
+        if (user) {
+          for (const s of stemRows) {
+            await supabase.rpc("delete_stem", { _user_id: user.id, _stem_id: (s as any).id });
+          }
+        }
       }
 
       // Delete audio file from storage
@@ -890,7 +911,8 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       await supabase.storage.from("covers").remove([coverPath]);
 
       // Delete the track row
-      const { error } = await supabase.from("tracks").delete().eq("id", uuid);
+      if (!user) return false;
+      const { error } = await supabase.rpc("delete_track", { _user_id: user.id, _track_id: uuid });
       if (error) {
         console.error("Error deleting track:", error);
         return false;
@@ -899,7 +921,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       setTracks((prev) => prev.filter((t) => t.uuid !== uuid));
       return true;
     },
-    [activeWorkspace]
+    [activeWorkspace, user]
   );
 
   return (

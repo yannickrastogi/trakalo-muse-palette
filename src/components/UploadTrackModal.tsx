@@ -558,10 +558,11 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           const { data: urlData } = supabase.storage
             .from("covers")
             .getPublicUrl(coverPath);
-          await supabase
-            .from("tracks")
-            .update({ cover_url: urlData.publicUrl })
-            .eq("id", savedTrack.uuid);
+          await supabase.rpc("update_track", {
+            _user_id: user!.id,
+            _track_id: savedTrack.uuid,
+            _updates: { cover_url: urlData.publicUrl },
+          });
           await refreshTracks();
         }
         setUploadProgress(98);
@@ -570,12 +571,12 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       // ── Share to other workspaces if selected ──
       if (savedTrack && currentTrack.sharedWorkspaces.length > 0 && user && activeWorkspace) {
         for (var i = 0; i < currentTrack.sharedWorkspaces.length; i++) {
-          await supabase.from("catalog_shares").insert({
-            track_id: savedTrack.uuid,
-            source_workspace_id: activeWorkspace.id,
-            target_workspace_id: currentTrack.sharedWorkspaces[i],
-            shared_by: user.id,
-            access_level: "pitcher",
+          await supabase.rpc("insert_catalog_share", {
+            _user_id: user.id,
+            _track_id: savedTrack.uuid,
+            _source_workspace_id: activeWorkspace.id,
+            _target_workspace_id: currentTrack.sharedWorkspaces[i],
+            _access_level: "pitcher",
           });
         }
       }
@@ -621,10 +622,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               .from("tracks")
               .upload(previewPath, mp3Blob, { contentType: "audio/mp3", upsert: true });
             if (upErr) throw upErr;
-            await supabase
-              .from("tracks")
-              .update({ audio_preview_url: previewPath })
-              .eq("id", bgTrackUuid);
+            await supabase.rpc("update_track", { _user_id: user!.id, _track_id: bgTrackUuid, _updates: { audio_preview_url: previewPath } });
             toast.success(t("uploadTrack.mp3PreviewReady", "MP3 preview ready"));
           } catch (err) {
             console.error("Background MP3 compression failed:", err);
@@ -668,7 +666,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                       lyrics: rawLyrics,
                     },
                   };
-                  await supabase.from("tracks").update({ sonic_dna: updatedSonicDna }).eq("id", bgTrackUuid);
+                  await supabase.rpc("update_track", { _user_id: user!.id, _track_id: bgTrackUuid, _updates: { sonic_dna: updatedSonicDna } });
                 }
               } catch (err) {
                 console.error("Failed to sync lyrics to sonic_dna:", err);
@@ -824,10 +822,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                 .from("tracks")
                 .upload(previewPath, mp3Blob, { contentType: "audio/mp3", upsert: true });
               if (upErr) throw upErr;
-              await supabase
-                .from("tracks")
-                .update({ audio_preview_url: previewPath })
-                .eq("id", bgTrackUuid);
+              await supabase.rpc("update_track", { _user_id: user!.id, _track_id: bgTrackUuid, _updates: { audio_preview_url: previewPath } });
               toast.success(t("uploadTrack.mp3PreviewReady", "MP3 preview ready"));
             } catch (err) {
               console.error("Background MP3 compression failed:", err);
@@ -867,7 +862,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                         lyrics: rawLyrics,
                       },
                     };
-                    await supabase.from("tracks").update({ sonic_dna: updatedSonicDna }).eq("id", bgTrackUuid);
+                    await supabase.rpc("update_track", { _user_id: user!.id, _track_id: bgTrackUuid, _updates: { sonic_dna: updatedSonicDna } });
                   }
                 } catch (err) {
                   console.error("Failed to sync lyrics to sonic_dna:", err);

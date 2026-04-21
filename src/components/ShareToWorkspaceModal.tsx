@@ -133,12 +133,12 @@ export function ShareToWorkspaceModal({ open, onClose, trackId, sourceWorkspaceI
   var handleShare = async function (targetWsId: string) {
     if (!user || !trackId) return;
     setSubmitting(true);
-    var { error } = await supabase.from("catalog_shares").insert({
-      track_id: trackId,
-      source_workspace_id: sourceWorkspaceId,
-      target_workspace_id: targetWsId,
-      shared_by: user.id,
-      access_level: "pitcher",
+    var { error } = await supabase.rpc("insert_catalog_share", {
+      _user_id: user.id,
+      _track_id: trackId,
+      _source_workspace_id: sourceWorkspaceId,
+      _target_workspace_id: targetWsId,
+      _access_level: "pitcher",
     });
 
     if (error) {
@@ -158,13 +158,13 @@ export function ShareToWorkspaceModal({ open, onClose, trackId, sourceWorkspaceI
     setSubmitting(true);
 
     // Insert full catalog share (track_id = NULL)
-    var { error } = await supabase.from("catalog_shares").insert({
-      track_id: null,
-      source_workspace_id: sourceWorkspaceId,
-      target_workspace_id: targetWsId,
-      shared_by: user.id,
-      access_level: "pitcher",
-    } as any);
+    var { error } = await supabase.rpc("insert_catalog_share", {
+      _user_id: user.id,
+      _track_id: null,
+      _source_workspace_id: sourceWorkspaceId,
+      _target_workspace_id: targetWsId,
+      _access_level: "pitcher",
+    });
 
     if (error) {
       console.error("Error sharing full catalog:", error);
