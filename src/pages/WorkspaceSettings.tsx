@@ -113,8 +113,12 @@ function SectionBlock({ title, subtitle, icon: Icon, children, onSave, saveLabel
    SECTION: INFO
    ═══════════════════════════════════════════════════════ */
 
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/[\s]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50);
+}
+
 function InfoSection() {
-  const { activeWorkspace } = useWorkspace();
+  const { activeWorkspace, refreshWorkspaces } = useWorkspace();
   const { user } = useAuth();
   const [name, setName] = useState(activeWorkspace?.name || "");
   const [slug, setSlug] = useState(activeWorkspace?.slug || "");
@@ -133,8 +137,21 @@ function InfoSection() {
       _workspace_id: activeWorkspace.id,
       _name: name,
     });
-    if (error) toast.error(error.message);
-    else toast.success("Workspace name saved");
+    if (error) { toast.error(error.message); return; }
+
+    // Auto-update slug
+    const newSlug = slugify(name);
+    if (newSlug && newSlug !== slug) {
+      await supabase.rpc("update_workspace_slug", {
+        _user_id: user.id,
+        _workspace_id: activeWorkspace.id,
+        _slug: newSlug,
+      });
+      setSlug(newSlug);
+    }
+
+    toast.success("Workspace name saved");
+    await refreshWorkspaces();
   };
 
   return (
@@ -172,7 +189,8 @@ const BRAND_PRESET_COLORS = [
 
 function BrandingSection() {
   const { t } = useTranslation();
-  const { activeWorkspace } = useWorkspace();
+  const { activeWorkspace, refreshWorkspaces } = useWorkspace();
+  const { user } = useAuth();
   const [heroUrl, setHeroUrl] = useState<string | null>(activeWorkspace?.hero_image_url || null);
   const [logoUrl, setLogoUrl] = useState<string | null>(activeWorkspace?.logo_url || null);
   const [brandColor, setBrandColor] = useState<string>(activeWorkspace?.brand_color || "");
@@ -246,13 +264,20 @@ function BrandingSection() {
   }, [repositioning, handleDragMove, handleDragEnd]);
 
   const handleSavePosition = async () => {
-    if (!activeWorkspace) return;
+    if (!activeWorkspace || !user) return;
     const pos = Math.round(dragPosition);
-    const { error } = await supabase.from("workspaces").update({ hero_position: pos }).eq("id", activeWorkspace.id);
+    const { error } = await supabase.rpc("update_workspace_branding", {
+      _user_id: user.id, _workspace_id: activeWorkspace.id,
+      _hero_image_url: heroUrl, _logo_url: logoUrl, _brand_color: brandColor || null,
+      _hero_position: pos, _hero_focal_point: focalPoint,
+      _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
+      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null,
+    });
     if (error) { toast.error(error.message); return; }
     setHeroPosition(pos);
     setRepositioning(false);
     toast.success("Hero position saved");
+    await refreshWorkspaces();
   };
 
   const handleCancelReposition = () => {
@@ -268,11 +293,18 @@ function BrandingSection() {
   };
 
   const handleSaveFocalPoint = async () => {
-    if (!activeWorkspace) return;
-    const { error } = await supabase.from("workspaces").update({ hero_focal_point: focalPoint }).eq("id", activeWorkspace.id);
+    if (!activeWorkspace || !user) return;
+    const { error } = await supabase.rpc("update_workspace_branding", {
+      _user_id: user.id, _workspace_id: activeWorkspace.id,
+      _hero_image_url: heroUrl, _logo_url: logoUrl, _brand_color: brandColor || null,
+      _hero_position: heroPosition, _hero_focal_point: focalPoint,
+      _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
+      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null,
+    });
     if (error) { toast.error(error.message); return; }
     setEditingFocal(false);
     toast.success("Focal point saved");
+    await refreshWorkspaces();
   };
 
   const handleUpload = (type: "hero" | "logo") => {
@@ -293,12 +325,20 @@ function BrandingSection() {
         const { data: urlData } = supabase.storage.from("branding").getPublicUrl(path);
         const publicUrl = urlData?.publicUrl;
         if (!publicUrl) { toast.error("Failed to get URL"); setUploading(null); return; }
-        const column = type === "hero" ? "hero_image_url" : "logo_url";
-        const { error: updateErr } = await supabase.from("workspaces").update({ [column]: publicUrl }).eq("id", activeWorkspace.id);
+        const newHero = type === "hero" ? publicUrl : heroUrl;
+        const newLogo = type === "logo" ? publicUrl : logoUrl;
+        const { error: updateErr } = await supabase.rpc("update_workspace_branding", {
+          _user_id: user!.id, _workspace_id: activeWorkspace.id,
+          _hero_image_url: newHero, _logo_url: newLogo, _brand_color: brandColor || null,
+          _hero_position: heroPosition, _hero_focal_point: focalPoint,
+          _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
+          _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null,
+        });
         if (updateErr) { toast.error(updateErr.message); setUploading(null); return; }
         if (type === "hero") setHeroUrl(publicUrl);
         else setLogoUrl(publicUrl);
         toast.success((type === "hero" ? "Background" : "Logo") + " uploaded");
+        await refreshWorkspaces();
       } catch (err: any) {
         toast.error(err?.message || "Upload failed");
       }
@@ -308,33 +348,47 @@ function BrandingSection() {
   };
 
   const handleRemove = async (type: "hero" | "logo") => {
-    if (!activeWorkspace) return;
-    const column = type === "hero" ? "hero_image_url" : "logo_url";
-    const { error } = await supabase.from("workspaces").update({ [column]: null }).eq("id", activeWorkspace.id);
+    if (!activeWorkspace || !user) return;
+    const newHero = type === "hero" ? null : heroUrl;
+    const newLogo = type === "logo" ? null : logoUrl;
+    const { error } = await supabase.rpc("update_workspace_branding", {
+      _user_id: user.id, _workspace_id: activeWorkspace.id,
+      _hero_image_url: newHero, _logo_url: newLogo, _brand_color: brandColor || null,
+      _hero_position: heroPosition, _hero_focal_point: focalPoint,
+      _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
+      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null,
+    });
     if (error) { toast.error(error.message); return; }
     if (type === "hero") setHeroUrl(null);
     else setLogoUrl(null);
     toast.success((type === "hero" ? "Background" : "Logo") + " removed");
+    await refreshWorkspaces();
   };
 
   const handleColorSave = async () => {
-    if (!activeWorkspace) return;
-    const { error } = await supabase.from("workspaces").update({ brand_color: brandColor || null }).eq("id", activeWorkspace.id);
+    if (!activeWorkspace || !user) return;
+    const { error } = await supabase.rpc("update_workspace_branding", {
+      _user_id: user.id, _workspace_id: activeWorkspace.id,
+      _hero_image_url: heroUrl, _logo_url: logoUrl, _brand_color: brandColor || null,
+      _hero_position: heroPosition, _hero_focal_point: focalPoint,
+      _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
+      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null,
+    });
     if (error) toast.error(error.message);
-    else toast.success("Brand color saved");
+    else { toast.success("Brand color saved"); await refreshWorkspaces(); }
   };
 
   const handleSocialSave = async () => {
-    if (!activeWorkspace) return;
-    const { error } = await supabase.from("workspaces").update({
-      social_instagram: socialInstagram || null,
-      social_tiktok: socialTiktok || null,
-      social_youtube: socialYoutube || null,
-      social_facebook: socialFacebook || null,
-      social_x: socialX || null,
-    }).eq("id", activeWorkspace.id);
+    if (!activeWorkspace || !user) return;
+    const { error } = await supabase.rpc("update_workspace_branding", {
+      _user_id: user.id, _workspace_id: activeWorkspace.id,
+      _hero_image_url: heroUrl, _logo_url: logoUrl, _brand_color: brandColor || null,
+      _hero_position: heroPosition, _hero_focal_point: focalPoint,
+      _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
+      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null,
+    });
     if (error) toast.error(error.message);
-    else toast.success("Social links saved");
+    else { toast.success("Social links saved"); await refreshWorkspaces(); }
   };
 
   return (

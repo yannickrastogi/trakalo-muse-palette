@@ -99,6 +99,10 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
     setStep(2);
   }
 
+  function slugify(name: string): string {
+    return name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/[\s]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50);
+  }
+
   async function handleWorkspaceFinish() {
     if (!activeWorkspace) { finish(); return; }
     const trimmed = workspaceName.trim();
@@ -115,6 +119,16 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
     if (error) {
       toast.error(error.message);
       return;
+    }
+
+    // Auto-update slug
+    const newSlug = slugify(trimmed);
+    if (newSlug) {
+      await supabase.rpc("update_workspace_slug", {
+        _user_id: user!.id,
+        _workspace_id: activeWorkspace.id,
+        _slug: newSlug,
+      });
     }
 
     await refreshWorkspaces();
