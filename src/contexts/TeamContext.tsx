@@ -142,7 +142,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         email = profile.email || "";
       } else {
         firstName = "Member";
-        lastName = m.user_id.slice(0, 8);
+        lastName = "";
         email = "";
       }
 
