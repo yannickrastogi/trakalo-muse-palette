@@ -205,12 +205,24 @@ export function GuidedTour({ run, onFinish, onUploadClick }: GuidedTourProps) {
     return [...sidebarSteps, ...headerSteps, ...commonSteps];
   }, [isMobile]);
 
+  // Filter out steps whose target is not in the DOM (hidden by permissions).
+  // Depends on `run` so it recalculates after the delay when DOM is ready.
+  const visibleSteps = useMemo(() => {
+    return steps.filter((step) => {
+      if (typeof step.target === "string" && step.target !== "body") {
+        return document.querySelector(step.target) !== null;
+      }
+      return true;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [steps, run]);
+
   function handleCallback(data: CallBackProps) {
     const { status, action, index, type } = data;
 
     // Tour completed all steps or user clicked "Skip Tour"
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
-      if (status === STATUS.FINISHED && onUploadClick && index === steps.length - 1 && action === ACTIONS.NEXT) {
+      if (status === STATUS.FINISHED && onUploadClick && index === visibleSteps.length - 1 && action === ACTIONS.NEXT) {
         onUploadClick();
       }
       onFinish();
@@ -223,11 +235,11 @@ export function GuidedTour({ run, onFinish, onUploadClick }: GuidedTourProps) {
     }
   }
 
-  if (steps.length === 0) return null;
+  if (visibleSteps.length === 0) return null;
 
   return (
     <Joyride
-      steps={steps}
+      steps={visibleSteps}
       run={run}
       continuous
       showProgress
