@@ -422,11 +422,12 @@ export function DashboardContent() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     let handled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     if (params.get("replay_tour") === "true") {
       localStorage.setItem("trakalog_tour_complete", "false");
       params.delete("replay_tour");
       handled = true;
-      setTimeout(() => setRunTour(true), 600);
+      timer = setTimeout(() => setRunTour(true), 600);
     }
     if (params.get("show_checklist") === "true") {
       localStorage.setItem("trakalog_checklist_dismissed", "false");
@@ -438,6 +439,7 @@ export function DashboardContent() {
       const qs = params.toString();
       window.history.replaceState({}, "", window.location.pathname + (qs ? "?" + qs : ""));
     }
+    return () => { if (timer) clearTimeout(timer); };
   }, []);
 
   // Launch tour after welcome is closed (or if welcome was already completed before)

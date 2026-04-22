@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Joyride, type Step, type CallBackProps, STATUS, ACTIONS } from "react-joyride";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -182,13 +182,11 @@ const joyrideStyles = {
 
 export function GuidedTour({ run, onFinish, onUploadClick }: GuidedTourProps) {
   const isMobile = useIsMobile();
-  const [steps, setSteps] = useState<Step[]>([]);
 
-  useEffect(() => {
-    // On mobile, skip sidebar steps (they're hidden) and workspace switcher
+  // Compute steps synchronously — avoids empty-steps render that can confuse Joyride
+  const steps = useMemo<Step[]>(() => {
     if (isMobile) {
-      // Keep only header steps (smart-ar and radio hidden on mobile too, but notifications and profile visible)
-      const mobileSteps = [
+      return [
         {
           target: '[data-tour="header-notifications"]',
           title: "Notifications",
@@ -203,22 +201,34 @@ export function GuidedTour({ run, onFinish, onUploadClick }: GuidedTourProps) {
         },
         ...commonSteps,
       ];
-      setSteps(mobileSteps);
-    } else {
-      setSteps([...sidebarSteps, ...headerSteps, ...commonSteps]);
     }
+    return [...sidebarSteps, ...headerSteps, ...commonSteps];
   }, [isMobile]);
+
+  // Force fresh Joyride instance each time the tour (re)starts.
+  // Without this, Joyride's internal stepIndex stays at the end after a completed tour,
+  // causing STATUS.FINISHED to fire immediately on restart.
+  const [tourKey, setTourKey] = useState(0);
+  const prevRunRef = useRef(false);
+  useEffect(() => {
+    if (run && !prevRunRef.current) {
+      setTourKey((k) => k + 1);
+    }
+    prevRunRef.current = run;
+  }, [run]);
 
   function handleCallback(data: CallBackProps) {
     const { status, action, index } = data;
+    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
 
-    if (status === STATUS.FINISHED) {
+    if (finishedStatuses.includes(status)) {
       // Check if user clicked "Next" on the last step — offer upload
-      if (onUploadClick && index === steps.length - 1 && action === ACTIONS.NEXT) {
+      if (status === STATUS.FINISHED && onUploadClick && index === steps.length - 1 && action === ACTIONS.NEXT) {
         onUploadClick();
       }
       onFinish();
-    } else if (status === STATUS.SKIPPED) {
+    } else if (action === ACTIONS.CLOSE) {
+      // User clicked X on a tooltip — treat as tour end
       onFinish();
     }
   }
@@ -227,6 +237,7 @@ export function GuidedTour({ run, onFinish, onUploadClick }: GuidedTourProps) {
 
   return (
     <Joyride
+      key={tourKey}
       steps={steps}
       run={run}
       continuous
