@@ -11,7 +11,7 @@ import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { useTeams } from "@/contexts/TeamContext";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useContacts } from "@/contexts/ContactsContext";
 import { usePitches } from "@/contexts/PitchContext";
 import {
@@ -416,9 +416,19 @@ export function DashboardContent() {
   });
 
   const [runTour, setRunTour] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Launch tour after welcome is closed (or if welcome was already completed before)
+  // Also triggers on replay_tour URL param from Guide page
+  const replayTourParam = searchParams.get("replay_tour");
   useEffect(() => {
+    // Handle replay_tour param from Guide page
+    if (replayTourParam === "true") {
+      localStorage.setItem("trakalog_tour_complete", "false");
+      setSearchParams((prev) => { prev.delete("replay_tour"); return prev; }, { replace: true });
+      const timer = setTimeout(() => setRunTour(true), 600);
+      return () => clearTimeout(timer);
+    }
     if (showWelcome) return; // wait for welcome to close
     if (isFirstSaveUser) return; // shared-link users skip tour
     if (localStorage.getItem("trakalog_tour_complete") === "true") return;
@@ -426,7 +436,18 @@ export function DashboardContent() {
     // Small delay so dashboard renders first and data-tour elements mount
     const timer = setTimeout(() => setRunTour(true), 600);
     return () => clearTimeout(timer);
-  }, [showWelcome, isFirstSaveUser]);
+  }, [showWelcome, isFirstSaveUser, replayTourParam, setSearchParams]);
+
+  // Handle show_checklist param from Guide page — force remount of OnboardingChecklist
+  const [checklistKey, setChecklistKey] = useState(0);
+  const showChecklistParam = searchParams.get("show_checklist");
+  useEffect(() => {
+    if (showChecklistParam === "true") {
+      localStorage.setItem("trakalog_checklist_dismissed", "false");
+      setSearchParams((prev) => { prev.delete("show_checklist"); return prev; }, { replace: true });
+      setChecklistKey((k) => k + 1);
+    }
+  }, [showChecklistParam, setSearchParams]);
 
   const [showSaveBanner, setShowSaveBanner] = useState(() => {
     return isFirstSaveUser && localStorage.getItem("trakalog_first_save_banner_dismissed") !== "true";
@@ -475,6 +496,7 @@ export function DashboardContent() {
 
       {/* Onboarding Checklist */}
       <OnboardingChecklist
+        key={checklistKey}
         user={user}
         workspace={activeWorkspace}
         tracks={allTracks}
