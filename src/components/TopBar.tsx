@@ -247,17 +247,19 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           onClick={() => navigate("/smart-ar")}
           title="Smart A&R"
           data-tour="header-smart-ar"
-          className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] hidden sm:flex items-center justify-center"
+          className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] hidden sm:flex items-center justify-center gap-1"
         >
-          <Sparkles className="w-[17px] h-[17px]" />
+          <Sparkles className="w-[17px] h-[17px] shrink-0" />
+          <span className="hidden md:inline text-xs">Smart A&R</span>
         </button>
         <button
           onClick={() => navigate("/radio")}
           title="Radio"
           data-tour="header-radio"
-          className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] hidden sm:flex items-center justify-center"
+          className="p-2 rounded-lg hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] hidden sm:flex items-center justify-center gap-1"
         >
-          <Radio className="w-[17px] h-[17px]" />
+          <Radio className="w-[17px] h-[17px] shrink-0" />
+          <span className="hidden md:inline text-xs">Radio</span>
         </button>
         <button
           onClick={() => navigate("/guide")}
