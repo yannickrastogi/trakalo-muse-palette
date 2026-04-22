@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -56,6 +56,33 @@ export default function SignAgreement() {
   var [signed, setSigned] = useState<boolean>(false);
   var [sigError, setSigError] = useState<string | null>(null);
   var sigRef = useRef<SignatureCanvas>(null);
+  var [savedSignature, setSavedSignature] = useState<string | null>(null);
+
+  // Save signature to state after each stroke
+  var handleStrokeEnd = useCallback(function () {
+    if (sigRef.current && !sigRef.current.isEmpty()) {
+      setSavedSignature(sigRef.current.toDataURL("image/png"));
+    }
+  }, []);
+
+  // Restore signature onto canvas from saved state
+  var restoreSignature = useCallback(function () {
+    if (sigRef.current && savedSignature) {
+      sigRef.current.fromDataURL(savedSignature, { ratio: 1 });
+    }
+  }, [savedSignature]);
+
+  // Restore signature on resize / orientation change
+  useEffect(function () {
+    function handleResize() {
+      // Small delay to let canvas resize first
+      setTimeout(restoreSignature, 100);
+    }
+    window.addEventListener("resize", handleResize);
+    return function () {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [restoreSignature]);
 
   useEffect(function () {
     async function load() {
@@ -362,20 +389,26 @@ export default function SignAgreement() {
         {/* Signature canvas */}
         <div className="card-premium p-5">
           <p className="text-sm font-medium mb-3">{t("signature.drawSignature")}</p>
-          <div className="border-2 border-dashed border-border rounded-xl overflow-hidden bg-white">
+          <div className="border-2 border-dashed border-border rounded-xl overflow-hidden bg-white min-w-[280px]">
             <SignatureCanvas
               ref={sigRef}
               penColor="black"
-              canvasProps={{ className: "w-full", style: { height: 200 } }}
+              onEnd={handleStrokeEnd}
+              canvasProps={{
+                className: "w-full",
+                style: { height: 180, touchAction: "none" },
+              }}
             />
           </div>
+          <p className="mt-1 text-[11px] text-muted-foreground/50">{t("signature.drawAbove", "Draw your signature above")}</p>
           <button
             onClick={function () {
               if (sigRef.current) {
                 sigRef.current.clear();
+                setSavedSignature(null);
               }
             }}
-            className="mt-2 text-xs text-muted-foreground flex items-center gap-1 min-h-[44px]"
+            className="mt-1 text-xs text-muted-foreground flex items-center gap-1 min-h-[44px]"
           >
             <Eraser className="w-3 h-3" /> {t("signature.clearSignature")}
           </button>
