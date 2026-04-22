@@ -190,7 +190,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  const activeWorkspace = workspaces.find((w) => w.id === activeId) || null;
+  const activeWorkspace = useMemo(
+    () => workspaces.find((w) => w.id === activeId) || null,
+    [workspaces, activeId]
+  );
 
   const switchWorkspace = useCallback((workspaceId: string) => {
     setActiveId(workspaceId);
@@ -248,6 +251,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [activeWorkspace, user]
   );
 
+  // Compute context value BEFORE early returns to maintain hooks ordering (Anti-React-#310)
+  const contextValue = useMemo(() => ({
+    activeWorkspace: activeWorkspace as Workspace,
+    workspaces,
+    loading,
+    switchWorkspace,
+    updateWorkspaceSettings,
+    createWorkspace,
+    refreshWorkspaces,
+  }), [activeWorkspace, workspaces, loading, switchWorkspace, updateWorkspaceSettings, createWorkspace, refreshWorkspaces]);
+
   // a) Auth still loading → spinner
   if (authLoading) {
     return (
@@ -287,9 +301,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // f) All good → render children
 
   return (
-    <WorkspaceContext.Provider
-      value={useMemo(() => ({ activeWorkspace, workspaces, loading, switchWorkspace, updateWorkspaceSettings, createWorkspace, refreshWorkspaces }), [activeWorkspace, workspaces, loading, switchWorkspace, updateWorkspaceSettings, createWorkspace, refreshWorkspaces])}
-    >
+    <WorkspaceContext.Provider value={contextValue}>
       {children}
     </WorkspaceContext.Provider>
   );
