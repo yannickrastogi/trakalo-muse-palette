@@ -47,7 +47,7 @@ export default function Onboarding() {
       .limit(1)
       .then(function (res) {
         if (res.data && res.data.length > 0) {
-          window.location.href = "/dashboard";
+          navigate("/dashboard", { replace: true });
         } else {
           setCheckingWorkspace(false);
         }
@@ -95,12 +95,12 @@ export default function Onboarding() {
     const pendingAutoSave = localStorage.getItem("trakalog_auto_save");
     if (returnUrl) {
       setSubmitting(false);
-      window.location.href = returnUrl;
+      navigate(returnUrl, { replace: true });
       return;
     }
     if (pendingAutoSave) {
       setSubmitting(false);
-      window.location.href = "/share/" + pendingAutoSave;
+      navigate("/share/" + pendingAutoSave, { replace: true });
       return;
     }
 

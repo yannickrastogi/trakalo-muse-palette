@@ -2747,7 +2747,7 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
       if (error) throw error;
 
       if (doc.mime_type && doc.mime_type.includes("pdf")) {
-        const pdfBytes = await fetch(data.signedUrl).then(r => r.arrayBuffer());
+        const pdfBytes = await fetch(data.signedUrl).then(r => { if (!r.ok) throw new Error("Failed to fetch PDF"); return r.arrayBuffer(); });
         const pdfDoc = await PDFDocument.load(pdfBytes);
         const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
         const pages = pdfDoc.getPages();

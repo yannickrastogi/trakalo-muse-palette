@@ -738,6 +738,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
         if (error) {
           console.error("Error updating track:", error);
+          toast.error("Failed to save track update");
         }
       }
     },

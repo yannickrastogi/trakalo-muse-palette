@@ -104,3 +104,51 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/analyze-sonic-dna/deno.json"
 entrypoint = "./functions/analyze-sonic-dna/index.ts"
+
+[functions.get-audio-url]
+enabled = true
+verify_jwt = true
+import_map = "./functions/get-audio-url/deno.json"
+entrypoint = "./functions/get-audio-url/index.ts"
+
+[functions.log-link-event]
+enabled = true
+verify_jwt = false
+import_map = "./functions/log-link-event/deno.json"
+entrypoint = "./functions/log-link-event/index.ts"
+
+[functions.trace-leak]
+enabled = true
+verify_jwt = true
+import_map = "./functions/trace-leak/deno.json"
+entrypoint = "./functions/trace-leak/index.ts"
+
+[functions.transcribe-lyrics]
+enabled = true
+verify_jwt = true
+import_map = "./functions/transcribe-lyrics/deno.json"
+entrypoint = "./functions/transcribe-lyrics/index.ts"
+
+[functions.send-split-signature]
+enabled = true
+verify_jwt = true
+import_map = "./functions/send-split-signature/deno.json"
+entrypoint = "./functions/send-split-signature/index.ts"
+
+[functions.send-executed-splits]
+enabled = true
+verify_jwt = true
+import_map = "./functions/send-executed-splits/deno.json"
+entrypoint = "./functions/send-executed-splits/index.ts"
+
+[functions.auto-add-contact]
+enabled = true
+verify_jwt = false
+import_map = "./functions/auto-add-contact/deno.json"
+entrypoint = "./functions/auto-add-contact/index.ts"
+
+[functions.smart-ar]
+enabled = true
+verify_jwt = true
+import_map = "./functions/smart-ar/deno.json"
+entrypoint = "./functions/smart-ar/index.ts"

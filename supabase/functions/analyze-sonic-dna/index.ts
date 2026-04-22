@@ -55,14 +55,6 @@ Deno.serve(async (req) => {
     const sonicDnaApiUrl = Deno.env.get("SONIC_DNA_API_URL");
     const sonicDnaApiKey = Deno.env.get("SONIC_DNA_API_KEY");
 
-    // DEBUG: log API key presence for troubleshooting
-    console.log('[SonicDNA] API URL:', sonicDnaApiUrl);
-    console.log('[SonicDNA] API KEY exists:', !!sonicDnaApiKey);
-    console.log('[SonicDNA] API KEY length:', sonicDnaApiKey?.length);
-    if (sonicDnaApiKey) {
-      console.log('[SonicDNA] Key preview:', sonicDnaApiKey.substring(0, 6) + '...' + sonicDnaApiKey.substring(sonicDnaApiKey.length - 6));
-    }
-
     if (!sonicDnaApiUrl || !sonicDnaApiKey) {
       return new Response(JSON.stringify({ error: "Sonic DNA API not configured" }), {
         status: 500,

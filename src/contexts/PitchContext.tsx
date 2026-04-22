@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
-import { supabase, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/integrations/supabase/client";
 import { type PitchEntry } from "@/components/CreatePitchModal";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -129,7 +129,7 @@ export function PitchProvider({ children }: { children: ReactNode }) {
 
       var hashedPassword = null;
       if (pitch.linkType === "secured" && pitch.password) {
-        var hashRes = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/hash-link-password", {
+        var hashRes = await fetch(SUPABASE_URL + "/functions/v1/hash-link-password", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY },
           body: JSON.stringify({ password: pitch.password }),
@@ -161,7 +161,7 @@ export function PitchProvider({ children }: { children: ReactNode }) {
 
       var shareLink = window.location.origin + "/share/" + slug;
 
-      fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/send-pitch-email", {
+      fetch(SUPABASE_URL + "/functions/v1/send-pitch-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

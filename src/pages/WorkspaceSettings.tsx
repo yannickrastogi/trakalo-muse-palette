@@ -33,7 +33,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { useTeams } from "@/contexts/TeamContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { InviteMemberModal, type InvitePayload } from "@/components/InviteMemberModal";
 import type { AccessLevel } from "@/contexts/RoleContext";
@@ -827,10 +827,8 @@ function CatalogSharingSection() {
 function LeakTracingSection() {
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
-  const SUPABASE_URL = "https://xhmeitivkclbeziqavxw.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik";
   const REST_URL = SUPABASE_URL + "/rest/v1";
-  const SB_HEADERS: Record<string, string> = { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + (user as any)?.access_token || SUPABASE_ANON_KEY };
+  const SB_HEADERS: Record<string, string> = { "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + (user as any)?.access_token || SUPABASE_PUBLISHABLE_KEY };
 
   const [leakAnalyzing, setLeakAnalyzing] = useState(false);
   const [leakResult, setLeakResult] = useState<{ match: boolean; visitor_email?: string | null; visitor_name?: string | null; link_id?: string | null; confidence?: number; hash_hex?: string | null } | null>(null);

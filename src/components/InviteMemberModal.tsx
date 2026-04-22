@@ -23,7 +23,7 @@ import { useTeams } from "@/contexts/TeamContext";
 import { CreateTeamModal } from "@/components/CreateTeamModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { supabase, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/integrations/supabase/client";
 import type { AccessLevel } from "@/contexts/RoleContext";
 
 const PROFESSIONAL_TITLES = [
@@ -119,7 +119,7 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
     setError("");
 
     try {
-      const res = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/create-invitation", {
+      const res = await fetch(SUPABASE_URL + "/functions/v1/create-invitation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

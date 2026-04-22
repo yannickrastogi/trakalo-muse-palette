@@ -483,7 +483,7 @@ export default function SharedLinkPage() {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
     visitorEmailRef.current = savedVisitor.email;
     // Log access with cookie data
-    fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/log-link-access", {
+    fetch(SUPABASE_URL + "/functions/v1/log-link-access", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY },
       body: JSON.stringify({ slug: slug, name: savedVisitor.name, email: savedVisitor.email, role: savedVisitor.role, company: savedVisitor.company }),
@@ -554,7 +554,7 @@ export default function SharedLinkPage() {
     var cacheKey = trackId + ":" + (quality || "original");
     if (audioUrlCache.current[cacheKey]) return audioUrlCache.current[cacheKey];
     try {
-      var res = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/get-audio-url", {
+      var res = await fetch(SUPABASE_URL + "/functions/v1/get-audio-url", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -600,7 +600,7 @@ export default function SharedLinkPage() {
       if (storagePath && currentLinkId && currentVisitorEmail) {
         var wmAbort = new AbortController();
         var wmTimeout = setTimeout(function() { wmAbort.abort(); }, 30000);
-        fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/get-watermarked-audio", {
+        fetch(SUPABASE_URL + "/functions/v1/get-watermarked-audio", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -709,7 +709,7 @@ export default function SharedLinkPage() {
   var handlePasswordSubmit = async function() {
     if (!linkData) return;
     try {
-      var res = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/verify-link-password", {
+      var res = await fetch(SUPABASE_URL + "/functions/v1/verify-link-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -747,7 +747,7 @@ export default function SharedLinkPage() {
     visitorEmailRef.current = visitorEmail;
     setVisitorCookie({ name: visitorName.trim(), email: visitorEmail.trim(), role: visitorRole.trim(), company: visitorCompany.trim() });
 
-    fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/log-link-access", {
+    fetch(SUPABASE_URL + "/functions/v1/log-link-access", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY },
       body: JSON.stringify({ slug: slug, name: visitorName.trim(), email: visitorEmail.trim(), role: visitorRole.trim(), company: visitorCompany.trim() }),
@@ -758,7 +758,7 @@ export default function SharedLinkPage() {
   };
 
   var logEvent = function(trackId: string | null, eventType: string) {
-    fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/log-link-event", {
+    fetch(SUPABASE_URL + "/functions/v1/log-link-event", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -871,7 +871,7 @@ export default function SharedLinkPage() {
       if (items.indexOf("track") >= 0) {
         var audioUrl = await fetchAudioUrl(trackData.id, "original");
         if (audioUrl) {
-          var audioBytes = await fetch(audioUrl).then(function(r) { return r.arrayBuffer(); });
+          var audioBytes = await fetch(audioUrl).then(function(r) { if (!r.ok) throw new Error("Failed to fetch audio"); return r.arrayBuffer(); });
           var fileName = (trackData.audio_url && trackData.audio_url.split("/").pop()) || (trackData.title + ".mp3");
           root.folder("Track")!.file(fileName, audioBytes);
         }
@@ -880,7 +880,7 @@ export default function SharedLinkPage() {
       // Cover Art — real image
       if (items.indexOf("cover") >= 0) {
         var coverUrl = trackData.cover_url || DEFAULT_COVER;
-        var coverBytes = await fetch(coverUrl).then(function(r) { return r.arrayBuffer(); });
+        var coverBytes = await fetch(coverUrl).then(function(r) { if (!r.ok) throw new Error("Failed to fetch cover"); return r.arrayBuffer(); });
         var coverExt = trackData.cover_url ? (trackData.cover_url.match(/\.(jpe?g|png|webp)$/i)?.[0] || ".jpg") : ".png";
         root.folder("Cover Art")!.file(trackData.title + " - Cover Art" + coverExt, coverBytes);
       }
@@ -905,7 +905,7 @@ export default function SharedLinkPage() {
             var stemSignJson = stemSignRes.ok ? await stemSignRes.json() : null;
             var stemSigned = stemSignJson ? { signedUrl: SUPABASE_URL + "/storage/v1" + stemSignJson.signedURL } : null;
             if (stemSigned?.signedUrl) {
-              var stemBytes = await fetch(stemSigned.signedUrl).then(function(r) { return r.arrayBuffer(); });
+              var stemBytes = await fetch(stemSigned.signedUrl).then(function(r) { if (!r.ok) throw new Error("Failed to fetch stem"); return r.arrayBuffer(); });
               stemsFolder.file((stem.file_name as string) || ("stem-" + si), stemBytes);
             }
           }

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
-import { supabase, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTrack } from "@/contexts/TrackContext";
@@ -189,7 +189,7 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
 
     var hashedPassword: string | null = null;
     if (link.linkType === "secured" && link.password) {
-      var hashRes = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/hash-link-password", {
+      var hashRes = await fetch(SUPABASE_URL + "/functions/v1/hash-link-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

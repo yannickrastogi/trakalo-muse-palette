@@ -115,7 +115,7 @@ export default function AcceptInvitation() {
     setAccepting(true);
 
     try {
-      var res = await fetch("https://xhmeitivkclbeziqavxw.supabase.co/functions/v1/accept-invitation", {
+      var res = await fetch(SUPABASE_URL + "/functions/v1/accept-invitation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

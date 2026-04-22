@@ -1501,7 +1501,10 @@ function StepInfo({
 }) {
   const { t } = useTranslation();
   const coverInputRef = useRef<HTMLInputElement>(null);
-  const coverPreviewUrl = coverFile ? URL.createObjectURL(coverFile) : null;
+  const coverPreviewUrl = useMemo(() => coverFile ? URL.createObjectURL(coverFile) : null, [coverFile]);
+  useEffect(() => {
+    return () => { if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl); };
+  }, [coverPreviewUrl]);
 
   const handleCoverSelect = (file: File) => {
     const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -2134,6 +2137,10 @@ function StepReview({
   masteredBy?: string; copyright?: string; explicit?: boolean;
 }) {
   const { t } = useTranslation();
+  const coverPreviewUrl = useMemo(() => coverFile ? URL.createObjectURL(coverFile) : null, [coverFile]);
+  useEffect(() => {
+    return () => { if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl); };
+  }, [coverPreviewUrl]);
   const ALL_DETAIL_FIELDS = [
     { key: "producers", label: "Producer(s)" },
     { key: "songwriters", label: "Songwriter(s)" },
@@ -2166,7 +2173,7 @@ function StepReview({
         <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">{t("uploadTrack.info")}</p>
         {coverFile && (
           <div className="flex items-center gap-3 pb-2">
-            <img src={URL.createObjectURL(coverFile)} alt="Cover" className="w-16 h-16 rounded-lg object-cover" />
+            <img src={coverPreviewUrl || ""} alt="Cover" className="w-16 h-16 rounded-lg object-cover" />
             <div>
               <p className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.coverArt", "Cover Art")}</p>
               <p className="text-[13px] font-medium text-foreground truncate max-w-[200px]">{coverFile.name}</p>

@@ -91,6 +91,8 @@ export default function SmartAR() {
 
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current.removeAttribute("src");
       audioRef.current = null;
     }
 
