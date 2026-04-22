@@ -43,10 +43,12 @@ export default function Guide() {
   const [checklistDismissed] = useState(() => localStorage.getItem("trakalog_checklist_dismissed") === "true");
 
   function handleReplayTour() {
+    localStorage.removeItem("trakalog_tour_complete");
     navigate("/dashboard?replay_tour=true");
   }
 
   function handleShowChecklist() {
+    localStorage.removeItem("trakalog_checklist_dismissed");
     navigate("/dashboard?show_checklist=true");
   }
 

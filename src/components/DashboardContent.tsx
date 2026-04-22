@@ -418,38 +418,39 @@ export function DashboardContent() {
   const [runTour, setRunTour] = useState(false);
   const [checklistKey, setChecklistKey] = useState(0);
 
-  // Handle replay_tour / show_checklist URL params from Guide page (mount-only)
+  // Handle show_checklist URL param from Guide page (mount-only)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    let handled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    if (params.get("replay_tour") === "true") {
-      localStorage.setItem("trakalog_tour_complete", "false");
-      params.delete("replay_tour");
-      handled = true;
-      timer = setTimeout(() => setRunTour(true), 600);
-    }
     if (params.get("show_checklist") === "true") {
       localStorage.setItem("trakalog_checklist_dismissed", "false");
       params.delete("show_checklist");
-      handled = true;
-      setChecklistKey((k) => k + 1);
-    }
-    if (handled) {
       const qs = params.toString();
       window.history.replaceState({}, "", window.location.pathname + (qs ? "?" + qs : ""));
+      setChecklistKey((k) => k + 1);
     }
-    return () => { if (timer) clearTimeout(timer); };
   }, []);
 
-  // Launch tour after welcome is closed (or if welcome was already completed before)
+  // Launch tour — handles both replay (URL param) and first-time launch
   useEffect(() => {
-    if (showWelcome) return; // wait for welcome to close
-    if (isFirstSaveUser) return; // shared-link users skip tour
+    if (showWelcome) return;
+    if (isFirstSaveUser) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const isReplay = params.get("replay_tour") === "true";
+
+    if (isReplay) {
+      localStorage.removeItem("trakalog_tour_complete");
+      params.delete("replay_tour");
+      const qs = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (qs ? "?" + qs : ""));
+      const timer = setTimeout(() => setRunTour(true), 800);
+      return () => clearTimeout(timer);
+    }
+
+    // Normal first-time launch
     if (localStorage.getItem("trakalog_tour_complete") === "true") return;
     if (localStorage.getItem("trakalog_onboarding_complete") !== "true") return;
-    // Small delay so dashboard renders first and data-tour elements mount
-    const timer = setTimeout(() => setRunTour(true), 600);
+    const timer = setTimeout(() => setRunTour(true), 800);
     return () => clearTimeout(timer);
   }, [showWelcome, isFirstSaveUser]);
 

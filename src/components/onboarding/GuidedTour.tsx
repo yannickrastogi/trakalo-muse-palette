@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { Joyride, type Step, type CallBackProps, STATUS, ACTIONS } from "react-joyride";
+import { useMemo } from "react";
+import { Joyride, type Step, type CallBackProps, STATUS, ACTIONS, EVENTS } from "react-joyride";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface GuidedTourProps {
@@ -205,30 +205,20 @@ export function GuidedTour({ run, onFinish, onUploadClick }: GuidedTourProps) {
     return [...sidebarSteps, ...headerSteps, ...commonSteps];
   }, [isMobile]);
 
-  // Force fresh Joyride instance each time the tour (re)starts.
-  // Without this, Joyride's internal stepIndex stays at the end after a completed tour,
-  // causing STATUS.FINISHED to fire immediately on restart.
-  const [tourKey, setTourKey] = useState(0);
-  const prevRunRef = useRef(false);
-  useEffect(() => {
-    if (run && !prevRunRef.current) {
-      setTourKey((k) => k + 1);
-    }
-    prevRunRef.current = run;
-  }, [run]);
-
   function handleCallback(data: CallBackProps) {
-    const { status, action, index } = data;
-    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+    const { status, action, index, type } = data;
 
-    if (finishedStatuses.includes(status)) {
-      // Check if user clicked "Next" on the last step — offer upload
+    // Tour completed all steps or user clicked "Skip Tour"
+    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       if (status === STATUS.FINISHED && onUploadClick && index === steps.length - 1 && action === ACTIONS.NEXT) {
         onUploadClick();
       }
       onFinish();
-    } else if (action === ACTIONS.CLOSE) {
-      // User clicked X on a tooltip — treat as tour end
+      return;
+    }
+
+    // User clicked X on a tooltip — only treat as skip if it's a real user close (STEP_AFTER)
+    if (action === ACTIONS.CLOSE && type === EVENTS.STEP_AFTER) {
       onFinish();
     }
   }
@@ -237,14 +227,16 @@ export function GuidedTour({ run, onFinish, onUploadClick }: GuidedTourProps) {
 
   return (
     <Joyride
-      key={tourKey}
       steps={steps}
       run={run}
       continuous
       showProgress
       showSkipButton
       disableOverlayClose
+      disableCloseOnEsc={false}
+      scrollToFirstStep
       spotlightClicks={false}
+      floaterProps={{ disableAnimation: true }}
       callback={handleCallback}
       styles={joyrideStyles}
       locale={{
