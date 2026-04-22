@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { buildEmail } from "../_shared/email-template.ts";
+import { buildEmail, isValidEmail } from "../_shared/email-template.ts";
 
 const maskIpi = (ipi: string | undefined) => ipi ? "***" + ipi.slice(-3) : "\u2014";
 
@@ -100,8 +100,8 @@ serve(async (req) => {
     let sent = 0;
 
     for (const sig of signatures) {
-      if (!sig.collaborator_email) {
-        console.log("Skipping executed copy for " + sig.collaborator_name + ": no email");
+      if (!sig.collaborator_email || !isValidEmail(sig.collaborator_email)) {
+        console.log("Skipping executed copy for " + sig.collaborator_name + ": no valid email");
         continue;
       }
 

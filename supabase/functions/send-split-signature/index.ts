@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { buildEmail } from "../_shared/email-template.ts";
+import { buildEmail, isValidEmail } from "../_shared/email-template.ts";
 
 function generateToken(length = 32): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -77,8 +77,8 @@ serve(async (req) => {
     let sent = 0;
 
     for (const split of splits) {
-      if (!split.email) {
-        console.log("Skipping split for " + split.name + ": no email provided");
+      if (!split.email || !isValidEmail(split.email)) {
+        console.log("Skipping split for " + split.name + ": no valid email provided");
         continue;
       }
 

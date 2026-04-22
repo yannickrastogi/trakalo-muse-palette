@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { buildEmail } from "../_shared/email-template.ts";
+import { buildEmail, isValidEmail } from "../_shared/email-template.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -20,6 +20,13 @@ serve(async (req) => {
 
     if (!to_email || !subject) {
       return new Response(JSON.stringify({ error: "to_email and subject required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!isValidEmail(to_email)) {
+      return new Response(JSON.stringify({ error: "Invalid email format" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

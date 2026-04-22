@@ -7,7 +7,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { buildEmail } from "../_shared/email-template.ts";
+import { buildEmail, isValidEmail } from "../_shared/email-template.ts";
 
 // Map event_type to notification_preferences column
 const EVENT_TO_COLUMN: Record<string, string> = {
@@ -75,8 +75,8 @@ Deno.serve(async (req) => {
       .eq("id", user_id)
       .maybeSingle();
 
-    if (!profile?.email) {
-      return new Response(JSON.stringify({ sent: false, reason: "no email found" }), {
+    if (!profile?.email || !isValidEmail(profile.email)) {
+      return new Response(JSON.stringify({ sent: false, reason: "no valid email found" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
