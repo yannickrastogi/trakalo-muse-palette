@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useCallback, useMemo, type ReactNode } from "react";
 import type { WorkspaceScoped } from "@/types/workspace";
 
 export interface RecipientEngagement {
@@ -70,7 +70,7 @@ export function EngagementProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <EngagementContext.Provider value={{
+    <EngagementContext.Provider value={useMemo(() => ({
       trackEngagement: emptyTrackEngagement,
       playlistEngagement: emptyPlaylistEngagement,
       getTrackEngagement,
@@ -79,7 +79,7 @@ export function EngagementProvider({ children }: { children: ReactNode }) {
       getTotalDownloadsForTrack,
       getTopPlayedTracks,
       getTotalStats,
-    }}>
+    }), [getTrackEngagement, getPlaylistEngagement, getTotalPlaysForTrack, getTotalDownloadsForTrack, getTopPlayedTracks, getTotalStats])}>
       {children}
     </EngagementContext.Provider>
   );

@@ -21,36 +21,42 @@ import { ApprovalProvider } from "@/contexts/ApprovalContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import Auth from "./pages/Auth";
 import Index from "./pages/Index";
-import Catalog from "./pages/Catalog";
-import TrackDetail from "./pages/TrackDetail";
 import Playlists from "./pages/Playlists";
 import PlaylistDetail from "./pages/PlaylistDetail";
 import Stems from "./pages/Stems";
-import Pitch from "./pages/Pitch";
 import Team from "./pages/Team";
 import { lazy, Suspense } from "react";
 const Workspaces = lazy(() => import("./pages/Workspaces"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Catalog = lazy(() => import("./pages/Catalog"));
+const TrackDetail = lazy(() => import("./pages/TrackDetail"));
+const Pitch = lazy(() => import("./pages/Pitch"));
+const SmartAR = lazy(() => import("./pages/SmartAR"));
+const SharedLinkPage = lazy(() => import("./pages/SharedLinkPage"));
+const Guide = lazy(() => import("./pages/Guide"));
+const WorkspaceSettings = lazy(() => import("./pages/WorkspaceSettings"));
+const Contacts = lazy(() => import("./pages/Contacts"));
 import SettingsPage from "./pages/SettingsPage";
-import WorkspaceSettings from "./pages/WorkspaceSettings";
-import Contacts from "./pages/Contacts";
 import SharedLinks from "./pages/SharedLinks";
 import SharedStemAccess from "./pages/SharedStemAccess";
 import NotFound from "./pages/NotFound";
 import NotificationCenter from "./pages/NotificationCenter";
 import ApprovalQueue from "./pages/ApprovalQueue";
-import SharedLinkPage from "./pages/SharedLinkPage";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
-import SmartAR from "./pages/SmartAR";
 import RadioPage from "./pages/Radio";
-import Guide from "./pages/Guide";
 import StudioSession from "./pages/StudioSession";
 import SignAgreement from "./pages/SignAgreement";
 import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
+
+const LazyFallback = () => (
+  <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+  </div>
+);
 
 function HomeRoute() {
   const { session, loading } = useAuth();
@@ -123,7 +129,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           {/* Public routes — no AuthProvider */}
-          <Route path="/share/:slug" element={<SharedLinkPage />} />
+          <Route path="/share/:slug" element={<Suspense fallback={<LazyFallback />}><SharedLinkPage /></Suspense>} />
           <Route path="/shared/:linkId" element={<SharedStemAccess />} />
           <Route path="/invite/:token" element={<AcceptInvitation />} />
           <Route path="/studio/:token" element={<StudioSession />} />
@@ -135,27 +141,27 @@ const App = () => (
           <Route element={<AuthLayout />}>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<HomeRoute />} />
-            <Route path="/onboarding" element={<Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><Onboarding /></Suspense>} />
+            <Route path="/onboarding" element={<Suspense fallback={<LazyFallback />}><Onboarding /></Suspense>} />
             <Route path="/dashboard" element={<ProtectedApp><Index /></ProtectedApp>} />
-            <Route path="/tracks" element={<ProtectedApp><Catalog /></ProtectedApp>} />
-            <Route path="/track/:id" element={<ProtectedApp><TrackDetail /></ProtectedApp>} />
+            <Route path="/tracks" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Catalog /></Suspense></ProtectedApp>} />
+            <Route path="/track/:id" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><TrackDetail /></Suspense></ProtectedApp>} />
             {/* Alias: /tracks/:id kept for backwards compatibility with older shared URLs */}
-            <Route path="/tracks/:id" element={<ProtectedApp><TrackDetail /></ProtectedApp>} />
+            <Route path="/tracks/:id" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><TrackDetail /></Suspense></ProtectedApp>} />
             <Route path="/playlists" element={<ProtectedApp><Playlists /></ProtectedApp>} />
             <Route path="/playlist/:id" element={<ProtectedApp><PlaylistDetail /></ProtectedApp>} />
             <Route path="/stems" element={<ProtectedApp><Stems /></ProtectedApp>} />
-            <Route path="/pitch" element={<ProtectedApp><Pitch /></ProtectedApp>} />
-            <Route path="/smart-ar" element={<ProtectedApp><SmartAR /></ProtectedApp>} />
+            <Route path="/pitch" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Pitch /></Suspense></ProtectedApp>} />
+            <Route path="/smart-ar" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><SmartAR /></Suspense></ProtectedApp>} />
             <Route path="/radio" element={<ProtectedApp><RadioPage /></ProtectedApp>} />
             <Route path="/team" element={<ProtectedApp><Team /></ProtectedApp>} />
-            <Route path="/workspaces" element={<ProtectedApp><Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><Workspaces /></Suspense></ProtectedApp>} />
-            <Route path="/contacts" element={<ProtectedApp><Contacts /></ProtectedApp>} />
+            <Route path="/workspaces" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Workspaces /></Suspense></ProtectedApp>} />
+            <Route path="/contacts" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Contacts /></Suspense></ProtectedApp>} />
             <Route path="/shared-links" element={<ProtectedApp><SharedLinks /></ProtectedApp>} />
             <Route path="/settings" element={<ProtectedApp><SettingsPage /></ProtectedApp>} />
-            <Route path="/workspace-settings" element={<ProtectedApp><WorkspaceSettings /></ProtectedApp>} />
+            <Route path="/workspace-settings" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><WorkspaceSettings /></Suspense></ProtectedApp>} />
             <Route path="/notifications" element={<ProtectedApp><NotificationCenter /></ProtectedApp>} />
             <Route path="/approvals" element={<ProtectedApp><ApprovalQueue /></ProtectedApp>} />
-            <Route path="/guide" element={<ProtectedApp><Guide /></ProtectedApp>} />
+            <Route path="/guide" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Guide /></Suspense></ProtectedApp>} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

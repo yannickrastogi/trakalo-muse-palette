@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { TrackData } from "@/contexts/TrackContext";
@@ -276,7 +276,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   }, [state.currentTrack?.id, state.isPlaying]);
 
   return (
-    <AudioPlayerContext.Provider value={{
+    <AudioPlayerContext.Provider value={useMemo(() => ({
       ...state,
       playTrack,
       togglePlay,
@@ -289,7 +289,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       setQueue,
       queue,
       isTrackPlaying,
-    }}>
+    }), [state, playTrack, togglePlay, pause, seek, seekToTime, setVolume, nextTrack, prevTrack, setQueue, queue, isTrackPlaying])}>
       {children}
     </AudioPlayerContext.Provider>
   );

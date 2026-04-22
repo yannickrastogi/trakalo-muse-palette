@@ -741,7 +741,7 @@ export function DashboardContent() {
                     >
                       <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
                       {pl.coverImage ? (
-                        <img src={pl.coverImage} alt={pl.name} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                        <img src={pl.coverImage} alt={pl.name} loading="lazy" className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                       ) : (
                         <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0 ring-1 ring-border/50">
                           <ListMusic className="w-4 h-4 text-muted-foreground" />
@@ -845,7 +845,7 @@ export function DashboardContent() {
                         onClick={function () { if (entry.trackUuid) navigate("/track/" + entry.trackUuid); }}
                       >
                         <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
-                        <img src={entry.coverImage || DEFAULT_COVER} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                        <img src={entry.coverImage || DEFAULT_COVER} alt={entry.trackTitle} loading="lazy" className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-pink transition-colors">{entry.trackTitle}</p>
                           <p className="text-[11px] text-muted-foreground truncate">{entry.trackArtist}</p>
@@ -941,7 +941,7 @@ export function DashboardContent() {
                         onClick={function () { if (entry.trackUuid) navigate("/track/" + entry.trackUuid); }}
                       >
                         <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
-                        <img src={entry.coverImage || DEFAULT_COVER} alt={entry.trackTitle} className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                        <img src={entry.coverImage || DEFAULT_COVER} alt={entry.trackTitle} loading="lazy" className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-purple transition-colors">{entry.trackTitle}</p>
                           <p className="text-[11px] text-muted-foreground truncate">{entry.trackArtist}</p>

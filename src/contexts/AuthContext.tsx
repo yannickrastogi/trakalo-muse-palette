@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 import { isEmailWhitelisted } from "@/lib/whitelist";
@@ -212,7 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, needsMfaVerification, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, verifyMfa }}>
+    <AuthContext.Provider value={useMemo(() => ({ session, user: session?.user ?? null, loading, needsMfaVerification, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, verifyMfa }), [session, loading, needsMfaVerification, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, verifyMfa])}>
       {children}
     </AuthContext.Provider>
   );

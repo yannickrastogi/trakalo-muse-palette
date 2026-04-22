@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -215,7 +215,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <RoleContext.Provider value={{ accessLevel, professionalTitle, permissions, role, setRole }}>
+    <RoleContext.Provider value={useMemo(() => ({ accessLevel, professionalTitle, permissions, role, setRole }), [accessLevel, professionalTitle, permissions, role, setRole])}>
       {children}
     </RoleContext.Provider>
   );

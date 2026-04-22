@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { type NewPlaylistData } from "@/components/CreatePlaylistModal";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -259,7 +259,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <PlaylistContext.Provider value={{ playlists, addPlaylist, getPlaylist, updatePlaylist, deletePlaylist }}>
+    <PlaylistContext.Provider value={useMemo(() => ({ playlists, addPlaylist, getPlaylist, updatePlaylist, deletePlaylist }), [playlists, addPlaylist, getPlaylist, updatePlaylist, deletePlaylist])}>
       {children}
     </PlaylistContext.Provider>
   );

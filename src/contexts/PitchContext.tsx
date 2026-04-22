@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/integrations/supabase/client";
 import { type PitchEntry } from "@/components/CreatePitchModal";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -191,7 +191,7 @@ export function PitchProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <PitchContext.Provider value={{ pitches, addPitch, getPitchesForTrack }}>
+    <PitchContext.Provider value={useMemo(() => ({ pitches, addPitch, getPitchesForTrack }), [pitches, addPitch, getPitchesForTrack])}>
       {children}
     </PitchContext.Provider>
   );

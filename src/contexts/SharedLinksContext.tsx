@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -285,7 +285,7 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <SharedLinksContext.Provider value={{ sharedLinks, createSharedLink, getSharedLink, getSharedLinkBySlug, updateLinkStatus, addDownloadEvent, notifications, clearNotification }}>
+    <SharedLinksContext.Provider value={useMemo(() => ({ sharedLinks, createSharedLink, getSharedLink, getSharedLinkBySlug, updateLinkStatus, addDownloadEvent, notifications, clearNotification }), [sharedLinks, createSharedLink, getSharedLink, getSharedLinkBySlug, updateLinkStatus, addDownloadEvent, notifications, clearNotification])}>
       {children}
     </SharedLinksContext.Provider>
   );

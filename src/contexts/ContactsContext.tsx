@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -145,7 +145,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <ContactsContext.Provider value={{ contacts, addOrUpdateContact, getContact, upsertCollaborator, refreshContacts: fetchContacts }}>
+    <ContactsContext.Provider value={useMemo(() => ({ contacts, addOrUpdateContact, getContact, upsertCollaborator, refreshContacts: fetchContacts }), [contacts, addOrUpdateContact, getContact, upsertCollaborator, fetchContacts])}>
       {children}
     </ContactsContext.Provider>
   );

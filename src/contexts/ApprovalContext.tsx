@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -412,14 +412,14 @@ export function ApprovalProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ApprovalContext.Provider value={{
+    <ApprovalContext.Provider value={useMemo(() => ({
       getTeamSettings, setTeamApprovalMode,
       getMemberRule, setMemberRule,
       sends, createSend, approveSend, rejectSend, cancelSend,
       getPendingSends, getSendById, getAuditTrail,
       approvalNotifications: notifications, clearApprovalNotification,
       doesSenderRequireApproval,
-    }}>
+    }), [getTeamSettings, setTeamApprovalMode, getMemberRule, setMemberRule, sends, createSend, approveSend, rejectSend, cancelSend, getPendingSends, getSendById, getAuditTrail, notifications, clearApprovalNotification, doesSenderRequireApproval])}>
       {children}
     </ApprovalContext.Provider>
   );

@@ -245,7 +245,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
                           </td>
                           <td className="px-2 py-3">
                             <div className="flex items-center gap-3">
-                              <img src={track.coverImage || DEFAULT_COVER} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
+                              <img src={track.coverImage || DEFAULT_COVER} alt={track.title} loading="lazy" className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                               <div className="min-w-0 flex-1">
                                 <p className="font-semibold text-foreground truncate text-[13px] tracking-tight leading-tight">{track.title}</p>
                                 <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>

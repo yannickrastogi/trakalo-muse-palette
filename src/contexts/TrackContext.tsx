@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -925,23 +925,23 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     [activeWorkspace, user]
   );
 
+  const contextValue = useMemo(() => ({
+    tracks,
+    loading,
+    getTrack,
+    getTrackByUuid,
+    addTrack,
+    updateTrack,
+    updateTrackStatus,
+    updateTrackLyrics,
+    updateTrackStems,
+    updateTrackSplits,
+    deleteTrack,
+    refreshTracks: fetchTracks,
+  }), [tracks, loading, getTrack, getTrackByUuid, addTrack, updateTrack, updateTrackStatus, updateTrackLyrics, updateTrackStems, updateTrackSplits, deleteTrack, fetchTracks]);
+
   return (
-    <TrackContext.Provider
-      value={{
-        tracks,
-        loading,
-        getTrack,
-        getTrackByUuid,
-        addTrack,
-        updateTrack,
-        updateTrackStatus,
-        updateTrackLyrics,
-        updateTrackStems,
-        updateTrackSplits,
-        deleteTrack,
-        refreshTracks: fetchTracks,
-      }}
-    >
+    <TrackContext.Provider value={contextValue}>
       {children}
     </TrackContext.Provider>
   );

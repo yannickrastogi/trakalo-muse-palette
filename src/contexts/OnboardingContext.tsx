@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from "react";
 
 export type OnboardingStep =
   | "create_team"
@@ -104,7 +104,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
   return (
     <OnboardingContext.Provider
-      value={{
+      value={useMemo(() => ({
         state,
         isFirstVisit,
         dismissWelcome,
@@ -116,7 +116,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         resetOnboarding,
         allStepsCompleted,
         completionPercent,
-      }}
+      }), [state, isFirstVisit, dismissWelcome, completeStep, isStepCompleted, dismissChecklist, dismissTooltip, isTooltipDismissed, resetOnboarding, allStepsCompleted, completionPercent])}
     >
       {children}
     </OnboardingContext.Provider>

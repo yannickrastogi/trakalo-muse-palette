@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -378,10 +378,11 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
 
   return (
     <TrackReviewContext.Provider
-      value={{
+      value={useMemo(() => ({
         comments, notifications, getCommentsForTrack, addComment, editComment, deleteComment,
         getFilteredComments, getSortedComments, getCommentCountForTrack, markNotificationRead, unreadNotificationCount,
-      }}
+      }), [comments, notifications, getCommentsForTrack, addComment, editComment, deleteComment,
+        getFilteredComments, getSortedComments, getCommentCountForTrack, markNotificationRead, unreadNotificationCount])}
     >
       {children}
     </TrackReviewContext.Provider>
