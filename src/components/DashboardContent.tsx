@@ -11,7 +11,7 @@ import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { useTeams } from "@/contexts/TeamContext";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useContacts } from "@/contexts/ContactsContext";
 import { usePitches } from "@/contexts/PitchContext";
 import {
@@ -416,19 +416,32 @@ export function DashboardContent() {
   });
 
   const [runTour, setRunTour] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [checklistKey, setChecklistKey] = useState(0);
+
+  // Handle replay_tour / show_checklist URL params from Guide page (mount-only)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    let handled = false;
+    if (params.get("replay_tour") === "true") {
+      localStorage.setItem("trakalog_tour_complete", "false");
+      params.delete("replay_tour");
+      handled = true;
+      setTimeout(() => setRunTour(true), 600);
+    }
+    if (params.get("show_checklist") === "true") {
+      localStorage.setItem("trakalog_checklist_dismissed", "false");
+      params.delete("show_checklist");
+      handled = true;
+      setChecklistKey((k) => k + 1);
+    }
+    if (handled) {
+      const qs = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (qs ? "?" + qs : ""));
+    }
+  }, []);
 
   // Launch tour after welcome is closed (or if welcome was already completed before)
-  // Also triggers on replay_tour URL param from Guide page
-  const replayTourParam = searchParams.get("replay_tour");
   useEffect(() => {
-    // Handle replay_tour param from Guide page
-    if (replayTourParam === "true") {
-      localStorage.setItem("trakalog_tour_complete", "false");
-      setSearchParams((prev) => { prev.delete("replay_tour"); return prev; }, { replace: true });
-      const timer = setTimeout(() => setRunTour(true), 600);
-      return () => clearTimeout(timer);
-    }
     if (showWelcome) return; // wait for welcome to close
     if (isFirstSaveUser) return; // shared-link users skip tour
     if (localStorage.getItem("trakalog_tour_complete") === "true") return;
@@ -436,18 +449,7 @@ export function DashboardContent() {
     // Small delay so dashboard renders first and data-tour elements mount
     const timer = setTimeout(() => setRunTour(true), 600);
     return () => clearTimeout(timer);
-  }, [showWelcome, isFirstSaveUser, replayTourParam, setSearchParams]);
-
-  // Handle show_checklist param from Guide page — force remount of OnboardingChecklist
-  const [checklistKey, setChecklistKey] = useState(0);
-  const showChecklistParam = searchParams.get("show_checklist");
-  useEffect(() => {
-    if (showChecklistParam === "true") {
-      localStorage.setItem("trakalog_checklist_dismissed", "false");
-      setSearchParams((prev) => { prev.delete("show_checklist"); return prev; }, { replace: true });
-      setChecklistKey((k) => k + 1);
-    }
-  }, [showChecklistParam, setSearchParams]);
+  }, [showWelcome, isFirstSaveUser]);
 
   const [showSaveBanner, setShowSaveBanner] = useState(() => {
     return isFirstSaveUser && localStorage.getItem("trakalog_first_save_banner_dismissed") !== "true";
