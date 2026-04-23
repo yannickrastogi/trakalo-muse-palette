@@ -1845,6 +1845,7 @@ interface StudioSubmission {
 
 function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUuid?: string; readOnly?: boolean }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { permissions: splitsPermissions } = useRole();
   const { getTrack, updateTrackSplits, tracks: allTracks } = useTrack();
   const { contacts, upsertCollaborator } = useContacts();
@@ -1977,7 +1978,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
       .then(function () {
         fetchSubmissions();
       }).catch(function (err) { console.error("Error:", err); });
-  }, [splits, trackId, updateTrackSplits, fetchSubmissions]);
+  }, [splits, trackId, updateTrackSplits, fetchSubmissions, user]);
 
   var handleAcceptAll = useCallback(function () {
     // Accept all pending submissions at once with equal balance
@@ -2006,7 +2007,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
     })).then(function () {
       fetchSubmissions();
     }).catch(function (err) { console.error("Error:", err); });
-  }, [splits, pendingSubs, trackId, updateTrackSplits, fetchSubmissions]);
+  }, [splits, pendingSubs, trackId, updateTrackSplits, fetchSubmissions, user]);
 
   var handleRejectSubmission = useCallback(function (subId: string) {
     supabase
