@@ -6,6 +6,7 @@ export interface CollaboratorSuggestion {
   lastName: string;
   fullName: string;
   email?: string;
+  stage_name?: string;
   pro?: string;
   ipi?: string;
   publisher?: string;

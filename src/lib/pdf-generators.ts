@@ -103,6 +103,7 @@ function drawFooters(doc: jsPDF, marginX: number) {
 
 export interface SplitData {
   name: string;
+  stage_name?: string;
   role: string;
   share: number;
   pro: string;
@@ -242,13 +243,17 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
   splits.forEach((s, i) => {
     const color = splitColors[i % splitColors.length];
 
+    // Build display name with stage name
+    const displayName = s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name;
+
     // Calculate row height based on content wrapping
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
     const roleLines = doc.splitTextToSize(s.role || "—", roleW - 8);
+    const proLines = doc.splitTextToSize(s.pro || "—", proW - 8);
     const ipiLines = doc.splitTextToSize(s.ipi || "—", ipiW - 8);
-    const nameLines = doc.splitTextToSize(s.name, nameW - 24);
-    const maxLines = Math.max(roleLines.length, ipiLines.length, nameLines.length);
+    const nameLines = doc.splitTextToSize(displayName, nameW - 24);
+    const maxLines = Math.max(roleLines.length, proLines.length, ipiLines.length, nameLines.length);
     const baseRowH = 32;
     const extraLineH = 11;
     const rowH = baseRowH + Math.max(0, maxLines - 1) * extraLineH + (s.publisher ? 12 : 0);
@@ -269,7 +274,7 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
     doc.setFillColor(...color);
     doc.circle(colName + 6, y + 10, 4, "F");
 
-    // Name (wrapped)
+    // Name with stage name (wrapped)
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(...textLight);
@@ -297,10 +302,14 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
       roleY += extraLineH;
     });
 
-    // PRO
+    // PRO (wrapped)
     doc.setFontSize(8.5);
     doc.setTextColor(...textMuted);
-    doc.text(s.pro || "—", colPro + 4, y + 12);
+    var proY = y + 12;
+    proLines.forEach(function (line: string) {
+      doc.text(line, colPro + 4, proY);
+      proY += extraLineH;
+    });
 
     // IPI (wrapped)
     var ipiY = y + 12;
@@ -637,6 +646,7 @@ export function generateContactListPdf(contacts: ContactExportEntry[]) {
 // ─── Signed Split Agreement PDF ────────────────────────────────────────
 export interface SignedSplitEntry {
   name: string;
+  stage_name?: string;
   role: string;
   share: number;
   pro: string;
@@ -698,7 +708,8 @@ function buildSignedAgreementDoc(title: string, artist: string, entries: SignedS
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.setTextColor(...textLight);
-    doc.text(e.name, marginX + 16, y + 10);
+    var signedDisplayName = e.stage_name ? e.name + " (" + e.stage_name + ")" : e.name;
+    doc.text(signedDisplayName, marginX + 16, y + 10);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...textMuted);
@@ -738,7 +749,8 @@ function buildSignedAgreementDoc(title: string, artist: string, entries: SignedS
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(...textLight);
-    doc.text(e.name, marginX + 14, y + 18);
+    var sigDisplayName = e.stage_name ? e.name + " (" + e.stage_name + ")" : e.name;
+    doc.text(sigDisplayName, marginX + 14, y + 18);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...textMuted);

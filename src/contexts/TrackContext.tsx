@@ -19,6 +19,7 @@ export interface TrackStem {
 export interface TrackSplit {
   id: string;
   name: string;
+  stage_name?: string;
   email?: string;
   role: string;
   share: number;

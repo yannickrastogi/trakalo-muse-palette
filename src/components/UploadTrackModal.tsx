@@ -55,6 +55,7 @@ import { MultiSelectChips } from "@/components/MultiSelectChips";
 interface Split {
   id: string;
   name: string;
+  stage_name: string;
   role: string;
   percentage: number;
   pro: string;
@@ -163,7 +164,7 @@ function createTrackEntry(file: File): TrackEntry {
     notes: "",
     details: {},
     stems: [],
-    splits: [{ id: "1", name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
+    splits: [{ id: "1", name: "", stage_name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
     lyrics: "",
     sharedTeams: [],
     sharedWorkspaces: [],
@@ -533,6 +534,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         splits: currentTrack.splits.filter((s) => s.name.trim()).map((s) => ({
           id: s.id,
           name: s.name,
+          stage_name: s.stage_name || undefined,
           role: s.role,
           share: Number(s.percentage) || 0,
           pro: s.pro,
@@ -1830,7 +1832,11 @@ function StepSplits({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.name", "Name")}</label>
-                <CollaboratorAutocomplete value={split.name} onChange={(v) => onUpdate(split.id, "name", v)} onSelect={(s) => { onUpdate(split.id, "name", s.fullName); if (s.pro) onUpdate(split.id, "pro", s.pro); if (s.ipi) onUpdate(split.id, "ipi", s.ipi); if (s.publisher) onUpdate(split.id, "publisher", s.publisher); }} contacts={contacts} existingSplitNames={existingSplitNames} placeholder={t("uploadTrack.fullName", "Full name")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                <CollaboratorAutocomplete value={split.name} onChange={(v) => onUpdate(split.id, "name", v)} onSelect={(s) => { onUpdate(split.id, "name", s.fullName); if (s.stage_name) onUpdate(split.id, "stage_name", s.stage_name); if (s.pro) onUpdate(split.id, "pro", s.pro); if (s.ipi) onUpdate(split.id, "ipi", s.ipi); if (s.publisher) onUpdate(split.id, "publisher", s.publisher); }} contacts={contacts} existingSplitNames={existingSplitNames} placeholder={t("uploadTrack.fullName", "Full name")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-2xs text-muted-foreground font-medium">Stage Name</label>
+                <input value={split.stage_name} onChange={(e) => onUpdate(split.id, "stage_name", e.target.value)} placeholder="Artist / Stage name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.role", "Role")}</label>

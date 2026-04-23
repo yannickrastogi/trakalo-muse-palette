@@ -358,7 +358,9 @@ export default function SignAgreement() {
                       className={isCurrentUser ? "bg-brand-orange/[0.08] border-l-2 border-brand-orange" : ""}
                     >
                       <td className="px-5 py-3 text-sm font-medium">
-                        {split.collaborator_name}{" "}
+                        {split.collaborator_name}
+                        {split.stage_name && <span className="text-muted-foreground font-normal"> ({split.stage_name})</span>}
+                        {" "}
                         {isCurrentUser && (
                           <span className="text-brand-orange text-xs">({t("signature.you")})</span>
                         )}

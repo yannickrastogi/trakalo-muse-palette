@@ -1959,6 +1959,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
     var newSplit: TrackSplit = {
       id: crypto.randomUUID(),
       name: sub.full_name,
+      stage_name: sub.artist_name || "",
       email: sub.email || "",
       role: sub.roles.join(", "),
       share: 0,
@@ -1987,6 +1988,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
       return {
         id: crypto.randomUUID(),
         name: sub.full_name,
+        stage_name: sub.artist_name || "",
         email: sub.email || "",
         role: sub.roles.join(", "),
         share: 0,
@@ -2076,6 +2078,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
       var matchingSplit = splits.find(function (s) { return (s.email && s.email === sig.collaborator_email) || s.name === sig.collaborator_name; });
       return {
         name: sig.collaborator_name,
+        stage_name: matchingSplit ? matchingSplit.stage_name : undefined,
         role: matchingSplit ? matchingSplit.role : "",
         share: sig.split_share,
         pro: matchingSplit ? matchingSplit.pro : "",
@@ -2242,7 +2245,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
   };
 
   const addSplit = () => {
-    const newSplits = [...editSplits, { id: crypto.randomUUID(), name: "", email: "", role: "", share: 0, pro: "", ipi: "", publisher: "" }];
+    const newSplits = [...editSplits, { id: crypto.randomUUID(), name: "", stage_name: "", email: "", role: "", share: 0, pro: "", ipi: "", publisher: "" }];
     setEditSplits(redistributeSplits(newSplits));
   };
 
@@ -2343,7 +2346,11 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <label className="text-2xs text-muted-foreground font-medium">Name</label>
-                  <CollaboratorAutocomplete value={split.name} onChange={(v) => updateSplit(split.id, "name", v)} onSelect={(s) => { updateSplit(split.id, "name", s.fullName); if (s.pro) updateSplit(split.id, "pro", s.pro); if (s.ipi) updateSplit(split.id, "ipi", s.ipi); if (s.publisher) updateSplit(split.id, "publisher", s.publisher); if (s.email) updateSplit(split.id, "email", s.email); }} contacts={contacts} existingSplitNames={existingSplitNames} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                  <CollaboratorAutocomplete value={split.name} onChange={(v) => updateSplit(split.id, "name", v)} onSelect={(s) => { updateSplit(split.id, "name", s.fullName); if (s.stage_name) updateSplit(split.id, "stage_name", s.stage_name); if (s.pro) updateSplit(split.id, "pro", s.pro); if (s.ipi) updateSplit(split.id, "ipi", s.ipi); if (s.publisher) updateSplit(split.id, "publisher", s.publisher); if (s.email) updateSplit(split.id, "email", s.email); }} contacts={contacts} existingSplitNames={existingSplitNames} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-2xs text-muted-foreground font-medium">Stage Name</label>
+                  <input value={split.stage_name || ""} onChange={(e) => updateSplit(split.id, "stage_name", e.target.value)} placeholder="Artist / Stage name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-2xs text-muted-foreground font-medium">Email</label>
@@ -2449,7 +2456,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className={"w-2.5 h-2.5 rounded-full shrink-0 " + dotColors[i % dotColors.length]} />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">{s.name}</p>
+                    <p className="text-sm font-medium text-foreground">{s.name}{s.stage_name ? <span className="text-muted-foreground font-normal"> ({s.stage_name})</span> : null}</p>
                     {splitsPermissions.canManageSplits && isEditingThisEmail ? (
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <input
@@ -2537,6 +2544,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
                           var matchingSplit = splits.find(function (s) { return (s.email && s.email === sig.collaborator_email) || s.name === sig.collaborator_name; });
                           return {
                             name: sig.collaborator_name,
+                            stage_name: matchingSplit ? matchingSplit.stage_name : undefined,
                             role: matchingSplit ? matchingSplit.role : "",
                             share: sig.split_share,
                             pro: matchingSplit ? matchingSplit.pro : "",
