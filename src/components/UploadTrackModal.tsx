@@ -50,6 +50,7 @@ const MAX_TRACKS = 20;
 const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
 import { GENRES, KEYS, MOODS, LANGUAGES, PROS, SPLIT_ROLES } from "@/lib/constants";
+import { MultiSelectChips } from "@/components/MultiSelectChips";
 
 interface Split {
   id: string;
@@ -1833,10 +1834,7 @@ function StepSplits({
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.role", "Role")}</label>
-                <select value={split.role} onChange={(e) => onUpdate(split.id, "role", e.target.value)} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium appearance-none cursor-pointer" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center" }}>
-                  <option value="">{t("uploadTrack.selectRole", "Select role")}</option>
-                  {SPLIT_ROLES.map(function (r) { return <option key={r} value={r}>{r}</option>; })}
-                </select>
+                <MultiSelectChips options={SPLIT_ROLES} selected={split.role ? split.role.split(", ").filter(Boolean) : []} onChange={function (vals) { onUpdate(split.id, "role", vals.join(", ")); }} placeholder={t("uploadTrack.selectRole", "Select role")} maxItems={4} />
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.share", "Split %")}</label>
@@ -1844,10 +1842,7 @@ function StepSplits({
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.pro", "PRO")}</label>
-                <select value={split.pro} onChange={(e) => onUpdate(split.id, "pro", e.target.value)} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium appearance-none cursor-pointer" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center" }}>
-                  <option value="">{t("uploadTrack.proPlaceholder", "Select PRO")}</option>
-                  {PROS.map(function (p) { return <option key={p} value={p}>{p}</option>; })}
-                </select>
+                <MultiSelectChips options={PROS} selected={split.pro ? split.pro.split(", ").filter(Boolean) : []} onChange={function (vals) { onUpdate(split.id, "pro", vals.join(", ")); }} placeholder={t("uploadTrack.proPlaceholder", "Select PRO")} maxItems={3} filterable />
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.ipi", "IPI")}</label>

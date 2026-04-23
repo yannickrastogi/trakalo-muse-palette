@@ -39,7 +39,7 @@ function mapRowToContact(row: Record<string, unknown>): Contact {
     email: (row.email as string) || "",
     organization: (row.company as string) || "",
     role: (row.role as string) || "",
-    pro: (row.pro as string) || "",
+    pro: Array.isArray(row.pro) ? (row.pro as string[]).join(", ") : (row.pro as string) || "",
     ipi: (row.ipi as string) || "",
     publisher: (row.publisher as string) || "",
     firstInteraction: (row.created_at as string) || "",
@@ -82,6 +82,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
     async (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => {
       if (!activeWorkspace || !user) return;
 
+      var proArr = data.pro ? data.pro.split(", ").filter(Boolean) : null;
       const { error } = await supabase.rpc("upsert_contact", {
         _user_id: user.id,
         _workspace_id: activeWorkspace.id,
@@ -91,7 +92,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
         _role: data.role || null,
         _company: data.organization || null,
         _phone: null,
-        _pro: data.pro || null,
+        _pro: proArr,
         _ipi: data.ipi || null,
         _publisher: data.publisher || null,
       });
@@ -119,6 +120,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
       });
 
       // Use upsert RPC — handles insert-or-update by email
+      var proArray = data.pro ? data.pro.split(", ").filter(Boolean) : null;
       await supabase.rpc("upsert_contact", {
         _user_id: user.id,
         _workspace_id: activeWorkspace.id,
@@ -128,7 +130,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
         _role: null,
         _company: null,
         _phone: null,
-        _pro: data.pro || null,
+        _pro: proArray,
         _ipi: data.ipi || null,
         _publisher: data.publisher || null,
       });

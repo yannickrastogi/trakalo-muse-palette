@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { DEFAULT_COVER, PROS, SPLIT_ROLES } from "@/lib/constants";
+import { MultiSelectChips } from "@/components/MultiSelectChips";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import { Music, User, Mail, Briefcase, DollarSign, CheckCircle, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
 
@@ -26,7 +27,7 @@ export default function StudioSession() {
   var [email, setEmail] = useState("");
   var [artistName, setArtistName] = useState("");
   var [roles, setRoles] = useState<string[]>([]);
-  var [proName, setProName] = useState("");
+  var [proNames, setProNames] = useState<string[]>([]);
   var [ipiNumber, setIpiNumber] = useState("");
   var [publisherName, setPublisherName] = useState("");
   // Split is calculated automatically by admin — guest doesn't choose
@@ -100,7 +101,7 @@ export default function StudioSession() {
         full_name: fullName.trim(),
         artist_name: artistName.trim() || null,
         roles: roles,
-        pro_name: proName.trim() || null,
+        pro_name: proNames.length > 0 ? proNames.join(", ") : null,
         ipi_number: ipiNumber.trim() || null,
         publisher_name: publisherName.trim() || null,
         proposed_split: 0,
@@ -128,7 +129,7 @@ export default function StudioSession() {
             last_name: lastName,
             role: roles.length > 0 ? roles.join(", ") : null,
             company: publisherName.trim() || null,
-            pro: proName.trim() || null,
+            pro: proNames.length > 0 ? proNames.join(", ") : null,
             ipi: ipiNumber.trim() || null,
             publisher: publisherName.trim() || null,
           },
@@ -386,17 +387,7 @@ export default function StudioSession() {
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">{t("studioQr.proName")}</label>
-              <select
-                className={inputClass + " appearance-none cursor-pointer"}
-                value={proName}
-                onChange={function (e) { setProName(e.target.value); }}
-                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}
-              >
-                <option value="">{t("studioQr.proPlaceholder")}</option>
-                {PROS.map(function (p) {
-                  return <option key={p} value={p}>{p}</option>;
-                })}
-              </select>
+              <MultiSelectChips options={PROS} selected={proNames} onChange={setProNames} placeholder={t("studioQr.proPlaceholder")} maxItems={3} filterable />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">{t("studioQr.ipiNumber")}</label>
@@ -460,10 +451,10 @@ export default function StudioSession() {
                   <span className="text-foreground font-medium">{roles.join(", ")}</span>
                 </div>
               )}
-              {proName && (
+              {proNames.length > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("studioQr.proName")}</span>
-                  <span className="text-foreground font-medium">{proName}</span>
+                  <span className="text-foreground font-medium">{proNames.join(", ")}</span>
                 </div>
               )}
               {ipiNumber && (
