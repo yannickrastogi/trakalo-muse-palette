@@ -295,8 +295,8 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
       // Split catalog shares into individual (track_id set) and full catalog (track_id null)
       const allShares = (!catalogSharesRes.error && catalogSharesRes.data) ? catalogSharesRes.data as any[] : [];
-      const sharedRes = { error: catalogSharesRes.error, data: allShares.filter(function (s: any) { return s.track_id != null; }) };
-      const fullCatalogRes = { error: catalogSharesRes.error, data: allShares.filter(function (s: any) { return s.track_id == null; }) };
+      const sharedRes = { error: catalogSharesRes.error, data: allShares.filter(function (s: any) { return s.track_id !== null && s.track_id !== undefined; }) };
+      const fullCatalogRes = { error: catalogSharesRes.error, data: allShares.filter(function (s: any) { return s.track_id === null || s.track_id === undefined; }) };
 
       if (tracksRes.error) {
         console.error("Error fetching tracks:", tracksRes.error);
@@ -357,8 +357,8 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
             // Split source shares into individual (track_id set) and full catalog (track_id null)
             const sourceAllShares = (!sourceCatalogSharesRes.error && sourceCatalogSharesRes.data) ? sourceCatalogSharesRes.data as any[] : [];
-            const sourceIndividualRes = { data: sourceAllShares.filter(function (cs: any) { return cs.track_id != null; }) };
-            const sourceFullCatalogRes = { data: sourceAllShares.filter(function (cs: any) { return cs.track_id == null; }) };
+            const sourceIndividualRes = { data: sourceAllShares.filter(function (cs: any) { return cs.track_id !== null && cs.track_id !== undefined; }) };
+            const sourceFullCatalogRes = { data: sourceAllShares.filter(function (cs: any) { return cs.track_id === null || cs.track_id === undefined; }) };
 
             // All rows we collect, with their original workspace name
             var collectedRows: { row: Record<string, unknown>; originalWsName: string }[] = [];
@@ -571,7 +571,6 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     try {
       while (sonicDnaQueueRef.current.length > 0) {
         const task = sonicDnaQueueRef.current.shift()!;
-        console.log('[SonicDNA] Queue processing:', task.track_id, 'path:', task.storage_path, '| remaining:', sonicDnaQueueRef.current.length);
         try {
           const res = await fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
             method: "POST",
@@ -580,7 +579,6 @@ export function TrackProvider({ children }: { children: ReactNode }) {
             signal: AbortSignal.timeout(120000),
           });
           const dnaResult = await res.json();
-          console.log('[SonicDNA] Result for', task.track_id, ':', dnaResult);
           if (dnaResult?.success) {
             await fetchTracksRef.current();
           }
@@ -688,7 +686,6 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
       // Queue Sonic DNA analysis — processed sequentially to prevent Railway OOM
       if (trackUuid && trackInput.originalFileUrl) {
-        console.log('[SonicDNA] Queuing analysis for track:', trackUuid, 'path:', trackInput.originalFileUrl);
         sonicDnaQueueRef.current.push({ track_id: trackUuid, storage_path: trackInput.originalFileUrl });
         toast.info("Analyzing audio — BPM, key & mood will appear shortly...", { duration: 5000 });
         processSonicDnaQueue();

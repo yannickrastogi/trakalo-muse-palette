@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { UploadTrackModal } from "@/components/UploadTrackModal";
@@ -75,6 +75,8 @@ export default function Catalog() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const [search, setSearch] = useState(initialQuery);
+  const [searchInput, setSearchInput] = useState(initialQuery);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [keyFilter, setKeyFilter] = useState<string | null>(null);
@@ -204,12 +206,16 @@ export default function Catalog() {
             <input
               type="text"
               placeholder={t("catalog.searchPlaceholder")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => {
+                setSearchInput(e.target.value);
+                clearTimeout(searchTimerRef.current);
+                searchTimerRef.current = setTimeout(() => setSearch(e.target.value), 300);
+              }}
               className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
             />
-            {search && (
-              <button onClick={() => setSearch("")} className="text-muted-foreground hover:text-foreground transition-colors">
+            {searchInput && (
+              <button onClick={() => { setSearchInput(""); setSearch(""); clearTimeout(searchTimerRef.current); }} className="text-muted-foreground hover:text-foreground transition-colors">
                 <X className="w-3.5 h-3.5" />
               </button>
             )}

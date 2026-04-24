@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return true;
           }
         }
-      } catch (e) {}
+      } catch (e) { console.error("MFA check failed:", e); }
       return false;
     };
 
@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("trakalog_was_auth", "1");
         try {
           localStorage.setItem("trakalog_session_backup", JSON.stringify(newSession));
-        } catch (e) {}
+        } catch (e) { console.error("Failed to backup session:", e); }
       }
       // On explicit SIGNED_OUT, clear the backup
       if (event === "SIGNED_OUT") {
@@ -120,8 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               }
             }
           }
-        } catch (e) {
-        }
+        } catch (e) { console.error("Session refresh failed:", e); }
       }
       if (initSession) {
         const allowed = await checkWhitelist(initSession);

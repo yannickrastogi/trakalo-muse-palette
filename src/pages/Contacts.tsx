@@ -120,6 +120,8 @@ export default function Contacts() {
   const { contacts: rawContacts } = useContacts();
   const { addPitch } = usePitches();
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const [roleFilter, setRoleFilter] = useState("All");
   const [orgFilter, setOrgFilter] = useState("All");
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -320,13 +322,17 @@ export default function Contacts() {
           <div className="flex items-center gap-2.5 bg-secondary/50 rounded-xl px-4 py-2 border border-border/50 focus-brand transition-all flex-1 min-w-[200px] max-w-md">
             <Search className="w-4 h-4 text-muted-foreground shrink-0" />
             <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => {
+                setSearchInput(e.target.value);
+                clearTimeout(searchTimerRef.current);
+                searchTimerRef.current = setTimeout(() => setSearch(e.target.value), 300);
+              }}
               placeholder={t("contacts.searchPlaceholder")}
               className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
             />
-            {search && (
-              <button onClick={() => setSearch("")} className="text-muted-foreground hover:text-foreground transition-colors">
+            {searchInput && (
+              <button onClick={() => { setSearchInput(""); setSearch(""); clearTimeout(searchTimerRef.current); }} className="text-muted-foreground hover:text-foreground transition-colors">
                 <X className="w-3.5 h-3.5" />
               </button>
             )}

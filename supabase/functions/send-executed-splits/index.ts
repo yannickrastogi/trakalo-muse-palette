@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { buildEmail, isValidEmail } from "../_shared/email-template.ts";
+import { buildEmail, isValidEmail, htmlEscape } from "../_shared/email-template.ts";
 
 const maskIpi = (ipi: string | undefined) => ipi ? "***" + ipi.slice(-3) : "\u2014";
 
@@ -86,13 +86,13 @@ serve(async (req) => {
         const signedDate = signedDateMap[s.name || ""] || "";
         const signedLabel = signedDate ? ("\u2705 " + signedDate) : "\u2014";
         return "<tr>"
-          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#333;\">" + (s.name || "\u2014") + "</td>"
-          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;\">" + (s.role || "\u2014") + "</td>"
+          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#333;\">" + htmlEscape(s.name || "\u2014") + "</td>"
+          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;\">" + htmlEscape(s.role || "\u2014") + "</td>"
           + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#333;font-weight:bold;text-align:right;\">" + (s.share || 0) + "%</td>"
-          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px;\">" + (s.pro || "\u2014") + "</td>"
-          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px;\">" + maskIpi(s.ipi) + "</td>"
-          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px;\">" + (s.publisher || "\u2014") + "</td>"
-          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#16a34a;font-size:12px;\">" + signedLabel + "</td>"
+          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px;\">" + htmlEscape(s.pro || "\u2014") + "</td>"
+          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px;\">" + htmlEscape(maskIpi(s.ipi)) + "</td>"
+          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;font-size:12px;\">" + htmlEscape(s.publisher || "\u2014") + "</td>"
+          + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#16a34a;font-size:12px;\">" + htmlEscape(signedLabel) + "</td>"
           + "</tr>";
       })
       .join("");
@@ -101,17 +101,14 @@ serve(async (req) => {
 
     for (const sig of signatures) {
       if (!sig.collaborator_email || !isValidEmail(sig.collaborator_email)) {
-        console.log("Skipping executed copy for " + sig.collaborator_name + ": no valid email");
         continue;
       }
-
-      console.log("Sending executed copy to:", sig.collaborator_email);
 
       const emailBody = "<div style=\"text-align:center;margin-bottom:24px;padding:16px;background:rgba(16,185,129,0.1);border-radius:8px;border:1px solid rgba(16,185,129,0.2);\">"
         + "<p style=\"color:#10b981;font-size:18px;font-weight:bold;margin:0;\">\u2705 Agreement Fully Executed</p>"
         + "</div>"
-        + "<p>Hi " + sig.collaborator_name + ",</p>"
-        + "<p>The split agreement for <strong>" + trackTitle + "</strong> by <strong>" + trackArtist + "</strong> has been fully executed. All parties have signed.</p>"
+        + "<p>Hi " + htmlEscape(sig.collaborator_name) + ",</p>"
+        + "<p>The split agreement for <strong>" + htmlEscape(trackTitle) + "</strong> by <strong>" + htmlEscape(trackArtist) + "</strong> has been fully executed. All parties have signed.</p>"
         + "<div style=\"margin:24px 0;\">"
         + "<h3 style=\"margin-bottom:12px;color:#ffffff;\">Final Split Breakdown</h3>"
         + "<table style=\"width:100%;border-collapse:collapse;font-size:14px;\">"
@@ -128,11 +125,11 @@ serve(async (req) => {
         + "</table>"
         + "</div>"
         + "<div style=\"margin:24px 0;padding:16px;background:rgba(255,255,255,0.05);border-radius:8px;border:1px solid rgba(255,255,255,0.1);\">"
-        + "<p style=\"color:#a1a1aa;font-size:14px;line-height:1.6;margin:0;\">This document serves as confirmation of the agreed ownership splits for <strong>" + trackTitle + "</strong>. All listed parties have reviewed and signed this agreement.</p>"
+        + "<p style=\"color:#a1a1aa;font-size:14px;line-height:1.6;margin:0;\">This document serves as confirmation of the agreed ownership splits for <strong>" + htmlEscape(trackTitle) + "</strong>. All listed parties have reviewed and signed this agreement.</p>"
         + "</div>";
 
       const htmlBody = buildEmail({
-        preheader: "Executed split agreement for " + trackTitle,
+        preheader: "Executed split agreement for " + htmlEscape(trackTitle),
         heading: "Executed Split Agreement",
         body: emailBody,
         ctaLabel: "View on Trakalog",
@@ -159,15 +156,12 @@ serve(async (req) => {
       });
 
       if (res.ok) {
-        console.log("Executed copy sent to:", sig.collaborator_email);
         sent++;
       } else {
         const errData = await res.json();
         console.error("Resend error for " + sig.collaborator_email + ": " + (errData.message || res.statusText));
       }
     }
-
-    console.log("Total executed copies sent:", sent);
 
     return new Response(JSON.stringify({ success: true, sent }), {
       status: 200,

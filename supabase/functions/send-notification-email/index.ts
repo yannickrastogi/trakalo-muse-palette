@@ -7,7 +7,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { buildEmail, isValidEmail } from "../_shared/email-template.ts";
+import { buildEmail, isValidEmail, htmlEscape } from "../_shared/email-template.ts";
 
 // Map event_type to notification_preferences column
 const EVENT_TO_COLUMN: Record<string, string> = {
@@ -98,10 +98,10 @@ Deno.serve(async (req) => {
     let ctaUrl = "";
 
     if (event_type === "link_activity") {
-      const visitorName = data.visitor_name || "Someone";
-      const visitorEmail = data.visitor_email || "";
-      const trackTitle = data.track_title || "your track";
-      subject = "[Trakalog] " + visitorName + " viewed " + trackTitle;
+      const visitorName = htmlEscape(data.visitor_name || "Someone");
+      const visitorEmail = htmlEscape(data.visitor_email || "");
+      const trackTitle = htmlEscape(data.track_title || "your track");
+      subject = "[Trakalog] " + (data.visitor_name || "Someone") + " viewed " + (data.track_title || "your track");
       heading = "New activity on your shared link";
       body = "<strong>" + visitorName + "</strong>"
         + (visitorEmail ? " (" + visitorEmail + ")" : "")
@@ -109,27 +109,36 @@ Deno.serve(async (req) => {
       ctaLabel = "View Activity";
       ctaUrl = "https://app.trakalog.com/shared-links";
     } else if (event_type === "comment") {
+      const commenterName = htmlEscape(data.commenter_name || "Someone");
+      const trackTitle = htmlEscape(data.track_title || "your track");
       subject = "[Trakalog] New comment on " + (data.track_title || "your track");
       heading = "New comment";
-      body = "<strong>" + (data.commenter_name || "Someone") + "</strong> commented on <strong>" + (data.track_title || "your track") + "</strong>.";
+      body = "<strong>" + commenterName + "</strong> commented on <strong>" + trackTitle + "</strong>.";
       ctaLabel = "View Comment";
       ctaUrl = data.track_url || "https://app.trakalog.com/tracks";
     } else if (event_type === "signature") {
+      const signerName = htmlEscape(data.signer_name || "A collaborator");
+      const trackTitle = htmlEscape(data.track_title || "your track");
       subject = "[Trakalog] Splits signed on " + (data.track_title || "your track");
       heading = "Splits signed";
-      body = "<strong>" + (data.signer_name || "A collaborator") + "</strong> signed their splits on <strong>" + (data.track_title || "your track") + "</strong>.";
+      body = "<strong>" + signerName + "</strong> signed their splits on <strong>" + trackTitle + "</strong>.";
       ctaLabel = "View Splits";
       ctaUrl = data.track_url || "https://app.trakalog.com/tracks";
     } else if (event_type === "new_member") {
+      const memberName = htmlEscape(data.member_name || "A new member");
+      const memberEmail = htmlEscape(data.member_email || "");
+      const workspaceName = htmlEscape(data.workspace_name || "your workspace");
       subject = "[Trakalog] " + (data.member_name || "Someone") + " joined your workspace";
       heading = "New member joined";
-      body = "<strong>" + (data.member_name || "A new member") + "</strong>" + (data.member_email ? " (" + data.member_email + ")" : "") + " accepted your invitation and joined <strong>" + (data.workspace_name || "your workspace") + "</strong>.";
+      body = "<strong>" + memberName + "</strong>" + (memberEmail ? " (" + memberEmail + ")" : "") + " accepted your invitation and joined <strong>" + workspaceName + "</strong>.";
       ctaLabel = "View Team";
       ctaUrl = "https://app.trakalog.com/workspace-settings";
     } else if (event_type === "track_upload") {
+      const uploaderName = htmlEscape(data.uploader_name || "A member");
+      const trackTitle = htmlEscape(data.track_title || "a new track");
       subject = "[Trakalog] New track uploaded: " + (data.track_title || "Untitled");
       heading = "New track uploaded";
-      body = "<strong>" + (data.uploader_name || "A member") + "</strong> uploaded <strong>" + (data.track_title || "a new track") + "</strong> to the catalog.";
+      body = "<strong>" + uploaderName + "</strong> uploaded <strong>" + trackTitle + "</strong> to the catalog.";
       ctaLabel = "View Track";
       ctaUrl = data.track_url || "https://app.trakalog.com/tracks";
     }

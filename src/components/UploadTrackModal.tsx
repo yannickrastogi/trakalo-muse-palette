@@ -659,7 +659,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
       // ── Auto-save collaborators to contacts (direct RPC, fire-and-forget) ──
       if (user && activeWorkspace) {
-        console.log("[SPLITS SAVE-BACK] Saving", currentTrack.splits.filter(function (s) { return s.name.trim(); }).length, "collaborators to contacts");
         (async () => {
           for (var si = 0; si < currentTrack.splits.length; si++) {
             var sp = currentTrack.splits[si];

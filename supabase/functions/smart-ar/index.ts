@@ -76,8 +76,6 @@ Deno.serve(async (req) => {
       return true;
     });
 
-    console.log("smart-ar: workspace_id=" + workspace_id + " own_tracks=" + (tracks?.length || 0) + " shared_tracks=" + (dedupedTracks.length - (tracks?.length || 0)) + " total=" + dedupedTracks.length);
-
     if (dedupedTracks.length === 0) {
       return new Response(
         JSON.stringify({ error: "No tracks found in workspace" }),

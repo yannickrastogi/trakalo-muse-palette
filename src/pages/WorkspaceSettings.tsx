@@ -842,7 +842,7 @@ function LeakTracingSection() {
       const { data } = await supabase.from("leak_traces").select("id, file_name, created_at, match, visitor_email, confidence")
         .eq("workspace_id", activeWorkspace.id).order("created_at", { ascending: false }).limit(10);
       if (data) setLeakTraces(data);
-    } catch (e) {}
+    } catch (e) { console.error("Failed to load leak traces:", e); }
   }, [activeWorkspace]);
 
   useEffect(() => { loadLeakTraces(); }, [loadLeakTraces]);

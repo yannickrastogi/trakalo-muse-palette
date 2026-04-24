@@ -452,7 +452,6 @@ export default function SharedLinkPage() {
       if (ws) {
         setCurrentUserWorkspace(ws.id);
         if (autoSave && linkData!.track_id) {
-          localStorage.removeItem("trakalog_auto_save");
           setSavingToTrakalog(true);
           fetch(SUPABASE_URL + "/rest/v1/rpc/save_track_to_trakalog", {
             method: "POST",
@@ -460,6 +459,7 @@ export default function SharedLinkPage() {
             body: JSON.stringify({ _track_id: linkData!.track_id, _source_workspace_id: linkData!.workspace_id, _target_workspace_id: ws.id, _user_id: userId }),
           }).then(function(saveRes) {
             if (saveRes.ok) {
+              localStorage.removeItem("trakalog_auto_save");
               fetch(SUPABASE_URL + "/rest/v1/rpc/write_audit_log", {
                 method: "POST",
                 headers: rpcHeaders,
@@ -859,13 +859,13 @@ export default function SharedLinkPage() {
     })
       .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
       .then(function(data) {
-        setSubmittingComment(false);
         if (data) {
           setComments(function(prev) { return prev.concat([data as TrackComment]); });
           setCommentComposerOpen(false);
           setCommentText("");
         }
-      }).catch(function (err) { setSubmittingComment(false); console.error("Error:", err); });
+      }).catch(function (err) { console.error("Error:", err); })
+      .finally(function () { setSubmittingComment(false); });
   }, [trackData, playingTrackId, linkData, commentText, commentTimestamp, submittingComment, visitorName]);
 
   var handleDownloadPack = useCallback(async function() {

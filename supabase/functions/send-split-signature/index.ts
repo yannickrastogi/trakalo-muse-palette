@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { buildEmail, isValidEmail } from "../_shared/email-template.ts";
+import { buildEmail, isValidEmail, htmlEscape } from "../_shared/email-template.ts";
 
 function generateToken(length = 32): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -67,8 +67,8 @@ serve(async (req) => {
     const splitsRows = splits
       .map((s) =>
         "<tr>"
-        + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#333;\">" + s.name + "</td>"
-        + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;\">" + s.role + "</td>"
+        + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#333;\">" + htmlEscape(s.name) + "</td>"
+        + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#666;\">" + htmlEscape(s.role) + "</td>"
         + "<td style=\"padding:10px 12px;border-bottom:1px solid #eee;color:#333;font-weight:bold;text-align:right;\">" + s.share + "%</td>"
         + "</tr>"
       )
@@ -78,7 +78,6 @@ serve(async (req) => {
 
     for (const split of splits) {
       if (!split.email || !isValidEmail(split.email)) {
-        console.log("Skipping split for " + split.name + ": no valid email provided");
         continue;
       }
 
@@ -93,7 +92,6 @@ serve(async (req) => {
         .maybeSingle();
 
       if (existing && existing.status === "signed") {
-        console.log("Skipping (already signed):", split.email);
         continue;
       }
 
@@ -101,14 +99,11 @@ serve(async (req) => {
 
       if (existing && existing.status === "pending") {
         // Resend email with existing token — no new row
-        console.log("Resending existing token:", split.email);
         signUrl = "https://app.trakalog.com/sign/" + existing.token;
       } else {
         // No existing entry — create new one
         const token = generateToken();
         signUrl = "https://app.trakalog.com/sign/" + token;
-
-        console.log("Sending to:", split.email, "(" + split.name + ")");
 
         const { error: insertError } = await supabase
           .from("signature_requests")
@@ -130,8 +125,8 @@ serve(async (req) => {
         }
       }
 
-      const emailBody = "<p>Hi " + split.name + ",</p>"
-        + "<p>You are invited to review and sign the split agreement for <strong>" + trackTitle + "</strong>.</p>"
+      const emailBody = "<p>Hi " + htmlEscape(split.name) + ",</p>"
+        + "<p>You are invited to review and sign the split agreement for <strong>" + htmlEscape(trackTitle) + "</strong>.</p>"
         + "<div style=\"margin:24px 0;\">"
         + "<h3 style=\"margin-bottom:12px;color:#ffffff;\">Split Breakdown</h3>"
         + "<table style=\"width:100%;border-collapse:collapse;font-size:14px;\">"
@@ -146,7 +141,7 @@ serve(async (req) => {
         + "<p style=\"color:#71717a;font-size:13px;line-height:1.5;\">This agreement was prepared via Trakalog. If you disagree with these splits, please contact the track owner directly before signing.</p>";
 
       const htmlBody = buildEmail({
-        preheader: "Split agreement for " + trackTitle,
+        preheader: "Split agreement for " + htmlEscape(trackTitle),
         heading: "Split Agreement — Signature Required",
         body: emailBody,
         ctaLabel: "Review & Sign",
@@ -169,15 +164,12 @@ serve(async (req) => {
       });
 
       if (res.ok) {
-        console.log("Email sent successfully to:", split.email);
         sent++;
       } else {
         const errData = await res.json();
         console.error("Resend error for " + split.email + ": " + (errData.message || res.statusText));
       }
     }
-
-    console.log("Total emails sent:", sent, "out of", splits.length, "splits");
 
     return new Response(JSON.stringify({ success: true, sent }), {
       status: 200,

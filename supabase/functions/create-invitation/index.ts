@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { buildEmail } from "../_shared/email-template.ts";
+import { buildEmail, htmlEscape } from "../_shared/email-template.ts";
 
 function generateToken(length: number): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -91,10 +91,10 @@ serve(async (req) => {
     }
 
     // Send invitation email via Resend
-    const inviter = inviter_name || "Someone";
-    const wsName = workspace_name || "a workspace";
-    const greeting = first_name ? "<p>Hi " + first_name + ",</p>" : "<p>Hi,</p>";
-    const roleLine = role ? " as <strong>" + role + "</strong>" : "";
+    const inviter = htmlEscape(inviter_name || "Someone");
+    const wsName = htmlEscape(workspace_name || "a workspace");
+    const greeting = first_name ? "<p>Hi " + htmlEscape(first_name) + ",</p>" : "<p>Hi,</p>";
+    const roleLine = role ? " as <strong>" + htmlEscape(role) + "</strong>" : "";
     const inviteLink = "https://app.trakalog.com/invite/" + token;
 
     const bodyContent = greeting

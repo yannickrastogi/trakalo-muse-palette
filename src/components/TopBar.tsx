@@ -29,6 +29,8 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const { tracks } = useTrack();
   const { playlists } = usePlaylists();
   const [searchValue, setSearchValue] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -83,6 +85,8 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
   const handleSelect = useCallback((suggestion: Suggestion) => {
     setSearchValue("");
+    setSearchInput("");
+    clearTimeout(searchTimerRef.current);
     setShowSuggestions(false);
     setSelectedIdx(-1);
     navigate(suggestion.route);
@@ -98,21 +102,25 @@ export function TopBar({ onMenuClick }: TopBarProps) {
     } else if (e.key === "Enter") {
       if (selectedIdx >= 0 && suggestions[selectedIdx]) {
         handleSelect(suggestions[selectedIdx]);
-      } else if (searchValue.trim()) {
-        navigate(`/tracks?q=${encodeURIComponent(searchValue.trim())}`);
+      } else if (searchInput.trim()) {
+        navigate(`/tracks?q=${encodeURIComponent(searchInput.trim())}`);
         setSearchValue("");
+        setSearchInput("");
+        clearTimeout(searchTimerRef.current);
         setShowSuggestions(false);
       }
     } else if (e.key === "Escape") {
       setShowSuggestions(false);
       inputRef.current?.blur();
     }
-  }, [selectedIdx, suggestions, searchValue, navigate, handleSelect]);
+  }, [selectedIdx, suggestions, searchInput, navigate, handleSelect]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchValue(e.target.value);
+    setSearchInput(e.target.value);
     setShowSuggestions(true);
     setSelectedIdx(-1);
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => setSearchValue(e.target.value), 300);
   }, []);
 
   const iconMap = {
@@ -150,10 +158,10 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               <input
                 ref={inputRef}
                 type="text"
-                value={searchValue}
+                value={searchInput}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
-                onFocus={() => searchValue.length >= 2 && setShowSuggestions(true)}
+                onFocus={() => searchInput.length >= 2 && setShowSuggestions(true)}
                 placeholder={isMobile ? t("topbar.searchShort") : t("topbar.search")}
                 className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
                 autoFocus={isMobile && mobileSearchOpen}

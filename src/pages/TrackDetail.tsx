@@ -2266,7 +2266,6 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
     updateTrackSplits(trackId, filtered);
     // Auto-save collaborators to contacts (direct RPC, fire-and-forget)
     if (user && activeWorkspace) {
-      console.log("[SPLITS SAVE-BACK] Saving", filtered.length, "collaborators to contacts");
       (async () => {
         for (var i = 0; i < filtered.length; i++) {
           var sp = filtered[i];

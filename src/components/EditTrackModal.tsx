@@ -311,7 +311,6 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
 
     // Auto-save collaborators to contacts (direct RPC, fire-and-forget)
     if (user && activeWorkspace) {
-      console.log("[SPLITS SAVE-BACK] Saving", filteredSplits.length, "collaborators to contacts");
       (async () => {
         for (var i = 0; i < filteredSplits.length; i++) {
           var sp = filteredSplits[i];

@@ -142,7 +142,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (e) {
-      // fallback to createSignedUrl
+      console.error("Edge function audio URL failed, falling back to createSignedUrl:", e);
     }
 
     // Fallback: direct storage signing

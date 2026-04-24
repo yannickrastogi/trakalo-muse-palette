@@ -135,7 +135,7 @@ export default function StudioSession() {
           },
         });
         setMode("success");
-      }).catch(function (err) { console.error("Error:", err); });
+      }).catch(function (err) { setSubmitting(false); setSubmitError(err instanceof Error ? err.message : "An unexpected error occurred"); console.error("Error:", err); });
   }
 
   var stepLabels = useMemo(function () {
