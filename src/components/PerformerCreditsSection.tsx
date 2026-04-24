@@ -1,11 +1,13 @@
 import { X, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { NameAutocomplete } from "@/components/NameAutocomplete";
 
 interface PerformerCreditsSectionProps {
   details: Record<string, string[]>;
   updateDetail: (key: string, index: number, value: string) => void;
   addDetailEntry: (key: string) => void;
   removeDetailEntry: (key: string, index: number) => void;
+  extraSuggestions?: { name: string; stage_name?: string }[];
 }
 
 const PERFORMER_FIELDS = [
@@ -23,6 +25,7 @@ export function PerformerCreditsSection({
   updateDetail,
   addDetailEntry,
   removeDetailEntry,
+  extraSuggestions = [],
 }: PerformerCreditsSectionProps) {
   const { t } = useTranslation();
   return (
@@ -37,12 +40,12 @@ export function PerformerCreditsSection({
               <label className="text-2xs text-muted-foreground font-medium">{t(f.labelKey)}</label>
               {entries.map((entry, idx) => (
                 <div key={idx} className="flex items-center gap-1">
-                  <input
-                    type="text"
+                  <NameAutocomplete
                     value={entry}
-                    onChange={(e) => updateDetail(f.key, idx, e.target.value)}
+                    onChange={(v) => updateDetail(f.key, idx, v)}
                     placeholder={"Enter " + t(f.labelKey).toLowerCase()}
                     className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
+                    extraSuggestions={extraSuggestions}
                   />
                   {entries.length > 1 && (
                     <button

@@ -51,6 +51,7 @@ const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
 import { GENRES, KEYS, MOODS, LANGUAGES, PROS, SPLIT_ROLES } from "@/lib/constants";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
+import { NameAutocomplete } from "@/components/NameAutocomplete";
 
 interface Split {
   id: string;
@@ -410,6 +411,33 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   const totalSplit = currentTrack ? currentTrack.splits.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0) : 0;
 
+  // ─── Auto-sync splits → metadata ──────────────────────────
+  const syncSplitsToMetadata = useCallback(() => {
+    if (!currentTrack) return;
+    const filled = currentTrack.splits.filter((s) => s.name.trim() && s.role);
+    if (filled.length === 0) return;
+
+    const byRole: Record<string, string[]> = {};
+    for (const s of filled) {
+      const roles = s.role.split(",").map((r) => r.trim()).filter(Boolean);
+      for (const r of roles) {
+        if (!byRole[r]) byRole[r] = [];
+        byRole[r].push(s.name.trim());
+      }
+    }
+
+    const updates: Partial<TrackEntry> = {};
+    if (!currentTrack.writtenBy && byRole["Songwriter"]?.length) {
+      updates.writtenBy = byRole["Songwriter"].join(", ");
+    }
+    if (!currentTrack.producedBy && byRole["Producer"]?.length) {
+      updates.producedBy = byRole["Producer"].join(", ");
+    }
+    if (Object.keys(updates).length > 0) {
+      updateCurrent(updates);
+    }
+  }, [currentTrack, updateCurrent]);
+
   // ─── Preview playback ──────────────────────────────────────
 
   const togglePreview = useCallback(() => {
@@ -544,7 +572,12 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         isrc: currentTrack.isrc || undefined,
         label: currentTrack.label || undefined,
         publisher: currentTrack.publisher || undefined,
-        // TODO: upc, album, releaseDate, writtenBy, producedBy, mixedBy, masteredBy, copyright, explicit — pass when DB columns exist
+        writtenBy: currentTrack.writtenBy ? currentTrack.writtenBy.split(",").map((s) => s.trim()).filter(Boolean) : [],
+        producedBy: currentTrack.producedBy ? currentTrack.producedBy.split(",").map((s) => s.trim()).filter(Boolean) : [],
+        mixedBy: currentTrack.mixedBy || undefined,
+        masteredBy: currentTrack.masteredBy || undefined,
+        copyright: currentTrack.copyright || undefined,
+        explicit: currentTrack.explicit || undefined,
       });
       setUploadProgress(90);
 
@@ -1218,13 +1251,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   {editStep < EDIT_STEPS.length - 1 ? (
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setEditStep(editStep + 1)}
+                        onClick={() => { if (editStep === 3) syncSplitsToMetadata(); setEditStep(editStep + 1); }}
                         className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors border border-border hover:border-border/80"
                       >
                         {t("uploadTrack.skip", "Skip")}
                       </button>
                       <button
-                        onClick={() => setEditStep(editStep + 1)}
+                        onClick={() => { if (editStep === 3) syncSplitsToMetadata(); setEditStep(editStep + 1); }}
                         className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold"
                       >
                         {t("uploadTrack.next")} <ChevronRight className="w-3.5 h-3.5" />
@@ -1938,12 +1971,14 @@ function StepDetails({
               updateDetail={updateDetail}
               addDetailEntry={addDetailEntry}
               removeDetailEntry={removeDetailEntry}
+              extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))}
             />
             <ProductionCreditsSection
               details={details}
               updateDetail={updateDetail}
               addDetailEntry={addDetailEntry}
               removeDetailEntry={removeDetailEntry}
+              extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))}
             />
           </motion.div>
         )}
@@ -1982,10 +2017,22 @@ function StepDetails({
             </div>
             <MetadataInput label="ISRC" value={isrc} onChange={(v) => onMetadataChange("isrc", v)} placeholder="e.g. USRC17607839" />
             <MetadataInput label="UPC" value={upc} onChange={(v) => onMetadataChange("upc", v)} placeholder="e.g. 0123456789012" />
-            <MetadataInput label={t("uploadTrack.writtenBy", "Written By")} value={writtenBy} onChange={(v) => onMetadataChange("writtenBy", v)} />
-            <MetadataInput label={t("uploadTrack.producedBy", "Produced By")} value={producedBy} onChange={(v) => onMetadataChange("producedBy", v)} />
-            <MetadataInput label={t("uploadTrack.mixedBy", "Mixed By")} value={mixedBy} onChange={(v) => onMetadataChange("mixedBy", v)} />
-            <MetadataInput label={t("uploadTrack.masteredBy", "Mastered By")} value={masteredBy} onChange={(v) => onMetadataChange("masteredBy", v)} />
+            <div className="space-y-1">
+              <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.writtenBy", "Written By")}</label>
+              <NameAutocomplete value={writtenBy} onChange={(v) => onMetadataChange("writtenBy", v)} placeholder="e.g. John Doe, Jane Smith" className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/30 transition-all placeholder:text-muted-foreground/40" extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.producedBy", "Produced By")}</label>
+              <NameAutocomplete value={producedBy} onChange={(v) => onMetadataChange("producedBy", v)} placeholder="e.g. John Doe" className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/30 transition-all placeholder:text-muted-foreground/40" extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.mixedBy", "Mixed By")}</label>
+              <NameAutocomplete value={mixedBy} onChange={(v) => onMetadataChange("mixedBy", v)} placeholder="e.g. Mix Engineer" className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/30 transition-all placeholder:text-muted-foreground/40" extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.masteredBy", "Mastered By")}</label>
+              <NameAutocomplete value={masteredBy} onChange={(v) => onMetadataChange("masteredBy", v)} placeholder="e.g. Mastering Engineer" className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/30 transition-all placeholder:text-muted-foreground/40" extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))} />
+            </div>
             <MetadataInput label={t("uploadTrack.copyright", "Copyright")} value={copyright} onChange={(v) => onMetadataChange("copyright", v)} placeholder="e.g. © 2026 Label Name" />
             <div className="flex items-center gap-2 self-end pb-2">
               <input

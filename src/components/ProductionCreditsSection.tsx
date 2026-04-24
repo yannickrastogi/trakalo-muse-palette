@@ -1,11 +1,13 @@
 import { X, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { NameAutocomplete } from "@/components/NameAutocomplete";
 
 interface ProductionCreditsSectionProps {
   details: Record<string, string[]>;
   updateDetail: (key: string, index: number, value: string) => void;
   addDetailEntry: (key: string) => void;
   removeDetailEntry: (key: string, index: number) => void;
+  extraSuggestions?: { name: string; stage_name?: string }[];
 }
 
 const PRODUCTION_FIELDS = [
@@ -25,6 +27,7 @@ export function ProductionCreditsSection({
   updateDetail,
   addDetailEntry,
   removeDetailEntry,
+  extraSuggestions = [],
 }: ProductionCreditsSectionProps) {
   const { t } = useTranslation();
   return (
@@ -35,18 +38,30 @@ export function ProductionCreditsSection({
           const raw = details[f.key];
           const entries = Array.isArray(raw) ? raw : raw ? [raw] : [""];
           const isDate = f.key === "recordingDate";
+          const isStudio = f.key === "mixingStudio" || f.key === "recordingStudio";
+          const isNameField = !isDate && !isStudio;
           return (
             <div key={f.key} className="space-y-1">
               <label className="text-2xs text-muted-foreground font-medium">{t(f.labelKey)}</label>
               {entries.map((entry, idx) => (
                 <div key={idx} className="flex items-center gap-1">
-                  <input
-                    type={isDate ? "date" : "text"}
-                    value={entry}
-                    onChange={(e) => updateDetail(f.key, idx, e.target.value)}
-                    placeholder={isDate ? "" : "Enter " + t(f.labelKey).toLowerCase()}
-                    className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
-                  />
+                  {isNameField ? (
+                    <NameAutocomplete
+                      value={entry}
+                      onChange={(v) => updateDetail(f.key, idx, v)}
+                      placeholder={"Enter " + t(f.labelKey).toLowerCase()}
+                      className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
+                      extraSuggestions={extraSuggestions}
+                    />
+                  ) : (
+                    <input
+                      type={isDate ? "date" : "text"}
+                      value={entry}
+                      onChange={(e) => updateDetail(f.key, idx, e.target.value)}
+                      placeholder={isDate ? "" : "Enter " + t(f.labelKey).toLowerCase()}
+                      className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
+                    />
+                  )}
                   {entries.length > 1 && (
                     <button
                       onClick={() => removeDetailEntry(f.key, idx)}

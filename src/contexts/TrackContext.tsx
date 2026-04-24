@@ -157,13 +157,13 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     publisher: Array.isArray(row.publishers) && (row.publishers as string[]).length > 0
       ? (row.publishers as string[])[0]
       : "",
-    writtenBy: [],
-    producedBy: [],
-    mixedBy: "",
-    masteredBy: "",
-    copyright: "",
+    writtenBy: (row.written_by as string) ? (row.written_by as string).split(",").map((s) => s.trim()).filter(Boolean) : [],
+    producedBy: (row.produced_by as string) ? (row.produced_by as string).split(",").map((s) => s.trim()).filter(Boolean) : [],
+    mixedBy: (row.mixed_by as string) || "",
+    masteredBy: (row.mastered_by as string) || "",
+    copyright: (row.copyright as string) || "",
     language: (row.language as string) || "",
-    explicit: false,
+    explicit: (row.explicit as boolean) || false,
     type: mapTrackType(row.track_type as string),
     coverIdx: 0,
     coverImage: (row.cover_url as string) || undefined,
@@ -640,12 +640,12 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         _upc: null,
         _album: null,
         _release_date: null,
-        _written_by: null,
-        _produced_by: null,
-        _mixed_by: null,
-        _mastered_by: null,
-        _copyright: null,
-        _explicit: null,
+        _written_by: trackInput.writtenBy?.length ? trackInput.writtenBy.join(", ") : null,
+        _produced_by: trackInput.producedBy?.length ? trackInput.producedBy.join(", ") : null,
+        _mixed_by: trackInput.mixedBy || null,
+        _mastered_by: trackInput.masteredBy || null,
+        _copyright: trackInput.copyright || null,
+        _explicit: trackInput.explicit || null,
       });
 
       if (error) {
@@ -729,6 +729,12 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (updates.isrc !== undefined) payload.isrc = updates.isrc || null;
       if (updates.chapters !== undefined) payload.chapters = updates.chapters || null;
       if (updates.waveformData !== undefined) payload.waveform_data = updates.waveformData || null;
+      if (updates.writtenBy !== undefined) payload.written_by = updates.writtenBy.length ? updates.writtenBy.join(", ") : null;
+      if (updates.producedBy !== undefined) payload.produced_by = updates.producedBy.length ? updates.producedBy.join(", ") : null;
+      if (updates.mixedBy !== undefined) payload.mixed_by = updates.mixedBy || null;
+      if (updates.masteredBy !== undefined) payload.mastered_by = updates.masteredBy || null;
+      if (updates.copyright !== undefined) payload.copyright = updates.copyright || null;
+      if (updates.explicit !== undefined) payload.explicit = updates.explicit || false;
 
       if (Object.keys(payload).length > 0 && user) {
         const { error } = await supabase.rpc("update_track", {

@@ -1848,7 +1848,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
   const { t } = useTranslation();
   const { user } = useAuth();
   const { permissions: splitsPermissions } = useRole();
-  const { getTrack, updateTrackSplits, tracks: allTracks } = useTrack();
+  const { getTrack, updateTrack, updateTrackSplits, tracks: allTracks } = useTrack();
   const { contacts, upsertCollaborator } = useContacts();
   const trackData = getTrack(trackId);
   const splits = trackData?.splits || [];
@@ -2284,6 +2284,28 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
         ipi: sp.ipi || undefined,
         publisher: sp.publisher || undefined,
       });
+    }
+    // Auto-sync splits → metadata (only fill empty fields)
+    if (trackData) {
+      var byRole: Record<string, string[]> = {};
+      for (var j = 0; j < filtered.length; j++) {
+        var s = filtered[j];
+        var roles = s.role.split(",").map(function (r) { return r.trim(); }).filter(Boolean);
+        for (var k = 0; k < roles.length; k++) {
+          if (!byRole[roles[k]]) byRole[roles[k]] = [];
+          byRole[roles[k]].push(s.name.trim());
+        }
+      }
+      var metaUpdates: Partial<TrackData> = {};
+      if ((!trackData.writtenBy || trackData.writtenBy.length === 0) && byRole["Songwriter"]?.length) {
+        metaUpdates.writtenBy = byRole["Songwriter"];
+      }
+      if ((!trackData.producedBy || trackData.producedBy.length === 0) && byRole["Producer"]?.length) {
+        metaUpdates.producedBy = byRole["Producer"];
+      }
+      if (Object.keys(metaUpdates).length > 0) {
+        updateTrack(trackId, metaUpdates);
+      }
     }
     setEditing(false);
   };

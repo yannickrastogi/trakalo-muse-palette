@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 import { GENRES, KEYS, MOODS, LANGUAGES } from "@/lib/constants";
+import { NameAutocomplete } from "@/components/NameAutocomplete";
 const TYPES = ["Song", "Instrumental", "Sample", "Acapella"];
 
 const DETAIL_FIELDS = [
@@ -627,7 +628,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         <div className="space-y-1">
                           <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.name")}</label>
-                          <input value={split.name} onChange={(e) => updateSplit(split.id, "name", e.target.value)} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                          <NameAutocomplete value={split.name} onChange={(v) => updateSplit(split.id, "name", v)} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))} />
                         </div>
                         <div className="space-y-1">
                           <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.role")}</label>
@@ -682,18 +683,30 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                         const raw = details[f.key];
                         const entries = Array.isArray(raw) ? raw : raw ? [raw] : [""];
                         const isDate = f.key === "recordingDate";
+                        const isStudio = f.key === "mixingStudio" || f.key === "recordingStudio";
+                        const isNameField = !isDate && !isStudio;
                         return (
                           <div key={f.key} className="space-y-1">
                             <label className="text-2xs text-muted-foreground font-medium">{f.label}</label>
                             {entries.map((entry, idx) => (
                               <div key={idx} className="flex items-center gap-1">
-                                <input
-                                  type={isDate ? "date" : "text"}
-                                  value={entry}
-                                  onChange={(e) => updateDetail(f.key, idx, e.target.value)}
-                                  placeholder={isDate ? "" : `Enter ${f.label.toLowerCase()}`}
-                                  className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
-                                />
+                                {isNameField ? (
+                                  <NameAutocomplete
+                                    value={entry}
+                                    onChange={(v) => updateDetail(f.key, idx, v)}
+                                    placeholder={`Enter ${f.label.toLowerCase()}`}
+                                    className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
+                                    extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))}
+                                  />
+                                ) : (
+                                  <input
+                                    type={isDate ? "date" : "text"}
+                                    value={entry}
+                                    onChange={(e) => updateDetail(f.key, idx, e.target.value)}
+                                    placeholder={isDate ? "" : `Enter ${f.label.toLowerCase()}`}
+                                    className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
+                                  />
+                                )}
                                 {entries.length > 1 && (
                                   <button
                                     onClick={() => removeDetailEntry(f.key, idx)}
