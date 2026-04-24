@@ -409,6 +409,18 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     updateCurrent({ splits: redistributeSplits(currentTrack.splits.filter((s) => s.id !== id)) });
   }, [currentTrack, updateCurrent]);
 
+  const batchUpdateSplit = useCallback((id: string, current: Split, s: CollaboratorSuggestion) => {
+    if (!currentTrack) return;
+    var patch: Partial<Split> = { name: s.fullName };
+    if (s.stage_name && !current.stage_name) patch.stage_name = s.stage_name;
+    if (s.role && !current.role) patch.role = s.role;
+    if (s.pro && !current.pro) patch.pro = s.pro;
+    if (s.ipi && !current.ipi) patch.ipi = s.ipi;
+    if (s.publisher && !current.publisher) patch.publisher = s.publisher;
+    var updated = currentTrack.splits.map(function (sp) { return sp.id === id ? { ...sp, ...patch } : sp; });
+    updateCurrent({ splits: updated });
+  }, [currentTrack, updateCurrent]);
+
   const totalSplit = currentTrack ? currentTrack.splits.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0) : 0;
 
   // ─── Auto-sync splits → metadata ──────────────────────────
@@ -1098,6 +1110,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   onAdd={addSplit}
                   onUpdate={updateSplit}
                   onRemove={removeSplit}
+                  onBatchUpdate={batchUpdateSplit}
                   details={currentTrack.details}
                   updateDetail={updateDetail}
                   addDetailEntry={addDetailEntry}
@@ -1849,13 +1862,14 @@ function StepStems({
 /* ─── Splits Step ─── */
 
 function StepSplits({
-  splits, totalSplit, onAdd, onUpdate, onRemove, contacts, existingSplitNames,
+  splits, totalSplit, onAdd, onUpdate, onRemove, onBatchUpdate, contacts, existingSplitNames,
 }: {
   splits: Split[];
   totalSplit: number;
   onAdd: () => void;
   onUpdate: (id: string, field: keyof Split, value: string | number) => void;
   onRemove: (id: string) => void;
+  onBatchUpdate: (id: string, current: Split, suggestion: CollaboratorSuggestion) => void;
   contacts: Contact[];
   existingSplitNames: string[];
 }) {
@@ -1890,7 +1904,7 @@ function StepSplits({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.name", "Name")}</label>
-                <CollaboratorAutocomplete value={split.name} onChange={(v) => onUpdate(split.id, "name", v)} onSelect={(s) => { onUpdate(split.id, "name", s.fullName); if (s.stage_name && !split.stage_name) onUpdate(split.id, "stage_name", s.stage_name); if (s.role && !split.role) onUpdate(split.id, "role", s.role); if (s.pro && !split.pro) onUpdate(split.id, "pro", s.pro); if (s.ipi && !split.ipi) onUpdate(split.id, "ipi", s.ipi); if (s.publisher && !split.publisher) onUpdate(split.id, "publisher", s.publisher); }} contacts={contacts} existingSplitNames={existingSplitNames} placeholder={t("uploadTrack.fullName", "Full name")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                <CollaboratorAutocomplete value={split.name} onChange={(v) => onUpdate(split.id, "name", v)} onSelect={(s) => { onBatchUpdate(split.id, split, s); }} contacts={contacts} existingSplitNames={existingSplitNames} placeholder={t("uploadTrack.fullName", "Full name")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">Stage Name</label>
@@ -1933,7 +1947,7 @@ function StepSplits({
 /* ─── Details Step (Splits + Credits) ─── */
 
 function StepDetails({
-  splits, totalSplit, onAdd, onUpdate, onRemove,
+  splits, totalSplit, onAdd, onUpdate, onRemove, onBatchUpdate,
   details, updateDetail, addDetailEntry, removeDetailEntry,
   isrc, upc, album, label, publisher, releaseDate,
   writtenBy, producedBy, mixedBy, masteredBy, copyright, explicit: isExplicit,
@@ -1944,6 +1958,7 @@ function StepDetails({
   onAdd: () => void;
   onUpdate: (id: string, field: keyof Split, value: string | number) => void;
   onRemove: (id: string) => void;
+  onBatchUpdate: (id: string, current: Split, suggestion: CollaboratorSuggestion) => void;
   details: Record<string, string[]>;
   updateDetail: (key: string, index: number, value: string) => void;
   addDetailEntry: (key: string) => void;
@@ -1968,6 +1983,7 @@ function StepDetails({
         onAdd={onAdd}
         onUpdate={onUpdate}
         onRemove={onRemove}
+        onBatchUpdate={onBatchUpdate}
         contacts={contacts}
         existingSplitNames={existingSplitNames}
       />

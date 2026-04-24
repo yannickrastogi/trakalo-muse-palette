@@ -17,6 +17,8 @@ import { toast } from "sonner";
 
 import { GENRES, KEYS, MOODS, LANGUAGES } from "@/lib/constants";
 import { NameAutocomplete } from "@/components/NameAutocomplete";
+import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
+import { useContacts } from "@/contexts/ContactsContext";
 const TYPES = ["Song", "Instrumental", "Sample", "Acapella"];
 
 const DETAIL_FIELDS = [
@@ -140,6 +142,7 @@ function LanguageMultiSelect({ value, onChange, placeholder }: { value: string; 
 export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) {
   const { getTrack, updateTrack, updateTrackSplits } = useTrack();
   const { user } = useAuth();
+  const { contacts } = useContacts();
   const { t } = useTranslation();
   const trackData = getTrack(trackId);
 
@@ -628,7 +631,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         <div className="space-y-1">
                           <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.name")}</label>
-                          <NameAutocomplete value={split.name} onChange={(v) => updateSplit(split.id, "name", v)} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))} />
+                          <CollaboratorAutocomplete value={split.name} onChange={(v) => updateSplit(split.id, "name", v)} onSelect={(s) => { var patch: Partial<TrackSplit> = { name: s.fullName }; if (s.stage_name && !split.stage_name) patch.stage_name = s.stage_name; if (s.role && !split.role) patch.role = s.role; if (s.pro && !split.pro) patch.pro = s.pro; if (s.ipi && !split.ipi) patch.ipi = s.ipi; if (s.publisher && !split.publisher) patch.publisher = s.publisher; setSplits(function (prev) { return prev.map(function (sp) { return sp.id === split.id ? { ...sp, ...patch } : sp; }); }); }} contacts={contacts} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
                         </div>
                         <div className="space-y-1">
                           <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.role")}</label>
