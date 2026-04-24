@@ -2257,12 +2257,12 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
     for (var i = 0; i < filtered.length; i++) {
       var sp = filtered[i];
       var parts = sp.name.trim().split(" ");
-      var firstRole = sp.role ? sp.role.split(",")[0].trim() : undefined;
       upsertCollaborator({
         firstName: parts[0] || "",
         lastName: parts.slice(1).join(" ") || "",
         email: sp.email || undefined,
-        role: firstRole || undefined,
+        role: sp.role || undefined,
+        stageName: sp.stage_name || undefined,
         pro: sp.pro || undefined,
         ipi: sp.ipi || undefined,
         publisher: sp.publisher || undefined,

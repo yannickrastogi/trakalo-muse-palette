@@ -144,7 +144,7 @@ function LanguageMultiSelect({ value, onChange, placeholder }: { value: string; 
 export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) {
   const { getTrack, updateTrack, updateTrackSplits } = useTrack();
   const { user } = useAuth();
-  const { contacts } = useContacts();
+  const { contacts, upsertCollaborator } = useContacts();
   const { t } = useTranslation();
   const trackData = getTrack(trackId);
 
@@ -304,7 +304,24 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
     };
 
     updateTrack(trackId, updates);
-    updateTrackSplits(trackId, splits.filter(s => s.name.trim()));
+    var filteredSplits = splits.filter(s => s.name.trim());
+    updateTrackSplits(trackId, filteredSplits);
+
+    // Auto-save collaborators to contacts
+    for (var i = 0; i < filteredSplits.length; i++) {
+      var sp = filteredSplits[i];
+      var parts = sp.name.trim().split(" ");
+      upsertCollaborator({
+        firstName: parts[0] || "",
+        lastName: parts.slice(1).join(" ") || "",
+        email: (sp as any).email || undefined,
+        role: sp.role || undefined,
+        stageName: sp.stage_name || undefined,
+        pro: sp.pro || undefined,
+        ipi: sp.ipi || undefined,
+        publisher: sp.publisher || undefined,
+      });
+    }
 
     // Sync user metadata + mood descriptors to sonic_dna
     if (trackData?.uuid) {

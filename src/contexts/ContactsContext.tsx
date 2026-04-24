@@ -11,6 +11,7 @@ export interface Contact extends WorkspaceScoped {
   email: string;
   organization: string;
   role: string;
+  stageName: string;
   pro: string;
   ipi: string;
   publisher: string;
@@ -24,7 +25,7 @@ interface ContactsContextValue {
   contacts: Contact[];
   addOrUpdateContact: (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => void;
   getContact: (email: string) => Contact | undefined;
-  upsertCollaborator: (data: { firstName: string; lastName: string; email?: string; role?: string; pro?: string; ipi?: string; publisher?: string }) => void;
+  upsertCollaborator: (data: { firstName: string; lastName: string; email?: string; role?: string; stageName?: string; pro?: string; ipi?: string; publisher?: string }) => void;
   refreshContacts: () => Promise<void>;
 }
 
@@ -39,6 +40,7 @@ function mapRowToContact(row: Record<string, unknown>): Contact {
     email: (row.email as string) || "",
     organization: (row.company as string) || "",
     role: (row.role as string) || "",
+    stageName: (row.stage_name as string) || "",
     pro: Array.isArray(row.pro) ? (row.pro as string[]).join(", ") : (row.pro as string) || "",
     ipi: (row.ipi as string) || "",
     publisher: (row.publisher as string) || "",
@@ -108,7 +110,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
   );
 
   const upsertCollaborator = useCallback(
-    async (data: { firstName: string; lastName: string; email?: string; role?: string; pro?: string; ipi?: string; publisher?: string }) => {
+    async (data: { firstName: string; lastName: string; email?: string; role?: string; stageName?: string; pro?: string; ipi?: string; publisher?: string }) => {
       if (!activeWorkspace || !user) return;
       var fullName = ((data.firstName || "") + " " + (data.lastName || "")).trim();
       if (!fullName) return;
@@ -122,6 +124,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
         _last_name: data.lastName,
         _email: data.email || null,
         _role: data.role || null,
+        _stage_name: data.stageName || null,
         _company: null,
         _phone: null,
         _pro: proArray,

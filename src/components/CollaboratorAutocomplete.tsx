@@ -68,6 +68,7 @@ export function CollaboratorAutocomplete({
           lastName: c.lastName,
           fullName: full,
           email: c.email || undefined,
+          stage_name: c.stageName || undefined,
           role: c.role || undefined,
           pro: c.pro || undefined,
           ipi: c.ipi || undefined,

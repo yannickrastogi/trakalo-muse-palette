@@ -661,11 +661,11 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         var sp = currentTrack.splits[si];
         if (!sp.name.trim()) continue;
         var parts = sp.name.trim().split(" ");
-        var firstRole = sp.role ? sp.role.split(",")[0].trim() : undefined;
         upsertCollaborator({
           firstName: parts[0] || "",
           lastName: parts.slice(1).join(" ") || "",
-          role: firstRole || undefined,
+          role: sp.role || undefined,
+          stageName: sp.stage_name || undefined,
           pro: sp.pro || undefined,
           ipi: sp.ipi || undefined,
           publisher: sp.publisher || undefined,
