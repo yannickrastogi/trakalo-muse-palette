@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useTrack, type TrackData, type TrackSplit } from "@/contexts/TrackContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -144,7 +145,8 @@ function LanguageMultiSelect({ value, onChange, placeholder }: { value: string; 
 export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) {
   const { getTrack, updateTrack, updateTrackSplits } = useTrack();
   const { user } = useAuth();
-  const { contacts, upsertCollaborator } = useContacts();
+  const { contacts, refreshContacts } = useContacts();
+  const { activeWorkspace } = useWorkspace();
   const { t } = useTranslation();
   const trackData = getTrack(trackId);
 
@@ -307,20 +309,36 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
     var filteredSplits = splits.filter(s => s.name.trim());
     updateTrackSplits(trackId, filteredSplits);
 
-    // Auto-save collaborators to contacts
-    for (var i = 0; i < filteredSplits.length; i++) {
-      var sp = filteredSplits[i];
-      var parts = sp.name.trim().split(" ");
-      upsertCollaborator({
-        firstName: parts[0] || "",
-        lastName: parts.slice(1).join(" ") || "",
-        email: (sp as any).email || undefined,
-        role: sp.role || undefined,
-        stageName: sp.stage_name || undefined,
-        pro: sp.pro || undefined,
-        ipi: sp.ipi || undefined,
-        publisher: sp.publisher || undefined,
-      });
+    // Auto-save collaborators to contacts (direct RPC, fire-and-forget)
+    if (user && activeWorkspace) {
+      console.log("[SPLITS SAVE-BACK] Saving", filteredSplits.length, "collaborators to contacts");
+      (async () => {
+        for (var i = 0; i < filteredSplits.length; i++) {
+          var sp = filteredSplits[i];
+          var parts = sp.name.trim().split(" ");
+          var proArray = sp.pro ? sp.pro.split(", ").filter(Boolean) : null;
+          try {
+            var { error } = await supabase.rpc("upsert_contact", {
+              _user_id: user.id,
+              _workspace_id: activeWorkspace.id,
+              _first_name: parts[0] || "",
+              _last_name: parts.slice(1).join(" ") || null,
+              _email: (sp as any).email && (sp as any).email.trim() !== "" ? (sp as any).email.trim() : null,
+              _role: sp.role && sp.role.trim() !== "" ? sp.role.trim() : null,
+              _stage_name: sp.stage_name && sp.stage_name.trim() !== "" ? sp.stage_name.trim() : null,
+              _company: null,
+              _phone: null,
+              _pro: proArray && proArray.length > 0 ? proArray : null,
+              _ipi: sp.ipi && sp.ipi.trim() !== "" ? sp.ipi.trim() : null,
+              _publisher: sp.publisher && sp.publisher.trim() !== "" ? sp.publisher.trim() : null,
+            });
+            if (error) console.error("[SPLITS SAVE-BACK] upsert_contact error for", sp.name, ":", error);
+          } catch (err) {
+            console.error("[SPLITS SAVE-BACK] Failed for", sp.name, ":", err);
+          }
+        }
+        refreshContacts();
+      })();
     }
 
     // Sync user metadata + mood descriptors to sonic_dna
