@@ -106,6 +106,7 @@ import { MultiSelectChips } from "@/components/MultiSelectChips";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { generateWaveform } from "@/lib/waveformGenerator";
 import { equalSplit } from "@/lib/split-utils";
+import { extractTextFromPdf } from "@/lib/pdf-text-extract";
 import { toast } from "sonner";
 import type { StemType } from "@/lib/constants";
 
@@ -1501,21 +1502,30 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !file.name.toLowerCase().endsWith(".pdf")) return;
-    // Read PDF as text — since we can't parse real PDFs in browser without a lib,
-    // we simulate by reading as text. For real PDFs, a backend service would be needed.
-    try {
+    if (!file) return;
+    if (file.name.toLowerCase().endsWith(".txt")) {
       const text = await file.text();
-      // Try to extract readable text from PDF content
-      const cleaned = text
-        .replace(/[^\x20-\x7E\n\r]/g, " ")
-        .replace(/\s{3,}/g, "\n")
-        .trim();
-      const extracted = cleaned.length > 20 ? cleaned : `[Lyrics imported from ${file.name}]\n\nPaste your lyrics here to replace this placeholder.`;
-      setEditValue(extracted);
+      setEditValue(text);
+      setIsEditing(true);
+      e.target.value = "";
+      return;
+    }
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Unsupported format. Please upload a PDF or TXT file.");
+      e.target.value = "";
+      return;
+    }
+    try {
+      const extracted = await extractTextFromPdf(file);
+      if (extracted.length > 10) {
+        setEditValue(extracted);
+      } else {
+        toast.error("This PDF doesn't contain extractable text. Try a text-based PDF or paste your lyrics manually.");
+        setEditValue("");
+      }
       setIsEditing(true);
     } catch {
-      setEditValue(`[Lyrics imported from ${file.name}]\n\nPaste your lyrics here.`);
+      toast.error("Could not extract text from PDF — please paste your lyrics manually.");
       setIsEditing(true);
     }
     e.target.value = "";

@@ -52,6 +52,7 @@ const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
 import { GENRES, KEYS, MOODS, LANGUAGES, PROS, SPLIT_ROLES } from "@/lib/constants";
 import { equalSplit } from "@/lib/split-utils";
+import { extractTextFromPdf } from "@/lib/pdf-text-extract";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
 import { NameAutocomplete } from "@/components/NameAutocomplete";
 
@@ -2168,42 +2169,18 @@ function StepLyrics({
       const text = await file.text();
       onUpdate(text);
     } else if (file.name.toLowerCase().endsWith(".pdf")) {
-      // Extract text from PDF binary by parsing text strings between parentheses (Tj/TJ operators)
       try {
-        const buffer = await file.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-        // Decode as latin1 to preserve all byte values as characters
-        let raw = "";
-        for (let i = 0; i < bytes.length; i++) {
-          raw += String.fromCharCode(bytes[i]);
-        }
-        // Extract text between parentheses in PDF content streams
-        const fragments: string[] = [];
-        const pdfTextRe = /\(([^)]*)\)/g;
-        let match: RegExpExecArray | null;
-        while ((match = pdfTextRe.exec(raw)) !== null) {
-          const s = match[1]
-            .replace(/\\n/g, "\n")
-            .replace(/\\r/g, "\r")
-            .replace(/\\t/g, "\t")
-            .replace(/\\\\/g, "\\")
-            .replace(/\\\(/g, "(")
-            .replace(/\\\)/g, ")");
-          if (s.trim().length > 0) fragments.push(s);
-        }
-        const extracted = fragments.join(" ")
-          .replace(/[^\x20-\x7E\n\r\u00C0-\u024F]/g, " ")
-          .replace(/ {2,}/g, " ")
-          .replace(/\n{3,}/g, "\n\n")
-          .trim();
-        if (extracted.length > 20) {
+        const extracted = await extractTextFromPdf(file);
+        if (extracted.length > 10) {
           onUpdate(extracted);
         } else {
-          toast.error(t("uploadTrack.pdfExtractFailed", "Could not extract text from PDF — please paste your lyrics manually"));
+          toast.error(t("uploadTrack.pdfExtractFailed", "This PDF doesn't contain extractable text. Try a text-based PDF or paste your lyrics manually."));
         }
       } catch {
-        toast.error(t("uploadTrack.pdfExtractFailed", "Could not extract text from PDF — please paste your lyrics manually"));
+        toast.error(t("uploadTrack.pdfExtractFailed", "Could not extract text from PDF — please paste your lyrics manually."));
       }
+    } else {
+      toast.error("Unsupported format. Please upload a PDF or TXT file.");
     }
     e.target.value = "";
   };
