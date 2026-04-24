@@ -461,13 +461,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     upsert = false,
   ): Promise<{ error: string | null }> => {
     return new Promise(async (resolve) => {
-      // Get a valid auth token — try getSession, then refreshSession, then backup
+      // Get a valid auth token — always try refreshSession first to ensure fresh token
       let token: string | null = null;
-      const { data: { session } } = await supabase.auth.getSession();
-      token = session?.access_token || null;
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      token = refreshed?.session?.access_token || null;
       if (!token) {
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        token = refreshed?.session?.access_token || null;
+        const { data: { session } } = await supabase.auth.getSession();
+        token = session?.access_token || null;
       }
       if (!token) {
         try {
