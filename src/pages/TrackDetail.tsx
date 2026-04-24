@@ -83,8 +83,7 @@ import {
   PenLine,
   MessageCircle,
   Bookmark,
-  Lock,
-  Unlock,
+  Scale,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -106,7 +105,7 @@ import { STEM_TYPES, DEFAULT_COVER, PROS, SPLIT_ROLES } from "@/lib/constants";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { generateWaveform } from "@/lib/waveformGenerator";
-import { smartRedistribute, redistributeAfterRemove, toggleLock } from "@/lib/split-utils";
+import { equalSplit } from "@/lib/split-utils";
 import { toast } from "sonner";
 import type { StemType } from "@/lib/constants";
 
@@ -2224,37 +2223,35 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
     setEditing(true);
   };
 
-  const redistributeSplits = (updated: TrackSplit[], changedId?: string): TrackSplit[] => {
-    return smartRedistribute(updated, "share", changedId);
-  };
+  const [splitsManuallyEdited, setSplitsManuallyEdited] = useState(false);
 
   const addSplit = () => {
     const newSplits = [...editSplits, { id: crypto.randomUUID(), name: "", stage_name: "", email: "", role: "", share: 0, pro: "", ipi: "", publisher: "" }];
-    setEditSplits(redistributeSplits(newSplits));
+    if (splitsManuallyEdited) {
+      setEditSplits(newSplits);
+    } else {
+      setEditSplits(equalSplit(newSplits, "share"));
+    }
   };
 
   const updateSplit = (id: string, field: keyof TrackSplit, value: string | number) => {
     const updated = editSplits.map((s) => (s.id === id ? { ...s, [field]: value } : s));
-    if (field === "share") {
-      setEditSplits(redistributeSplits(updated, id));
-    } else {
-      setEditSplits(updated);
-    }
+    if (field === "share") setSplitsManuallyEdited(true);
+    setEditSplits(updated);
   };
 
   const removeSplit = (id: string) => {
     if (editSplits.length <= 1) return;
-    setEditSplits(redistributeAfterRemove(editSplits.filter((s) => s.id !== id), "share"));
+    setEditSplits(editSplits.filter((s) => s.id !== id));
+  };
+
+  const equalSplitAll = () => {
+    setEditSplits(equalSplit(editSplits, "share"));
+    setSplitsManuallyEdited(false);
   };
 
   const saveSplits = () => {
     var filtered = editSplits.filter(function (s) { return s.name.trim(); });
-    var total = filtered.reduce(function (sum, s) { return sum + (Number(s.share) || 0); }, 0);
-    var roundedTotal = parseFloat(total.toFixed(2));
-    if (roundedTotal !== 100 && filtered.length > 0) {
-      toast.error("Total splits must equal 100% (currently " + roundedTotal + "%)");
-      return;
-    }
     updateTrackSplits(trackId, filtered);
     // Auto-save collaborators to contacts
     for (var i = 0; i < filtered.length; i++) {
@@ -2322,20 +2319,12 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
         action={
           <div className="flex items-center gap-2">
             <button onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">Cancel</button>
-            <button onClick={saveSplits} disabled={parseFloat(editTotalShares.toFixed(2)) !== 100 && editSplits.filter(function (s) { return s.name.trim(); }).length > 0} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"><CheckCircle2 className="w-3 h-3" /> Save</button>
+            <button onClick={saveSplits} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3" /> Save</button>
           </div>
         }
       >
         <div className="p-5 space-y-3">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-2xs text-muted-foreground">Add collaborators and assign ownership splits</p>
-            <div className="text-right">
-              <span className={"text-xs font-bold tabular-nums " + (editTotalShares === 100 ? "text-emerald-400" : editTotalShares > 100 ? "text-destructive" : "text-brand-orange")}>{parseFloat(editTotalShares.toFixed(2))}%</span>
-              {parseFloat(editTotalShares.toFixed(2)) !== 100 && editSplits.filter(function (s) { return s.name.trim(); }).length > 0 && (
-                <p className="text-[10px] text-destructive mt-0.5">Total must equal 100%</p>
-              )}
-            </div>
-          </div>
+          <p className="text-2xs text-muted-foreground mb-2">Add collaborators and assign ownership splits</p>
           {editSplits.map((split, idx) => (
             <div key={split.id} className="rounded-xl bg-secondary/50 border border-border p-4 space-y-3">
               <div className="flex items-center justify-between">
@@ -2371,10 +2360,8 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
                 <div className="space-y-1">
                   <label className="text-2xs text-muted-foreground font-medium">Split %</label>
                   <div className="flex items-center gap-1">
-                    <input type="number" min={0} max={100} step={0.01} value={split.share} onChange={(e) => updateSplit(split.id, "share", parseFloat(e.target.value) || 0)} className={`h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40 ${split.locked ? "text-foreground" : "text-muted-foreground"}`} />
-                    <button type="button" onClick={() => setEditSplits(toggleLock(editSplits, split.id, "share"))} className="p-1 shrink-0 rounded hover:bg-white/5 transition-colors" title={split.locked ? "Unlock" : "Lock"}>
-                      {split.locked ? <Lock className="w-3 h-3 text-brand-orange" /> : <Unlock className="w-3 h-3 text-muted-foreground/40" />}
-                    </button>
+                    <input type="text" inputMode="decimal" value={split.share === 0 ? "0" : String(split.share)} onChange={(e) => { var v = e.target.value.replace(/[^0-9.]/g, ""); if (v.length > 1 && v.startsWith("0") && v[1] !== ".") v = v.replace(/^0+/, ""); var n = parseFloat(v); if (!isNaN(n) && n > 100) v = "100"; updateSplit(split.id, "share", v === "" ? 0 : parseFloat(v) || 0); }} onFocus={(e) => { if (split.share === 0) e.target.select(); }} className="h-8 w-[70px] px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-mono font-medium text-right" />
+                    <span className="text-xs text-muted-foreground">%</span>
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -2395,6 +2382,21 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
           <button onClick={addSplit} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-border hover:border-brand-orange/30 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-all w-full justify-center">
             <Plus className="w-3.5 h-3.5" /> Add Contributor
           </button>
+
+          {/* Total bar */}
+          <div className="space-y-2 mt-2">
+            <div className="h-2 rounded-full bg-secondary overflow-hidden">
+              <div className={`h-full rounded-full transition-all ${editTotalShares === 100 ? "bg-emerald-500" : editTotalShares > 100 ? "bg-destructive" : "bg-brand-orange"}`} style={{ width: Math.min(editTotalShares, 100) + "%" }} />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={`text-2xs font-medium ${editTotalShares === 100 ? "text-emerald-400" : editTotalShares > 100 ? "text-destructive" : "text-muted-foreground"}`}>
+                {editTotalShares === 100 ? "Total: 100% \u2713 Fully allocated" : editTotalShares > 100 ? "Total: " + parseFloat(editTotalShares.toFixed(2)) + "% \u2014 exceeds 100%!" : "Total: " + parseFloat(editTotalShares.toFixed(2)) + "% \u2014 " + parseFloat((100 - editTotalShares).toFixed(2)) + "% remaining"}
+              </span>
+              <button type="button" onClick={equalSplitAll} className="flex items-center gap-1 text-2xs font-semibold text-muted-foreground hover:text-foreground transition-colors">
+                <Scale className="w-3 h-3" /> Equal Split
+              </button>
+            </div>
+          </div>
         </div>
       </SectionCard>
       {renderStudioSubmissions()}

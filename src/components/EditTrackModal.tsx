@@ -9,8 +9,7 @@ import {
   Save,
   User,
   Trash2,
-  Lock,
-  Unlock,
+  Scale,
 } from "lucide-react";
 import { useTrack, type TrackData, type TrackSplit } from "@/contexts/TrackContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 import { GENRES, KEYS, MOODS, LANGUAGES } from "@/lib/constants";
-import { smartRedistribute, redistributeAfterRemove, toggleLock } from "@/lib/split-utils";
+import { equalSplit } from "@/lib/split-utils";
 import { NameAutocomplete } from "@/components/NameAutocomplete";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
 import { useContacts } from "@/contexts/ContactsContext";
@@ -246,27 +245,31 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
   };
 
   // ─── Splits logic ───
-  const redistributeSplits = (updated: TrackSplit[], changedId?: string): TrackSplit[] => {
-    return smartRedistribute(updated, "share", changedId);
-  };
+  const [splitsManuallyEdited, setSplitsManuallyEdited] = useState(false);
 
   const addSplit = useCallback(() => {
     const newSplits = [...splits, { id: crypto.randomUUID(), name: "", role: "", share: 0, pro: "", ipi: "", publisher: "" }];
-    setSplits(redistributeSplits(newSplits));
-  }, [splits]);
+    if (splitsManuallyEdited) {
+      setSplits(newSplits);
+    } else {
+      setSplits(equalSplit(newSplits, "share"));
+    }
+  }, [splits, splitsManuallyEdited]);
 
   const updateSplit = useCallback((id: string, field: keyof TrackSplit, value: string | number) => {
     const updated = splits.map((s) => (s.id === id ? { ...s, [field]: value } : s));
-    if (field === "share") {
-      setSplits(redistributeSplits(updated, id));
-    } else {
-      setSplits(updated);
-    }
+    if (field === "share") setSplitsManuallyEdited(true);
+    setSplits(updated);
   }, [splits]);
 
   const removeSplit = useCallback((id: string) => {
     if (splits.length <= 1) return;
-    setSplits(redistributeAfterRemove(splits.filter((s) => s.id !== id), "share"));
+    setSplits(splits.filter((s) => s.id !== id));
+  }, [splits]);
+
+  const equalSplitAll = useCallback(() => {
+    setSplits(equalSplit(splits, "share"));
+    setSplitsManuallyEdited(false);
   }, [splits]);
 
   const totalSplit = splits.reduce((sum, s) => sum + (Number(s.share) || 0), 0);
@@ -587,14 +590,9 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
 
               {/* Splits */}
               <div className="border-t border-border pt-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-xs font-semibold text-foreground">Splits & Credits</h4>
-                    <p className="text-2xs text-muted-foreground">Add collaborators and assign ownership splits</p>
-                  </div>
-                  <div className={`text-xs font-bold tabular-nums ${totalSplit === 100 ? "text-emerald-400" : totalSplit > 100 ? "text-destructive" : "text-brand-orange"}`}>
-                    {totalSplit}%
-                  </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-foreground">Splits & Credits</h4>
+                  <p className="text-2xs text-muted-foreground">Add collaborators and assign ownership splits</p>
                 </div>
                 <div className="space-y-3">
                   {splits.map((split, idx) => (
@@ -624,10 +622,8 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                         <div className="space-y-1">
                           <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.share")}</label>
                           <div className="flex items-center gap-1">
-                            <input type="number" min={0} max={100} step={0.01} value={split.share} onChange={(e) => updateSplit(split.id, "share", parseFloat(e.target.value) || 0)} className={`h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40 ${split.locked ? "text-foreground" : "text-muted-foreground"}`} />
-                            <button type="button" onClick={() => setSplits(toggleLock(splits, split.id, "share"))} className="p-1 shrink-0 rounded hover:bg-white/5 transition-colors" title={split.locked ? "Unlock" : "Lock"}>
-                              {split.locked ? <Lock className="w-3 h-3 text-brand-orange" /> : <Unlock className="w-3 h-3 text-muted-foreground/40" />}
-                            </button>
+                            <input type="text" inputMode="decimal" value={split.share === 0 ? "0" : String(split.share)} onChange={(e) => { var v = e.target.value.replace(/[^0-9.]/g, ""); if (v.length > 1 && v.startsWith("0") && v[1] !== ".") v = v.replace(/^0+/, ""); var n = parseFloat(v); if (!isNaN(n) && n > 100) v = "100"; updateSplit(split.id, "share", v === "" ? 0 : parseFloat(v) || 0); }} onFocus={(e) => { if (split.share === 0) e.target.select(); }} className="h-8 w-[70px] px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-mono font-medium text-right" />
+                            <span className="text-xs text-muted-foreground">%</span>
                           </div>
                         </div>
                         <div className="space-y-1">
@@ -652,6 +648,21 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 >
                   <Plus className="w-3.5 h-3.5" /> {t("editTrack.addCollaborator")}
                 </button>
+
+                {/* Total bar */}
+                <div className="space-y-2 mt-2">
+                  <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${totalSplit === 100 ? "bg-emerald-500" : totalSplit > 100 ? "bg-destructive" : "bg-brand-orange"}`} style={{ width: Math.min(totalSplit, 100) + "%" }} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-2xs font-medium ${totalSplit === 100 ? "text-emerald-400" : totalSplit > 100 ? "text-destructive" : "text-muted-foreground"}`}>
+                      {totalSplit === 100 ? "Total: 100% \u2713 Fully allocated" : totalSplit > 100 ? "Total: " + parseFloat(totalSplit.toFixed(2)) + "% \u2014 exceeds 100%!" : "Total: " + parseFloat(totalSplit.toFixed(2)) + "% \u2014 " + parseFloat((100 - totalSplit).toFixed(2)) + "% remaining"}
+                    </span>
+                    <button type="button" onClick={equalSplitAll} className="flex items-center gap-1 text-2xs font-semibold text-muted-foreground hover:text-foreground transition-colors">
+                      <Scale className="w-3 h-3" /> Equal Split
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Credits */}
