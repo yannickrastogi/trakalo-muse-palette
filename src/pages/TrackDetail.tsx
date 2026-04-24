@@ -2768,9 +2768,10 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
         _user_id: user.id,
         _track_id: trackUuid,
         _name: file.name.replace(/\.[^/.]+$/, ""),
-        _file_url: storagePath,
+        _file_name: file.name,
+        _file_path: storagePath,
         _file_size: file.size,
-        _doc_type: file.type || "application/octet-stream",
+        _mime_type: file.type || "application/octet-stream",
       });
       if (dbError) {
         toast.error("Failed to save document: " + dbError.message);
@@ -2982,7 +2983,7 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
           </div>
           <p className="text-sm font-medium text-foreground mb-1">No documents yet</p>
           <p className="text-xs text-muted-foreground mb-1">
-            Upload contracts, split sheets, licenses, and any paperwork related to this track.
+            Upload any paperwork related to this track.
           </p>
           <p className="text-[10px] text-muted-foreground/60 mb-4">
             Accepted formats: PDF, Word, Images, Text — Max 10MB per file
