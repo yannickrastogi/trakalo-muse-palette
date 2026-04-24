@@ -2687,10 +2687,13 @@ interface TrackDocument {
 }
 
 function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspaceId: string }) {
+  const { user } = useAuth();
   const [documents, setDocuments] = useState<TrackDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
+  const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB total per track
 
   const fetchDocuments = useCallback(async () => {
     if (!trackUuid || !workspaceId) return;
@@ -2716,30 +2719,53 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !workspaceId || !trackUuid) return;
+    if (!file || !workspaceId || !trackUuid || !user) return;
 
-    if (file.size > 20 * 1024 * 1024) {
-      alert("File too large. Maximum size is 20MB.");
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("File too large (" + (file.size / (1024 * 1024)).toFixed(1) + " MB). Maximum document size is 10MB.");
+      return;
+    }
+
+    const currentTotal = documents.reduce((sum, d) => sum + (d.file_size || 0), 0);
+    if (currentTotal + file.size > MAX_TOTAL_SIZE) {
+      toast.error("Document storage limit reached (50MB per track).");
       return;
     }
 
     setUploading(true);
     try {
+      // Ensure valid session before storage upload
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      if (!refreshed?.session) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          try {
+            const backup = localStorage.getItem("trakalog_session_backup");
+            if (backup) {
+              const parsed = JSON.parse(backup);
+              const accessToken = parsed?.access_token || parsed?.currentSession?.access_token;
+              const refreshToken = parsed?.refresh_token || parsed?.currentSession?.refresh_token;
+              if (accessToken && refreshToken) {
+                await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+              }
+            }
+          } catch { /* ignore */ }
+        }
+      }
+
       const ext = file.name.split(".").pop() || "pdf";
       const storagePath = workspaceId + "/" + trackUuid + "/" + crypto.randomUUID() + "." + ext;
 
       const { error: storageError } = await supabase.storage
         .from("documents")
-        .upload(storagePath, file, { contentType: file.type });
+        .upload(storagePath, file, { upsert: true });
       if (storageError) {
-        alert("Storage upload failed: " + storageError.message);
+        toast.error("Upload failed: " + storageError.message);
         return;
       }
 
-      const userId = (await supabase.auth.getSession()).data.session?.user?.id;
-
       const { error: dbError } = await supabase.rpc("insert_track_document", {
-        _user_id: userId,
+        _user_id: user.id,
         _track_id: trackUuid,
         _name: file.name.replace(/\.[^/.]+$/, ""),
         _file_url: storagePath,
@@ -2747,14 +2773,15 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
         _doc_type: file.type || "application/octet-stream",
       });
       if (dbError) {
-        alert("Database insert failed: " + dbError.message);
+        toast.error("Failed to save document: " + dbError.message);
         return;
       }
 
+      toast.success("Document uploaded successfully");
       await fetchDocuments();
     } catch (err) {
       console.error("Upload failed:", err);
-      alert("Upload failed: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Upload failed. Please try again.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -2940,7 +2967,7 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
         ref={fileInputRef}
         type="file"
         className="hidden"
-        accept=".pdf,.doc,.docx,.txt,.rtf,.png,.jpg,.jpeg"
+        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,text/plain"
         onChange={handleUpload}
       />
 
@@ -2954,8 +2981,11 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
             <Paperclip className="w-5 h-5 text-muted-foreground" />
           </div>
           <p className="text-sm font-medium text-foreground mb-1">No documents yet</p>
-          <p className="text-xs text-muted-foreground mb-4">
-            Upload contracts, split sheets, licenses, and other paperwork.
+          <p className="text-xs text-muted-foreground mb-1">
+            Upload contracts, split sheets, licenses, and any paperwork related to this track.
+          </p>
+          <p className="text-[10px] text-muted-foreground/60 mb-4">
+            Accepted formats: PDF, Word, Images, Text — Max 10MB per file
           </p>
           <button
             onClick={() => fileInputRef.current?.click()}
