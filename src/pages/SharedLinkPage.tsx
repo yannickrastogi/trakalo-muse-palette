@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
-import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark, ShieldCheck } from "lucide-react";
+import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark, ShieldCheck, Award } from "lucide-react";
 import { DEFAULT_COVER, INDUSTRY_ROLES } from "@/lib/constants";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import JSZip from "jszip";
@@ -63,7 +63,11 @@ interface TrackData {
   waveform_data: number[] | null;
   lyrics: string | null;
   lyrics_segments: { start: number; end: number; text: string }[] | null;
-  splits: { name: string; role: string; share: number; pro: string; ipi: string; publisher: string }[] | null;
+  splits: { name: string; stage_name?: string; role: string; share: number; pro: string; ipi: string; publisher: string }[] | null;
+  written_by: string | null;
+  produced_by: string | null;
+  mixed_by: string | null;
+  mastered_by: string | null;
   isrc: string | null;
   labels: string[] | null;
   publishers: string[] | null;
@@ -284,6 +288,9 @@ export default function SharedLinkPage() {
   var [submittingComment, setSubmittingComment] = useState(false);
   var commentInputRef = useRef<HTMLInputElement>(null);
 
+  // Credits
+  var [creditsOpen, setCreditsOpen] = useState(false);
+
   // Pack download state
   var [packDownloading, setPackDownloading] = useState(false);
   var [savedToTrakalog, setSavedToTrakalog] = useState(false);
@@ -390,7 +397,7 @@ export default function SharedLinkPage() {
         }
       } else if (link.track_id) {
         // Single track (also used by stems and pack share types)
-        var trackRes = await fetch(REST_URL + "/tracks?select=id,title,artist,featuring,genre,bpm,key,duration_sec,cover_url,audio_url,mood,waveform_data,lyrics,lyrics_segments,splits,isrc,labels,publishers,language,gender,released_at&id=eq." + encodeURIComponent(link.track_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } });
+        var trackRes = await fetch(REST_URL + "/tracks?select=id,title,artist,featuring,genre,bpm,key,duration_sec,cover_url,audio_url,mood,waveform_data,lyrics,lyrics_segments,splits,isrc,labels,publishers,language,gender,released_at,written_by,produced_by,mixed_by,mastered_by&id=eq." + encodeURIComponent(link.track_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } });
         var track = trackRes.ok ? await trackRes.json() : null;
         var trackErr = trackRes.ok ? null : { message: trackRes.statusText };
 
@@ -1591,6 +1598,61 @@ export default function SharedLinkPage() {
                 )}
               </div>
             </div>
+
+            {/* Credits */}
+            {(() => {
+              var creditEntries: { label: string; names: string }[] = [];
+              // Written by — from metadata or splits with Songwriter role
+              var writtenBy = trackData.written_by;
+              if (!writtenBy && trackData.splits) {
+                var songwriters = trackData.splits.filter(function (s) { return s.role && s.role.split(",").map(function (r) { return r.trim(); }).indexOf("Songwriter") >= 0; });
+                if (songwriters.length > 0) writtenBy = songwriters.map(function (s) { return s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name; }).join(", ");
+              }
+              if (writtenBy) creditEntries.push({ label: "WRITTEN BY", names: writtenBy });
+              // Produced by
+              var producedBy = trackData.produced_by;
+              if (!producedBy && trackData.splits) {
+                var producers = trackData.splits.filter(function (s) { return s.role && s.role.split(",").map(function (r) { return r.trim(); }).indexOf("Producer") >= 0; });
+                if (producers.length > 0) producedBy = producers.map(function (s) { return s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name; }).join(", ");
+              }
+              if (producedBy) creditEntries.push({ label: "PRODUCED BY", names: producedBy });
+              // Performed by
+              if (trackData.splits) {
+                var artists = trackData.splits.filter(function (s) { return s.role && s.role.split(",").map(function (r) { return r.trim(); }).indexOf("Artist") >= 0; });
+                if (artists.length > 0) creditEntries.push({ label: "PERFORMED BY", names: artists.map(function (s) { return s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name; }).join(", ") });
+              }
+              // Mixed by
+              if (trackData.mixed_by) creditEntries.push({ label: "MIXED BY", names: trackData.mixed_by });
+              // Mastered by
+              if (trackData.mastered_by) creditEntries.push({ label: "MASTERED BY", names: trackData.mastered_by });
+              // Musicians
+              if (trackData.splits) {
+                var musicians = trackData.splits.filter(function (s) { return s.role && s.role.split(",").map(function (r) { return r.trim(); }).indexOf("Musician") >= 0; });
+                if (musicians.length > 0) creditEntries.push({ label: "MUSICIANS", names: musicians.map(function (s) { return s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name; }).join(", ") });
+              }
+              if (creditEntries.length === 0) return null;
+              return (
+                <div className="px-6 pt-3">
+                  <button onClick={function () { setCreditsOpen(!creditsOpen); }} className={"flex items-center gap-1.5 text-sm transition-colors " + (immersive ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-foreground")}>
+                    <Award className="w-3.5 h-3.5" />
+                    Credits
+                    {creditsOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  </button>
+                  {creditsOpen && (
+                    <div className={"mt-2 rounded-lg p-4 space-y-2.5 " + (immersive ? "bg-white/5" : "bg-secondary/50")}>
+                      {creditEntries.map(function (entry) {
+                        return (
+                          <div key={entry.label}>
+                            <p className={"text-[10px] uppercase tracking-wider font-semibold " + (immersive ? "text-white/40" : "text-muted-foreground")}>{entry.label}</p>
+                            <p className={"text-sm " + (immersive ? "text-white" : "text-foreground")}>{entry.names}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Player */}
             {(trackData.audio_url || slug) && (
