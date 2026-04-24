@@ -461,8 +461,34 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     upsert = false,
   ): Promise<{ error: string | null }> => {
     return new Promise(async (resolve) => {
+      // Get a valid auth token — try getSession, then refreshSession, then backup
+      let token: string | null = null;
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || SUPABASE_PUBLISHABLE_KEY;
+      token = session?.access_token || null;
+      if (!token) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        token = refreshed?.session?.access_token || null;
+      }
+      if (!token) {
+        try {
+          const backup = localStorage.getItem("trakalog_session_backup");
+          if (backup) {
+            const parsed = JSON.parse(backup);
+            const backupToken = parsed?.access_token || parsed?.currentSession?.access_token;
+            if (backupToken) {
+              const { data: restored } = await supabase.auth.setSession({
+                access_token: backupToken,
+                refresh_token: parsed?.refresh_token || parsed?.currentSession?.refresh_token || "",
+              });
+              token = restored?.session?.access_token || backupToken;
+            }
+          }
+        } catch { /* ignore parse errors */ }
+      }
+      if (!token) {
+        resolve({ error: "No auth session — please sign in again" });
+        return;
+      }
 
       const xhr = new XMLHttpRequest();
       xhr.upload.addEventListener("progress", (e) => {
