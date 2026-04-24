@@ -1963,10 +1963,10 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
           {/* Logo header — pushed down to leave hero image visible */}
           <header className="pt-[35vh] md:pt-[25vh] pb-4">
             <div className="flex flex-col items-center gap-1">
-              <img src={logoUrl || trakalogLogo} alt="Logo" className="object-contain max-h-[50px] md:max-h-[80px]" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
+              <img src={logoUrl || trakalogLogo} alt="Logo" className="object-contain max-h-[80px] md:max-h-[120px]" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
               <div className="flex flex-col items-center">
-                <span className="text-base md:text-xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
-                <span className="text-[7px] md:text-[10px] tracking-[0.2em] text-white/30 font-medium block mt-0.5">CATALOG MANAGER</span>
+                <span className="text-2xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+                <span className="text-[9px] md:text-sm tracking-[0.2em] text-white/30 font-medium block mt-0.5">CATALOG MANAGER</span>
               </div>
               <SocialIcons branding={branding} immersive={true} />
             </div>
@@ -1989,16 +1989,16 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
           <div className="flex flex-col items-center">
             <div className="flex items-center gap-3">
               {logoUrl ? (
-                <img src={logoUrl} alt="Logo" className="object-contain max-h-[40px] sm:max-h-[50px]" />
+                <img src={logoUrl} alt="Logo" className="object-contain max-h-[80px] sm:max-h-[120px]" />
               ) : (
                 <>
-                  <img src={trakalogLogo} alt="Trakalog" className="h-10" />
-                  <span className="text-xl font-bold tracking-wider uppercase" style={{ background: "linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Trakalog</span>
+                  <img src={trakalogLogo} alt="Trakalog" className="h-16 sm:h-20" />
+                  <span className="text-2xl sm:text-4xl font-bold tracking-wider uppercase" style={{ background: "linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Trakalog</span>
                 </>
               )}
             </div>
             {!logoUrl && (
-              <span className="text-[10px] uppercase tracking-[0.2em] mt-1 text-muted-foreground/50">Catalog Manager</span>
+              <span className="text-xs sm:text-sm uppercase tracking-[0.2em] mt-1 text-muted-foreground/50">Catalog Manager</span>
             )}
             <SocialIcons branding={branding} immersive={false} />
           </div>

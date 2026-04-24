@@ -418,9 +418,9 @@ function BrandingSection() {
                 {!repositioning && !editingFocal && (
                   <div className="absolute inset-0 flex flex-col items-center pointer-events-none select-none">
                     <div className="flex flex-col items-center mt-[8%] gap-0.5">
-                      <img src={logoUrl || trakalogLogo} alt="Logo" className="h-[25px] object-contain" />
-                      <span className="text-[6px] font-bold tracking-wider bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
-                      <span className="text-[4px] tracking-[0.15em] text-white/30 font-medium">CATALOG MANAGER</span>
+                      <img src={logoUrl || trakalogLogo} alt="Logo" className="h-[40px] object-contain" />
+                      <span className="text-[9px] font-bold tracking-wider bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+                      <span className="text-[5px] tracking-[0.15em] text-white/30 font-medium">CATALOG MANAGER</span>
                     </div>
                     <div className="mt-[5%] w-[55%] flex items-start gap-1.5 rounded bg-white/5 border border-white/10 px-2 py-1.5">
                       <div className="w-[2px] h-3 rounded-full bg-gradient-to-b from-brand-orange to-brand-pink flex-shrink-0 mt-0.5" />
