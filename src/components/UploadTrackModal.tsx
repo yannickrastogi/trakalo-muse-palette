@@ -31,6 +31,8 @@ import {
   CheckCircle2,
   ArrowRightLeft,
   Zap,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { CollaboratorAutocomplete, type CollaboratorSuggestion } from "@/components/CollaboratorAutocomplete";
 import { useContacts, type Contact } from "@/contexts/ContactsContext";
@@ -50,6 +52,7 @@ const MAX_TRACKS = 20;
 const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
 import { GENRES, KEYS, MOODS, LANGUAGES, PROS, SPLIT_ROLES } from "@/lib/constants";
+import { smartRedistribute, redistributeAfterRemove, toggleLock } from "@/lib/split-utils";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
 import { NameAutocomplete } from "@/components/NameAutocomplete";
 
@@ -59,6 +62,7 @@ interface Split {
   stage_name: string;
   role: string;
   percentage: number;
+  locked?: boolean;
   pro: string;
   ipi: string;
   publisher: string;
@@ -360,29 +364,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   // Splits
   const redistributeSplits = (updatedSplits: Split[], changedId?: string): Split[] => {
-    if (!changedId) {
-      const equal = parseFloat((100 / updatedSplits.length).toFixed(2));
-      const total = parseFloat((equal * updatedSplits.length).toFixed(2));
-      const diff = parseFloat((100 - total).toFixed(2));
-      return updatedSplits.map((s, i) => ({
-        ...s,
-        percentage: i === 0 ? parseFloat((equal + diff).toFixed(2)) : equal,
-      }));
-    }
-    const changed = updatedSplits.find((s) => s.id === changedId);
-    const others = updatedSplits.filter((s) => s.id !== changedId);
-    const remaining = parseFloat(Math.max(0, 100 - (changed?.percentage || 0)).toFixed(2));
-    if (others.length === 0) return updatedSplits;
-    const each = parseFloat((remaining / others.length).toFixed(2));
-    const total = parseFloat((each * others.length).toFixed(2));
-    const diff = parseFloat((remaining - total).toFixed(2));
-    let idx = 0;
-    return updatedSplits.map((s) => {
-      if (s.id === changedId) return s;
-      const val = idx === 0 ? parseFloat((each + diff).toFixed(2)) : each;
-      idx++;
-      return { ...s, percentage: val };
-    });
+    return smartRedistribute(updatedSplits, "percentage", changedId);
   };
 
   const addSplit = useCallback(() => {
@@ -406,7 +388,12 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   const removeSplit = useCallback((id: string) => {
     if (!currentTrack || currentTrack.splits.length <= 1) return;
-    updateCurrent({ splits: redistributeSplits(currentTrack.splits.filter((s) => s.id !== id)) });
+    updateCurrent({ splits: redistributeAfterRemove(currentTrack.splits.filter((s) => s.id !== id), "percentage") });
+  }, [currentTrack, updateCurrent]);
+
+  const toggleSplitLock = useCallback((id: string) => {
+    if (!currentTrack) return;
+    updateCurrent({ splits: toggleLock(currentTrack.splits, id, "percentage") });
   }, [currentTrack, updateCurrent]);
 
   const batchUpdateSplit = useCallback((id: string, current: Split, s: CollaboratorSuggestion) => {
@@ -600,6 +587,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           stage_name: s.stage_name || undefined,
           role: s.role,
           share: Number(s.percentage) || 0,
+          locked: s.locked || undefined,
           pro: s.pro,
           ipi: s.ipi,
           publisher: s.publisher,
@@ -1111,6 +1099,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   onUpdate={updateSplit}
                   onRemove={removeSplit}
                   onBatchUpdate={batchUpdateSplit}
+                  onToggleLock={toggleSplitLock}
                   details={currentTrack.details}
                   updateDetail={updateDetail}
                   addDetailEntry={addDetailEntry}
@@ -1862,7 +1851,7 @@ function StepStems({
 /* ─── Splits Step ─── */
 
 function StepSplits({
-  splits, totalSplit, onAdd, onUpdate, onRemove, onBatchUpdate, contacts, existingSplitNames,
+  splits, totalSplit, onAdd, onUpdate, onRemove, onBatchUpdate, onToggleLock, contacts, existingSplitNames,
 }: {
   splits: Split[];
   totalSplit: number;
@@ -1870,6 +1859,7 @@ function StepSplits({
   onUpdate: (id: string, field: keyof Split, value: string | number) => void;
   onRemove: (id: string) => void;
   onBatchUpdate: (id: string, current: Split, suggestion: CollaboratorSuggestion) => void;
+  onToggleLock: (id: string) => void;
   contacts: Contact[];
   existingSplitNames: string[];
 }) {
@@ -1916,7 +1906,12 @@ function StepSplits({
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.share", "Split %")}</label>
-                <input type="number" min={0} max={100} step={0.01} value={split.percentage} onChange={(e) => onUpdate(split.id, "percentage", parseFloat(e.target.value) || 0)} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40" />
+                <div className="flex items-center gap-1">
+                  <input type="number" min={0} max={100} step={0.01} value={split.percentage} onChange={(e) => onUpdate(split.id, "percentage", parseFloat(e.target.value) || 0)} className={`h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40 ${split.locked ? "text-foreground" : "text-muted-foreground"}`} />
+                  <button type="button" onClick={() => onToggleLock(split.id)} className="p-1 shrink-0 rounded hover:bg-white/5 transition-colors" title={split.locked ? "Unlock" : "Lock"}>
+                    {split.locked ? <Lock className="w-3 h-3 text-brand-orange" /> : <Unlock className="w-3 h-3 text-muted-foreground/40" />}
+                  </button>
+                </div>
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.pro", "PRO")}</label>
@@ -1947,7 +1942,7 @@ function StepSplits({
 /* ─── Details Step (Splits + Credits) ─── */
 
 function StepDetails({
-  splits, totalSplit, onAdd, onUpdate, onRemove, onBatchUpdate,
+  splits, totalSplit, onAdd, onUpdate, onRemove, onBatchUpdate, onToggleLock,
   details, updateDetail, addDetailEntry, removeDetailEntry,
   isrc, upc, album, label, publisher, releaseDate,
   writtenBy, producedBy, mixedBy, masteredBy, copyright, explicit: isExplicit,
@@ -1959,6 +1954,7 @@ function StepDetails({
   onUpdate: (id: string, field: keyof Split, value: string | number) => void;
   onRemove: (id: string) => void;
   onBatchUpdate: (id: string, current: Split, suggestion: CollaboratorSuggestion) => void;
+  onToggleLock: (id: string) => void;
   details: Record<string, string[]>;
   updateDetail: (key: string, index: number, value: string) => void;
   addDetailEntry: (key: string) => void;
@@ -1984,6 +1980,7 @@ function StepDetails({
         onUpdate={onUpdate}
         onRemove={onRemove}
         onBatchUpdate={onBatchUpdate}
+        onToggleLock={onToggleLock}
         contacts={contacts}
         existingSplitNames={existingSplitNames}
       />

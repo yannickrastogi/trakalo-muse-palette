@@ -9,6 +9,8 @@ import {
   Save,
   User,
   Trash2,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { useTrack, type TrackData, type TrackSplit } from "@/contexts/TrackContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 import { GENRES, KEYS, MOODS, LANGUAGES } from "@/lib/constants";
+import { smartRedistribute, redistributeAfterRemove, toggleLock } from "@/lib/split-utils";
 import { NameAutocomplete } from "@/components/NameAutocomplete";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
 import { useContacts } from "@/contexts/ContactsContext";
@@ -244,26 +247,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
 
   // ─── Splits logic ───
   const redistributeSplits = (updated: TrackSplit[], changedId?: string): TrackSplit[] => {
-    if (!changedId) {
-      const equal = parseFloat((100 / updated.length).toFixed(2));
-      const total = parseFloat((equal * updated.length).toFixed(2));
-      const diff = parseFloat((100 - total).toFixed(2));
-      return updated.map((s, i) => ({ ...s, share: i === 0 ? parseFloat((equal + diff).toFixed(2)) : equal }));
-    }
-    const changed = updated.find((s) => s.id === changedId);
-    const others = updated.filter((s) => s.id !== changedId);
-    const remaining = parseFloat(Math.max(0, 100 - (changed?.share || 0)).toFixed(2));
-    if (others.length === 0) return updated;
-    const each = parseFloat((remaining / others.length).toFixed(2));
-    const total = parseFloat((each * others.length).toFixed(2));
-    const diff = parseFloat((remaining - total).toFixed(2));
-    let idx = 0;
-    return updated.map((s) => {
-      if (s.id === changedId) return s;
-      const val = idx === 0 ? parseFloat((each + diff).toFixed(2)) : each;
-      idx++;
-      return { ...s, share: val };
-    });
+    return smartRedistribute(updated, "share", changedId);
   };
 
   const addSplit = useCallback(() => {
@@ -282,7 +266,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
 
   const removeSplit = useCallback((id: string) => {
     if (splits.length <= 1) return;
-    setSplits(redistributeSplits(splits.filter((s) => s.id !== id)));
+    setSplits(redistributeAfterRemove(splits.filter((s) => s.id !== id), "share"));
   }, [splits]);
 
   const totalSplit = splits.reduce((sum, s) => sum + (Number(s.share) || 0), 0);
@@ -639,7 +623,12 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                         </div>
                         <div className="space-y-1">
                           <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.share")}</label>
-                          <input type="number" min={0} max={100} step={0.01} value={split.share} onChange={(e) => updateSplit(split.id, "share", parseFloat(e.target.value) || 0)} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40" />
+                          <div className="flex items-center gap-1">
+                            <input type="number" min={0} max={100} step={0.01} value={split.share} onChange={(e) => updateSplit(split.id, "share", parseFloat(e.target.value) || 0)} className={`h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs outline-none focus:border-brand-orange/30 transition-all font-mono font-medium placeholder:text-muted-foreground/40 ${split.locked ? "text-foreground" : "text-muted-foreground"}`} />
+                            <button type="button" onClick={() => setSplits(toggleLock(splits, split.id, "share"))} className="p-1 shrink-0 rounded hover:bg-white/5 transition-colors" title={split.locked ? "Unlock" : "Lock"}>
+                              {split.locked ? <Lock className="w-3 h-3 text-brand-orange" /> : <Unlock className="w-3 h-3 text-muted-foreground/40" />}
+                            </button>
+                          </div>
                         </div>
                         <div className="space-y-1">
                           <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.pro")}</label>

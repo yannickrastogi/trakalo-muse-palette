@@ -23,6 +23,7 @@ export interface TrackSplit {
   email?: string;
   role: string;
   share: number;
+  locked?: boolean;
   pro: string;
   ipi: string;
   publisher: string;
