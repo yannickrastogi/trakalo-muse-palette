@@ -452,66 +452,63 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   // ─── XHR upload with progress ─────────────────────────────
 
-  const uploadFileWithProgress = useCallback((
+  // Ensure the Supabase client has a valid session before storage operations
+  const ensureSession = useCallback(async (): Promise<boolean> => {
+    // Try refreshSession first for a fresh token
+    const { data: refreshed } = await supabase.auth.refreshSession();
+    if (refreshed?.session) return true;
+    // Try getSession
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) return true;
+    // Restore from backup
+    try {
+      const backup = localStorage.getItem("trakalog_session_backup");
+      if (backup) {
+        const parsed = JSON.parse(backup);
+        const accessToken = parsed?.access_token || parsed?.currentSession?.access_token;
+        const refreshToken = parsed?.refresh_token || parsed?.currentSession?.refresh_token;
+        if (accessToken && refreshToken) {
+          const { data: restored } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (restored?.session) return true;
+        }
+      }
+    } catch { /* ignore */ }
+    return false;
+  }, []);
+
+  const uploadFileWithProgress = useCallback(async (
     bucket: string,
     path: string,
     file: File,
-    contentType: string,
+    _contentType: string,
     onProgress: (pct: number) => void,
     upsert = false,
   ): Promise<{ error: string | null }> => {
-    return new Promise(async (resolve) => {
-      // Get a valid auth token — always try refreshSession first to ensure fresh token
-      let token: string | null = null;
-      const { data: refreshed } = await supabase.auth.refreshSession();
-      token = refreshed?.session?.access_token || null;
-      if (!token) {
-        const { data: { session } } = await supabase.auth.getSession();
-        token = session?.access_token || null;
-      }
-      if (!token) {
-        try {
-          const backup = localStorage.getItem("trakalog_session_backup");
-          if (backup) {
-            const parsed = JSON.parse(backup);
-            const backupToken = parsed?.access_token || parsed?.currentSession?.access_token;
-            if (backupToken) {
-              const { data: restored } = await supabase.auth.setSession({
-                access_token: backupToken,
-                refresh_token: parsed?.refresh_token || parsed?.currentSession?.refresh_token || "",
-              });
-              token = restored?.session?.access_token || backupToken;
-            }
-          }
-        } catch { /* ignore parse errors */ }
-      }
-      if (!token) {
-        resolve({ error: "No auth session — please sign in again" });
-        return;
-      }
+    // Ensure valid session before upload
+    const hasSession = await ensureSession();
+    if (!hasSession) {
+      return { error: "No auth session — please sign in again" };
+    }
 
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-      });
-      xhr.addEventListener("load", () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve({ error: null });
-        } else {
-          resolve({ error: "Upload failed with status " + xhr.status });
-        }
-      });
-      xhr.addEventListener("error", () => resolve({ error: "Network error" }));
+    onProgress(10);
 
-      const url = SUPABASE_URL + "/storage/v1/object/" + bucket + "/" + path;
-      xhr.open("POST", url, true);
-      xhr.setRequestHeader("Authorization", "Bearer " + token);
-      xhr.setRequestHeader("apikey", SUPABASE_PUBLISHABLE_KEY);
-      xhr.setRequestHeader("Content-Type", contentType);
-      if (upsert) xhr.setRequestHeader("x-upsert", "true");
-      xhr.send(file);
-    });
-  }, []);
+    const { error } = await supabase.storage
+      .from(bucket)
+      .upload(path, file, {
+        upsert,
+        cacheControl: "3600",
+      });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    onProgress(100);
+    return { error: null };
+  }, [ensureSession]);
 
   // ─── Save ──────────────────────────────────────────────────
 
