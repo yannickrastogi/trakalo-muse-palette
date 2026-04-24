@@ -2276,10 +2276,12 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
     for (var i = 0; i < filtered.length; i++) {
       var sp = filtered[i];
       var parts = sp.name.trim().split(" ");
+      var firstRole = sp.role ? sp.role.split(",")[0].trim() : undefined;
       upsertCollaborator({
         firstName: parts[0] || "",
         lastName: parts.slice(1).join(" ") || "",
         email: sp.email || undefined,
+        role: firstRole || undefined,
         pro: sp.pro || undefined,
         ipi: sp.ipi || undefined,
         publisher: sp.publisher || undefined,
@@ -2368,7 +2370,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <label className="text-2xs text-muted-foreground font-medium">Name</label>
-                  <CollaboratorAutocomplete value={split.name} onChange={(v) => updateSplit(split.id, "name", v)} onSelect={(s) => { updateSplit(split.id, "name", s.fullName); if (s.stage_name) updateSplit(split.id, "stage_name", s.stage_name); if (s.pro) updateSplit(split.id, "pro", s.pro); if (s.ipi) updateSplit(split.id, "ipi", s.ipi); if (s.publisher) updateSplit(split.id, "publisher", s.publisher); if (s.email) updateSplit(split.id, "email", s.email); }} contacts={contacts} existingSplitNames={existingSplitNames} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                  <CollaboratorAutocomplete value={split.name} onChange={(v) => updateSplit(split.id, "name", v)} onSelect={(s) => { updateSplit(split.id, "name", s.fullName); if (s.email) updateSplit(split.id, "email", s.email); if (s.stage_name && !split.stage_name) updateSplit(split.id, "stage_name", s.stage_name); if (s.role && !split.role) updateSplit(split.id, "role", s.role); if (s.pro && !split.pro) updateSplit(split.id, "pro", s.pro); if (s.ipi && !split.ipi) updateSplit(split.id, "ipi", s.ipi); if (s.publisher && !split.publisher) updateSplit(split.id, "publisher", s.publisher); }} contacts={contacts} existingSplitNames={existingSplitNames} placeholder="Full name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-2xs text-muted-foreground font-medium">Stage Name</label>

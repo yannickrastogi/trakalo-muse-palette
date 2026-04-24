@@ -7,6 +7,7 @@ export interface CollaboratorSuggestion {
   fullName: string;
   email?: string;
   stage_name?: string;
+  role?: string;
   pro?: string;
   ipi?: string;
   publisher?: string;
@@ -67,9 +68,10 @@ export function CollaboratorAutocomplete({
           lastName: c.lastName,
           fullName: full,
           email: c.email || undefined,
-          pro: (c as any).pro || undefined,
-          ipi: (c as any).ipi || undefined,
-          publisher: (c as any).publisher || undefined,
+          role: c.role || undefined,
+          pro: c.pro || undefined,
+          ipi: c.ipi || undefined,
+          publisher: c.publisher || undefined,
           source: "contact",
         });
       }
@@ -125,10 +127,10 @@ export function CollaboratorAutocomplete({
                 onMouseDown={function (e) { e.preventDefault(); }}
                 onClick={function () { handleSelect(s); }}
               >
-                <div className="text-xs font-medium text-foreground">{s.fullName}</div>
-                {(s.pro || s.ipi) && (
+                <div className="text-xs font-medium text-foreground">{s.fullName}{s.stage_name ? " (" + s.stage_name + ")" : ""}</div>
+                {(s.role || s.pro || s.ipi) && (
                   <div className="text-[10px] text-muted-foreground">
-                    {[s.pro, s.ipi ? "IPI: " + s.ipi : ""].filter(Boolean).join(" · ")}
+                    {[s.role, s.pro, s.ipi ? "IPI: " + s.ipi : ""].filter(Boolean).join(" · ")}
                   </div>
                 )}
               </button>

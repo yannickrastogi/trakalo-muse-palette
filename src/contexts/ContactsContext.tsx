@@ -24,7 +24,7 @@ interface ContactsContextValue {
   contacts: Contact[];
   addOrUpdateContact: (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => void;
   getContact: (email: string) => Contact | undefined;
-  upsertCollaborator: (data: { firstName: string; lastName: string; email?: string; pro?: string; ipi?: string; publisher?: string }) => void;
+  upsertCollaborator: (data: { firstName: string; lastName: string; email?: string; role?: string; pro?: string; ipi?: string; publisher?: string }) => void;
   refreshContacts: () => Promise<void>;
 }
 
@@ -108,18 +108,12 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
   );
 
   const upsertCollaborator = useCallback(
-    async (data: { firstName: string; lastName: string; email?: string; pro?: string; ipi?: string; publisher?: string }) => {
+    async (data: { firstName: string; lastName: string; email?: string; role?: string; pro?: string; ipi?: string; publisher?: string }) => {
       if (!activeWorkspace || !user) return;
       var fullName = ((data.firstName || "") + " " + (data.lastName || "")).trim();
       if (!fullName) return;
 
-      // Find existing contact by name (case-insensitive)
-      var existing = contacts.find(function (c) {
-        var cFull = ((c.firstName || "") + " " + (c.lastName || "")).trim().toLowerCase();
-        return cFull === fullName.toLowerCase();
-      });
-
-      // Use upsert RPC — handles insert-or-update by email
+      // Use upsert RPC — handles insert-or-update by name
       var proArray = data.pro ? data.pro.split(", ").filter(Boolean) : null;
       await supabase.rpc("upsert_contact", {
         _user_id: user.id,
@@ -127,7 +121,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
         _first_name: data.firstName,
         _last_name: data.lastName,
         _email: data.email || null,
-        _role: null,
+        _role: data.role || null,
         _company: null,
         _phone: null,
         _pro: proArray,
@@ -136,7 +130,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
       });
       await fetchContacts();
     },
-    [activeWorkspace, user, contacts, fetchContacts]
+    [activeWorkspace, user, fetchContacts]
   );
 
   const getContact = useCallback(

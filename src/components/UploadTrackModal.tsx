@@ -622,9 +622,11 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         var sp = currentTrack.splits[si];
         if (!sp.name.trim()) continue;
         var parts = sp.name.trim().split(" ");
+        var firstRole = sp.role ? sp.role.split(",")[0].trim() : undefined;
         upsertCollaborator({
           firstName: parts[0] || "",
           lastName: parts.slice(1).join(" ") || "",
+          role: firstRole || undefined,
           pro: sp.pro || undefined,
           ipi: sp.ipi || undefined,
           publisher: sp.publisher || undefined,
@@ -1865,7 +1867,7 @@ function StepSplits({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.name", "Name")}</label>
-                <CollaboratorAutocomplete value={split.name} onChange={(v) => onUpdate(split.id, "name", v)} onSelect={(s) => { onUpdate(split.id, "name", s.fullName); if (s.stage_name) onUpdate(split.id, "stage_name", s.stage_name); if (s.pro) onUpdate(split.id, "pro", s.pro); if (s.ipi) onUpdate(split.id, "ipi", s.ipi); if (s.publisher) onUpdate(split.id, "publisher", s.publisher); }} contacts={contacts} existingSplitNames={existingSplitNames} placeholder={t("uploadTrack.fullName", "Full name")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                <CollaboratorAutocomplete value={split.name} onChange={(v) => onUpdate(split.id, "name", v)} onSelect={(s) => { onUpdate(split.id, "name", s.fullName); if (s.stage_name && !split.stage_name) onUpdate(split.id, "stage_name", s.stage_name); if (s.role && !split.role) onUpdate(split.id, "role", s.role); if (s.pro && !split.pro) onUpdate(split.id, "pro", s.pro); if (s.ipi && !split.ipi) onUpdate(split.id, "ipi", s.ipi); if (s.publisher && !split.publisher) onUpdate(split.id, "publisher", s.publisher); }} contacts={contacts} existingSplitNames={existingSplitNames} placeholder={t("uploadTrack.fullName", "Full name")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">Stage Name</label>
