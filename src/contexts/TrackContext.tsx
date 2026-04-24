@@ -626,8 +626,8 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         _mood: trackInput.mood || [],
         _language: trackInput.language || null,
         _gender: trackInput.voice?.toLowerCase().replace("n/a", "n_a") || null,
-        _label: trackInput.label || null,
-        _publisher: trackInput.publisher || null,
+        _labels: trackInput.label ? [trackInput.label] : [],
+        _publishers: trackInput.publisher ? [trackInput.publisher] : [],
         _audio_url: trackInput.originalFileUrl || null,
         _audio_preview_url: trackInput.previewFileUrl || null,
         _cover_art_url: trackInput.coverImage || null,
@@ -636,16 +636,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         _splits: trackInput.splits || [],
         _isrc: trackInput.isrc || null,
         _waveform_data: trackInput.waveformData || null,
-        _chapters: trackInput.chapters || null,
-        _upc: null,
-        _album: null,
-        _release_date: null,
-        _written_by: trackInput.writtenBy?.length ? trackInput.writtenBy.join(", ") : null,
-        _produced_by: trackInput.producedBy?.length ? trackInput.producedBy.join(", ") : null,
-        _mixed_by: trackInput.mixedBy || null,
-        _mastered_by: trackInput.masteredBy || null,
-        _copyright: trackInput.copyright || null,
-        _explicit: trackInput.explicit || null,
+        _released_at: null,
       });
 
       if (error) {
@@ -655,6 +646,25 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
       // RPC returns uuid directly — wrap in object for downstream compat
       const trackUuid = data as unknown as string;
+
+      // Save metadata fields via update_track after creation (not in insert_track signature)
+      if (trackUuid) {
+        const metaPayload: Record<string, unknown> = {};
+        if (trackInput.writtenBy?.length) metaPayload.written_by = trackInput.writtenBy.join(", ");
+        if (trackInput.producedBy?.length) metaPayload.produced_by = trackInput.producedBy.join(", ");
+        if (trackInput.mixedBy) metaPayload.mixed_by = trackInput.mixedBy;
+        if (trackInput.masteredBy) metaPayload.mastered_by = trackInput.masteredBy;
+        if (trackInput.copyright) metaPayload.copyright = trackInput.copyright;
+        if (trackInput.explicit) metaPayload.explicit = trackInput.explicit;
+        if (trackInput.chapters) metaPayload.chapters = trackInput.chapters;
+        if (Object.keys(metaPayload).length > 0) {
+          await supabase.rpc("update_track", {
+            _user_id: user.id,
+            _track_id: trackUuid,
+            _updates: metaPayload,
+          });
+        }
+      }
 
       // Send notification to workspace owner if uploader is not the owner
       if (activeWorkspace.owner_id && activeWorkspace.owner_id !== user.id) {
