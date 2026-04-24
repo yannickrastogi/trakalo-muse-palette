@@ -64,10 +64,6 @@ interface TrackData {
   lyrics: string | null;
   lyrics_segments: { start: number; end: number; text: string }[] | null;
   splits: { name: string; stage_name?: string; role: string; share: number; pro: string; ipi: string; publisher: string }[] | null;
-  written_by: string | null;
-  produced_by: string | null;
-  mixed_by: string | null;
-  mastered_by: string | null;
   isrc: string | null;
   labels: string[] | null;
   publishers: string[] | null;
@@ -397,7 +393,7 @@ export default function SharedLinkPage() {
         }
       } else if (link.track_id) {
         // Single track (also used by stems and pack share types)
-        var trackRes = await fetch(REST_URL + "/tracks?select=id,title,artist,featuring,genre,bpm,key,duration_sec,cover_url,audio_url,mood,waveform_data,lyrics,lyrics_segments,splits,isrc,labels,publishers,language,gender,released_at,written_by,produced_by,mixed_by,mastered_by&id=eq." + encodeURIComponent(link.track_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } });
+        var trackRes = await fetch(REST_URL + "/tracks?select=id,title,artist,featuring,genre,bpm,key,duration_sec,cover_url,audio_url,mood,waveform_data,lyrics,lyrics_segments,splits,isrc,labels,publishers,language,gender,released_at&id=eq." + encodeURIComponent(link.track_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } });
         var track = trackRes.ok ? await trackRes.json() : null;
         var trackErr = trackRes.ok ? null : { message: trackRes.statusText };
 
@@ -1601,35 +1597,18 @@ export default function SharedLinkPage() {
 
             {/* Credits */}
             {(() => {
+              if (!trackData.splits || trackData.splits.length === 0) return null;
               var creditEntries: { label: string; names: string }[] = [];
-              // Written by — from metadata or splits with Songwriter role
-              var writtenBy = trackData.written_by;
-              if (!writtenBy && trackData.splits) {
-                var songwriters = trackData.splits.filter(function (s) { return s.role && s.role.split(",").map(function (r) { return r.trim(); }).indexOf("Songwriter") >= 0; });
-                if (songwriters.length > 0) writtenBy = songwriters.map(function (s) { return s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name; }).join(", ");
-              }
-              if (writtenBy) creditEntries.push({ label: "WRITTEN BY", names: writtenBy });
-              // Produced by
-              var producedBy = trackData.produced_by;
-              if (!producedBy && trackData.splits) {
-                var producers = trackData.splits.filter(function (s) { return s.role && s.role.split(",").map(function (r) { return r.trim(); }).indexOf("Producer") >= 0; });
-                if (producers.length > 0) producedBy = producers.map(function (s) { return s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name; }).join(", ");
-              }
-              if (producedBy) creditEntries.push({ label: "PRODUCED BY", names: producedBy });
-              // Performed by
-              if (trackData.splits) {
-                var artists = trackData.splits.filter(function (s) { return s.role && s.role.split(",").map(function (r) { return r.trim(); }).indexOf("Artist") >= 0; });
-                if (artists.length > 0) creditEntries.push({ label: "PERFORMED BY", names: artists.map(function (s) { return s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name; }).join(", ") });
-              }
-              // Mixed by
-              if (trackData.mixed_by) creditEntries.push({ label: "MIXED BY", names: trackData.mixed_by });
-              // Mastered by
-              if (trackData.mastered_by) creditEntries.push({ label: "MASTERED BY", names: trackData.mastered_by });
-              // Musicians
-              if (trackData.splits) {
-                var musicians = trackData.splits.filter(function (s) { return s.role && s.role.split(",").map(function (r) { return r.trim(); }).indexOf("Musician") >= 0; });
-                if (musicians.length > 0) creditEntries.push({ label: "MUSICIANS", names: musicians.map(function (s) { return s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name; }).join(", ") });
-              }
+              var formatNames = function (list: typeof trackData.splits) { return (list || []).map(function (s) { return s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name; }).join(", "); };
+              var byRole = function (role: string) { return (trackData.splits || []).filter(function (s) { return s.role && s.role.split(",").map(function (r) { return r.trim(); }).indexOf(role) >= 0; }); };
+              var songwriters = byRole("Songwriter");
+              if (songwriters.length > 0) creditEntries.push({ label: "WRITTEN BY", names: formatNames(songwriters) });
+              var producers = byRole("Producer");
+              if (producers.length > 0) creditEntries.push({ label: "PRODUCED BY", names: formatNames(producers) });
+              var artists = byRole("Artist");
+              if (artists.length > 0) creditEntries.push({ label: "PERFORMED BY", names: formatNames(artists) });
+              var musicians = byRole("Musician");
+              if (musicians.length > 0) creditEntries.push({ label: "MUSICIANS", names: formatNames(musicians) });
               if (creditEntries.length === 0) return null;
               return (
                 <div className="px-6 pt-3">
