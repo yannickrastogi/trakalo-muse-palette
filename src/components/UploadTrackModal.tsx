@@ -232,11 +232,28 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   // ─── File handling ──────────────────────────────────────────
 
   const addFiles = useCallback(async (files: File[]) => {
-    const audioFiles = files.filter((f) => f.type.startsWith("audio/") || /\.(wav|mp3|flac|aiff|aif|ogg|m4a|wma)$/i.test(f.name));
+    const SUPPORTED_EXTENSIONS = /\.(wav|mp3|flac|aiff|aif|ogg|m4a)$/i;
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+    const audioFiles = files.filter((f) => f.type.startsWith("audio/") || SUPPORTED_EXTENSIONS.test(f.name));
+    if (audioFiles.length === 0 && files.length > 0) {
+      toast.error("Unsupported file format. Please upload a WAV, MP3, FLAC, AIFF, M4A, or OGG file.");
+      return;
+    }
     if (audioFiles.length === 0) return;
 
+    // Check file sizes
+    const oversized = audioFiles.filter((f) => f.size > MAX_FILE_SIZE);
+    if (oversized.length > 0) {
+      for (const f of oversized) {
+        toast.error("File is too large (" + (f.size / (1024 * 1024)).toFixed(1) + " MB). Maximum upload size is 50MB. Try a compressed format (MP3, FLAC).");
+      }
+    }
+    const validFiles = audioFiles.filter((f) => f.size <= MAX_FILE_SIZE);
+    if (validFiles.length === 0) return;
+
     const remaining = MAX_TRACKS - queue.length;
-    const toAdd = audioFiles.slice(0, remaining);
+    const toAdd = validFiles.slice(0, remaining);
     if (toAdd.length === 0) return;
 
     const entries = toAdd.map(createTrackEntry);
@@ -513,7 +530,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     if (!currentTrack || isSaving) return;
     setIsSaving(true);
     setUploadProgress(0);
-    setUploadStage(t("uploadTrack.uploadingAudio", "Uploading audio..."));
+    const fileSizeMB = currentTrack.file ? (currentTrack.file.size / (1024 * 1024)).toFixed(1) : "0";
+    setUploadStage(t("uploadTrack.uploadingAudio", "Uploading audio") + " (" + fileSizeMB + " MB)...");
     setUploadComplete(false);
 
     try {
@@ -534,6 +552,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
         if (uploadError) {
           console.error("Error uploading audio:", uploadError);
+          toast.error("Upload failed: " + uploadError + ". Please try again.");
         } else {
           audioUrl = filePath;
         }
@@ -826,6 +845,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
           if (uploadError) {
             console.error("Error uploading audio:", uploadError);
+            toast.error("Upload failed: " + uploadError + ". Please try again.");
           } else {
             audioUrl = filePath;
           }
@@ -1467,7 +1487,7 @@ function StepBulkUpload({
         <input
           ref={fileInputRef}
           type="file"
-          accept="audio/*"
+          accept="audio/wav,audio/x-wav,audio/mpeg,audio/mp3,audio/flac,audio/x-flac,audio/aiff,audio/x-aiff,audio/mp4,audio/m4a,audio/ogg,.wav,.mp3,.flac,.aiff,.aif,.m4a,.ogg"
           multiple
           className="hidden"
           onChange={(e) => {
@@ -1817,7 +1837,7 @@ function StepStems({
         <input
           ref={stemsInputRef}
           type="file"
-          accept="audio/*"
+          accept="audio/wav,audio/x-wav,audio/mpeg,audio/mp3,audio/flac,audio/x-flac,audio/aiff,audio/x-aiff,audio/mp4,audio/m4a,audio/ogg,.wav,.mp3,.flac,.aiff,.aif,.m4a,.ogg"
           multiple
           className="hidden"
           onChange={(e) => {
