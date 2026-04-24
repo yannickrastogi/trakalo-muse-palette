@@ -43,7 +43,7 @@ export function NameAutocomplete({
   }, [lastSegment]);
 
   const suggestions = useMemo(() => {
-    if (!debouncedQuery || debouncedQuery.length < 3) return [];
+    if (!debouncedQuery || debouncedQuery.length < 2) return [];
     const query = debouncedQuery.toLowerCase();
     const results: NameSuggestion[] = [];
     const seen = new Set<string>();
@@ -56,9 +56,10 @@ export function NameAutocomplete({
       if (seen.has(key)) continue;
       const firstName = (c.firstName || "").toLowerCase();
       const lastName = (c.lastName || "").toLowerCase();
-      if (firstName.startsWith(query) || lastName.startsWith(query) || key.indexOf(query) >= 0) {
+      const stageLower = (c.stageName || "").toLowerCase();
+      if (firstName.startsWith(query) || lastName.startsWith(query) || key.indexOf(query) >= 0 || (stageLower && stageLower.startsWith(query))) {
         seen.add(key);
-        results.push({ fullName: full });
+        results.push({ fullName: full, stageName: c.stageName || undefined });
       }
     }
 
@@ -124,7 +125,7 @@ export function NameAutocomplete({
           setHighlightIdx(-1);
         }}
         onFocus={() => {
-          if (lastSegment.length >= 3) setOpen(true);
+          if (lastSegment.length >= 2) setOpen(true);
         }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
