@@ -276,6 +276,9 @@ export default function SharedLinkPage() {
   var prevVolumeRef = useRef(0.8);
   var [isWatermarked, setIsWatermarked] = useState(false);
 
+  // Audio loading
+  var [audioLoading, setAudioLoading] = useState(false);
+
   // Comments
   var [comments, setComments] = useState<TrackComment[]>([]);
   var [commentComposerOpen, setCommentComposerOpen] = useState(false);
@@ -533,14 +536,18 @@ export default function SharedLinkPage() {
       setCurrentTime(0);
       setDuration(0);
     };
-    var onPlay = function() { setIsPlaying(true); };
+    var onPlay = function() { setIsPlaying(true); setAudioLoading(false); };
     var onPause = function() { setIsPlaying(false); };
+    var onWaiting = function() { setAudioLoading(true); };
+    var onCanPlay = function() { setAudioLoading(false); };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("loadedmetadata", onLoadedMetadata);
     audio.addEventListener("ended", onEnded);
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
+    audio.addEventListener("waiting", onWaiting);
+    audio.addEventListener("canplay", onCanPlay);
 
     return function() {
       audio.removeEventListener("timeupdate", onTimeUpdate);
@@ -548,6 +555,8 @@ export default function SharedLinkPage() {
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("waiting", onWaiting);
+      audio.removeEventListener("canplay", onCanPlay);
       audio.pause();
       audio.src = "";
     };
@@ -661,6 +670,7 @@ export default function SharedLinkPage() {
       return;
     }
 
+    setAudioLoading(true);
     loadAndPlayTrack(track);
     logEvent(track.id, "play");
   }, [loadAndPlayTrack]);
@@ -1397,7 +1407,7 @@ export default function SharedLinkPage() {
                         className="w-10 h-10 rounded-full btn-brand flex items-center justify-center"
                         style={branding?.brand_color ? { background: branding.brand_color } : undefined}
                       >
-                        {isPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
+                        {audioLoading ? <Loader2 className="w-4.5 h-4.5 animate-spin" /> : isPlaying ? <Pause className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5 ml-0.5" />}
                       </button>
                       <button
                         onClick={handleNextTrack}
@@ -1599,16 +1609,37 @@ export default function SharedLinkPage() {
             {(() => {
               if (!trackData.splits || trackData.splits.length === 0) return null;
               var creditEntries: { label: string; names: string }[] = [];
-              var formatNames = function (list: typeof trackData.splits) { return (list || []).map(function (s) { return s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name; }).join(", "); };
-              var byRole = function (role: string) { return (trackData.splits || []).filter(function (s) { return s.role && s.role.split(",").map(function (r) { return r.trim(); }).indexOf(role) >= 0; }); };
-              var songwriters = byRole("Songwriter");
-              if (songwriters.length > 0) creditEntries.push({ label: "WRITTEN BY", names: formatNames(songwriters) });
-              var producers = byRole("Producer");
-              if (producers.length > 0) creditEntries.push({ label: "PRODUCED BY", names: formatNames(producers) });
-              var artists = byRole("Artist");
-              if (artists.length > 0) creditEntries.push({ label: "PERFORMED BY", names: formatNames(artists) });
-              var musicians = byRole("Musician");
-              if (musicians.length > 0) creditEntries.push({ label: "MUSICIANS", names: formatNames(musicians) });
+              var formatName = function (s: { name: string; stage_name?: string }) { return s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name; };
+              // Build credits map from splits
+              var creditsMap: Record<string, string[]> = {};
+              for (var ci = 0; ci < trackData.splits.length; ci++) {
+                var sp = trackData.splits[ci];
+                if (!sp.name) continue;
+                var displayName = formatName(sp);
+                // Read roles: support both role (comma string) and roles (array)
+                var splitRoles: string[] = [];
+                if (Array.isArray((sp as any).roles) && (sp as any).roles.length > 0) {
+                  splitRoles = (sp as any).roles;
+                } else if (sp.role) {
+                  splitRoles = sp.role.split(",").map(function (r) { return r.trim(); }).filter(function (r) { return r !== ""; });
+                }
+                for (var ri = 0; ri < splitRoles.length; ri++) {
+                  var rl = splitRoles[ri].toLowerCase();
+                  var cat = "";
+                  if (rl.indexOf("songwriter") >= 0 || rl.indexOf("writer") >= 0) cat = "WRITTEN BY";
+                  else if (rl.indexOf("producer") >= 0) cat = "PRODUCED BY";
+                  else if (rl.indexOf("artist") >= 0) cat = "PERFORMED BY";
+                  else if (rl.indexOf("musician") >= 0) cat = "MUSICIANS";
+                  if (cat) {
+                    if (!creditsMap[cat]) creditsMap[cat] = [];
+                    if (creditsMap[cat].indexOf(displayName) < 0) creditsMap[cat].push(displayName);
+                  }
+                }
+              }
+              var categoryOrder = ["WRITTEN BY", "PRODUCED BY", "PERFORMED BY", "MUSICIANS"];
+              for (var oi = 0; oi < categoryOrder.length; oi++) {
+                if (creditsMap[categoryOrder[oi]]) creditEntries.push({ label: categoryOrder[oi], names: creditsMap[categoryOrder[oi]].join(", ") });
+              }
               if (creditEntries.length === 0) return null;
               return (
                 <div className="px-6 pt-3">
@@ -1700,7 +1731,7 @@ export default function SharedLinkPage() {
                     className="w-11 h-11 rounded-full btn-brand flex items-center justify-center"
                     style={branding?.brand_color ? { background: branding.brand_color } : undefined}
                   >
-                    {playingTrackId === trackData.id && isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                    {audioLoading && playingTrackId === trackData.id ? <Loader2 className="w-5 h-5 animate-spin" /> : playingTrackId === trackData.id && isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
                   </button>
                   <div className="flex items-center gap-2">
                     <button
