@@ -219,14 +219,15 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
 
   // Column layout — proportional widths to prevent overlap
   const colName = marginX;
-  const nameW = contentW * 0.28;
+  const nameW = contentW * 0.30;
   const colRole = colName + nameW;
-  const roleW = contentW * 0.28;
+  const roleW = contentW * 0.22;
   const colPro = colRole + roleW;
-  const proW = contentW * 0.13;
+  const proW = contentW * 0.20;
   const colIpi = colPro + proW;
-  const ipiW = contentW * 0.18;
-  const colShare = marginX + contentW;
+  const ipiW = contentW * 0.15;
+  const colShare = colIpi + ipiW;
+  const shareW = contentW * 0.13;
 
   doc.setFillColor(...cardBg);
   doc.roundedRect(marginX, y, contentW, 28, 6, 6, "F");
@@ -237,7 +238,7 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
   doc.text("ROLE", colRole + 4, y + 18);
   doc.text("PRO", colPro + 4, y + 18);
   doc.text("IPI", colIpi + 4, y + 18);
-  doc.text("SHARE", colShare - 6, y + 18, { align: "right" });
+  doc.text("SHARE", colShare + shareW - 6, y + 18, { align: "right" });
   y += 36;
 
   splits.forEach((s, i) => {
@@ -247,16 +248,21 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
     const displayName = s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name;
 
     // Calculate row height based on content wrapping
+    // Use name font (bold 9) for name wrapping calculation
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    const nameLines = doc.splitTextToSize(displayName, nameW - 24);
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    const publisherLines = s.publisher ? doc.splitTextToSize(s.publisher, nameW - 24) : [];
     doc.setFontSize(8.5);
     const roleLines = doc.splitTextToSize(s.role || "—", roleW - 8);
     const proLines = doc.splitTextToSize(s.pro || "—", proW - 8);
-    const ipiLines = doc.splitTextToSize(s.ipi || "—", ipiW - 8);
-    const nameLines = doc.splitTextToSize(displayName, nameW - 24);
-    const maxLines = Math.max(roleLines.length, proLines.length, ipiLines.length, nameLines.length);
-    const baseRowH = 32;
     const extraLineH = 11;
-    const rowH = baseRowH + Math.max(0, maxLines - 1) * extraLineH + (s.publisher ? 12 : 0);
+    const nameColumnLines = nameLines.length + publisherLines.length;
+    const maxLines = Math.max(nameColumnLines, roleLines.length, proLines.length, 1);
+    const baseRowH = 32;
+    const rowH = baseRowH + Math.max(0, maxLines - 1) * extraLineH;
 
     // Page break check
     if (y + rowH > pageH - 80) {
@@ -276,7 +282,7 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
 
     // Name with stage name (wrapped)
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(...textLight);
     var nameY = y + 12;
     nameLines.forEach(function (line: string) {
@@ -284,12 +290,15 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
       nameY += extraLineH;
     });
 
-    // Publisher below name
+    // Publisher below name (wrapped)
     if (s.publisher) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
       doc.setTextColor(...textMuted);
-      doc.text(s.publisher, colName + 18, nameY);
+      publisherLines.forEach(function (line: string) {
+        doc.text(line, colName + 18, nameY);
+        nameY += extraLineH;
+      });
     }
 
     // Role (wrapped)
@@ -311,18 +320,14 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
       proY += extraLineH;
     });
 
-    // IPI (wrapped)
-    var ipiY = y + 12;
-    ipiLines.forEach(function (line: string) {
-      doc.text(line, colIpi + 4, ipiY);
-      ipiY += extraLineH;
-    });
+    // IPI
+    doc.text(s.ipi || "—", colIpi + 4, y + 12);
 
     // Share %
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...color);
-    doc.text(s.share + "%", colShare - 6, y + 14, { align: "right" });
+    doc.text(s.share + "%", colShare + shareW - 6, y + 14, { align: "right" });
 
     y += rowH;
   });
@@ -339,11 +344,11 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
   const isComplete = totalShares === 100;
   doc.setFontSize(14);
   doc.setTextColor(isComplete ? 74 : 239, isComplete ? 222 : 68, isComplete ? 128 : 68);
-  doc.text(`${totalShares}%`, colShare, y, { align: "right" });
+  doc.text(`${totalShares}%`, colShare + shareW - 6, y, { align: "right" });
   if (isComplete) {
     doc.setFontSize(8);
     doc.setTextColor(74, 222, 128);
-    doc.text("✓ Fully allocated", colShare - 40, y + 14, { align: "right" });
+    doc.text("✓ Fully allocated", colShare + shareW - 6 - 40, y + 14, { align: "right" });
   }
 
   drawFooters(doc, marginX);
@@ -678,52 +683,98 @@ function buildSignedAgreementDoc(title: string, artist: string, entries: SignedS
   doc.text("Agreement Date: " + dateStr, marginX, y);
   y += 24;
 
+  // Splits table — column layout
+  var saNameW = contentW * 0.30;
+  var saRoleW = contentW * 0.22;
+  var saShareW = contentW * 0.12;
+  var saProIpiW = contentW * 0.36;
+  var saColName = marginX;
+  var saColRole = saColName + saNameW;
+  var saColShare = saColRole + saRoleW;
+  var saColProIpi = saColShare + saShareW;
+
   // Splits table header
   doc.setFillColor(...cardBg);
   doc.roundedRect(marginX, y, contentW, 26, 6, 6, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
   doc.setTextColor(...textMuted);
-  doc.text("NAME", marginX + 14, y + 16);
-  doc.text("ROLE", marginX + contentW * 0.3, y + 16);
-  doc.text("SHARE", marginX + contentW * 0.6, y + 16);
-  doc.text("PRO / IPI", marginX + contentW * 0.72, y + 16);
+  doc.text("NAME", saColName + 14, y + 16);
+  doc.text("ROLE", saColRole + 4, y + 16);
+  doc.text("SHARE", saColShare + 4, y + 16);
+  doc.text("PRO / IPI", saColProIpi + 4, y + 16);
   y += 34;
 
   var splitColors: [number, number, number][] = [brandOrange, brandPink, brandPurple, [80, 180, 220]];
+  var saExtraLineH = 11;
 
   entries.forEach(function (e, i) {
-    if (y + 28 > pageH - 120) {
+    var color = splitColors[i % splitColors.length];
+    var signedDisplayName = e.stage_name ? e.name + " (" + e.stage_name + ")" : e.name;
+    var proIpi = (e.pro || "—") + " / " + (e.ipi || "—");
+
+    // Calculate wrapped lines
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    var saNameLines = doc.splitTextToSize(signedDisplayName, saNameW - 24);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    var saRoleLines = doc.splitTextToSize(e.role || "—", saRoleW - 8);
+    doc.setFontSize(7.5);
+    var saProIpiLines = doc.splitTextToSize(proIpi, saProIpiW - 8);
+
+    var saMaxLines = Math.max(saNameLines.length, saRoleLines.length, saProIpiLines.length, 1);
+    var saRowH = 24 + Math.max(0, saMaxLines - 1) * saExtraLineH;
+
+    if (y + saRowH > pageH - 120) {
       doc.addPage();
       drawPageBackground(doc);
       y = 48;
     }
-    var color = splitColors[i % splitColors.length];
     if (i % 2 === 0) {
       doc.setFillColor(cardBg[0] - 2, cardBg[1] - 2, cardBg[2] - 2);
-      doc.rect(marginX, y - 4, contentW, 26, "F");
+      doc.rect(marginX, y - 4, contentW, saRowH, "F");
     }
     doc.setFillColor(...color);
-    doc.circle(marginX + 6, y + 8, 3, "F");
+    doc.circle(saColName + 6, y + 8, 3, "F");
+
+    // Name (wrapped)
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.setTextColor(...textLight);
-    var signedDisplayName = e.stage_name ? e.name + " (" + e.stage_name + ")" : e.name;
-    doc.text(signedDisplayName, marginX + 16, y + 10);
+    var saNameY = y + 10;
+    saNameLines.forEach(function (line: string) {
+      doc.text(line, saColName + 16, saNameY);
+      saNameY += saExtraLineH;
+    });
+
+    // Role (wrapped)
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...textMuted);
-    doc.text(e.role || "—", marginX + contentW * 0.3, y + 10);
+    var saRoleY = y + 10;
+    saRoleLines.forEach(function (line: string) {
+      doc.text(line, saColRole + 4, saRoleY);
+      saRoleY += saExtraLineH;
+    });
+
+    // Share
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(...color);
-    doc.text(e.share + "%", marginX + contentW * 0.6, y + 10);
+    doc.text(e.share + "%", saColShare + 4, y + 10);
+
+    // PRO / IPI (wrapped)
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(...textMuted);
-    var proIpi = (e.pro || "—") + " / " + (e.ipi || "—");
-    doc.text(proIpi, marginX + contentW * 0.72, y + 10);
-    y += 28;
+    var saProY = y + 10;
+    saProIpiLines.forEach(function (line: string) {
+      doc.text(line, saColProIpi + 4, saProY);
+      saProY += saExtraLineH;
+    });
+
+    y += saRowH;
   });
 
   y += 20;
