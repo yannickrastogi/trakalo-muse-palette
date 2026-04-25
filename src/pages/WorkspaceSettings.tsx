@@ -761,27 +761,107 @@ function MembersSection() {
    ═══════════════════════════════════════════════════════ */
 
 function CatalogSharingSection() {
-  const { activeWorkspace } = useWorkspace();
+  const { activeWorkspace, workspaces } = useWorkspace();
   const { user } = useAuth();
   const [outgoing, setOutgoing] = useState<any[]>([]);
   const [incoming, setIncoming] = useState<any[]>([]);
+  const [shareDropdownOpen, setShareDropdownOpen] = useState(false);
+  const [sharing, setSharing] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const fetchShares = useCallback(() => {
     if (!activeWorkspace) return;
-    // Fetch outgoing shares
     supabase.from("catalog_shares").select("id, target_workspace_id, track_id, created_at, workspaces!catalog_shares_target_workspace_id_fkey(name)")
       .eq("source_workspace_id", activeWorkspace.id)
       .then(({ data }) => { if (data) setOutgoing(data); })
       .catch((err) => console.error("Failed to fetch outgoing shares:", err));
-    // Fetch incoming shares
     supabase.from("catalog_shares").select("id, source_workspace_id, track_id, created_at, workspaces!catalog_shares_source_workspace_id_fkey(name)")
       .eq("target_workspace_id", activeWorkspace.id)
       .then(({ data }) => { if (data) setIncoming(data); })
       .catch((err) => console.error("Failed to fetch incoming shares:", err));
   }, [activeWorkspace]);
 
+  useEffect(() => { fetchShares(); }, [fetchShares]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!shareDropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setShareDropdownOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [shareDropdownOpen]);
+
+  // Workspaces available for full catalog sharing (exclude self + already shared)
+  const outgoingFullCatalogTargetIds = new Set(outgoing.filter((s) => !s.track_id).map((s) => s.target_workspace_id));
+  const availableWorkspaces = workspaces.filter((w) => w.id !== activeWorkspace?.id && !outgoingFullCatalogTargetIds.has(w.id));
+
+  const handleShareFullCatalog = async (targetWs: { id: string; name: string }) => {
+    if (!activeWorkspace || !user) return;
+    setSharing(targetWs.id);
+    const { error } = await supabase.rpc("insert_catalog_share", {
+      _user_id: user.id,
+      _track_id: null,
+      _source_workspace_id: activeWorkspace.id,
+      _target_workspace_id: targetWs.id,
+      _access_level: "pitcher",
+    });
+    if (error) { toast.error(error.message); }
+    else { toast.success("Full catalog shared with " + targetWs.name); fetchShares(); }
+    setSharing(null);
+    setShareDropdownOpen(false);
+  };
+
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
+      {/* Share Full Catalog button */}
+      <motion.div variants={fadeUp} className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setShareDropdownOpen(!shareDropdownOpen)}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+          style={{ background: "var(--gradient-brand-horizontal)" }}
+        >
+          <ArrowRightLeft className="w-4 h-4" />
+          Share Full Catalog
+          <ChevronDown className={"w-3.5 h-3.5 transition-transform " + (shareDropdownOpen ? "rotate-180" : "")} />
+        </button>
+        {shareDropdownOpen && (
+          <div className="absolute left-0 top-full mt-2 w-80 rounded-xl border border-border/30 bg-card/95 backdrop-blur-md shadow-xl z-50 overflow-hidden">
+            <div className="px-4 py-3 border-b border-border/20">
+              <p className="text-[12px] font-semibold text-foreground">Share full catalog with...</p>
+              <p className="text-[10px] text-muted-foreground/50 mt-0.5">Select a workspace to share your entire catalog</p>
+            </div>
+            {availableWorkspaces.length === 0 ? (
+              <div className="px-4 py-6 text-center">
+                <p className="text-[12px] text-muted-foreground/50">No other workspaces available to share with</p>
+              </div>
+            ) : (
+              <div className="max-h-60 overflow-y-auto py-1">
+                {availableWorkspaces.map((ws) => (
+                  <div key={ws.id} className="flex items-center justify-between px-4 py-2.5 hover:bg-secondary/30 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange/20 to-brand-purple/20 flex items-center justify-center shrink-0">
+                        <span className="text-[11px] font-bold text-foreground">{(ws.name || "W").charAt(0).toUpperCase()}</span>
+                      </div>
+                      <span className="text-[13px] font-medium text-foreground truncate">{ws.name}</span>
+                    </div>
+                    <button
+                      onClick={() => handleShareFullCatalog(ws)}
+                      disabled={sharing === ws.id}
+                      className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                      style={{ background: "var(--gradient-brand-horizontal)" }}
+                    >
+                      {sharing === ws.id ? "Sharing..." : "Share"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </motion.div>
+
       <SectionBlock title={"Outgoing Shares (" + outgoing.length + ")"} subtitle="Catalogs you share with other workspaces" icon={ExternalLink}>
         {outgoing.length === 0 ? (
           <p className="text-[12px] text-muted-foreground/50">No outgoing catalog shares yet.</p>
