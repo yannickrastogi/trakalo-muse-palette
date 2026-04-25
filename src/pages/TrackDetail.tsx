@@ -173,7 +173,7 @@ function buildMeta(trackData: TrackData, t: (key: string) => string) {
     { label: t("trackDetail.explicit"), value: trackData.explicit ? t("trackDetail.yes") : t("trackDetail.no") },
     { label: t("trackDetail.notes"), value: trackData.notes || "\u2014" },
   ];
-  Object.entries(trackData.details || {}).forEach(([key, values]) => {
+  Object.entries(trackData.credits || {}).forEach(([key, values]) => {
     const filtered = values.filter(Boolean);
     if (filtered.length > 0) {
       meta.push({ label: detailLabelKeys[key] ? t(detailLabelKeys[key]) : key, value: filtered.join(", ") });
@@ -1247,7 +1247,7 @@ function CreditsTab({ trackId, onEdit }: { trackId: number; onEdit: () => void }
   const trackData = getTrack(trackId);
   if (!trackData) return null;
 
-  const details = trackData.details || {};
+  const details = trackData.credits || {};
   const performerCredits = PERFORMER_CREDIT_KEYS.filter((f) => details[f.key]?.some((v) => v.trim()));
   const productionCredits = PRODUCTION_CREDIT_KEYS.filter((f) => details[f.key]?.some((v) => v.trim()));
 
