@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 
 import { DEFAULT_COVER } from "@/lib/constants";
+import { MiniEqualizer } from "@/components/visual/MiniEqualizer";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -234,8 +235,9 @@ export function PersistentPlayer() {
             className="w-10 h-10 sm:w-11 sm:h-11 rounded-lg object-cover ring-1 ring-border/50 group-hover/info:ring-primary/30 transition-all shrink-0"
           />
           <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-foreground truncate leading-tight group-hover/info:text-primary transition-colors">
+            <p className="text-[13px] font-semibold text-foreground truncate leading-tight group-hover/info:text-primary transition-colors flex items-center">
               {currentTrack.title}
+              {isPlaying && <MiniEqualizer />}
             </p>
             <p className="text-[11px] text-muted-foreground truncate mt-0.5">
               {currentTrack.artist}
