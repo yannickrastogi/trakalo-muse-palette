@@ -76,39 +76,46 @@ export async function compressAudio(file: File): Promise<CompressedAudio> {
 
   // Encode using MediaRecorder via MediaStreamDestination
   const playbackCtx = new AudioContext({ sampleRate: targetSampleRate });
-  const dest = playbackCtx.createMediaStreamDestination();
-  const playbackSource = playbackCtx.createBufferSource();
-  playbackSource.buffer = rendered;
-  playbackSource.connect(dest);
+  let blob: Blob;
+  try {
+    const dest = playbackCtx.createMediaStreamDestination();
+    const playbackSource = playbackCtx.createBufferSource();
+    playbackSource.buffer = rendered;
+    playbackSource.connect(dest);
 
-  const recorder = new MediaRecorder(dest.stream, {
-    mimeType: codec.mimeType,
-    audioBitsPerSecond: 96000, // 96kbps — sweet spot for quality/size
-  });
+    const recorder = new MediaRecorder(dest.stream, {
+      mimeType: codec.mimeType,
+      audioBitsPerSecond: 96000, // 96kbps — sweet spot for quality/size
+    });
 
-  const chunks: Blob[] = [];
+    const chunks: Blob[] = [];
 
-  const recordingDone = new Promise<Blob>((resolve) => {
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
-    recorder.onstop = () => {
-      resolve(new Blob(chunks, { type: codec.mimeType }));
-    };
-  });
+    const recordingDone = new Promise<Blob>((resolve) => {
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      recorder.onstop = () => {
+        resolve(new Blob(chunks, { type: codec.mimeType }));
+      };
+    });
 
-  recorder.start();
-  playbackSource.start();
+    recorder.start();
+    playbackSource.start();
 
-  // Stop after the audio duration + small buffer
-  const durationMs = rendered.duration * 1000;
-  await new Promise((r) => setTimeout(r, durationMs + 200));
+    // Stop after the audio duration + small buffer
+    const durationMs = rendered.duration * 1000;
+    await new Promise((r) => setTimeout(r, durationMs + 200));
 
-  recorder.stop();
-  playbackSource.stop();
+    recorder.stop();
+    playbackSource.stop();
 
-  const blob = await recordingDone;
-  await playbackCtx.close();
+    blob = await recordingDone;
+
+    // Clean up MediaStream tracks
+    dest.stream.getTracks().forEach(t => t.stop());
+  } finally {
+    await playbackCtx.close();
+  }
 
   const url = URL.createObjectURL(blob);
   const ratio = file.size > 0 ? `${(file.size / blob.size).toFixed(1)}:1` : "—";

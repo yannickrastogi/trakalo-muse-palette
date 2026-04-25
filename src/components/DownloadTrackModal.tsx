@@ -102,7 +102,9 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
       if (selectedItems.has("track") && trackData.originalFileUrl) {
         const trackFolder = root.folder("Track")!;
         const fileName = trackData.originalFileName || (trackData.title + ".mp3");
-        const audioBytes = await fetch(trackData.originalFileUrl).then(r => r.arrayBuffer());
+        const audioRes = await fetch(trackData.originalFileUrl);
+        if (!audioRes.ok) throw new Error("Failed to download track audio: " + audioRes.status);
+        const audioBytes = await audioRes.arrayBuffer();
         trackFolder.file(fileName, audioBytes);
       }
 
@@ -110,7 +112,9 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
       if (selectedItems.has("cover")) {
         const coverFolder = root.folder("Cover Art")!;
         const coverUrl = trackData.coverImage || DEFAULT_COVER;
-        const coverBytes = await fetch(coverUrl).then(r => r.arrayBuffer());
+        const coverRes = await fetch(coverUrl);
+        if (!coverRes.ok) throw new Error("Failed to download cover art: " + coverRes.status);
+        const coverBytes = await coverRes.arrayBuffer();
         const ext = trackData.coverImage ? (trackData.coverImage.match(/\.(jpe?g|png|webp)$/i)?.[0] || ".jpg") : ".png";
         coverFolder.file(trackData.title + " - Cover Art" + ext, coverBytes);
       }
@@ -198,7 +202,9 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
               .createSignedUrl(doc.file_path, 3600);
             if (!signedData?.signedUrl) continue;
 
-            const fileBytes = await fetch(signedData.signedUrl).then(r => r.arrayBuffer());
+            const docRes = await fetch(signedData.signedUrl);
+            if (!docRes.ok) throw new Error("Failed to download document: " + docRes.status);
+            const fileBytes = await docRes.arrayBuffer();
 
             if (doc.mime_type && doc.mime_type.includes("pdf")) {
               const pdfDoc = await PDFDocument.load(fileBytes);

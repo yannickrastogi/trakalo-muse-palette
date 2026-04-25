@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { buildEmail, htmlEscape, isValidEmail } from "../_shared/email-template.ts";
-import { isValidUUID } from "../_shared/validation.ts";
+import { isValidUUID, sanitizeEmailSubject } from "../_shared/validation.ts";
 
 function generateToken(length: number): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -137,7 +137,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: "Trakalog <noreply@trakalog.com>",
         to: [email],
-        subject: inviter + " invited you to join " + wsName + " on Trakalog",
+        subject: sanitizeEmailSubject(inviter + " invited you to join " + wsName + " on Trakalog"),
         html: htmlBody,
       }),
     });

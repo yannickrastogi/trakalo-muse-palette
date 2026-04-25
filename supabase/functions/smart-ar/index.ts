@@ -18,7 +18,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { brief, track_count, workspace_id } = await req.json();
+    const body = await req.json();
+    const brief = typeof body.brief === 'string' ? body.brief.substring(0, 2000) : '';
+    const track_count = body.track_count;
+    const workspace_id = body.workspace_id;
 
     if (!brief || !workspace_id) {
       return new Response(
@@ -203,7 +206,7 @@ Deno.serve(async (req) => {
     } catch (groqFetchError) {
       console.error("smart-ar: Groq API fetch error:", groqFetchError);
       return new Response(
-        JSON.stringify({ error: "Groq API fetch failed: " + groqFetchError.message }),
+        JSON.stringify({ error: "Groq API fetch failed: " + (groqFetchError instanceof Error ? groqFetchError.message : String(groqFetchError)) }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

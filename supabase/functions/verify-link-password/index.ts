@@ -7,7 +7,9 @@ async function verifyPassword(password, stored) {
   const saltHex = parts[0];
   const hashHex = parts[1];
   if (!saltHex || !hashHex) return false;
-  const salt = new Uint8Array(saltHex.match(/.{2}/g).map(function(b) { return parseInt(b, 16); }));
+  const saltMatch = saltHex.match(/.{2}/g);
+  if (!saltMatch) return false;
+  const salt = new Uint8Array(saltMatch.map(function(b) { return parseInt(b, 16); }));
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
   const hash = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, 256);
@@ -39,6 +41,6 @@ serve(async function(req) {
     const valid = await verifyPassword(password, result.data.password_hash);
     return new Response(JSON.stringify({ valid: valid }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
-    return new Response(JSON.stringify({ valid: false, error: err.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ valid: false, error: err instanceof Error ? err.message : String(err) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

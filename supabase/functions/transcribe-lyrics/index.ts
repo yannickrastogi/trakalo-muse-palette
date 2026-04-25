@@ -68,6 +68,17 @@ serve(async (req) => {
       });
     }
 
+    // Validate storage paths to prevent traversal
+    function isValidStoragePath(p: string): boolean {
+      return !!p && !p.includes('..') && !p.includes('//') && !p.startsWith('/');
+    }
+    if ((originalPath && !isValidStoragePath(originalPath)) || (previewPath && !isValidStoragePath(previewPath))) {
+      return new Response(JSON.stringify({ error: "Invalid file path" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // 2. Download audio via fresh signed URL — try original first, fallback to preview if too large
     let audioPath = originalPath || previewPath;
     let fileData: Blob | null = null;

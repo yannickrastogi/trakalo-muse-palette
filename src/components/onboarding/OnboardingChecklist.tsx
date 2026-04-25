@@ -4,6 +4,7 @@ import { Check, X, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { TrackData } from "@/contexts/TrackContext";
 import type { Workspace } from "@/types/workspace";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 interface ChecklistProps {
   user: { user_metadata?: Record<string, unknown> } | null;
@@ -83,8 +84,8 @@ export function OnboardingChecklist({
   if (dismissed || doneCount === total) return null;
 
   // Don't show if onboarding not started yet
-  const onboardingDone = localStorage.getItem("trakalog_onboarding_complete") === "true";
-  const isSharedLinkUser = localStorage.getItem("trakalog_first_save_done") === "true";
+  const onboardingDone = safeLocalStorage.getItem("trakalog_onboarding_complete") === "true";
+  const isSharedLinkUser = safeLocalStorage.getItem("trakalog_first_save_done") === "true";
   if (!onboardingDone && !isSharedLinkUser) return null;
 
   function handleDismiss() {

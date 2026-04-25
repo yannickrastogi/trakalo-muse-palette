@@ -12,6 +12,20 @@ export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function sanitizeUrl(url: string): string {
+  if (!url) return '#';
+  if (url.startsWith('https://app.trakalog.com') || url.startsWith('https://trakalog.com')) {
+    return url;
+  }
+  return '#';
+}
+
+function sanitizeCssColor(color: string): string {
+  if (!color) return '#f97316';
+  if (/^#[0-9a-fA-F]{3,8}$/.test(color)) return color;
+  return '#f97316';
+}
+
 export function buildEmail(options: {
   workspaceName?: string;
   workspaceLogoUrl?: string | null;
@@ -39,14 +53,16 @@ export function buildEmail(options: {
     ? '<div style="display:none;font-size:1px;color:#0a0a0b;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">' + preheader + '</div>'
     : '';
 
-  const ctaBackground = brandColor
-    ? 'background-color:' + brandColor + ';'
+  const safeBrandColor = brandColor ? sanitizeCssColor(brandColor) : null;
+  const ctaBackground = safeBrandColor
+    ? 'background-color:' + safeBrandColor + ';'
     : 'background:linear-gradient(135deg,#f97316,#ec4899);';
 
-  const ctaHtml = ctaLabel && ctaUrl
+  const safeCtaUrl = ctaUrl ? sanitizeUrl(ctaUrl) : '';
+  const ctaHtml = ctaLabel && safeCtaUrl
     ? '<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:32px 0 8px 0;">'
       + '<tr><td align="center">'
-      + '<a href="' + ctaUrl + '" target="_blank" style="display:inline-block;' + ctaBackground + 'color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;font-family:Arial,sans-serif;"><!--[if mso]><i style="mso-font-width:150%;mso-text-raise:22pt">&nbsp;</i><![endif]-->' + ctaLabel + '<!--[if mso]><i style="mso-font-width:150%">&nbsp;</i><![endif]--></a>'
+      + '<a href="' + safeCtaUrl + '" target="_blank" style="display:inline-block;' + ctaBackground + 'color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;font-family:Arial,sans-serif;"><!--[if mso]><i style="mso-font-width:150%;mso-text-raise:22pt">&nbsp;</i><![endif]-->' + ctaLabel + '<!--[if mso]><i style="mso-font-width:150%">&nbsp;</i><![endif]--></a>'
       + '</td></tr></table>'
     : '';
 

@@ -477,7 +477,7 @@ export default function SharedLinkPage() {
         }
         setUserHasNoWorkspace(true);
       }
-    }).catch(function() { /* JWT expired or network error — silent, no retry */ });
+    }).catch(function(err) { console.error("Auto-save workspace check failed:", err); setSavingToTrakalog(false); });
   }, [linkData]);
 
   // Auto-skip gate screen if valid visitor cookie exists
@@ -1479,7 +1479,7 @@ export default function SharedLinkPage() {
                         logEvent(track.id, "download");
                         fetchAudioUrl(track.id, linkData.download_quality === "hi-res" ? "original" : "preview").then(function(url) {
                           if (!url) return;
-                          fetch(url).then(function(res) { return res.blob(); }).then(function(blob) {
+                          fetch(url).then(function(res) { if (!res.ok) throw new Error("Download failed: " + res.status); return res.blob(); }).then(function(blob) {
                             var blobUrl = URL.createObjectURL(blob);
                             var a = document.createElement("a");
                             a.href = blobUrl;
@@ -1786,7 +1786,7 @@ export default function SharedLinkPage() {
                     logEvent(trackData!.id, "download");
                     fetchAudioUrl(trackData!.id, linkData.download_quality === "hi-res" ? "original" : "preview").then(function(url) {
                       if (!url) return;
-                      fetch(url).then(function(res) { return res.blob(); }).then(function(blob) {
+                      fetch(url).then(function(res) { if (!res.ok) throw new Error("Download failed: " + res.status); return res.blob(); }).then(function(blob) {
                         var blobUrl = URL.createObjectURL(blob);
                         var a = document.createElement("a");
                         a.href = blobUrl;

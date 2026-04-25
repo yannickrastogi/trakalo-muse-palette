@@ -33,6 +33,12 @@ serve(async (req) => {
       });
     }
 
+    if (audio_path.includes('..') || audio_path.includes('//') || audio_path.startsWith('/')) {
+      return new Response(JSON.stringify({ error: "Invalid file path" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // 1. Download original file from storage
     const { data: fileData, error: dlError } = await supabaseAdmin.storage
       .from("tracks")
@@ -92,7 +98,7 @@ serve(async (req) => {
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

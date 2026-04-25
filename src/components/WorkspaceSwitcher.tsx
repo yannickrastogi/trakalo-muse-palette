@@ -238,7 +238,7 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
           localStorage.setItem("trakalog_track_count_" + ids[ci], String(counts[ids[ci]] || 0));
         }
       } catch (e) { /* ignore quota errors */ }
-    });
+    }).catch(function (err) { console.error("WorkspaceSwitcher track count error:", err); });
   }, [workspaces]);
 
   // Close dropdown on outside click

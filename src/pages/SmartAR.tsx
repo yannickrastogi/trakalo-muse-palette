@@ -372,8 +372,8 @@ export default function SmartAR() {
         ];
       });
       setStep("created");
-    } catch (err: any) {
-      toast({ title: "Error: " + (err.message || "Unknown error") });
+    } catch (err) {
+      toast({ title: "Error: " + (err instanceof Error ? err.message : String(err)) });
     } finally {
       setIsCreating(false);
     }
