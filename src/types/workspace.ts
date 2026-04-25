@@ -30,6 +30,7 @@ export interface Workspace {
   social_youtube: string | null;
   social_facebook: string | null;
   social_x: string | null;
+  social_website: string | null;
   is_personal: boolean;
 }
 

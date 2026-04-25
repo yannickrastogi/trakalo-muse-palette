@@ -207,6 +207,7 @@ function BrandingSection() {
   const [socialYoutube, setSocialYoutube] = useState(activeWorkspace?.social_youtube || "");
   const [socialFacebook, setSocialFacebook] = useState(activeWorkspace?.social_facebook || "");
   const [socialX, setSocialX] = useState(activeWorkspace?.social_x || "");
+  const [socialWebsite, setSocialWebsite] = useState(activeWorkspace?.social_website || "");
 
   useEffect(() => {
     if (activeWorkspace) {
@@ -220,6 +221,7 @@ function BrandingSection() {
       setSocialYoutube(activeWorkspace.social_youtube || "");
       setSocialFacebook(activeWorkspace.social_facebook || "");
       setSocialX(activeWorkspace.social_x || "");
+      setSocialWebsite(activeWorkspace.social_website || "");
     }
   }, [activeWorkspace]);
 
@@ -271,7 +273,7 @@ function BrandingSection() {
       _hero_image_url: heroUrl, _logo_url: logoUrl, _brand_color: brandColor || null,
       _hero_position: pos, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
-      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null,
+      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
     });
     if (error) { toast.error(error.message); return; }
     setHeroPosition(pos);
@@ -299,7 +301,7 @@ function BrandingSection() {
       _hero_image_url: heroUrl, _logo_url: logoUrl, _brand_color: brandColor || null,
       _hero_position: heroPosition, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
-      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null,
+      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
     });
     if (error) { toast.error(error.message); return; }
     setEditingFocal(false);
@@ -332,7 +334,7 @@ function BrandingSection() {
           _hero_image_url: newHero, _logo_url: newLogo, _brand_color: brandColor || null,
           _hero_position: heroPosition, _hero_focal_point: focalPoint,
           _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
-          _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null,
+          _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
         });
         if (updateErr) { toast.error(updateErr.message); setUploading(null); return; }
         if (type === "hero") setHeroUrl(publicUrl);
@@ -356,7 +358,7 @@ function BrandingSection() {
       _hero_image_url: newHero, _logo_url: newLogo, _brand_color: brandColor || null,
       _hero_position: heroPosition, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
-      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null,
+      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
     });
     if (error) { toast.error(error.message); return; }
     if (type === "hero") setHeroUrl(null);
@@ -372,7 +374,7 @@ function BrandingSection() {
       _hero_image_url: heroUrl, _logo_url: logoUrl, _brand_color: brandColor || null,
       _hero_position: heroPosition, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
-      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null,
+      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
     });
     if (error) toast.error(error.message);
     else { toast.success("Brand color saved"); await refreshWorkspaces(); }
@@ -385,7 +387,7 @@ function BrandingSection() {
       _hero_image_url: heroUrl, _logo_url: logoUrl, _brand_color: brandColor || null,
       _hero_position: heroPosition, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
-      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null,
+      _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
     });
     if (error) toast.error(error.message);
     else { toast.success("Social links saved"); await refreshWorkspaces(); }
@@ -630,6 +632,12 @@ function BrandingSection() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             </div>
             <input type="text" value={socialX} placeholder="@yourusername or https://x.com/yourusername" onChange={(e) => setSocialX(e.target.value)} className="w-full h-11 pl-10 pr-4 rounded-xl bg-secondary/40 border border-border/30 text-[13px] text-foreground font-medium outline-none focus:border-primary/30 focus:bg-secondary/60 transition-all placeholder:text-muted-foreground/30" />
+          </div>
+          <div className="relative group/input">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            <input type="url" value={socialWebsite} placeholder="https://yoursite.com" onChange={(e) => setSocialWebsite(e.target.value)} className="w-full h-11 pl-10 pr-4 rounded-xl bg-secondary/40 border border-border/30 text-[13px] text-foreground font-medium outline-none focus:border-primary/30 focus:bg-secondary/60 transition-all placeholder:text-muted-foreground/30" />
           </div>
         </div>
       </SectionBlock>
