@@ -46,6 +46,9 @@ import { GuidedTour } from "@/components/onboarding/GuidedTour";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 
 import { DEFAULT_COVER } from "@/lib/constants";
+import { AuroraBackground } from "@/components/visual/AuroraBackground";
+import { AmbientWaveform } from "@/components/visual/AmbientWaveform";
+import { AnimatedCounter } from "@/components/visual/AnimatedCounter";
 
 
 function timeAgo(dateStr: string): string {
@@ -402,12 +405,12 @@ export function DashboardContent() {
   }, [contactEntries, contactsRange, contactsSearch]);
 
   const stats = [
-    { id: "tracks", label: t("dashboard.totalTracks"), value: allTracks.length.toLocaleString(), icon: Music, change: "+" + tracksThisWeek + " " + t("common.thisWeek").toLowerCase(), changeColor: "text-brand-orange", accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20", hoverRing: "hover:ring-1 hover:ring-brand-orange/20", clickable: true },
-    { id: "playlists", label: t("dashboard.playlists"), value: allPlaylists.length.toLocaleString(), icon: ListMusic, change: allPlaylists.length + " total", changeColor: "text-brand-pink", accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", hoverRing: "hover:ring-1 hover:ring-brand-pink/20", clickable: true },
-    { id: "plays", label: t("dashboard.totalPlays"), value: (linkPlays.length || engagementStats.totalPlays).toLocaleString(), icon: Headphones, change: t("dashboard.recipients", { count: playRecipients || engagementStats.uniqueRecipients }), changeColor: "text-brand-pink", accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", hoverRing: "hover:ring-1 hover:ring-brand-pink/20", clickable: true },
-    { id: "downloads", label: t("dashboard.downloads"), value: (linkDownloads.length || engagementStats.totalDownloads).toLocaleString(), icon: Download, change: t("dashboard.acrossContacts", { count: downloadRecipients || engagementStats.uniqueRecipients }), changeColor: "text-brand-purple", accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", hoverRing: "hover:ring-1 hover:ring-brand-purple/20", clickable: true },
-    { id: "contacts", label: t("nav.contacts"), value: allContacts.length.toLocaleString(), icon: Users, change: t("dashboard.recent", { count: contactsThisWeek }), changeColor: "text-brand-purple", accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", hoverRing: "hover:ring-1 hover:ring-brand-purple/20", clickable: true },
-    { id: "pitches", label: t("pitch.title"), value: allPitches.length.toLocaleString(), icon: Send, change: t("pitch.active", { count: allPitches.filter(function(p) { return p.status === "Sent" || p.status === "Opened"; }).length }), changeColor: "text-brand-orange", accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", hoverRing: "hover:ring-1 hover:ring-brand-orange/20", clickable: true },
+    { id: "tracks", label: t("dashboard.totalTracks"), value: allTracks.length, icon: Music, change: "+" + tracksThisWeek + " " + t("common.thisWeek").toLowerCase(), changeColor: "text-brand-orange", accent: "from-brand-orange to-brand-pink", iconBg: "bg-brand-orange/10", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.06)", borderAccent: "hover:border-brand-orange/20", hoverRing: "hover:ring-1 hover:ring-brand-orange/20", clickable: true },
+    { id: "playlists", label: t("dashboard.playlists"), value: allPlaylists.length, icon: ListMusic, change: allPlaylists.length + " total", changeColor: "text-brand-pink", accent: "from-brand-pink to-brand-purple", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", hoverRing: "hover:ring-1 hover:ring-brand-pink/20", clickable: true },
+    { id: "plays", label: t("dashboard.totalPlays"), value: linkPlays.length || engagementStats.totalPlays, icon: Headphones, change: t("dashboard.recipients", { count: playRecipients || engagementStats.uniqueRecipients }), changeColor: "text-brand-pink", accent: "from-brand-pink to-brand-orange", iconBg: "bg-brand-pink/10", iconColor: "text-brand-pink", glowColor: "hsl(330 80% 60% / 0.06)", borderAccent: "hover:border-brand-pink/20", hoverRing: "hover:ring-1 hover:ring-brand-pink/20", clickable: true },
+    { id: "downloads", label: t("dashboard.downloads"), value: linkDownloads.length || engagementStats.totalDownloads, icon: Download, change: t("dashboard.acrossContacts", { count: downloadRecipients || engagementStats.uniqueRecipients }), changeColor: "text-brand-purple", accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", hoverRing: "hover:ring-1 hover:ring-brand-purple/20", clickable: true },
+    { id: "contacts", label: t("nav.contacts"), value: allContacts.length, icon: Users, change: t("dashboard.recent", { count: contactsThisWeek }), changeColor: "text-brand-purple", accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", hoverRing: "hover:ring-1 hover:ring-brand-purple/20", clickable: true },
+    { id: "pitches", label: t("pitch.title"), value: allPitches.length, icon: Send, change: t("pitch.active", { count: allPitches.filter(function(p) { return p.status === "Sent" || p.status === "Opened"; }).length }), changeColor: "text-brand-orange", accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", hoverRing: "hover:ring-1 hover:ring-brand-orange/20", clickable: true },
   ];
 
   const isFirstSaveUser = localStorage.getItem("trakalog_first_save_done") === "true";
@@ -487,16 +490,18 @@ export function DashboardContent() {
   ].filter((a) => a.visible);
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-7 max-w-[1400px]">
+    <motion.div variants={container} initial="hidden" animate="show" className="relative p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-7 max-w-[1400px]">
+      <AuroraBackground />
       {/* Header */}
-      <motion.div variants={item}>
-        <div className="flex items-center gap-2.5">
+      <motion.div variants={item} className="relative">
+        <AmbientWaveform />
+        <div className="flex items-center gap-2.5 relative z-[1]">
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center">
             <LayoutDashboard className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-white" />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("dashboard.title")}</h1>
         </div>
-        <p className="text-muted-foreground text-xs sm:text-sm mt-1">{t("dashboard.subtitle", { date: new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) })}</p>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-1 relative z-[1]">{t("dashboard.subtitle", { date: new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) })}</p>
       </motion.div>
 
       {/* Onboarding Checklist */}
@@ -577,7 +582,7 @@ export function DashboardContent() {
               </div>
               <ArrowUpRight className={`w-4 h-4 text-muted-foreground/20 group-hover:${stat.iconColor} transition-colors duration-300 opacity-0 group-hover:opacity-70`} />
             </div>
-            <p className="text-2xl sm:text-[34px] font-bold text-foreground tracking-tight leading-none relative">{stat.value}</p>
+            <p className="text-2xl sm:text-[34px] font-bold text-foreground tracking-tight leading-none relative"><AnimatedCounter value={stat.value} /></p>
             <div className="flex items-center justify-between mt-2.5 sm:mt-3 relative">
               <p className="text-xs sm:text-sm text-muted-foreground font-medium">{stat.label}</p>
               <p className={`text-xs sm:text-sm ${stat.changeColor} font-medium`}>{stat.change}</p>
