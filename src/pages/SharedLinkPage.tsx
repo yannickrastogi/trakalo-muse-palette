@@ -12,7 +12,6 @@ import {
   generateCreditsPdf,
   generateSignedAgreementPdf,
 } from "@/lib/pdf-generators";
-import trakalogLogo from "@/assets/trakalog-logo.png";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 
 interface SharedLinkData {
@@ -36,6 +35,7 @@ interface SharedLinkData {
 }
 
 interface WorkspaceBranding {
+  name: string | null;
   hero_image_url: string | null;
   hero_position: number | null;
   hero_focal_point: string | null;
@@ -502,7 +502,7 @@ export default function SharedLinkPage() {
   // Fetch workspace branding when link data is available
   useEffect(function() {
     if (!linkData || !linkData.workspace_id) return;
-    fetch(REST_URL + "/workspaces?select=hero_image_url,hero_position,hero_focal_point,logo_url,brand_color,social_instagram,social_tiktok,social_youtube,social_facebook,social_x,social_website,bio&id=eq." + encodeURIComponent(linkData.workspace_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } })
+    fetch(REST_URL + "/workspaces?select=name,hero_image_url,hero_position,hero_focal_point,logo_url,brand_color,social_instagram,social_tiktok,social_youtube,social_facebook,social_x,social_website,bio&id=eq." + encodeURIComponent(linkData.workspace_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } })
       .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
       .then(function(data) {
         if (data) {
@@ -1966,15 +1966,21 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
           {/* Logo header — pushed down to leave hero image visible */}
           <header className="pt-[35vh] md:pt-[25vh] pb-4">
             <div className="flex flex-col items-center gap-1">
-              <img src={logoUrl || trakalogLogo} alt="Logo" className="object-contain max-h-[80px] md:max-h-[120px]" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
-              <div className="flex flex-col items-center">
-                <span className="text-2xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
-                <span className="text-[9px] md:text-sm tracking-[0.2em] text-white/30 font-medium block mt-0.5">CATALOG MANAGER</span>
-              </div>
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="object-contain max-h-[100px] md:max-h-[150px]" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
+              ) : (
+                <span className="text-3xl md:text-5xl font-bold tracking-tight text-white" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>{branding?.name || "Untitled"}</span>
+              )}
               <SocialIcons branding={branding} immersive={true} />
               {branding?.bio && (
                 <p className="mt-2 max-w-md text-xs md:text-sm text-white/50 italic text-center" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>{branding.bio}</p>
               )}
+              <div className="text-center mt-4">
+                <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 hover:text-white/50 transition-colors">
+                  <span>Sent via</span>
+                  <span className="font-semibold tracking-wider">TRAKALOG</span>
+                </a>
+              </div>
             </div>
           </header>
           <div className="flex-1">{children}</div>
@@ -1993,23 +1999,21 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="max-w-2xl mx-auto px-4 flex items-center justify-center relative z-10 py-5">
           <div className="flex flex-col items-center">
-            <div className="flex items-center gap-3">
-              {logoUrl ? (
-                <img src={logoUrl} alt="Logo" className="object-contain max-h-[80px] sm:max-h-[120px]" />
-              ) : (
-                <>
-                  <img src={trakalogLogo} alt="Trakalog" className="h-16 sm:h-20" />
-                  <span className="text-2xl sm:text-4xl font-bold tracking-wider uppercase" style={{ background: "linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Trakalog</span>
-                </>
-              )}
-            </div>
-            {!logoUrl && (
-              <span className="text-xs sm:text-sm uppercase tracking-[0.2em] mt-1 text-muted-foreground/50">Catalog Manager</span>
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="object-contain max-h-[100px] sm:max-h-[150px]" />
+            ) : (
+              <span className="text-3xl sm:text-5xl font-bold tracking-tight text-foreground">{branding?.name || "Untitled"}</span>
             )}
             <SocialIcons branding={branding} immersive={false} />
             {branding?.bio && (
               <p className="mt-2 max-w-md text-xs sm:text-sm text-muted-foreground/50 italic text-center">{branding.bio}</p>
             )}
+            <div className="text-center mt-4">
+              <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors">
+                <span>Sent via</span>
+                <span className="font-semibold tracking-wider">TRAKALOG</span>
+              </a>
+            </div>
           </div>
         </div>
       </header>
