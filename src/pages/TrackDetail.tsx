@@ -109,6 +109,8 @@ import { equalSplit } from "@/lib/split-utils";
 import { extractTextFromPdf } from "@/lib/pdf-text-extract";
 import { toast } from "sonner";
 import type { StemType } from "@/lib/constants";
+import { PerformerCreditsSection } from "@/components/PerformerCreditsSection";
+import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
 
 interface StemFile {
   id: string;
@@ -936,7 +938,7 @@ export default function TrackDetail() {
                    <div className="border-t border-border" />
                    <section>
                      <h3 className="text-lg font-semibold text-foreground mb-4">Metadata</h3>
-                     <OverviewTab trackId={track.id} onEdit={() => setEditTrackModalOpen(true)} readOnly={isViewerShared || !permissions.canEditTracks} />
+                     <OverviewTab trackId={track.id} readOnly={isViewerShared || !permissions.canEditTracks} />
                    </section>
                    {!isViewerShared && permissions.canEditTracks && (
                    <>
@@ -1198,10 +1200,35 @@ function SectionCard({ title, icon: Icon, children, action }: { title: string; i
   );
 }
 
-function OverviewTab({ trackId, onEdit, readOnly }: { trackId: number; onEdit: () => void; readOnly?: boolean }) {
+function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolean }) {
   const { t } = useTranslation();
-  const { getTrack } = useTrack();
+  const { getTrack, updateTrack } = useTrack();
   const trackData = getTrack(trackId);
+
+  // ─── Metadata inline editing ───
+  const [editingMetadata, setEditingMetadata] = useState(false);
+  const [editAlbum, setEditAlbum] = useState("");
+  const [editLabel, setEditLabel] = useState("");
+  const [editPublishers, setEditPublishers] = useState<string[]>([""]);
+  const [editReleaseDate, setEditReleaseDate] = useState("");
+  const [editIsrc, setEditIsrc] = useState("");
+  const [editUpc, setEditUpc] = useState("");
+  const [editCopyright, setEditCopyright] = useState("");
+  const [editLanguage, setEditLanguage] = useState("");
+  const [editGender, setEditGender] = useState("");
+  const [editExplicit, setEditExplicit] = useState(false);
+  const [editNotes, setEditNotes] = useState("");
+
+  // ─── Performer Credits inline editing ───
+  const [editingPerformer, setEditingPerformer] = useState(false);
+  const [editPerformerDetails, setEditPerformerDetails] = useState<Record<string, string[]>>({});
+  const [editCustomPerformers, setEditCustomPerformers] = useState<CustomCreditEntry[]>([]);
+
+  // ─── Production Credits inline editing ───
+  const [editingProduction, setEditingProduction] = useState(false);
+  const [editProductionDetails, setEditProductionDetails] = useState<Record<string, string[]>>({});
+  const [editCustomProduction, setEditCustomProduction] = useState<CustomCreditEntry[]>([]);
+
   if (!trackData) return null;
 
   const meta = buildMeta(trackData, t);
@@ -1223,52 +1250,342 @@ function OverviewTab({ trackId, onEdit, readOnly }: { trackId: number; onEdit: (
     </div>
   );
 
-  const sections = [
-    { title: "Metadata", subtitle: "Release info & identifiers", icon: FileText, accent: "orange", items: meta },
-    { title: "Performer Credits", subtitle: "Artists & musicians", icon: Mic, accent: "pink", items: performerCredits },
-    { title: "Production & Other Credits", subtitle: "Engineers, studios & production", icon: Headphones, accent: "purple", items: productionCredits },
-  ] as const;
-
   const accentStyles = {
     orange: { bg: "bg-orange-500/10", text: "text-orange-500", border: "border-t-orange-500/40" },
     pink: { bg: "bg-pink-500/10", text: "text-pink-500", border: "border-t-pink-500/40" },
     purple: { bg: "bg-purple-500/10", text: "text-purple-500", border: "border-t-purple-500/40" },
   };
 
+  // ─── Metadata editing functions ───
+  const startEditingMetadata = () => {
+    setEditAlbum(trackData.album || "");
+    setEditLabel(trackData.label || "");
+    setEditPublishers(trackData.publishers.length ? [...trackData.publishers] : [""]);
+    setEditReleaseDate(trackData.releaseDate || "");
+    setEditIsrc(trackData.isrc || "");
+    setEditUpc(trackData.upc || "");
+    setEditCopyright(trackData.copyright || "");
+    setEditLanguage(trackData.language || "");
+    setEditGender(trackData.voice || "");
+    setEditExplicit(trackData.explicit || false);
+    setEditNotes(trackData.notes || "");
+    setEditingMetadata(true);
+  };
+
+  const saveMetadata = () => {
+    updateTrack(trackId, {
+      album: editAlbum.trim(),
+      label: editLabel.trim(),
+      publishers: editPublishers.filter(Boolean).map(p => p.trim()),
+      releaseDate: editReleaseDate,
+      isrc: editIsrc.trim(),
+      upc: editUpc.trim(),
+      copyright: editCopyright.trim(),
+      language: editLanguage,
+      voice: editGender,
+      explicit: editExplicit,
+      notes: editNotes.trim(),
+    });
+    toast.success(t("editTrack.saved", "Track updated"));
+    setEditingMetadata(false);
+  };
+
+  // ─── Performer Credits editing functions ───
+  const startEditingPerformer = () => {
+    const credits = trackData.credits || {};
+    const detailsCopy: Record<string, string[]> = {};
+    for (const f of PERFORMER_CREDIT_KEYS) {
+      detailsCopy[f.key] = credits[f.key] ? [...credits[f.key]] : [""];
+    }
+    setEditPerformerDetails(detailsCopy);
+    setEditCustomPerformers(
+      Array.isArray(credits.customPerformers)
+        ? (credits.customPerformers as unknown as CustomCreditEntry[]).map(e => ({ ...e, values: [...e.values] }))
+        : []
+    );
+    setEditingPerformer(true);
+  };
+
+  const savePerformerCredits = () => {
+    const existingCredits = trackData.credits || {};
+    updateTrack(trackId, {
+      credits: {
+        ...existingCredits,
+        ...editPerformerDetails,
+        customPerformers: editCustomPerformers.filter(e => e.role.trim() && e.values.some(v => v.trim())),
+        customProduction: Array.isArray(existingCredits.customProduction) ? existingCredits.customProduction : [],
+      },
+    });
+    toast.success(t("editTrack.saved", "Track updated"));
+    setEditingPerformer(false);
+  };
+
+  // ─── Production Credits editing functions ───
+  const startEditingProduction = () => {
+    const credits = trackData.credits || {};
+    const detailsCopy: Record<string, string[]> = {};
+    for (const f of PRODUCTION_CREDIT_KEYS) {
+      detailsCopy[f.key] = credits[f.key] ? [...credits[f.key]] : [""];
+    }
+    setEditProductionDetails(detailsCopy);
+    setEditCustomProduction(
+      Array.isArray(credits.customProduction)
+        ? (credits.customProduction as unknown as CustomCreditEntry[]).map(e => ({ ...e, values: [...e.values] }))
+        : []
+    );
+    setEditingProduction(true);
+  };
+
+  const saveProductionCredits = () => {
+    const existingCredits = trackData.credits || {};
+    updateTrack(trackId, {
+      credits: {
+        ...existingCredits,
+        ...editProductionDetails,
+        customPerformers: Array.isArray(existingCredits.customPerformers) ? existingCredits.customPerformers : [],
+        customProduction: editCustomProduction.filter(e => e.role.trim() && e.values.some(v => v.trim())),
+      },
+    });
+    toast.success(t("editTrack.saved", "Track updated"));
+    setEditingProduction(false);
+  };
+
+  // ─── Detail helpers for credits editing (same pattern as EditTrackModal) ───
+  const updatePerformerDetail = (key: string, index: number, value: string) => {
+    setEditPerformerDetails(prev => {
+      const arr = [...(prev[key] || [""])];
+      arr[index] = value;
+      return { ...prev, [key]: arr };
+    });
+  };
+  const addPerformerDetailEntry = (key: string) => {
+    setEditPerformerDetails(prev => ({ ...prev, [key]: [...(prev[key] || [""]), ""] }));
+  };
+  const removePerformerDetailEntry = (key: string, index: number) => {
+    setEditPerformerDetails(prev => {
+      const arr = [...(prev[key] || [])];
+      arr.splice(index, 1);
+      return { ...prev, [key]: arr.length ? arr : [""] };
+    });
+  };
+
+  const updateProductionDetail = (key: string, index: number, value: string) => {
+    setEditProductionDetails(prev => {
+      const arr = [...(prev[key] || [""])];
+      arr[index] = value;
+      return { ...prev, [key]: arr };
+    });
+  };
+  const addProductionDetailEntry = (key: string) => {
+    setEditProductionDetails(prev => ({ ...prev, [key]: [...(prev[key] || [""]), ""] }));
+  };
+  const removeProductionDetailEntry = (key: string, index: number) => {
+    setEditProductionDetails(prev => {
+      const arr = [...(prev[key] || [])];
+      arr.splice(index, 1);
+      return { ...prev, [key]: arr.length ? arr : [""] };
+    });
+  };
+
+  // ─── Splits suggestions for name autocomplete in credits ───
+  const splitSuggestions = (trackData.splits || []).filter(s => s.name.trim()).map(s => ({ name: s.name, stage_name: s.stage_name }));
+
+  const inputClass = "w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/30 transition-all placeholder:text-muted-foreground/40";
+
   return (
     <div className="space-y-4">
       {/* Action bar */}
       <div className="flex items-center justify-end gap-2">
-        {!readOnly && (
-          <button onClick={onEdit} className="flex items-center gap-1.5 text-xs text-foreground hover:text-foreground/80 bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-lg font-semibold transition-colors">
-            <Edit3 className="w-3.5 h-3.5" /> Edit Metadata
-          </button>
-        )}
         <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg font-semibold transition-colors">
           <Download className="w-3.5 h-3.5" /> Download PDF
         </button>
       </div>
 
-      {sections.map((section) => {
-        const style = accentStyles[section.accent];
-        const Icon = section.icon;
-        return (
-          <div key={section.title} className={`rounded-xl bg-card/50 border border-border/40 border-t-2 ${style.border} overflow-hidden`}>
-            <div className="px-5 pt-5 pb-4 flex items-center gap-3">
-              <div className={`w-9 h-9 rounded-lg ${style.bg} flex items-center justify-center shrink-0`}>
-                <Icon className={`w-[18px] h-[18px] ${style.text}`} />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-foreground">{section.title}</h4>
-                <p className="text-[11px] text-muted-foreground">{section.subtitle}</p>
-              </div>
+      {/* ═══════════════════ METADATA SECTION ═══════════════════ */}
+      <div className={`rounded-xl bg-card/50 border border-border/40 border-t-2 ${accentStyles.orange.border} overflow-hidden`}>
+        <div className="px-5 pt-5 pb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-lg ${accentStyles.orange.bg} flex items-center justify-center shrink-0`}>
+              <FileText className={`w-[18px] h-[18px] ${accentStyles.orange.text}`} />
             </div>
-            <div className="px-5 pb-5">
-              {renderGrid(section.items)}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground">Metadata</h4>
+              <p className="text-[11px] text-muted-foreground">Release info & identifiers</p>
             </div>
           </div>
-        );
-      })}
+          {!readOnly && !editingMetadata && (
+            <button onClick={startEditingMetadata} className="text-xs text-primary hover:underline">Edit</button>
+          )}
+          {editingMetadata && (
+            <div className="flex items-center gap-2">
+              <button onClick={() => setEditingMetadata(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">Cancel</button>
+              <button onClick={saveMetadata} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3" /> Save</button>
+            </div>
+          )}
+        </div>
+        <div className="px-5 pb-5">
+          {editingMetadata ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.albumEp", "Album / EP")}</label>
+                <input type="text" value={editAlbum} onChange={e => setEditAlbum(e.target.value)} className={inputClass} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.label", "Label")}</label>
+                <input type="text" value={editLabel} onChange={e => setEditLabel(e.target.value)} className={inputClass} />
+              </div>
+              <div className="col-span-2 space-y-1">
+                <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.publisher", "Publisher(s)")}</label>
+                {editPublishers.map((pub, idx) => (
+                  <div key={idx} className="flex items-center gap-2 mb-1">
+                    <input
+                      type="text"
+                      value={pub}
+                      onChange={e => { const updated = [...editPublishers]; updated[idx] = e.target.value; setEditPublishers(updated); }}
+                      placeholder={t("uploadTrack.publisherPlaceholder", "e.g. Sony Music Publishing")}
+                      className={"flex-1 " + inputClass}
+                    />
+                    {editPublishers.length > 1 && (
+                      <button type="button" onClick={() => setEditPublishers(editPublishers.filter((_, i) => i !== idx))} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button type="button" onClick={() => setEditPublishers([...editPublishers, ""])} className="text-2xs text-primary hover:text-primary/80 font-medium mt-1">
+                  + {t("uploadTrack.addAnother", "Add another")}
+                </button>
+              </div>
+              <div className="space-y-1">
+                <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.releaseDate", "Release Date")}</label>
+                <input type="date" value={editReleaseDate} onChange={e => setEditReleaseDate(e.target.value)} className={inputClass} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-2xs font-medium text-muted-foreground">ISRC</label>
+                <input type="text" value={editIsrc} onChange={e => setEditIsrc(e.target.value)} placeholder="e.g. USRC17607839" className={inputClass} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-2xs font-medium text-muted-foreground">UPC</label>
+                <input type="text" value={editUpc} onChange={e => setEditUpc(e.target.value)} placeholder="e.g. 0123456789012" className={inputClass} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.copyright", "Copyright")}</label>
+                <input type="text" value={editCopyright} onChange={e => setEditCopyright(e.target.value)} placeholder="e.g. © 2026 Label Name" className={inputClass} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-2xs font-medium text-muted-foreground">{t("editTrack.language", "Language")}</label>
+                <input type="text" value={editLanguage} onChange={e => setEditLanguage(e.target.value)} className={inputClass} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-2xs font-medium text-muted-foreground">{t("editTrack.gender", "Gender")}</label>
+                <select value={editGender} onChange={e => setEditGender(e.target.value)} className={inputClass}>
+                  <option value="">{t("editTrack.selectGender", "Select gender")}</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Duet">Duet</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2 self-end pb-2">
+                <input type="checkbox" id="edit-explicit-inline" checked={editExplicit} onChange={e => setEditExplicit(e.target.checked)} className="w-4 h-4 rounded border-border accent-brand-orange" />
+                <label htmlFor="edit-explicit-inline" className="text-sm text-foreground font-medium cursor-pointer">{t("uploadTrack.explicit", "Explicit")}</label>
+              </div>
+              <div className="col-span-2 space-y-1">
+                <label className="text-2xs font-medium text-muted-foreground">{t("editTrack.notes", "Notes")}</label>
+                <textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} placeholder="Any additional notes about this track…" rows={3} className={inputClass + " resize-none"} />
+              </div>
+            </div>
+          ) : (
+            renderGrid(meta)
+          )}
+        </div>
+      </div>
+
+      {/* ═══════════════════ PERFORMER CREDITS SECTION ═══════════════════ */}
+      <div className={`rounded-xl bg-card/50 border border-border/40 border-t-2 ${accentStyles.pink.border} overflow-hidden`}>
+        <div className="px-5 pt-5 pb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-lg ${accentStyles.pink.bg} flex items-center justify-center shrink-0`}>
+              <Mic className={`w-[18px] h-[18px] ${accentStyles.pink.text}`} />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-foreground">Performer Credits</h4>
+              <p className="text-[11px] text-muted-foreground">Artists & musicians</p>
+            </div>
+          </div>
+          {!readOnly && !editingPerformer && (
+            <button onClick={startEditingPerformer} className="text-xs text-primary hover:underline">Edit</button>
+          )}
+          {editingPerformer && (
+            <div className="flex items-center gap-2">
+              <button onClick={() => setEditingPerformer(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">Cancel</button>
+              <button onClick={savePerformerCredits} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3" /> Save</button>
+            </div>
+          )}
+        </div>
+        <div className="px-5 pb-5">
+          {editingPerformer ? (
+            <PerformerCreditsSection
+              details={editPerformerDetails}
+              updateDetail={updatePerformerDetail}
+              addDetailEntry={addPerformerDetailEntry}
+              removeDetailEntry={removePerformerDetailEntry}
+              extraSuggestions={splitSuggestions}
+              customPerformers={editCustomPerformers}
+              onAddCustomPerformer={() => setEditCustomPerformers(prev => [...prev, { id: crypto.randomUUID(), role: "", values: [""] }])}
+              onUpdateCustomPerformer={(id, field, value) => setEditCustomPerformers(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p))}
+              onRemoveCustomPerformer={(id) => setEditCustomPerformers(prev => prev.filter(p => p.id !== id))}
+              onAddCustomPerformerValue={(id) => setEditCustomPerformers(prev => prev.map(p => p.id === id ? { ...p, values: [...p.values, ""] } : p))}
+              onRemoveCustomPerformerValue={(id, index) => setEditCustomPerformers(prev => prev.map(p => p.id === id ? { ...p, values: p.values.filter((_, i) => i !== index) } : p))}
+            />
+          ) : (
+            renderGrid(performerCredits)
+          )}
+        </div>
+      </div>
+
+      {/* ═══════════════════ PRODUCTION & OTHER CREDITS SECTION ═══════════════════ */}
+      <div className={`rounded-xl bg-card/50 border border-border/40 border-t-2 ${accentStyles.purple.border} overflow-hidden`}>
+        <div className="px-5 pt-5 pb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-lg ${accentStyles.purple.bg} flex items-center justify-center shrink-0`}>
+              <Headphones className={`w-[18px] h-[18px] ${accentStyles.purple.text}`} />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-foreground">Production & Other Credits</h4>
+              <p className="text-[11px] text-muted-foreground">Engineers, studios & production</p>
+            </div>
+          </div>
+          {!readOnly && !editingProduction && (
+            <button onClick={startEditingProduction} className="text-xs text-primary hover:underline">Edit</button>
+          )}
+          {editingProduction && (
+            <div className="flex items-center gap-2">
+              <button onClick={() => setEditingProduction(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">Cancel</button>
+              <button onClick={saveProductionCredits} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3" /> Save</button>
+            </div>
+          )}
+        </div>
+        <div className="px-5 pb-5">
+          {editingProduction ? (
+            <ProductionCreditsSection
+              details={editProductionDetails}
+              updateDetail={updateProductionDetail}
+              addDetailEntry={addProductionDetailEntry}
+              removeDetailEntry={removeProductionDetailEntry}
+              extraSuggestions={splitSuggestions}
+              customProduction={editCustomProduction}
+              onAddCustomProduction={() => setEditCustomProduction(prev => [...prev, { id: crypto.randomUUID(), role: "", values: [""] }])}
+              onUpdateCustomProduction={(id, field, value) => setEditCustomProduction(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p))}
+              onRemoveCustomProduction={(id) => setEditCustomProduction(prev => prev.filter(p => p.id !== id))}
+              onAddCustomProductionValue={(id) => setEditCustomProduction(prev => prev.map(p => p.id === id ? { ...p, values: [...p.values, ""] } : p))}
+              onRemoveCustomProductionValue={(id, index) => setEditCustomProduction(prev => prev.map(p => p.id === id ? { ...p, values: p.values.filter((_, i) => i !== index) } : p))}
+            />
+          ) : (
+            renderGrid(productionCredits)
+          )}
+        </div>
+      </div>
     </div>
   );
 }
