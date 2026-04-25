@@ -165,11 +165,8 @@ function buildMeta(trackData: TrackData, t: (key: string) => string) {
     { label: t("trackDetail.releaseDate"), value: trackData.releaseDate || "\u2014" },
     { label: t("trackDetail.isrc"), value: trackData.isrc || "\u2014" },
     { label: t("trackDetail.upc"), value: trackData.upc || "\u2014" },
-    { label: t("trackDetail.copyright"), value: trackData.copyright || "\u2014" },
     { label: t("trackDetail.language"), value: trackData.language || "\u2014" },
-    { label: t("trackDetail.gender"), value: trackData.voice || "\u2014" },
     { label: t("trackDetail.explicit"), value: trackData.explicit ? t("trackDetail.yes") : t("trackDetail.no") },
-    { label: t("trackDetail.notes"), value: trackData.notes || "\u2014" },
   ];
 }
 
@@ -1213,11 +1210,8 @@ function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolea
   const [editReleaseDate, setEditReleaseDate] = useState("");
   const [editIsrc, setEditIsrc] = useState("");
   const [editUpc, setEditUpc] = useState("");
-  const [editCopyright, setEditCopyright] = useState("");
   const [editLanguage, setEditLanguage] = useState("");
-  const [editGender, setEditGender] = useState("");
   const [editExplicit, setEditExplicit] = useState(false);
-  const [editNotes, setEditNotes] = useState("");
 
   // ─── Performer Credits inline editing ───
   const [editingPerformer, setEditingPerformer] = useState(false);
@@ -1264,11 +1258,8 @@ function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolea
     setEditReleaseDate(trackData.releaseDate || "");
     setEditIsrc(trackData.isrc || "");
     setEditUpc(trackData.upc || "");
-    setEditCopyright(trackData.copyright || "");
     setEditLanguage(trackData.language || "");
-    setEditGender(trackData.voice || "");
     setEditExplicit(trackData.explicit || false);
-    setEditNotes(trackData.notes || "");
     setEditingMetadata(true);
   };
 
@@ -1280,11 +1271,8 @@ function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolea
       releaseDate: editReleaseDate,
       isrc: editIsrc.trim(),
       upc: editUpc.trim(),
-      copyright: editCopyright.trim(),
       language: editLanguage,
-      voice: editGender,
       explicit: editExplicit,
-      notes: editNotes.trim(),
     });
     toast.success(t("editTrack.saved", "Track updated"));
     setEditingMetadata(false);
@@ -1469,30 +1457,12 @@ function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolea
                 <input type="text" value={editUpc} onChange={e => setEditUpc(e.target.value)} placeholder="e.g. 0123456789012" className={inputClass} />
               </div>
               <div className="space-y-1">
-                <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.copyright", "Copyright")}</label>
-                <input type="text" value={editCopyright} onChange={e => setEditCopyright(e.target.value)} placeholder="e.g. © 2026 Label Name" className={inputClass} />
-              </div>
-              <div className="space-y-1">
                 <label className="text-2xs font-medium text-muted-foreground">{t("editTrack.language", "Language")}</label>
                 <input type="text" value={editLanguage} onChange={e => setEditLanguage(e.target.value)} className={inputClass} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-2xs font-medium text-muted-foreground">{t("editTrack.gender", "Gender")}</label>
-                <select value={editGender} onChange={e => setEditGender(e.target.value)} className={inputClass}>
-                  <option value="">{t("editTrack.selectGender", "Select gender")}</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Duet">Duet</option>
-                  <option value="N/A">N/A</option>
-                </select>
               </div>
               <div className="flex items-center gap-2 self-end pb-2">
                 <input type="checkbox" id="edit-explicit-inline" checked={editExplicit} onChange={e => setEditExplicit(e.target.checked)} className="w-4 h-4 rounded border-border accent-brand-orange" />
                 <label htmlFor="edit-explicit-inline" className="text-sm text-foreground font-medium cursor-pointer">{t("uploadTrack.explicit", "Explicit")}</label>
-              </div>
-              <div className="col-span-2 space-y-1">
-                <label className="text-2xs font-medium text-muted-foreground">{t("editTrack.notes", "Notes")}</label>
-                <textarea value={editNotes} onChange={e => setEditNotes(e.target.value)} placeholder="Any additional notes about this track…" rows={3} className={inputClass + " resize-none"} />
               </div>
             </div>
           ) : (

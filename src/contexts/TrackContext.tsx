@@ -138,7 +138,7 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     featuredArtists: (row.featuring as string)
       ? (row.featuring as string).split(",").map((s) => s.trim())
       : [],
-    album: "",
+    album: (row.album as string) || "",
     genre: (row.genre as string) || "",
     bpm: (row.bpm as number) || 0,
     key: (row.key as string) || "",
@@ -149,7 +149,7 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     voice: (row.gender as string) || "",
     status: mapStatus(row.status as string),
     isrc: (row.isrc as string) || "",
-    upc: "",
+    upc: (row.upc as string) || "",
     releaseDate: (row.released_at as string) || "",
     label: Array.isArray(row.labels) && (row.labels as string[]).length > 0
       ? (row.labels as string[])[0]
@@ -713,6 +713,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       // Build Supabase update payload
       const payload: Record<string, unknown> = {};
       if (updates.title !== undefined) payload.title = updates.title;
+      if (updates.album !== undefined) payload.album = updates.album || null;
       if (updates.artist !== undefined) payload.artist = updates.artist;
       if (updates.featuredArtists !== undefined) payload.featuring = updates.featuredArtists.join(", ");
       if (updates.type !== undefined) payload.track_type = mapTrackTypeToDb(updates.type);
@@ -733,6 +734,8 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (updates.notes !== undefined) payload.notes = updates.notes || null;
       if (updates.splits !== undefined) payload.splits = updates.splits;
       if (updates.isrc !== undefined) payload.isrc = updates.isrc || null;
+      if (updates.upc !== undefined) payload.upc = updates.upc || null;
+      if (updates.releaseDate !== undefined) payload.released_at = updates.releaseDate || null;
       if (updates.chapters !== undefined) payload.chapters = updates.chapters || null;
       if (updates.waveformData !== undefined) payload.waveform_data = updates.waveformData || null;
       if (updates.writtenBy !== undefined) payload.written_by = updates.writtenBy.length ? updates.writtenBy.join(", ") : null;
