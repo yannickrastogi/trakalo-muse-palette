@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { buildEmail, isValidEmail } from "../_shared/email-template.ts";
-import { isValidUUID } from "../_shared/validation.ts";
+import { buildEmail, isValidEmail, htmlEscape } from "../_shared/email-template.ts";
+import { isValidUUID, sanitizeEmailSubject } from "../_shared/validation.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -59,20 +59,20 @@ serve(async (req) => {
       }
     }
 
-    const greeting = to_name ? "<p>Hi " + to_name + ",</p>" : "<p>Hi,</p>";
-    const inviter = inviter_name || "Someone";
-    const roleLine = role ? " as <strong>" + role + "</strong>" : "";
+    const greeting = to_name ? "<p>Hi " + htmlEscape(to_name) + ",</p>" : "<p>Hi,</p>";
+    const inviter = htmlEscape(inviter_name || "Someone");
+    const roleLine = role ? " as <strong>" + htmlEscape(role) + "</strong>" : "";
 
     const bodyContent = greeting
-      + "<p><strong>" + inviter + "</strong> has invited you to join <strong>" + workspace_name + "</strong>" + roleLine + ".</p>"
+      + "<p><strong>" + inviter + "</strong> has invited you to join <strong>" + htmlEscape(workspace_name) + "</strong>" + roleLine + ".</p>"
       + '<p style="color:#52525b;font-size:13px;margin-top:24px;">If you didn\'t expect this invitation, you can safely ignore this email.</p>';
 
     const htmlBody = buildEmail({
       workspaceName: workspace_name,
       workspaceLogoUrl: logoUrl || null,
       brandColor: brandColor || null,
-      preheader: inviter + " invited you to join " + workspace_name,
-      heading: "You're invited to join " + workspace_name,
+      preheader: inviter + " invited you to join " + htmlEscape(workspace_name),
+      heading: "You're invited to join " + htmlEscape(workspace_name),
       body: bodyContent,
       ctaLabel: "Join Workspace",
       ctaUrl: invite_link,
@@ -87,7 +87,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: "Trakalog <noreply@trakalog.com>",
         to: [to_email],
-        subject: inviter + " invited you to join " + workspace_name + " on Trakalog",
+        subject: sanitizeEmailSubject(inviter + " invited you to join " + workspace_name + " on Trakalog"),
         html: htmlBody,
       }),
     });
@@ -106,7 +106,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

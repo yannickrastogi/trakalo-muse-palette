@@ -138,6 +138,8 @@ export default function SharedStemAccess() {
 
   // Fetch link data on mount
   useEffect(function() {
+    var isMounted = true;
+
     if (!linkId) {
       setError("Invalid link.");
       setLoading(false);
@@ -151,6 +153,8 @@ export default function SharedStemAccess() {
         .select("*")
         .eq("id", linkId!)
         .single();
+
+      if (!isMounted) return;
 
       if (linkErr || !linkRow) {
         setError("This link does not exist or has been removed.");
@@ -182,6 +186,8 @@ export default function SharedStemAccess() {
           .eq("id", sl.playlist_id)
           .single();
 
+        if (!isMounted) return;
+
         if (pl) {
           setPlaylistName(pl.name || "");
           setPlaylistCover(pl.cover_url || null);
@@ -194,12 +200,16 @@ export default function SharedStemAccess() {
           .eq("playlist_id", sl.playlist_id)
           .order("position", { ascending: true });
 
+        if (!isMounted) return;
+
         if (ptRows && ptRows.length > 0) {
           var trackIds = ptRows.map(function(r) { return r.track_id; });
           var { data: tracks } = await anonSupabase
             .from("tracks")
             .select("*")
             .in("id", trackIds);
+
+          if (!isMounted) return;
 
           if (tracks) {
             var trackMap: Record<string, TrackRow> = {};
@@ -218,6 +228,8 @@ export default function SharedStemAccess() {
           .eq("id", sl.track_id)
           .single();
 
+        if (!isMounted) return;
+
         if (track) {
           setTrackData(track as unknown as TrackRow);
         }
@@ -229,6 +241,8 @@ export default function SharedStemAccess() {
           .eq("track_id", sl.track_id)
           .order("created_at", { ascending: true });
 
+        if (!isMounted) return;
+
         if (stemRows) {
           setStems(stemRows as StemRow[]);
         }
@@ -238,9 +252,13 @@ export default function SharedStemAccess() {
     }
 
     fetchData().catch(function() {
-      setError("Failed to load this link. Please try again.");
-      setLoading(false);
+      if (isMounted) {
+        setError("Failed to load this link. Please try again.");
+        setLoading(false);
+      }
     });
+
+    return function () { isMounted = false; };
   }, [linkId]);
 
   // Fetch comments when form is completed

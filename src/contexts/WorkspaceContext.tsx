@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
 import { useAuth } from "@/contexts/AuthContext";
 import type { Workspace, WorkspaceSettings } from "@/types/workspace";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 interface WorkspaceContextValue {
   /** Currently active workspace */
@@ -107,7 +108,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                 }));
                 setWorkspaces(mapped);
                 setActiveId(mapped[0].id);
-                localStorage.setItem("trakalog_active_workspace", mapped[0].id);
+                safeLocalStorage.setItem("trakalog_active_workspace", mapped[0].id);
                 return;
               }
             }
@@ -147,30 +148,30 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       // If switchTo is specified (e.g. after creating a new workspace), use it
       if (opts?.switchTo && mapped.some((w) => w.id === opts.switchTo)) {
         setActiveId(opts.switchTo);
-        localStorage.setItem("trakalog_active_workspace", opts.switchTo);
+        safeLocalStorage.setItem("trakalog_active_workspace", opts.switchTo);
       } else if (!activeId || !mapped.some((w) => w.id === activeId)) {
         // Set active workspace: use stored preference or first workspace
         // Always prefer the user's personal workspace (is_personal = true)
         const personalWorkspace = mapped.find((w) => w.is_personal && w.owner_id === user.id) || null;
         const ownWorkspace = personalWorkspace;
-        const stored = localStorage.getItem("trakalog_active_workspace");
-        const justLoggedIn = localStorage.getItem("trakalog_just_logged_in");
+        const stored = safeLocalStorage.getItem("trakalog_active_workspace");
+        const justLoggedIn = safeLocalStorage.getItem("trakalog_just_logged_in");
 
         if (justLoggedIn) {
           // After login, always start on personal workspace
-          localStorage.removeItem("trakalog_just_logged_in");
+          safeLocalStorage.removeItem("trakalog_just_logged_in");
           if (ownWorkspace) {
             setActiveId(ownWorkspace.id);
-            localStorage.setItem("trakalog_active_workspace", ownWorkspace.id);
+            safeLocalStorage.setItem("trakalog_active_workspace", ownWorkspace.id);
           } else if (mapped.length > 0) {
             setActiveId(mapped[0].id);
-            localStorage.setItem("trakalog_active_workspace", mapped[0].id);
+            safeLocalStorage.setItem("trakalog_active_workspace", mapped[0].id);
           }
         } else if (stored && mapped.some((w) => w.id === stored)) {
           setActiveId(stored);
         } else if (ownWorkspace) {
           setActiveId(ownWorkspace.id);
-          localStorage.setItem("trakalog_active_workspace", ownWorkspace.id);
+          safeLocalStorage.setItem("trakalog_active_workspace", ownWorkspace.id);
         } else if (mapped.length > 0) {
           setActiveId(mapped[0].id);
         }
@@ -197,7 +198,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const switchWorkspace = useCallback((workspaceId: string) => {
     setActiveId(workspaceId);
-    localStorage.setItem("trakalog_active_workspace", workspaceId);
+    safeLocalStorage.setItem("trakalog_active_workspace", workspaceId);
   }, []);
 
   const createWorkspace = useCallback(async (name: string, description?: string): Promise<string | null> => {

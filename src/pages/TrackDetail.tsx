@@ -2849,9 +2849,9 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
         const watermarkedBytes = await pdfDoc.save();
         const blob = new Blob([watermarkedBytes], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
-        window.open(url, "_blank");
+        window.open(url, "_blank", "noopener,noreferrer");
       } else {
-        window.open(data.signedUrl, "_blank");
+        window.open(data.signedUrl, "_blank", "noopener,noreferrer");
       }
     } catch (err) {
       console.error("Failed to open document:", err);

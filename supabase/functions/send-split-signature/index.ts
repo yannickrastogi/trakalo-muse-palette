@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { buildEmail, isValidEmail, htmlEscape } from "../_shared/email-template.ts";
-import { isValidUUID } from "../_shared/validation.ts";
+import { isValidUUID, sanitizeEmailSubject } from "../_shared/validation.ts";
 
 function generateToken(length = 32): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -173,7 +173,7 @@ serve(async (req) => {
         body: JSON.stringify({
           from: "Trakalog <noreply@trakalog.com>",
           to: [split.email],
-          subject: "Split Agreement \u2014 " + trackTitle + " \u2014 Signature Required",
+          subject: sanitizeEmailSubject("Split Agreement \u2014 " + trackTitle + " \u2014 Signature Required"),
           html: htmlBody,
         }),
       });
@@ -191,7 +191,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

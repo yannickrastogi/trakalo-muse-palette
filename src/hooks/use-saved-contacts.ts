@@ -29,5 +29,5 @@ export function saveContact(contact: Omit<SavedContact, "lastUsed">) {
   }
   // Keep max 50 contacts, sorted by most recent
   contacts.sort((a, b) => b.lastUsed - a.lastUsed);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts.slice(0, 50)));
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts.slice(0, 50))); } catch { /* quota exceeded or private browsing */ }
 }

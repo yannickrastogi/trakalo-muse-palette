@@ -8,8 +8,14 @@ serve(async (req) => {
   if (corsRes) return corsRes;
   const corsHeaders = getCorsHeaders(req);
 
+  const visitor_ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const supabaseRl = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const { data: rateLimitOk } = await supabaseRl.rpc("check_rate_limit", { _key: "log-event:" + visitor_ip, _max_requests: 120, _window_seconds: 60 });
+  if (rateLimitOk === false) {
+    return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   try {
-    const visitor_ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
     const { slug, track_id, visitor_email, event_type } = await req.json();
 
     if (!slug || !event_type) {
@@ -76,7 +82,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -294,7 +294,11 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   }, [queue.length]);
 
   const removeFromQueue = useCallback((id: string) => {
-    setQueue((prev) => prev.filter((e) => e.id !== id));
+    setQueue((prev) => {
+      const removed = prev.find((e) => e.id === id);
+      if (removed?.compressed?.url) URL.revokeObjectURL(removed.compressed.url);
+      return prev.filter((e) => e.id !== id);
+    });
   }, []);
 
   // ─── Drag & Drop ──────────────────────────────────────────
@@ -802,6 +806,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   const handleReset = () => {
     setPhase("upload");
+    queue.forEach((e) => { if (e.compressed?.url) URL.revokeObjectURL(e.compressed.url); });
     setQueue([]);
     setCurrentIdx(0);
     setEditStep(0);

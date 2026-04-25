@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { safeLocalStorage } from "@/lib/safeStorage";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
@@ -51,6 +52,10 @@ export default function Onboarding() {
         } else {
           setCheckingWorkspace(false);
         }
+      })
+      .catch(function (err) {
+        console.error("Error checking workspace:", err);
+        setCheckingWorkspace(false);
       });
   }, [user]);
 
@@ -92,7 +97,7 @@ export default function Onboarding() {
 
     // 3. Check for return URL or pending auto-save
     const returnUrl = searchParams.get("return");
-    const pendingAutoSave = localStorage.getItem("trakalog_auto_save");
+    const pendingAutoSave = safeLocalStorage.getItem("trakalog_auto_save");
     if (returnUrl) {
       setSubmitting(false);
       navigate(returnUrl, { replace: true });

@@ -8,7 +8,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { buildEmail, isValidEmail, htmlEscape } from "../_shared/email-template.ts";
-import { isValidUUID } from "../_shared/validation.ts";
+import { isValidUUID, sanitizeEmailSubject } from "../_shared/validation.ts";
 
 // Map event_type to notification_preferences column
 const EVENT_TO_COLUMN: Record<string, string> = {
@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
       const visitorName = htmlEscape(data.visitor_name || "Someone");
       const visitorEmail = htmlEscape(data.visitor_email || "");
       const trackTitle = htmlEscape(data.track_title || "your track");
-      subject = "[Trakalog] " + (data.visitor_name || "Someone") + " viewed " + (data.track_title || "your track");
+      subject = sanitizeEmailSubject("[Trakalog] " + (data.visitor_name || "Someone") + " viewed " + (data.track_title || "your track"));
       heading = "New activity on your shared link";
       body = "<strong>" + visitorName + "</strong>"
         + (visitorEmail ? " (" + visitorEmail + ")" : "")
@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     } else if (event_type === "comment") {
       const commenterName = htmlEscape(data.commenter_name || "Someone");
       const trackTitle = htmlEscape(data.track_title || "your track");
-      subject = "[Trakalog] New comment on " + (data.track_title || "your track");
+      subject = sanitizeEmailSubject("[Trakalog] New comment on " + (data.track_title || "your track"));
       heading = "New comment";
       body = "<strong>" + commenterName + "</strong> commented on <strong>" + trackTitle + "</strong>.";
       ctaLabel = "View Comment";
@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
     } else if (event_type === "signature") {
       const signerName = htmlEscape(data.signer_name || "A collaborator");
       const trackTitle = htmlEscape(data.track_title || "your track");
-      subject = "[Trakalog] Splits signed on " + (data.track_title || "your track");
+      subject = sanitizeEmailSubject("[Trakalog] Splits signed on " + (data.track_title || "your track"));
       heading = "Splits signed";
       body = "<strong>" + signerName + "</strong> signed their splits on <strong>" + trackTitle + "</strong>.";
       ctaLabel = "View Splits";
@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
       const memberName = htmlEscape(data.member_name || "A new member");
       const memberEmail = htmlEscape(data.member_email || "");
       const workspaceName = htmlEscape(data.workspace_name || "your workspace");
-      subject = "[Trakalog] " + (data.member_name || "Someone") + " joined your workspace";
+      subject = sanitizeEmailSubject("[Trakalog] " + (data.member_name || "Someone") + " joined your workspace");
       heading = "New member joined";
       body = "<strong>" + memberName + "</strong>" + (memberEmail ? " (" + memberEmail + ")" : "") + " accepted your invitation and joined <strong>" + workspaceName + "</strong>.";
       ctaLabel = "View Team";
@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
     } else if (event_type === "track_upload") {
       const uploaderName = htmlEscape(data.uploader_name || "A member");
       const trackTitle = htmlEscape(data.track_title || "a new track");
-      subject = "[Trakalog] New track uploaded: " + (data.track_title || "Untitled");
+      subject = sanitizeEmailSubject("[Trakalog] New track uploaded: " + (data.track_title || "Untitled"));
       heading = "New track uploaded";
       body = "<strong>" + uploaderName + "</strong> uploaded <strong>" + trackTitle + "</strong> to the catalog.";
       ctaLabel = "View Track";

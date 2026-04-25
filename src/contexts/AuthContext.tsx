@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 import { isEmailWhitelisted } from "@/lib/whitelist";
 import { toast } from "sonner";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 interface AuthContextValue {
   session: Session | null;
@@ -69,14 +70,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       // Persist session to localStorage on any valid event
       if (newSession) {
-        localStorage.setItem("trakalog_was_auth", "1");
+        safeLocalStorage.setItem("trakalog_was_auth", "1");
         try {
-          localStorage.setItem("trakalog_session_backup", JSON.stringify(newSession));
+          safeLocalStorage.setItem("trakalog_session_backup", JSON.stringify(newSession));
         } catch (e) { console.error("Failed to backup session:", e); }
       }
       // On explicit SIGNED_OUT, clear the backup
       if (event === "SIGNED_OUT") {
-        localStorage.removeItem("trakalog_session_backup");
+        safeLocalStorage.removeItem("trakalog_session_backup");
       }
 
       if (event === "SIGNED_IN" && newSession) {
@@ -203,9 +204,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.rpc("write_audit_log", { _user_id: currentUser.id, _workspace_id: null, _action: "user.logout" }).then(() => {}).catch(() => {});
     }
     supabase.auth.stopAutoRefresh();
-    localStorage.removeItem("trakalog_was_auth");
-    localStorage.removeItem("trakalog_session_backup");
-    localStorage.removeItem("trakalog_active_workspace");
+    safeLocalStorage.removeItem("trakalog_was_auth");
+    safeLocalStorage.removeItem("trakalog_session_backup");
+    safeLocalStorage.removeItem("trakalog_active_workspace");
     await supabase.auth.signOut();
     window.location.href = "/auth";
   }, []);

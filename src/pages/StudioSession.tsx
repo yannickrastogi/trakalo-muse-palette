@@ -37,6 +37,8 @@ export default function StudioSession() {
   var [existingSubmissions, setExistingSubmissions] = useState<{ full_name: string }[]>([]);
 
   useEffect(function () {
+    var isMounted = true;
+
     if (!token) {
       setError(t("studioQr.invalidToken"));
       setLoading(false);
@@ -49,6 +51,7 @@ export default function StudioSession() {
       .eq("qr_token", token)
       .single()
       .then(function (res) {
+        if (!isMounted) return;
         if (res.error || !res.data) {
           setError(t("studioQr.invalidToken"));
           setLoading(false);
@@ -62,12 +65,15 @@ export default function StudioSession() {
           .eq("track_id", res.data.id)
           .neq("status", "rejected")
           .then(function (subRes) {
+            if (!isMounted) return;
             if (subRes.data) {
               setExistingSubmissions(subRes.data);
             }
             setLoading(false);
           }).catch(function (err) { console.error("Error:", err); });
       }).catch(function (err) { console.error("Error:", err); });
+
+    return function () { isMounted = false; };
   }, [token]);
 
   function toggleRole(value: string) {

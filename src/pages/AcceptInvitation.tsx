@@ -56,59 +56,67 @@ export default function AcceptInvitation() {
   var [accepted, setAccepted] = useState(false);
 
   useEffect(function () {
-    loadInvitation();
-    checkSession();
-  }, [token]);
+    var isMounted = true;
 
-  async function checkSession() {
-    try {
-      var backup = localStorage.getItem("trakalog_session_backup");
-      if (backup) {
-        var parsed = JSON.parse(backup);
-        if (parsed && parsed.user) {
-          setSession(parsed);
+    function checkSession() {
+      try {
+        var backup = localStorage.getItem("trakalog_session_backup");
+        if (backup) {
+          var parsed = JSON.parse(backup);
+          if (parsed && parsed.user && isMounted) {
+            setSession(parsed);
+          }
         }
+      } catch (e) {
+        // ignore parse errors
       }
-    } catch (e) {
-      // ignore parse errors
-    }
-  }
-
-  async function loadInvitation() {
-    if (!token) {
-      setError("Invalid invitation link.");
-      setLoading(false);
-      return;
     }
 
-    try {
-      var { data, error: fetchError } = await anonSupabase
-        .from("invitations")
-        .select("*")
-        .eq("token", token)
-        .single();
-
-      if (fetchError || !data) {
-        setError("This invitation was not found. It may have been revoked.");
-        setLoading(false);
+    async function loadInvitation() {
+      if (!token) {
+        if (isMounted) {
+          setError("Invalid invitation link.");
+          setLoading(false);
+        }
         return;
       }
 
-      setInvitation(data as InvitationData);
+      try {
+        var { data, error: fetchError } = await anonSupabase
+          .from("invitations")
+          .select("*")
+          .eq("token", token)
+          .single();
 
-      if (data.status === "accepted") {
-        setError("This invitation has already been accepted.");
-      } else if (data.status === "revoked") {
-        setError("This invitation has been revoked.");
-      } else if (data.expires_at && new Date(data.expires_at) < new Date()) {
-        setError("This invitation has expired.");
+        if (!isMounted) return;
+
+        if (fetchError || !data) {
+          setError("This invitation was not found. It may have been revoked.");
+          setLoading(false);
+          return;
+        }
+
+        setInvitation(data as InvitationData);
+
+        if (data.status === "accepted") {
+          setError("This invitation has already been accepted.");
+        } else if (data.status === "revoked") {
+          setError("This invitation has been revoked.");
+        } else if (data.expires_at && new Date(data.expires_at) < new Date()) {
+          setError("This invitation has expired.");
+        }
+      } catch (e: any) {
+        if (isMounted) setError("Failed to load invitation.");
+      } finally {
+        if (isMounted) setLoading(false);
       }
-    } catch (e: any) {
-      setError("Failed to load invitation.");
-    } finally {
-      setLoading(false);
     }
-  }
+
+    loadInvitation();
+    checkSession();
+
+    return function () { isMounted = false; };
+  }, [token]);
 
   async function handleAccept() {
     if (!invitation || !session) return;

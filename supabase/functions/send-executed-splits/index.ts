@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { buildEmail, isValidEmail, htmlEscape } from "../_shared/email-template.ts";
-import { isValidUUID } from "../_shared/validation.ts";
+import { isValidUUID, sanitizeEmailSubject } from "../_shared/validation.ts";
 
 const maskIpi = (ipi: string | undefined) => ipi ? "***" + ipi.slice(-3) : "\u2014";
 
@@ -160,11 +160,11 @@ serve(async (req) => {
         body: JSON.stringify(Object.assign({
           from: "Trakalog <noreply@trakalog.com>",
           to: [sig.collaborator_email],
-          subject: "Executed Split Agreement \u2014 " + trackTitle,
+          subject: sanitizeEmailSubject("Executed Split Agreement \u2014 " + trackTitle),
           html: htmlBody,
         }, pdf_base64 ? {
           attachments: [{
-            filename: trackTitle + " - Split Agreement.pdf",
+            filename: sanitizeEmailSubject(trackTitle) + " - Split Agreement.pdf",
             content: pdf_base64,
           }],
         } : {})),
@@ -183,7 +183,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
