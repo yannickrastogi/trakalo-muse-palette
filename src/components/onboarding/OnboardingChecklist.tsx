@@ -90,7 +90,7 @@ export function OnboardingChecklist({
 
   function handleDismiss() {
     setDismissed(true);
-    localStorage.setItem("trakalog_checklist_dismissed", "true");
+    safeLocalStorage.setItem("trakalog_checklist_dismissed", "true");
   }
 
   return (

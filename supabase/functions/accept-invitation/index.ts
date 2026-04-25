@@ -88,7 +88,8 @@ serve(async (req) => {
       .upsert(memberData, { onConflict: "user_id,workspace_id" });
 
     if (memberError) {
-      return new Response(JSON.stringify({ error: "Failed to add workspace member: " + memberError.message }), {
+      console.error("accept-invitation member error:", memberError.message);
+      return new Response(JSON.stringify({ error: "Failed to join workspace" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -101,7 +102,8 @@ serve(async (req) => {
       .eq("id", invitation.id);
 
     if (updateError) {
-      return new Response(JSON.stringify({ error: "Failed to update invitation: " + updateError.message }), {
+      console.error("accept-invitation update error:", updateError.message);
+      return new Response(JSON.stringify({ error: "Failed to update invitation" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

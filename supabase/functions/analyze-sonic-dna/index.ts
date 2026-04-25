@@ -162,13 +162,15 @@ Deno.serve(async (req) => {
         .eq("id", track_id);
 
       if (updateErr) {
-        return new Response(JSON.stringify({ error: "Failed to update track: " + updateErr.message }), {
+        console.error("analyze-sonic-dna update error:", updateErr.message);
+        return new Response(JSON.stringify({ error: "Failed to update track analysis" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
     } catch (dbErr) {
-      return new Response(JSON.stringify({ error: "DB update exception: " + String(dbErr) }), {
+      console.error("analyze-sonic-dna DB exception:", dbErr);
+      return new Response(JSON.stringify({ error: "Failed to update track analysis" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

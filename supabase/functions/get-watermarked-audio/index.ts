@@ -130,8 +130,9 @@ Deno.serve(async (req) => {
 
     if (!wmResponse.ok) {
       const wmError = await wmResponse.text();
+      console.error("get-watermarked-audio encoding error:", wmError);
       return new Response(
-        JSON.stringify({ error: "Watermark encoding failed", details: wmError }),
+        JSON.stringify({ error: "Failed to generate watermarked audio" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -147,8 +148,9 @@ Deno.serve(async (req) => {
       });
 
     if (uploadErr) {
+      console.error("get-watermarked-audio upload error:", uploadErr.message);
       return new Response(
-        JSON.stringify({ error: "Failed to store watermarked audio", details: uploadErr.message }),
+        JSON.stringify({ error: "Failed to generate watermarked audio" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

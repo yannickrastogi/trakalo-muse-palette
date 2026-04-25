@@ -76,7 +76,8 @@ serve(async (req) => {
       .upload(previewPath, mp3Blob, { contentType: "audio/mp3", upsert: true });
 
     if (uploadError) {
-      return new Response(JSON.stringify({ error: "Failed to upload preview: " + uploadError.message }), {
+      console.error("compress-audio upload error:", uploadError.message);
+      return new Response(JSON.stringify({ error: "Failed to compress audio" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -88,7 +89,8 @@ serve(async (req) => {
       .eq("id", track_id);
 
     if (updateError) {
-      return new Response(JSON.stringify({ error: "Failed to update track: " + updateError.message }), {
+      console.error("compress-audio update error:", updateError.message);
+      return new Response(JSON.stringify({ error: "Failed to compress audio" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

@@ -203,7 +203,8 @@ serve(async (req) => {
       .eq("id", track_id);
 
     if (updateError) {
-      return new Response(JSON.stringify({ error: "Failed to update lyrics: " + updateError.message }), {
+      console.error("transcribe-lyrics update error:", updateError.message);
+      return new Response(JSON.stringify({ error: "Failed to save transcription" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -215,7 +216,8 @@ serve(async (req) => {
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error("transcribe-lyrics error:", err);
+    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

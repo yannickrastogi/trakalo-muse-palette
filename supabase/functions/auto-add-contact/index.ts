@@ -91,7 +91,7 @@ serve(async (req) => {
 
     if (insertError) {
       console.error("Insert contact error:", insertError.message);
-      return new Response(JSON.stringify({ error: insertError.message }), {
+      return new Response(JSON.stringify({ error: "Failed to save contact" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

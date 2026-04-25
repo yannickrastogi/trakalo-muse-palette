@@ -169,8 +169,8 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
       });
       reset();
       onOpenChange(false);
-    } catch (err: any) {
-      setError("Failed to send invitation: " + (err.message || "unknown error"));
+    } catch (err) {
+      setError("Failed to send invitation: " + (err instanceof Error ? err.message : "unknown error"));
     } finally {
       setSending(false);
     }
