@@ -56,7 +56,7 @@ export function AmbientWaveform() {
 
       <style>{`
         .ambient-waveform {
-          opacity: 0.12;
+          opacity: 0.30;
         }
         .ambient-waveform-svg {
           animation: ambient-pulse 9s ease-in-out infinite;

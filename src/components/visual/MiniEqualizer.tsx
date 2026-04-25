@@ -6,7 +6,7 @@ export function MiniEqualizer() {
   return (
     <div
       aria-hidden="true"
-      className="mini-eq inline-flex items-end gap-[2px] h-3.5 ml-1.5 shrink-0"
+      className="mini-eq inline-flex items-end gap-[2px] h-[18px] ml-1.5 shrink-0"
     >
       <span className="mini-eq-bar mini-eq-bar-1" />
       <span className="mini-eq-bar mini-eq-bar-2" />

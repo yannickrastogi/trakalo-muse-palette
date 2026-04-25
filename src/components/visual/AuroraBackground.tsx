@@ -14,7 +14,7 @@ export function AuroraBackground() {
 
       <style>{`
         .aurora-bg {
-          opacity: 0.2;
+          opacity: 0.5;
         }
         .aurora-blob {
           position: absolute;
@@ -23,24 +23,24 @@ export function AuroraBackground() {
           will-change: transform;
         }
         .aurora-blob-1 {
-          width: 45%;
-          height: 45%;
+          width: 55%;
+          height: 55%;
           top: -10%;
           left: -5%;
           background: radial-gradient(circle, #f97316 0%, transparent 70%);
           animation: aurora-drift-1 18s ease-in-out infinite alternate;
         }
         .aurora-blob-2 {
-          width: 40%;
-          height: 40%;
+          width: 50%;
+          height: 50%;
           top: 30%;
           right: -10%;
           background: radial-gradient(circle, #ec4899 0%, transparent 70%);
           animation: aurora-drift-2 20s ease-in-out infinite alternate;
         }
         .aurora-blob-3 {
-          width: 35%;
-          height: 35%;
+          width: 45%;
+          height: 45%;
           bottom: -5%;
           left: 25%;
           background: radial-gradient(circle, #a855f7 0%, transparent 70%);
