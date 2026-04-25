@@ -79,7 +79,7 @@ export interface TrackData extends WorkspaceScoped {
   originalFileName?: string;
   originalFileSize?: number;
   notes: string;
-  details: Record<string, string[]>;
+  credits: Record<string, string[]>;
   stems: TrackStem[];
   splits: TrackSplit[];
   lyrics?: string;
@@ -171,7 +171,7 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     previewFileUrl: (row.audio_preview_url as string) || undefined,
     originalFileUrl: (row.audio_url as string) || undefined,
     notes: (row.notes as string) || "",
-    details: {},
+    credits: (row.credits as Record<string, string[]>) || {},
     stems,
     splits: (row.splits as TrackSplit[]) || [],
     lyrics: (row.lyrics as string) || undefined,
@@ -655,6 +655,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         if (trackInput.copyright) metaPayload.copyright = trackInput.copyright;
         if (trackInput.explicit) metaPayload.explicit = trackInput.explicit;
         if (trackInput.chapters) metaPayload.chapters = trackInput.chapters;
+        if (trackInput.credits && Object.keys(trackInput.credits).length > 0) metaPayload.credits = trackInput.credits;
         if (Object.keys(metaPayload).length > 0) {
           await supabase.rpc("update_track", {
             _user_id: user.id,
@@ -742,6 +743,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (updates.masteredBy !== undefined) payload.mastered_by = updates.masteredBy || null;
       if (updates.copyright !== undefined) payload.copyright = updates.copyright || null;
       if (updates.explicit !== undefined) payload.explicit = updates.explicit || false;
+      if (updates.credits !== undefined) payload.credits = updates.credits;
 
       if (Object.keys(payload).length > 0 && user) {
         const { error } = await supabase.rpc("update_track", {

@@ -622,6 +622,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         masteredBy: currentTrack.masteredBy || undefined,
         copyright: currentTrack.copyright || undefined,
         explicit: currentTrack.explicit || undefined,
+        credits: currentTrack.details || {},
       });
       setUploadProgress(90);
 
@@ -905,6 +906,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           waveformData: waveformData,
           chapters: null,
           splits: [],
+          credits: entry.details || {},
         });
         setUploadProgress(100);
 
