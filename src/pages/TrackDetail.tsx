@@ -156,30 +156,33 @@ const detailLabelKeys: Record<string, string> = {
 };
 
 function buildMeta(trackData: TrackData, t: (key: string) => string) {
-  const meta = [
+  return [
     { label: t("trackDetail.albumEp"), value: trackData.album || "\u2014" },
     { label: t("trackDetail.label"), value: trackData.label || "\u2014" },
-    { label: t("trackDetail.publisher"), value: trackData.publisher || "\u2014" },
+    { label: t("trackDetail.publisher"), value: trackData.publishers.length ? trackData.publishers.join(", ") : "\u2014" },
     { label: t("trackDetail.releaseDate"), value: trackData.releaseDate || "\u2014" },
     { label: t("trackDetail.isrc"), value: trackData.isrc || "\u2014" },
     { label: t("trackDetail.upc"), value: trackData.upc || "\u2014" },
-    { label: t("trackDetail.writtenBy"), value: trackData.writtenBy.length ? trackData.writtenBy.join(", ") : "\u2014" },
-    { label: t("trackDetail.producedBy"), value: trackData.producedBy.length ? trackData.producedBy.join(", ") : "\u2014" },
-    { label: t("trackDetail.mixedBy"), value: trackData.mixedBy || "\u2014" },
-    { label: t("trackDetail.masteredBy"), value: trackData.masteredBy || "\u2014" },
     { label: t("trackDetail.copyright"), value: trackData.copyright || "\u2014" },
     { label: t("trackDetail.language"), value: trackData.language || "\u2014" },
     { label: t("trackDetail.gender"), value: trackData.voice || "\u2014" },
     { label: t("trackDetail.explicit"), value: trackData.explicit ? t("trackDetail.yes") : t("trackDetail.no") },
     { label: t("trackDetail.notes"), value: trackData.notes || "\u2014" },
   ];
-  Object.entries(trackData.credits || {}).forEach(([key, values]) => {
-    const filtered = values.filter(Boolean);
-    if (filtered.length > 0) {
-      meta.push({ label: detailLabelKeys[key] ? t(detailLabelKeys[key]) : key, value: filtered.join(", ") });
-    }
+}
+
+function buildPerformerCredits(trackData: TrackData, t: (key: string) => string) {
+  return PERFORMER_CREDIT_KEYS.map((f) => {
+    const values = (trackData.credits || {})[f.key]?.filter(Boolean) || [];
+    return { label: detailLabelKeys[f.key] ? t(detailLabelKeys[f.key]) : f.label, value: values.length > 0 ? values.join(", ") : "\u2014" };
   });
-  return meta;
+}
+
+function buildProductionCredits(trackData: TrackData, t: (key: string) => string) {
+  return PRODUCTION_CREDIT_KEYS.map((f) => {
+    const values = (trackData.credits || {})[f.key]?.filter(Boolean) || [];
+    return { label: detailLabelKeys[f.key] ? t(detailLabelKeys[f.key]) : f.label, value: values.length > 0 ? values.join(", ") : "\u2014" };
+  });
 }
 
 export default function TrackDetail() {
@@ -1186,10 +1189,23 @@ function OverviewTab({ trackId, onEdit, readOnly }: { trackId: number; onEdit: (
   if (!trackData) return null;
 
   const meta = buildMeta(trackData, t);
+  const performerCredits = buildPerformerCredits(trackData, t);
+  const productionCredits = buildProductionCredits(trackData, t);
 
   const handleDownloadPdf = () => {
     generateMetadataPdf(trackData.title, trackData.artist, meta);
   };
+
+  const renderGrid = (items: { label: string; value: string }[]) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border">
+      {items.map((m) => (
+        <div key={m.label} className="bg-card px-5 py-3.5">
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">{m.label}</p>
+          <p className="text-sm text-foreground font-medium">{m.value}</p>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <SectionCard
@@ -1208,13 +1224,22 @@ function OverviewTab({ trackId, onEdit, readOnly }: { trackId: number; onEdit: (
         </div>
       }
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border">
-        {meta.map((m) => (
-          <div key={m.label} className="bg-card px-5 py-3.5">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">{m.label}</p>
-            <p className="text-sm text-foreground font-medium">{m.value}</p>
-          </div>
-        ))}
+      <div className="space-y-6">
+        {/* Metadata */}
+        <div>
+          <h4 className="text-xs font-semibold text-foreground border-b border-border pb-1 mb-3 px-5 pt-4">Metadata</h4>
+          {renderGrid(meta)}
+        </div>
+        {/* Performer Credits */}
+        <div>
+          <h4 className="text-xs font-semibold text-foreground border-b border-border pb-1 mb-3 px-5">Performer Credits</h4>
+          {renderGrid(performerCredits)}
+        </div>
+        {/* Production & Other Credits */}
+        <div>
+          <h4 className="text-xs font-semibold text-foreground border-b border-border pb-1 mb-3 px-5">Production & Other Credits</h4>
+          {renderGrid(productionCredits)}
+        </div>
       </div>
     </SectionCard>
   );

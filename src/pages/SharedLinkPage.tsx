@@ -936,7 +936,7 @@ export default function SharedLinkPage() {
           { label: "Duration", value: trackData.duration_sec ? formatDuration(trackData.duration_sec) : "\u2014" },
           { label: "Mood", value: Array.isArray(trackData.mood) && trackData.mood.length > 0 ? trackData.mood.join(", ") : "\u2014" },
           { label: "Label", value: trackData.labels && trackData.labels.length > 0 ? trackData.labels[0] : "\u2014" },
-          { label: "Publisher", value: trackData.publishers && trackData.publishers.length > 0 ? trackData.publishers[0] : "\u2014" },
+          { label: "Publisher", value: trackData.publishers && trackData.publishers.length > 0 ? trackData.publishers.join(", ") : "\u2014" },
           { label: "ISRC", value: trackData.isrc || "\u2014" },
           { label: "Language", value: trackData.language || "\u2014" },
           { label: "Release Date", value: trackData.released_at || "\u2014" },

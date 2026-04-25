@@ -166,7 +166,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
   const [upc, setUpc] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
   const [label, setLabel] = useState("");
-  const [publisher, setPublisher] = useState("");
+  const [publishers, setPublishers] = useState<string[]>([]);
   const [copyright, setCopyright] = useState("");
   const [explicit, setExplicit] = useState(false);
   const [details, setDetails] = useState<Record<string, string[]>>({});
@@ -204,7 +204,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       setUpc(trackData.upc);
       setReleaseDate(trackData.releaseDate);
       setLabel(trackData.label);
-      setPublisher(trackData.publisher);
+      setPublishers(trackData.publishers.length ? [...trackData.publishers] : [""]);
       setCopyright(trackData.copyright);
       setExplicit(trackData.explicit);
       setDetails(JSON.parse(JSON.stringify(trackData.credits || {})));
@@ -299,10 +299,10 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       upc: upc.trim(),
       releaseDate,
       label: label.trim(),
-      publisher: publisher.trim(),
+      publishers: publishers.filter(Boolean).map(p => p.trim()),
       copyright: copyright.trim(),
       explicit,
-      details,
+      credits: details,
     };
 
     updateTrack(trackId, updates);
@@ -585,7 +585,25 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 </div>
                 <div className="space-y-1.5">
                   <FieldLabel>{t("editTrack.publisher")}</FieldLabel>
-                  <FieldInput value={publisher} onChange={setPublisher} placeholder={t("editTrack.publisherPlaceholder")} />
+                  {publishers.map((pub, idx) => (
+                    <div key={idx} className="flex items-center gap-2 mb-1">
+                      <input
+                        type="text"
+                        value={pub}
+                        onChange={(e) => { const updated = [...publishers]; updated[idx] = e.target.value; setPublishers(updated); }}
+                        placeholder={t("editTrack.publisherPlaceholder")}
+                        className="h-9 flex-1 px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
+                      />
+                      {publishers.length > 1 && (
+                        <button type="button" onClick={() => setPublishers(publishers.filter((_, i) => i !== idx))} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setPublishers([...publishers, ""])} className="text-2xs text-primary hover:text-primary/80 font-medium">
+                    + {t("uploadTrack.addAnother", "Add another")}
+                  </button>
                 </div>
               </div>
               <div className="space-y-1.5">

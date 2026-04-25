@@ -59,7 +59,7 @@ interface TrackRow {
   isrc: string | null;
   upc: string | null;
   label: string | null;
-  publisher: string | null;
+  publishers: string[] | null;
   copyright: string | null;
   written_by: string[] | null;
   produced_by: string[] | null;
@@ -775,7 +775,7 @@ function TrackDetailTabs({
               <MetaRow label="ISRC" value={trackData.isrc || "—"} />
               <MetaRow label="UPC" value={trackData.upc || "—"} />
               <MetaRow label="Label" value={trackData.label || "—"} />
-              <MetaRow label="Publisher" value={trackData.publisher || "—"} />
+              <MetaRow label="Publisher" value={trackData.publishers && trackData.publishers.length > 0 ? trackData.publishers.join(", ") : "—"} />
               <MetaRow label="Copyright" value={trackData.copyright || "—"} />
               <MetaRow label="Written By" value={trackData.written_by?.join(", ") || "—"} />
               <MetaRow label="Produced By" value={trackData.produced_by?.join(", ") || "—"} />

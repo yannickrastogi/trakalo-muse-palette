@@ -111,7 +111,7 @@ interface TrackEntry {
   upc: string;
   album: string;
   label: string;
-  publisher: string;
+  publishers: string[];
   releaseDate: string;
   writtenBy: string;
   producedBy: string;
@@ -177,7 +177,7 @@ function createTrackEntry(file: File): TrackEntry {
     upc: "",
     album: "",
     label: "",
-    publisher: "",
+    publishers: [""],
     releaseDate: "",
     writtenBy: "",
     producedBy: "",
@@ -615,7 +615,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         })),
         isrc: currentTrack.isrc || undefined,
         label: currentTrack.label || undefined,
-        publisher: currentTrack.publisher || undefined,
+        publishers: currentTrack.publishers.filter(Boolean),
         writtenBy: currentTrack.writtenBy ? currentTrack.writtenBy.split(",").map((s) => s.trim()).filter(Boolean) : [],
         producedBy: currentTrack.producedBy ? currentTrack.producedBy.split(",").map((s) => s.trim()).filter(Boolean) : [],
         mixedBy: currentTrack.mixedBy || undefined,
@@ -1149,15 +1149,12 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   upc={currentTrack.upc}
                   album={currentTrack.album}
                   label={currentTrack.label}
-                  publisher={currentTrack.publisher}
+                  publishers={currentTrack.publishers}
                   releaseDate={currentTrack.releaseDate}
-                  writtenBy={currentTrack.writtenBy}
-                  producedBy={currentTrack.producedBy}
-                  mixedBy={currentTrack.mixedBy}
-                  masteredBy={currentTrack.masteredBy}
                   copyright={currentTrack.copyright}
                   explicit={currentTrack.explicit}
                   onMetadataChange={(field: string, value: string | boolean) => updateCurrent({ [field]: value })}
+                  onPublishersChange={(pubs: string[]) => updateCurrent({ publishers: pubs })}
                   contacts={contacts}
                   existingSplitNames={existingSplitNames}
                 />
@@ -1176,7 +1173,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   coverFile={currentTrack.coverFile}
                   isrc={currentTrack.isrc} upc={currentTrack.upc}
                   album={currentTrack.album} label={currentTrack.label}
-                  publisher={currentTrack.publisher} releaseDate={currentTrack.releaseDate}
+                  publishers={currentTrack.publishers} releaseDate={currentTrack.releaseDate}
                   writtenBy={currentTrack.writtenBy} producedBy={currentTrack.producedBy}
                   mixedBy={currentTrack.mixedBy} masteredBy={currentTrack.masteredBy}
                   copyright={currentTrack.copyright} explicit={currentTrack.explicit}
@@ -1993,9 +1990,9 @@ function StepSplits({
 function StepDetails({
   splits, totalSplit, onAdd, onUpdate, onRemove, onBatchUpdate, onEqualSplit,
   details, updateDetail, addDetailEntry, removeDetailEntry,
-  isrc, upc, album, label, publisher, releaseDate,
-  writtenBy, producedBy, mixedBy, masteredBy, copyright, explicit: isExplicit,
-  onMetadataChange, contacts, existingSplitNames,
+  isrc, upc, album, label, publishers, releaseDate,
+  copyright, explicit: isExplicit,
+  onMetadataChange, onPublishersChange, contacts, existingSplitNames,
 }: {
   splits: Split[];
   totalSplit: number;
@@ -2008,10 +2005,10 @@ function StepDetails({
   updateDetail: (key: string, index: number, value: string) => void;
   addDetailEntry: (key: string) => void;
   removeDetailEntry: (key: string, index: number) => void;
-  isrc: string; upc: string; album: string; label: string; publisher: string;
-  releaseDate: string; writtenBy: string; producedBy: string; mixedBy: string;
-  masteredBy: string; copyright: string; explicit: boolean;
+  isrc: string; upc: string; album: string; label: string; publishers: string[];
+  releaseDate: string; copyright: string; explicit: boolean;
   onMetadataChange: (field: string, value: string | boolean) => void;
+  onPublishersChange: (publishers: string[]) => void;
   contacts: Contact[];
   existingSplitNames: string[];
 }) {
@@ -2092,7 +2089,28 @@ function StepDetails({
           >
             <MetadataInput label={t("uploadTrack.albumEp", "Album / EP")} value={album} onChange={(v) => onMetadataChange("album", v)} />
             <MetadataInput label={t("uploadTrack.label", "Label")} value={label} onChange={(v) => onMetadataChange("label", v)} />
-            <MetadataInput label={t("uploadTrack.publisher", "Publisher")} value={publisher} onChange={(v) => onMetadataChange("publisher", v)} />
+            <div className="col-span-2 space-y-1">
+              <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.publisher", "Publisher(s)")}</label>
+              {publishers.map((pub, idx) => (
+                <div key={idx} className="flex items-center gap-2 mb-1">
+                  <input
+                    type="text"
+                    value={pub}
+                    onChange={(e) => { const updated = [...publishers]; updated[idx] = e.target.value; onPublishersChange(updated); }}
+                    placeholder={t("uploadTrack.publisherPlaceholder", "e.g. Sony Music Publishing")}
+                    className="flex-1 px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/30 transition-all placeholder:text-muted-foreground/40"
+                  />
+                  {publishers.length > 1 && (
+                    <button type="button" onClick={() => onPublishersChange(publishers.filter((_, i) => i !== idx))} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={() => onPublishersChange([...publishers, ""])} className="text-2xs text-primary hover:text-primary/80 font-medium mt-1">
+                + {t("uploadTrack.addAnother", "Add another")}
+              </button>
+            </div>
             <div className="space-y-1">
               <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.releaseDate", "Release Date")}</label>
               <input
@@ -2104,22 +2122,6 @@ function StepDetails({
             </div>
             <MetadataInput label="ISRC" value={isrc} onChange={(v) => onMetadataChange("isrc", v)} placeholder="e.g. USRC17607839" />
             <MetadataInput label="UPC" value={upc} onChange={(v) => onMetadataChange("upc", v)} placeholder="e.g. 0123456789012" />
-            <div className="space-y-1">
-              <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.writtenBy", "Written By")}</label>
-              <NameAutocomplete value={writtenBy} onChange={(v) => onMetadataChange("writtenBy", v)} placeholder="e.g. John Doe, Jane Smith" className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/30 transition-all placeholder:text-muted-foreground/40" extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.producedBy", "Produced By")}</label>
-              <NameAutocomplete value={producedBy} onChange={(v) => onMetadataChange("producedBy", v)} placeholder="e.g. John Doe" className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/30 transition-all placeholder:text-muted-foreground/40" extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.mixedBy", "Mixed By")}</label>
-              <NameAutocomplete value={mixedBy} onChange={(v) => onMetadataChange("mixedBy", v)} placeholder="e.g. Mix Engineer" className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/30 transition-all placeholder:text-muted-foreground/40" extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.masteredBy", "Mastered By")}</label>
-              <NameAutocomplete value={masteredBy} onChange={(v) => onMetadataChange("masteredBy", v)} placeholder="e.g. Mastering Engineer" className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/30 transition-all placeholder:text-muted-foreground/40" extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))} />
-            </div>
             <MetadataInput label={t("uploadTrack.copyright", "Copyright")} value={copyright} onChange={(v) => onMetadataChange("copyright", v)} placeholder="e.g. © 2026 Label Name" />
             <div className="flex items-center gap-2 self-end pb-2">
               <input
@@ -2234,7 +2236,7 @@ function StepLyrics({
 function StepReview({
   title, artist, bpm, trackKey, genre, mood, trackType, voice, language, notes,
   audioFile, stems, splits, totalSplit, details, lyrics, coverFile,
-  isrc, upc, album, label, publisher, releaseDate,
+  isrc, upc, album, label, publishers, releaseDate,
   writtenBy, producedBy, mixedBy, masteredBy, copyright, explicit: isExplicit,
 }: {
   title: string; artist: string; bpm: string; trackKey: string;
@@ -2243,7 +2245,7 @@ function StepReview({
   details: Record<string, string[]>;
   lyrics?: string;
   coverFile?: File | null;
-  isrc?: string; upc?: string; album?: string; label?: string; publisher?: string;
+  isrc?: string; upc?: string; album?: string; label?: string; publishers?: string[];
   releaseDate?: string; writtenBy?: string; producedBy?: string; mixedBy?: string;
   masteredBy?: string; copyright?: string; explicit?: boolean;
 }) {
@@ -2393,13 +2395,13 @@ function StepReview({
       )}
 
       {/* Metadata */}
-      {(album || label || publisher || releaseDate || isrc || upc || writtenBy || producedBy || mixedBy || masteredBy || copyright || isExplicit) && (
+      {(album || label || (publishers && publishers.filter(Boolean).length > 0) || releaseDate || isrc || upc || writtenBy || producedBy || mixedBy || masteredBy || copyright || isExplicit) && (
         <div className="rounded-xl bg-secondary/50 border border-border p-4 space-y-2">
           <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">{t("uploadTrack.metadata", "Metadata")}</p>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[13px]">
             {album && <ReviewRow label={t("uploadTrack.albumEp", "Album / EP")} value={album} />}
             {label && <ReviewRow label={t("uploadTrack.label", "Label")} value={label} />}
-            {publisher && <ReviewRow label={t("uploadTrack.publisher", "Publisher")} value={publisher} />}
+            {publishers && publishers.filter(Boolean).length > 0 && <ReviewRow label={t("uploadTrack.publisher", "Publisher")} value={publishers.filter(Boolean).join(", ")} />}
             {releaseDate && <ReviewRow label={t("uploadTrack.releaseDate", "Release Date")} value={releaseDate} />}
             {isrc && <ReviewRow label="ISRC" value={isrc} />}
             {upc && <ReviewRow label="UPC" value={upc} />}

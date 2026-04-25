@@ -62,7 +62,7 @@ export interface TrackData extends WorkspaceScoped {
   upc: string;
   releaseDate: string;
   label: string;
-  publisher: string;
+  publishers: string[];
   writtenBy: string[];
   producedBy: string[];
   mixedBy: string;
@@ -154,9 +154,7 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     label: Array.isArray(row.labels) && (row.labels as string[]).length > 0
       ? (row.labels as string[])[0]
       : "",
-    publisher: Array.isArray(row.publishers) && (row.publishers as string[]).length > 0
-      ? (row.publishers as string[])[0]
-      : "",
+    publishers: Array.isArray(row.publishers) ? (row.publishers as string[]) : [],
     writtenBy: (row.written_by as string) ? (row.written_by as string).split(",").map((s) => s.trim()).filter(Boolean) : [],
     producedBy: (row.produced_by as string) ? (row.produced_by as string).split(",").map((s) => s.trim()).filter(Boolean) : [],
     mixedBy: (row.mixed_by as string) || "",
@@ -625,7 +623,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         _language: trackInput.language || null,
         _gender: trackInput.voice?.toLowerCase().replace("n/a", "n_a") || null,
         _labels: trackInput.label ? [trackInput.label] : [],
-        _publishers: trackInput.publisher ? [trackInput.publisher] : [],
+        _publishers: trackInput.publishers?.length ? trackInput.publishers : [],
         _audio_url: trackInput.originalFileUrl || null,
         _audio_preview_url: trackInput.previewFileUrl || null,
         _cover_art_url: trackInput.coverImage || null,
@@ -727,7 +725,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (updates.language !== undefined) payload.language = updates.language || null;
       if (updates.voice !== undefined) payload.gender = updates.voice?.toLowerCase().replace("n/a", "n_a") || null;
       if (updates.label !== undefined) payload.labels = updates.label ? [updates.label] : [];
-      if (updates.publisher !== undefined) payload.publishers = updates.publisher ? [updates.publisher] : [];
+      if (updates.publishers !== undefined) payload.publishers = updates.publishers;
       if (updates.coverImage !== undefined) payload.cover_url = updates.coverImage || null;
       if (updates.originalFileUrl !== undefined) payload.audio_url = updates.originalFileUrl || null;
       if (updates.previewFileUrl !== undefined) payload.audio_preview_url = updates.previewFileUrl || null;
