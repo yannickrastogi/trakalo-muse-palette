@@ -8,6 +8,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { buildEmail, isValidEmail, htmlEscape } from "../_shared/email-template.ts";
+import { isValidUUID } from "../_shared/validation.ts";
 
 // Map event_type to notification_preferences column
 const EVENT_TO_COLUMN: Record<string, string> = {
@@ -30,11 +31,25 @@ Deno.serve(async (req) => {
     });
   }
 
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const supabaseRl = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const { data: rateLimitOk } = await supabaseRl.rpc("check_rate_limit", { _key: "notif-email:" + ip, _max_requests: 30, _window_seconds: 3600 });
+  if (rateLimitOk === false) {
+    return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   try {
     const { event_type, user_id, data } = await req.json();
 
     if (!event_type || !user_id || !data) {
       return new Response(JSON.stringify({ error: "event_type, user_id, and data are required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!isValidUUID(user_id)) {
+      return new Response(JSON.stringify({ error: "Invalid user_id format" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

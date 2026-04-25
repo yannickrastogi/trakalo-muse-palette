@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { isValidUUID } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   const corsRes = handleCors(req);
@@ -22,6 +23,13 @@ Deno.serve(async (req) => {
     if (!brief || !workspace_id) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: brief, workspace_id" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!isValidUUID(workspace_id)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid workspace_id format" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

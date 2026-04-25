@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { buildEmail, isValidEmail, htmlEscape } from "../_shared/email-template.ts";
+import { isValidUUID } from "../_shared/validation.ts";
 
 const maskIpi = (ipi: string | undefined) => ipi ? "***" + ipi.slice(-3) : "\u2014";
 
@@ -10,11 +11,25 @@ serve(async (req) => {
   if (corsRes) return corsRes;
   const corsHeaders = getCorsHeaders(req);
 
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const supabaseRl = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const { data: rateLimitOk } = await supabaseRl.rpc("check_rate_limit", { _key: "exec-splits:" + ip, _max_requests: 10, _window_seconds: 3600 });
+  if (rateLimitOk === false) {
+    return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   try {
     const { track_id, pdf_base64 } = await req.json() as { track_id: string; pdf_base64?: string };
 
     if (!track_id) {
       return new Response(JSON.stringify({ error: "track_id required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!isValidUUID(track_id)) {
+      return new Response(JSON.stringify({ error: "Invalid track_id format" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

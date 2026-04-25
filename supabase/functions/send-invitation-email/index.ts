@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { buildEmail, isValidEmail } from "../_shared/email-template.ts";
+import { isValidUUID } from "../_shared/validation.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -27,6 +28,13 @@ serve(async (req) => {
 
     if (!isValidEmail(to_email)) {
       return new Response(JSON.stringify({ error: "Invalid email format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (workspace_id && !isValidUUID(workspace_id)) {
+      return new Response(JSON.stringify({ error: "Invalid workspace_id format" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

@@ -9,6 +9,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { isValidUUID } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   // CORS preflight
@@ -23,6 +24,16 @@ Deno.serve(async (req) => {
     });
   }
 
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+  const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", { _key: "sonic-dna:" + ip, _max_requests: 20, _window_seconds: 3600 });
+  if (rateLimitOk === false) {
+    return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   try {
     const { track_id, storage_path, force } = await req.json();
 
@@ -33,10 +44,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    if (!isValidUUID(track_id)) {
+      return new Response(JSON.stringify({ error: "Invalid track_id format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // 1. Create a signed URL for the audio file
     const { data: signedData, error: signErr } = await supabaseAdmin

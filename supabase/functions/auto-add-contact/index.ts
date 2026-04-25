@@ -1,11 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { isValidUUID } from "../_shared/validation.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
   if (corsRes) return corsRes;
   const corsHeaders = getCorsHeaders(req);
+
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const { data: rateLimitOk } = await supabase.rpc("check_rate_limit", { _key: "auto-contact:" + ip, _max_requests: 30, _window_seconds: 3600 });
+  if (rateLimitOk === false) {
+    return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 
   try {
     const { workspace_id, email, first_name, last_name, role, company, pro, ipi, publisher } = await req.json();
@@ -17,9 +27,12 @@ serve(async (req) => {
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    if (!isValidUUID(workspace_id)) {
+      return new Response(JSON.stringify({ error: "Invalid workspace_id format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Validate that workspace_id is a real workspace
     const { data: ws, error: wsError } = await supabase

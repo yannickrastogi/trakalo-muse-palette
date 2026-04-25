@@ -9,6 +9,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { isValidUUID } from "../_shared/validation.ts";
 
 async function sha256Hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input);
@@ -31,6 +32,13 @@ Deno.serve(async (req) => {
     });
   }
 
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const supabaseRl = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const { data: rateLimitOk } = await supabaseRl.rpc("check_rate_limit", { _key: "watermark:" + ip, _max_requests: 60, _window_seconds: 60 });
+  if (rateLimitOk === false) {
+    return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   try {
     const { storage_path: rawStoragePath, link_id, visitor_email, visitor_name } = await req.json();
 
@@ -43,6 +51,13 @@ Deno.serve(async (req) => {
     if (!storage_path || !link_id || !visitor_email) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: storage_path, link_id, visitor_email" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!isValidUUID(link_id)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid link_id format" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

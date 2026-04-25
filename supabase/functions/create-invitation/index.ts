@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { buildEmail, htmlEscape } from "../_shared/email-template.ts";
+import { buildEmail, htmlEscape, isValidEmail } from "../_shared/email-template.ts";
+import { isValidUUID } from "../_shared/validation.ts";
 
 function generateToken(length: number): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -20,6 +21,20 @@ serve(async (req) => {
 
     if (!workspace_id || !email || !invited_by) {
       return new Response(JSON.stringify({ error: "workspace_id, email, and invited_by are required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!isValidUUID(workspace_id) || !isValidUUID(invited_by)) {
+      return new Response(JSON.stringify({ error: "Invalid workspace_id or invited_by format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!isValidEmail(email)) {
+      return new Response(JSON.stringify({ error: "Invalid email format" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

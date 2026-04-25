@@ -9,6 +9,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { isValidUUID } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   // CORS preflight
@@ -28,6 +29,13 @@ Deno.serve(async (req) => {
 
     if (!track_id) {
       return new Response(JSON.stringify({ error: "Missing track_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!isValidUUID(track_id)) {
+      return new Response(JSON.stringify({ error: "Invalid track_id format" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
