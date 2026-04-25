@@ -218,6 +218,7 @@ function BrandingSection() {
   const [socialFacebook, setSocialFacebook] = useState(activeWorkspace?.social_facebook || "");
   const [socialX, setSocialX] = useState(activeWorkspace?.social_x || "");
   const [socialWebsite, setSocialWebsite] = useState(activeWorkspace?.social_website || "");
+  const [bio, setBio] = useState(activeWorkspace?.bio || "");
 
   useEffect(() => {
     if (activeWorkspace) {
@@ -226,6 +227,7 @@ function BrandingSection() {
       setBrandColor(activeWorkspace.brand_color || "");
       setHeroPosition(activeWorkspace.hero_position ?? 50);
       setFocalPoint(activeWorkspace.hero_focal_point || "50% 50%");
+      setBio(activeWorkspace.bio || "");
       setSocialInstagram(activeWorkspace.social_instagram || "");
       setSocialTiktok(activeWorkspace.social_tiktok || "");
       setSocialYoutube(activeWorkspace.social_youtube || "");
@@ -284,6 +286,7 @@ function BrandingSection() {
       _hero_position: pos, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
       _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
+      _bio: bio || null,
     });
     if (error) { toast.error(error.message); return; }
     setHeroPosition(pos);
@@ -312,6 +315,7 @@ function BrandingSection() {
       _hero_position: heroPosition, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
       _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
+      _bio: bio || null,
     });
     if (error) { toast.error(error.message); return; }
     setEditingFocal(false);
@@ -345,6 +349,7 @@ function BrandingSection() {
           _hero_position: heroPosition, _hero_focal_point: focalPoint,
           _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
           _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
+          _bio: bio || null,
         });
         if (updateErr) { toast.error(updateErr.message); setUploading(null); return; }
         if (type === "hero") setHeroUrl(publicUrl);
@@ -369,6 +374,7 @@ function BrandingSection() {
       _hero_position: heroPosition, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
       _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
+      _bio: bio || null,
     });
     if (error) { toast.error(error.message); return; }
     if (type === "hero") setHeroUrl(null);
@@ -385,6 +391,7 @@ function BrandingSection() {
       _hero_position: heroPosition, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
       _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
+      _bio: bio || null,
     });
     if (error) toast.error(error.message);
     else { toast.success("Brand color saved"); await refreshWorkspaces(); }
@@ -398,6 +405,7 @@ function BrandingSection() {
       _hero_position: heroPosition, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
       _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
+      _bio: bio || null,
     });
     if (error) toast.error(error.message);
     else { toast.success("Social links saved"); await refreshWorkspaces(); }
@@ -606,6 +614,35 @@ function BrandingSection() {
               />
               <span className="text-[11px] text-muted-foreground/50 font-mono">{brandColor || "Default"}</span>
             </div>
+          </div>
+        </FieldGroup>
+      </SectionBlock>
+
+      {/* About / Bio */}
+      <SectionBlock title="About" subtitle="A short bio shown to recipients on your shared links" icon={Edit3} onSave={async () => {
+        if (!activeWorkspace || !user) return;
+        const { error } = await supabase.rpc("update_workspace_branding", {
+          _user_id: user.id, _workspace_id: activeWorkspace.id,
+          _hero_image_url: heroUrl, _logo_url: logoUrl, _brand_color: brandColor || null,
+          _hero_position: heroPosition, _hero_focal_point: focalPoint,
+          _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
+          _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
+          _bio: bio || null,
+        });
+        if (error) toast.error(error.message);
+        else { toast.success("Bio saved"); await refreshWorkspaces(); }
+      }} saveLabel="Save Bio">
+        <FieldGroup label="Bio" hint="A short bio to introduce your workspace to recipients (max 280 characters)">
+          <div className="relative">
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value.slice(0, 280))}
+              maxLength={280}
+              placeholder="Tell recipients a bit about you or your workspace..."
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl bg-secondary/40 border border-border/30 text-[13px] text-foreground font-medium outline-none focus:border-primary/30 focus:bg-secondary/60 transition-all placeholder:text-muted-foreground/30 resize-none"
+            />
+            <span className="absolute bottom-2.5 right-3 text-[10px] text-muted-foreground/40">{bio.length}/280</span>
           </div>
         </FieldGroup>
       </SectionBlock>

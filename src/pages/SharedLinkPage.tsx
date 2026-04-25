@@ -47,6 +47,7 @@ interface WorkspaceBranding {
   social_facebook: string | null;
   social_x: string | null;
   social_website: string | null;
+  bio: string | null;
 }
 
 interface TrackData {
@@ -501,7 +502,7 @@ export default function SharedLinkPage() {
   // Fetch workspace branding when link data is available
   useEffect(function() {
     if (!linkData || !linkData.workspace_id) return;
-    fetch(REST_URL + "/workspaces?select=hero_image_url,hero_position,hero_focal_point,logo_url,brand_color,social_instagram,social_tiktok,social_youtube,social_facebook,social_x,social_website&id=eq." + encodeURIComponent(linkData.workspace_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } })
+    fetch(REST_URL + "/workspaces?select=hero_image_url,hero_position,hero_focal_point,logo_url,brand_color,social_instagram,social_tiktok,social_youtube,social_facebook,social_x,social_website,bio&id=eq." + encodeURIComponent(linkData.workspace_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } })
       .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
       .then(function(data) {
         if (data) {
@@ -1971,6 +1972,9 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
                 <span className="text-[9px] md:text-sm tracking-[0.2em] text-white/30 font-medium block mt-0.5">CATALOG MANAGER</span>
               </div>
               <SocialIcons branding={branding} immersive={true} />
+              {branding?.bio && (
+                <p className="text-sm md:text-base text-white/60 italic max-w-md text-center mt-2 px-4" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>{branding.bio}</p>
+              )}
             </div>
           </header>
           <div className="flex-1">{children}</div>
@@ -2003,6 +2007,9 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               <span className="text-xs sm:text-sm uppercase tracking-[0.2em] mt-1 text-muted-foreground/50">Catalog Manager</span>
             )}
             <SocialIcons branding={branding} immersive={false} />
+            {branding?.bio && (
+              <p className="text-sm text-muted-foreground/60 italic max-w-md text-center mt-2">{branding.bio}</p>
+            )}
           </div>
         </div>
       </header>
