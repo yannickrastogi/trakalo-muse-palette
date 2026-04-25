@@ -1197,9 +1197,9 @@ function OverviewTab({ trackId, onEdit, readOnly }: { trackId: number; onEdit: (
   };
 
   const renderGrid = (items: { label: string; value: string }[]) => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
       {items.map((m) => (
-        <div key={m.label} className="bg-card px-5 py-3.5">
+        <div key={m.label}>
           <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">{m.label}</p>
           <p className="text-sm text-foreground font-medium">{m.value}</p>
         </div>
@@ -1207,41 +1207,53 @@ function OverviewTab({ trackId, onEdit, readOnly }: { trackId: number; onEdit: (
     </div>
   );
 
+  const sections = [
+    { title: "Metadata", subtitle: "Release info & identifiers", icon: FileText, accent: "orange", items: meta },
+    { title: "Performer Credits", subtitle: "Artists & musicians", icon: Mic, accent: "pink", items: performerCredits },
+    { title: "Production & Other Credits", subtitle: "Engineers, studios & production", icon: Headphones, accent: "purple", items: productionCredits },
+  ] as const;
+
+  const accentStyles = {
+    orange: { bg: "bg-orange-500/10", text: "text-orange-500", border: "border-t-orange-500/40" },
+    pink: { bg: "bg-pink-500/10", text: "text-pink-500", border: "border-t-pink-500/40" },
+    purple: { bg: "bg-purple-500/10", text: "text-purple-500", border: "border-t-purple-500/40" },
+  };
+
   return (
-    <SectionCard
-      title="Metadata"
-      icon={FileText}
-      action={
-        <div className="flex items-center gap-2">
-          {!readOnly && (
+    <div className="space-y-4">
+      {/* Action bar */}
+      <div className="flex items-center justify-end gap-2">
+        {!readOnly && (
           <button onClick={onEdit} className="flex items-center gap-1.5 text-xs text-foreground hover:text-foreground/80 bg-secondary hover:bg-secondary/80 px-3 py-1.5 rounded-lg font-semibold transition-colors">
             <Edit3 className="w-3.5 h-3.5" /> Edit Metadata
           </button>
-          )}
-          <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg font-semibold transition-colors">
-            <Download className="w-3.5 h-3.5" /> Download PDF
-          </button>
-        </div>
-      }
-    >
-      <div className="space-y-6">
-        {/* Metadata */}
-        <div>
-          <h4 className="text-xs font-semibold text-foreground border-b border-border pb-1 mb-3 px-5 pt-4">Metadata</h4>
-          {renderGrid(meta)}
-        </div>
-        {/* Performer Credits */}
-        <div>
-          <h4 className="text-xs font-semibold text-foreground border-b border-border pb-1 mb-3 px-5">Performer Credits</h4>
-          {renderGrid(performerCredits)}
-        </div>
-        {/* Production & Other Credits */}
-        <div>
-          <h4 className="text-xs font-semibold text-foreground border-b border-border pb-1 mb-3 px-5">Production & Other Credits</h4>
-          {renderGrid(productionCredits)}
-        </div>
+        )}
+        <button onClick={handleDownloadPdf} className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg font-semibold transition-colors">
+          <Download className="w-3.5 h-3.5" /> Download PDF
+        </button>
       </div>
-    </SectionCard>
+
+      {sections.map((section) => {
+        const style = accentStyles[section.accent];
+        const Icon = section.icon;
+        return (
+          <div key={section.title} className={`rounded-xl bg-card/50 border border-border/40 border-t-2 ${style.border} overflow-hidden`}>
+            <div className="px-5 pt-5 pb-4 flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-lg ${style.bg} flex items-center justify-center shrink-0`}>
+                <Icon className={`w-[18px] h-[18px] ${style.text}`} />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">{section.title}</h4>
+                <p className="text-[11px] text-muted-foreground">{section.subtitle}</p>
+              </div>
+            </div>
+            <div className="px-5 pb-5">
+              {renderGrid(section.items)}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
