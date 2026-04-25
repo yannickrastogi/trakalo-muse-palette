@@ -162,7 +162,7 @@ function buildMeta(trackData: TrackData, t: (key: string) => string) {
     { label: t("trackDetail.albumEp"), value: trackData.album || "\u2014" },
     { label: t("trackDetail.label"), value: trackData.label || "\u2014" },
     { label: t("trackDetail.publisher"), value: trackData.publishers.length ? trackData.publishers.join(", ") : "\u2014" },
-    { label: t("trackDetail.releaseDate"), value: trackData.releaseDate || "\u2014" },
+    { label: t("trackDetail.releaseDate"), value: trackData.releaseDate ? trackData.releaseDate.split("T")[0] : "\u2014" },
     { label: t("trackDetail.isrc"), value: trackData.isrc || "\u2014" },
     { label: t("trackDetail.upc"), value: trackData.upc || "\u2014" },
     { label: t("trackDetail.language"), value: trackData.language || "\u2014" },
@@ -1255,7 +1255,7 @@ function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolea
     setEditAlbum(trackData.album || "");
     setEditLabel(trackData.label || "");
     setEditPublishers(trackData.publishers.length ? [...trackData.publishers] : [""]);
-    setEditReleaseDate(trackData.releaseDate || "");
+    setEditReleaseDate(trackData.releaseDate ? trackData.releaseDate.split("T")[0] : "");
     setEditIsrc(trackData.isrc || "");
     setEditUpc(trackData.upc || "");
     setEditLanguage(trackData.language || "");
