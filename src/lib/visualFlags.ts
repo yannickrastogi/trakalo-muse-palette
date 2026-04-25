@@ -1,6 +1,6 @@
 export const VISUAL_FLAGS = {
   auroraBackground: true,
-  ambientWaveform: true,
+  ambientWaveform: false,
   animatedCounters: true,
   miniEqualizer: true,
 };
