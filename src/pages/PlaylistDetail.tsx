@@ -620,6 +620,7 @@ function SortableDesktopRow({
   setPlayingTrackId: (id: number | null) => void;
   removeTrack: (id: number) => void;
 }) {
+  const navigate = useNavigate();
   const { isTrackPlaying, progress } = useAudioPlayer();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: track.id });
 
@@ -634,12 +635,13 @@ function SortableDesktopRow({
     <tr
       ref={setNodeRef}
       style={style}
-      className={`border-b border-border/40 last:border-0 hover:bg-secondary/25 transition-all duration-200 group/row ${
+      className={`border-b border-border/40 last:border-0 hover:bg-secondary/25 transition-all duration-200 group/row cursor-pointer ${
         isDragging ? "bg-secondary/40 shadow-lg opacity-90" : ""
       }`}
+      onClick={() => navigate("/track/" + track.uuid)}
     >
       {/* Drag handle */}
-      <td className="pl-3 pr-1 py-3">
+      <td className="pl-3 pr-1 py-3" onClick={(e) => e.stopPropagation()}>
         <button
           {...attributes}
           {...listeners}
@@ -651,7 +653,7 @@ function SortableDesktopRow({
       {/* # / Play */}
       <td className="pl-2 pr-2 py-3">
         <button
-          onClick={() => setPlayingTrackId(isPlaying ? null : track.id)}
+          onClick={(e) => { e.stopPropagation(); setPlayingTrackId(isPlaying ? null : track.id); }}
           className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 ${
             isPlaying ? "btn-brand shadow-none" : "text-muted-foreground/40 group-hover/row:text-foreground"
           }`}
@@ -702,7 +704,7 @@ function SortableDesktopRow({
        </td>
       <td className="px-2 py-3">
         <button
-          onClick={() => removeTrack(track.id)}
+          onClick={(e) => { e.stopPropagation(); removeTrack(track.id); }}
           className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground/40 hover:text-destructive opacity-0 group-hover/row:opacity-100"
           title="Remove from playlist"
         >
@@ -797,6 +799,7 @@ function SortableMobileCard({
   setPlayingTrackId: (id: number | null) => void;
   removeTrack: (id: number) => void;
 }) {
+  const navigate = useNavigate();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: track.id });
 
   const style = {
@@ -810,19 +813,21 @@ function SortableMobileCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`card-premium p-3.5 flex items-center gap-3 ${isDragging ? "shadow-lg opacity-90 ring-1 ring-brand-orange/20" : ""}`}
+      className={`card-premium p-3.5 flex items-center gap-3 cursor-pointer ${isDragging ? "shadow-lg opacity-90 ring-1 ring-brand-orange/20" : ""}`}
+      onClick={() => navigate("/track/" + track.uuid)}
     >
       {/* Drag handle */}
       <button
         {...attributes}
         {...listeners}
+        onClick={(e) => e.stopPropagation()}
         className="p-1.5 rounded cursor-grab active:cursor-grabbing text-muted-foreground/25 hover:text-muted-foreground/50 transition-colors shrink-0 touch-none min-h-[44px] min-w-[28px] flex items-center justify-center"
       >
         <GripVertical className="w-4 h-4" />
       </button>
 
       <button
-        onClick={() => setPlayingTrackId(isPlaying ? null : track.id)}
+        onClick={(e) => { e.stopPropagation(); setPlayingTrackId(isPlaying ? null : track.id); }}
         className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 min-h-[44px] min-w-[44px] transition-all ${
           isPlaying ? "btn-brand shadow-none" : "bg-secondary"
         }`}
@@ -847,7 +852,7 @@ function SortableMobileCard({
       </div>
 
       <button
-        onClick={() => removeTrack(track.id)}
+        onClick={(e) => { e.stopPropagation(); removeTrack(track.id); }}
         className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive transition-colors shrink-0 min-h-[36px] min-w-[36px] flex items-center justify-center"
       >
         <Trash2 className="w-3.5 h-3.5" />
