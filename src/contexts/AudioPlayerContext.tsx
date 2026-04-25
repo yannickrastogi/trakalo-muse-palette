@@ -40,6 +40,13 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   });
   const [queue, setQueue] = useState<TrackData[]>([]);
 
+  // Keep refs so event handlers inside the one-time useEffect avoid stale closures
+  const queueRef = useRef(queue);
+  useEffect(() => {
+    queueRef.current = queue;
+  }, [queue]);
+  const playTrackInternalRef = useRef<(track: TrackData) => void>(() => {});
+
   // Create audio element once
   useEffect(() => {
     const audio = new Audio();
@@ -65,13 +72,14 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
     const onEnded = () => {
       setState((prev) => ({ ...prev, isPlaying: false, progress: 100 }));
-      // Auto-play next track
+      // Auto-play next track (use queueRef to avoid stale closure)
       const currentId = audioRef.current?.dataset.trackId;
       if (currentId) {
-        const idx = queue.findIndex((t) => String(t.id) === currentId);
-        if (idx >= 0 && idx < queue.length - 1) {
-          const nextTrack = queue[idx + 1];
-          playTrackInternal(nextTrack);
+        const currentQueue = queueRef.current;
+        const idx = currentQueue.findIndex((t) => String(t.id) === currentId);
+        if (idx >= 0 && idx < currentQueue.length - 1) {
+          const nextTrack = currentQueue[idx + 1];
+          playTrackInternalRef.current(nextTrack);
         }
       }
     };
@@ -96,12 +104,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       audio.src = "";
     };
   }, []);
-
-  // Update queue ref for onEnded handler
-  const queueRef = useRef(queue);
-  useEffect(() => {
-    queueRef.current = queue;
-  }, [queue]);
 
   // Cache of signed URLs by storage path to avoid re-signing
   const signedUrlCache = useRef<Record<string, { url: string; expires: number }>>({});
@@ -198,6 +200,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       setState((prev) => ({ ...prev, isPlaying: false }));
     });
   }, [resolveAudioUrl]);
+  playTrackInternalRef.current = playTrackInternal;
 
   const playTrack = useCallback((track: TrackData) => {
     playTrackInternal(track);

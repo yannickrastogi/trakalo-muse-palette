@@ -7,6 +7,16 @@ serve(async (req) => {
   if (corsRes) return corsRes;
   const corsHeaders = getCorsHeaders(req);
 
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+  const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", { _key: "transcribe:" + ip, _max_requests: 10, _window_seconds: 3600 });
+  if (rateLimitOk === false) {
+    return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   try {
     const { track_id } = await req.json();
 
@@ -24,11 +34,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // 1. Get the track's audio paths
     const { data: track, error: trackErr } = await supabaseAdmin

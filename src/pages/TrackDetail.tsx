@@ -1388,24 +1388,24 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
       }).catch(function (err) { console.error("Error:", err); });
   }, [trackUuid, contextTrack]);
 
-  if (!trackData) return null;
-
   // Use the most up-to-date lyrics source: local edit > context > DB fetch > fallback
-  const effectiveTrackData = localLyrics !== undefined
-    ? { ...trackData, lyrics: localLyrics }
-    : contextTrack
-      ? trackData
-      : dbLyrics !== undefined
-        ? { ...trackData, lyrics: dbLyrics, lyricsSegments: dbSegments }
-        : trackData;
+  const effectiveTrackData = trackData
+    ? (localLyrics !== undefined
+      ? { ...trackData, lyrics: localLyrics }
+      : contextTrack
+        ? trackData
+        : dbLyrics !== undefined
+          ? { ...trackData, lyrics: dbLyrics, lyricsSegments: dbSegments }
+          : trackData)
+    : null;
 
-  const segments = effectiveTrackData.lyricsSegments;
-  const isThisTrackPlaying = currentTrack?.uuid === trackData.uuid;
+  const segments = effectiveTrackData?.lyricsSegments;
+  const isThisTrackPlaying = currentTrack?.uuid === trackData?.uuid;
   const hasSyncedLyrics = !!segments && segments.length > 0 && !isEditing;
 
   // Find the active segment index based on current playback time (respects end time)
   const activeSegmentIndex = useMemo(() => {
-    if (!hasSyncedLyrics || !isThisTrackPlaying) return -1;
+    if (!hasSyncedLyrics || !isThisTrackPlaying || !segments) return -1;
     for (let i = segments.length - 1; i >= 0; i--) {
       if (currentTime >= segments[i].start && currentTime < segments[i].end) return i;
     }
@@ -1423,6 +1423,8 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
       container.scrollBy({ top: offset, behavior: "smooth" });
     }
   }, [activeSegmentIndex]);
+
+  if (!trackData || !effectiveTrackData) return null;
 
   const handleSegmentClick = (segment: { start: number; end: number; text: string }) => {
     if (isThisTrackPlaying) {

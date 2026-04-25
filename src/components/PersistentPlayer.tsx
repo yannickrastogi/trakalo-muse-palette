@@ -39,9 +39,6 @@ export function PersistentPlayer() {
   const [expanded, setExpanded] = useState(false);
   const prevVolumeRef = useRef(0.8);
 
-  // Hide persistent player when Radio page is active
-  if (location.pathname === "/radio") return null;
-
   const handleProgressClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const rect = e.currentTarget.getBoundingClientRect();
@@ -59,6 +56,9 @@ export function PersistentPlayer() {
     },
     [setVolume]
   );
+
+  // Hide persistent player when Radio page is active
+  if (location.pathname === "/radio") return null;
 
   if (!currentTrack) return null;
 

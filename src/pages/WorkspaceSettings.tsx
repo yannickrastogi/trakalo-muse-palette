@@ -763,11 +763,13 @@ function CatalogSharingSection() {
     // Fetch outgoing shares
     supabase.from("catalog_shares").select("id, target_workspace_id, track_id, created_at, workspaces!catalog_shares_target_workspace_id_fkey(name)")
       .eq("source_workspace_id", activeWorkspace.id)
-      .then(({ data }) => { if (data) setOutgoing(data); });
+      .then(({ data }) => { if (data) setOutgoing(data); })
+      .catch((err) => console.error("Failed to fetch outgoing shares:", err));
     // Fetch incoming shares
     supabase.from("catalog_shares").select("id, source_workspace_id, track_id, created_at, workspaces!catalog_shares_source_workspace_id_fkey(name)")
       .eq("target_workspace_id", activeWorkspace.id)
-      .then(({ data }) => { if (data) setIncoming(data); });
+      .then(({ data }) => { if (data) setIncoming(data); })
+      .catch((err) => console.error("Failed to fetch incoming shares:", err));
   }, [activeWorkspace]);
 
   return (

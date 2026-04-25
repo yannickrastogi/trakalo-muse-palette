@@ -201,7 +201,7 @@ export default function SignAgreement() {
               user_id: wsForNotif.owner_id,
               data: { track_title: trackForNotif.title || "", signer_name: request.collaborator_name, signer_email: request.collaborator_email },
             }),
-          }).catch(function() {});
+          }).catch(function(err) { console.error("Notification email error:", err); });
         }
       }
     }

@@ -464,11 +464,11 @@ export default function SharedLinkPage() {
                 method: "POST",
                 headers: rpcHeaders,
                 body: JSON.stringify({ _user_id: userId, _workspace_id: ws.id, _action: "track.saved_from_share", _entity_type: "track", _entity_id: linkData!.track_id }),
-              }).catch(function() {});
+              }).catch(function(err) { console.error("Audit log error:", err); });
               setSavedToTrakalog(true);
             }
             setSavingToTrakalog(false);
-          }).catch(function() { setSavingToTrakalog(false); });
+          }).catch(function(err) { console.error("Save to trakalog error:", err); setSavingToTrakalog(false); });
         }
       } else {
         if (autoSave) {

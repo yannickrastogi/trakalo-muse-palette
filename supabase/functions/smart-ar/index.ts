@@ -6,6 +6,16 @@ Deno.serve(async (req) => {
   if (corsRes) return corsRes;
   const corsHeaders = getCorsHeaders(req);
 
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+  const { data: rateLimitOk } = await supabase.rpc("check_rate_limit", { _key: "smart-ar:" + ip, _max_requests: 20, _window_seconds: 3600 });
+  if (rateLimitOk === false) {
+    return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   try {
     const { brief, track_count, workspace_id } = await req.json();
 
@@ -15,11 +25,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     const { data: tracks, error: tracksError } = await supabase
       .from("tracks")

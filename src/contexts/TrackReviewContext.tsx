@@ -298,7 +298,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       setNotifications((prev) => [...prev, notification]);
     }
     return newComment;
-  }, [persistCommentsForTrack]);
+  }, [persistCommentsForTrack, activeWorkspace]);
 
   const editComment = useCallback((commentId: string, newText: string) => {
     setComments((prev) =>
