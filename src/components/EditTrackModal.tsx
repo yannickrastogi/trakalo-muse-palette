@@ -22,6 +22,7 @@ import { equalSplit } from "@/lib/split-utils";
 import { NameAutocomplete } from "@/components/NameAutocomplete";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
 import { useContacts } from "@/contexts/ContactsContext";
+import type { CustomCreditEntry } from "@/components/PerformerCreditsSection";
 const TYPES = ["Song", "Instrumental", "Sample", "Acapella"];
 
 const DETAIL_FIELDS = [
@@ -171,6 +172,8 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
   const [explicit, setExplicit] = useState(false);
   const [details, setDetails] = useState<Record<string, string[]>>({});
   const [showDetails, setShowDetails] = useState(false);
+  const [customPerformers, setCustomPerformers] = useState<CustomCreditEntry[]>([]);
+  const [customProduction, setCustomProduction] = useState<CustomCreditEntry[]>([]);
   const [splits, setSplits] = useState<TrackSplit[]>([]);
   const [initialBpm, setInitialBpm] = useState("");
   const [initialKey, setInitialKey] = useState("");
@@ -207,7 +210,10 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       setPublishers(trackData.publishers.length ? [...trackData.publishers] : [""]);
       setCopyright(trackData.copyright);
       setExplicit(trackData.explicit);
-      setDetails(JSON.parse(JSON.stringify(trackData.credits || {})));
+      const credits = trackData.credits || {};
+      setDetails(JSON.parse(JSON.stringify(credits)));
+      setCustomPerformers(Array.isArray(credits.customPerformers) ? (credits.customPerformers as unknown as CustomCreditEntry[]).map(e => ({ ...e })) : []);
+      setCustomProduction(Array.isArray(credits.customProduction) ? (credits.customProduction as unknown as CustomCreditEntry[]).map(e => ({ ...e })) : []);
       setSplits(trackData.splits?.length ? trackData.splits.map(s => ({ ...s })) : [{ id: "1", name: "", role: "", share: 100, pro: "", ipi: "", publisher: "" }]);
     }
   }, [open, trackId, trackData]);
@@ -302,7 +308,11 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       publishers: publishers.filter(Boolean).map(p => p.trim()),
       copyright: copyright.trim(),
       explicit,
-      credits: details,
+      credits: {
+        ...details,
+        customPerformers: customPerformers.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
+        customProduction: customProduction.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
+      },
     };
 
     updateTrack(trackId, updates);
@@ -783,6 +793,108 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                           </div>
                         );
                       })}
+                    </div>
+
+                    {/* Custom Performers */}
+                    <div className="space-y-3 pt-3 border-t border-border/50 mt-3">
+                      <h5 className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">Custom Performer Credits</h5>
+                      {customPerformers.map((entry) => (
+                        <div key={entry.id} className="rounded-lg border border-dashed border-border/60 bg-secondary/30 p-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={entry.role}
+                              onChange={(e) => setCustomPerformers((prev) => prev.map((p) => p.id === entry.id ? { ...p, role: e.target.value } : p))}
+                              placeholder="Role name (e.g. Strings By)"
+                              className="h-8 flex-1 px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-pink-500/30 transition-all font-semibold placeholder:text-muted-foreground/40 placeholder:font-normal"
+                            />
+                            <button
+                              onClick={() => setCustomPerformers((prev) => prev.filter((p) => p.id !== entry.id))}
+                              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          {entry.values.map((val, idx) => (
+                            <div key={idx} className="flex items-center gap-1 pl-1">
+                              <NameAutocomplete
+                                value={val}
+                                onChange={(v) => setCustomPerformers((prev) => prev.map((p) => p.id === entry.id ? { ...p, values: p.values.map((vv, ii) => ii === idx ? v : vv) } : p))}
+                                placeholder="Enter name"
+                                className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-pink-500/30 transition-all font-medium placeholder:text-muted-foreground/40"
+                                extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))}
+                              />
+                              {entry.values.length > 1 && (
+                                <button onClick={() => setCustomPerformers((prev) => prev.map((p) => p.id === entry.id ? { ...p, values: p.values.filter((_, i) => i !== idx) } : p))} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          {entry.values[0]?.trim() && (
+                            <button onClick={() => setCustomPerformers((prev) => prev.map((p) => p.id === entry.id ? { ...p, values: [...p.values, ""] } : p))} className="flex items-center gap-1 text-2xs text-brand-orange hover:text-brand-orange/80 font-semibold transition-colors ml-1">
+                              <Plus className="w-3 h-3" /> Add another
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => setCustomPerformers((prev) => [...prev, { id: crypto.randomUUID(), role: "", values: [""] }])}
+                        className="flex items-center gap-1.5 text-xs text-pink-500 hover:text-pink-400 font-medium transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Add Custom Performer
+                      </button>
+                    </div>
+
+                    {/* Custom Production Credits */}
+                    <div className="space-y-3 pt-3 border-t border-border/50 mt-3">
+                      <h5 className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">Custom Production Credits</h5>
+                      {customProduction.map((entry) => (
+                        <div key={entry.id} className="rounded-lg border border-dashed border-border/60 bg-secondary/30 p-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={entry.role}
+                              onChange={(e) => setCustomProduction((prev) => prev.map((p) => p.id === entry.id ? { ...p, role: e.target.value } : p))}
+                              placeholder="Role name (e.g. Sound Design By)"
+                              className="h-8 flex-1 px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-purple-500/30 transition-all font-semibold placeholder:text-muted-foreground/40 placeholder:font-normal"
+                            />
+                            <button
+                              onClick={() => setCustomProduction((prev) => prev.filter((p) => p.id !== entry.id))}
+                              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          {entry.values.map((val, idx) => (
+                            <div key={idx} className="flex items-center gap-1 pl-1">
+                              <NameAutocomplete
+                                value={val}
+                                onChange={(v) => setCustomProduction((prev) => prev.map((p) => p.id === entry.id ? { ...p, values: p.values.map((vv, ii) => ii === idx ? v : vv) } : p))}
+                                placeholder="Enter name"
+                                className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-purple-500/30 transition-all font-medium placeholder:text-muted-foreground/40"
+                                extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))}
+                              />
+                              {entry.values.length > 1 && (
+                                <button onClick={() => setCustomProduction((prev) => prev.map((p) => p.id === entry.id ? { ...p, values: p.values.filter((_, i) => i !== idx) } : p))} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          {entry.values[0]?.trim() && (
+                            <button onClick={() => setCustomProduction((prev) => prev.map((p) => p.id === entry.id ? { ...p, values: [...p.values, ""] } : p))} className="flex items-center gap-1 text-2xs text-brand-orange hover:text-brand-orange/80 font-semibold transition-colors ml-1">
+                              <Plus className="w-3 h-3" /> Add another
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => setCustomProduction((prev) => [...prev, { id: crypto.randomUUID(), role: "", values: [""] }])}
+                        className="flex items-center gap-1.5 text-xs text-purple-500 hover:text-purple-400 font-medium transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Add Custom Production Credit
+                      </button>
                     </div>
                   </motion.div>
                 )}

@@ -1,6 +1,7 @@
-import { X, Plus } from "lucide-react";
+import { X, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NameAutocomplete } from "@/components/NameAutocomplete";
+import type { CustomCreditEntry } from "@/components/PerformerCreditsSection";
 
 interface ProductionCreditsSectionProps {
   details: Record<string, string[]>;
@@ -8,6 +9,12 @@ interface ProductionCreditsSectionProps {
   addDetailEntry: (key: string) => void;
   removeDetailEntry: (key: string, index: number) => void;
   extraSuggestions?: { name: string; stage_name?: string }[];
+  customProduction?: CustomCreditEntry[];
+  onAddCustomProduction?: () => void;
+  onUpdateCustomProduction?: (id: string, field: "role" | "values", value: string | string[]) => void;
+  onRemoveCustomProduction?: (id: string) => void;
+  onAddCustomProductionValue?: (id: string) => void;
+  onRemoveCustomProductionValue?: (id: string, index: number) => void;
 }
 
 const PRODUCTION_FIELDS = [
@@ -28,6 +35,12 @@ export function ProductionCreditsSection({
   addDetailEntry,
   removeDetailEntry,
   extraSuggestions = [],
+  customProduction = [],
+  onAddCustomProduction,
+  onUpdateCustomProduction,
+  onRemoveCustomProduction,
+  onAddCustomProductionValue,
+  onRemoveCustomProductionValue,
 }: ProductionCreditsSectionProps) {
   const { t } = useTranslation();
   return (
@@ -84,6 +97,71 @@ export function ProductionCreditsSection({
           );
         })}
       </div>
+
+      {/* Custom Production Credits */}
+      {customProduction.length > 0 && (
+        <div className="space-y-3 pt-2 border-t border-border/50">
+          {customProduction.map((entry) => (
+            <div key={entry.id} className="rounded-lg border border-dashed border-border/60 bg-secondary/30 p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={entry.role}
+                  onChange={(e) => onUpdateCustomProduction?.(entry.id, "role", e.target.value)}
+                  placeholder="Role name (e.g. Sound Design By)"
+                  className="h-8 flex-1 px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-purple-500/30 transition-all font-semibold placeholder:text-muted-foreground/40 placeholder:font-normal"
+                />
+                <button
+                  onClick={() => onRemoveCustomProduction?.(entry.id)}
+                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {entry.values.map((val, idx) => (
+                <div key={idx} className="flex items-center gap-1 pl-1">
+                  <NameAutocomplete
+                    value={val}
+                    onChange={(v) => {
+                      const updated = [...entry.values];
+                      updated[idx] = v;
+                      onUpdateCustomProduction?.(entry.id, "values", updated);
+                    }}
+                    placeholder="Enter name"
+                    className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-purple-500/30 transition-all font-medium placeholder:text-muted-foreground/40"
+                    extraSuggestions={extraSuggestions}
+                  />
+                  {entry.values.length > 1 && (
+                    <button
+                      onClick={() => onRemoveCustomProductionValue?.(entry.id, idx)}
+                      className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {entry.values[0]?.trim() && (
+                <button
+                  onClick={() => onAddCustomProductionValue?.(entry.id)}
+                  className="flex items-center gap-1 text-2xs text-brand-orange hover:text-brand-orange/80 font-semibold transition-colors ml-1"
+                >
+                  <Plus className="w-3 h-3" /> Add another
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {onAddCustomProduction && (
+        <button
+          onClick={onAddCustomProduction}
+          className="flex items-center gap-1.5 text-xs text-purple-500 hover:text-purple-400 font-medium transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" /> Add Custom Production Credit
+        </button>
+      )}
     </div>
   );
 }

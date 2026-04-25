@@ -36,7 +36,7 @@ import {
 import { CollaboratorAutocomplete, type CollaboratorSuggestion } from "@/components/CollaboratorAutocomplete";
 import { useContacts, type Contact } from "@/contexts/ContactsContext";
 import { useTrack as useTrackContext } from "@/contexts/TrackContext";
-import { PerformerCreditsSection } from "@/components/PerformerCreditsSection";
+import { PerformerCreditsSection, type CustomCreditEntry } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
 import {
   Dialog,
@@ -100,6 +100,8 @@ interface TrackEntry {
   language: string;
   notes: string;
   details: Record<string, string[]>;
+  customPerformers: CustomCreditEntry[];
+  customProduction: CustomCreditEntry[];
   stems: StemFile[];
   splits: Split[];
   lyrics: string;
@@ -167,6 +169,8 @@ function createTrackEntry(file: File): TrackEntry {
     language: "",
     notes: "",
     details: {},
+    customPerformers: [],
+    customProduction: [],
     stems: [],
     splits: [{ id: "1", name: "", stage_name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
     lyrics: "",
@@ -363,6 +367,57 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     if (!currentTrack) return;
     const arr = (currentTrack.details[key] || []).filter((_, i) => i !== index);
     updateCurrent({ details: { ...currentTrack.details, [key]: arr } });
+  }, [currentTrack, updateCurrent]);
+
+  // Custom credits helpers
+  const addCustomPerformer = useCallback(() => {
+    if (!currentTrack) return;
+    updateCurrent({ customPerformers: [...currentTrack.customPerformers, { id: crypto.randomUUID(), role: "", values: [""] }] });
+  }, [currentTrack, updateCurrent]);
+
+  const updateCustomPerformer = useCallback((id: string, field: "role" | "values", value: string | string[]) => {
+    if (!currentTrack) return;
+    updateCurrent({ customPerformers: currentTrack.customPerformers.map((e) => e.id === id ? { ...e, [field]: value } : e) });
+  }, [currentTrack, updateCurrent]);
+
+  const removeCustomPerformer = useCallback((id: string) => {
+    if (!currentTrack) return;
+    updateCurrent({ customPerformers: currentTrack.customPerformers.filter((e) => e.id !== id) });
+  }, [currentTrack, updateCurrent]);
+
+  const addCustomPerformerValue = useCallback((id: string) => {
+    if (!currentTrack) return;
+    updateCurrent({ customPerformers: currentTrack.customPerformers.map((e) => e.id === id ? { ...e, values: [...e.values, ""] } : e) });
+  }, [currentTrack, updateCurrent]);
+
+  const removeCustomPerformerValue = useCallback((id: string, index: number) => {
+    if (!currentTrack) return;
+    updateCurrent({ customPerformers: currentTrack.customPerformers.map((e) => e.id === id ? { ...e, values: e.values.filter((_, i) => i !== index) } : e) });
+  }, [currentTrack, updateCurrent]);
+
+  const addCustomProduction = useCallback(() => {
+    if (!currentTrack) return;
+    updateCurrent({ customProduction: [...currentTrack.customProduction, { id: crypto.randomUUID(), role: "", values: [""] }] });
+  }, [currentTrack, updateCurrent]);
+
+  const updateCustomProduction = useCallback((id: string, field: "role" | "values", value: string | string[]) => {
+    if (!currentTrack) return;
+    updateCurrent({ customProduction: currentTrack.customProduction.map((e) => e.id === id ? { ...e, [field]: value } : e) });
+  }, [currentTrack, updateCurrent]);
+
+  const removeCustomProduction = useCallback((id: string) => {
+    if (!currentTrack) return;
+    updateCurrent({ customProduction: currentTrack.customProduction.filter((e) => e.id !== id) });
+  }, [currentTrack, updateCurrent]);
+
+  const addCustomProductionValue = useCallback((id: string) => {
+    if (!currentTrack) return;
+    updateCurrent({ customProduction: currentTrack.customProduction.map((e) => e.id === id ? { ...e, values: [...e.values, ""] } : e) });
+  }, [currentTrack, updateCurrent]);
+
+  const removeCustomProductionValue = useCallback((id: string, index: number) => {
+    if (!currentTrack) return;
+    updateCurrent({ customProduction: currentTrack.customProduction.map((e) => e.id === id ? { ...e, values: e.values.filter((_, i) => i !== index) } : e) });
   }, [currentTrack, updateCurrent]);
 
   // Stems
@@ -622,7 +677,11 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         masteredBy: currentTrack.masteredBy || undefined,
         copyright: currentTrack.copyright || undefined,
         explicit: currentTrack.explicit || undefined,
-        credits: currentTrack.details || {},
+        credits: {
+          ...(currentTrack.details || {}),
+          customPerformers: currentTrack.customPerformers.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
+          customProduction: currentTrack.customProduction.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
+        },
       });
       setUploadProgress(90);
 
@@ -906,7 +965,11 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           waveformData: waveformData,
           chapters: null,
           splits: [],
-          credits: entry.details || {},
+          credits: {
+            ...(entry.details || {}),
+            customPerformers: entry.customPerformers?.filter((e) => e.role.trim() && e.values.some((v) => v.trim())) || [],
+            customProduction: entry.customProduction?.filter((e) => e.role.trim() && e.values.some((v) => v.trim())) || [],
+          },
         });
         setUploadProgress(100);
 
@@ -1145,6 +1208,18 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   updateDetail={updateDetail}
                   addDetailEntry={addDetailEntry}
                   removeDetailEntry={removeDetailEntry}
+                  customPerformers={currentTrack.customPerformers}
+                  onAddCustomPerformer={addCustomPerformer}
+                  onUpdateCustomPerformer={updateCustomPerformer}
+                  onRemoveCustomPerformer={removeCustomPerformer}
+                  onAddCustomPerformerValue={addCustomPerformerValue}
+                  onRemoveCustomPerformerValue={removeCustomPerformerValue}
+                  customProduction={currentTrack.customProduction}
+                  onAddCustomProduction={addCustomProduction}
+                  onUpdateCustomProduction={updateCustomProduction}
+                  onRemoveCustomProduction={removeCustomProduction}
+                  onAddCustomProductionValue={addCustomProductionValue}
+                  onRemoveCustomProductionValue={removeCustomProductionValue}
                   isrc={currentTrack.isrc}
                   upc={currentTrack.upc}
                   album={currentTrack.album}
@@ -1990,6 +2065,8 @@ function StepSplits({
 function StepDetails({
   splits, totalSplit, onAdd, onUpdate, onRemove, onBatchUpdate, onEqualSplit,
   details, updateDetail, addDetailEntry, removeDetailEntry,
+  customPerformers, onAddCustomPerformer, onUpdateCustomPerformer, onRemoveCustomPerformer, onAddCustomPerformerValue, onRemoveCustomPerformerValue,
+  customProduction, onAddCustomProduction, onUpdateCustomProduction, onRemoveCustomProduction, onAddCustomProductionValue, onRemoveCustomProductionValue,
   isrc, upc, album, label, publishers, releaseDate,
   copyright, explicit: isExplicit,
   onMetadataChange, onPublishersChange, contacts, existingSplitNames,
@@ -2005,6 +2082,18 @@ function StepDetails({
   updateDetail: (key: string, index: number, value: string) => void;
   addDetailEntry: (key: string) => void;
   removeDetailEntry: (key: string, index: number) => void;
+  customPerformers: CustomCreditEntry[];
+  onAddCustomPerformer: () => void;
+  onUpdateCustomPerformer: (id: string, field: "role" | "values", value: string | string[]) => void;
+  onRemoveCustomPerformer: (id: string) => void;
+  onAddCustomPerformerValue: (id: string) => void;
+  onRemoveCustomPerformerValue: (id: string, index: number) => void;
+  customProduction: CustomCreditEntry[];
+  onAddCustomProduction: () => void;
+  onUpdateCustomProduction: (id: string, field: "role" | "values", value: string | string[]) => void;
+  onRemoveCustomProduction: (id: string) => void;
+  onAddCustomProductionValue: (id: string) => void;
+  onRemoveCustomProductionValue: (id: string, index: number) => void;
   isrc: string; upc: string; album: string; label: string; publishers: string[];
   releaseDate: string; copyright: string; explicit: boolean;
   onMetadataChange: (field: string, value: string | boolean) => void;
@@ -2056,6 +2145,12 @@ function StepDetails({
               addDetailEntry={addDetailEntry}
               removeDetailEntry={removeDetailEntry}
               extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))}
+              customPerformers={customPerformers}
+              onAddCustomPerformer={onAddCustomPerformer}
+              onUpdateCustomPerformer={onUpdateCustomPerformer}
+              onRemoveCustomPerformer={onRemoveCustomPerformer}
+              onAddCustomPerformerValue={onAddCustomPerformerValue}
+              onRemoveCustomPerformerValue={onRemoveCustomPerformerValue}
             />
             <ProductionCreditsSection
               details={details}
@@ -2063,6 +2158,12 @@ function StepDetails({
               addDetailEntry={addDetailEntry}
               removeDetailEntry={removeDetailEntry}
               extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))}
+              customProduction={customProduction}
+              onAddCustomProduction={onAddCustomProduction}
+              onUpdateCustomProduction={onUpdateCustomProduction}
+              onRemoveCustomProduction={onRemoveCustomProduction}
+              onAddCustomProductionValue={onAddCustomProductionValue}
+              onRemoveCustomProductionValue={onRemoveCustomProductionValue}
             />
           </motion.div>
         )}

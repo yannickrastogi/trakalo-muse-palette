@@ -171,18 +171,34 @@ function buildMeta(trackData: TrackData, t: (key: string) => string) {
   ];
 }
 
+interface CustomCreditEntry { id: string; role: string; values: string[]; }
+
 function buildPerformerCredits(trackData: TrackData, t: (key: string) => string) {
-  return PERFORMER_CREDIT_KEYS.map((f) => {
-    const values = (trackData.credits || {})[f.key]?.filter(Boolean) || [];
+  const credits = trackData.credits || {};
+  const standard = PERFORMER_CREDIT_KEYS.map((f) => {
+    const values = credits[f.key]?.filter(Boolean) || [];
     return { label: detailLabelKeys[f.key] ? t(detailLabelKeys[f.key]) : f.label, value: values.length > 0 ? values.join(", ") : "\u2014" };
   });
+  const custom = Array.isArray(credits.customPerformers)
+    ? (credits.customPerformers as unknown as CustomCreditEntry[])
+        .filter((e) => e.role?.trim() && e.values?.some((v) => v.trim()))
+        .map((e) => ({ label: e.role, value: e.values.filter(Boolean).join(", ") }))
+    : [];
+  return [...standard, ...custom];
 }
 
 function buildProductionCredits(trackData: TrackData, t: (key: string) => string) {
-  return PRODUCTION_CREDIT_KEYS.map((f) => {
-    const values = (trackData.credits || {})[f.key]?.filter(Boolean) || [];
+  const credits = trackData.credits || {};
+  const standard = PRODUCTION_CREDIT_KEYS.map((f) => {
+    const values = credits[f.key]?.filter(Boolean) || [];
     return { label: detailLabelKeys[f.key] ? t(detailLabelKeys[f.key]) : f.label, value: values.length > 0 ? values.join(", ") : "\u2014" };
   });
+  const custom = Array.isArray(credits.customProduction)
+    ? (credits.customProduction as unknown as CustomCreditEntry[])
+        .filter((e) => e.role?.trim() && e.values?.some((v) => v.trim()))
+        .map((e) => ({ label: e.role, value: e.values.filter(Boolean).join(", ") }))
+    : [];
+  return [...standard, ...custom];
 }
 
 export default function TrackDetail() {
