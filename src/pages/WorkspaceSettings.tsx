@@ -27,6 +27,16 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -767,6 +777,8 @@ function CatalogSharingSection() {
   const [incoming, setIncoming] = useState<any[]>([]);
   const [shareDropdownOpen, setShareDropdownOpen] = useState(false);
   const [sharing, setSharing] = useState<string | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<{ id: string; name: string; isTrack: boolean } | null>(null);
+  const [revoking, setRevoking] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchShares = useCallback(() => {
@@ -811,6 +823,16 @@ function CatalogSharingSection() {
     else { toast.success("Full catalog shared with " + targetWs.name); fetchShares(); }
     setSharing(null);
     setShareDropdownOpen(false);
+  };
+
+  const handleRevoke = async () => {
+    if (!revokeTarget || !user) return;
+    setRevoking(true);
+    const { error } = await supabase.rpc("revoke_catalog_share", { _user_id: user.id, _share_id: revokeTarget.id });
+    if (error) toast.error(error.message);
+    else { setOutgoing((prev) => prev.filter((x) => x.id !== revokeTarget.id)); toast.success("Share revoked"); }
+    setRevoking(false);
+    setRevokeTarget(null);
   };
 
   return (
@@ -874,11 +896,7 @@ function CatalogSharingSection() {
                   <p className="text-[11px] text-muted-foreground/50">{s.track_id ? "Single track" : "Full catalog"}</p>
                 </div>
                 <button
-                  onClick={async () => {
-                    const { error } = await supabase.rpc("revoke_catalog_share", { _user_id: user.id, _share_id: s.id });
-                    if (error) toast.error(error.message);
-                    else { setOutgoing((prev) => prev.filter((x) => x.id !== s.id)); toast.success("Share revoked"); }
-                  }}
+                  onClick={() => setRevokeTarget({ id: s.id, name: (s as any).workspaces?.name || "Unknown", isTrack: !!s.track_id })}
                   className="text-[11px] text-destructive/60 hover:text-destructive transition-colors"
                 >
                   Revoke
@@ -906,6 +924,30 @@ function CatalogSharingSection() {
           </div>
         )}
       </SectionBlock>
+
+      {/* Revoke confirmation dialog */}
+      <AlertDialog open={!!revokeTarget} onOpenChange={(open) => { if (!open) setRevokeTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke catalog share?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {revokeTarget?.isTrack
+                ? "Are you sure you want to revoke the track share with " + revokeTarget.name + "? They will no longer have access to this track."
+                : "Are you sure you want to revoke the share of your catalog with " + (revokeTarget?.name || "") + "? They will no longer have access to your tracks."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={revoking}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRevoke}
+              disabled={revoking}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {revoking ? "Revoking..." : "Revoke"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
