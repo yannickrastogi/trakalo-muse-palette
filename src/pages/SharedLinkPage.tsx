@@ -1973,9 +1973,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               </div>
               <SocialIcons branding={branding} immersive={true} />
               {branding?.bio && (
-                <div className="mt-3 max-w-md rounded-2xl bg-white/8 backdrop-blur-xl border border-white/10 px-5 py-3">
-                  <p className="text-sm md:text-base text-white/70 italic text-center">{branding.bio}</p>
-                </div>
+                <p className="mt-2 max-w-md text-xs md:text-sm text-white/50 italic text-center" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>{branding.bio}</p>
               )}
             </div>
           </header>
@@ -2010,9 +2008,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
             )}
             <SocialIcons branding={branding} immersive={false} />
             {branding?.bio && (
-              <div className="mt-3 max-w-md rounded-2xl bg-card border border-border px-5 py-3">
-                <p className="text-sm text-muted-foreground/60 italic text-center">{branding.bio}</p>
-              </div>
+              <p className="mt-2 max-w-md text-xs sm:text-sm text-muted-foreground/50 italic text-center">{branding.bio}</p>
             )}
           </div>
         </div>
