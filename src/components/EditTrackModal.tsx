@@ -23,6 +23,8 @@ import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete"
 import { useContacts } from "@/contexts/ContactsContext";
 import { PerformerCreditsSection, type CustomCreditEntry } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
+import { TagsSection } from "@/components/TagsSection";
+import type { TrackTags } from "@/lib/tagsVocabulary";
 const TYPES = ["Song", "Instrumental", "Sample", "Acapella"];
 
 
@@ -158,6 +160,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
   const [customPerformers, setCustomPerformers] = useState<CustomCreditEntry[]>([]);
   const [customProduction, setCustomProduction] = useState<CustomCreditEntry[]>([]);
   const [splits, setSplits] = useState<TrackSplit[]>([]);
+  const [tags, setTags] = useState<TrackTags>({});
   const [initialBpm, setInitialBpm] = useState("");
   const [initialKey, setInitialKey] = useState("");
   const populatedRef = useRef(false);
@@ -198,6 +201,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       setCustomPerformers(Array.isArray(credits.customPerformers) ? (credits.customPerformers as unknown as CustomCreditEntry[]).map(e => ({ ...e })) : []);
       setCustomProduction(Array.isArray(credits.customProduction) ? (credits.customProduction as unknown as CustomCreditEntry[]).map(e => ({ ...e })) : []);
       setSplits(trackData.splits?.length ? trackData.splits.map(s => ({ ...s })) : [{ id: "1", name: "", role: "", share: 100, pro: "", ipi: "", publisher: "" }]);
+      setTags(trackData.tags ? JSON.parse(JSON.stringify(trackData.tags)) : {});
     }
   }, [open, trackId, trackData]);
 
@@ -296,6 +300,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
         customPerformers: customPerformers.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
         customProduction: customProduction.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
       },
+      tags,
     };
 
     updateTrack(trackId, updates);
@@ -759,6 +764,15 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                     />
                   </motion.div>
                 )}
+              </div>
+
+              {/* Tags */}
+              <div className="border-t border-border pt-4 mt-4">
+                <p className="text-[13px] font-semibold text-muted-foreground mb-3">
+                  Tags
+                  <span className="text-2xs text-muted-foreground/50 font-normal ml-1">— instruments, mood, themes & sync</span>
+                </p>
+                <TagsSection tags={tags} onChange={setTags} />
               </div>
             </div>
 

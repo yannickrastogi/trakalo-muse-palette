@@ -84,6 +84,7 @@ import {
   MessageCircle,
   Bookmark,
   Scale,
+  Tag,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -111,6 +112,8 @@ import { toast } from "sonner";
 import type { StemType } from "@/lib/constants";
 import { PerformerCreditsSection } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
+import { TagsSection } from "@/components/TagsSection";
+import type { TrackTags } from "@/lib/tagsVocabulary";
 
 interface StemFile {
   id: string;
@@ -1223,6 +1226,10 @@ function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolea
   const [editProductionDetails, setEditProductionDetails] = useState<Record<string, string[]>>({});
   const [editCustomProduction, setEditCustomProduction] = useState<CustomCreditEntry[]>([]);
 
+  // ─── Tags inline editing ───
+  const [editingTags, setEditingTags] = useState(false);
+  const [editTags, setEditTags] = useState<TrackTags>({});
+
   if (!trackData) return null;
 
   const meta = buildMeta(trackData, t);
@@ -1230,7 +1237,7 @@ function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolea
   const productionCredits = buildProductionCredits(trackData, t);
 
   const handleDownloadPdf = () => {
-    generateMetadataPdf(trackData.title, trackData.artist, meta, performerCredits, productionCredits);
+    generateMetadataPdf(trackData.title, trackData.artist, meta, performerCredits, productionCredits, trackData.tags || undefined);
   };
 
   const renderGrid = (items: { label: string; value: string }[]) => (
@@ -1248,6 +1255,7 @@ function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolea
     orange: { bg: "bg-orange-500/10", text: "text-orange-500", border: "border-t-orange-500/40" },
     pink: { bg: "bg-pink-500/10", text: "text-pink-500", border: "border-t-pink-500/40" },
     purple: { bg: "bg-purple-500/10", text: "text-purple-500", border: "border-t-purple-500/40" },
+    green: { bg: "bg-green-500/10", text: "text-green-500", border: "border-t-green-500/40" },
   };
 
   // ─── Metadata editing functions ───
@@ -1336,6 +1344,17 @@ function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolea
     });
     toast.success(t("editTrack.saved", "Track updated"));
     setEditingProduction(false);
+  };
+
+  const startEditingTags = () => {
+    setEditTags(trackData.tags ? JSON.parse(JSON.stringify(trackData.tags)) : {});
+    setEditingTags(true);
+  };
+
+  const saveTags = () => {
+    updateTrack(trackId, { tags: editTags });
+    toast.success(t("editTrack.saved", "Track updated"));
+    setEditingTags(false);
   };
 
   // ─── Detail helpers for credits editing (same pattern as EditTrackModal) ───
@@ -1553,6 +1572,37 @@ function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolea
             />
           ) : (
             renderGrid(productionCredits)
+          )}
+        </div>
+      </div>
+
+      {/* ═══════════════════ TAGS SECTION ═══════════════════ */}
+      <div className={`rounded-xl bg-card/50 border border-border/40 border-t-2 ${accentStyles.green.border} overflow-hidden`}>
+        <div className="px-5 pt-5 pb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-lg ${accentStyles.green.bg} flex items-center justify-center shrink-0`}>
+              <Tag className={`w-[18px] h-[18px] ${accentStyles.green.text}`} />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-foreground">Tags</h4>
+              <p className="text-[11px] text-muted-foreground">Instruments, mood, themes & sync</p>
+            </div>
+          </div>
+          {!readOnly && !editingTags && (
+            <button onClick={startEditingTags} className="text-xs text-primary hover:underline">Edit</button>
+          )}
+          {editingTags && (
+            <div className="flex items-center gap-2">
+              <button onClick={() => setEditingTags(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">Cancel</button>
+              <button onClick={saveTags} className="px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3" /> Save</button>
+            </div>
+          )}
+        </div>
+        <div className="px-5 pb-5">
+          {editingTags ? (
+            <TagsSection tags={editTags} onChange={setEditTags} />
+          ) : (
+            <TagsSection tags={trackData.tags || {}} readOnly />
           )}
         </div>
       </div>

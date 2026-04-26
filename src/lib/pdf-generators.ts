@@ -359,15 +359,32 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
   doc.save(`${title} - Splits.pdf`);
 }
 
-/** Generate metadata PDF — optionally includes performer & production credits sections */
+export interface TagsPdfData {
+  instruments?: string[];
+  lyric_themes?: string[];
+  mood_feel?: string[];
+  tempo_descriptor?: string | null;
+  sync_tags?: string[];
+  custom?: string[];
+}
+
+/** Generate metadata PDF — optionally includes performer & production credits and tags sections */
 export function generateMetadataPdf(
   title: string,
   artist: string,
   meta: MetaField[],
   performerCredits?: CreditEntry[],
   productionCredits?: CreditEntry[],
+  asBlobOrTags?: boolean | TagsPdfData,
   asBlob?: boolean,
 ): Blob | void {
+  let tags: TagsPdfData | undefined;
+  let returnBlob = asBlob;
+  if (typeof asBlobOrTags === "boolean") {
+    returnBlob = asBlobOrTags;
+  } else if (asBlobOrTags && typeof asBlobOrTags === "object") {
+    tags = asBlobOrTags;
+  }
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -423,9 +440,22 @@ export function generateMetadataPdf(
   if (performerCredits) drawSectionGrid("Performer Credits", performerCredits);
   if (productionCredits) drawSectionGrid("Production & Other Credits", productionCredits);
 
+  // Tags section
+  if (tags) {
+    const tagEntries: MetaField[] = [];
+    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+    if (tags.instruments?.length) tagEntries.push({ label: "Instruments", value: tags.instruments.map(capitalize).join(", ") });
+    if (tags.lyric_themes?.length) tagEntries.push({ label: "Lyric Themes", value: tags.lyric_themes.map(capitalize).join(", ") });
+    if (tags.mood_feel?.length) tagEntries.push({ label: "Mood & Feel", value: tags.mood_feel.map(capitalize).join(", ") });
+    if (tags.tempo_descriptor) tagEntries.push({ label: "Tempo", value: capitalize(tags.tempo_descriptor) });
+    if (tags.sync_tags?.length) tagEntries.push({ label: "Sync Tags", value: tags.sync_tags.map(capitalize).join(", ") });
+    if (tags.custom?.length) tagEntries.push({ label: "Custom Tags", value: tags.custom.join(", ") });
+    if (tagEntries.length > 0) drawSectionGrid("Tags", tagEntries);
+  }
+
   drawFooters(doc, marginX);
 
-  if (asBlob) {
+  if (returnBlob) {
     return doc.output("blob");
   }
   doc.save(`${title} - Metadata.pdf`);

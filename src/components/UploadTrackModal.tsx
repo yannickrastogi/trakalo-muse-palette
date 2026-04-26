@@ -38,6 +38,8 @@ import { useContacts, type Contact } from "@/contexts/ContactsContext";
 import { useTrack as useTrackContext } from "@/contexts/TrackContext";
 import { PerformerCreditsSection, type CustomCreditEntry } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
+import { TagsSection } from "@/components/TagsSection";
+import type { TrackTags } from "@/lib/tagsVocabulary";
 import {
   Dialog,
   DialogContent,
@@ -121,6 +123,8 @@ interface TrackEntry {
   masteredBy: string;
   copyright: string;
   explicit: boolean;
+  // Tags
+  tags: Record<string, unknown>;
   // Status
   metadataComplete: boolean;
 }
@@ -189,6 +193,7 @@ function createTrackEntry(file: File): TrackEntry {
     masteredBy: "",
     copyright: "",
     explicit: false,
+    tags: {},
     metadataComplete: false,
   };
 }
@@ -682,6 +687,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           customPerformers: currentTrack.customPerformers.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
           customProduction: currentTrack.customProduction.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
         },
+        tags: currentTrack.tags,
       });
       setUploadProgress(90);
 
@@ -1220,6 +1226,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   onRemoveCustomProduction={removeCustomProduction}
                   onAddCustomProductionValue={addCustomProductionValue}
                   onRemoveCustomProductionValue={removeCustomProductionValue}
+                  tags={(currentTrack.tags || {}) as TrackTags}
+                  onTagsChange={(tags: TrackTags) => updateCurrent({ tags })}
                   isrc={currentTrack.isrc}
                   upc={currentTrack.upc}
                   album={currentTrack.album}
@@ -2067,6 +2075,7 @@ function StepDetails({
   details, updateDetail, addDetailEntry, removeDetailEntry,
   customPerformers, onAddCustomPerformer, onUpdateCustomPerformer, onRemoveCustomPerformer, onAddCustomPerformerValue, onRemoveCustomPerformerValue,
   customProduction, onAddCustomProduction, onUpdateCustomProduction, onRemoveCustomProduction, onAddCustomProductionValue, onRemoveCustomProductionValue,
+  tags, onTagsChange,
   isrc, upc, album, label, publishers, releaseDate,
   copyright, explicit: isExplicit,
   onMetadataChange, onPublishersChange, contacts, existingSplitNames,
@@ -2094,6 +2103,8 @@ function StepDetails({
   onRemoveCustomProduction: (id: string) => void;
   onAddCustomProductionValue: (id: string) => void;
   onRemoveCustomProductionValue: (id: string, index: number) => void;
+  tags: TrackTags;
+  onTagsChange: (tags: TrackTags) => void;
   isrc: string; upc: string; album: string; label: string; publishers: string[];
   releaseDate: string; copyright: string; explicit: boolean;
   onMetadataChange: (field: string, value: string | boolean) => void;
@@ -2167,6 +2178,18 @@ function StepDetails({
             />
           </motion.div>
         )}
+      </div>
+
+      {/* Separator */}
+      <div className="border-t border-border" />
+
+      {/* Tags */}
+      <div>
+        <p className="text-[13px] font-semibold text-muted-foreground mb-3">
+          Tags
+          <span className="text-2xs text-muted-foreground/50 font-normal ml-1">— instruments, mood, themes & sync</span>
+        </p>
+        <TagsSection tags={tags} onChange={onTagsChange} />
       </div>
 
       {/* Separator */}

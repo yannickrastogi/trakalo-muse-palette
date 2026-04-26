@@ -95,6 +95,8 @@ export interface TrackData extends WorkspaceScoped {
   shareId?: string;
   // deno-lint-ignore no-explicit-any
   sonicDna?: Record<string, any>;
+  // deno-lint-ignore no-explicit-any
+  tags?: Record<string, any>;
 }
 
 const stemTypeColors: Record<string, string> = {
@@ -183,6 +185,7 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     createdAt: (row.created_at as string) || undefined,
     statusHistory: [],
     sonicDna: row.sonic_dna ? (row.sonic_dna as Record<string, any>) : undefined,
+    tags: row.tags ? (row.tags as Record<string, any>) : {},
   };
 }
 
@@ -654,6 +657,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         if (trackInput.explicit) metaPayload.explicit = trackInput.explicit;
         if (trackInput.chapters) metaPayload.chapters = trackInput.chapters;
         if (trackInput.credits && Object.keys(trackInput.credits).length > 0) metaPayload.credits = trackInput.credits;
+        if (trackInput.tags && Object.keys(trackInput.tags).length > 0) metaPayload.tags = trackInput.tags;
         if (Object.keys(metaPayload).length > 0) {
           await supabase.rpc("update_track", {
             _user_id: user.id,
@@ -745,6 +749,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (updates.copyright !== undefined) payload.copyright = updates.copyright || null;
       if (updates.explicit !== undefined) payload.explicit = updates.explicit || false;
       if (updates.credits !== undefined) payload.credits = updates.credits;
+      if (updates.tags !== undefined) payload.tags = updates.tags;
 
       if (Object.keys(payload).length > 0 && user) {
         const { error } = await supabase.rpc("update_track", {
