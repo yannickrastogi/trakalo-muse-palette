@@ -17,7 +17,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-import { GENRES, KEYS, MOODS, LANGUAGES } from "@/lib/constants";
+import { GENRES, KEYS, LANGUAGES } from "@/lib/constants";
 import { equalSplit } from "@/lib/split-utils";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
 import { useContacts } from "@/contexts/ContactsContext";
@@ -142,7 +142,6 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
   const [bpm, setBpm] = useState("");
   const [trackKey, setTrackKey] = useState("");
   const [genre, setGenre] = useState("");
-  const [mood, setMood] = useState<string[]>([]);
   const [voice, setVoice] = useState("");
   const [language, setLanguage] = useState("");
   const [trackType, setTrackType] = useState("");
@@ -184,7 +183,6 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       setTrackKey(trackData.key);
       setInitialKey(trackData.key);
       setGenre(trackData.genre);
-      setMood([...trackData.mood]);
       setVoice(trackData.voice || "");
       setLanguage(trackData.language);
       setTrackType(trackData.type);
@@ -204,20 +202,6 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       setTags(trackData.tags ? JSON.parse(JSON.stringify(trackData.tags)) : {});
     }
   }, [open, trackId, trackData]);
-
-  const toggleMood = (m: string) => {
-    setMood((prev) => prev.includes(m) ? prev.filter((x) => x !== m) : prev.length < 8 ? [...prev, m] : prev);
-  };
-
-  const addCustomMood = (tag: string) => {
-    const normalized = tag.trim().toLowerCase().replace(/^#/, "");
-    if (!normalized) return;
-    setMood((prev) => {
-      if (prev.includes(normalized)) return prev;
-      if (prev.length >= 8) return prev;
-      return [...prev, normalized];
-    });
-  };
 
   const updateDetail = (key: string, index: number, value: string) => {
     setDetails((prev) => {
@@ -283,7 +267,6 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       bpm: Number(bpm) || 0,
       key: trackKey,
       genre,
-      mood,
       voice,
       language,
       type: trackType,
@@ -338,7 +321,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       })();
     }
 
-    // Sync user metadata + mood descriptors to sonic_dna
+    // Sync user metadata to sonic_dna
     if (trackData?.uuid) {
       try {
         const { data: row } = await supabase
@@ -351,16 +334,11 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
         if (existingSonicDna) {
           const updatedSonicDna = {
             ...existingSonicDna,
-            mood: {
-              ...(existingSonicDna.mood as Record<string, unknown> || {}),
-              descriptors: mood,
-            },
             user_metadata: {
               genre,
               type: trackType,
               gender: voice,
               language,
-              mood,
               bpm: Number(bpm) || 0,
               key: trackKey,
               title: title.trim(),
@@ -506,46 +484,13 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 </div>
               </div>
 
-              {/* Mood Tags */}
+              {/* Tags */}
               <div className="space-y-1.5">
-                <FieldLabel>{t("editTrack.mood")} <span className="text-muted-foreground/50 normal-case tracking-normal font-normal">({mood.length}/8)</span></FieldLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {MOODS.map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => toggleMood(m)}
-                      className={`px-2.5 py-1 rounded-full text-2xs font-semibold transition-all ${
-                        mood.includes(m)
-                          ? "bg-brand-orange/15 text-brand-orange border border-brand-orange/30"
-                          : "bg-secondary text-muted-foreground border border-border hover:border-brand-orange/20 hover:text-foreground"
-                      }`}
-                    >
-                      #{m}
-                    </button>
-                  ))}
-                  {mood.filter((m) => !(MOODS as readonly string[]).includes(m)).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => toggleMood(m)}
-                      className="px-2.5 py-1 rounded-full text-2xs font-semibold transition-all bg-brand-orange/15 text-brand-orange border border-brand-orange/30 flex items-center gap-1"
-                    >
-                      #{m}
-                      <X className="w-3 h-3" />
-                    </button>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  placeholder="Add custom tag..."
-                  className="h-7 px-2.5 rounded-full bg-secondary border border-border text-2xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40 w-36"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addCustomMood((e.target as HTMLInputElement).value);
-                      (e.target as HTMLInputElement).value = "";
-                    }
-                  }}
-                />
+                <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">
+                  Tags
+                  <span className="text-2xs text-muted-foreground/50 font-normal normal-case tracking-normal ml-1">— instruments, mood, themes & sync</span>
+                </p>
+                <TagsSection tags={tags} onChange={setTags} />
               </div>
 
               {/* Metadata — collapsible, matching UploadTrackModal layout */}
@@ -766,14 +711,6 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 )}
               </div>
 
-              {/* Tags */}
-              <div className="border-t border-border pt-4 mt-4">
-                <p className="text-[13px] font-semibold text-muted-foreground mb-3">
-                  Tags
-                  <span className="text-2xs text-muted-foreground/50 font-normal ml-1">— instruments, mood, themes & sync</span>
-                </p>
-                <TagsSection tags={tags} onChange={setTags} />
-              </div>
             </div>
 
             {/* Footer */}

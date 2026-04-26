@@ -52,7 +52,7 @@ const MAX_TRACKS = 20;
 
 const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
-import { GENRES, KEYS, MOODS, LANGUAGES, PROS, SPLIT_ROLES } from "@/lib/constants";
+import { GENRES, KEYS, LANGUAGES, PROS, SPLIT_ROLES } from "@/lib/constants";
 import { equalSplit } from "@/lib/split-utils";
 import { extractTextFromPdf } from "@/lib/pdf-text-extract";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
@@ -96,7 +96,6 @@ interface TrackEntry {
   bpm: string;
   trackKey: string;
   genre: string;
-  mood: string[];
   trackType: string;
   voice: string;
   language: string;
@@ -167,7 +166,6 @@ function createTrackEntry(file: File): TrackEntry {
     bpm: "",
     trackKey: "",
     genre: "",
-    mood: [],
     trackType: "Song",
     voice: "",
     language: "",
@@ -337,24 +335,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const updateCurrent = useCallback((updates: Partial<TrackEntry>) => {
     setQueue((prev) => prev.map((e, i) => i === currentIdx ? { ...e, ...updates } : e));
   }, [currentIdx]);
-
-  const toggleMood = useCallback((m: string) => {
-    if (!currentTrack) return;
-    if (currentTrack.mood.includes(m)) {
-      updateCurrent({ mood: currentTrack.mood.filter((x) => x !== m) });
-    } else if (currentTrack.mood.length < 8) {
-      updateCurrent({ mood: [...currentTrack.mood, m] });
-    }
-  }, [currentTrack, updateCurrent]);
-
-  const addCustomMood = useCallback((tag: string) => {
-    if (!currentTrack) return;
-    const normalized = tag.trim().toLowerCase().replace(/^#/, "");
-    if (!normalized) return;
-    if (currentTrack.mood.includes(normalized)) return;
-    if (currentTrack.mood.length >= 8) return;
-    updateCurrent({ mood: [...currentTrack.mood, normalized] });
-  }, [currentTrack, updateCurrent]);
 
   const updateDetail = useCallback((key: string, index: number, value: string) => {
     if (!currentTrack) return;
@@ -650,7 +630,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         bpm: parseInt(currentTrack.bpm) || 0,
         key: currentTrack.trackKey || "",
         duration: currentTrack.analysisResult?.duration || "0:00",
-        mood: currentTrack.mood,
         status: "Available",
         language: currentTrack.language || "",
         voice: currentTrack.voice || "N/A",
@@ -957,7 +936,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           bpm: 0,
           key: "",
           duration: entry.analysisResult?.duration || "0:00",
-          mood: [],
           status: "Available",
           language: "",
           voice: "N/A",
@@ -1175,7 +1153,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   bpm={currentTrack.bpm} setBpm={(v) => updateCurrent({ bpm: v })}
                   trackKey={currentTrack.trackKey} setTrackKey={(v) => updateCurrent({ trackKey: v })}
                   genre={currentTrack.genre} setGenre={(v) => updateCurrent({ genre: v })}
-                  mood={currentTrack.mood} toggleMood={toggleMood} addCustomMood={addCustomMood}
                   trackType={currentTrack.trackType} setTrackType={(v) => updateCurrent({ trackType: v })}
                   voice={currentTrack.voice} setVoice={(v) => updateCurrent({ voice: v })}
                   language={currentTrack.language} setLanguage={(v) => updateCurrent({ language: v })}
@@ -1246,7 +1223,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                 <StepReview
                   title={currentTrack.title} artist={currentTrack.artist}
                   bpm={currentTrack.bpm} trackKey={currentTrack.trackKey}
-                  genre={currentTrack.genre} mood={currentTrack.mood}
+                  genre={currentTrack.genre}
                   trackType={currentTrack.trackType}
                   voice={currentTrack.voice}
                   language={currentTrack.language} notes={currentTrack.notes}
@@ -1661,7 +1638,7 @@ function StepBulkUpload({
 
 function StepInfo({
   title, setTitle, artist, setArtist, bpm, setBpm,
-  trackKey, setTrackKey, genre, setGenre, mood, toggleMood, addCustomMood,
+  trackKey, setTrackKey, genre, setGenre,
   trackType, setTrackType,
   voice, setVoice,
   language, setLanguage, notes, setNotes,
@@ -1673,7 +1650,6 @@ function StepInfo({
   bpm: string; setBpm: (v: string) => void;
   trackKey: string; setTrackKey: (v: string) => void;
   genre: string; setGenre: (v: string) => void;
-  mood: string[]; toggleMood: (v: string) => void; addCustomMood: (v: string) => void;
   trackType: string; setTrackType: (v: string) => void;
   voice: string; setVoice: (v: string) => void;
   language: string; setLanguage: (v: string) => void;
@@ -1842,46 +1818,6 @@ function StepInfo({
             </select>
           )}
         </div>
-      </div>
-      <div className="space-y-1.5">
-        <FieldLabel>{t("uploadTrack.mood")} <span className="text-muted-foreground/50 normal-case tracking-normal font-normal">({mood.length}/8)</span></FieldLabel>
-        <div className="flex flex-wrap gap-1.5">
-          {MOODS.map((m) => (
-            <button
-              key={m}
-              onClick={() => toggleMood(m)}
-              className={`px-2.5 py-1 rounded-full text-2xs font-semibold transition-all ${
-                mood.includes(m)
-                  ? "bg-brand-orange/15 text-brand-orange border border-brand-orange/30"
-                  : "bg-secondary text-muted-foreground border border-border hover:border-brand-orange/20 hover:text-foreground"
-              }`}
-            >
-              #{m}
-            </button>
-          ))}
-          {mood.filter((m) => !(MOODS as readonly string[]).includes(m)).map((m) => (
-            <button
-              key={m}
-              onClick={() => toggleMood(m)}
-              className="px-2.5 py-1 rounded-full text-2xs font-semibold transition-all bg-brand-orange/15 text-brand-orange border border-brand-orange/30 flex items-center gap-1"
-            >
-              #{m}
-              <X className="w-3 h-3" />
-            </button>
-          ))}
-        </div>
-        <input
-          type="text"
-          placeholder="Add custom tag..."
-          className="h-7 px-2.5 rounded-full bg-secondary border border-border text-2xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40 w-36"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              addCustomMood((e.target as HTMLInputElement).value);
-              (e.target as HTMLInputElement).value = "";
-            }
-          }}
-        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
@@ -2358,13 +2294,13 @@ function StepLyrics({
 /* ─── Review Step ─── */
 
 function StepReview({
-  title, artist, bpm, trackKey, genre, mood, trackType, voice, language, notes,
+  title, artist, bpm, trackKey, genre, trackType, voice, language, notes,
   audioFile, stems, splits, totalSplit, details, lyrics, coverFile,
   isrc, upc, album, label, publishers, releaseDate,
   writtenBy, producedBy, mixedBy, masteredBy, copyright, explicit: isExplicit,
 }: {
   title: string; artist: string; bpm: string; trackKey: string;
-  genre: string; mood: string[]; trackType: string; voice: string; language: string; notes: string;
+  genre: string; trackType: string; voice: string; language: string; notes: string;
   audioFile: File | null; stems: StemFile[]; splits: Split[]; totalSplit: number;
   details: Record<string, string[]>;
   lyrics?: string;
@@ -2427,14 +2363,6 @@ function StepReview({
           <ReviewRow label={t("editTrack.gender", "Gender")} value={voice || "—"} />
           <ReviewRow label={t("uploadTrack.language")} value={language || "—"} />
         </div>
-        {mood.length > 0 && (
-          <div className="flex items-center gap-1.5 pt-1 flex-wrap">
-            <span className="text-2xs text-muted-foreground font-medium">{t("uploadTrack.mood")}:</span>
-            {mood.map((m) => (
-              <span key={m} className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70">#{m}</span>
-            ))}
-          </div>
-        )}
         {notes && <p className="text-2xs text-muted-foreground pt-1 italic">"{notes}"</p>}
       </div>
 
