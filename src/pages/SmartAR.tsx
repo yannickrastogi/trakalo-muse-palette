@@ -9,7 +9,6 @@ import { ShareModal } from "@/components/ShareModal";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, supabase } from "@/integrations/supabase/client";
-import { DEFAULT_COVER } from "@/lib/constants";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, Send, Loader2, Music, ListMusic, Pencil, Link2, Eye, Play, Pause } from "lucide-react";
@@ -63,6 +62,9 @@ export default function SmartAR() {
   var [audioProgress, setAudioProgress] = useState(0);
   var [audioDuration, setAudioDuration] = useState(0);
   var [loadingAudioId, setLoadingAudioId] = useState<string | null>(null);
+
+  var [showCustomCount, setShowCustomCount] = useState(false);
+  var [customCountInput, setCustomCountInput] = useState("");
 
   useEffect(function () {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -272,7 +274,9 @@ export default function SmartAR() {
             .concat({
               id: makeId(),
               role: "bot",
-              content: "I found " + matchedTracks.length + " tracks matching your brief:",
+              content: matchedTracks.length === 1
+                ? "Here's the best match for your brief:"
+                : "I found " + matchedTracks.length + " tracks matching your brief:",
               type: "results",
               data: resultData,
             });
@@ -297,7 +301,13 @@ export default function SmartAR() {
 
   var handleSelectCount = useCallback(function (count: number | "all") {
     setTrackCount(count);
-    var label = count === "all" ? "All matching tracks" : count + " tracks";
+    setShowCustomCount(false);
+    setCustomCountInput("");
+    var label = count === "all"
+      ? "All matching tracks"
+      : count === 1
+        ? "1 track"
+        : count + " tracks";
     var loadingId = makeId();
 
     setMessages(function (prev) {
@@ -311,6 +321,15 @@ export default function SmartAR() {
 
     callSmartAR(brief, count, loadingId);
   }, [brief, callSmartAR]);
+
+  var handleSubmitCustomCount = useCallback(function () {
+    var parsed = parseInt(customCountInput, 10);
+    if (Number.isNaN(parsed) || parsed < 1 || parsed > 50) {
+      toast({ title: "Please enter a number between 1 and 50" });
+      return;
+    }
+    handleSelectCount(parsed);
+  }, [customCountInput, handleSelectCount, toast]);
 
   var handleCreatePlaylist = useCallback(async function () {
     if (!results || !results.tracks || results.tracks.length === 0 || isCreating) return;
@@ -462,6 +481,12 @@ export default function SmartAR() {
           <p className="mb-3">{msg.content}</p>
           <div className="flex flex-wrap gap-2">
             <button
+              onClick={function () { handleSelectCount(1); }}
+              className="px-4 py-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors text-sm font-medium"
+            >
+              1 track
+            </button>
+            <button
               onClick={function () { handleSelectCount(3); }}
               className="px-4 py-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors text-sm font-medium"
             >
@@ -479,7 +504,49 @@ export default function SmartAR() {
             >
               All matching
             </button>
+            <button
+              onClick={function () { setShowCustomCount(function (v) { return !v; }); }}
+              className={"px-4 py-2 rounded-lg border transition-colors text-sm font-medium " + (showCustomCount ? "border-primary bg-primary/10 text-primary" : "border-border bg-card hover:bg-accent")}
+            >
+              Custom...
+            </button>
           </div>
+          <AnimatePresence initial={false}>
+            {showCustomCount && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="flex items-center gap-2 mt-3">
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={customCountInput}
+                    onChange={function (e) { setCustomCountInput(e.target.value); }}
+                    onKeyDown={function (e) {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleSubmitCustomCount();
+                      }
+                    }}
+                    placeholder="Number of tracks"
+                    className="flex-1 max-w-[200px] rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+                  />
+                  <button
+                    onClick={handleSubmitCustomCount}
+                    disabled={!customCountInput.trim()}
+                    className="btn-brand p-2.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <p className="text-xs text-muted-foreground/60 mt-2">3 to 5 tracks is usually ideal — you don't want to overwhelm the recipient.</p>
         </div>
       );
@@ -559,38 +626,49 @@ export default function SmartAR() {
                   variants={item}
                   className="relative rounded-lg bg-card/50 border border-border/50 overflow-hidden"
                 >
-                  <div className="flex items-center gap-3 p-2">
-                    <button
-                      onClick={function () { handlePlayTrack(t.id); }}
-                      className="relative w-8 h-8 rounded flex-shrink-0 group"
-                    >
-                      <img
-                        src={td.coverImage || DEFAULT_COVER}
-                        alt={td.title}
-                        className={"w-8 h-8 rounded object-cover transition-opacity " + (isPlaying || isLoadingAudio ? "opacity-40" : "group-hover:opacity-60")}
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        {isLoadingAudio ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-white" />
-                        ) : isPlaying ? (
-                          <Pause className="w-4 h-4 text-white" />
-                        ) : (
-                          <Play className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                        )}
-                      </div>
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{td.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{td.artist}</p>
+                  <div className="flex items-start gap-3 p-3">
+                    <div className="w-12 h-12 rounded flex-shrink-0 overflow-hidden bg-muted">
+                      {td.coverImage ? (
+                        <img
+                          src={td.coverImage}
+                          alt={td.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                          <Music className="w-5 h-5 text-primary/60" />
+                        </div>
+                      )}
                     </div>
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-semibold flex-shrink-0">
-                      {scorePercent}%
-                    </span>
-                    {t.reason && (
-                      <span className="text-xs text-muted-foreground hidden sm:block">
-                        {t.reason}
-                      </span>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold truncate">{td.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{td.artist}</p>
+                        </div>
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-semibold flex-shrink-0">
+                          {scorePercent}%
+                        </span>
+                      </div>
+                      {t.reason && (
+                        <p className="text-xs text-muted-foreground/80 mt-1.5 leading-snug">
+                          {t.reason}
+                        </p>
+                      )}
+                      <button
+                        onClick={function () { handlePlayTrack(t.id); }}
+                        className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        {isLoadingAudio ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : isPlaying ? (
+                          <Pause className="w-3 h-3" />
+                        ) : (
+                          <Play className="w-3 h-3" />
+                        )}
+                        <span>{isPlaying ? "Pause" : "Play"}</span>
+                      </button>
+                    </div>
                   </div>
                   {isPlaying && audioDuration > 0 && (
                     <div className="h-0.5 bg-border/30">

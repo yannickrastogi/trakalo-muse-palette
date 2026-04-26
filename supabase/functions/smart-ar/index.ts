@@ -217,7 +217,9 @@ Deno.serve(async (req) => {
     const selectionInstruction =
       track_count === "all"
         ? "Select ALL tracks that match the brief, ranked by relevance."
-        : "Select the top " + track_count + " tracks that best match the brief, ranked by relevance.";
+        : track_count === 1
+          ? "Select the SINGLE best track for the brief — return exactly one track, the strongest match."
+          : "Select the top " + track_count + " tracks that best match the brief, ranked by relevance.";
 
     let groqResponse;
     try {
