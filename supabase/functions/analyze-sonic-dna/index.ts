@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
     // Fetch existing track metadata to sync into sonic_dna.user_metadata and check BPM/Key
     const { data: existingTrack } = await supabaseAdmin
       .from("tracks")
-      .select("bpm, key, title, artist, featuring, genre, mood, gender, language, track_type")
+      .select("bpm, key, title, artist, featuring, genre, mood, gender, language, track_type, tags")
       .eq("id", track_id)
       .single();
 
@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
         language: existingTrack.language,
         bpm: existingTrack.bpm,
         key: existingTrack.key,
+        tags: existingTrack.tags || {},
       };
     }
 
