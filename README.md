@@ -13,7 +13,7 @@ Your music catalog, organized & pitch-ready.
 
 ```sh
 git clone <YOUR_GIT_URL>
-cd trakalo-muse-palette
+cd trakalog-app
 npm i
 npm run dev
 ```
