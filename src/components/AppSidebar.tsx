@@ -50,53 +50,12 @@ const bottomNavKeys = new Set([
 function SidebarStyles() {
   return (
     <style>{`
-.trakalog-nav-link .tnl-label {
-  position: relative;
-  display: inline-block;
-  max-width: 100%;
-}
-.trakalog-nav-link .tnl-label::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -5px;
-  height: 2px;
-  border-radius: 1px;
-  background: linear-gradient(90deg, #f97316 0%, #ec4899 50%, #a855f7 100%);
-  transform: scaleX(0);
-  transform-origin: right center;
-  transition: transform 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
-  pointer-events: none;
-}
-.trakalog-nav-link:hover .tnl-label::after,
-.trakalog-nav-link:focus-visible .tnl-label::after {
-  transform: scaleX(1);
-  transform-origin: left center;
-}
-.trakalog-nav-link.nav-active .tnl-label::after {
-  transform: scaleX(1);
-  transform-origin: left center;
-}
 .trakalog-nav-link.nav-active .tnl-label {
   background: linear-gradient(90deg, #f97316 0%, #ec4899 50%, #a855f7 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   font-weight: 600;
-}
-@media (prefers-reduced-motion: reduce) {
-  .trakalog-nav-link .tnl-label::after {
-    transition: opacity 200ms ease;
-    transform: scaleX(1);
-    transform-origin: left center;
-    opacity: 0;
-  }
-  .trakalog-nav-link:hover .tnl-label::after,
-  .trakalog-nav-link:focus-visible .tnl-label::after,
-  .trakalog-nav-link.nav-active .tnl-label::after {
-    opacity: 1;
-  }
 }
     `}</style>
   );
