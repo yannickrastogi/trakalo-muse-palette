@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 // Use centralized constants
 import { STEM_TYPES, GENRES, DEFAULT_COVER } from "@/lib/constants";
 import type { StemType } from "@/lib/constants";
+import { INSTRUMENTS, LYRIC_THEMES, MOOD_FEEL, TEMPO_DESCRIPTORS, SYNC_TAGS } from "@/lib/tagsVocabulary";
+import { TagFilterDropdown, TempoToggle } from "@/components/TagFilterDropdown";
 
 interface FlatStem extends TrackStem {
   trackId: number;
@@ -23,6 +25,7 @@ interface FlatStem extends TrackStem {
   trackKey: string;
   trackCoverIdx: number;
   trackCover?: string;
+  trackTags?: Record<string, unknown>;
   isPack?: boolean;
   stemCount?: number;
 }
@@ -136,6 +139,11 @@ function StemsInner() {
   const [keyFilter, setKeyFilter] = useState("all");
   const [bpmMin, setBpmMin] = useState("");
   const [bpmMax, setBpmMax] = useState("");
+  const [instrumentsFilter, setInstrumentsFilter] = useState<string[]>([]);
+  const [lyricThemesFilter, setLyricThemesFilter] = useState<string[]>([]);
+  const [moodFeelFilter, setMoodFeelFilter] = useState<string[]>([]);
+  const [tempoFilter, setTempoFilter] = useState<string | null>(null);
+  const [syncTagsFilter, setSyncTagsFilter] = useState<string[]>([]);
 
   // Stem numeric ID for audio player matching
   const stemNumericId = useCallback(function(stemId: string) {
@@ -231,6 +239,7 @@ function StemsInner() {
         trackKey: track.key,
         trackCoverIdx: track.coverIdx,
         trackCover: track.coverImage,
+        trackTags: track.tags as Record<string, unknown> | undefined,
         isPack: true,
         stemCount: track.stems.length,
       });
@@ -247,6 +256,7 @@ function StemsInner() {
           trackKey: track.key,
           trackCoverIdx: track.coverIdx,
           trackCover: track.coverImage,
+          trackTags: track.tags as Record<string, unknown> | undefined,
         });
       });
     });
@@ -270,8 +280,13 @@ function StemsInner() {
     if (genreFilter !== "all") count++;
     if (keyFilter !== "all") count++;
     if (bpmMin || bpmMax) count++;
+    if (instrumentsFilter.length > 0) count++;
+    if (lyricThemesFilter.length > 0) count++;
+    if (moodFeelFilter.length > 0) count++;
+    if (tempoFilter) count++;
+    if (syncTagsFilter.length > 0) count++;
     return count;
-  }, [trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax]);
+  }, [trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax, instrumentsFilter, lyricThemesFilter, moodFeelFilter, tempoFilter, syncTagsFilter]);
 
   const clearAllFilters = useCallback(() => {
     setTrackFilter("all");
@@ -279,7 +294,13 @@ function StemsInner() {
     setTypeFilter("all");
     setGenreFilter("all");
     setKeyFilter("all");
+    setBpmMin("");
     setBpmMax("");
+    setInstrumentsFilter([]);
+    setLyricThemesFilter([]);
+    setMoodFeelFilter([]);
+    setTempoFilter(null);
+    setSyncTagsFilter([]);
   }, []);
 
   const filtered = useMemo(() => {
@@ -302,10 +323,31 @@ function StemsInner() {
       if (genreFilter !== "all" && s.trackGenre !== genreFilter) return false;
       if (keyFilter !== "all" && (s.key || s.trackKey) !== keyFilter) return false;
       if (bpmMinVal && s.trackBpm < bpmMinVal) return false;
+      if (bpmMaxVal && s.trackBpm > bpmMaxVal) return false;
+
+      // Tag filters via parent track
+      const tags = s.trackTags || {};
+      if (instrumentsFilter.length > 0) {
+        const arr = Array.isArray(tags.instruments) ? (tags.instruments as string[]) : [];
+        if (!instrumentsFilter.some((tag) => arr.includes(tag))) return false;
+      }
+      if (lyricThemesFilter.length > 0) {
+        const arr = Array.isArray(tags.lyric_themes) ? (tags.lyric_themes as string[]) : [];
+        if (!lyricThemesFilter.some((tag) => arr.includes(tag))) return false;
+      }
+      if (moodFeelFilter.length > 0) {
+        const arr = Array.isArray(tags.mood_feel) ? (tags.mood_feel as string[]) : [];
+        if (!moodFeelFilter.some((tag) => arr.includes(tag))) return false;
+      }
+      if (syncTagsFilter.length > 0) {
+        const arr = Array.isArray(tags.sync_tags) ? (tags.sync_tags as string[]) : [];
+        if (!syncTagsFilter.some((tag) => arr.includes(tag))) return false;
+      }
+      if (tempoFilter && tags.tempo_descriptor !== tempoFilter) return false;
 
       return true;
     });
-  }, [allStems, search, trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax]);
+  }, [allStems, search, trackFilter, artistFilter, typeFilter, genreFilter, keyFilter, bpmMin, bpmMax, instrumentsFilter, lyricThemesFilter, moodFeelFilter, tempoFilter, syncTagsFilter]);
 
   return (
     <>
@@ -452,6 +494,41 @@ function StemsInner() {
                       </div>
                     </div>
                   </div>
+                  {/* Tag Filters row */}
+                  <div className="mt-5 pt-5 border-t border-border/40">
+                    <p className="text-xs font-medium text-muted-foreground mb-3">Tag Filters</p>
+                    <div className="flex flex-wrap gap-2">
+                      <TagFilterDropdown
+                        label="Instruments"
+                        color="pink"
+                        options={INSTRUMENTS}
+                        values={instrumentsFilter}
+                        onChange={setInstrumentsFilter}
+                      />
+                      <TagFilterDropdown
+                        label="Lyric Themes"
+                        color="purple"
+                        options={LYRIC_THEMES}
+                        values={lyricThemesFilter}
+                        onChange={setLyricThemesFilter}
+                      />
+                      <TagFilterDropdown
+                        label="Mood & Feel"
+                        color="orange"
+                        options={MOOD_FEEL}
+                        values={moodFeelFilter}
+                        onChange={setMoodFeelFilter}
+                      />
+                      <TempoToggle value={tempoFilter} onChange={setTempoFilter} options={TEMPO_DESCRIPTORS} />
+                      <TagFilterDropdown
+                        label="Sync Tags"
+                        color="green"
+                        options={SYNC_TAGS}
+                        values={syncTagsFilter}
+                        onChange={setSyncTagsFilter}
+                      />
+                    </div>
+                  </div>
                   {activeFilterCount > 0 && (
                     <div className="mt-4 flex justify-end">
                       <button
@@ -479,6 +556,11 @@ function StemsInner() {
                 {genreFilter !== "all" && <FilterTag key="genre" label={"Genre: " + genreFilter} onRemove={() => setGenreFilter("all")} />}
                 {keyFilter !== "all" && <FilterTag key="key" label={"Key: " + keyFilter} onRemove={() => setKeyFilter("all")} />}
                 {(bpmMin || bpmMax) && <FilterTag key="bpm" label={"BPM: " + (bpmMin || "–") + "–" + (bpmMax || "–")} onRemove={() => { setBpmMin(""); setBpmMax(""); }} />}
+                {instrumentsFilter.length > 0 && <FilterTag key="instruments" label={"Instruments: " + instrumentsFilter.length} onRemove={() => setInstrumentsFilter([])} />}
+                {lyricThemesFilter.length > 0 && <FilterTag key="lyric_themes" label={"Lyric Themes: " + lyricThemesFilter.length} onRemove={() => setLyricThemesFilter([])} />}
+                {moodFeelFilter.length > 0 && <FilterTag key="mood_feel" label={"Mood & Feel: " + moodFeelFilter.length} onRemove={() => setMoodFeelFilter([])} />}
+                {tempoFilter && <FilterTag key="tempo" label={"Tempo: " + tempoFilter} onRemove={() => setTempoFilter(null)} />}
+                {syncTagsFilter.length > 0 && <FilterTag key="sync_tags" label={"Sync Tags: " + syncTagsFilter.length} onRemove={() => setSyncTagsFilter([])} />}
               </AnimatePresence>
               <button onClick={clearAllFilters} className="text-xs text-brand-orange hover:text-brand-pink ml-1.5 font-semibold transition-colors flex items-center gap-1">
                 <X className="w-3 h-3" />

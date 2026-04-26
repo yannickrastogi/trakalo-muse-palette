@@ -8,7 +8,9 @@ import { FirstUseTooltip } from "@/components/FirstUseTooltip";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useEngagement } from "@/contexts/EngagementContext";
-import { GENRES, KEYS, MOODS, LANGUAGES, GENDERS, DEFAULT_COVER } from "@/lib/constants";
+import { GENRES, KEYS, LANGUAGES, GENDERS, DEFAULT_COVER } from "@/lib/constants";
+import { INSTRUMENTS, LYRIC_THEMES, MOOD_FEEL, TEMPO_DESCRIPTORS, SYNC_TAGS } from "@/lib/tagsVocabulary";
+import { TagFilterDropdown, TempoToggle } from "@/components/TagFilterDropdown";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Music,
@@ -82,9 +84,13 @@ export default function Catalog() {
   const [keyFilter, setKeyFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [bpmFilter, setBpmFilter] = useState<{ label: string; min: number; max: number } | null>(null);
-  const [moodFilter, setMoodFilter] = useState<string | null>(null);
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [voiceFilter, setVoiceFilter] = useState<string | null>(null);
+  const [instrumentsFilter, setInstrumentsFilter] = useState<string[]>([]);
+  const [lyricThemesFilter, setLyricThemesFilter] = useState<string[]>([]);
+  const [moodFeelFilter, setMoodFeelFilter] = useState<string[]>([]);
+  const [tempoFilter, setTempoFilter] = useState<string | null>(null);
+  const [syncTagsFilter, setSyncTagsFilter] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const { currentTrack, isPlaying: globalIsPlaying, playTrack, togglePlay, isTrackPlaying, setQueue, progress } = useAudioPlayer();
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
@@ -108,11 +114,15 @@ export default function Catalog() {
   const types = useMemo(() => [...new Set(allTracks.map((t) => t.type))].sort(), [allTracks]);
   const genres = [...GENRES];
   const keys = [...KEYS];
-  const moods = [...MOODS];
   const languages = [...LANGUAGES];
   const voices = [...GENDERS];
 
-  const activeFilterCount = [typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter, voiceFilter].filter(Boolean).length;
+  const activeFilterCount =
+    [typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, languageFilter, voiceFilter, tempoFilter].filter(Boolean).length +
+    (instrumentsFilter.length > 0 ? 1 : 0) +
+    (lyricThemesFilter.length > 0 ? 1 : 0) +
+    (moodFeelFilter.length > 0 ? 1 : 0) +
+    (syncTagsFilter.length > 0 ? 1 : 0);
 
   const filteredTracks = useMemo(() => {
     return allTracks.filter((track) => {
@@ -122,12 +132,30 @@ export default function Catalog() {
       if (keyFilter && track.key !== keyFilter) return false;
       if (statusFilter && track.status !== statusFilter) return false;
       if (bpmFilter && (track.bpm < bpmFilter.min || track.bpm > bpmFilter.max)) return false;
-      if (moodFilter && !track.mood.includes(moodFilter)) return false;
       if (languageFilter && track.language !== languageFilter) return false;
       if (voiceFilter && track.voice !== voiceFilter) return false;
+      // Tag filters — read from track.tags (jsonb)
+      const trackTags = (track.tags as Record<string, unknown> | undefined) || {};
+      if (instrumentsFilter.length > 0) {
+        const arr = Array.isArray(trackTags.instruments) ? (trackTags.instruments as string[]) : [];
+        if (!instrumentsFilter.some((tag) => arr.includes(tag))) return false;
+      }
+      if (lyricThemesFilter.length > 0) {
+        const arr = Array.isArray(trackTags.lyric_themes) ? (trackTags.lyric_themes as string[]) : [];
+        if (!lyricThemesFilter.some((tag) => arr.includes(tag))) return false;
+      }
+      if (moodFeelFilter.length > 0) {
+        const arr = Array.isArray(trackTags.mood_feel) ? (trackTags.mood_feel as string[]) : [];
+        if (!moodFeelFilter.some((tag) => arr.includes(tag))) return false;
+      }
+      if (syncTagsFilter.length > 0) {
+        const arr = Array.isArray(trackTags.sync_tags) ? (trackTags.sync_tags as string[]) : [];
+        if (!syncTagsFilter.some((tag) => arr.includes(tag))) return false;
+      }
+      if (tempoFilter && trackTags.tempo_descriptor !== tempoFilter) return false;
       return true;
     });
-  }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter, voiceFilter]);
+  }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, languageFilter, voiceFilter, instrumentsFilter, lyricThemesFilter, moodFeelFilter, syncTagsFilter, tempoFilter]);
 
   const clearFilters = () => {
     setTypeFilter(null);
@@ -135,9 +163,13 @@ export default function Catalog() {
     setKeyFilter(null);
     setStatusFilter(null);
     setBpmFilter(null);
-    setMoodFilter(null);
     setLanguageFilter(null);
     setVoiceFilter(null);
+    setInstrumentsFilter([]);
+    setLyricThemesFilter([]);
+    setMoodFeelFilter([]);
+    setTempoFilter(null);
+    setSyncTagsFilter([]);
   };
 
   return (
@@ -286,10 +318,44 @@ export default function Catalog() {
                       setBpmFilter(f ?? null);
                     }}
                   />
-                  <FilterSelect label={t("catalog.mood")} value={moodFilter} options={moods} onChange={setMoodFilter} />
                   <FilterSelect label={t("catalog.language")} value={languageFilter} options={languages} onChange={setLanguageFilter} />
                   <FilterSelect label="Gender" value={voiceFilter} options={voices} onChange={setVoiceFilter} />
                   <FilterSelect label={t("catalog.status")} value={statusFilter} options={statuses} onChange={setStatusFilter} />
+                </div>
+                {/* Tag Filters row */}
+                <div className="mt-5 pt-5 border-t border-border/40">
+                  <p className="text-xs font-medium text-muted-foreground mb-3">Tag Filters</p>
+                  <div className="flex flex-wrap gap-2">
+                    <TagFilterDropdown
+                      label="Instruments"
+                      color="pink"
+                      options={INSTRUMENTS}
+                      values={instrumentsFilter}
+                      onChange={setInstrumentsFilter}
+                    />
+                    <TagFilterDropdown
+                      label="Lyric Themes"
+                      color="purple"
+                      options={LYRIC_THEMES}
+                      values={lyricThemesFilter}
+                      onChange={setLyricThemesFilter}
+                    />
+                    <TagFilterDropdown
+                      label="Mood & Feel"
+                      color="orange"
+                      options={MOOD_FEEL}
+                      values={moodFeelFilter}
+                      onChange={setMoodFeelFilter}
+                    />
+                    <TempoToggle value={tempoFilter} onChange={setTempoFilter} options={TEMPO_DESCRIPTORS} />
+                    <TagFilterDropdown
+                      label="Sync Tags"
+                      color="green"
+                      options={SYNC_TAGS}
+                      values={syncTagsFilter}
+                      onChange={setSyncTagsFilter}
+                    />
+                  </div>
                 </div>
                 {activeFilterCount > 0 && (
                   <div className="mt-4 flex justify-end">
@@ -316,10 +382,14 @@ export default function Catalog() {
               {genreFilter && <FilterTag key="genre" label={"Genre: " + genreFilter} onRemove={() => setGenreFilter(null)} />}
               {keyFilter && <FilterTag key="key" label={"Key: " + keyFilter} onRemove={() => setKeyFilter(null)} />}
               {bpmFilter && <FilterTag key="bpm" label={"BPM: " + bpmFilter.label} onRemove={() => setBpmFilter(null)} />}
-              {moodFilter && <FilterTag key="mood" label={"Mood: " + moodFilter} onRemove={() => setMoodFilter(null)} />}
               {languageFilter && <FilterTag key="lang" label={"Lang: " + languageFilter} onRemove={() => setLanguageFilter(null)} />}
               {voiceFilter && <FilterTag key="voice" label={"Gender: " + voiceFilter} onRemove={() => setVoiceFilter(null)} />}
               {statusFilter && <FilterTag key="status" label={"Status: " + statusFilter} onRemove={() => setStatusFilter(null)} />}
+              {instrumentsFilter.length > 0 && <FilterTag key="instruments" label={"Instruments: " + instrumentsFilter.length} onRemove={() => setInstrumentsFilter([])} />}
+              {lyricThemesFilter.length > 0 && <FilterTag key="lyric_themes" label={"Lyric Themes: " + lyricThemesFilter.length} onRemove={() => setLyricThemesFilter([])} />}
+              {moodFeelFilter.length > 0 && <FilterTag key="mood_feel" label={"Mood & Feel: " + moodFeelFilter.length} onRemove={() => setMoodFeelFilter([])} />}
+              {tempoFilter && <FilterTag key="tempo" label={"Tempo: " + tempoFilter} onRemove={() => setTempoFilter(null)} />}
+              {syncTagsFilter.length > 0 && <FilterTag key="sync_tags" label={"Sync Tags: " + syncTagsFilter.length} onRemove={() => setSyncTagsFilter([])} />}
             </AnimatePresence>
             <button onClick={clearFilters} className="text-xs text-brand-orange hover:text-brand-pink ml-1.5 font-semibold transition-colors flex items-center gap-1">
               <X className="w-3 h-3" />
