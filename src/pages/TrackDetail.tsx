@@ -1230,7 +1230,7 @@ function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolea
   const productionCredits = buildProductionCredits(trackData, t);
 
   const handleDownloadPdf = () => {
-    generateMetadataPdf(trackData.title, trackData.artist, meta);
+    generateMetadataPdf(trackData.title, trackData.artist, meta, performerCredits, productionCredits);
   };
 
   const renderGrid = (items: { label: string; value: string }[]) => (

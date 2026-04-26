@@ -144,7 +144,7 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
       // Metadata
       if (selectedItems.has("metadata")) {
         const metaFolder = root.folder("Metadata")!;
-        const blob = generateMetadataPdf(trackData.title, trackData.artist, meta, true) as Blob;
+        const blob = generateMetadataPdf(trackData.title, trackData.artist, meta, undefined, undefined, true) as Blob;
         metaFolder.file(`${trackData.title} - Metadata.pdf`, blob);
       }
 

@@ -359,8 +359,15 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
   doc.save(`${title} - Splits.pdf`);
 }
 
-/** Generate metadata PDF */
-export function generateMetadataPdf(title: string, artist: string, meta: MetaField[], asBlob?: boolean): Blob | void {
+/** Generate metadata PDF — optionally includes performer & production credits sections */
+export function generateMetadataPdf(
+  title: string,
+  artist: string,
+  meta: MetaField[],
+  performerCredits?: CreditEntry[],
+  productionCredits?: CreditEntry[],
+  asBlob?: boolean,
+): Blob | void {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -369,34 +376,52 @@ export function generateMetadataPdf(title: string, artist: string, meta: MetaFie
 
   drawPageBackground(doc);
   drawLogo(doc, marginX);
-  drawHeaderCard(doc, marginX, contentW, pageW, title, artist, "METADATA");
+  drawHeaderCard(doc, marginX, contentW, pageW, title, artist, "TRACK INFO");
   drawDividerDots(doc, pageW);
 
   let y = 210;
   const colW = (contentW - 12) / 2;
   const rowH = 44;
-  meta.forEach((m, i) => {
-    if (y + rowH > pageH - 60) {
-      doc.addPage();
-      drawPageBackground(doc);
-      y = 48;
-    }
-    const col = i % 2;
-    const x = marginX + col * (colW + 12);
-    doc.setFillColor(...cardBg);
-    doc.roundedRect(x, y, colW, rowH - 4, 4, 4, "F");
+
+  const drawSectionGrid = (heading: string, entries: MetaField[] | CreditEntry[]) => {
+    const filled = entries.filter(e => e.value && e.value !== "—");
+    if (filled.length === 0) return;
+
+    if (y + 40 > pageH - 60) { doc.addPage(); drawPageBackground(doc); y = 48; }
+    doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7);
-    doc.setTextColor(...brandOrange);
-    doc.text(m.label.toUpperCase(), x + 12, y + 15);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(...textLight);
-    const wrappedLines = doc.splitTextToSize(m.value, colW - 24);
-    doc.text(wrappedLines[0] || "—", x + 12, y + 30);
-    if (col === 1) y += rowH;
-  });
-  if (meta.length % 2 !== 0) y += rowH;
+    doc.setTextColor(...textMuted);
+    doc.text(heading.toUpperCase(), marginX, y);
+    y += 20;
+
+    filled.forEach((m, i) => {
+      if (y + rowH > pageH - 60) {
+        doc.addPage();
+        drawPageBackground(doc);
+        y = 48;
+      }
+      const col = i % 2;
+      const x = marginX + col * (colW + 12);
+      doc.setFillColor(...cardBg);
+      doc.roundedRect(x, y, colW, rowH - 4, 4, 4, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(...brandOrange);
+      doc.text(m.label.toUpperCase(), x + 12, y + 15);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(...textLight);
+      const wrappedLines = doc.splitTextToSize(m.value, colW - 24);
+      doc.text(wrappedLines[0] || "—", x + 12, y + 30);
+      if (col === 1) y += rowH;
+    });
+    if (filled.length % 2 !== 0) y += rowH;
+    y += 8;
+  };
+
+  drawSectionGrid("Metadata", meta);
+  if (performerCredits) drawSectionGrid("Performer Credits", performerCredits);
+  if (productionCredits) drawSectionGrid("Production & Other Credits", productionCredits);
 
   drawFooters(doc, marginX);
 

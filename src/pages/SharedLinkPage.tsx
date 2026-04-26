@@ -941,7 +941,7 @@ export default function SharedLinkPage() {
           { label: "Language", value: trackData.language || "\u2014" },
           { label: "Release Date", value: trackData.released_at || "\u2014" },
         ];
-        var metaBlob = generateMetadataPdf(trackData.title, trackData.artist, meta, true) as Blob;
+        var metaBlob = generateMetadataPdf(trackData.title, trackData.artist, meta, undefined, undefined, true) as Blob;
         root.folder("Metadata")!.file(trackData.title + " - Metadata.pdf", metaBlob);
       }
 
