@@ -28,6 +28,47 @@ function makeId() {
   return crypto.randomUUID();
 }
 
+var STOPWORDS = new Set([
+  "a", "an", "the", "and", "or", "but", "for", "to", "of", "in", "on", "at", "by",
+  "with", "from", "is", "are", "was", "were", "be", "been", "being", "i", "im",
+  "need", "want", "looking", "find", "song", "songs", "track", "tracks", "music",
+  "some", "something", "any", "this", "that", "these", "those", "it", "its",
+  "my", "our", "your", "their", "his", "her", "have", "has", "had", "would",
+  "could", "should", "can", "will", "do", "does", "did", "as", "like", "than",
+  "very", "really", "just", "feel", "feels", "feeling", "vibe", "vibes",
+  "kind", "type", "thing", "stuff", "about", "around", "into", "onto",
+  "please", "thanks", "thank", "hi", "hey", "hello",
+]);
+
+function suggestPlaylistName(brief: string): string {
+  if (!brief || typeof brief !== "string") return "";
+  var words = brief
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s'-]+/gu, " ")
+    .split(/\s+/)
+    .filter(function (w) { return w.length > 2 && !STOPWORDS.has(w); });
+  var seen = new Set<string>();
+  var picked: string[] = [];
+  for (var i = 0; i < words.length && picked.length < 4; i++) {
+    var w = words[i];
+    if (seen.has(w)) continue;
+    seen.add(w);
+    picked.push(w);
+  }
+  if (picked.length < 2) return "";
+  var name = picked
+    .map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); })
+    .join(" ");
+  if (name.length > 30) name = name.slice(0, 30).trimEnd();
+  return name;
+}
+
+function fallbackPlaylistName(): string {
+  var d = new Date();
+  var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return "Smart A&R Match - " + months[d.getMonth()] + " " + d.getDate();
+}
+
 export default function SmartAR() {
   var { activeWorkspace } = useWorkspace();
   var { tracks } = useTrack();
@@ -259,14 +300,18 @@ export default function SmartAR() {
           return;
         }
 
+        var suggestedName = suggestPlaylistName(brief) || fallbackPlaylistName();
         var resultData = {
           playlist_name: data.playlist_name || "Smart A&R \u2014 " + fullBrief.substring(0, 40),
+          suggested_name: suggestedName,
           criteria: data.criteria || [],
           tracks: matchedTracks,
         };
 
         setResults(resultData);
-        setPlaylistName(resultData.playlist_name);
+        setPlaylistName(function (current) {
+          return current && current.trim().length > 0 ? current : "";
+        });
 
         setMessages(function (prev) {
           return prev
@@ -275,7 +320,7 @@ export default function SmartAR() {
               id: makeId(),
               role: "bot",
               content: matchedTracks.length === 1
-                ? "Here's the best match for your brief:"
+                ? "Here's the best match \u2014 name your playlist to keep track of this brief."
                 : "I found " + matchedTracks.length + " tracks matching your brief:",
               type: "results",
               data: resultData,
@@ -342,11 +387,14 @@ export default function SmartAR() {
 
     try {
       var matchedTracks = results.tracks;
+      var effectiveName = playlistName.trim().length > 0
+        ? playlistName.trim()
+        : (results.suggested_name || fallbackPlaylistName());
 
       var { data: playlistId, error: plError } = await supabase.rpc("create_playlist", {
         _user_id: user.id,
         _workspace_id: activeWorkspace.id,
-        _name: playlistName,
+        _name: effectiveName,
         _description: "Created by Smart A&R from brief: " + brief.substring(0, 100),
         _cover_url: matchedTracks[0]?.trackData.coverImage || null,
       });
@@ -385,7 +433,7 @@ export default function SmartAR() {
           {
             id: makeId(),
             role: "bot",
-            content: "Playlist \"" + playlistName + "\" created with " + matchedTracks.length + " tracks! What would you like to do next?",
+            content: "Playlist \"" + effectiveName + "\" created with " + matchedTracks.length + (matchedTracks.length === 1 ? " track" : " tracks") + "! What would you like to do next?",
             type: "created",
           },
         ];
@@ -608,7 +656,8 @@ export default function SmartAR() {
                 type="text"
                 value={playlistName}
                 onChange={function (e) { setPlaylistName(e.target.value); }}
-                className="flex-1 bg-transparent border-b border-border focus:border-primary outline-none text-sm py-1 transition-colors"
+                placeholder={d.suggested_name || fallbackPlaylistName()}
+                className="flex-1 bg-transparent border-b border-border focus:border-primary outline-none text-sm py-1 transition-colors placeholder:text-muted-foreground/50"
               />
             </div>
           </div>
@@ -694,7 +743,11 @@ export default function SmartAR() {
               ) : (
                 <ListMusic className="w-4 h-4" />
               )}
-              {isCreating ? "Creating..." : "Create Playlist"}
+              {isCreating
+                ? "Creating..."
+                : d.tracks.length === 1
+                  ? "Save & Pitch"
+                  : "Create Playlist"}
             </button>
             <button
               onClick={handleRefine}
