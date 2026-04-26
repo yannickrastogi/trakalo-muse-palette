@@ -47,6 +47,61 @@ const bottomNavKeys = new Set([
   "nav.smartAr",
 ]);
 
+function SidebarStyles() {
+  return (
+    <style>{`
+.trakalog-nav-link .tnl-label {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+.trakalog-nav-link .tnl-label::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, #f97316 0%, #ec4899 50%, #a855f7 100%);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  pointer-events: none;
+}
+.trakalog-nav-link:hover .tnl-label::after,
+.trakalog-nav-link:focus-visible .tnl-label::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+.trakalog-nav-link.nav-active .tnl-label::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+.trakalog-nav-link.nav-active .tnl-label {
+  background: linear-gradient(90deg, #f97316 0%, #ec4899 50%, #a855f7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+  .trakalog-nav-link .tnl-label::after {
+    transition: opacity 200ms ease;
+    transform: scaleX(1);
+    transform-origin: left center;
+    opacity: 0;
+  }
+  .trakalog-nav-link:hover .tnl-label::after,
+  .trakalog-nav-link:focus-visible .tnl-label::after,
+  .trakalog-nav-link.nav-active .tnl-label::after {
+    opacity: 1;
+  }
+}
+    `}</style>
+  );
+}
+
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation();
   const { permissions } = useRole();
@@ -56,18 +111,19 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   });
   return (
     <nav className="flex-1 py-5 px-3 space-y-1">
+      <SidebarStyles />
       {visibleItems.map((item) => (
         <NavLink
           key={item.titleKey}
           to={item.url}
           end={item.url === "/"}
           data-tour={item.tourKey}
-          className="flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all text-sm font-medium group min-h-[44px]"
+          className="trakalog-nav-link flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-all text-sm font-medium group min-h-[44px]"
           activeClassName="nav-active text-foreground"
           onClick={onNavigate}
         >
           <item.icon className="w-[19px] h-[19px] shrink-0 transition-colors group-[.nav-active]:text-brand-orange" />
-          <span className="tracking-tight">{t(item.titleKey)}</span>
+          <span className="tnl-label tracking-tight">{t(item.titleKey)}</span>
         </NavLink>
       ))}
     </nav>
@@ -247,17 +303,18 @@ export function AppSidebar() {
       </div>
 
       <nav className="flex-1 py-5 px-3 space-y-1">
+        <SidebarStyles />
         {visibleItems.map((item) => (
           <NavLink
             key={item.titleKey}
             to={item.url}
             end={item.url === "/"}
             data-tour={item.tourKey}
-            className="flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all text-sm font-medium group"
+            className="trakalog-nav-link flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground transition-all text-sm font-medium group"
             activeClassName="nav-active text-foreground"
           >
             <item.icon className="w-[19px] h-[19px] shrink-0 transition-colors group-[.nav-active]:text-brand-orange" />
-            {!collapsed && <span className="tracking-tight">{t(item.titleKey)}</span>}
+            {!collapsed && <span className="tnl-label tracking-tight">{t(item.titleKey)}</span>}
           </NavLink>
         ))}
       </nav>
