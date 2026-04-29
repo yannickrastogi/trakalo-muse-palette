@@ -216,10 +216,10 @@ Toutes les queries DB sensibles passent par des RPCs `SECURITY DEFINER` pour con
 ## Contacts
 
 ### upsert_contact
-- **Description:** Crée ou met à jour un contact dans le workspace
-- **Params:** `_user_id` (uuid), `_workspace_id` (uuid), `_first_name` (text), `_last_name` (text), `_email` (text), `_role` (text), `_company` (text), `_phone` (text)
-- **Returns:** void
-- **Used in:** ContactsContext.tsx
+- **Description:** Crée ou met à jour un contact dans le workspace. Dédup par `(workspace_id, lower(email))` quand email fourni, sinon par `(workspace_id, lower(first_name), lower(coalesce(last_name,'')))`. Les valeurs vides n'écrasent jamais les données existantes (COALESCE/NULLIF).
+- **Params:** `_user_id` (uuid), `_workspace_id` (uuid), `_first_name` (text), `_last_name` (text, optional), `_email` (text, optional), `_role` (text, optional), `_stage_name` (text, optional), `_company` (text, optional), `_phone` (text, optional), `_pro` (text[], optional), `_ipi` (text, optional), `_publisher` (text, optional)
+- **Returns:** uuid (contact id)
+- **Used in:** ContactsContext.tsx, UploadTrackModal.tsx, EditTrackModal.tsx, TrackDetail.tsx
 - **Tables:** contacts
 
 ### add_contact_manual
