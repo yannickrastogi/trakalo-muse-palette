@@ -93,6 +93,7 @@ interface TrackEntry {
   // Metadata
   title: string;
   artist: string;
+  featuring: string;
   bpm: string;
   trackKey: string;
   genre: string;
@@ -133,6 +134,63 @@ interface UploadTrackModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/** Shared metadata applied across multiple tracks in a bulk upload */
+interface CommonInfo {
+  artist: string;
+  featuring: string;
+  coverFile: File | null;
+  genre: string;
+  trackType: string;
+  voice: string;
+  language: string;
+  notes: string;
+  album: string;
+  label: string;
+  publishers: string[];
+  releaseDate: string;
+  copyright: string;
+  writtenBy: string;
+  producedBy: string;
+  mixedBy: string;
+  masteredBy: string;
+  splits: Split[];
+  tags: Record<string, unknown>;
+}
+
+function createEmptyCommonInfo(): CommonInfo {
+  return {
+    artist: "",
+    featuring: "",
+    coverFile: null,
+    genre: "",
+    trackType: "",
+    voice: "",
+    language: "",
+    notes: "",
+    album: "",
+    label: "",
+    publishers: [""],
+    releaseDate: "",
+    copyright: "",
+    writtenBy: "",
+    producedBy: "",
+    mixedBy: "",
+    masteredBy: "",
+    splits: [{ id: "1", name: "", stage_name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
+    tags: {},
+  };
+}
+
+function commonInfoHasContent(c: CommonInfo): boolean {
+  if (c.artist || c.featuring || c.coverFile || c.genre || c.trackType || c.voice || c.language) return true;
+  if (c.notes || c.album || c.label || c.releaseDate || c.copyright) return true;
+  if (c.writtenBy || c.producedBy || c.mixedBy || c.masteredBy) return true;
+  if (c.publishers.some((p) => p.trim())) return true;
+  if (c.splits.some((s) => s.name.trim())) return true;
+  if (c.tags && Object.values(c.tags).some((v) => Array.isArray(v) ? v.length > 0 : Boolean(v))) return true;
+  return false;
+}
+
 function parseFileName(fileName: string): { artist: string; title: string } {
   var nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
   var separators = [" - ", " – ", " — "];
@@ -163,6 +221,7 @@ function createTrackEntry(file: File): TrackEntry {
     compressed: null,
     title: parsed.title,
     artist: parsed.artist,
+    featuring: "",
     bpm: "",
     trackKey: "",
     genre: "",
@@ -209,12 +268,14 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const [uploadStage, setUploadStage] = useState("");
   const [uploadComplete, setUploadComplete] = useState(false);
 
-  // Phase: "upload" (drag & drop files) → "edit" (per-track metadata) → done
-  const [phase, setPhase] = useState<"upload" | "edit">("upload");
+  // Phase: "upload" (drag & drop) → "common" (multi-track shared info) → "edit" (per-track) → done
+  const [phase, setPhase] = useState<"upload" | "common" | "edit">("upload");
   const [queue, setQueue] = useState<TrackEntry[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [editStep, setEditStep] = useState(0); // 0=Info, 1=Stems, 2=Lyrics, 3=Splits, 4=Review
   const [isDragOver, setIsDragOver] = useState(false);
+  const [commonInfo, setCommonInfo] = useState<CommonInfo>(createEmptyCommonInfo);
+  const [commonInfoApplied, setCommonInfoApplied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
@@ -626,6 +687,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       const savedTrack = await addTrack({
         title: currentTrack.title.trim() || "Untitled",
         artist: currentTrack.artist.trim() || "Unknown Artist",
+        featuredArtists: currentTrack.featuring ? currentTrack.featuring.split(",").map((s) => s.trim()).filter(Boolean) : [],
         genre: currentTrack.genre || "",
         bpm: parseInt(currentTrack.bpm) || 0,
         key: currentTrack.trackKey || "",
@@ -859,7 +921,130 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     setIsPlayingPreview(false);
     setQuickUploadIdx(-1);
     setQuickUploadDone(false);
+    setCommonInfo(createEmptyCommonInfo());
+    setCommonInfoApplied(false);
   };
+
+  // ─── Common Info ──────────────────────────────────────────
+
+  const updateCommonInfo = useCallback((updates: Partial<CommonInfo>) => {
+    setCommonInfo((prev) => ({ ...prev, ...updates }));
+  }, []);
+
+  const [commonSplitsManuallyEdited, setCommonSplitsManuallyEdited] = useState(false);
+
+  const addCommonSplit = useCallback(() => {
+    setCommonInfo((prev) => {
+      const next = [
+        ...prev.splits,
+        { id: crypto.randomUUID(), name: "", stage_name: "", role: "", percentage: 0, pro: "", ipi: "", publisher: "" },
+      ];
+      return { ...prev, splits: commonSplitsManuallyEdited ? next : equalSplit(next, "percentage") };
+    });
+  }, [commonSplitsManuallyEdited]);
+
+  const updateCommonSplit = useCallback((id: string, field: keyof Split, value: string | number) => {
+    if (field === "percentage") setCommonSplitsManuallyEdited(true);
+    setCommonInfo((prev) => ({
+      ...prev,
+      splits: prev.splits.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
+    }));
+  }, []);
+
+  const removeCommonSplit = useCallback((id: string) => {
+    setCommonInfo((prev) => prev.splits.length <= 1 ? prev : { ...prev, splits: prev.splits.filter((s) => s.id !== id) });
+  }, []);
+
+  const batchUpdateCommonSplit = useCallback((id: string, current: Split, s: CollaboratorSuggestion) => {
+    var patch: Partial<Split> = { name: s.fullName };
+    if (s.stage_name && !current.stage_name) patch.stage_name = s.stage_name;
+    if (s.role && !current.role) patch.role = s.role;
+    if (s.pro && !current.pro) patch.pro = s.pro;
+    if (s.ipi && !current.ipi) patch.ipi = s.ipi;
+    if (s.publisher && !current.publisher) patch.publisher = s.publisher;
+    setCommonInfo((prev) => ({
+      ...prev,
+      splits: prev.splits.map((sp) => (sp.id === id ? { ...sp, ...patch } : sp)),
+    }));
+  }, []);
+
+  const equalSplitCommon = useCallback(() => {
+    setCommonInfo((prev) => ({ ...prev, splits: equalSplit(prev.splits, "percentage") }));
+    setCommonSplitsManuallyEdited(false);
+  }, []);
+
+  const totalCommonSplit = commonInfo.splits.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0);
+
+  // Build a partial TrackEntry from CommonInfo, only with non-empty fields.
+  const buildCommonPatch = useCallback((c: CommonInfo): Partial<TrackEntry> => {
+    const patch: Partial<TrackEntry> = {};
+    if (c.artist.trim()) patch.artist = c.artist.trim();
+    if (c.featuring.trim()) patch.featuring = c.featuring.trim();
+    if (c.coverFile) patch.coverFile = c.coverFile;
+    if (c.genre) patch.genre = c.genre;
+    if (c.trackType) patch.trackType = c.trackType;
+    if (c.voice) patch.voice = c.voice;
+    if (c.language) patch.language = c.language;
+    if (c.notes.trim()) patch.notes = c.notes;
+    if (c.album.trim()) patch.album = c.album;
+    if (c.label.trim()) patch.label = c.label;
+    if (c.releaseDate) patch.releaseDate = c.releaseDate;
+    if (c.copyright.trim()) patch.copyright = c.copyright;
+    if (c.writtenBy.trim()) patch.writtenBy = c.writtenBy;
+    if (c.producedBy.trim()) patch.producedBy = c.producedBy;
+    if (c.mixedBy.trim()) patch.mixedBy = c.mixedBy;
+    if (c.masteredBy.trim()) patch.masteredBy = c.masteredBy;
+    const filledPubs = c.publishers.filter((p) => p.trim());
+    if (filledPubs.length > 0) patch.publishers = filledPubs;
+    const filledSplits = c.splits.filter((s) => s.name.trim());
+    if (filledSplits.length > 0) {
+      patch.splits = c.splits.map((s) => ({ ...s, id: crypto.randomUUID() }));
+    }
+    if (c.tags && Object.keys(c.tags).length > 0) patch.tags = c.tags;
+    return patch;
+  }, []);
+
+  const applyCommonInfo = useCallback(() => {
+    const patch = buildCommonPatch(commonInfo);
+    setQueue((prev) => prev.map((entry) => {
+      const next: TrackEntry = { ...entry };
+      // Apply each defined patch field, freshly cloning splits per-track
+      const hasSplits = patch.splits !== undefined;
+      Object.assign(next, patch);
+      if (hasSplits && patch.splits) {
+        next.splits = patch.splits.map((s) => ({ ...s, id: crypto.randomUUID() }));
+      }
+      return next;
+    }));
+    setCommonInfoApplied(true);
+    setPhase("edit");
+    setCurrentIdx(0);
+    setEditStep(0);
+  }, [commonInfo, buildCommonPatch]);
+
+  const requestApplyCommonInfo = useCallback(() => {
+    if (!commonInfoApplied) {
+      applyCommonInfo();
+      return;
+    }
+    toast.warning(t("uploadTrack.commonInfoResetWarning", "Re-applying will reset individual changes on all tracks"), {
+      action: {
+        label: t("uploadTrack.confirm", "Confirm"),
+        onClick: () => applyCommonInfo(),
+      },
+    });
+  }, [commonInfoApplied, applyCommonInfo, t]);
+
+  const skipCommonInfo = useCallback(() => {
+    if (commonInfoHasContent(commonInfo)) {
+      toast.info(t("uploadTrack.commonInfoDiscarded", "Common info discarded — fill each track individually"));
+    }
+    setCommonInfo(createEmptyCommonInfo());
+    setCommonInfoApplied(false);
+    setPhase("edit");
+    setCurrentIdx(0);
+    setEditStep(0);
+  }, [commonInfo, t]);
 
   const canProceedEdit = () => {
     return true; // All steps are optional — users can skip
@@ -867,6 +1052,10 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   const startEditing = () => {
     if (queue.length === 0) return;
+    if (queue.length > 1) {
+      setPhase("common");
+      return;
+    }
     setPhase("edit");
     setCurrentIdx(0);
     setEditStep(0);
@@ -1055,6 +1244,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           <DialogTitle className="text-lg font-bold text-foreground tracking-tight">
             {phase === "upload"
               ? t("uploadTrack.uploadTracks")
+              : phase === "common"
+              ? t("uploadTrack.commonInfo", "Common Info")
               : t("uploadTrack.trackOf", { current: currentIdx + 1, total: queue.length })
             }
           </DialogTitle>
@@ -1128,12 +1319,29 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         <div className="flex-1 overflow-y-auto px-6 py-5">
           <AnimatePresence mode="wait">
             <motion.div
-              key={phase === "upload" ? "upload" : `edit-${currentIdx}-${editStep}`}
+              key={phase === "upload" ? "upload" : phase === "common" ? "common" : `edit-${currentIdx}-${editStep}`}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
             >
+              {phase === "common" && (
+                <StepCommonInfo
+                  trackCount={queue.length}
+                  commonInfo={commonInfo}
+                  onUpdate={updateCommonInfo}
+                  splits={commonInfo.splits}
+                  totalSplit={totalCommonSplit}
+                  onAddSplit={addCommonSplit}
+                  onUpdateSplit={updateCommonSplit}
+                  onRemoveSplit={removeCommonSplit}
+                  onBatchUpdateSplit={batchUpdateCommonSplit}
+                  onEqualSplit={equalSplitCommon}
+                  contacts={contacts}
+                  existingSplitNames={existingSplitNames}
+                  onSkip={skipCommonInfo}
+                />
+              )}
               {phase === "upload" && (
                 <StepBulkUpload
                   queue={queue}
@@ -1357,6 +1565,23 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                     </div>
                   )}
                 </>
+              ) : phase === "common" ? (
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setPhase("upload")}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" /> {t("uploadTrack.back")}
+                  </button>
+                  <button
+                    onClick={requestApplyCommonInfo}
+                    className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold"
+                  >
+                    {commonInfoApplied
+                      ? t("uploadTrack.reapplyToAll", "Re-apply to all tracks")
+                      : t("uploadTrack.applyToAll", { count: queue.length, defaultValue: "Apply to all " + queue.length + " tracks" })} <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               ) : (
                 <>
                   <button
@@ -1365,6 +1590,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                       else if (currentIdx > 0) {
                         setCurrentIdx(currentIdx - 1);
                         setEditStep(EDIT_STEPS.length - 1);
+                      } else if (queue.length > 1) {
+                        setPhase("common");
                       } else {
                         setPhase("upload");
                       }
@@ -1629,6 +1856,301 @@ function StepBulkUpload({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ─── Common Info Step ─── */
+
+function StepCommonInfo({
+  trackCount, commonInfo, onUpdate,
+  splits, totalSplit, onAddSplit, onUpdateSplit, onRemoveSplit, onBatchUpdateSplit, onEqualSplit,
+  contacts, existingSplitNames, onSkip,
+}: {
+  trackCount: number;
+  commonInfo: CommonInfo;
+  onUpdate: (updates: Partial<CommonInfo>) => void;
+  splits: Split[];
+  totalSplit: number;
+  onAddSplit: () => void;
+  onUpdateSplit: (id: string, field: keyof Split, value: string | number) => void;
+  onRemoveSplit: (id: string) => void;
+  onBatchUpdateSplit: (id: string, current: Split, suggestion: CollaboratorSuggestion) => void;
+  onEqualSplit: () => void;
+  contacts: Contact[];
+  existingSplitNames: string[];
+  onSkip: () => void;
+}) {
+  const { t } = useTranslation();
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const coverPreviewUrl = useMemo(
+    () => commonInfo.coverFile ? URL.createObjectURL(commonInfo.coverFile) : null,
+    [commonInfo.coverFile],
+  );
+  useEffect(() => {
+    return () => { if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl); };
+  }, [coverPreviewUrl]);
+  const [showCredits, setShowCredits] = useState(false);
+  const [showMetadata, setShowMetadata] = useState(false);
+
+  const handleCoverSelect = (file: File) => {
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) return;
+    if (file.size > 5 * 1024 * 1024) return;
+    onUpdate({ coverFile: file });
+  };
+
+  const setPublishers = (pubs: string[]) => onUpdate({ publishers: pubs });
+
+  return (
+    <div className="space-y-5">
+      {/* Header with Skip link */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-foreground mb-1">
+            {t("uploadTrack.commonInfo", "Common Info")}
+          </h3>
+          <p className="text-2xs text-muted-foreground">
+            {t("uploadTrack.commonInfoDesc", { count: trackCount, defaultValue: "Fill once, apply to all " + trackCount + " tracks. You can still override fields on individual tracks." })}
+          </p>
+        </div>
+        <button
+          onClick={onSkip}
+          className="text-2xs font-semibold text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors whitespace-nowrap"
+        >
+          {t("uploadTrack.skipCommonInfo", "Skip common info →")}
+        </button>
+      </div>
+
+      {/* Cover Art */}
+      <div className="space-y-1.5">
+        <FieldLabel>{t("uploadTrack.coverArt", "Cover Art")} <span className="text-muted-foreground/50 normal-case tracking-normal font-normal">({t("uploadTrack.optional", "optional")})</span></FieldLabel>
+        <div className="flex items-start gap-4">
+          <div
+            onClick={() => coverInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const file = e.dataTransfer.files?.[0];
+              if (file) handleCoverSelect(file);
+            }}
+            className="w-24 h-24 rounded-lg border-2 border-dashed border-border hover:border-brand-orange/30 flex items-center justify-center cursor-pointer transition-all group overflow-hidden shrink-0"
+          >
+            {coverPreviewUrl ? (
+              <img src={coverPreviewUrl} alt="Cover preview" className="w-full h-full object-cover" />
+            ) : (
+              <div className="flex flex-col items-center gap-1">
+                <ImagePlus className="w-6 h-6 text-muted-foreground group-hover:text-brand-orange transition-colors" />
+                <span className="text-[9px] text-muted-foreground group-hover:text-brand-orange transition-colors">{t("uploadTrack.addCover", "Add cover")}</span>
+              </div>
+            )}
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleCoverSelect(file);
+                e.target.value = "";
+              }}
+            />
+          </div>
+          {commonInfo.coverFile && (
+            <div className="flex flex-col gap-1 pt-1">
+              <p className="text-[13px] font-medium text-foreground truncate max-w-[200px]">{commonInfo.coverFile.name}</p>
+              <p className="text-2xs text-muted-foreground">{formatFileSize(commonInfo.coverFile.size)}</p>
+              <button
+                onClick={() => onUpdate({ coverFile: null })}
+                className="text-2xs text-destructive hover:text-destructive/80 font-semibold mt-1 self-start"
+              >
+                {t("uploadTrack.remove", "Remove")}
+              </button>
+            </div>
+          )}
+        </div>
+        <p className="text-[10px] text-muted-foreground/50">JPG, PNG or WebP · max 5 MB</p>
+      </div>
+
+      {/* Artist + Featuring */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <FieldLabel>{t("uploadTrack.artist")}</FieldLabel>
+          <FieldInput value={commonInfo.artist} onChange={(v) => onUpdate({ artist: v })} placeholder={t("uploadTrack.artistPlaceholder")} />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel>{t("editTrack.featuredArtists", "Featuring")}</FieldLabel>
+          <FieldInput value={commonInfo.featuring} onChange={(v) => onUpdate({ featuring: v })} placeholder={t("editTrack.commaSeparated", "Comma separated")} />
+        </div>
+      </div>
+
+      {/* Genre */}
+      <div className="space-y-1.5">
+        <FieldLabel>{t("uploadTrack.genre")}</FieldLabel>
+        {commonInfo.genre === "__other__" || (!(GENRES as readonly string[]).includes(commonInfo.genre) && commonInfo.genre !== "") ? (
+          <div className="flex gap-1.5">
+            <input
+              type="text"
+              value={commonInfo.genre === "__other__" ? "" : commonInfo.genre}
+              onChange={(e) => onUpdate({ genre: e.target.value })}
+              placeholder={t("uploadTrack.enterCustomGenre", "Enter custom genre")}
+              autoFocus
+              className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
+            />
+            <button
+              onClick={() => onUpdate({ genre: "" })}
+              className="shrink-0 h-9 px-2 rounded-lg bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <select
+            value={commonInfo.genre}
+            onChange={(e) => onUpdate({ genre: e.target.value })}
+            className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none font-medium"
+          >
+            <option value="">{t("uploadTrack.selectGenre")}</option>
+            {GENRES.map((o) => <option key={o} value={o}>{o}</option>)}
+            <option value="__other__">Other…</option>
+          </select>
+        )}
+      </div>
+
+      {/* Type + Gender */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <FieldLabel>{t("uploadTrack.type", "Type")}</FieldLabel>
+          <FieldSelect value={commonInfo.trackType} onChange={(v) => onUpdate({ trackType: v })} options={["Song", "Instrumental", "Sample", "Acapella"]} placeholder={t("uploadTrack.selectType", "Select type")} />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel>{t("editTrack.gender", "Gender")}</FieldLabel>
+          <FieldSelect value={commonInfo.voice} onChange={(v) => onUpdate({ voice: v })} options={["Male", "Female", "Duet", "N/A"]} placeholder={t("uploadTrack.selectGender", "Select gender")} />
+        </div>
+      </div>
+
+      {/* Language */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <FieldLabel>{t("uploadTrack.language")}</FieldLabel>
+          <LanguageMultiSelect value={commonInfo.language} onChange={(v) => onUpdate({ language: v })} placeholder={t("uploadTrack.selectLanguage")} />
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div className="space-y-1.5">
+        <FieldLabel>{t("uploadTrack.notes")}</FieldLabel>
+        <textarea
+          value={commonInfo.notes}
+          onChange={(e) => onUpdate({ notes: e.target.value })}
+          placeholder={t("uploadTrack.notesPlaceholder", "Any additional notes about these tracks...")}
+          rows={3}
+          className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40 resize-none"
+        />
+      </div>
+
+      {/* Splits */}
+      <div className="border-t border-border pt-5">
+        <StepSplits
+          splits={splits}
+          totalSplit={totalSplit}
+          onAdd={onAddSplit}
+          onUpdate={onUpdateSplit}
+          onRemove={onRemoveSplit}
+          onBatchUpdate={onBatchUpdateSplit}
+          onEqualSplit={onEqualSplit}
+          contacts={contacts}
+          existingSplitNames={existingSplitNames}
+        />
+      </div>
+
+      {/* Tags */}
+      <div className="border-t border-border pt-5">
+        <p className="text-[13px] font-semibold text-muted-foreground mb-3">
+          Tags
+          <span className="text-2xs text-muted-foreground/50 font-normal ml-1">— instruments, mood, themes & sync</span>
+        </p>
+        <TagsSection tags={(commonInfo.tags || {}) as TrackTags} onChange={(tags) => onUpdate({ tags: tags as Record<string, unknown> })} />
+      </div>
+
+      {/* Credits (collapsible) */}
+      <div className="border-t border-border pt-5">
+        <button
+          onClick={() => setShowCredits(!showCredits)}
+          className="flex items-center gap-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showCredits ? "rotate-90" : ""}`} />
+          {t("uploadTrack.credits", "Credits")}
+          <span className="text-2xs text-muted-foreground/50 font-normal">— written by, produced by, mixed by, mastered by</span>
+        </button>
+        {showCredits && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mt-4 grid grid-cols-2 gap-3"
+          >
+            <MetadataInput label={t("uploadTrack.writtenBy", "Written By")} value={commonInfo.writtenBy} onChange={(v) => onUpdate({ writtenBy: v })} placeholder="Comma separated" />
+            <MetadataInput label={t("uploadTrack.producedBy", "Produced By")} value={commonInfo.producedBy} onChange={(v) => onUpdate({ producedBy: v })} placeholder="Comma separated" />
+            <MetadataInput label={t("uploadTrack.mixedBy", "Mixed By")} value={commonInfo.mixedBy} onChange={(v) => onUpdate({ mixedBy: v })} />
+            <MetadataInput label={t("uploadTrack.masteredBy", "Mastered By")} value={commonInfo.masteredBy} onChange={(v) => onUpdate({ masteredBy: v })} />
+          </motion.div>
+        )}
+      </div>
+
+      {/* Metadata (collapsible) */}
+      <div className="border-t border-border pt-5">
+        <button
+          onClick={() => setShowMetadata(!showMetadata)}
+          className="flex items-center gap-2 text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showMetadata ? "rotate-90" : ""}`} />
+          {t("uploadTrack.metadata", "Metadata")}
+          <span className="text-2xs text-muted-foreground/50 font-normal">— album, label, release info</span>
+        </button>
+        {showMetadata && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mt-4 grid grid-cols-2 gap-3"
+          >
+            <MetadataInput label={t("uploadTrack.albumEp", "Album / EP")} value={commonInfo.album} onChange={(v) => onUpdate({ album: v })} />
+            <MetadataInput label={t("uploadTrack.label", "Label")} value={commonInfo.label} onChange={(v) => onUpdate({ label: v })} />
+            <div className="col-span-2 space-y-1">
+              <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.publisher", "Publisher(s)")}</label>
+              {commonInfo.publishers.map((pub, idx) => (
+                <div key={idx} className="flex items-center gap-2 mb-1">
+                  <input
+                    type="text"
+                    value={pub}
+                    onChange={(e) => { const updated = [...commonInfo.publishers]; updated[idx] = e.target.value; setPublishers(updated); }}
+                    placeholder={t("uploadTrack.publisherPlaceholder", "e.g. Sony Music Publishing")}
+                    className="flex-1 px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/30 transition-all placeholder:text-muted-foreground/40"
+                  />
+                  {commonInfo.publishers.length > 1 && (
+                    <button type="button" onClick={() => setPublishers(commonInfo.publishers.filter((_, i) => i !== idx))} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={() => setPublishers([...commonInfo.publishers, ""])} className="text-2xs text-primary hover:text-primary/80 font-medium mt-1">
+                + {t("uploadTrack.addAnother", "Add another")}
+              </button>
+            </div>
+            <div className="space-y-1">
+              <label className="text-2xs font-medium text-muted-foreground">{t("uploadTrack.releaseDate", "Release Date")}</label>
+              <input
+                type="date"
+                value={commonInfo.releaseDate}
+                onChange={(e) => onUpdate({ releaseDate: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/30 transition-all"
+              />
+            </div>
+            <MetadataInput label={t("uploadTrack.copyright", "Copyright")} value={commonInfo.copyright} onChange={(v) => onUpdate({ copyright: v })} placeholder="e.g. © 2026 Label Name" />
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 }
