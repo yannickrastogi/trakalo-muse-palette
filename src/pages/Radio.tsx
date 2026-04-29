@@ -181,7 +181,10 @@ export default function RadioPage() {
         filtered = shuffleArray(tracks);
       } else if (mode === "genre") {
         if (!genreFilter) return;
-        filtered = shuffleArray(tracks.filter(function (tr) { return tr.genre === genreFilter; }));
+        filtered = shuffleArray(tracks.filter(function (tr) {
+          var g = Array.isArray(tr.genre) ? tr.genre : (tr.genre ? [tr.genre as unknown as string] : []);
+          return g.indexOf(genreFilter) !== -1;
+        }));
       } else if (mode === "mood") {
         if (!moodFilter) return;
         filtered = shuffleArray(
@@ -277,7 +280,8 @@ export default function RadioPage() {
   var availableGenres = useMemo(function () {
     var set = new Set<string>();
     tracks.forEach(function (tr) {
-      if (tr.genre) set.add(tr.genre);
+      var g = Array.isArray(tr.genre) ? tr.genre : (tr.genre ? [tr.genre as unknown as string] : []);
+      g.forEach(function (val) { if (val) set.add(val); });
     });
     return Array.from(set).sort();
   }, [tracks]);
@@ -661,9 +665,9 @@ export default function RadioPage() {
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2 mt-3 justify-center lg:justify-start">
-                  {radioState.currentTrack.genre && (
+                  {radioState.currentTrack.genre && (Array.isArray(radioState.currentTrack.genre) ? radioState.currentTrack.genre.length > 0 : true) && (
                     <span className="text-xs px-2 py-1 rounded-full bg-brand-orange/12 text-brand-orange">
-                      {radioState.currentTrack.genre}
+                      {Array.isArray(radioState.currentTrack.genre) ? radioState.currentTrack.genre.join(", ") : radioState.currentTrack.genre}
                     </span>
                   )}
                   {radioState.currentTrack.bpm > 0 && (

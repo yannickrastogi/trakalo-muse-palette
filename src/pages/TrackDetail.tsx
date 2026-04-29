@@ -142,6 +142,7 @@ const docStatusColors: Record<string, string> = {
 
 function isEmptyValue(val: unknown): boolean {
   if (val === undefined || val === null || val === "" || val === 0) return true;
+  if (Array.isArray(val)) return val.length === 0;
   if (typeof val === "string") {
     const lower = val.toLowerCase().trim();
     if (lower === "n_a" || lower === "n/a") return true;
@@ -584,7 +585,7 @@ export default function TrackDetail() {
                 {/* Quick metadata chips — scroll horizontal on mobile */}
                 <div className="flex flex-nowrap md:flex-wrap gap-2 overflow-x-auto scrollbar-hide pb-1 md:pb-0">
                   {!isEmptyValue(track.type) && <MetaChip icon={Music} label={track.type} />}
-                  {!isEmptyValue(track.genre) && <MetaChip icon={Disc3} label={track.genre} />}
+                  {!isEmptyValue(track.genre) && <MetaChip icon={Disc3} label={Array.isArray(track.genre) ? track.genre.join(", ") : track.genre} />}
                   {!isEmptyValue(track.bpm) && <MetaChip icon={Activity} label={track.bpm + " BPM"} />}
                   {!isEmptyValue(track.key) && <MetaChip icon={({ className }: { className?: string }) => <span className={className}>#</span>} label={track.key} />}
                   {isEmptyValue(track.bpm) && isEmptyValue(track.key) && track.createdAt && (Date.now() - new Date(track.createdAt).getTime()) < 5 * 60 * 1000 && (

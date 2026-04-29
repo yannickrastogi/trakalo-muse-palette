@@ -62,7 +62,10 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
     return sharedTracks.filter((track) => {
       if (search && !track.title.toLowerCase().includes(search.toLowerCase()) && !track.artist.toLowerCase().includes(search.toLowerCase())) return false;
       if (typeFilter && track.type !== typeFilter) return false;
-      if (genreFilter && track.genre !== genreFilter) return false;
+      if (genreFilter) {
+        const trackGenres = Array.isArray(track.genre) ? track.genre : (track.genre ? [track.genre as unknown as string] : []);
+        if (!trackGenres.some((g) => g.toLowerCase() === genreFilter.toLowerCase())) return false;
+      }
       if (keyFilter && track.key !== keyFilter) return false;
       if (statusFilter && track.status !== statusFilter) return false;
       if (bpmFilter && (track.bpm < bpmFilter.min || track.bpm > bpmFilter.max)) return false;
@@ -257,7 +260,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
                             </div>
                           </td>
                           <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-xs">{track.type || "—"}</td>
-                          <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.genre || "—"}</span></td>
+                          <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{(Array.isArray(track.genre) ? track.genre.join(", ") : track.genre) || "—"}</span></td>
                           <td className="px-4 py-3 hidden lg:table-cell"><span className="font-mono text-2xs text-foreground/60 tabular-nums">{track.bpm || "—"}</span></td>
                           <td className="px-4 py-3 hidden lg:table-cell">
                             {track.key ? (
@@ -333,7 +336,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
                         <p className="font-semibold text-foreground text-[13px] tracking-tight truncate leading-tight">{track.title}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
                         <div className="flex items-center gap-2 pt-1 flex-wrap">
-                          <span className="text-2xs text-muted-foreground shrink-0">{track.genre || "—"}</span>
+                          <span className="text-2xs text-muted-foreground shrink-0">{(Array.isArray(track.genre) ? track.genre.join(", ") : track.genre) || "—"}</span>
                           <span className="w-px h-3 bg-border shrink-0" />
                           <span className="text-2xs font-mono text-foreground/50 tabular-nums shrink-0">{track.bpm ? `${track.bpm} BPM` : "—"}</span>
                           <span className="w-px h-3 bg-border shrink-0" />

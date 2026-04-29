@@ -4,12 +4,25 @@
 export const DEFAULT_COVER = "/images/default-cover.png";
 
 export const GENRES = [
-  "Afrobeats", "Afrohouse", "Ambient", "Blues", "Bouyon", "Caribbean", "Classical",
-  "Country", "Dance", "Disco-Funk", "DnB", "Dubstep", "Electronic",
-  "Film", "Folk", "Hip-Hop", "House", "I-Pop", "Indie", "Jazz",
-  "K-Pop", "Kompa", "Latin", "Lo-fi", "Lounge", "Pop", "Progressive",
-  "R&B", "Reggae-Dancehall", "Rock", "Shatta", "Soca", "Soul",
-  "World", "Zouk",
+  "Afro Trap", "Afrobeats", "Afrohouse", "Amapiano", "Ambient",
+  "Blues", "Bouyon",
+  "Caribbean", "Classical", "Compas", "Country",
+  "Dance", "Dancehall", "Dembow", "Disco-Funk", "DnB", "Drill", "Dubstep",
+  "Electronic",
+  "Film", "Folk", "Funk",
+  "Garage", "Gospel",
+  "Hip-Hop", "House", "Hyperpop",
+  "I-Pop", "Indie",
+  "Jazz", "Jersey Club",
+  "K-Pop", "Kompa",
+  "Latin", "Latin Trap", "Lo-fi", "Lounge",
+  "Metal",
+  "Phonk", "Pluggnb", "Pop", "Progressive", "Punk",
+  "R&B", "Reggae", "Reggae-Dancehall", "Reggaeton", "Rock",
+  "Shatta", "Soca", "Soul",
+  "Techno", "Trance", "Trap",
+  "World",
+  "Zouk",
 ] as const;
 
 export const STEM_TYPES = [

@@ -270,7 +270,10 @@ export default function Playlists() {
         pl.trackIds.forEach(function (tid) {
           var track = allTracks.find(function (t) { return t.id === tid; });
           if (track && track.genre) {
-            genreCounts[track.genre] = (genreCounts[track.genre] || 0) + 1;
+            var genres = Array.isArray(track.genre) ? track.genre : [track.genre as unknown as string];
+            genres.forEach(function (g) {
+              if (g) genreCounts[g] = (genreCounts[g] || 0) + 1;
+            });
           }
         });
         var best = "";

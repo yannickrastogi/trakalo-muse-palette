@@ -22,10 +22,14 @@ export function SelectTrackForStemsModal({ open, onClose }: Props) {
     const q = search.toLowerCase();
     if (!q) return tracks;
     return tracks.filter(
-      (t) =>
-        t.title.toLowerCase().includes(q) ||
-        t.artist.toLowerCase().includes(q) ||
-        t.genre.toLowerCase().includes(q)
+      (t) => {
+        const genreText = Array.isArray(t.genre) ? t.genre.join(" ") : (t.genre as unknown as string) || "";
+        return (
+          t.title.toLowerCase().includes(q) ||
+          t.artist.toLowerCase().includes(q) ||
+          genreText.toLowerCase().includes(q)
+        );
+      }
     );
   }, [tracks, search]);
 
@@ -120,7 +124,7 @@ export function SelectTrackForStemsModal({ open, onClose }: Props) {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{track.title}</p>
                           <p className="text-xs text-muted-foreground truncate">
-                            {track.artist} · {track.genre}
+                            {track.artist} · {Array.isArray(track.genre) ? track.genre.join(", ") : track.genre}
                             {stemCount > 0 && (
                               <span className="ml-1.5 text-primary/70">· {stemCount} stem{stemCount !== 1 ? "s" : ""}</span>
                             )}

@@ -51,7 +51,7 @@ export interface TrackData extends WorkspaceScoped {
   artist: string;
   featuredArtists: string[];
   album: string;
-  genre: string;
+  genre: string[];
   bpm: number;
   key: string;
   duration: string;
@@ -129,6 +129,13 @@ function mapStemRow(row: Record<string, unknown>): TrackStem {
   };
 }
 
+// Helper: format a track's genre (text[] or legacy text) as a display string
+export function formatGenre(genre: unknown): string {
+  if (Array.isArray(genre)) return genre.filter((g) => typeof g === "string" && g.trim()).join(", ");
+  if (typeof genre === "string") return genre;
+  return "";
+}
+
 // Helper: convert Supabase row to TrackData
 export function mapRowToTrack(row: Record<string, unknown>, index: number, stems: TrackStem[] = []): TrackData {
   return {
@@ -141,7 +148,11 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
       ? (row.featuring as string).split(",").map((s) => s.trim())
       : [],
     album: (row.album as string) || "",
-    genre: (row.genre as string) || "",
+    genre: Array.isArray(row.genre)
+      ? (row.genre as string[]).filter((g) => typeof g === "string" && g.trim() !== "")
+      : (row.genre as string)
+        ? [(row.genre as string).trim()]
+        : [],
     bpm: (row.bpm as number) || 0,
     key: (row.key as string) || "",
     duration: row.duration_sec
@@ -621,7 +632,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         _bpm: trackInput.bpm || null,
         _key: trackInput.key || null,
         _duration_sec: trackInput.duration ? parseDurationToSeconds(trackInput.duration) : null,
-        _genre: trackInput.genre || null,
+        _genre: trackInput.genre && trackInput.genre.length > 0 ? trackInput.genre : null,
         _mood: trackInput.mood || [],
         _language: trackInput.language || null,
         _gender: trackInput.voice?.toLowerCase().replace("n/a", "n_a") || null,
@@ -725,7 +736,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (updates.bpm !== undefined) payload.bpm = updates.bpm || null;
       if (updates.key !== undefined) payload.key = updates.key || null;
       if (updates.duration !== undefined) payload.duration_sec = parseDurationToSeconds(updates.duration);
-      if (updates.genre !== undefined) payload.genre = updates.genre || null;
+      if (updates.genre !== undefined) payload.genre = updates.genre && updates.genre.length > 0 ? updates.genre : null;
       if (updates.mood !== undefined) payload.mood = updates.mood;
       if (updates.language !== undefined) payload.language = updates.language || null;
       if (updates.voice !== undefined) payload.gender = updates.voice?.toLowerCase().replace("n/a", "n_a") || null;

@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
             " - " +
             (t.artist || "Unknown") +
             " | genre: " +
-            (t.genre || "N/A") +
+            (Array.isArray(t.genre) ? (t.genre.length > 0 ? t.genre.join(", ") : "N/A") : (t.genre || "N/A")) +
             " | bpm: " +
             (t.bpm || "N/A") +
             " | key: " +

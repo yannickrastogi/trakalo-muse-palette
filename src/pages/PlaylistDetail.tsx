@@ -538,7 +538,7 @@ export default function PlaylistDetail() {
                     <p className="text-sm font-semibold text-foreground truncate">{track.title}</p>
                     <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
                   </div>
-                  <span className="text-2xs text-muted-foreground">{track.genre}</span>
+                  <span className="text-2xs text-muted-foreground">{Array.isArray(track.genre) ? track.genre.join(", ") : track.genre}</span>
                   <Plus className="w-4 h-4 text-muted-foreground/40 group-hover/add:text-brand-orange transition-colors shrink-0" />
                 </div>
               ))
@@ -683,7 +683,7 @@ function SortableDesktopRow({
         </div>
       </td>
       <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell text-xs">{track.type}</td>
-      <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{track.genre}</span></td>
+      <td className="px-4 py-3 hidden md:table-cell"><span className="text-xs text-muted-foreground">{Array.isArray(track.genre) ? track.genre.join(", ") : track.genre}</span></td>
       <td className="px-4 py-3 hidden lg:table-cell"><span className="font-mono text-2xs text-foreground/60 tabular-nums">{track.bpm}</span></td>
       <td className="px-4 py-3 hidden lg:table-cell">
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary text-2xs font-semibold text-foreground/70">
@@ -845,7 +845,7 @@ function SortableMobileCard({
         <p className="font-semibold text-foreground text-[13px] tracking-tight truncate">{track.title}</p>
         <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-2xs text-muted-foreground/60">{track.genre}</span>
+          <span className="text-2xs text-muted-foreground/60">{Array.isArray(track.genre) ? track.genre.join(", ") : track.genre}</span>
           <span className="text-2xs text-muted-foreground/40">{track.bpm} BPM</span>
           <span className={`inline-flex px-1.5 py-0 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
         </div>

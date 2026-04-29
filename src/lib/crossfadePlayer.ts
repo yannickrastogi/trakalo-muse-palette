@@ -6,7 +6,7 @@ export interface CrossfadeTrack {
   uuid: string;
   title: string;
   artist: string;
-  genre: string;
+  genre: string | string[];
   bpm: number;
   key: string;
   mood: string[];

@@ -674,7 +674,7 @@ export function DashboardContent() {
                         <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-orange transition-colors">{track.title}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
                       </div>
-                      <span className="text-2xs text-muted-foreground hidden sm:inline">{track.genre}</span>
+                      <span className="text-2xs text-muted-foreground hidden sm:inline">{Array.isArray(track.genre) ? track.genre.join(", ") : track.genre}</span>
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
                       <span className="text-2xs text-muted-foreground/50 font-mono hidden sm:inline">{track.duration}</span>
                     </div>
@@ -783,7 +783,7 @@ export function DashboardContent() {
                         <p className="font-semibold text-foreground text-[13px] truncate group-hover/row:text-brand-pink transition-colors">{pl.name}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{pl.description || "No description"}</p>
                       </div>
-                      <span className="text-2xs text-muted-foreground hidden sm:inline">{pl.genre || "—"}</span>
+                      <span className="text-2xs text-muted-foreground hidden sm:inline">{(Array.isArray(pl.genre) ? pl.genre.join(", ") : pl.genre) || "—"}</span>
                       <span className="inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-pink/12 text-brand-pink">
                         {pl.tracks} tracks
                       </span>

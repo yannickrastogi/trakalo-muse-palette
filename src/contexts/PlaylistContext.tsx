@@ -26,7 +26,7 @@ export interface PlaylistItem extends WorkspaceScoped {
   coverIdxs: number[];
   color: string;
   trackIds?: number[];
-  genre?: string;
+  genre?: string[];
   moods?: string[];
   coverImage?: string;
 }

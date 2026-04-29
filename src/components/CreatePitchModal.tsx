@@ -373,7 +373,7 @@ export function CreatePitchModal({ open, onOpenChange, onCreate, initialPlaylist
                           key={track.id}
                           name={track.title}
                           sub={track.artist}
-                          extra={track.genre}
+                          extra={Array.isArray(track.genre) ? track.genre.join(", ") : track.genre}
                           coverIdx={track.coverIdx}
                           coverImage={track.coverImage}
                           icon={<Music className="w-3 h-3 text-primary/40" />}

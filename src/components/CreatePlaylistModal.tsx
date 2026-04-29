@@ -9,7 +9,6 @@ import {
   Check,
   ListMusic,
   ImagePlus,
-  ChevronDown,
   Hash,
 } from "lucide-react";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
@@ -22,17 +21,9 @@ import {
 } from "@/components/ui/dialog";
 
 import { DEFAULT_COVER } from "@/lib/constants";
+import { GenreMultiSelect } from "@/components/GenreMultiSelect";
 
 type Track = TrackData;
-
-const GENRES = [
-  "Afrobeats", "Afrohouse", "Ambient", "Blues", "Bouyon", "Caribbean", "Classical",
-  "Country", "Dance", "Disco-Funk", "DnB", "Dubstep", "Electronic",
-  "Film", "Folk", "Hip-Hop", "House", "I-Pop", "Indie", "Jazz",
-  "K-Pop", "Kompa", "Latin", "Lo-fi", "Lounge", "Pop", "Progressive",
-  "R&B", "Reggae-Dancehall", "Rock", "Shatta", "Soca", "Soul",
-  "World", "Zouk",
-];
 
 export interface NewPlaylistData {
   id: string;
@@ -45,7 +36,7 @@ export interface NewPlaylistData {
   coverIdxs: number[];
   color: string;
   trackIds: number[];
-  genre?: string;
+  genre?: string[];
   moods?: string[];
   coverImage?: string;
 }
@@ -72,9 +63,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
   const [description, setDescription] = useState("");
   const [selectedTracks, setSelectedTracks] = useState<Track[]>([]);
   const [trackSearch, setTrackSearch] = useState("");
-  const [genre, setGenre] = useState("");
-  const [genreOpen, setGenreOpen] = useState(false);
-  const [customGenreMode, setCustomGenreMode] = useState(false);
+  const [genres, setGenres] = useState<string[]>([]);
   const [moodInput, setMoodInput] = useState("");
   const [moods, setMoods] = useState<string[]>([]);
   const [coverImage, setCoverImage] = useState<string | null>(null);
@@ -86,8 +75,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
     setDescription("");
     setSelectedTracks([]);
     setTrackSearch("");
-    setGenre("");
-    setGenreOpen(false);
+    setGenres([]);
     setMoodInput("");
     setMoods([]);
     setCoverImage(null);
@@ -138,10 +126,14 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
     if (trackSearch) {
       const q = trackSearch.toLowerCase();
       filtered = filtered.filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) ||
-          t.artist.toLowerCase().includes(q) ||
-          t.genre.toLowerCase().includes(q)
+        (t) => {
+          const genreText = Array.isArray(t.genre) ? t.genre.join(" ") : (t.genre as unknown as string) || "";
+          return (
+            t.title.toLowerCase().includes(q) ||
+            t.artist.toLowerCase().includes(q) ||
+            genreText.toLowerCase().includes(q)
+          );
+        }
       );
     }
     return filtered;
@@ -284,82 +276,11 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                 </div>
 
                 {/* Genre */}
-                <div className="space-y-2 relative">
+                <div className="space-y-2">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
                     {t("createPlaylist.genre")}
                   </label>
-                  {customGenreMode || (!GENRES.includes(genre) && genre !== "") ? (
-                    <div className="flex gap-1.5">
-                      <input
-                        type="text"
-                        value={genre}
-                        onChange={(e) => setGenre(e.target.value)}
-                        placeholder="Enter custom genre"
-                        autoFocus
-                        className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none hover:border-primary/40 focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
-                      />
-                      <button
-                        onClick={() => { setGenre(""); setCustomGenreMode(false); }}
-                        className="shrink-0 h-11 px-3 rounded-xl bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setGenreOpen((v) => !v)}
-                        className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none hover:border-primary/40 transition-colors font-medium flex items-center justify-between"
-                      >
-                        <span className={genre ? "text-foreground" : "text-muted-foreground/40"}>
-                          {genre || t("createPlaylist.selectGenre")}
-                        </span>
-                        <ChevronDown className={`w-4 h-4 text-muted-foreground/50 transition-transform ${genreOpen ? "rotate-180" : ""}`} />
-                      </button>
-                      <AnimatePresence>
-                        {genreOpen && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -4 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute z-50 left-0 right-0 top-full mt-1 bg-popover border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto"
-                          >
-                            {GENRES.map((g) => (
-                              <button
-                                key={g}
-                                type="button"
-                                onClick={() => {
-                                  setGenre(g);
-                                  setGenreOpen(false);
-                                }}
-                                className={`w-full text-left px-4 py-2.5 text-[13px] font-medium transition-colors flex items-center justify-between ${
-                                  genre === g
-                                    ? "bg-primary/10 text-primary"
-                                    : "text-foreground hover:bg-secondary"
-                                }`}
-                              >
-                                {g}
-                                {genre === g && <Check className="w-3.5 h-3.5 text-primary" />}
-                              </button>
-                            ))}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setGenre("");
-                                setCustomGenreMode(true);
-                                setGenreOpen(false);
-                              }}
-                              className="w-full text-left px-4 py-2.5 text-[13px] font-medium text-muted-foreground hover:bg-secondary transition-colors border-t border-border"
-                            >
-                              Other…
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </>
-                  )}
+                  <GenreMultiSelect value={genres} onChange={setGenres} placeholder={t("createPlaylist.selectGenre")} />
                 </div>
 
                 {/* Mood hashtags */}
@@ -419,8 +340,8 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-foreground text-sm truncate">{name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          {genre && (
-                            <span className="text-2xs text-accent font-medium">{genre}</span>
+                          {genres.length > 0 && (
+                            <span className="text-2xs text-accent font-medium">{genres.join(", ")}</span>
                           )}
                           {description && (
                             <span className="text-xs text-muted-foreground truncate">{description}</span>
@@ -519,7 +440,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                           <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-2xs text-muted-foreground/50 hidden sm:inline">{track.genre}</span>
+                          <span className="text-2xs text-muted-foreground/50 hidden sm:inline">{Array.isArray(track.genre) ? track.genre.join(", ") : track.genre}</span>
                           <span className="text-2xs text-muted-foreground/40 font-mono tabular-nums hidden sm:inline">{track.bpm} BPM</span>
                           <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center group-hover/track:bg-primary/15 transition-colors">
                             <Plus className="w-3.5 h-3.5 text-muted-foreground/50 group-hover/track:text-primary transition-colors" />
@@ -575,7 +496,7 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                     coverIdxs,
                     color: gradientColors[Math.floor(Math.random() * gradientColors.length)],
                     trackIds: selectedTracks.map((t) => t.id),
-                    genre: genre || undefined,
+                    genre: genres.length > 0 ? genres : undefined,
                     moods: moods.length > 0 ? moods : undefined,
                     coverImage: coverImage || undefined,
                   };

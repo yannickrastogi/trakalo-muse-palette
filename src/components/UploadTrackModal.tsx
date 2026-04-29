@@ -52,11 +52,12 @@ const MAX_TRACKS = 20;
 
 const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
-import { GENRES, KEYS, LANGUAGES, PROS, SPLIT_ROLES } from "@/lib/constants";
+import { KEYS, LANGUAGES, PROS, SPLIT_ROLES } from "@/lib/constants";
 import { equalSplit } from "@/lib/split-utils";
 import { extractTextFromPdf } from "@/lib/pdf-text-extract";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
 import { NameAutocomplete } from "@/components/NameAutocomplete";
+import { GenreMultiSelect } from "@/components/GenreMultiSelect";
 
 interface Split {
   id: string;
@@ -96,7 +97,7 @@ interface TrackEntry {
   featuring: string;
   bpm: string;
   trackKey: string;
-  genre: string;
+  genre: string[];
   trackType: string;
   voice: string;
   language: string;
@@ -139,7 +140,7 @@ interface CommonInfo {
   artist: string;
   featuring: string;
   coverFile: File | null;
-  genre: string;
+  genre: string[];
   trackType: string;
   voice: string;
   language: string;
@@ -162,7 +163,7 @@ function createEmptyCommonInfo(): CommonInfo {
     artist: "",
     featuring: "",
     coverFile: null,
-    genre: "",
+    genre: [],
     trackType: "",
     voice: "",
     language: "",
@@ -182,7 +183,7 @@ function createEmptyCommonInfo(): CommonInfo {
 }
 
 function commonInfoHasContent(c: CommonInfo): boolean {
-  if (c.artist || c.featuring || c.coverFile || c.genre || c.trackType || c.voice || c.language) return true;
+  if (c.artist || c.featuring || c.coverFile || c.genre.length > 0 || c.trackType || c.voice || c.language) return true;
   if (c.notes || c.album || c.label || c.releaseDate || c.copyright) return true;
   if (c.writtenBy || c.producedBy || c.mixedBy || c.masteredBy) return true;
   if (c.publishers.some((p) => p.trim())) return true;
@@ -224,7 +225,7 @@ function createTrackEntry(file: File): TrackEntry {
     featuring: "",
     bpm: "",
     trackKey: "",
-    genre: "",
+    genre: [],
     trackType: "Song",
     voice: "",
     language: "",
@@ -688,7 +689,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         title: currentTrack.title.trim() || "Untitled",
         artist: currentTrack.artist.trim() || "Unknown Artist",
         featuredArtists: currentTrack.featuring ? currentTrack.featuring.split(",").map((s) => s.trim()).filter(Boolean) : [],
-        genre: currentTrack.genre || "",
+        genre: currentTrack.genre || [],
         bpm: parseInt(currentTrack.bpm) || 0,
         key: currentTrack.trackKey || "",
         duration: currentTrack.analysisResult?.duration || "0:00",
@@ -981,7 +982,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     if (c.artist.trim()) patch.artist = c.artist.trim();
     if (c.featuring.trim()) patch.featuring = c.featuring.trim();
     if (c.coverFile) patch.coverFile = c.coverFile;
-    if (c.genre) patch.genre = c.genre;
+    if (c.genre.length > 0) patch.genre = c.genre;
     if (c.trackType) patch.trackType = c.trackType;
     if (c.voice) patch.voice = c.voice;
     if (c.language) patch.language = c.language;
@@ -1121,7 +1122,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         const savedTrack = await addTrack({
           title: entry.title.trim() || "Untitled",
           artist: entry.artist.trim() || "",
-          genre: "",
+          genre: [],
           bpm: 0,
           key: "",
           duration: entry.analysisResult?.duration || "0:00",
@@ -1988,34 +1989,7 @@ function StepCommonInfo({
       {/* Genre */}
       <div className="space-y-1.5">
         <FieldLabel>{t("uploadTrack.genre")}</FieldLabel>
-        {commonInfo.genre === "__other__" || (!(GENRES as readonly string[]).includes(commonInfo.genre) && commonInfo.genre !== "") ? (
-          <div className="flex gap-1.5">
-            <input
-              type="text"
-              value={commonInfo.genre === "__other__" ? "" : commonInfo.genre}
-              onChange={(e) => onUpdate({ genre: e.target.value })}
-              placeholder={t("uploadTrack.enterCustomGenre", "Enter custom genre")}
-              autoFocus
-              className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
-            />
-            <button
-              onClick={() => onUpdate({ genre: "" })}
-              className="shrink-0 h-9 px-2 rounded-lg bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ) : (
-          <select
-            value={commonInfo.genre}
-            onChange={(e) => onUpdate({ genre: e.target.value })}
-            className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none font-medium"
-          >
-            <option value="">{t("uploadTrack.selectGenre")}</option>
-            {GENRES.map((o) => <option key={o} value={o}>{o}</option>)}
-            <option value="__other__">Other…</option>
-          </select>
-        )}
+        <GenreMultiSelect value={commonInfo.genre} onChange={(v) => onUpdate({ genre: v })} placeholder={t("uploadTrack.selectGenre")} />
       </div>
 
       {/* Type + Gender */}
@@ -2171,7 +2145,7 @@ function StepInfo({
   artist: string; setArtist: (v: string) => void;
   bpm: string; setBpm: (v: string) => void;
   trackKey: string; setTrackKey: (v: string) => void;
-  genre: string; setGenre: (v: string) => void;
+  genre: string[]; setGenre: (v: string[]) => void;
   trackType: string; setTrackType: (v: string) => void;
   voice: string; setVoice: (v: string) => void;
   language: string; setLanguage: (v: string) => void;
@@ -2311,34 +2285,7 @@ function StepInfo({
       <div className="grid grid-cols-1 gap-4">
         <div className="space-y-1.5">
           <FieldLabel>{t("uploadTrack.genre")}</FieldLabel>
-          {genre === "__other__" || (!(GENRES as readonly string[]).includes(genre) && genre !== "") ? (
-            <div className="flex gap-1.5">
-              <input
-                type="text"
-                value={genre === "__other__" ? "" : genre}
-                onChange={(e) => setGenre(e.target.value)}
-                placeholder={t("uploadTrack.enterCustomGenre", "Enter custom genre")}
-                autoFocus
-                className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
-              />
-              <button
-                onClick={() => setGenre("")}
-                className="shrink-0 h-9 px-2 rounded-lg bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <select
-              value={genre}
-              onChange={(e) => setGenre(e.target.value)}
-              className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none font-medium"
-            >
-              <option value="">{t("uploadTrack.selectGenre")}</option>
-              {GENRES.map((o) => <option key={o} value={o}>{o}</option>)}
-              <option value="__other__">Other…</option>
-            </select>
-          )}
+          <GenreMultiSelect value={genre} onChange={setGenre} placeholder={t("uploadTrack.selectGenre")} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -2822,7 +2769,7 @@ function StepReview({
   writtenBy, producedBy, mixedBy, masteredBy, copyright, explicit: isExplicit,
 }: {
   title: string; artist: string; bpm: string; trackKey: string;
-  genre: string; trackType: string; voice: string; language: string; notes: string;
+  genre: string[]; trackType: string; voice: string; language: string; notes: string;
   audioFile: File | null; stems: StemFile[]; splits: Split[]; totalSplit: number;
   details: Record<string, string[]>;
   lyrics?: string;
@@ -2880,7 +2827,7 @@ function StepReview({
           <ReviewRow label={t("uploadTrack.artist")} value={artist} />
           <ReviewRow label={t("uploadTrack.bpm")} value={bpm || "—"} />
           <ReviewRow label={t("uploadTrack.key")} value={trackKey || "—"} />
-          <ReviewRow label={t("uploadTrack.genre")} value={genre || "—"} />
+          <ReviewRow label={t("uploadTrack.genre")} value={genre && genre.length > 0 ? genre.join(", ") : "—"} />
           <ReviewRow label={t("uploadTrack.type", "Type")} value={trackType || "—"} />
           <ReviewRow label={t("editTrack.gender", "Gender")} value={voice || "—"} />
           <ReviewRow label={t("uploadTrack.language")} value={language || "—"} />

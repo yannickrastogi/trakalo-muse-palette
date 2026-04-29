@@ -694,7 +694,7 @@ function TrackDetailTabs({
         <TabsContent value="overview" className="mt-4">
           <div className="bg-card border border-border rounded-2xl p-5 space-y-4" style={{ boxShadow: "var(--shadow-card)" }}>
             <div className="grid grid-cols-2 gap-3">
-              <InfoRow icon={Disc} label="Genre" value={trackData.genre || "—"} />
+              <InfoRow icon={Disc} label="Genre" value={(Array.isArray(trackData.genre) ? trackData.genre.join(", ") : trackData.genre) || "—"} />
               <InfoRow icon={Hash} label="BPM" value={trackData.bpm ? String(trackData.bpm) : "—"} />
               <InfoRow icon={Music} label="Key" value={trackData.key || "—"} />
               <InfoRow icon={Clock} label="Duration" value={totalDurationSeconds > 0 ? formatDuration(totalDurationSeconds) : "—"} />

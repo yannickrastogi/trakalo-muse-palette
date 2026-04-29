@@ -128,7 +128,11 @@ export default function Catalog() {
     return allTracks.filter((track) => {
       if (search && !track.title.toLowerCase().includes(search.toLowerCase()) && !track.artist.toLowerCase().includes(search.toLowerCase())) return false;
       if (typeFilter && track.type !== typeFilter) return false;
-      if (genreFilter && track.genre !== genreFilter) return false;
+      if (genreFilter) {
+        const trackGenres = Array.isArray(track.genre) ? track.genre : (track.genre ? [track.genre as unknown as string] : []);
+        const matches = trackGenres.some((g) => g.toLowerCase() === genreFilter.toLowerCase());
+        if (!matches) return false;
+      }
       if (keyFilter && track.key !== keyFilter) return false;
       if (statusFilter && track.status !== statusFilter) return false;
       if (bpmFilter && (track.bpm < bpmFilter.min || track.bpm > bpmFilter.max)) return false;
@@ -491,7 +495,8 @@ export default function Catalog() {
                           <td className="px-4 py-3 hidden sm:table-cell">
                             <span className="text-xs text-muted-foreground">
                               {(() => {
-                                const parts = [track.type, track.genre, track.bpm ? track.bpm + " BPM" : null, track.key].filter(Boolean).join(" · ");
+                                const genreText = Array.isArray(track.genre) ? track.genre.join(", ") : track.genre;
+                                const parts = [track.type, genreText, track.bpm ? track.bpm + " BPM" : null, track.key].filter(Boolean).join(" · ");
                                 if (parts) return parts;
                                 const isRecent = track.createdAt && (Date.now() - new Date(track.createdAt).getTime()) < 5 * 60 * 1000;
                                 if (isRecent) return <span className="animate-pulse text-brand-orange">⏳ Analyzing...</span>;
@@ -631,7 +636,7 @@ export default function Catalog() {
                           </span>
                         )}
                          <div className="flex items-center gap-2 pt-1 flex-wrap">
-                           <span className="text-2xs text-muted-foreground shrink-0">{track.genre || "—"}</span>
+                           <span className="text-2xs text-muted-foreground shrink-0 truncate max-w-[140px]">{(Array.isArray(track.genre) ? track.genre.join(", ") : track.genre) || "—"}</span>
                            <span className="w-px h-3 bg-border shrink-0" />
                            {(() => {
                              const isRecent = track.createdAt && (Date.now() - new Date(track.createdAt).getTime()) < 5 * 60 * 1000;

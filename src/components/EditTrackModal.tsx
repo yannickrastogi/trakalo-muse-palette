@@ -17,7 +17,8 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-import { GENRES, KEYS, LANGUAGES } from "@/lib/constants";
+import { KEYS, LANGUAGES } from "@/lib/constants";
+import { GenreMultiSelect } from "@/components/GenreMultiSelect";
 import { equalSplit } from "@/lib/split-utils";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
 import { useContacts } from "@/contexts/ContactsContext";
@@ -141,7 +142,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
   const [album, setAlbum] = useState("");
   const [bpm, setBpm] = useState("");
   const [trackKey, setTrackKey] = useState("");
-  const [genre, setGenre] = useState("");
+  const [genre, setGenre] = useState<string[]>([]);
   const [voice, setVoice] = useState("");
   const [language, setLanguage] = useState("");
   const [trackType, setTrackType] = useState("");
@@ -182,7 +183,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       setInitialBpm(bpmStr);
       setTrackKey(trackData.key);
       setInitialKey(trackData.key);
-      setGenre(trackData.genre);
+      setGenre(Array.isArray(trackData.genre) ? trackData.genre : trackData.genre ? [trackData.genre as unknown as string] : []);
       setVoice(trackData.voice || "");
       setLanguage(trackData.language);
       setTrackType(trackData.type);
@@ -437,34 +438,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 </div>
                 <div className="space-y-1.5">
                   <FieldLabel>{t("editTrack.genre")}</FieldLabel>
-                  {genre === "__other__" || (!(GENRES as readonly string[]).includes(genre) && genre !== "") ? (
-                    <div className="flex gap-1.5">
-                      <input
-                        type="text"
-                        value={genre === "__other__" ? "" : genre}
-                        onChange={(e) => setGenre(e.target.value)}
-                        placeholder={t("editTrack.customGenre")}
-                        autoFocus
-                        className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
-                      />
-                      <button
-                        onClick={() => setGenre("")}
-                        className="shrink-0 h-9 px-2 rounded-lg bg-secondary border border-border text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <select
-                      value={genre}
-                      onChange={(e) => setGenre(e.target.value)}
-                      className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none font-medium"
-                    >
-                      <option value="">{t("editTrack.selectGenre")}</option>
-                      {GENRES.map((o) => <option key={o} value={o}>{o}</option>)}
-                      <option value="__other__">{t("editTrack.other")}</option>
-                    </select>
-                  )}
+                  <GenreMultiSelect value={genre} onChange={setGenre} placeholder={t("editTrack.selectGenre")} />
                 </div>
               </div>
 

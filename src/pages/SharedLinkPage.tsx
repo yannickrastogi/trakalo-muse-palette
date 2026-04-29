@@ -930,7 +930,7 @@ export default function SharedLinkPage() {
       // Metadata — branded PDF
       if (items.indexOf("metadata") >= 0) {
         var meta: { label: string; value: string }[] = [
-          { label: "Genre", value: trackData.genre || "\u2014" },
+          { label: "Genre", value: (Array.isArray(trackData.genre) ? trackData.genre.join(", ") : trackData.genre) || "\u2014" },
           { label: "BPM", value: trackData.bpm ? String(trackData.bpm) : "\u2014" },
           { label: "Key", value: trackData.key || "\u2014" },
           { label: "Duration", value: trackData.duration_sec ? formatDuration(trackData.duration_sec) : "\u2014" },
@@ -1579,8 +1579,8 @@ export default function SharedLinkPage() {
                   {trackData.featuring ? " ft. " + trackData.featuring : ""}
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-3">
-                  {trackData.genre && (
-                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/12 border border-white/15 text-white/90" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.genre}</span>
+                  {trackData.genre && (Array.isArray(trackData.genre) ? trackData.genre.length > 0 : true) && (
+                    <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium " + (immersive ? "bg-white/12 border border-white/15 text-white/90" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{Array.isArray(trackData.genre) ? trackData.genre.join(", ") : trackData.genre}</span>
                   )}
                   {trackData.bpm && (
                     <span className={"px-2 py-0.5 rounded-md text-[10px] font-medium font-mono " + (immersive ? "bg-white/12 border border-white/15 text-white/90" : "bg-secondary text-muted-foreground")} style={!immersive && branding?.brand_color ? { backgroundColor: branding.brand_color + "18", color: branding.brand_color } : undefined}>{trackData.bpm + " BPM"}</span>
