@@ -391,8 +391,9 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
                   >
                     <Checkbox
                       checked={checked}
-                      onCheckedChange={() => toggleItem(item.id)}
-                      className="shrink-0"
+                      tabIndex={-1}
+                      aria-hidden
+                      className="shrink-0 pointer-events-none"
                     />
                     <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
                       <ItemIcon className="w-3.5 h-3.5 text-muted-foreground" />
@@ -415,6 +416,11 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     {t("downloadTrack.generatingPack")}
+                  </>
+                ) : selectedItems.size === 0 ? (
+                  <>
+                    <Package className="w-4 h-4" />
+                    {t("downloadTrack.selectAtLeastOne", "Select at least one item")}
                   </>
                 ) : (
                   <>
