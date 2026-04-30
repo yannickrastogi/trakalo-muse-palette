@@ -19,6 +19,8 @@ export interface TeamActivity {
 
 export interface TeamMember {
   id: string;
+  /** workspace_members.id (row UUID) — used as the canonical member identifier in RPCs. */
+  membershipId: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -43,10 +45,16 @@ interface TeamContextValue {
   createTeam: (name: string) => Team;
   deleteTeam: (teamId: string) => void;
   renameTeam: (teamId: string, name: string) => void;
-  addMember: (teamId: string, member: Omit<TeamMember, "id" | "joinedAt" | "status">) => void;
+  addMember: (teamId: string, member: Omit<TeamMember, "id" | "membershipId" | "joinedAt" | "status">) => void;
   removeMember: (teamId: string, memberId: string) => void;
   updateMemberRole: (teamId: string, memberId: string, role: TeamRole) => void;
   updateMemberAccess: (teamId: string, memberId: string, accessLevel: AccessLevel, professionalTitle: string | null) => void;
+  /** Edit a workspace member: title is editable by self or admin; access level by admin only. */
+  updateWorkspaceMember: (
+    workspaceId: string,
+    membershipId: string,
+    updates: { professionalTitle?: string | null; accessLevel?: AccessLevel }
+  ) => Promise<{ error?: string }>;
 }
 
 const TeamContext = createContext<TeamContextValue | undefined>(undefined);
@@ -148,6 +156,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
       return {
         id: m.user_id,
+        membershipId: (m as { id: string }).id,
         firstName,
         lastName,
         email,
@@ -292,12 +301,13 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addMember = useCallback(
-    async (teamId: string, member: Omit<TeamMember, "id" | "joinedAt" | "status">) => {
+    async (teamId: string, member: Omit<TeamMember, "id" | "membershipId" | "joinedAt" | "status">) => {
       if (!activeWorkspace) return;
 
       const newMember: TeamMember = {
         ...member,
         id: "pending-" + Date.now(),
+        membershipId: "pending-" + Date.now(),
         joinedAt: new Date().toISOString().split("T")[0],
         status: "pending",
       };
@@ -397,8 +407,36 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     [activeWorkspace, fetchTeam]
   );
 
+  // New: edit member title + access level via secure RPC (permission checks server-side)
+  const updateWorkspaceMember = useCallback(
+    async (
+      workspaceId: string,
+      membershipId: string,
+      updates: { professionalTitle?: string | null; accessLevel?: AccessLevel }
+    ): Promise<{ error?: string }> => {
+      if (!user) return { error: "Not authenticated" };
+
+      const { error } = await supabase.rpc("update_workspace_member", {
+        _user_id: user.id,
+        _workspace_id: workspaceId,
+        _member_id: membershipId,
+        _professional_title: updates.professionalTitle ?? null,
+        _access_level: updates.accessLevel ?? null,
+      });
+
+      if (error) {
+        console.error("Error updating workspace member:", error);
+        return { error: error.message };
+      }
+
+      await fetchTeam();
+      return {};
+    },
+    [user, fetchTeam]
+  );
+
   return (
-    <TeamContext.Provider value={useMemo(() => ({ teams, createTeam, deleteTeam, renameTeam, addMember, removeMember, updateMemberRole, updateMemberAccess }), [teams, createTeam, deleteTeam, renameTeam, addMember, removeMember, updateMemberRole, updateMemberAccess])}>
+    <TeamContext.Provider value={useMemo(() => ({ teams, createTeam, deleteTeam, renameTeam, addMember, removeMember, updateMemberRole, updateMemberAccess, updateWorkspaceMember }), [teams, createTeam, deleteTeam, renameTeam, addMember, removeMember, updateMemberRole, updateMemberAccess, updateWorkspaceMember])}>
       {children}
     </TeamContext.Provider>
   );

@@ -46,7 +46,9 @@ import { useTranslation } from "react-i18next";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { InviteMemberModal, type InvitePayload } from "@/components/InviteMemberModal";
+import { EditMemberModal } from "@/components/EditMemberModal";
 import type { AccessLevel } from "@/contexts/RoleContext";
+import type { TeamMember } from "@/contexts/TeamContext";
 
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 const fadeUp = {
@@ -698,10 +700,12 @@ function BrandingSection() {
 
 function MembersSection() {
   const { t } = useTranslation();
-  const { teams, removeMember, updateMemberAccess } = useTeams();
+  const { teams, removeMember } = useTeams();
   const { permissions } = useRole();
   const { activeWorkspace } = useWorkspace();
+  const { user } = useAuth();
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<{ member: TeamMember; mode: "admin" | "self" } | null>(null);
 
   const teamId = activeWorkspace?.id || "";
   const team = teams.find((t) => t.id === teamId);
@@ -715,15 +719,7 @@ function MembersSection() {
     removeMember(teamId, memberId);
   };
 
-  const handleAccessChange = (memberId: string, newLevel: AccessLevel, currentTitle: string | null) => {
-    updateMemberAccess(teamId, memberId, newLevel, currentTitle);
-  };
-
-  const handleTitleChange = (memberId: string, currentLevel: AccessLevel, newTitle: string | null) => {
-    updateMemberAccess(teamId, memberId, currentLevel, newTitle);
-  };
-
-  const accessLevels: AccessLevel[] = ["viewer", "pitcher", "editor", "admin"];
+  const isAdmin = permissions.canManageTeam;
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
@@ -750,54 +746,63 @@ function MembersSection() {
                   <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Member</th>
                   <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Title</th>
                   <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Access</th>
-                  <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-20"></th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-32"></th>
                 </tr>
               </thead>
               <tbody>
-                {members.map((m) => (
-                  <tr key={m.id} className="border-b border-border/10 last:border-0">
-                    <td className="px-4 py-3">
-                      <div>
-                        <p className="text-[13px] font-semibold text-foreground">{m.firstName} {m.lastName}</p>
-                        {m.email && <p className="text-[11px] text-muted-foreground/50">{m.email}</p>}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <span className="text-[12px] text-muted-foreground">{m.professionalTitle || m.role}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {permissions.canManageTeam ? (
-                        <select
-                          value={m.accessLevel}
-                          onChange={(e) => handleAccessChange(m.id, e.target.value as AccessLevel, m.professionalTitle)}
-                          className="text-[12px] bg-secondary/40 border border-border/30 rounded-lg px-2 py-1.5 text-foreground"
-                        >
-                          {accessLevels.map((lvl) => (
-                            <option key={lvl} value={lvl}>{lvl.charAt(0).toUpperCase() + lvl.slice(1)}</option>
-                          ))}
-                        </select>
-                      ) : (
+                {members.map((m) => {
+                  const isSelf = !!user && m.id === user.id;
+                  const canEdit = isAdmin || isSelf;
+                  const editMode: "admin" | "self" = isAdmin ? "admin" : "self";
+                  return (
+                    <tr key={m.id} className="border-b border-border/10 last:border-0">
+                      <td className="px-4 py-3">
+                        <div>
+                          <p className="text-[13px] font-semibold text-foreground">{m.firstName} {m.lastName}</p>
+                          {m.email && <p className="text-[11px] text-muted-foreground/50">{m.email}</p>}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        <span className="text-[12px] text-muted-foreground">{m.professionalTitle || m.role}</span>
+                      </td>
+                      <td className="px-4 py-3">
                         <span className="text-[12px] text-muted-foreground capitalize">{m.accessLevel}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {permissions.canManageTeam && m.id !== activeWorkspace?.owner_id && (
-                        <button
-                          onClick={() => handleRemoveMember(m.id)}
-                          className="text-[11px] text-destructive/60 hover:text-destructive transition-colors"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="inline-flex items-center gap-3 justify-end">
+                          {canEdit && m.status === "active" && !m.membershipId.startsWith("pending-") && (
+                            <button
+                              onClick={() => setEditTarget({ member: m, mode: editMode })}
+                              className="text-[11px] text-brand-orange/80 hover:text-brand-orange transition-colors font-semibold"
+                            >
+                              {isAdmin ? "Edit" : "Edit my title"}
+                            </button>
+                          )}
+                          {permissions.canManageTeam && m.id !== activeWorkspace?.owner_id && (
+                            <button
+                              onClick={() => handleRemoveMember(m.id)}
+                              className="text-[11px] text-destructive/60 hover:text-destructive transition-colors"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       </SectionBlock>
       <InviteMemberModal open={inviteOpen} onOpenChange={setInviteOpen} onInvite={handleInvite} preselectedTeamId={teamId || undefined} />
+      <EditMemberModal
+        open={!!editTarget}
+        onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+        member={editTarget?.member || null}
+        mode={editTarget?.mode || "self"}
+      />
     </motion.div>
   );
 }
