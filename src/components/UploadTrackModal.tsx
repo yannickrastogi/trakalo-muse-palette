@@ -32,6 +32,8 @@ import {
   ArrowRightLeft,
   Zap,
   Scale,
+  Sparkles,
+  Layers,
 } from "lucide-react";
 import { CollaboratorAutocomplete, type CollaboratorSuggestion } from "@/components/CollaboratorAutocomplete";
 import { useContacts, type Contact } from "@/contexts/ContactsContext";
@@ -277,6 +279,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const [isDragOver, setIsDragOver] = useState(false);
   const [commonInfo, setCommonInfo] = useState<CommonInfo>(createEmptyCommonInfo);
   const [commonInfoApplied, setCommonInfoApplied] = useState(false);
+  const [appliedFieldsCount, setAppliedFieldsCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
@@ -924,6 +927,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     setQuickUploadDone(false);
     setCommonInfo(createEmptyCommonInfo());
     setCommonInfoApplied(false);
+    setAppliedFieldsCount(0);
   };
 
   // ─── Common Info ──────────────────────────────────────────
@@ -1007,6 +1011,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   const applyCommonInfo = useCallback(() => {
     const patch = buildCommonPatch(commonInfo);
+    const fieldsCount = Object.keys(patch).length;
     setQueue((prev) => prev.map((entry) => {
       const next: TrackEntry = { ...entry };
       // Apply each defined patch field, freshly cloning splits per-track
@@ -1018,10 +1023,16 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       return next;
     }));
     setCommonInfoApplied(true);
+    setAppliedFieldsCount(fieldsCount);
+    if (fieldsCount > 0) {
+      toast.success(
+        t("uploadTrack.commonInfoApplied", { count: queue.length, defaultValue: "✓ Common info applied to " + queue.length + " tracks" }),
+      );
+    }
     setPhase("edit");
     setCurrentIdx(0);
     setEditStep(0);
-  }, [commonInfo, buildCommonPatch]);
+  }, [commonInfo, buildCommonPatch, queue.length, t]);
 
   const requestApplyCommonInfo = useCallback(() => {
     if (!commonInfoApplied) {
@@ -1042,6 +1053,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     }
     setCommonInfo(createEmptyCommonInfo());
     setCommonInfoApplied(false);
+    setAppliedFieldsCount(0);
     setPhase("edit");
     setCurrentIdx(0);
     setEditStep(0);
@@ -1329,7 +1341,9 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               {phase === "common" && (
                 <StepCommonInfo
                   trackCount={queue.length}
+                  trackNames={queue.map((e) => e.title || e.fileName)}
                   commonInfo={commonInfo}
+                  commonInfoApplied={commonInfoApplied}
                   onUpdate={updateCommonInfo}
                   splits={commonInfo.splits}
                   totalSplit={totalCommonSplit}
@@ -1340,7 +1354,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   onEqualSplit={equalSplitCommon}
                   contacts={contacts}
                   existingSplitNames={existingSplitNames}
-                  onSkip={skipCommonInfo}
                 />
               )}
               {phase === "upload" && (
@@ -1370,6 +1383,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   analyzing={currentTrack.analyzing}
                   coverFile={currentTrack.coverFile}
                   setCoverFile={(f) => updateCurrent({ coverFile: f })}
+                  commonFieldsApplied={commonInfoApplied ? appliedFieldsCount : 0}
                 />
               )}
               {phase === "edit" && currentTrack && editStep === 1 && (
@@ -1567,21 +1581,31 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   )}
                 </>
               ) : phase === "common" ? (
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <button
                     onClick={() => setPhase("upload")}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-semibold text-muted-foreground hover:text-foreground transition-colors shrink-0"
                   >
                     <ChevronLeft className="w-3.5 h-3.5" /> {t("uploadTrack.back")}
                   </button>
-                  <button
-                    onClick={requestApplyCommonInfo}
-                    className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold"
-                  >
-                    {commonInfoApplied
-                      ? t("uploadTrack.reapplyToAll", "Re-apply to all tracks")
-                      : t("uploadTrack.applyToAll", { count: queue.length, defaultValue: "Apply to all " + queue.length + " tracks" })} <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-3 flex-wrap justify-end">
+                    <button
+                      onClick={skipCommonInfo}
+                      className="text-2xs sm:text-[13px] font-semibold text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors whitespace-nowrap"
+                    >
+                      {t("uploadTrack.skipFillIndividually", "Skip — fill each track individually")}
+                    </button>
+                    <button
+                      onClick={requestApplyCommonInfo}
+                      className="btn-brand flex items-center gap-1.5 px-5 sm:px-7 py-3 rounded-xl text-[13px] sm:text-sm font-bold shadow-lg shadow-brand-orange/20"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      {commonInfoApplied
+                        ? t("uploadTrack.reapplyToAll", "Re-apply to all tracks")
+                        : t("uploadTrack.applyToAllTracks", { count: queue.length, defaultValue: "Apply to all " + queue.length + " tracks" })}
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -1864,12 +1888,14 @@ function StepBulkUpload({
 /* ─── Common Info Step ─── */
 
 function StepCommonInfo({
-  trackCount, commonInfo, onUpdate,
+  trackCount, trackNames, commonInfo, commonInfoApplied, onUpdate,
   splits, totalSplit, onAddSplit, onUpdateSplit, onRemoveSplit, onBatchUpdateSplit, onEqualSplit,
-  contacts, existingSplitNames, onSkip,
+  contacts, existingSplitNames,
 }: {
   trackCount: number;
+  trackNames: string[];
   commonInfo: CommonInfo;
+  commonInfoApplied: boolean;
   onUpdate: (updates: Partial<CommonInfo>) => void;
   splits: Split[];
   totalSplit: number;
@@ -1880,7 +1906,6 @@ function StepCommonInfo({
   onEqualSplit: () => void;
   contacts: Contact[];
   existingSplitNames: string[];
-  onSkip: () => void;
 }) {
   const { t } = useTranslation();
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -1903,25 +1928,72 @@ function StepCommonInfo({
 
   const setPublishers = (pubs: string[]) => onUpdate({ publishers: pubs });
 
+  const previewNames = trackNames.slice(0, 4);
+  const remainingCount = Math.max(0, trackNames.length - previewNames.length);
+
   return (
     <div className="space-y-5">
-      {/* Header with Skip link */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-foreground mb-1">
-            {t("uploadTrack.commonInfo", "Common Info")}
-          </h3>
-          <p className="text-2xs text-muted-foreground">
-            {t("uploadTrack.commonInfoDesc", { count: trackCount, defaultValue: "Fill once, apply to all " + trackCount + " tracks. You can still override fields on individual tracks." })}
-          </p>
+      {/* Prominent gradient header */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="relative overflow-hidden rounded-2xl border border-brand-orange/20 bg-gradient-to-br from-brand-orange/10 via-brand-pink/8 to-brand-purple/10 p-5"
+      >
+        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-brand-orange/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-brand-purple/10 blur-3xl pointer-events-none" />
+        <div className="relative space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0 shadow-lg shadow-brand-orange/30">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h3 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
+                  {t("uploadTrack.commonInfo", "Common Info")}
+                </h3>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-orange/15 border border-brand-orange/30 text-2xs font-bold text-brand-orange whitespace-nowrap">
+                  <Layers className="w-3 h-3" />
+                  {t("uploadTrack.tracksSelected", { count: trackCount, defaultValue: trackCount + " tracks selected" })}
+                </span>
+              </div>
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
+                <span className="font-semibold text-foreground">{t("uploadTrack.saveTime", "Save time!")}</span>{" "}
+                {t("uploadTrack.commonInfoLongDesc", { count: trackCount, defaultValue: "Fill these fields ONCE and they'll be applied to all " + trackCount + " tracks. You can still customize each track individually after." })}
+              </p>
+            </div>
+          </div>
+
+          {/* Tracks preview */}
+          {previewNames.length > 0 && (
+            <div className="rounded-xl bg-card/60 backdrop-blur-sm border border-border/50 p-3">
+              <p className="text-2xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
+                {t("uploadTrack.theseTracksWillShare", { count: trackCount, defaultValue: "These " + trackCount + " tracks will share these details:" })}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {previewNames.map((name, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-secondary/80 text-2xs font-medium text-foreground max-w-[180px]">
+                    <Music className="w-2.5 h-2.5 text-brand-orange shrink-0" />
+                    <span className="truncate">{name}</span>
+                  </span>
+                ))}
+                {remainingCount > 0 && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-secondary/60 text-2xs font-semibold text-muted-foreground">
+                    +{remainingCount} {t("uploadTrack.more", "more")}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {commonInfoApplied && (
+            <div className="flex items-center gap-1.5 text-2xs font-semibold text-emerald-400">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {t("uploadTrack.alreadyApplied", "Already applied — re-applying will reset individual changes")}
+            </div>
+          )}
         </div>
-        <button
-          onClick={onSkip}
-          className="text-2xs font-semibold text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors whitespace-nowrap"
-        >
-          {t("uploadTrack.skipCommonInfo", "Skip common info →")}
-        </button>
-      </div>
+      </motion.div>
 
       {/* Cover Art */}
       <div className="space-y-1.5">
@@ -2140,6 +2212,7 @@ function StepInfo({
   language, setLanguage, notes, setNotes,
   analysisResult, analyzing,
   coverFile, setCoverFile,
+  commonFieldsApplied,
 }: {
   title: string; setTitle: (v: string) => void;
   artist: string; setArtist: (v: string) => void;
@@ -2154,6 +2227,7 @@ function StepInfo({
   analyzing: boolean;
   coverFile: File | null;
   setCoverFile: (f: File | null) => void;
+  commonFieldsApplied?: number;
 }) {
   const { t } = useTranslation();
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -2171,6 +2245,17 @@ function StepInfo({
 
   return (
     <div className="space-y-4">
+      {/* Common fields pre-filled badge */}
+      {commonFieldsApplied && commonFieldsApplied > 0 ? (
+        <div className="flex items-start gap-2 rounded-lg border border-brand-orange/20 bg-gradient-to-r from-brand-orange/8 via-brand-pink/6 to-brand-purple/8 px-3 py-2">
+          <Sparkles className="w-3.5 h-3.5 text-brand-orange mt-0.5 shrink-0" />
+          <p className="text-2xs text-foreground leading-snug">
+            <span className="font-semibold">{commonFieldsApplied} {t("uploadTrack.commonFieldsPrefilled", { count: commonFieldsApplied, defaultValue: "common field" + (commonFieldsApplied > 1 ? "s" : "") + " pre-filled" })}</span>
+            <span className="text-muted-foreground"> — {t("uploadTrack.canOverride", "you can override any of them")}</span>
+          </p>
+        </div>
+      ) : null}
+
       {/* Cover Art */}
       <div className="space-y-1.5">
         <FieldLabel>{t("uploadTrack.coverArt", "Cover Art")} <span className="text-muted-foreground/50 normal-case tracking-normal font-normal">({t("uploadTrack.optional", "optional")})</span></FieldLabel>
