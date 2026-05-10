@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, ListMusic, Briefcase, UserPlus, Contact } from "lucide-react";
+import { Users, ListMusic, Briefcase, UserPlus, Contact, Play } from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -21,6 +21,8 @@ interface AdminOverview {
   workspaces_total: number;
   tracks_total: number;
   contacts_total: number;
+  plays_total: number;
+  plays_last_7d: number;
 }
 
 interface DailyPoint {
@@ -44,6 +46,7 @@ function normalizeOverview(raw: unknown): AdminOverview {
   const workspaces = group("workspaces");
   const tracks = group("tracks");
   const contacts = group("contacts");
+  const plays = group("plays");
   return {
     waitlist_total: num(waitlist.total ?? r.waitlist_total),
     waitlist_this_week: num(waitlist.this_week ?? r.waitlist_this_week),
@@ -51,6 +54,8 @@ function normalizeOverview(raw: unknown): AdminOverview {
     workspaces_total: num(workspaces.total ?? r.workspaces_total),
     tracks_total: num(tracks.total ?? r.tracks_total),
     contacts_total: num(contacts.total ?? r.contacts_total),
+    plays_total: num(plays.total ?? r.plays_total),
+    plays_last_7d: num(plays.last_7d ?? r.plays_last_7d),
   };
 }
 
@@ -116,7 +121,7 @@ export default function OverviewTab() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6 lg:gap-4">
         <KpiCard
           icon={<UserPlus className="h-4 w-4" />}
           label="Waitlist"
@@ -147,6 +152,14 @@ export default function OverviewTab() {
           icon={<Contact className="h-4 w-4" />}
           label="Contacts"
           value={overview?.contacts_total}
+          loading={!overview}
+        />
+        <KpiCard
+          icon={<Play className="h-4 w-4" />}
+          label="Plays"
+          value={overview?.plays_total}
+          delta={overview?.plays_last_7d}
+          deltaLabel="this week"
           loading={!overview}
         />
       </div>

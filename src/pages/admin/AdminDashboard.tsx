@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import OverviewTab from "@/components/admin/OverviewTab";
 import WaitlistTab from "@/components/admin/WaitlistTab";
 import ContactsTab from "@/components/admin/ContactsTab";
+import UsersTab from "@/components/admin/UsersTab";
 
 export default function AdminDashboard() {
   const { user, session, loading, signOut } = useAuth();
@@ -73,6 +74,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-0">
@@ -85,6 +87,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="contacts" className="mt-0">
             <ContactsTab />
+          </TabsContent>
+
+          <TabsContent value="users" className="mt-0">
+            <UsersTab />
           </TabsContent>
         </Tabs>
       </main>
