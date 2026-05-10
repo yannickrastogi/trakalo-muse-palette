@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 
-const MAX_TRACKS = 20;
+const MAX_TRACKS = 50;
 
 const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
