@@ -1963,6 +1963,19 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
         <div className="fixed inset-0" style={{ backgroundColor: "rgba(0,0,0,0.35)", zIndex: 1 }} />
         {/* All content floats above */}
         <div className="relative min-h-screen flex flex-col" style={{ zIndex: 2 }}>
+          {/* Trakalog brand strip — overlay at very top */}
+          <div className="absolute top-0 left-0 right-0 pt-4 md:pt-6 flex justify-center pointer-events-none" style={{ zIndex: 3 }}>
+            <a
+              href="https://trakalog.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center pointer-events-auto transition-opacity hover:opacity-90"
+              style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}
+            >
+              <span className="text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+              <span className="text-[8px] md:text-[10px] tracking-[0.2em] text-white/60 font-medium block mt-0.5">CATALOG MANAGER</span>
+            </a>
+          </div>
           {/* Logo header — pushed down to leave hero image visible */}
           <header className="pt-[35vh] md:pt-[25vh] pb-4">
             <div className="flex flex-col items-center gap-1">
