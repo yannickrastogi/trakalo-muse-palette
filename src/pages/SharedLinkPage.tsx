@@ -1969,7 +1969,10 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="object-contain max-h-[100px] md:max-h-[150px]" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
               ) : (
-                <span className="text-3xl md:text-5xl font-bold tracking-tight text-white" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}>{branding?.name || "Untitled"}</span>
+                <div className="flex flex-col items-center" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}>
+                  <span className="text-3xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+                  <span className="text-[10px] md:text-xs tracking-[0.2em] text-white/50 font-medium block mt-1">CATALOG MANAGER</span>
+                </div>
               )}
               <SocialIcons branding={branding} immersive={true} />
               {branding?.bio && (
@@ -2002,7 +2005,10 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
             {logoUrl ? (
               <img src={logoUrl} alt="Logo" className="object-contain max-h-[100px] sm:max-h-[150px]" />
             ) : (
-              <span className="text-3xl sm:text-5xl font-bold tracking-tight text-foreground">{branding?.name || "Untitled"}</span>
+              <div className="flex flex-col items-center">
+                <span className="text-3xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+                <span className="text-[10px] sm:text-xs tracking-[0.2em] text-muted-foreground/60 font-medium block mt-1">CATALOG MANAGER</span>
+              </div>
             )}
             <SocialIcons branding={branding} immersive={false} />
             {branding?.bio && (
