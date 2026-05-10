@@ -33,7 +33,6 @@ interface WaitlistRow {
   email: string;
   created_at: string;
   status: "pending" | "invited" | string;
-  total_count?: number;
 }
 
 function normalizeRow(raw: unknown): WaitlistRow | null {
@@ -46,13 +45,25 @@ function normalizeRow(raw: unknown): WaitlistRow | null {
     email,
     created_at: String(r.created_at ?? ""),
     status: (r.status as string) || "pending",
-    total_count:
-      typeof r.total_count === "number"
-        ? r.total_count
-        : r.total_count != null
-          ? Number(r.total_count)
-          : undefined,
   };
+}
+
+// The list_waitlist_signups RPC returns { total: number, rows: object[] }.
+function parseListResponse(data: unknown): { rows: WaitlistRow[]; total: number | null } {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return { rows: [], total: null };
+  }
+  const obj = data as Record<string, unknown>;
+  const rawRows = Array.isArray(obj.rows) ? obj.rows : [];
+  const rows = rawRows
+    .map(normalizeRow)
+    .filter((r): r is WaitlistRow => r !== null);
+  const total = typeof obj.total === "number"
+    ? obj.total
+    : obj.total != null
+      ? Number(obj.total)
+      : null;
+  return { rows, total: total != null && !Number.isNaN(total) ? total : null };
 }
 
 function formatDate(s: string): string {
@@ -112,12 +123,10 @@ export default function WaitlistTab() {
       });
       if (reqId !== reqIdRef.current) return;
       if (rpcError) throw rpcError;
-      const list = Array.isArray(data) ? data : [];
-      const normalized = list.map(normalizeRow).filter((r): r is WaitlistRow => r !== null);
+      const { rows: normalized, total: parsedTotal } = parseListResponse(data);
       setRows(normalized);
-      const t = normalized[0]?.total_count;
-      if (typeof t === "number") {
-        setTotal(t);
+      if (parsedTotal !== null) {
+        setTotal(parsedTotal);
       } else if (page === 0 && normalized.length < PAGE_SIZE) {
         setTotal(normalized.length);
       }
@@ -238,8 +247,7 @@ export default function WaitlistTab() {
           _offset: offset,
         });
         if (rpcError) throw rpcError;
-        const list = Array.isArray(data) ? data : [];
-        const normalized = list.map(normalizeRow).filter((r): r is WaitlistRow => r !== null);
+        const { rows: normalized } = parseListResponse(data);
         all.push(...normalized);
         if (normalized.length < EXPORT_PAGE_SIZE) break;
         offset += EXPORT_PAGE_SIZE;
