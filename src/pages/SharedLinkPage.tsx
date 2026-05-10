@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark, ShieldCheck, Award } from "lucide-react";
 import { DEFAULT_COVER, INDUSTRY_ROLES } from "@/lib/constants";
@@ -242,6 +243,7 @@ function getVisitorCookie(): { name: string; email: string; role: string; compan
 }
 
 export default function SharedLinkPage() {
+  const { t, i18n } = useTranslation();
   var REST_URL = SUPABASE_URL + "/rest/v1";
   var STORAGE_URL = SUPABASE_URL + "/storage/v1";
   var SB_HEADERS: Record<string, string> = { "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY };
@@ -1228,7 +1230,7 @@ export default function SharedLinkPage() {
             <div className={"flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl " + (plImmersive ? "bg-white/5 backdrop-blur border border-white/10" : "bg-brand-orange/10 border border-brand-orange/20")}>
               <Clock className={"w-3.5 h-3.5 " + (plImmersive ? "text-white/60" : "text-brand-orange")} />
               <p className={"text-xs font-medium " + (plImmersive ? "text-white/60" : "text-brand-orange")}>
-                {"This link expires on " + new Date(linkData.expires_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                {t("sharedLink.expiresOn", { date: new Date(linkData.expires_at).toLocaleDateString(i18n.language, { month: "long", day: "numeric", year: "numeric" }) })}
               </p>
             </div>
           )}

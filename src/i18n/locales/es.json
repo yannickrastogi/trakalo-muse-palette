@@ -57,7 +57,20 @@
     "tracksInCatalog": "{{total}} pistas en tu catálogo · {{shown}} mostradas",
     "uploadTrack": "Subir pista",
     "searchPlaceholder": "Buscar por título, artista o álbum…",
-    "filters": "Filtros",
+    "filters": {
+      "typeChip": "Tipo: {{value}}",
+      "genreChip": "Género: {{value}}",
+      "keyChip": "Tono: {{value}}",
+      "bpmChip": "BPM: {{value}}",
+      "langChip": "Idioma: {{value}}",
+      "genderChip": "Voz: {{value}}",
+      "statusChip": "Estado: {{value}}",
+      "instrumentsChip": "Instrumentos: {{value}}",
+      "lyricThemesChip": "Temas líricos: {{value}}",
+      "moodFeelChip": "Ambiente: {{value}}",
+      "tempoChip": "Tempo: {{value}}",
+      "syncTagsChip": "Tags Sync: {{value}}"
+    },
     "clearAll": "Borrar todo",
     "clear": "Borrar",
     "activeFilters": "Filtros activos:",
@@ -141,7 +154,9 @@
     "sent": "Enviado",
     "opened": "Abierto",
     "pitchCount": "{{count}} pitch",
-    "pitchCountPlural": "{{count}} pitches"
+    "pitchCountPlural": "{{count}} pitches",
+    "pitchCount_one": "{{count}} pitch",
+    "pitchCount_other": "{{count}} pitches"
   },
   "createPitchModal": {
     "title": "Crear pitch",
@@ -264,7 +279,13 @@
     "trackNotFound": "Pista no encontrada.",
     "tracks": "Pistas",
     "gender": "Género vocal",
-    "notes": "Notas"
+    "notes": "Notas",
+    "sonicDnaComplete": "Sonic DNA completo",
+    "sonicDnaCompleteWithBpm": "Sonic DNA completo: {{bpm}} BPM",
+    "sonicDnaCompleteWithKey": "Sonic DNA completo, {{key}}",
+    "sonicDnaCompleteWithBpmAndKey": "Sonic DNA completo: {{bpm}} BPM, {{key}}",
+    "engagementPlayed": "ha escuchado este tema",
+    "engagementDownloaded": "ha descargado este tema"
   },
   "stems": {
     "title": "Stems",
@@ -484,7 +505,8 @@
     "publisherPlaceholder": "ej. Nomura Publishing",
     "copyrightPlaceholder": "ej. © 2026 Nightfall Records",
     "rolePlaceholder": "ej. Productor",
-    "proPlaceholder": "ej. ASCAP"
+    "proPlaceholder": "ej. ASCAP",
+    "saved": "Tema actualizado"
   },
   "settings": {
     "title": "Ajustes",
@@ -622,7 +644,43 @@
     "selectLanguage": "Seleccionar idioma",
     "titlePlaceholder": "ej. Velvet Hour",
     "artistPlaceholder": "ej. Nombre del artista",
-    "proPlaceholder": "ej. ASCAP"
+    "proPlaceholder": "ej. ASCAP",
+    "workspacesSelected_one": "{{count}} espacio seleccionado",
+    "workspacesSelected_other": "{{count}} espacios seleccionados",
+    "albumEp": "Álbum / EP",
+    "label": "Sello",
+    "publisher": "Editor(es)",
+    "publisherPlaceholder": "ej. Sony Music Publishing",
+    "addAnother": "Añadir otro",
+    "releaseDate": "Fecha de lanzamiento",
+    "explicit": "Explícito",
+    "details": "Detalles",
+    "workspacesStep": "Espacios",
+    "uploadingAudio": "Subiendo audio",
+    "generatingWaveform": "Generando waveform…",
+    "savingTrack": "Guardando tema…",
+    "uploadingCover": "Subiendo portada…",
+    "trackUploaded": "¡Tema subido!",
+    "compressingPreview": "Comprimiendo vista previa MP3…",
+    "mp3PreviewReady": "Vista previa MP3 lista",
+    "mp3PreviewFailed": "Fallo en la vista previa MP3 — el tema sigue disponible",
+    "transcribingLyrics": "Transcribiendo letras…",
+    "noVocalsDetected": "No se detectaron voces",
+    "lyricsTranscribed": "¡Letras transcritas!",
+    "commonInfoApplied_one": "✓ Info común aplicada a {{count}} tema",
+    "commonInfoApplied_other": "✓ Info común aplicada a {{count}} temas",
+    "commonInfoResetWarning": "Volver a aplicar restablecerá los cambios individuales en todos los temas",
+    "confirm": "Confirmar",
+    "commonInfoDiscarded": "Info común descartada — completa cada tema individualmente",
+    "commonInfo": "Info común",
+    "processing": "Procesando…",
+    "continue": "Continuar",
+    "skipFillIndividually": "Omitir — completar cada tema individualmente",
+    "reapplyToAll": "Volver a aplicar a todos los temas",
+    "skip": "Omitir",
+    "saveAndNext": "Guardar y siguiente",
+    "uploadAndShare": "Subir y compartir",
+    "saveAllToCatalog": "Guardar todo en el catálogo"
   },
   "createPlaylist": {
     "title": "Crear playlist",
@@ -709,7 +767,12 @@
     "createAccount": "Crear cuenta",
     "minChars": "Mín. 6 caracteres",
     "termsAgree": "Al continuar, aceptas nuestros Términos de servicio.",
-    "checkEmail": "Revisa tu e-mail para confirmar tu cuenta."
+    "checkEmail": "Revisa tu e-mail para confirmar tu cuenta.",
+    "twoFactorTitle": "Autenticación de dos factores",
+    "twoFactorDescription": "Ingresa el código de 6 dígitos de tu app de autenticación",
+    "verificationCode": "Código de verificación",
+    "verifying": "Verificando…",
+    "verify": "Verificar"
   },
   "common": {
     "pitch": "pitch",
@@ -728,7 +791,14 @@
     "today": "Hoy",
     "yesterday": "Ayer",
     "thisWeek": "Esta semana",
-    "thisMonth": "Este mes"
+    "thisMonth": "Este mes",
+    "trackCount_one": "{{count}} pista",
+    "trackCount_other": "{{count}} pistas",
+    "commentCount_one": "{{count}} comentario",
+    "commentCount_other": "{{count}} comentarios",
+    "personCount_one": "{{count}} persona",
+    "personCount_other": "{{count}} personas",
+    "commentsFromPeople": "{{commentText}} de {{peopleText}}"
   },
   "createTeam": {
     "title": "Crear nuevo equipo",
@@ -1191,5 +1261,13 @@
     "title": "Página no encontrada",
     "description": "La página que buscas no existe o ha sido movida.",
     "goBack": "Volver"
+  },
+  "sharedLink": {
+    "expiresOn": "Este enlace expira el {{date}}",
+    "linkDisabled": "Este enlace ha sido desactivado.",
+    "linkRevoked": "Este enlace ha sido revocado.",
+    "downloadingFile": "Descargando {{name}} ({{quality}})",
+    "qualityHiRes": "Hi-Res",
+    "qualityLowRes": "Low-Res"
   }
 }

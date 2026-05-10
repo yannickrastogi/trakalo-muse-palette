@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import {
@@ -111,6 +112,7 @@ function formatTimestamp(seconds: number): string {
 }
 
 export default function SharedStemAccess() {
+  const { t } = useTranslation();
   var anonSupabase = useRef(createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } })).current;
   var { linkId } = useParams();
 
@@ -165,7 +167,7 @@ export default function SharedStemAccess() {
       var sl = linkRow as unknown as SharedLinkRow;
 
       if (sl.status === "disabled" || sl.status === "revoked") {
-        setError("This link has been " + sl.status + ".");
+        setError(t(sl.status === "disabled" ? "sharedLink.linkDisabled" : "sharedLink.linkRevoked"));
         setLoading(false);
         return;
       }
@@ -331,7 +333,8 @@ export default function SharedStemAccess() {
 
   var handleDownloadItem = function(fileName: string) {
     if (!link || !link.allow_download) return;
-    toast.success("Downloading " + fileName + " (" + (link.download_quality === "hi-res" ? "Hi-Res" : "Low-Res") + ")");
+    var qualityLabel = t(link.download_quality === "hi-res" ? "sharedLink.qualityHiRes" : "sharedLink.qualityLowRes");
+    toast.success(t("sharedLink.downloadingFile", { name: fileName, quality: qualityLabel }));
   };
 
   var handleDownloadAll = function() {
@@ -343,7 +346,8 @@ export default function SharedStemAccess() {
       : shareType === "stems"
       ? displayTitle + "_Stems.zip"
       : displayTitle + ".zip";
-    toast.success("Downloading " + zipName + " (" + (link.download_quality === "hi-res" ? "Hi-Res" : "Low-Res") + ")");
+    var qualityLabel = t(link.download_quality === "hi-res" ? "sharedLink.qualityHiRes" : "sharedLink.qualityLowRes");
+    toast.success(t("sharedLink.downloadingFile", { name: zipName, quality: qualityLabel }));
   };
 
   // Derived values

@@ -57,7 +57,20 @@
     "tracksInCatalog": "{{total}} Titel in deinem Katalog · {{shown}} angezeigt",
     "uploadTrack": "Titel hochladen",
     "searchPlaceholder": "Nach Titel, Künstler oder Album suchen…",
-    "filters": "Filter",
+    "filters": {
+      "typeChip": "Typ: {{value}}",
+      "genreChip": "Genre: {{value}}",
+      "keyChip": "Tonart: {{value}}",
+      "bpmChip": "BPM: {{value}}",
+      "langChip": "Sprache: {{value}}",
+      "genderChip": "Stimme: {{value}}",
+      "statusChip": "Status: {{value}}",
+      "instrumentsChip": "Instrumente: {{value}}",
+      "lyricThemesChip": "Songtext-Themen: {{value}}",
+      "moodFeelChip": "Stimmung: {{value}}",
+      "tempoChip": "Tempo: {{value}}",
+      "syncTagsChip": "Sync-Tags: {{value}}"
+    },
     "clearAll": "Alle löschen",
     "clear": "Löschen",
     "activeFilters": "Aktive Filter:",
@@ -141,7 +154,9 @@
     "sent": "Gesendet",
     "opened": "Geöffnet",
     "pitchCount": "{{count}} Pitch",
-    "pitchCountPlural": "{{count}} Pitches"
+    "pitchCountPlural": "{{count}} Pitches",
+    "pitchCount_one": "{{count}} Pitch",
+    "pitchCount_other": "{{count}} Pitches"
   },
   "createPitchModal": {
     "title": "Pitch erstellen",
@@ -264,7 +279,13 @@
     "trackNotFound": "Titel nicht gefunden.",
     "tracks": "Titel",
     "gender": "Stimmgeschlecht",
-    "notes": "Notizen"
+    "notes": "Notizen",
+    "sonicDnaComplete": "Sonic DNA abgeschlossen",
+    "sonicDnaCompleteWithBpm": "Sonic DNA abgeschlossen: {{bpm}} BPM",
+    "sonicDnaCompleteWithKey": "Sonic DNA abgeschlossen, {{key}}",
+    "sonicDnaCompleteWithBpmAndKey": "Sonic DNA abgeschlossen: {{bpm}} BPM, {{key}}",
+    "engagementPlayed": "hat diesen Track abgespielt",
+    "engagementDownloaded": "hat diesen Track heruntergeladen"
   },
   "stems": {
     "title": "Stems",
@@ -497,7 +518,8 @@
     "publisherPlaceholder": "z.B. Nomura Publishing",
     "copyrightPlaceholder": "z.B. © 2026 Nightfall Records",
     "rolePlaceholder": "z.B. Produzent",
-    "proPlaceholder": "z.B. ASCAP"
+    "proPlaceholder": "z.B. ASCAP",
+    "saved": "Track aktualisiert"
   },
   "settings": {
     "title": "Einstellungen",
@@ -635,7 +657,43 @@
     "selectLanguage": "Sprache wählen",
     "titlePlaceholder": "z.B. Velvet Hour",
     "artistPlaceholder": "z.B. Künstlername",
-    "proPlaceholder": "z.B. ASCAP"
+    "proPlaceholder": "z.B. ASCAP",
+    "workspacesSelected_one": "{{count}} Workspace ausgewählt",
+    "workspacesSelected_other": "{{count}} Workspaces ausgewählt",
+    "albumEp": "Album / EP",
+    "label": "Label",
+    "publisher": "Verlag",
+    "publisherPlaceholder": "z. B. Sony Music Publishing",
+    "addAnother": "Weiteren hinzufügen",
+    "releaseDate": "Veröffentlichungsdatum",
+    "explicit": "Explizit",
+    "details": "Details",
+    "workspacesStep": "Workspaces",
+    "uploadingAudio": "Audio wird hochgeladen",
+    "generatingWaveform": "Waveform wird erstellt…",
+    "savingTrack": "Track wird gespeichert…",
+    "uploadingCover": "Cover wird hochgeladen…",
+    "trackUploaded": "Track hochgeladen!",
+    "compressingPreview": "MP3-Vorschau wird komprimiert…",
+    "mp3PreviewReady": "MP3-Vorschau bereit",
+    "mp3PreviewFailed": "MP3-Vorschau fehlgeschlagen — Track bleibt verfügbar",
+    "transcribingLyrics": "Songtext wird transkribiert…",
+    "noVocalsDetected": "Keine Vocals erkannt",
+    "lyricsTranscribed": "Songtext transkribiert!",
+    "commonInfoApplied_one": "✓ Allgemeine Infos auf {{count}} Track angewendet",
+    "commonInfoApplied_other": "✓ Allgemeine Infos auf {{count}} Tracks angewendet",
+    "commonInfoResetWarning": "Erneutes Anwenden setzt individuelle Änderungen auf allen Tracks zurück",
+    "confirm": "Bestätigen",
+    "commonInfoDiscarded": "Allgemeine Infos verworfen — fülle jeden Track einzeln aus",
+    "commonInfo": "Allgemeine Infos",
+    "processing": "Verarbeitung…",
+    "continue": "Weiter",
+    "skipFillIndividually": "Überspringen — jeden Track einzeln ausfüllen",
+    "reapplyToAll": "Auf alle Tracks erneut anwenden",
+    "skip": "Überspringen",
+    "saveAndNext": "Speichern & weiter",
+    "uploadAndShare": "Hochladen & teilen",
+    "saveAllToCatalog": "Alle im Katalog speichern"
   },
   "createPlaylist": {
     "title": "Playlist erstellen",
@@ -722,7 +780,12 @@
     "createAccount": "Konto erstellen",
     "minChars": "Mind. 6 Zeichen",
     "termsAgree": "Mit dem Fortfahren stimmst du unseren Nutzungsbedingungen zu.",
-    "checkEmail": "Überprüfe deine E-Mail, um dein Konto zu bestätigen."
+    "checkEmail": "Überprüfe deine E-Mail, um dein Konto zu bestätigen.",
+    "twoFactorTitle": "Zwei-Faktor-Authentifizierung",
+    "twoFactorDescription": "Gib den 6-stelligen Code aus deiner Authenticator-App ein",
+    "verificationCode": "Bestätigungscode",
+    "verifying": "Überprüfung…",
+    "verify": "Bestätigen"
   },
   "common": {
     "pitch": "Pitch",
@@ -741,7 +804,14 @@
     "today": "Heute",
     "yesterday": "Gestern",
     "thisWeek": "Diese Woche",
-    "thisMonth": "Dieser Monat"
+    "thisMonth": "Dieser Monat",
+    "trackCount_one": "{{count}} Track",
+    "trackCount_other": "{{count}} Tracks",
+    "commentCount_one": "{{count}} Kommentar",
+    "commentCount_other": "{{count}} Kommentare",
+    "personCount_one": "{{count}} Person",
+    "personCount_other": "{{count}} Personen",
+    "commentsFromPeople": "{{commentText}} von {{peopleText}}"
   },
   "createTeam": {
     "title": "Neues Team erstellen",
@@ -1191,5 +1261,13 @@
     "title": "Seite nicht gefunden",
     "description": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
     "goBack": "Zurück"
+  },
+  "sharedLink": {
+    "expiresOn": "Dieser Link läuft am {{date}} ab",
+    "linkDisabled": "Dieser Link wurde deaktiviert.",
+    "linkRevoked": "Dieser Link wurde widerrufen.",
+    "downloadingFile": "{{name}} wird heruntergeladen ({{quality}})",
+    "qualityHiRes": "Hi-Res",
+    "qualityLowRes": "Low-Res"
   }
 }

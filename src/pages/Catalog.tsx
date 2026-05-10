@@ -212,7 +212,7 @@ export default function Catalog() {
             </div>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
-                {allTracks.length + " track" + (allTracks.length !== 1 ? "s" : "")}
+                {t("common.trackCount", { count: allTracks.length })}
               </span>
               <span className="text-muted-foreground/40 text-xs">&middot;</span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
@@ -382,18 +382,18 @@ export default function Catalog() {
           <motion.div variants={item} className="flex flex-wrap gap-2 items-center">
             <span className="text-xs text-muted-foreground mr-1 font-medium">{t("catalog.activeFilters")}</span>
             <AnimatePresence>
-              {typeFilter && <FilterTag key="type" label={"Type: " + typeFilter} onRemove={() => setTypeFilter(null)} />}
-              {genreFilter && <FilterTag key="genre" label={"Genre: " + genreFilter} onRemove={() => setGenreFilter(null)} />}
-              {keyFilter && <FilterTag key="key" label={"Key: " + keyFilter} onRemove={() => setKeyFilter(null)} />}
-              {bpmFilter && <FilterTag key="bpm" label={"BPM: " + bpmFilter.label} onRemove={() => setBpmFilter(null)} />}
-              {languageFilter && <FilterTag key="lang" label={"Lang: " + languageFilter} onRemove={() => setLanguageFilter(null)} />}
-              {voiceFilter && <FilterTag key="voice" label={"Gender: " + voiceFilter} onRemove={() => setVoiceFilter(null)} />}
-              {statusFilter && <FilterTag key="status" label={"Status: " + statusFilter} onRemove={() => setStatusFilter(null)} />}
-              {instrumentsFilter.length > 0 && <FilterTag key="instruments" label={"Instruments: " + instrumentsFilter.length} onRemove={() => setInstrumentsFilter([])} />}
-              {lyricThemesFilter.length > 0 && <FilterTag key="lyric_themes" label={"Lyric Themes: " + lyricThemesFilter.length} onRemove={() => setLyricThemesFilter([])} />}
-              {moodFeelFilter.length > 0 && <FilterTag key="mood_feel" label={"Mood & Feel: " + moodFeelFilter.length} onRemove={() => setMoodFeelFilter([])} />}
-              {tempoFilter && <FilterTag key="tempo" label={"Tempo: " + tempoFilter} onRemove={() => setTempoFilter(null)} />}
-              {syncTagsFilter.length > 0 && <FilterTag key="sync_tags" label={"Sync Tags: " + syncTagsFilter.length} onRemove={() => setSyncTagsFilter([])} />}
+              {typeFilter && <FilterTag key="type" label={t("catalog.filters.typeChip", { value: typeFilter })} onRemove={() => setTypeFilter(null)} />}
+              {genreFilter && <FilterTag key="genre" label={t("catalog.filters.genreChip", { value: genreFilter })} onRemove={() => setGenreFilter(null)} />}
+              {keyFilter && <FilterTag key="key" label={t("catalog.filters.keyChip", { value: keyFilter })} onRemove={() => setKeyFilter(null)} />}
+              {bpmFilter && <FilterTag key="bpm" label={t("catalog.filters.bpmChip", { value: bpmFilter.label })} onRemove={() => setBpmFilter(null)} />}
+              {languageFilter && <FilterTag key="lang" label={t("catalog.filters.langChip", { value: languageFilter })} onRemove={() => setLanguageFilter(null)} />}
+              {voiceFilter && <FilterTag key="voice" label={t("catalog.filters.genderChip", { value: voiceFilter })} onRemove={() => setVoiceFilter(null)} />}
+              {statusFilter && <FilterTag key="status" label={t("catalog.filters.statusChip", { value: statusFilter })} onRemove={() => setStatusFilter(null)} />}
+              {instrumentsFilter.length > 0 && <FilterTag key="instruments" label={t("catalog.filters.instrumentsChip", { value: instrumentsFilter.length })} onRemove={() => setInstrumentsFilter([])} />}
+              {lyricThemesFilter.length > 0 && <FilterTag key="lyric_themes" label={t("catalog.filters.lyricThemesChip", { value: lyricThemesFilter.length })} onRemove={() => setLyricThemesFilter([])} />}
+              {moodFeelFilter.length > 0 && <FilterTag key="mood_feel" label={t("catalog.filters.moodFeelChip", { value: moodFeelFilter.length })} onRemove={() => setMoodFeelFilter([])} />}
+              {tempoFilter && <FilterTag key="tempo" label={t("catalog.filters.tempoChip", { value: tempoFilter })} onRemove={() => setTempoFilter(null)} />}
+              {syncTagsFilter.length > 0 && <FilterTag key="sync_tags" label={t("catalog.filters.syncTagsChip", { value: syncTagsFilter.length })} onRemove={() => setSyncTagsFilter([])} />}
             </AnimatePresence>
             <button onClick={clearFilters} className="text-xs text-brand-orange hover:text-brand-pink ml-1.5 font-semibold transition-colors flex items-center gap-1">
               <X className="w-3 h-3" />

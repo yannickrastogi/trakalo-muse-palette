@@ -694,7 +694,7 @@ function DesktopPitchTable({
           borderImage: "linear-gradient(90deg, hsl(24 100% 55% / 0.1), hsl(330 80% 60% / 0.06), transparent) 1",
         }}
       >
-        <span>{pitches.length} pitch{pitches.length !== 1 ? "es" : ""}</span>
+        <span>{t("pitch.pitchCount", { count: pitches.length })}</span>
         <span className="text-2xs text-muted-foreground/50">TRAKALOG Pitch</span>
       </div>
     </div>

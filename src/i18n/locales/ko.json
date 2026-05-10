@@ -57,7 +57,20 @@
     "tracksInCatalog": "카탈로그에 {{total}}개 트랙 · {{shown}}개 표시",
     "uploadTrack": "트랙 업로드",
     "searchPlaceholder": "제목, 아티스트 또는 앨범으로 검색…",
-    "filters": "필터",
+    "filters": {
+      "typeChip": "유형: {{value}}",
+      "genreChip": "장르: {{value}}",
+      "keyChip": "조: {{value}}",
+      "bpmChip": "BPM: {{value}}",
+      "langChip": "언어: {{value}}",
+      "genderChip": "보컬: {{value}}",
+      "statusChip": "상태: {{value}}",
+      "instrumentsChip": "악기: {{value}}",
+      "lyricThemesChip": "가사 테마: {{value}}",
+      "moodFeelChip": "분위기: {{value}}",
+      "tempoChip": "템포: {{value}}",
+      "syncTagsChip": "싱크 태그: {{value}}"
+    },
     "clearAll": "모두 지우기",
     "clear": "지우기",
     "activeFilters": "활성 필터:",
@@ -141,7 +154,9 @@
     "sent": "전송됨",
     "opened": "열림",
     "pitchCount": "{{count}}개 피칭",
-    "pitchCountPlural": "{{count}}개 피칭"
+    "pitchCountPlural": "{{count}}개 피칭",
+    "pitchCount_one": "피치 {{count}}개",
+    "pitchCount_other": "피치 {{count}}개"
   },
   "createPitchModal": {
     "title": "피칭 만들기",
@@ -264,7 +279,13 @@
     "trackNotFound": "트랙을 찾을 수 없습니다.",
     "tracks": "트랙",
     "gender": "보컬 성별",
-    "notes": "메모"
+    "notes": "메모",
+    "sonicDnaComplete": "Sonic DNA 완료",
+    "sonicDnaCompleteWithBpm": "Sonic DNA 완료: {{bpm}} BPM",
+    "sonicDnaCompleteWithKey": "Sonic DNA 완료, {{key}}",
+    "sonicDnaCompleteWithBpmAndKey": "Sonic DNA 완료: {{bpm}} BPM, {{key}}",
+    "engagementPlayed": "이 트랙을 재생했습니다",
+    "engagementDownloaded": "이 트랙을 다운로드했습니다"
   },
   "stems": {
     "title": "스템",
@@ -497,7 +518,8 @@
     "publisherPlaceholder": "예: Nomura Publishing",
     "copyrightPlaceholder": "예: © 2026 Nightfall Records",
     "rolePlaceholder": "예: 프로듀서",
-    "proPlaceholder": "예: ASCAP"
+    "proPlaceholder": "예: ASCAP",
+    "saved": "트랙이 업데이트되었습니다"
   },
   "settings": {
     "title": "설정",
@@ -635,7 +657,43 @@
     "selectLanguage": "언어 선택",
     "titlePlaceholder": "예: Velvet Hour",
     "artistPlaceholder": "예: 아티스트 이름",
-    "proPlaceholder": "예: ASCAP"
+    "proPlaceholder": "예: ASCAP",
+    "workspacesSelected_one": "워크스페이스 {{count}}개 선택됨",
+    "workspacesSelected_other": "워크스페이스 {{count}}개 선택됨",
+    "albumEp": "앨범 / EP",
+    "label": "레이블",
+    "publisher": "퍼블리셔",
+    "publisherPlaceholder": "예: Sony Music Publishing",
+    "addAnother": "추가",
+    "releaseDate": "발매일",
+    "explicit": "Explicit",
+    "details": "상세 정보",
+    "workspacesStep": "워크스페이스",
+    "uploadingAudio": "오디오 업로드 중",
+    "generatingWaveform": "파형 생성 중…",
+    "savingTrack": "트랙 저장 중…",
+    "uploadingCover": "커버 업로드 중…",
+    "trackUploaded": "트랙이 업로드되었습니다!",
+    "compressingPreview": "MP3 미리보기 압축 중…",
+    "mp3PreviewReady": "MP3 미리보기 준비됨",
+    "mp3PreviewFailed": "MP3 미리보기 실패 — 트랙은 여전히 사용 가능합니다",
+    "transcribingLyrics": "가사 변환 중…",
+    "noVocalsDetected": "보컬이 감지되지 않았습니다",
+    "lyricsTranscribed": "가사 변환 완료!",
+    "commonInfoApplied_one": "✓ 공통 정보를 {{count}}개 트랙에 적용했습니다",
+    "commonInfoApplied_other": "✓ 공통 정보를 {{count}}개 트랙에 적용했습니다",
+    "commonInfoResetWarning": "다시 적용하면 모든 트랙의 개별 변경사항이 초기화됩니다",
+    "confirm": "확인",
+    "commonInfoDiscarded": "공통 정보 취소 — 각 트랙을 개별적으로 입력하세요",
+    "commonInfo": "공통 정보",
+    "processing": "처리 중…",
+    "continue": "계속",
+    "skipFillIndividually": "건너뛰기 — 각 트랙을 개별 입력",
+    "reapplyToAll": "모든 트랙에 다시 적용",
+    "skip": "건너뛰기",
+    "saveAndNext": "저장 후 다음",
+    "uploadAndShare": "업로드 후 공유",
+    "saveAllToCatalog": "모두 카탈로그에 저장"
   },
   "createPlaylist": {
     "title": "플레이리스트 만들기",
@@ -725,7 +783,14 @@
     "today": "오늘",
     "yesterday": "어제",
     "thisWeek": "이번 주",
-    "thisMonth": "이번 달"
+    "thisMonth": "이번 달",
+    "trackCount_one": "트랙 {{count}}개",
+    "trackCount_other": "트랙 {{count}}개",
+    "commentCount_one": "댓글 {{count}}개",
+    "commentCount_other": "댓글 {{count}}개",
+    "personCount_one": "{{count}}명",
+    "personCount_other": "{{count}}명",
+    "commentsFromPeople": "{{peopleText}}이(가) 남긴 {{commentText}}"
   },
   "createTeam": {
     "title": "새 팀 만들기",
@@ -780,7 +845,12 @@
     "createAccount": "계정 만들기",
     "minChars": "최소 6자",
     "termsAgree": "계속 진행하면 서비스 이용약관에 동의하게 됩니다.",
-    "checkEmail": "이메일을 확인하여 계정을 인증하세요."
+    "checkEmail": "이메일을 확인하여 계정을 인증하세요.",
+    "twoFactorTitle": "2단계 인증",
+    "twoFactorDescription": "인증 앱에서 6자리 코드를 입력하세요",
+    "verificationCode": "인증 코드",
+    "verifying": "확인 중…",
+    "verify": "확인"
   },
   "downloadTrack": {
     "title": "다운로드",
@@ -1191,5 +1261,13 @@
     "title": "페이지를 찾을 수 없습니다",
     "description": "찾고 있는 페이지가 존재하지 않거나 이동되었습니다.",
     "goBack": "뒤로 가기"
+  },
+  "sharedLink": {
+    "expiresOn": "이 링크는 {{date}}에 만료됩니다",
+    "linkDisabled": "이 링크가 비활성화되었습니다.",
+    "linkRevoked": "이 링크가 취소되었습니다.",
+    "downloadingFile": "{{name}} 다운로드 중 ({{quality}})",
+    "qualityHiRes": "Hi-Res",
+    "qualityLowRes": "Low-Res"
   }
 }

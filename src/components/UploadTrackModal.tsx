@@ -3094,7 +3094,7 @@ function StepTeams({
 
       {selectedWorkspaces.length > 0 && (
         <p className="text-2xs text-muted-foreground">
-          {selectedWorkspaces.length + " workspace" + (selectedWorkspaces.length !== 1 ? "s" : "") + " selected"}
+          {t("uploadTrack.workspacesSelected", { count: selectedWorkspaces.length })}
         </p>
       )}
     </div>

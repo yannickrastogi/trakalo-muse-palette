@@ -60,7 +60,20 @@
     "tracksInCatalog": "{{total}} tracks in your catalog · {{shown}} shown",
     "uploadTrack": "Upload Track",
     "searchPlaceholder": "Search by title, artist, or album…",
-    "filters": "Filters",
+    "filters": {
+      "typeChip": "Type: {{value}}",
+      "genreChip": "Genre: {{value}}",
+      "keyChip": "Key: {{value}}",
+      "bpmChip": "BPM: {{value}}",
+      "langChip": "Lang: {{value}}",
+      "genderChip": "Gender: {{value}}",
+      "statusChip": "Status: {{value}}",
+      "instrumentsChip": "Instruments: {{value}}",
+      "lyricThemesChip": "Lyric Themes: {{value}}",
+      "moodFeelChip": "Mood & Feel: {{value}}",
+      "tempoChip": "Tempo: {{value}}",
+      "syncTagsChip": "Sync Tags: {{value}}"
+    },
     "clearAll": "Clear all",
     "clear": "Clear",
     "activeFilters": "Active filters:",
@@ -144,7 +157,9 @@
     "sent": "Sent",
     "opened": "Opened",
     "pitchCount": "{{count}} pitch",
-    "pitchCountPlural": "{{count}} pitches"
+    "pitchCountPlural": "{{count}} pitches",
+    "pitchCount_one": "{{count}} pitch",
+    "pitchCount_other": "{{count}} pitches"
   },
   "createPitchModal": {
     "title": "Create Pitch",
@@ -336,7 +351,13 @@
     "trackNotFound": "Track not found.",
     "tracks": "Tracks",
     "gender": "Gender",
-    "notes": "Notes"
+    "notes": "Notes",
+    "sonicDnaComplete": "Sonic DNA complete",
+    "sonicDnaCompleteWithBpm": "Sonic DNA complete: {{bpm}} BPM",
+    "sonicDnaCompleteWithKey": "Sonic DNA complete, {{key}}",
+    "sonicDnaCompleteWithBpmAndKey": "Sonic DNA complete: {{bpm}} BPM, {{key}}",
+    "engagementPlayed": "played this track",
+    "engagementDownloaded": "downloaded this track"
   },
   "stems": {
     "title": "Stems",
@@ -556,7 +577,8 @@
     "publisherPlaceholder": "e.g. Nomura Publishing",
     "copyrightPlaceholder": "e.g. © 2026 Nightfall Records",
     "rolePlaceholder": "e.g. Producer",
-    "proPlaceholder": "e.g. ASCAP"
+    "proPlaceholder": "e.g. ASCAP",
+    "saved": "Track updated"
   },
   "settings": {
     "title": "Settings",
@@ -703,7 +725,43 @@
     "selectLanguage": "Select language",
     "titlePlaceholder": "e.g. Velvet Hour",
     "artistPlaceholder": "e.g. Artist Name",
-    "proPlaceholder": "e.g. ASCAP"
+    "proPlaceholder": "e.g. ASCAP",
+    "workspacesSelected_one": "{{count}} workspace selected",
+    "workspacesSelected_other": "{{count}} workspaces selected",
+    "albumEp": "Album / EP",
+    "label": "Label",
+    "publisher": "Publisher(s)",
+    "publisherPlaceholder": "e.g. Sony Music Publishing",
+    "addAnother": "Add another",
+    "releaseDate": "Release Date",
+    "explicit": "Explicit",
+    "details": "Details",
+    "workspacesStep": "Workspaces",
+    "uploadingAudio": "Uploading audio",
+    "generatingWaveform": "Generating waveform...",
+    "savingTrack": "Saving track...",
+    "uploadingCover": "Uploading cover...",
+    "trackUploaded": "Track uploaded!",
+    "compressingPreview": "Compressing MP3 preview...",
+    "mp3PreviewReady": "MP3 preview ready",
+    "mp3PreviewFailed": "MP3 preview failed — track is still available",
+    "transcribingLyrics": "Transcribing lyrics...",
+    "noVocalsDetected": "No vocals detected",
+    "lyricsTranscribed": "Lyrics transcribed!",
+    "commonInfoApplied_one": "✓ Common info applied to {{count}} track",
+    "commonInfoApplied_other": "✓ Common info applied to {{count}} tracks",
+    "commonInfoResetWarning": "Re-applying will reset individual changes on all tracks",
+    "confirm": "Confirm",
+    "commonInfoDiscarded": "Common info discarded — fill each track individually",
+    "commonInfo": "Common Info",
+    "processing": "Processing...",
+    "continue": "Continue",
+    "skipFillIndividually": "Skip — fill each track individually",
+    "reapplyToAll": "Re-apply to all tracks",
+    "skip": "Skip",
+    "saveAndNext": "Save & Next",
+    "uploadAndShare": "Upload & Share",
+    "saveAllToCatalog": "Save All to Catalog"
   },
   "createPlaylist": {
     "title": "Create Playlist",
@@ -790,7 +848,12 @@
     "createAccount": "Create account",
     "minChars": "Min. 6 characters",
     "termsAgree": "By continuing, you agree to our Terms of Service.",
-    "checkEmail": "Check your email to confirm your account."
+    "checkEmail": "Check your email to confirm your account.",
+    "twoFactorTitle": "Two-Factor Authentication",
+    "twoFactorDescription": "Enter the 6-digit code from your authenticator app",
+    "verificationCode": "Verification code",
+    "verifying": "Verifying...",
+    "verify": "Verify"
   },
   "common": {
     "pitch": "pitch",
@@ -809,7 +872,14 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "thisWeek": "This Week",
-    "thisMonth": "This Month"
+    "thisMonth": "This Month",
+    "trackCount_one": "{{count}} track",
+    "trackCount_other": "{{count}} tracks",
+    "commentCount_one": "{{count}} comment",
+    "commentCount_other": "{{count}} comments",
+    "personCount_one": "{{count}} person",
+    "personCount_other": "{{count}} people",
+    "commentsFromPeople": "{{commentText}} from {{peopleText}}"
   },
   "createTeam": {
     "title": "Create New Team",
@@ -1272,5 +1342,13 @@
     "title": "Page not found",
     "description": "The page you're looking for doesn't exist or has been moved.",
     "goBack": "Go Back"
+  },
+  "sharedLink": {
+    "expiresOn": "This link expires on {{date}}",
+    "linkDisabled": "This link has been disabled.",
+    "linkRevoked": "This link has been revoked.",
+    "downloadingFile": "Downloading {{name}} ({{quality}})",
+    "qualityHiRes": "Hi-Res",
+    "qualityLowRes": "Low-Res"
   }
 }

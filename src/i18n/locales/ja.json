@@ -57,7 +57,20 @@
     "tracksInCatalog": "カタログに{{total}}トラック · {{shown}}件表示",
     "uploadTrack": "トラックをアップロード",
     "searchPlaceholder": "タイトル、アーティスト、アルバムで検索…",
-    "filters": "フィルター",
+    "filters": {
+      "typeChip": "タイプ: {{value}}",
+      "genreChip": "ジャンル: {{value}}",
+      "keyChip": "キー: {{value}}",
+      "bpmChip": "BPM: {{value}}",
+      "langChip": "言語: {{value}}",
+      "genderChip": "ボーカル: {{value}}",
+      "statusChip": "ステータス: {{value}}",
+      "instrumentsChip": "楽器: {{value}}",
+      "lyricThemesChip": "歌詞テーマ: {{value}}",
+      "moodFeelChip": "ムード: {{value}}",
+      "tempoChip": "テンポ: {{value}}",
+      "syncTagsChip": "シンクタグ: {{value}}"
+    },
     "clearAll": "すべてクリア",
     "clear": "クリア",
     "activeFilters": "アクティブなフィルター:",
@@ -141,7 +154,9 @@
     "sent": "送信済み",
     "opened": "開封済み",
     "pitchCount": "{{count}}件のピッチ",
-    "pitchCountPlural": "{{count}}件のピッチ"
+    "pitchCountPlural": "{{count}}件のピッチ",
+    "pitchCount_one": "{{count}}件のピッチ",
+    "pitchCount_other": "{{count}}件のピッチ"
   },
   "createPitchModal": {
     "title": "ピッチを作成",
@@ -264,7 +279,13 @@
     "trackNotFound": "トラックが見つかりません。",
     "tracks": "トラック",
     "gender": "ボーカル性別",
-    "notes": "メモ"
+    "notes": "メモ",
+    "sonicDnaComplete": "Sonic DNA 完了",
+    "sonicDnaCompleteWithBpm": "Sonic DNA 完了: {{bpm}} BPM",
+    "sonicDnaCompleteWithKey": "Sonic DNA 完了, {{key}}",
+    "sonicDnaCompleteWithBpmAndKey": "Sonic DNA 完了: {{bpm}} BPM, {{key}}",
+    "engagementPlayed": "このトラックを再生しました",
+    "engagementDownloaded": "このトラックをダウンロードしました"
   },
   "stems": {
     "title": "ステム",
@@ -484,7 +505,8 @@
     "publisherPlaceholder": "例: Nomura Publishing",
     "copyrightPlaceholder": "例: © 2026 Nightfall Records",
     "rolePlaceholder": "例: プロデューサー",
-    "proPlaceholder": "例: ASCAP"
+    "proPlaceholder": "例: ASCAP",
+    "saved": "トラックを更新しました"
   },
   "settings": {
     "title": "設定",
@@ -622,7 +644,43 @@
     "selectLanguage": "言語を選択",
     "titlePlaceholder": "例: Velvet Hour",
     "artistPlaceholder": "例: アーティスト名",
-    "proPlaceholder": "例: ASCAP"
+    "proPlaceholder": "例: ASCAP",
+    "workspacesSelected_one": "ワークスペース{{count}}件を選択中",
+    "workspacesSelected_other": "ワークスペース{{count}}件を選択中",
+    "albumEp": "アルバム / EP",
+    "label": "レーベル",
+    "publisher": "パブリッシャー",
+    "publisherPlaceholder": "例: Sony Music Publishing",
+    "addAnother": "追加",
+    "releaseDate": "リリース日",
+    "explicit": "Explicit",
+    "details": "詳細",
+    "workspacesStep": "ワークスペース",
+    "uploadingAudio": "オーディオをアップロード中",
+    "generatingWaveform": "波形を生成中…",
+    "savingTrack": "トラックを保存中…",
+    "uploadingCover": "カバーをアップロード中…",
+    "trackUploaded": "トラックをアップロードしました!",
+    "compressingPreview": "MP3プレビューを圧縮中…",
+    "mp3PreviewReady": "MP3プレビューの準備完了",
+    "mp3PreviewFailed": "MP3プレビューに失敗 — トラックは引き続き利用可能です",
+    "transcribingLyrics": "歌詞を文字起こし中…",
+    "noVocalsDetected": "ボーカルが検出されませんでした",
+    "lyricsTranscribed": "歌詞の文字起こし完了!",
+    "commonInfoApplied_one": "✓ 共通情報を{{count}}件のトラックに適用しました",
+    "commonInfoApplied_other": "✓ 共通情報を{{count}}件のトラックに適用しました",
+    "commonInfoResetWarning": "再適用するとすべてのトラックの個別変更がリセットされます",
+    "confirm": "確認",
+    "commonInfoDiscarded": "共通情報を破棄しました — 各トラックを個別に入力してください",
+    "commonInfo": "共通情報",
+    "processing": "処理中…",
+    "continue": "続ける",
+    "skipFillIndividually": "スキップ — 各トラックを個別に入力",
+    "reapplyToAll": "すべてのトラックに再適用",
+    "skip": "スキップ",
+    "saveAndNext": "保存して次へ",
+    "uploadAndShare": "アップロードして共有",
+    "saveAllToCatalog": "すべてカタログに保存"
   },
   "createPlaylist": {
     "title": "プレイリストを作成",
@@ -709,7 +767,12 @@
     "createAccount": "アカウントを作成",
     "minChars": "6文字以上",
     "termsAgree": "続行することで、利用規約に同意したものとみなされます。",
-    "checkEmail": "メールを確認してアカウントを認証してください。"
+    "checkEmail": "メールを確認してアカウントを認証してください。",
+    "twoFactorTitle": "二要素認証",
+    "twoFactorDescription": "認証アプリの6桁のコードを入力してください",
+    "verificationCode": "認証コード",
+    "verifying": "確認中…",
+    "verify": "確認"
   },
   "common": {
     "pitch": "ピッチ",
@@ -728,7 +791,14 @@
     "today": "今日",
     "yesterday": "昨日",
     "thisWeek": "今週",
-    "thisMonth": "今月"
+    "thisMonth": "今月",
+    "trackCount_one": "{{count}}件のトラック",
+    "trackCount_other": "{{count}}件のトラック",
+    "commentCount_one": "{{count}}件のコメント",
+    "commentCount_other": "{{count}}件のコメント",
+    "personCount_one": "{{count}}人",
+    "personCount_other": "{{count}}人",
+    "commentsFromPeople": "{{peopleText}}による{{commentText}}"
   },
   "createTeam": {
     "title": "新しいチームを作成",
@@ -1191,5 +1261,13 @@
     "title": "ページが見つかりません",
     "description": "お探しのページは存在しないか、移動されました。",
     "goBack": "戻る"
+  },
+  "sharedLink": {
+    "expiresOn": "このリンクの有効期限は{{date}}です",
+    "linkDisabled": "このリンクは無効化されています。",
+    "linkRevoked": "このリンクは取り消されました。",
+    "downloadingFile": "{{name}}をダウンロード中 ({{quality}})",
+    "qualityHiRes": "Hi-Res",
+    "qualityLowRes": "Low-Res"
   }
 }

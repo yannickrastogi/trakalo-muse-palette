@@ -728,7 +728,14 @@ export default function TrackDetail() {
                                   const key = result.sonic_dna?.key?.key;
                                   const mode = result.sonic_dna?.key?.mode;
                                   const keyLabel = key ? key + " " + (mode === "Minor" ? "Min" : "Maj") : null;
-                                  toast.success("Sonic DNA complete" + (bpm ? ": " + Math.round(bpm) + " BPM" : "") + (keyLabel ? ", " + keyLabel : ""));
+                                  const tKey = bpm && keyLabel
+                                    ? "trackDetail.sonicDnaCompleteWithBpmAndKey"
+                                    : bpm
+                                      ? "trackDetail.sonicDnaCompleteWithBpm"
+                                      : keyLabel
+                                        ? "trackDetail.sonicDnaCompleteWithKey"
+                                        : "trackDetail.sonicDnaComplete";
+                                  toast.success(t(tKey, { bpm: bpm ? Math.round(bpm) : "", key: keyLabel || "" }));
                                 } catch (err: any) {
                                   console.error("Re-analyze failed:", err);
                                   toast.error("Re-analysis failed: " + (err?.message || "unknown error"));
@@ -1020,7 +1027,10 @@ export default function TrackDetail() {
                      <p className="text-sm font-semibold text-foreground mb-2">
                        {"Recipient Feedback "}
                        <span className="text-muted-foreground font-normal">
-                         {"· " + commentCount + " comment" + (commentCount !== 1 ? "s" : "") + " from " + commentAuthors.length + " " + (commentAuthors.length !== 1 ? "people" : "person")}
+                         {"· " + t("common.commentsFromPeople", {
+                           commentText: t("common.commentCount", { count: commentCount }),
+                           peopleText: t("common.personCount", { count: commentAuthors.length }),
+                         })}
                        </span>
                      </p>
                      <div className="flex flex-wrap gap-2">
@@ -3809,7 +3819,7 @@ function EngagementTab({ trackId, onSeek }: { trackId: number; onSeek?: (seconds
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-foreground truncate">
                       <span className="font-semibold">{evt.visitor_email || "Anonymous"}</span>
-                      {" " + (evt.event_type === "play" ? "played" : "downloaded") + " this track"}
+                      {" " + t(evt.event_type === "play" ? "trackDetail.engagementPlayed" : "trackDetail.engagementDownloaded")}
                     </p>
                   </div>
                   <span className="text-[10px] text-muted-foreground/50 shrink-0">
