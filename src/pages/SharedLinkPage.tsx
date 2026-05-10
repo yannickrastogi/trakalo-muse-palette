@@ -13,6 +13,7 @@ import {
   generateSignedAgreementPdf,
 } from "@/lib/pdf-generators";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SharedLinkData {
   id: string;
@@ -1716,16 +1717,33 @@ export default function SharedLinkPage() {
                   </div>
                 )}
 
+                {audioLoading && playingTrackId === trackData.id && (
+                  <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (immersive ? "bg-white/8 backdrop-blur border border-white/10" : "bg-muted/40 border border-border")}>
+                    <ShieldCheck className={"w-4 h-4 mt-0.5 shrink-0 animate-pulse " + (immersive ? "text-white/80" : "text-primary")} />
+                    <div className="min-w-0 flex-1">
+                      <p className={"text-xs font-semibold " + (immersive ? "text-white" : "text-foreground")}>Preparing your secure copy</p>
+                      <p className={"text-[10px] mt-0.5 " + (immersive ? "text-white/55" : "text-muted-foreground")}>Each playback is uniquely watermarked for protection</p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className={"text-[11px] font-mono tabular-nums " + (immersive ? "text-white/50" : "text-muted-foreground")}>
                       {formatDuration(currentTime)}
                     </span>
                     {isWatermarked && (
-                      <span className={"inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full " + (immersive ? "bg-white/10 text-white/50" : "bg-muted text-muted-foreground")}>
-                        <ShieldCheck className="w-3 h-3" />
-                        Protected
-                      </span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className={"inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full cursor-help " + (immersive ? "bg-white/10 text-white/50" : "bg-muted text-muted-foreground")}>
+                            <ShieldCheck className="w-3 h-3" />
+                            Protected
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs max-w-[260px]">
+                          Every listener receives a unique invisible audio fingerprint. This protects the artist if the track leaks.
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
                   <button
@@ -1766,6 +1784,11 @@ export default function SharedLinkPage() {
                     </span>
                   </div>
                 </div>
+                {isWatermarked && !audioLoading && (
+                  <p className={"text-[10px] text-center " + (immersive ? "text-white/40" : "text-muted-foreground/60")}>
+                    Audio uniquely watermarked for this session
+                  </p>
+                )}
               </div>
             </>
             )}
