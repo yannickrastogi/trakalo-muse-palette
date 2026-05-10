@@ -107,7 +107,17 @@ GRANT EXECUTE ON FUNCTION public.storage_path_workspace_id(text)
 --   SELECT → tout member (lecture pour collaborer)
 --   UPDATE → editor+ (rare en pratique mais cohérent)
 --   DELETE → uploader (storage.objects.owner = auth.uid()) OR admin
+--
+-- Vérifie les noms de policies actuels avant exécution :
+--   SELECT policyname FROM pg_policies
+--   WHERE schemaname = 'storage' AND tablename = 'objects'
+--   ORDER BY policyname;
 
+-- Noms réels prod (review human, 2026-05-10)
+DROP POLICY IF EXISTS "Allow authenticated uploads to documents" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated reads from documents" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated deletes from documents" ON storage.objects;
+-- Anciens noms (au cas où) — défensif
 DROP POLICY IF EXISTS "Authenticated users can upload documents" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can read documents" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can delete own documents" ON storage.objects;
@@ -172,19 +182,256 @@ CREATE POLICY "documents_storage_delete_uploader_or_admin"
   );
 
 -- ═══════════════════════════════════════════════════════════════════════
--- 📝 NOTE — Autres buckets (tracks, stems, covers, branding, avatars)
+-- S1.B — Storage bucket `tracks` (audio masters)
 -- ═══════════════════════════════════════════════════════════════════════
--- L'audit confirme que `tracks`, `stems`, `covers`, `branding` utilisent
--- aussi un path `{workspace_id}/...` (cf. UploadTrackModal.tsx, Stems.tsx,
--- WorkspaceSettings.tsx). Le risque cross-workspace leak est probablement
--- identique à `documents` mais n'a pas été tagué P0 dans l'audit initial.
+-- Path convention : {workspace_id}/{uuid}.{ext} (UploadTrackModal.tsx:653)
+-- INSERT → pitcher+ (un Pitcher peut uploader un track)
+-- SELECT → tout member
+-- UPDATE → editor+
+-- DELETE → editor+ OR uploader
+
+DROP POLICY IF EXISTS "Allow authenticated uploads to tracks" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated reads from tracks" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated updates to tracks" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated deletes from tracks" ON storage.objects;
+-- Défensif : anciens noms éventuels
+DROP POLICY IF EXISTS "Authenticated users can upload tracks" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can read tracks" ON storage.objects;
+
+CREATE POLICY "tracks_storage_insert_pitcher"
+  ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'tracks'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND public.has_workspace_access_level(
+      auth.uid(),
+      public.storage_path_workspace_id(name),
+      'pitcher'
+    )
+  );
+
+CREATE POLICY "tracks_storage_select_members"
+  ON storage.objects FOR SELECT TO authenticated
+  USING (
+    bucket_id = 'tracks'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND public.is_workspace_member(
+      auth.uid(),
+      public.storage_path_workspace_id(name)
+    )
+  );
+
+CREATE POLICY "tracks_storage_update_editor"
+  ON storage.objects FOR UPDATE TO authenticated
+  USING (
+    bucket_id = 'tracks'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND public.has_workspace_access_level(
+      auth.uid(),
+      public.storage_path_workspace_id(name),
+      'editor'
+    )
+  )
+  WITH CHECK (
+    bucket_id = 'tracks'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND public.has_workspace_access_level(
+      auth.uid(),
+      public.storage_path_workspace_id(name),
+      'editor'
+    )
+  );
+
+CREATE POLICY "tracks_storage_delete_editor_or_uploader"
+  ON storage.objects FOR DELETE TO authenticated
+  USING (
+    bucket_id = 'tracks'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND (
+      owner = auth.uid()
+      OR public.has_workspace_access_level(
+        auth.uid(),
+        public.storage_path_workspace_id(name),
+        'editor'
+      )
+    )
+  );
+
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- S1.C — Storage bucket `stems`
+-- ═══════════════════════════════════════════════════════════════════════
+-- Path convention : {workspace_id}/{track_id}/{stem_id}/{file_name}
+-- (Stems.tsx:161, StemsTab.tsx:198) — premier segment = workspace_id
+-- INSERT → pitcher+ (Pitcher peut uploader des stems pour ses tracks)
+-- SELECT → tout member
+-- UPDATE → editor+
+-- DELETE → editor+ OR uploader
+
+DROP POLICY IF EXISTS "Allow authenticated uploads to stems" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated reads from stems" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated deletes from stems" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload stems" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can read stems" ON storage.objects;
+
+CREATE POLICY "stems_storage_insert_pitcher"
+  ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'stems'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND public.has_workspace_access_level(
+      auth.uid(),
+      public.storage_path_workspace_id(name),
+      'pitcher'
+    )
+  );
+
+CREATE POLICY "stems_storage_select_members"
+  ON storage.objects FOR SELECT TO authenticated
+  USING (
+    bucket_id = 'stems'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND public.is_workspace_member(
+      auth.uid(),
+      public.storage_path_workspace_id(name)
+    )
+  );
+
+CREATE POLICY "stems_storage_update_editor"
+  ON storage.objects FOR UPDATE TO authenticated
+  USING (
+    bucket_id = 'stems'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND public.has_workspace_access_level(
+      auth.uid(),
+      public.storage_path_workspace_id(name),
+      'editor'
+    )
+  )
+  WITH CHECK (
+    bucket_id = 'stems'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND public.has_workspace_access_level(
+      auth.uid(),
+      public.storage_path_workspace_id(name),
+      'editor'
+    )
+  );
+
+CREATE POLICY "stems_storage_delete_editor_or_uploader"
+  ON storage.objects FOR DELETE TO authenticated
+  USING (
+    bucket_id = 'stems'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND (
+      owner = auth.uid()
+      OR public.has_workspace_access_level(
+        auth.uid(),
+        public.storage_path_workspace_id(name),
+        'editor'
+      )
+    )
+  );
+
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- S1.D — Storage bucket `covers` (cover art tracks + playlists)
+-- ═══════════════════════════════════════════════════════════════════════
+-- Path convention : {workspace_id}/{track_id}.jpg (UploadTrackModal.tsx:742,
+-- TrackDetail.tsx:515)
+-- INSERT → pitcher+
+-- SELECT → tout member ✅ + anon (pour shared links publics : la cover
+--          d'un track partagé doit s'afficher sur SharedLinkPage)
+-- UPDATE → editor+
+-- DELETE → editor+ OR uploader
 --
--- Si Mosimann héberge des audio masters sensibles : durcir aussi `tracks`
--- et `stems` AVANT le launch en copiant le bloc S1 et en remplaçant
--- 'documents' par 'tracks' / 'stems'. Voir docs/RLS_PHASE3_GUIDE.md.
---
--- `avatars` est scopé par user_id (pas workspace) — pattern différent,
--- moins risqué (un user voit les avatars de tous, c'est public).
+-- ⚠️ Spécificité anon : on NE PEUT PAS facilement scoper la lecture anon
+-- au workspace (l'anon ne sait pas à quel WS appartient le track depuis
+-- le storage path seul). Stratégie pragmatique : anon SELECT autorisé
+-- sur tout le bucket `covers` car ces images sont publiques par design
+-- (cover art = public sur Spotify/Apple Music). Aucune donnée sensible.
+
+DROP POLICY IF EXISTS "Allow authenticated uploads to covers" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated reads from covers" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated deletes from covers" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public reads from covers" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload covers" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can read covers" ON storage.objects;
+DROP POLICY IF EXISTS "Public can read covers" ON storage.objects;
+
+CREATE POLICY "covers_storage_insert_pitcher"
+  ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'covers'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND public.has_workspace_access_level(
+      auth.uid(),
+      public.storage_path_workspace_id(name),
+      'pitcher'
+    )
+  );
+
+-- Authenticated members + anon (cover art = public par design)
+CREATE POLICY "covers_storage_select_members"
+  ON storage.objects FOR SELECT TO authenticated
+  USING (
+    bucket_id = 'covers'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND public.is_workspace_member(
+      auth.uid(),
+      public.storage_path_workspace_id(name)
+    )
+  );
+
+CREATE POLICY "covers_storage_select_anon"
+  ON storage.objects FOR SELECT TO anon
+  USING (bucket_id = 'covers');
+
+CREATE POLICY "covers_storage_update_editor"
+  ON storage.objects FOR UPDATE TO authenticated
+  USING (
+    bucket_id = 'covers'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND public.has_workspace_access_level(
+      auth.uid(),
+      public.storage_path_workspace_id(name),
+      'editor'
+    )
+  )
+  WITH CHECK (
+    bucket_id = 'covers'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND public.has_workspace_access_level(
+      auth.uid(),
+      public.storage_path_workspace_id(name),
+      'editor'
+    )
+  );
+
+CREATE POLICY "covers_storage_delete_editor_or_uploader"
+  ON storage.objects FOR DELETE TO authenticated
+  USING (
+    bucket_id = 'covers'
+    AND public.storage_path_workspace_id(name) IS NOT NULL
+    AND (
+      owner = auth.uid()
+      OR public.has_workspace_access_level(
+        auth.uid(),
+        public.storage_path_workspace_id(name),
+        'editor'
+      )
+    )
+  );
+
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- 📝 NOTE — Buckets non traités dans Phase 3
+-- ═══════════════════════════════════════════════════════════════════════
+-- `branding` (workspace branding : hero, logo) — path {workspace_id}/...
+--   À durcir si nécessaire avec le même pattern que `tracks`. Risque bas
+--   car les assets de branding sont publics par design.
+-- `avatars` — path {user_id}/avatar.{ext}, pattern différent (scopé user
+--   pas workspace). Risque très bas (les avatars sont publics).
 
 
 -- ═══════════════════════════════════════════════════════════════════════
@@ -500,24 +747,28 @@ END $body$;
 -- ═══════════════════════════════════════════════════════════════════════
 -- S5 — Vérifications post-exécution
 -- ═══════════════════════════════════════════════════════════════════════
--- (a) Storage policies du bucket documents :
+-- (a) Toutes les nouvelles policies storage :
 --   SELECT policyname, cmd FROM pg_policies
 --   WHERE schemaname = 'storage'
 --     AND tablename = 'objects'
---     AND policyname LIKE 'documents_storage_%'
---   ORDER BY cmd;
---   -- Attendu : 4 lignes (insert_editor, select_members, update_editor, delete_uploader_or_admin)
+--     AND (policyname LIKE 'documents_storage_%'
+--          OR policyname LIKE 'tracks_storage_%'
+--          OR policyname LIKE 'stems_storage_%'
+--          OR policyname LIKE 'covers_storage_%')
+--   ORDER BY policyname;
+--   -- Attendu : 17 lignes
+--   --   documents : 4 (insert/select/update/delete)
+--   --   tracks    : 4 (insert/select/update/delete)
+--   --   stems     : 4 (insert/select/update/delete)
+--   --   covers    : 5 (insert/select_members/select_anon/update/delete)
 --
 -- (b) Anciennes policies storage absentes :
 --   SELECT policyname FROM pg_policies
 --   WHERE schemaname = 'storage'
 --     AND tablename = 'objects'
---     AND policyname IN (
---       'Authenticated users can upload documents',
---       'Authenticated users can read documents',
---       'Authenticated users can delete own documents'
---     );
---   -- Attendu : 0 ligne
+--     AND (policyname LIKE 'Allow authenticated %'
+--          OR policyname LIKE 'Authenticated users can %');
+--   -- Attendu : 0 ligne (sauf si d'autres buckets non traités existent)
 --
 -- (c) Helper safe-cast fonctionne :
 --   SELECT public.storage_path_workspace_id('not-a-uuid/file.pdf') IS NULL; -- true

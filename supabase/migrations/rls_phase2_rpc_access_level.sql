@@ -360,7 +360,7 @@ CREATE OR REPLACE FUNCTION public.save_track_to_trakalog(
   _target_workspace_id uuid,
   _user_id uuid
 )
-RETURNS void AS $func$
+RETURNS uuid AS $func$
 BEGIN
   -- Le user doit être membre du target workspace (où il sauve le track)
   IF NOT public.is_workspace_member(_user_id, _target_workspace_id) THEN
@@ -368,7 +368,7 @@ BEGIN
       USING ERRCODE = 'insufficient_privilege';
   END IF;
 
-  PERFORM public.save_track_to_trakalog_legacy_v0(_track_id, _source_workspace_id, _target_workspace_id, _user_id);
+  RETURN public.save_track_to_trakalog_legacy_v0(_track_id, _source_workspace_id, _target_workspace_id, _user_id);
 END;
 $func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
@@ -441,7 +441,7 @@ CREATE OR REPLACE FUNCTION public.insert_stem(
   _file_size bigint,
   _stem_type text
 )
-RETURNS void AS $func$
+RETURNS uuid AS $func$
 DECLARE
   v_workspace_id uuid;
 BEGIN
@@ -452,7 +452,7 @@ BEGIN
 
   PERFORM public.require_workspace_access_level(_user_id, v_workspace_id, 'pitcher');
 
-  PERFORM public.insert_stem_legacy_v0(_user_id, _track_id, _name, _file_url, _file_size, _stem_type);
+  RETURN public.insert_stem_legacy_v0(_user_id, _track_id, _name, _file_url, _file_size, _stem_type);
 END;
 $func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
@@ -552,7 +552,7 @@ CREATE OR REPLACE FUNCTION public.insert_track_document(
   _file_size bigint,
   _doc_type text
 )
-RETURNS void AS $func$
+RETURNS uuid AS $func$
 DECLARE
   v_workspace_id uuid;
 BEGIN
@@ -563,7 +563,7 @@ BEGIN
 
   PERFORM public.require_workspace_access_level(_user_id, v_workspace_id, 'editor');
 
-  PERFORM public.insert_track_document_legacy_v0(_user_id, _track_id, _name, _file_url, _file_size, _doc_type);
+  RETURN public.insert_track_document_legacy_v0(_user_id, _track_id, _name, _file_url, _file_size, _doc_type);
 END;
 $func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
@@ -828,12 +828,13 @@ $func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- ─── create_pitch (NON versionné — wrap) ──────────────────────────
 -- Permission : pitcher+
--- ⚠️ Signature de RPCS.md (11 params), à vérifier en prod
+-- Signature confirmée en prod (review human) : 10 params, retourne uuid.
+-- Pas de _playlist_ids ni _link_type. _sent_at ajouté à la fin.
 
 DO $body$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'create_pitch_legacy_v0' AND pronamespace = 'public'::regnamespace) THEN
     BEGIN
-      ALTER FUNCTION public.create_pitch(uuid, uuid, text, text, text, text, text, uuid[], uuid[], text, text)
+      ALTER FUNCTION public.create_pitch(uuid, uuid, text, text, text, text, text, uuid[], text, timestamptz)
         RENAME TO create_pitch_legacy_v0;
     EXCEPTION WHEN undefined_function THEN
       RAISE NOTICE 'create_pitch not found with documented sig — DUMP prod and adjust before retry';
@@ -845,23 +846,22 @@ CREATE OR REPLACE FUNCTION public.create_pitch(
   _user_id uuid,
   _workspace_id uuid,
   _recipient_name text,
-  _recipient_email text,
-  _recipient_company text,
-  _subject text,
-  _message text,
-  _track_ids uuid[],
-  _playlist_ids uuid[],
-  _link_type text,
-  _status text
+  _recipient_email text DEFAULT NULL,
+  _recipient_company text DEFAULT '',
+  _subject text DEFAULT '',
+  _message text DEFAULT NULL,
+  _track_ids uuid[] DEFAULT '{}',
+  _status text DEFAULT 'draft',
+  _sent_at timestamptz DEFAULT NULL
 )
-RETURNS void AS $func$
+RETURNS uuid AS $func$
 BEGIN
   PERFORM public.require_workspace_access_level(_user_id, _workspace_id, 'pitcher');
 
-  PERFORM public.create_pitch_legacy_v0(
+  RETURN public.create_pitch_legacy_v0(
     _user_id, _workspace_id, _recipient_name, _recipient_email,
     _recipient_company, _subject, _message, _track_ids,
-    _playlist_ids, _link_type, _status
+    _status, _sent_at
   );
 END;
 $func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
@@ -1120,12 +1120,12 @@ CREATE OR REPLACE FUNCTION public.insert_catalog_share(
   _target_workspace_id uuid,
   _access_level text
 )
-RETURNS void AS $func$
+RETURNS uuid AS $func$
 BEGIN
   -- Admin sur SOURCE (celui qui partage)
   PERFORM public.require_workspace_access_level(_user_id, _source_workspace_id, 'admin');
 
-  PERFORM public.insert_catalog_share_legacy_v0(
+  RETURN public.insert_catalog_share_legacy_v0(
     _user_id, _track_id, _source_workspace_id, _target_workspace_id, _access_level
   );
 END;
@@ -1193,7 +1193,7 @@ CREATE OR REPLACE FUNCTION public.add_track_comment(
   _timestamp_sec numeric,
   _content text
 )
-RETURNS void AS $func$
+RETURNS uuid AS $func$
 DECLARE
   v_workspace_id uuid;
   v_uid uuid := auth.uid();
@@ -1212,7 +1212,7 @@ BEGIN
     END IF;
   END IF;
 
-  PERFORM public.add_track_comment_legacy_v0(
+  RETURN public.add_track_comment_legacy_v0(
     _track_id, _author_name, _author_email, _author_type, _timestamp_sec, _content
   );
 END;

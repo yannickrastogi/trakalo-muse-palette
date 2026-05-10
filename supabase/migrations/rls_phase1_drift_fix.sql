@@ -483,12 +483,22 @@ DROP POLICY IF EXISTS "System can create notifications" ON public.notifications;
 -- et sont conformes à la matrice.
 
 -- RPC create_notification : seul point d'entrée pour créer une notification.
+-- Schéma prod confirmé après review :
+--   notifications (id, workspace_id, user_id, type::notification_type,
+--                  title NOT NULL, message, is_read, track_id, pitch_id,
+--                  link_id, approval_id, created_at)
+-- Title et type sont obligatoires.
 CREATE OR REPLACE FUNCTION public.create_notification(
   _actor_user_id uuid,
   _target_user_id uuid,
   _workspace_id uuid,
-  _kind text,
-  _payload jsonb DEFAULT '{}'::jsonb
+  _type text,
+  _title text,
+  _message text DEFAULT NULL,
+  _track_id uuid DEFAULT NULL,
+  _pitch_id uuid DEFAULT NULL,
+  _link_id uuid DEFAULT NULL,
+  _approval_id uuid DEFAULT NULL
 )
 RETURNS uuid AS $func$
 DECLARE
@@ -514,20 +524,24 @@ BEGIN
       _target_user_id, _workspace_id;
   END IF;
 
-  -- 3. Valider le kind (whitelist défensive — ajuster selon les besoins métier)
-  IF _kind IS NULL OR length(btrim(_kind)) = 0 THEN
-    RAISE EXCEPTION 'Notification kind is required';
+  -- 3. Valider type (cast vers l'enum notification_type côté INSERT)
+  IF _type IS NULL OR length(btrim(_type)) = 0 THEN
+    RAISE EXCEPTION 'Notification type is required';
   END IF;
 
-  IF length(_kind) > 64 THEN
-    RAISE EXCEPTION 'Notification kind too long (max 64 chars)';
+  -- 4. Valider title (NOT NULL en base)
+  IF _title IS NULL OR length(btrim(_title)) = 0 THEN
+    RAISE EXCEPTION 'Notification title is required';
   END IF;
 
-  -- 4. INSERT (bypass RLS via SECURITY DEFINER)
+  -- 5. INSERT (bypass RLS via SECURITY DEFINER)
   INSERT INTO public.notifications (
-    user_id, workspace_id, kind, payload, created_at
+    workspace_id, user_id, type, title, message, is_read,
+    track_id, pitch_id, link_id, approval_id, created_at
   ) VALUES (
-    _target_user_id, _workspace_id, _kind, COALESCE(_payload, '{}'::jsonb), now()
+    _workspace_id, _target_user_id, _type::public.notification_type, _title,
+    _message, false,
+    _track_id, _pitch_id, _link_id, _approval_id, now()
   )
   RETURNING id INTO v_notification_id;
 
@@ -535,15 +549,9 @@ BEGIN
 END;
 $func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
-GRANT EXECUTE ON FUNCTION public.create_notification(uuid, uuid, uuid, text, jsonb)
-  TO authenticated;
-
--- ⚠️ ATTENTION : si la table notifications a des colonnes supplémentaires
--- (`actor_user_id`, `entity_type`, `entity_id`, `read_at`, etc.) en prod,
--- adapte la RPC et le INSERT en conséquence. La structure exacte n'est
--- pas dans le repo (la table n'est définie que par sa policy SELECT, pas
--- par CREATE TABLE versionné). Faire un \d notifications dans le SQL
--- Editor avant d'exécuter cette section.
+GRANT EXECUTE ON FUNCTION public.create_notification(
+  uuid, uuid, uuid, text, text, text, uuid, uuid, uuid, uuid
+) TO authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════════
