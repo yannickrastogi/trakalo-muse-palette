@@ -47,6 +47,7 @@ import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations
 import { toast } from "sonner";
 import { InviteMemberModal, type InvitePayload } from "@/components/InviteMemberModal";
 import { EditMemberModal } from "@/components/EditMemberModal";
+import { validateSocialInput, isValidHexColor, type SocialPlatform } from "@/lib/social-urls";
 import type { AccessLevel } from "@/contexts/RoleContext";
 import type { TeamMember } from "@/contexts/TeamContext";
 
@@ -387,6 +388,10 @@ function BrandingSection() {
 
   const handleColorSave = async () => {
     if (!activeWorkspace || !user) return;
+    if (!isValidHexColor(brandColor || null)) {
+      toast.error("Brand color must be a 6-digit hex code (e.g. #FF8C32).");
+      return;
+    }
     const { error } = await supabase.rpc("update_workspace_branding", {
       _user_id: user.id, _workspace_id: activeWorkspace.id,
       _hero_image_url: heroUrl, _logo_url: logoUrl, _brand_color: brandColor || null,
@@ -401,6 +406,17 @@ function BrandingSection() {
 
   const handleSocialSave = async () => {
     if (!activeWorkspace || !user) return;
+    const checks: Array<[string, SocialPlatform]> = [
+      [socialInstagram, "instagram"],
+      [socialTiktok, "tiktok"],
+      [socialYoutube, "youtube"],
+      [socialFacebook, "facebook"],
+      [socialX, "x"],
+    ];
+    for (const [value, platform] of checks) {
+      const result = validateSocialInput(value, platform);
+      if (!result.ok) { toast.error(result.reason); return; }
+    }
     const { error } = await supabase.rpc("update_workspace_branding", {
       _user_id: user.id, _workspace_id: activeWorkspace.id,
       _hero_image_url: heroUrl, _logo_url: logoUrl, _brand_color: brandColor || null,
