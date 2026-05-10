@@ -506,6 +506,7 @@ function DesktopPitchTable({
   pitchSentBy: Record<string, string | null>;
   senderProfiles: Record<string, string>;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="card-premium overflow-hidden">
       <div className="overflow-x-auto">
