@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -20,6 +20,8 @@ async function hashPassword(password: string): Promise<string> {
 serve(async (req) => {
   const corsRes = handleCors(req);
   if (corsRes) return corsRes;
+  const originRes = rejectInvalidOrigin(req);
+  if (originRes) return originRes;
   const corsHeaders = getCorsHeaders(req);
 
   const ip = req.headers.get("x-forwarded-for") || "unknown";

@@ -8,13 +8,15 @@
 // Deploy: supabase functions deploy analyze-sonic-dna
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { isValidUUID } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   // CORS preflight
   const corsRes = handleCors(req);
   if (corsRes) return corsRes;
+  const originRes = rejectInvalidOrigin(req);
+  if (originRes) return originRes;
   const corsHeaders = getCorsHeaders(req);
 
   if (req.method !== "POST") {

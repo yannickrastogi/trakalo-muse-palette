@@ -6,7 +6,7 @@
 // Returns: { sent: boolean } or { error: string }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { buildEmail, isValidEmail, htmlEscape } from "../_shared/email-template.ts";
 import { isValidUUID, sanitizeEmailSubject } from "../_shared/validation.ts";
 
@@ -22,6 +22,8 @@ const EVENT_TO_COLUMN: Record<string, string> = {
 Deno.serve(async (req) => {
   const corsRes = handleCors(req);
   if (corsRes) return corsRes;
+  const originRes = rejectInvalidOrigin(req);
+  if (originRes) return originRes;
   const corsHeaders = getCorsHeaders(req);
 
   if (req.method !== "POST") {

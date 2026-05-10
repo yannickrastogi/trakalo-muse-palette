@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { buildEmail, isValidEmail, htmlEscape } from "../_shared/email-template.ts";
 import { isValidUUID, sanitizeEmailSubject } from "../_shared/validation.ts";
 
@@ -9,6 +9,8 @@ const maskIpi = (ipi: string | undefined) => ipi ? "***" + ipi.slice(-3) : "\u20
 serve(async (req) => {
   const corsRes = handleCors(req);
   if (corsRes) return corsRes;
+  const originRes = rejectInvalidOrigin(req);
+  if (originRes) return originRes;
   const corsHeaders = getCorsHeaders(req);
 
   const ip = req.headers.get("x-forwarded-for") || "unknown";

@@ -1,11 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { isValidUUID } from "../_shared/validation.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
   if (corsRes) return corsRes;
+  const originRes = rejectInvalidOrigin(req);
+  if (originRes) return originRes;
   const corsHeaders = getCorsHeaders(req);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
