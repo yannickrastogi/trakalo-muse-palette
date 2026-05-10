@@ -306,7 +306,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   const addFiles = useCallback(async (files: File[]) => {
     const SUPPORTED_EXTENSIONS = /\.(wav|mp3|flac|aiff|aif|ogg|m4a)$/i;
-    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    const MAX_FILE_SIZE = 70 * 1024 * 1024; // 70MB
 
     const audioFiles = files.filter((f) => f.type.startsWith("audio/") || SUPPORTED_EXTENSIONS.test(f.name));
     if (audioFiles.length === 0 && files.length > 0) {
@@ -319,7 +319,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     const oversized = audioFiles.filter((f) => f.size > MAX_FILE_SIZE);
     if (oversized.length > 0) {
       for (const f of oversized) {
-        toast.error("File is too large (" + (f.size / (1024 * 1024)).toFixed(1) + " MB). Maximum upload size is 50MB. Try a compressed format (MP3, FLAC).");
+        toast.error("File is too large (" + (f.size / (1024 * 1024)).toFixed(1) + " MB). Maximum upload size is 70MB. Try a compressed format (MP3, FLAC).");
       }
     }
     const validFiles = audioFiles.filter((f) => f.size <= MAX_FILE_SIZE);
