@@ -69,7 +69,13 @@
       "lyricThemesChip": "가사 테마: {{value}}",
       "moodFeelChip": "분위기: {{value}}",
       "tempoChip": "템포: {{value}}",
-      "syncTagsChip": "싱크 태그: {{value}}"
+      "syncTagsChip": "싱크 태그: {{value}}",
+      "tagFilters": "태그 필터",
+      "genderLabel": "보컬",
+      "instrumentsLabel": "악기",
+      "lyricThemesLabel": "가사 테마",
+      "moodFeelLabel": "분위기",
+      "syncTagsLabel": "싱크 태그"
     },
     "clearAll": "모두 지우기",
     "clear": "지우기",
@@ -88,7 +94,30 @@
     "bpm": "BPM",
     "available": "이용 가능",
     "onHold": "보류 중",
-    "released": "발매됨"
+    "released": "발매됨",
+    "tabs": {
+      "tracks": "트랙",
+      "stems": "스템"
+    },
+    "playsCount_one": "재생 {{count}}회",
+    "playsCount_other": "재생 {{count}}회",
+    "pitchesSentCount_one": "피치 {{count}}건 발송",
+    "pitchesSentCount_other": "피치 {{count}}건 발송",
+    "firstUseTooltip": "첫 트랙을 업로드하여 카탈로그를 시작하세요",
+    "empty": {
+      "title": "카탈로그가 비어 있습니다",
+      "description": "첫 트랙을 업로드하세요 — Sonic DNA가 BPM, 키, 오디오 특성을 자동으로 감지합니다.",
+      "actionLabel": "트랙 업로드",
+      "secondaryLabel": "또는 즉시 일괄 가져오기를 위해 Quick Upload를 사용해 보세요"
+    },
+    "analyzing": "분석 중…",
+    "showing": "트랙 {{total}}개 중 {{filtered}}개 표시",
+    "brandLabel": "TRAKALOG 카탈로그",
+    "deleteDialog": {
+      "title": "트랙 삭제",
+      "description": "\"{{title}}\"을(를) 삭제하시겠습니까? 트랙, 스템 및 연관된 모든 파일이 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+      "deleting": "삭제 중…"
+    }
   },
   "playlists": {
     "title": "플레이리스트",
@@ -790,7 +819,10 @@
     "commentCount_other": "댓글 {{count}}개",
     "personCount_one": "{{count}}명",
     "personCount_other": "{{count}}명",
-    "commentsFromPeople": "{{peopleText}}이(가) 남긴 {{commentText}}"
+    "commentsFromPeople": "{{peopleText}}이(가) 남긴 {{commentText}}",
+    "send": "보내기",
+    "yes": "예",
+    "no": "아니요"
   },
   "createTeam": {
     "title": "새 팀 만들기",
@@ -1268,6 +1300,157 @@
     "linkRevoked": "이 링크가 취소되었습니다.",
     "downloadingFile": "{{name}} 다운로드 중 ({{quality}})",
     "qualityHiRes": "Hi-Res",
-    "qualityLowRes": "Low-Res"
+    "qualityLowRes": "Low-Res",
+    "error": {
+      "invalidLink": "잘못된 링크",
+      "linkNotFound": "이 링크는 존재하지 않거나 삭제되었습니다.",
+      "linkExpired": "이 링크는 만료되었습니다.",
+      "loadFailed": "이 링크를 불러오지 못했습니다. 다시 시도해 주세요."
+    },
+    "lyrics": "가사",
+    "gate": {
+      "welcome": "환영합니다",
+      "instruction": "이 콘텐츠에 접근하려면 정보를 입력하세요.",
+      "fullNameLabel": "성명",
+      "namePlaceholder": "이름",
+      "emailLabel": "이메일",
+      "emailPlaceholder": "your@email.com",
+      "roleLabel": "역할",
+      "selectRole": "역할 선택…",
+      "companyLabel": "회사",
+      "companyPlaceholder": "회사 또는 레이블",
+      "continueButton": "계속",
+      "errorName": "이름을 입력해 주세요.",
+      "errorEmail": "유효한 이메일 주소를 입력해 주세요."
+    },
+    "password": {
+      "title": "보호된 링크",
+      "instruction": "이 콘텐츠에 접근하려면 비밀번호를 입력하세요.",
+      "placeholder": "비밀번호",
+      "error": "비밀번호가 올바르지 않습니다. 다시 시도해 주세요.",
+      "accessButton": "콘텐츠 보기"
+    },
+    "messageFromSender": "보낸 사람의 메시지",
+    "playlistLabel": "플레이리스트",
+    "selectTrackPrompt": "재생을 시작하려면 트랙을 선택하세요",
+    "doubleClickHint": "댓글을 남기려면 파형을 더블 클릭하세요",
+    "commentPlaceholder": "댓글을 남기세요…",
+    "shareType": {
+      "stems": "스템",
+      "pack": "팩",
+      "track": "트랙"
+    },
+    "watermark": {
+      "preparing": "보안 사본 준비 중",
+      "explanation": "각 재생에 고유한 워터마크가 적용됩니다",
+      "protected": "보호됨",
+      "tooltip": "각 청취자는 고유한 보이지 않는 오디오 지문을 받습니다. 트랙이 유출될 경우 아티스트를 보호합니다.",
+      "confirmation": "이 세션을 위한 고유 워터마크가 적용된 오디오"
+    },
+    "downloadButton": "다운로드 ({{quality}})",
+    "save": {
+      "saved": "Trakalog에 저장됨",
+      "saving": "저장 중…",
+      "button": "Trakalog에 저장",
+      "signUpButton": "Trakalog에 저장 — 무료 가입"
+    },
+    "pack": {
+      "generating": "팩 생성 중…",
+      "downloadButton": "Trakalog Pack 다운로드"
+    },
+    "sharedVia": "{{date}}에 Trakalog로 공유됨",
+    "sentVia": "다음을 통해 전송",
+    "poweredBy": "Trakalog 제공 ✦",
+    "catalogManagerTagline": "카탈로그 매니저",
+    "fallback": {
+      "sharedContent": "공유된 콘텐츠",
+      "noTrackData": "트랙 데이터를 사용할 수 없습니다."
+    }
+  },
+  "sharedStem": {
+    "fillAllFields": "모든 필드를 입력해 주세요",
+    "accessLabel": {
+      "stems": "스템",
+      "track": "이 트랙",
+      "playlist": "이 플레이리스트"
+    },
+    "fallback": {
+      "track": "트랙",
+      "playlist": "플레이리스트"
+    },
+    "error": {
+      "title": "사용할 수 없는 링크"
+    },
+    "password": {
+      "title": "비밀번호 필요",
+      "instruction": "{{target}}에 접근하려면 비밀번호를 입력하세요.",
+      "placeholder": "비밀번호 입력"
+    },
+    "form": {
+      "heading": "{{target}}에 접근하려면 정보를 입력하세요",
+      "firstNameLabel": "이름",
+      "firstNamePlaceholder": "이름",
+      "lastNameLabel": "성",
+      "lastNamePlaceholder": "성",
+      "emailLabel": "이메일",
+      "emailPlaceholder": "you@company.com",
+      "organizationLabel": "조직",
+      "organizationPlaceholder": "회사",
+      "roleLabel": "역할"
+    },
+    "download": {
+      "singleTrack": "트랙 다운로드",
+      "allAsZip": "ZIP으로 전체 다운로드",
+      "disabled": "이 공유 링크에서는 다운로드가 활성화되어 있지 않습니다"
+    },
+    "downloadAction": "다운로드",
+    "stemsCount_one": "스템 {{count}}개",
+    "stemsCount_other": "스템 {{count}}개",
+    "tabs": {
+      "overview": "개요",
+      "lyrics": "가사",
+      "stems": "스템",
+      "metadata": "메타데이터",
+      "review": "리뷰",
+      "status": "상태"
+    },
+    "waveformHint": "특정 순간으로 이동하려면 파형을 더블 클릭하세요",
+    "fields": {
+      "genre": "장르",
+      "bpm": "BPM",
+      "key": "조",
+      "duration": "길이",
+      "voice": "보컬",
+      "language": "언어",
+      "mood": "분위기",
+      "release": "발매",
+      "featuredArtists": "피처링 아티스트"
+    },
+    "metadata": {
+      "title": "트랙 메타데이터",
+      "isrc": "ISRC",
+      "upc": "UPC",
+      "label": "레이블",
+      "publisher": "퍼블리셔",
+      "copyright": "저작권",
+      "writtenBy": "작사",
+      "producedBy": "프로듀서",
+      "mixedBy": "믹스",
+      "masteredBy": "마스터링",
+      "type": "유형",
+      "explicit": "Explicit"
+    },
+    "currentStatus": "현재 상태",
+    "trackLabel": "트랙",
+    "review": {
+      "yourFeedback": "내 피드백",
+      "addComment": "댓글 추가",
+      "feedbackPlaceholder": "이 순간에 대한 피드백을 공유하세요…",
+      "empty": "아직 피드백이 없습니다",
+      "emptyHint": "위 버튼을 클릭하여 타임코드 피드백을 남기세요",
+      "edited": "수정됨",
+      "deleteTitle": "댓글 삭제",
+      "deleteDescription": "확실합니까? 이 작업은 되돌릴 수 없습니다."
+    }
   }
 }

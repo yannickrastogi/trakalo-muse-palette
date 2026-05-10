@@ -69,7 +69,13 @@
       "lyricThemesChip": "Temi testi: {{value}}",
       "moodFeelChip": "Mood: {{value}}",
       "tempoChip": "Tempo: {{value}}",
-      "syncTagsChip": "Tag Sync: {{value}}"
+      "syncTagsChip": "Tag Sync: {{value}}",
+      "tagFilters": "Filtri tag",
+      "genderLabel": "Voce",
+      "instrumentsLabel": "Strumenti",
+      "lyricThemesLabel": "Temi testi",
+      "moodFeelLabel": "Mood",
+      "syncTagsLabel": "Tag Sync"
     },
     "clearAll": "Cancella tutto",
     "clear": "Cancella",
@@ -88,7 +94,30 @@
     "bpm": "BPM",
     "available": "Disponibile",
     "onHold": "In attesa",
-    "released": "Pubblicato"
+    "released": "Pubblicato",
+    "tabs": {
+      "tracks": "Brani",
+      "stems": "Stems"
+    },
+    "playsCount_one": "{{count}} riproduzione",
+    "playsCount_other": "{{count}} riproduzioni",
+    "pitchesSentCount_one": "{{count}} pitch inviato",
+    "pitchesSentCount_other": "{{count}} pitch inviati",
+    "firstUseTooltip": "Carica il tuo primo brano per iniziare il catalogo",
+    "empty": {
+      "title": "Il tuo catalogo è vuoto",
+      "description": "Carica il tuo primo brano — Sonic DNA rileverà automaticamente BPM, tonalità e caratteristiche audio.",
+      "actionLabel": "Carica brano",
+      "secondaryLabel": "Oppure prova Quick Upload per l'importazione massiva istantanea"
+    },
+    "analyzing": "Analisi…",
+    "showing": "Mostrati {{filtered}} di {{total}} brani",
+    "brandLabel": "Catalogo TRAKALOG",
+    "deleteDialog": {
+      "title": "Elimina brano",
+      "description": "Vuoi davvero eliminare \"{{title}}\"? Il brano, i suoi stems e tutti i file associati saranno rimossi definitivamente. Questa azione non può essere annullata.",
+      "deleting": "Eliminazione…"
+    }
   },
   "playlists": {
     "title": "Playlist",
@@ -798,7 +827,10 @@
     "commentCount_other": "{{count}} commenti",
     "personCount_one": "{{count}} persona",
     "personCount_other": "{{count}} persone",
-    "commentsFromPeople": "{{commentText}} da {{peopleText}}"
+    "commentsFromPeople": "{{commentText}} da {{peopleText}}",
+    "send": "Invia",
+    "yes": "Sì",
+    "no": "No"
   },
   "createTeam": {
     "title": "Crea nuovo team",
@@ -1268,6 +1300,157 @@
     "linkRevoked": "Questo link è stato revocato.",
     "downloadingFile": "Download di {{name}} ({{quality}}) in corso",
     "qualityHiRes": "Hi-Res",
-    "qualityLowRes": "Low-Res"
+    "qualityLowRes": "Low-Res",
+    "error": {
+      "invalidLink": "Link non valido",
+      "linkNotFound": "Questo link non esiste o è stato rimosso.",
+      "linkExpired": "Questo link è scaduto.",
+      "loadFailed": "Impossibile caricare questo link. Riprova."
+    },
+    "lyrics": "Testo",
+    "gate": {
+      "welcome": "Benvenuto",
+      "instruction": "Inserisci i tuoi dati per accedere a questo contenuto.",
+      "fullNameLabel": "Nome completo",
+      "namePlaceholder": "Il tuo nome",
+      "emailLabel": "Email",
+      "emailPlaceholder": "tua@email.com",
+      "roleLabel": "Ruolo",
+      "selectRole": "Seleziona un ruolo…",
+      "companyLabel": "Azienda",
+      "companyPlaceholder": "La tua azienda o etichetta",
+      "continueButton": "Continua",
+      "errorName": "Inserisci il tuo nome.",
+      "errorEmail": "Inserisci un indirizzo email valido."
+    },
+    "password": {
+      "title": "Link protetto",
+      "instruction": "Inserisci la password per accedere a questo contenuto.",
+      "placeholder": "Password",
+      "error": "Password errata. Riprova.",
+      "accessButton": "Accedi al contenuto"
+    },
+    "messageFromSender": "Messaggio dal mittente",
+    "playlistLabel": "Playlist",
+    "selectTrackPrompt": "Seleziona un brano per iniziare la riproduzione",
+    "doubleClickHint": "Doppio clic sulla waveform per lasciare un commento",
+    "commentPlaceholder": "Lascia un commento…",
+    "shareType": {
+      "stems": "Stems",
+      "pack": "Pack",
+      "track": "Brano"
+    },
+    "watermark": {
+      "preparing": "Preparazione della tua copia sicura",
+      "explanation": "Ogni riproduzione ha un watermark unico per la protezione",
+      "protected": "Protetto",
+      "tooltip": "Ogni ascoltatore riceve un'impronta audio invisibile unica. Questo protegge l'artista in caso di leak.",
+      "confirmation": "Audio con watermark unico per questa sessione"
+    },
+    "downloadButton": "Scarica ({{quality}})",
+    "save": {
+      "saved": "Salvato nel tuo Trakalog",
+      "saving": "Salvataggio…",
+      "button": "Salva nel tuo Trakalog",
+      "signUpButton": "Salva nel tuo Trakalog — Registrati gratis"
+    },
+    "pack": {
+      "generating": "Generazione Pack…",
+      "downloadButton": "Scarica Trakalog Pack"
+    },
+    "sharedVia": "Condiviso tramite Trakalog il {{date}}",
+    "sentVia": "Inviato tramite",
+    "poweredBy": "Realizzato con Trakalog ✦",
+    "catalogManagerTagline": "GESTORE CATALOGO",
+    "fallback": {
+      "sharedContent": "Contenuto condiviso",
+      "noTrackData": "Nessun dato del brano disponibile."
+    }
+  },
+  "sharedStem": {
+    "fillAllFields": "Compila tutti i campi",
+    "accessLabel": {
+      "stems": "stems",
+      "track": "questo brano",
+      "playlist": "questa playlist"
+    },
+    "fallback": {
+      "track": "Brano",
+      "playlist": "Playlist"
+    },
+    "error": {
+      "title": "Link non disponibile"
+    },
+    "password": {
+      "title": "Password richiesta",
+      "instruction": "Inserisci la password per accedere a {{target}}.",
+      "placeholder": "Inserisci la password"
+    },
+    "form": {
+      "heading": "Inserisci i tuoi dati per accedere a {{target}}",
+      "firstNameLabel": "Nome",
+      "firstNamePlaceholder": "Nome",
+      "lastNameLabel": "Cognome",
+      "lastNamePlaceholder": "Cognome",
+      "emailLabel": "Email",
+      "emailPlaceholder": "tu@azienda.com",
+      "organizationLabel": "Organizzazione",
+      "organizationPlaceholder": "La tua azienda",
+      "roleLabel": "Ruolo"
+    },
+    "download": {
+      "singleTrack": "Scarica brano",
+      "allAsZip": "Scarica tutto come ZIP",
+      "disabled": "I download non sono abilitati per questo link"
+    },
+    "downloadAction": "Scarica",
+    "stemsCount_one": "{{count}} stem",
+    "stemsCount_other": "{{count}} stems",
+    "tabs": {
+      "overview": "Panoramica",
+      "lyrics": "Testo",
+      "stems": "Stems",
+      "metadata": "Metadati",
+      "review": "Recensione",
+      "status": "Stato"
+    },
+    "waveformHint": "Doppio clic sulla waveform per saltare a un punto",
+    "fields": {
+      "genre": "Genere",
+      "bpm": "BPM",
+      "key": "Tonalità",
+      "duration": "Durata",
+      "voice": "Voce",
+      "language": "Lingua",
+      "mood": "Mood",
+      "release": "Uscita",
+      "featuredArtists": "Artisti in featuring"
+    },
+    "metadata": {
+      "title": "Metadati del brano",
+      "isrc": "ISRC",
+      "upc": "UPC",
+      "label": "Etichetta",
+      "publisher": "Editore",
+      "copyright": "Copyright",
+      "writtenBy": "Scritto da",
+      "producedBy": "Prodotto da",
+      "mixedBy": "Mixato da",
+      "masteredBy": "Masterizzato da",
+      "type": "Tipo",
+      "explicit": "Esplicito"
+    },
+    "currentStatus": "Stato attuale",
+    "trackLabel": "Brano",
+    "review": {
+      "yourFeedback": "Il tuo feedback",
+      "addComment": "Aggiungi commento",
+      "feedbackPlaceholder": "Condividi il tuo feedback su questo momento…",
+      "empty": "Nessun feedback finora",
+      "emptyHint": "Clicca il pulsante sopra per lasciare feedback timecodato",
+      "edited": "Modificato",
+      "deleteTitle": "Elimina commento",
+      "deleteDescription": "Sei sicuro? Questa azione non può essere annullata."
+    }
   }
 }

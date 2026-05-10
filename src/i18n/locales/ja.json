@@ -69,7 +69,13 @@
       "lyricThemesChip": "歌詞テーマ: {{value}}",
       "moodFeelChip": "ムード: {{value}}",
       "tempoChip": "テンポ: {{value}}",
-      "syncTagsChip": "シンクタグ: {{value}}"
+      "syncTagsChip": "シンクタグ: {{value}}",
+      "tagFilters": "タグフィルター",
+      "genderLabel": "ボーカル",
+      "instrumentsLabel": "楽器",
+      "lyricThemesLabel": "歌詞テーマ",
+      "moodFeelLabel": "ムード",
+      "syncTagsLabel": "シンクタグ"
     },
     "clearAll": "すべてクリア",
     "clear": "クリア",
@@ -88,7 +94,30 @@
     "bpm": "BPM",
     "available": "利用可能",
     "onHold": "保留中",
-    "released": "リリース済み"
+    "released": "リリース済み",
+    "tabs": {
+      "tracks": "トラック",
+      "stems": "ステム"
+    },
+    "playsCount_one": "{{count}}回再生",
+    "playsCount_other": "{{count}}回再生",
+    "pitchesSentCount_one": "{{count}}件のピッチ送信",
+    "pitchesSentCount_other": "{{count}}件のピッチ送信",
+    "firstUseTooltip": "最初のトラックをアップロードしてカタログを始めましょう",
+    "empty": {
+      "title": "カタログは空です",
+      "description": "最初のトラックをアップロード — Sonic DNAがBPM、キー、オーディオ特性を自動検出します。",
+      "actionLabel": "トラックをアップロード",
+      "secondaryLabel": "またはQuick Uploadで一括インポートを試す"
+    },
+    "analyzing": "解析中…",
+    "showing": "{{total}}件中{{filtered}}件のトラックを表示",
+    "brandLabel": "TRAKALOG カタログ",
+    "deleteDialog": {
+      "title": "トラックを削除",
+      "description": "\"{{title}}\"を削除しますか？トラック、ステム、関連するすべてのファイルが完全に削除されます。この操作は取り消せません。",
+      "deleting": "削除中…"
+    }
   },
   "playlists": {
     "title": "プレイリスト",
@@ -798,7 +827,10 @@
     "commentCount_other": "{{count}}件のコメント",
     "personCount_one": "{{count}}人",
     "personCount_other": "{{count}}人",
-    "commentsFromPeople": "{{peopleText}}による{{commentText}}"
+    "commentsFromPeople": "{{peopleText}}による{{commentText}}",
+    "send": "送信",
+    "yes": "はい",
+    "no": "いいえ"
   },
   "createTeam": {
     "title": "新しいチームを作成",
@@ -1268,6 +1300,157 @@
     "linkRevoked": "このリンクは取り消されました。",
     "downloadingFile": "{{name}}をダウンロード中 ({{quality}})",
     "qualityHiRes": "Hi-Res",
-    "qualityLowRes": "Low-Res"
+    "qualityLowRes": "Low-Res",
+    "error": {
+      "invalidLink": "無効なリンク",
+      "linkNotFound": "このリンクは存在しないか削除されました。",
+      "linkExpired": "このリンクは期限切れです。",
+      "loadFailed": "リンクの読み込みに失敗しました。もう一度お試しください。"
+    },
+    "lyrics": "歌詞",
+    "gate": {
+      "welcome": "ようこそ",
+      "instruction": "このコンテンツにアクセスするには情報を入力してください。",
+      "fullNameLabel": "氏名",
+      "namePlaceholder": "お名前",
+      "emailLabel": "メール",
+      "emailPlaceholder": "your@email.com",
+      "roleLabel": "役割",
+      "selectRole": "役割を選択…",
+      "companyLabel": "会社",
+      "companyPlaceholder": "会社またはレーベル",
+      "continueButton": "続ける",
+      "errorName": "お名前を入力してください。",
+      "errorEmail": "有効なメールアドレスを入力してください。"
+    },
+    "password": {
+      "title": "保護されたリンク",
+      "instruction": "このコンテンツにアクセスするにはパスワードを入力してください。",
+      "placeholder": "パスワード",
+      "error": "パスワードが正しくありません。もう一度お試しください。",
+      "accessButton": "コンテンツを見る"
+    },
+    "messageFromSender": "送信者からのメッセージ",
+    "playlistLabel": "プレイリスト",
+    "selectTrackPrompt": "再生を開始するトラックを選択してください",
+    "doubleClickHint": "波形をダブルクリックでコメントを残せます",
+    "commentPlaceholder": "コメントを残す…",
+    "shareType": {
+      "stems": "ステム",
+      "pack": "パック",
+      "track": "トラック"
+    },
+    "watermark": {
+      "preparing": "セキュアコピーを準備中",
+      "explanation": "再生ごとに固有のウォーターマークが付与されます",
+      "protected": "保護中",
+      "tooltip": "リスナーごとに固有の見えない音声フィンガープリントが付与されます。トラック流出時にアーティストを保護します。",
+      "confirmation": "このセッション用の固有ウォーターマーク付きオーディオ"
+    },
+    "downloadButton": "ダウンロード ({{quality}})",
+    "save": {
+      "saved": "Trakalogに保存しました",
+      "saving": "保存中…",
+      "button": "Trakalogに保存",
+      "signUpButton": "Trakalogに保存 — 無料登録"
+    },
+    "pack": {
+      "generating": "パックを生成中…",
+      "downloadButton": "Trakalog Packをダウンロード"
+    },
+    "sharedVia": "{{date}}にTrakalogで共有",
+    "sentVia": "送信元",
+    "poweredBy": "Trakalog 提供 ✦",
+    "catalogManagerTagline": "カタログマネージャー",
+    "fallback": {
+      "sharedContent": "共有コンテンツ",
+      "noTrackData": "トラックデータがありません。"
+    }
+  },
+  "sharedStem": {
+    "fillAllFields": "すべての項目を入力してください",
+    "accessLabel": {
+      "stems": "ステム",
+      "track": "このトラック",
+      "playlist": "このプレイリスト"
+    },
+    "fallback": {
+      "track": "トラック",
+      "playlist": "プレイリスト"
+    },
+    "error": {
+      "title": "リンクは利用できません"
+    },
+    "password": {
+      "title": "パスワードが必要",
+      "instruction": "{{target}}にアクセスするにはパスワードを入力してください。",
+      "placeholder": "パスワードを入力"
+    },
+    "form": {
+      "heading": "{{target}}にアクセスするには情報を入力してください",
+      "firstNameLabel": "名",
+      "firstNamePlaceholder": "名",
+      "lastNameLabel": "姓",
+      "lastNamePlaceholder": "姓",
+      "emailLabel": "メール",
+      "emailPlaceholder": "you@company.com",
+      "organizationLabel": "組織",
+      "organizationPlaceholder": "会社",
+      "roleLabel": "役割"
+    },
+    "download": {
+      "singleTrack": "トラックをダウンロード",
+      "allAsZip": "ZIPですべてダウンロード",
+      "disabled": "この共有リンクではダウンロードは無効です"
+    },
+    "downloadAction": "ダウンロード",
+    "stemsCount_one": "{{count}}件のステム",
+    "stemsCount_other": "{{count}}件のステム",
+    "tabs": {
+      "overview": "概要",
+      "lyrics": "歌詞",
+      "stems": "ステム",
+      "metadata": "メタデータ",
+      "review": "レビュー",
+      "status": "ステータス"
+    },
+    "waveformHint": "波形をダブルクリックして任意の時点へ移動",
+    "fields": {
+      "genre": "ジャンル",
+      "bpm": "BPM",
+      "key": "キー",
+      "duration": "長さ",
+      "voice": "ボーカル",
+      "language": "言語",
+      "mood": "ムード",
+      "release": "リリース",
+      "featuredArtists": "フィーチャリング"
+    },
+    "metadata": {
+      "title": "トラックメタデータ",
+      "isrc": "ISRC",
+      "upc": "UPC",
+      "label": "レーベル",
+      "publisher": "パブリッシャー",
+      "copyright": "著作権",
+      "writtenBy": "作詞",
+      "producedBy": "プロデュース",
+      "mixedBy": "ミックス",
+      "masteredBy": "マスタリング",
+      "type": "タイプ",
+      "explicit": "Explicit"
+    },
+    "currentStatus": "現在のステータス",
+    "trackLabel": "トラック",
+    "review": {
+      "yourFeedback": "あなたのフィードバック",
+      "addComment": "コメント追加",
+      "feedbackPlaceholder": "この時点へのフィードバックを共有…",
+      "empty": "まだフィードバックがありません",
+      "emptyHint": "上のボタンをクリックしてタイムコード付きフィードバックを残せます",
+      "edited": "編集済み",
+      "deleteTitle": "コメントを削除",
+      "deleteDescription": "本当によろしいですか？この操作は取り消せません。"
+    }
   }
 }

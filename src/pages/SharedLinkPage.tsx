@@ -153,6 +153,7 @@ function KaraokeLyrics({ segments, currentTime, isPlaying, onSeek, className, da
   className?: string;
   darkBg?: boolean;
 }) {
+  const { t } = useTranslation();
   var [expanded, setExpanded] = useState(true);
   var containerRef = useRef<HTMLDivElement>(null);
   var activeLineRef = useRef<HTMLDivElement>(null);
@@ -184,7 +185,7 @@ function KaraokeLyrics({ segments, currentTime, isPlaying, onSeek, className, da
       >
         <span className="flex items-center gap-2">
           <FileText className="w-4 h-4" />
-          Lyrics
+          {t("sharedLink.lyrics")}
         </span>
         {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </button>
@@ -328,7 +329,7 @@ export default function SharedLinkPage() {
   // Fetch link data
   useEffect(function() {
     if (!slug) {
-      setError("Invalid link");
+      setError(t("sharedLink.error.invalidLink"));
       setLoading(false);
       return;
     }
@@ -339,7 +340,7 @@ export default function SharedLinkPage() {
       var fetchErr = slRes.ok ? null : { message: slRes.statusText };
 
       if (fetchErr || !data) {
-        setError("This link does not exist or has been removed.");
+        setError(t("sharedLink.error.linkNotFound"));
         setLoading(false);
         return;
       }
@@ -347,25 +348,25 @@ export default function SharedLinkPage() {
       var link = data as unknown as SharedLinkData;
 
       if (link.status === "disabled") {
-        setError("This link has been disabled.");
+        setError(t("sharedLink.linkDisabled"));
         setLoading(false);
         return;
       }
 
       if (link.status === "revoked") {
-        setError("This link has been revoked.");
+        setError(t("sharedLink.linkRevoked"));
         setLoading(false);
         return;
       }
 
       if (link.expires_at && new Date(link.expires_at) < new Date()) {
-        setError("This link has expired.");
+        setError(t("sharedLink.error.linkExpired"));
         setLoading(false);
         return;
       }
 
       if (link.status === "expired") {
-        setError("This link has expired.");
+        setError(t("sharedLink.error.linkExpired"));
         setLoading(false);
         return;
       }
@@ -420,7 +421,7 @@ export default function SharedLinkPage() {
     }
 
     fetchLink().catch(function() {
-      setError("Failed to load this link. Please try again.");
+      setError(t("sharedLink.error.loadFailed"));
       setLoading(false);
     });
   }, [slug]);
@@ -753,11 +754,11 @@ export default function SharedLinkPage() {
 
   var handleGateSubmit = function() {
     if (!visitorName.trim()) {
-      setGateError("Please enter your name.");
+      setGateError(t("sharedLink.gate.errorName"));
       return;
     }
     if (!visitorEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(visitorEmail.trim())) {
-      setGateError("Please enter a valid email address.");
+      setGateError(t("sharedLink.gate.errorEmail"));
       return;
     }
     setGateError("");
@@ -1090,51 +1091,51 @@ export default function SharedLinkPage() {
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "linear-gradient(135deg, rgba(249,115,22,0.2), rgba(139,92,246,0.2))" }}>
               <User className="w-6 h-6 text-primary" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground">Welcome</h2>
-            <p className="text-sm text-muted-foreground mt-1.5 mb-6">Please enter your details to access this content.</p>
+            <h2 className="text-lg font-semibold text-foreground">{t("sharedLink.gate.welcome")}</h2>
+            <p className="text-sm text-muted-foreground mt-1.5 mb-6">{t("sharedLink.gate.instruction")}</p>
             <div className="space-y-3 text-left">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Full Name <span className="text-destructive">*</span></label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("sharedLink.gate.fullNameLabel")} <span className="text-destructive">*</span></label>
                 <input
                   type="text"
                   value={visitorName}
                   onChange={function(e) { setVisitorName(e.target.value); }}
-                  placeholder="Your name"
+                  placeholder={t("sharedLink.gate.namePlaceholder")}
                   maxLength={100}
                   className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
                   autoFocus
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Email <span className="text-destructive">*</span></label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("sharedLink.gate.emailLabel")} <span className="text-destructive">*</span></label>
                 <input
                   type="email"
                   value={visitorEmail}
                   onChange={function(e) { setVisitorEmail(e.target.value); }}
-                  placeholder="your@email.com"
+                  placeholder={t("sharedLink.gate.emailPlaceholder")}
                   maxLength={255}
                   className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Role</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("sharedLink.gate.roleLabel")}</label>
                 <select
                   value={visitorRole}
                   onChange={function(e) { setVisitorRole(e.target.value); }}
                   className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium appearance-none cursor-pointer"
                 >
-                  <option value="">Select role...</option>
+                  <option value="">{t("sharedLink.gate.selectRole")}</option>
                   {INDUSTRY_ROLES.map(function(r) { return <option key={r} value={r}>{r}</option>; })}
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Company</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{t("sharedLink.gate.companyLabel")}</label>
                 <input
                   type="text"
                   value={visitorCompany}
                   onChange={function(e) { setVisitorCompany(e.target.value); }}
                   onKeyDown={function(e) { if (e.key === "Enter") handleGateSubmit(); }}
-                  placeholder="Your company or label"
+                  placeholder={t("sharedLink.gate.companyPlaceholder")}
                   maxLength={100}
                   className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
                 />
@@ -1146,7 +1147,7 @@ export default function SharedLinkPage() {
                 onClick={handleGateSubmit}
                 className="w-full h-11 rounded-xl text-sm font-semibold btn-brand"
               >
-                Continue
+                {t("sharedLink.gate.continueButton")}
               </button>
             </div>
           </div>
@@ -1163,25 +1164,25 @@ export default function SharedLinkPage() {
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Lock className="w-6 h-6 text-primary" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground">Protected Link</h2>
-          <p className="text-sm text-muted-foreground mt-1.5 mb-6">Enter the password to access this content.</p>
+          <h2 className="text-lg font-semibold text-foreground">{t("sharedLink.password.title")}</h2>
+          <p className="text-sm text-muted-foreground mt-1.5 mb-6">{t("sharedLink.password.instruction")}</p>
           <div className="space-y-3">
             <input
               type="password"
               value={passwordInput}
               onChange={function(e) { setPasswordInput(e.target.value); }}
               onKeyDown={function(e) { if (e.key === "Enter") handlePasswordSubmit(); }}
-              placeholder="Password"
+              placeholder={t("sharedLink.password.placeholder")}
               className={"w-full h-11 px-4 rounded-xl bg-secondary border text-sm text-foreground outline-none transition-all " + (passwordError ? "border-destructive" : "border-border focus:border-primary/40")}
             />
             {passwordError && (
-              <p className="text-xs text-destructive">Incorrect password. Please try again.</p>
+              <p className="text-xs text-destructive">{t("sharedLink.password.error")}</p>
             )}
             <button
               onClick={handlePasswordSubmit}
               className="w-full h-11 rounded-xl text-sm font-semibold btn-brand"
             >
-              Access Content
+              {t("sharedLink.password.accessButton")}
             </button>
           </div>
         </div>
@@ -1205,7 +1206,7 @@ export default function SharedLinkPage() {
                     <MessageSquare className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider mb-1.5">Message from the sender</p>
+                    <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider mb-1.5">{t("sharedLink.messageFromSender")}</p>
                     <p className="text-sm text-white leading-relaxed font-medium">{linkData.message}</p>
                   </div>
                 </div>
@@ -1218,7 +1219,7 @@ export default function SharedLinkPage() {
                     <MessageSquare className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold text-brand-orange uppercase tracking-wider mb-1.5">Message from the sender</p>
+                    <p className="text-[11px] font-semibold text-brand-orange uppercase tracking-wider mb-1.5">{t("sharedLink.messageFromSender")}</p>
                     <p className="text-sm text-foreground leading-relaxed font-medium">{linkData.message}</p>
                   </div>
                 </div>
@@ -1243,7 +1244,7 @@ export default function SharedLinkPage() {
                 <img src={playlistData.cover_url || DEFAULT_COVER} alt={playlistData.name} className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1 pt-1">
-                <p className={"text-[10px] uppercase tracking-wider font-semibold mb-1 " + (plImmersive ? "text-white/60" : "text-primary")}>Playlist</p>
+                <p className={"text-[10px] uppercase tracking-wider font-semibold mb-1 " + (plImmersive ? "text-white/60" : "text-primary")}>{t("sharedLink.playlistLabel")}</p>
                 <h1 className={"text-xl sm:text-2xl font-bold tracking-tight leading-tight " + (plImmersive ? "text-white" : "text-foreground")}>
                   {playlistData.name}
                 </h1>
@@ -1253,7 +1254,7 @@ export default function SharedLinkPage() {
                 <div className={"flex items-center gap-3 mt-3 " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
                   <span className="flex items-center gap-1 text-xs font-medium">
                     <Music className="w-3.5 h-3.5" />
-                    {playlistTracks.length + " tracks"}
+                    {t("common.trackCount", { count: playlistTracks.length })}
                   </span>
                   {totalDuration > 0 && (
                     <>
@@ -1320,7 +1321,7 @@ export default function SharedLinkPage() {
               <div className={(plImmersive ? "border-t border-white/10 bg-white/5" : "border-t border-border bg-secondary/20") + " px-6 py-4"}>
                 <div className={"flex items-center justify-center gap-2 " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
                   <Play className="w-4 h-4" />
-                  <span className="text-xs font-medium">Select a track to start playback</span>
+                  <span className="text-xs font-medium">{t("sharedLink.selectTrackPrompt")}</span>
                 </div>
               </div>
             )}
@@ -1360,7 +1361,7 @@ export default function SharedLinkPage() {
                     />
                     <CommentMarkers comments={comments} totalDuration={effectiveDuration} />
                   </div>
-                  <p className={"text-[10px] text-center " + (plImmersive ? "text-white/40" : "text-muted-foreground/40")}>Double-click waveform to leave a comment</p>
+                  <p className={"text-[10px] text-center " + (plImmersive ? "text-white/40" : "text-muted-foreground/40")}>{t("sharedLink.doubleClickHint")}</p>
 
                   {commentComposerOpen && (
                     <div className={"flex items-center gap-2 px-3 py-2.5 rounded-xl " + (plImmersive ? "bg-white/10 backdrop-blur border border-white/10" : "bg-secondary/80 border border-border")}>
@@ -1374,7 +1375,7 @@ export default function SharedLinkPage() {
                           if (e.key === "Enter" && commentText.trim()) handleSubmitComment();
                           if (e.key === "Escape") { setCommentComposerOpen(false); setCommentText(""); }
                         }}
-                        placeholder="Leave a comment..."
+                        placeholder={t("sharedLink.commentPlaceholder")}
                         className={"flex-1 bg-transparent text-sm outline-none " + (plImmersive ? "text-white placeholder:text-white/40" : "text-foreground placeholder:text-muted-foreground")}
                       />
                       <button
@@ -1502,7 +1503,7 @@ export default function SharedLinkPage() {
                       <span className={"font-medium " + (plImmersive ? "text-white" : "text-foreground")}>{track.title} - {track.artist}</span>
                       <span className={"flex items-center gap-1.5 " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
                         <Download className="w-3.5 h-3.5" />
-                        {linkData.download_quality === "hi-res" ? "Hi-Res" : "Low-Res"}
+                        {t(linkData.download_quality === "hi-res" ? "sharedLink.qualityHiRes" : "sharedLink.qualityLowRes")}
                       </span>
                     </button>
                   );
@@ -1512,7 +1513,7 @@ export default function SharedLinkPage() {
           )}
 
           <p className={"text-center text-[10px] " + (plImmersive ? "text-white/40" : "text-muted-foreground/60")}>
-            {"Shared via Trakalog on " + new Date(linkData?.created_at || "").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+            {t("sharedLink.sharedVia", { date: new Date(linkData?.created_at || "").toLocaleDateString(i18n.language, { month: "long", day: "numeric", year: "numeric" }) })}
           </p>
         </div>
       </Shell>
@@ -1533,7 +1534,7 @@ export default function SharedLinkPage() {
                   <MessageSquare className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider mb-1.5">Message from the sender</p>
+                  <p className="text-[11px] font-semibold text-white/60 uppercase tracking-wider mb-1.5">{t("sharedLink.messageFromSender")}</p>
                   <p className="text-sm text-white leading-relaxed font-medium">{linkData.message}</p>
                 </div>
               </div>
@@ -1546,7 +1547,7 @@ export default function SharedLinkPage() {
                   <MessageSquare className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold text-brand-orange uppercase tracking-wider mb-1.5">Message from the sender</p>
+                  <p className="text-[11px] font-semibold text-brand-orange uppercase tracking-wider mb-1.5">{t("sharedLink.messageFromSender")}</p>
                   <p className="text-sm text-foreground leading-relaxed font-medium">{linkData.message}</p>
                 </div>
               </div>
@@ -1558,7 +1559,7 @@ export default function SharedLinkPage() {
           <div className={"flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl " + (immersive ? "bg-white/5 backdrop-blur border border-white/10" : "bg-brand-orange/10 border border-brand-orange/20")}>
             <Clock className={"w-3.5 h-3.5 " + (immersive ? "text-white/60" : "text-brand-orange")} />
             <p className={"text-xs font-medium " + (immersive ? "text-white/60" : "text-brand-orange")}>
-              {"This link expires on " + new Date(linkData.expires_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+              {t("sharedLink.expiresOn", { date: new Date(linkData.expires_at).toLocaleDateString(i18n.language, { month: "long", day: "numeric", year: "numeric" }) })}
             </p>
           </div>
         )}
@@ -1573,7 +1574,7 @@ export default function SharedLinkPage() {
               <div className="min-w-0 flex-1 pt-1">
                 <p className={"text-[10px] uppercase tracking-wider font-semibold mb-1 flex items-center " + (immersive ? "" : "text-primary")} style={!immersive && branding?.brand_color ? { color: branding.brand_color } : undefined}>
                   {immersive && <span className="inline-block w-6 h-0.5 bg-gradient-to-r from-brand-orange to-brand-pink rounded-full mr-2" />}
-                  <span className={immersive ? "bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent" : ""}>{linkData?.share_type === "stems" ? "Stems" : linkData?.share_type === "pack" ? "Pack" : "Track"}</span>
+                  <span className={immersive ? "bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent" : ""}>{t(linkData?.share_type === "stems" ? "sharedLink.shareType.stems" : linkData?.share_type === "pack" ? "sharedLink.shareType.pack" : "sharedLink.shareType.track")}</span>
                 </p>
                 <h1 className={"text-xl sm:text-2xl font-bold tracking-tight leading-tight " + (immersive ? "text-white" : "text-foreground truncate")}>
                   {trackData.title}
@@ -1724,8 +1725,8 @@ export default function SharedLinkPage() {
                   <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (immersive ? "bg-white/8 backdrop-blur border border-white/10" : "bg-muted/40 border border-border")}>
                     <ShieldCheck className={"w-4 h-4 mt-0.5 shrink-0 animate-pulse " + (immersive ? "text-white/80" : "text-primary")} />
                     <div className="min-w-0 flex-1">
-                      <p className={"text-xs font-semibold " + (immersive ? "text-white" : "text-foreground")}>Preparing your secure copy</p>
-                      <p className={"text-[10px] mt-0.5 " + (immersive ? "text-white/55" : "text-muted-foreground")}>Each playback is uniquely watermarked for protection</p>
+                      <p className={"text-xs font-semibold " + (immersive ? "text-white" : "text-foreground")}>{t("sharedLink.watermark.preparing")}</p>
+                      <p className={"text-[10px] mt-0.5 " + (immersive ? "text-white/55" : "text-muted-foreground")}>{t("sharedLink.watermark.explanation")}</p>
                     </div>
                   </div>
                 )}
@@ -1740,11 +1741,11 @@ export default function SharedLinkPage() {
                         <TooltipTrigger asChild>
                           <span className={"inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full cursor-help " + (immersive ? "bg-white/10 text-white/50" : "bg-muted text-muted-foreground")}>
                             <ShieldCheck className="w-3 h-3" />
-                            Protected
+                            {t("sharedLink.watermark.protected")}
                           </span>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs max-w-[260px]">
-                          Every listener receives a unique invisible audio fingerprint. This protects the artist if the track leaks.
+                          {t("sharedLink.watermark.tooltip")}
                         </TooltipContent>
                       </Tooltip>
                     )}
@@ -1789,7 +1790,7 @@ export default function SharedLinkPage() {
                 </div>
                 {isWatermarked && !audioLoading && (
                   <p className={"text-[10px] text-center " + (immersive ? "text-white/40" : "text-muted-foreground/60")}>
-                    Audio uniquely watermarked for this session
+                    {t("sharedLink.watermark.confirmation")}
                   </p>
                 )}
               </div>
@@ -1829,7 +1830,7 @@ export default function SharedLinkPage() {
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold btn-brand"
                 >
                   <Download className="w-4 h-4" />
-                  {"Download " + (linkData.download_quality === "hi-res" ? "(Hi-Res)" : "(Low-Res)")}
+                  {t("sharedLink.downloadButton", { quality: t(linkData.download_quality === "hi-res" ? "sharedLink.qualityHiRes" : "sharedLink.qualityLowRes") })}
                 </button>
               </div>
             )}
@@ -1839,7 +1840,7 @@ export default function SharedLinkPage() {
                 {savedToTrakalog ? (
                   <div className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold " + (immersive ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20" : "bg-emerald-500/10 text-emerald-500")}>
                     <Bookmark className="w-4 h-4" />
-                    Saved to your Trakalog
+                    {t("sharedLink.save.saved")}
                   </div>
                 ) : currentUserSession && !userHasNoWorkspace ? (
                   <button
@@ -1848,7 +1849,7 @@ export default function SharedLinkPage() {
                     className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] " + (immersive ? "bg-white/10 backdrop-blur-xl border border-white/15 text-white hover:bg-white/20" : "btn-brand")}
                   >
                     <Bookmark className="w-4 h-4" />
-                    {savingToTrakalog ? "Saving..." : "Save to your Trakalog"}
+                    {savingToTrakalog ? t("sharedLink.save.saving") : t("sharedLink.save.button")}
                   </button>
                 ) : currentUserSession && userHasNoWorkspace ? (
                   <a
@@ -1857,7 +1858,7 @@ export default function SharedLinkPage() {
                     className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] " + (immersive ? "bg-white/10 backdrop-blur-xl border border-white/15 text-white hover:bg-white/20" : "btn-brand")}
                   >
                     <Bookmark className="w-4 h-4" />
-                    Save to your Trakalog
+                    {t("sharedLink.save.button")}
                   </a>
                 ) : (
                   <a
@@ -1866,7 +1867,7 @@ export default function SharedLinkPage() {
                     className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] " + (immersive ? "bg-white/10 backdrop-blur-xl border border-white/15 text-white hover:bg-white/20" : "border border-border bg-card text-foreground hover:bg-secondary")}
                   >
                     <Bookmark className="w-4 h-4" />
-                    Save to your Trakalog — Sign up free
+                    {t("sharedLink.save.signUpButton")}
                   </a>
                 )}
               </div>
@@ -1883,12 +1884,12 @@ export default function SharedLinkPage() {
                   {packDownloading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Generating Pack...
+                      {t("sharedLink.pack.generating")}
                     </>
                   ) : (
                     <>
                       <Package className="w-4 h-4" />
-                      Download Trakalog Pack
+                      {t("sharedLink.pack.downloadButton")}
                     </>
                   )}
                 </button>
@@ -1901,13 +1902,13 @@ export default function SharedLinkPage() {
             <div className={"w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 " + (immersive ? "bg-white/10" : "bg-secondary")}>
               <Music className={"w-6 h-6 " + (immersive ? "text-white/60" : "text-muted-foreground")} />
             </div>
-            <h2 className={"text-lg font-semibold " + (immersive ? "text-white" : "text-foreground")}>{linkData?.link_name || "Shared Content"}</h2>
-            <p className={"text-sm mt-1.5 " + (immersive ? "text-white/50" : "text-muted-foreground")}>No track data available.</p>
+            <h2 className={"text-lg font-semibold " + (immersive ? "text-white" : "text-foreground")}>{linkData?.link_name || t("sharedLink.fallback.sharedContent")}</h2>
+            <p className={"text-sm mt-1.5 " + (immersive ? "text-white/50" : "text-muted-foreground")}>{t("sharedLink.fallback.noTrackData")}</p>
           </div>
         )}
 
         <p className={"text-center text-[10px] " + (immersive ? "text-white/40" : "text-muted-foreground/60")}>
-          {"Shared via Trakalog on " + new Date(linkData?.created_at || "").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+          {t("sharedLink.sharedVia", { date: new Date(linkData?.created_at || "").toLocaleDateString(i18n.language, { month: "long", day: "numeric", year: "numeric" }) })}
         </p>
       </div>
     </Shell>
@@ -1963,6 +1964,7 @@ function SocialIcons({ branding, immersive }: { branding?: WorkspaceBranding | n
 }
 
 function Shell({ children, branding }: { children: React.ReactNode; branding?: WorkspaceBranding | null }) {
+  const { t } = useTranslation();
   var heroUrl = branding?.hero_image_url || null;
   var heroFocalPoint = branding?.hero_focal_point || "50% 50%";
   var logoUrl = branding?.logo_url || null;
@@ -1992,7 +1994,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}
             >
               <span className="text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
-              <span className="text-[8px] md:text-[10px] tracking-[0.2em] text-white/60 font-medium block mt-0.5">CATALOG MANAGER</span>
+              <span className="text-[8px] md:text-[10px] tracking-[0.2em] text-white/60 font-medium block mt-0.5">{t("sharedLink.catalogManagerTagline")}</span>
             </a>
           </div>
           {/* Logo header — pushed down to leave hero image visible */}
@@ -2003,7 +2005,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               ) : (
                 <div className="flex flex-col items-center" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}>
                   <span className="text-3xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
-                  <span className="text-[10px] md:text-xs tracking-[0.2em] text-white/50 font-medium block mt-1">CATALOG MANAGER</span>
+                  <span className="text-[10px] md:text-xs tracking-[0.2em] text-white/50 font-medium block mt-1">{t("sharedLink.catalogManagerTagline")}</span>
                 </div>
               )}
               <SocialIcons branding={branding} immersive={true} />
@@ -2012,7 +2014,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               )}
               <div className="text-center mt-4">
                 <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 hover:text-white/50 transition-colors">
-                  <span>Sent via</span>
+                  <span>{t("sharedLink.sentVia")}</span>
                   <span className="font-semibold tracking-wider">TRAKALOG</span>
                 </a>
               </div>
@@ -2021,7 +2023,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
           <div className="flex-1">{children}</div>
           <footer className="py-6 text-center">
             <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] hover:opacity-80 transition-opacity" style={{ color: "#f97316" }}>
-              {"Powered by Trakalog \u2726"}
+              {t("sharedLink.poweredBy")}
             </a>
           </footer>
         </div>
@@ -2039,7 +2041,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
             ) : (
               <div className="flex flex-col items-center">
                 <span className="text-3xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
-                <span className="text-[10px] sm:text-xs tracking-[0.2em] text-muted-foreground/60 font-medium block mt-1">CATALOG MANAGER</span>
+                <span className="text-[10px] sm:text-xs tracking-[0.2em] text-muted-foreground/60 font-medium block mt-1">{t("sharedLink.catalogManagerTagline")}</span>
               </div>
             )}
             <SocialIcons branding={branding} immersive={false} />
@@ -2048,7 +2050,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
             )}
             <div className="text-center mt-4">
               <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors">
-                <span>Sent via</span>
+                <span>{t("sharedLink.sentVia")}</span>
                 <span className="font-semibold tracking-wider">TRAKALOG</span>
               </a>
             </div>
@@ -2058,7 +2060,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
       <div className="flex-1">{children}</div>
       <footer className="py-6 text-center">
         <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="text-[10px] hover:opacity-80 transition-opacity" style={{ color: "#f97316" }}>
-          {"Powered by Trakalog \u2726"}
+          {t("sharedLink.poweredBy")}
         </a>
       </footer>
     </div>

@@ -185,13 +185,13 @@ export default function Catalog() {
             onClick={() => setActiveTab("tracks")}
             className={"px-4 py-2 rounded-lg text-sm font-medium transition-all " + (activeTab === "tracks" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
           >
-            Tracks
+            {t("catalog.tabs.tracks")}
           </button>
           <button
             onClick={() => setActiveTab("stems")}
             className={"px-4 py-2 rounded-lg text-sm font-medium transition-all " + (activeTab === "stems" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
           >
-            Stems
+            {t("catalog.tabs.stems")}
           </button>
         </div>
       </div>
@@ -217,17 +217,17 @@ export default function Catalog() {
               <span className="text-muted-foreground/40 text-xs">&middot;</span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
                 <Headphones className="w-3 h-3" />
-                {allTracks.reduce((sum, t) => sum + getTotalPlaysForTrack(t.id), 0) + " plays"}
+                {t("catalog.playsCount", { count: allTracks.reduce((sum, tr) => sum + getTotalPlaysForTrack(tr.id), 0) })}
               </span>
               <span className="text-muted-foreground/40 text-xs">&middot;</span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
                 <Send className="w-3 h-3" />
-                {allTracks.reduce((sum, t) => sum + getTotalDownloadsForTrack(t.id), 0) + " pitches sent"}
+                {t("catalog.pitchesSentCount", { count: allTracks.reduce((sum, tr) => sum + getTotalDownloadsForTrack(tr.id), 0) })}
               </span>
             </div>
           </div>
           {permissions.canUploadTracks && (
-            <FirstUseTooltip id="upload-track" message="Upload your first track to start building your catalog" position="left">
+            <FirstUseTooltip id="upload-track" message={t("catalog.firstUseTooltip")} position="left">
               <button onClick={() => setUploadOpen(true)} className="btn-brand flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold shrink-0 self-start">
                 <Upload className="w-4 h-4" /> {t("catalog.uploadTrack")}
               </button>
@@ -323,29 +323,29 @@ export default function Catalog() {
                     }}
                   />
                   <FilterSelect label={t("catalog.language")} value={languageFilter} options={languages} onChange={setLanguageFilter} />
-                  <FilterSelect label="Gender" value={voiceFilter} options={voices} onChange={setVoiceFilter} />
+                  <FilterSelect label={t("catalog.filters.genderLabel")} value={voiceFilter} options={voices} onChange={setVoiceFilter} />
                   <FilterSelect label={t("catalog.status")} value={statusFilter} options={statuses} onChange={setStatusFilter} />
                 </div>
                 {/* Tag Filters row */}
                 <div className="mt-5 pt-5 border-t border-border/40">
-                  <p className="text-xs font-medium text-muted-foreground mb-3">Tag Filters</p>
+                  <p className="text-xs font-medium text-muted-foreground mb-3">{t("catalog.filters.tagFilters")}</p>
                   <div className="flex flex-wrap gap-2">
                     <TagFilterDropdown
-                      label="Instruments"
+                      label={t("catalog.filters.instrumentsLabel")}
                       color="pink"
                       options={INSTRUMENTS}
                       values={instrumentsFilter}
                       onChange={setInstrumentsFilter}
                     />
                     <TagFilterDropdown
-                      label="Lyric Themes"
+                      label={t("catalog.filters.lyricThemesLabel")}
                       color="purple"
                       options={LYRIC_THEMES}
                       values={lyricThemesFilter}
                       onChange={setLyricThemesFilter}
                     />
                     <TagFilterDropdown
-                      label="Mood & Feel"
+                      label={t("catalog.filters.moodFeelLabel")}
                       color="orange"
                       options={MOOD_FEEL}
                       values={moodFeelFilter}
@@ -353,7 +353,7 @@ export default function Catalog() {
                     />
                     <TempoToggle value={tempoFilter} onChange={setTempoFilter} options={TEMPO_DESCRIPTORS} />
                     <TagFilterDropdown
-                      label="Sync Tags"
+                      label={t("catalog.filters.syncTagsLabel")}
                       color="green"
                       options={SYNC_TAGS}
                       values={syncTagsFilter}
@@ -407,11 +407,11 @@ export default function Catalog() {
           {allTracks.length === 0 ? (
             <EmptyState
               icon={Music}
-              title="Your catalog is empty"
-              description="Upload your first track — Sonic DNA will automatically detect BPM, key, and audio characteristics."
-              actionLabel="Upload Track"
+              title={t("catalog.empty.title")}
+              description={t("catalog.empty.description")}
+              actionLabel={t("catalog.empty.actionLabel")}
               onAction={() => setUploadOpen(true)}
-              secondaryLabel="Or try Quick Upload for instant bulk import"
+              secondaryLabel={t("catalog.empty.secondaryLabel")}
               onSecondaryAction={() => setUploadOpen(true)}
             />
           ) : effectiveViewMode === "table" ? (
@@ -499,7 +499,7 @@ export default function Catalog() {
                                 const parts = [track.type, genreText, track.bpm ? track.bpm + " BPM" : null, track.key].filter(Boolean).join(" · ");
                                 if (parts) return parts;
                                 const isRecent = track.createdAt && (Date.now() - new Date(track.createdAt).getTime()) < 5 * 60 * 1000;
-                                if (isRecent) return <span className="animate-pulse text-brand-orange">⏳ Analyzing...</span>;
+                                if (isRecent) return <span className="animate-pulse text-brand-orange">⏳ {t("catalog.analyzing")}</span>;
                                 return "—";
                               })()}
                             </span>
@@ -545,13 +545,13 @@ export default function Catalog() {
                                 {permissions.canEditTracks && (
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate("/track/" + track.uuid + "?edit=true"); }}>
                                   <Edit3 className="w-3.5 h-3.5 mr-2" />
-                                  Edit
+                                  {t("common.edit")}
                                 </DropdownMenuItem>
                                 )}
                                 {permissions.canDeleteTracks && (
                                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteTarget(track); }}>
                                   <Trash2 className="w-3.5 h-3.5 mr-2" />
-                                  Delete
+                                  {t("common.delete")}
                                 </DropdownMenuItem>
                                 )}
                               </DropdownMenuContent>
@@ -569,8 +569,8 @@ export default function Catalog() {
               className="flex items-center justify-between px-5 py-3 text-xs text-muted-foreground font-medium"
               style={{ borderTop: "1px solid transparent", borderImage: "linear-gradient(90deg, hsl(24 100% 55% / 0.1), hsl(330 80% 60% / 0.06), transparent) 1" }}
             >
-              <span>Showing {filteredTracks.length} of {allTracks.length} tracks</span>
-              <span className="text-2xs text-muted-foreground/50">TRAKALOG Catalog</span>
+              <span>{t("catalog.showing", { filtered: filteredTracks.length, total: allTracks.length })}</span>
+              <span className="text-2xs text-muted-foreground/50">{t("catalog.brandLabel")}</span>
             </div>
           </div>
           ) : (
@@ -579,8 +579,8 @@ export default function Catalog() {
             {filteredTracks.length === 0 ? (
               <div className="card-premium px-5 py-20 text-center text-muted-foreground">
                 <Music className="w-10 h-10 mx-auto mb-4 opacity-15" />
-                <p className="text-sm font-semibold">No tracks found</p>
-                <p className="text-xs mt-1.5 text-muted-foreground/70">Try adjusting your search or filters</p>
+                <p className="text-sm font-semibold">{t("catalog.noTracks")}</p>
+                <p className="text-xs mt-1.5 text-muted-foreground/70">{t("catalog.adjustFilters")}</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -641,7 +641,7 @@ export default function Catalog() {
                            {(() => {
                              const isRecent = track.createdAt && (Date.now() - new Date(track.createdAt).getTime()) < 5 * 60 * 1000;
                              if (!track.bpm && !track.key && isRecent) {
-                               return <span className="text-2xs font-semibold text-brand-orange animate-pulse shrink-0">⏳ Analyzing...</span>;
+                               return <span className="text-2xs font-semibold text-brand-orange animate-pulse shrink-0">⏳ {t("catalog.analyzing")}</span>;
                              }
                              return <>
                                <span className="text-2xs font-mono text-foreground/50 tabular-nums shrink-0">{track.bpm ? `${track.bpm} BPM` : "—"}</span>
@@ -673,8 +673,8 @@ export default function Catalog() {
             <div
               className="flex items-center justify-between mt-4 px-1 text-xs text-muted-foreground font-medium"
             >
-              <span>Showing {filteredTracks.length} of {allTracks.length} tracks</span>
-              <span className="text-2xs text-muted-foreground/50">TRAKALOG Catalog</span>
+              <span>{t("catalog.showing", { filtered: filteredTracks.length, total: allTracks.length })}</span>
+              <span className="text-2xs text-muted-foreground/50">{t("catalog.brandLabel")}</span>
             </div>
           </div>
           )}
@@ -684,13 +684,13 @@ export default function Catalog() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Track</AlertDialogTitle>
+            <AlertDialogTitle>{t("catalog.deleteDialog.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteTarget?.title}"? This will permanently remove the track, its stems, and all associated files. This action cannot be undone.
+              {t("catalog.deleteDialog.description", { title: deleteTarget?.title ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -703,7 +703,7 @@ export default function Catalog() {
                 setDeleteTarget(null);
               }}
             >
-              {deleting ? "Deleting…" : "Delete"}
+              {deleting ? t("catalog.deleteDialog.deleting") : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -725,6 +725,7 @@ function FilterSelect({
   options: string[];
   onChange: (v: string | null) => void;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
 
@@ -747,7 +748,7 @@ function FilterSelect({
           onClick={() => setOpen(!open)}
           className={"flex items-center justify-between w-full h-10 px-3 rounded-xl bg-card text-[13px] font-medium transition-all " + (value ? "border-2 border-brand-orange/40 text-brand-orange" : "border border-border text-muted-foreground hover:border-brand-pink/20 hover:text-foreground")}
         >
-          <span className="truncate">{value || "All"}</span>
+          <span className="truncate">{value || t("common.all")}</span>
           <ChevronDown className={"w-3.5 h-3.5 shrink-0 ml-2 transition-transform duration-200 " + (open ? "rotate-180" : "")} />
         </button>
         <AnimatePresence>
@@ -765,7 +766,7 @@ function FilterSelect({
                   onClick={() => { onChange(null); setOpen(false); }}
                   className={"w-full text-left px-4 py-2.5 rounded-lg text-[13px] transition-colors " + (!value ? "bg-brand-orange/10 text-brand-orange font-medium" : "text-foreground hover:bg-secondary/60")}
                 >
-                  All
+                  {t("common.all")}
                 </button>
                 {options.map((opt) => (
                   <button

@@ -143,7 +143,7 @@ export default function SharedStemAccess() {
     var isMounted = true;
 
     if (!linkId) {
-      setError("Invalid link.");
+      setError(t("sharedLink.error.invalidLink"));
       setLoading(false);
       return;
     }
@@ -159,7 +159,7 @@ export default function SharedStemAccess() {
       if (!isMounted) return;
 
       if (linkErr || !linkRow) {
-        setError("This link does not exist or has been removed.");
+        setError(t("sharedLink.error.linkNotFound"));
         setLoading(false);
         return;
       }
@@ -173,7 +173,7 @@ export default function SharedStemAccess() {
       }
 
       if (sl.status === "expired" || (sl.expires_at && new Date(sl.expires_at) < new Date())) {
-        setError("This link has expired.");
+        setError(t("sharedLink.error.linkExpired"));
         setLoading(false);
         return;
       }
@@ -255,7 +255,7 @@ export default function SharedStemAccess() {
 
     fetchData().catch(function() {
       if (isMounted) {
-        setError("Failed to load this link. Please try again.");
+        setError(t("sharedLink.error.loadFailed"));
         setLoading(false);
       }
     });
@@ -307,7 +307,7 @@ export default function SharedStemAccess() {
   var handleFormSubmit = function(e: React.FormEvent) {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !organization.trim() || !role) {
-      toast.error("Please fill in all fields");
+      toast.error(t("sharedStem.fillAllFields"));
       return;
     }
     setFormCompleted(true);
@@ -353,15 +353,19 @@ export default function SharedStemAccess() {
   // Derived values
   var shareType = link?.share_type || "stems";
   var displayTitle = shareType === "playlist"
-    ? (playlistName || trackData?.title || "Playlist")
-    : (trackData?.title || "Track");
+    ? (playlistName || trackData?.title || t("sharedStem.fallback.playlist"))
+    : (trackData?.title || t("sharedStem.fallback.track"));
   var displaySubtitle = shareType === "playlist"
-    ? playlistTracks.length + " tracks"
+    ? t("common.trackCount", { count: playlistTracks.length })
     : (trackData?.artist || "");
   var displayCover = shareType === "playlist"
     ? (playlistCover || trackData?.cover_url)
     : trackData?.cover_url;
-  var accessLabel = shareType === "stems" ? "stems" : shareType === "track" ? "this track" : "this playlist";
+  var accessLabel = shareType === "stems"
+    ? t("sharedStem.accessLabel.stems")
+    : shareType === "track"
+      ? t("sharedStem.accessLabel.track")
+      : t("sharedStem.accessLabel.playlist");
   var needsPassword = link && link.link_type === "secured" && !passwordVerified;
 
   // Loading
@@ -383,8 +387,8 @@ export default function SharedStemAccess() {
           <div className="w-14 h-14 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-6 h-6 text-destructive" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground">Link Unavailable</h2>
-          <p className="text-sm text-muted-foreground mt-1">{error || "This share link doesn't exist or has been removed."}</p>
+          <h2 className="text-lg font-semibold text-foreground">{t("sharedStem.error.title")}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{error || t("sharedLink.error.linkNotFound")}</p>
         </div>
       </ExternalShell>
     );
@@ -399,22 +403,22 @@ export default function SharedStemAccess() {
             <div className="w-14 h-14 rounded-2xl icon-brand flex items-center justify-center mx-auto mb-4">
               <Lock className="w-6 h-6 text-primary" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground">Password Required</h2>
-            <p className="text-sm text-muted-foreground mt-1">Enter the password to access {accessLabel}.</p>
+            <h2 className="text-lg font-semibold text-foreground">{t("sharedStem.password.title")}</h2>
+            <p className="text-sm text-muted-foreground mt-1">{t("sharedStem.password.instruction", { target: accessLabel })}</p>
           </div>
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
             <input
               type="password"
               value={password}
               onChange={function(e) { setPassword(e.target.value); setPasswordError(false); }}
-              placeholder="Enter password"
+              placeholder={t("sharedStem.password.placeholder")}
               className={"h-11 w-full px-4 rounded-xl bg-secondary border text-sm text-foreground outline-none transition-all " +
                 (passwordError ? "border-destructive" : "border-border focus:border-primary/30")}
               autoFocus
             />
-            {passwordError && <p className="text-xs text-destructive">Incorrect password. Please try again.</p>}
+            {passwordError && <p className="text-xs text-destructive">{t("sharedLink.password.error")}</p>}
             <button type="submit" className="w-full h-11 rounded-xl text-sm font-semibold btn-brand">
-              Access Content
+              {t("sharedLink.password.accessButton")}
             </button>
           </form>
         </div>
@@ -445,52 +449,52 @@ export default function SharedStemAccess() {
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-6" style={{ boxShadow: "var(--shadow-card)" }}>
-            <h3 className="text-sm font-semibold text-foreground mb-4">Enter your details to access {accessLabel}</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-4">{t("sharedStem.form.heading", { target: accessLabel })}</h3>
             <form onSubmit={handleFormSubmit} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1">First Name *</label>
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1">{t("sharedStem.form.firstNameLabel")} *</label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                    <input value={firstName} onChange={function(e) { setFirstName(e.target.value); }} placeholder="First name"
+                    <input value={firstName} onChange={function(e) { setFirstName(e.target.value); }} placeholder={t("sharedStem.form.firstNamePlaceholder")}
                       className="h-10 w-full pl-9 pr-3 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-all" />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1">Last Name *</label>
-                  <input value={lastName} onChange={function(e) { setLastName(e.target.value); }} placeholder="Last name"
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1">{t("sharedStem.form.lastNameLabel")} *</label>
+                  <input value={lastName} onChange={function(e) { setLastName(e.target.value); }} placeholder={t("sharedStem.form.lastNamePlaceholder")}
                     className="h-10 w-full px-3 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-all" />
                 </div>
               </div>
               <div>
-                <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1">Email *</label>
+                <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1">{t("sharedStem.form.emailLabel")} *</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <input type="email" value={email} onChange={function(e) { setEmail(e.target.value); }} placeholder="you@company.com"
+                  <input type="email" value={email} onChange={function(e) { setEmail(e.target.value); }} placeholder={t("sharedStem.form.emailPlaceholder")}
                     className="h-10 w-full pl-9 pr-3 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-all" />
                 </div>
               </div>
               <div>
-                <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1">Organization *</label>
+                <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1">{t("sharedStem.form.organizationLabel")} *</label>
                 <div className="relative">
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <input value={organization} onChange={function(e) { setOrganization(e.target.value); }} placeholder="Your company"
+                  <input value={organization} onChange={function(e) { setOrganization(e.target.value); }} placeholder={t("sharedStem.form.organizationPlaceholder")}
                     className="h-10 w-full pl-9 pr-3 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-all" />
                 </div>
               </div>
               <div>
-                <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1">Role *</label>
+                <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1">{t("sharedStem.form.roleLabel")} *</label>
                 <div className="relative">
                   <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <select value={role} onChange={function(e) { setRole(e.target.value); }}
                     className="h-10 w-full pl-9 pr-3 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 transition-all appearance-none cursor-pointer">
-                    <option value="">Select role...</option>
+                    <option value="">{t("sharedLink.gate.selectRole")}</option>
                     {roleOptions.map(function(r) { return <option key={r} value={r}>{r}</option>; })}
                   </select>
                 </div>
               </div>
               <button type="submit" className="w-full h-11 rounded-xl text-sm font-semibold btn-brand mt-2">
-                Access Content
+                {t("sharedLink.password.accessButton")}
               </button>
             </form>
           </div>
@@ -525,13 +529,13 @@ export default function SharedStemAccess() {
         {link.allow_download ? (
           <button onClick={handleDownloadAll} className="w-full h-12 rounded-xl text-sm font-semibold btn-brand flex items-center justify-center gap-2 mb-6">
             <Package className="w-4 h-4" />
-            {shareType === "track" ? "Download Track" : "Download All as ZIP"}
-            <span className="text-[10px] opacity-70 ml-1">({link.download_quality === "hi-res" ? "Hi-Res" : "Low-Res"})</span>
+            {t(shareType === "track" ? "sharedStem.download.singleTrack" : "sharedStem.download.allAsZip")}
+            <span className="text-[10px] opacity-70 ml-1">({t(link.download_quality === "hi-res" ? "sharedLink.qualityHiRes" : "sharedLink.qualityLowRes")})</span>
           </button>
         ) : (
           <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-secondary/50 border border-border mb-6">
             <ShieldOff className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Downloads are not enabled for this shared link</span>
+            <span className="text-xs text-muted-foreground">{t("sharedStem.download.disabled")}</span>
           </div>
         )}
 
@@ -541,7 +545,7 @@ export default function SharedStemAccess() {
             <div className="px-5 py-3 border-b border-border">
               <div className="flex items-center gap-2">
                 <ListMusic className="w-4 h-4 text-muted-foreground" />
-                <span className="text-xs font-semibold text-foreground">{playlistTracks.length} Tracks</span>
+                <span className="text-xs font-semibold text-foreground">{t("common.trackCount", { count: playlistTracks.length })}</span>
               </div>
             </div>
             <div className="divide-y divide-border">
@@ -557,7 +561,7 @@ export default function SharedStemAccess() {
                       </div>
                     </div>
                     {link.allow_download && (
-                      <button onClick={function() { handleDownloadItem(track.title); }} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
+                      <button onClick={function() { handleDownloadItem(track.title); }} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={t("sharedStem.downloadAction")}>
                         <Download className="w-4 h-4" />
                       </button>
                     )}
@@ -614,6 +618,7 @@ function TrackDetailTabs({
   recipientName: string;
   recipientEmail: string;
 }) {
+  const { t } = useTranslation();
   var [progress, setProgress] = useState(35);
   var [isPlaying, setIsPlaying] = useState(false);
 
@@ -627,12 +632,12 @@ function TrackDetailTabs({
   };
 
   var availableTabs = [
-    { id: "overview", label: "Overview" },
-    ...(trackData.lyrics ? [{ id: "lyrics", label: "Lyrics" }] : []),
-    ...(stems.length > 0 ? [{ id: "stems", label: "Stems" }] : []),
-    { id: "metadata", label: "Metadata" },
-    { id: "review", label: "Review" },
-    { id: "status", label: "Status" },
+    { id: "overview", label: t("sharedStem.tabs.overview") },
+    ...(trackData.lyrics ? [{ id: "lyrics", label: t("sharedStem.tabs.lyrics") }] : []),
+    ...(stems.length > 0 ? [{ id: "stems", label: t("sharedStem.tabs.stems") }] : []),
+    { id: "metadata", label: t("sharedStem.tabs.metadata") },
+    { id: "review", label: t("sharedStem.tabs.review") },
+    { id: "status", label: t("sharedStem.tabs.status") },
   ];
 
   return (
@@ -680,7 +685,7 @@ function TrackDetailTabs({
             onMarkerClick={function(seconds) { handleSeek(seconds); }}
           />
         </div>
-        <p className="text-[10px] text-muted-foreground/40 mt-2 text-center">Double-click waveform to jump to a moment</p>
+        <p className="text-[10px] text-muted-foreground/40 mt-2 text-center">{t("sharedStem.waveformHint")}</p>
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
@@ -698,18 +703,18 @@ function TrackDetailTabs({
         <TabsContent value="overview" className="mt-4">
           <div className="bg-card border border-border rounded-2xl p-5 space-y-4" style={{ boxShadow: "var(--shadow-card)" }}>
             <div className="grid grid-cols-2 gap-3">
-              <InfoRow icon={Disc} label="Genre" value={(Array.isArray(trackData.genre) ? trackData.genre.join(", ") : trackData.genre) || "—"} />
-              <InfoRow icon={Hash} label="BPM" value={trackData.bpm ? String(trackData.bpm) : "—"} />
-              <InfoRow icon={Music} label="Key" value={trackData.key || "—"} />
-              <InfoRow icon={Clock} label="Duration" value={totalDurationSeconds > 0 ? formatDuration(totalDurationSeconds) : "—"} />
-              <InfoRow icon={Headphones} label="Voice" value={trackData.voice || "—"} />
-              <InfoRow icon={Globe} label="Language" value={trackData.language || "—"} />
-              <InfoRow icon={Tag} label="Mood" value={trackData.mood?.join(", ") || "—"} />
-              <InfoRow icon={Calendar} label="Release" value={trackData.release_date || "—"} />
+              <InfoRow icon={Disc} label={t("sharedStem.fields.genre")} value={(Array.isArray(trackData.genre) ? trackData.genre.join(", ") : trackData.genre) || "—"} />
+              <InfoRow icon={Hash} label={t("sharedStem.fields.bpm")} value={trackData.bpm ? String(trackData.bpm) : "—"} />
+              <InfoRow icon={Music} label={t("sharedStem.fields.key")} value={trackData.key || "—"} />
+              <InfoRow icon={Clock} label={t("sharedStem.fields.duration")} value={totalDurationSeconds > 0 ? formatDuration(totalDurationSeconds) : "—"} />
+              <InfoRow icon={Headphones} label={t("sharedStem.fields.voice")} value={trackData.voice || "—"} />
+              <InfoRow icon={Globe} label={t("sharedStem.fields.language")} value={trackData.language || "—"} />
+              <InfoRow icon={Tag} label={t("sharedStem.fields.mood")} value={trackData.mood?.join(", ") || "—"} />
+              <InfoRow icon={Calendar} label={t("sharedStem.fields.release")} value={trackData.release_date || "—"} />
             </div>
             {trackData.featuring && (
               <div className="pt-2 border-t border-border">
-                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-1">Featured Artists</p>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-1">{t("sharedStem.fields.featuredArtists")}</p>
                 <p className="text-sm text-foreground">{trackData.featuring}</p>
               </div>
             )}
@@ -722,7 +727,7 @@ function TrackDetailTabs({
             <div className="bg-card border border-border rounded-2xl p-5" style={{ boxShadow: "var(--shadow-card)" }}>
               <div className="flex items-center gap-2 mb-3">
                 <FileText className="w-4 h-4 text-muted-foreground" />
-                <span className="text-xs font-semibold text-foreground">Lyrics</span>
+                <span className="text-xs font-semibold text-foreground">{t("sharedStem.tabs.lyrics")}</span>
               </div>
               <pre className="text-sm text-foreground/90 whitespace-pre-wrap font-sans leading-relaxed">
                 {trackData.lyrics}
@@ -738,7 +743,7 @@ function TrackDetailTabs({
               <div className="px-5 py-3 border-b border-border">
                 <div className="flex items-center gap-2">
                   <Layers className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-xs font-semibold text-foreground">{stems.length} Stems</span>
+                  <span className="text-xs font-semibold text-foreground">{t("sharedStem.stemsCount", { count: stems.length })}</span>
                 </div>
               </div>
               <div className="divide-y divide-border">
@@ -756,7 +761,7 @@ function TrackDetailTabs({
                         </div>
                       </div>
                       {allowDownload && (
-                        <button onClick={function() { onDownloadItem(stem.file_name); }} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
+                        <button onClick={function() { onDownloadItem(stem.file_name); }} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={t("sharedStem.downloadAction")}>
                           <Download className="w-4 h-4" />
                         </button>
                       )}
@@ -773,20 +778,20 @@ function TrackDetailTabs({
           <div className="bg-card border border-border rounded-2xl p-5 space-y-3" style={{ boxShadow: "var(--shadow-card)" }}>
             <div className="flex items-center gap-2 mb-2">
               <PieChart className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs font-semibold text-foreground">Track Metadata</span>
+              <span className="text-xs font-semibold text-foreground">{t("sharedStem.metadata.title")}</span>
             </div>
             <div className="grid grid-cols-1 gap-2">
-              <MetaRow label="ISRC" value={trackData.isrc || "—"} />
-              <MetaRow label="UPC" value={trackData.upc || "—"} />
-              <MetaRow label="Label" value={trackData.label || "—"} />
-              <MetaRow label="Publisher" value={trackData.publishers && trackData.publishers.length > 0 ? trackData.publishers.join(", ") : "—"} />
-              <MetaRow label="Copyright" value={trackData.copyright || "—"} />
-              <MetaRow label="Written By" value={trackData.written_by?.join(", ") || "—"} />
-              <MetaRow label="Produced By" value={trackData.produced_by?.join(", ") || "—"} />
-              <MetaRow label="Mixed By" value={trackData.mixed_by || "—"} />
-              <MetaRow label="Mastered By" value={trackData.mastered_by || "—"} />
-              <MetaRow label="Type" value={trackData.type || "—"} />
-              <MetaRow label="Explicit" value={trackData.explicit ? "Yes" : "No"} />
+              <MetaRow label={t("sharedStem.metadata.isrc")} value={trackData.isrc || "—"} />
+              <MetaRow label={t("sharedStem.metadata.upc")} value={trackData.upc || "—"} />
+              <MetaRow label={t("sharedStem.metadata.label")} value={trackData.label || "—"} />
+              <MetaRow label={t("sharedStem.metadata.publisher")} value={trackData.publishers && trackData.publishers.length > 0 ? trackData.publishers.join(", ") : "—"} />
+              <MetaRow label={t("sharedStem.metadata.copyright")} value={trackData.copyright || "—"} />
+              <MetaRow label={t("sharedStem.metadata.writtenBy")} value={trackData.written_by?.join(", ") || "—"} />
+              <MetaRow label={t("sharedStem.metadata.producedBy")} value={trackData.produced_by?.join(", ") || "—"} />
+              <MetaRow label={t("sharedStem.metadata.mixedBy")} value={trackData.mixed_by || "—"} />
+              <MetaRow label={t("sharedStem.metadata.masteredBy")} value={trackData.mastered_by || "—"} />
+              <MetaRow label={t("sharedStem.metadata.type")} value={trackData.type || "—"} />
+              <MetaRow label={t("sharedStem.metadata.explicit")} value={trackData.explicit ? t("common.yes") : t("common.no")} />
             </div>
           </div>
         </TabsContent>
@@ -796,7 +801,7 @@ function TrackDetailTabs({
           <div className="bg-card border border-border rounded-2xl p-5" style={{ boxShadow: "var(--shadow-card)" }}>
             <div className="flex items-center gap-2 mb-4">
               <Clock className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs font-semibold text-foreground">Current Status</span>
+              <span className="text-xs font-semibold text-foreground">{t("sharedStem.currentStatus")}</span>
               <span className="ml-auto px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">
                 {trackData.status || "—"}
               </span>
@@ -845,6 +850,7 @@ function AutonomousReviewPanel({
   totalDurationSeconds: number;
   onSeek: (seconds: number) => void;
 }) {
+  const { t } = useTranslation();
   var [composerOpen, setComposerOpen] = useState(false);
   var [commentText, setCommentText] = useState("");
   var [submitting, setSubmitting] = useState(false);
@@ -918,7 +924,7 @@ function AutonomousReviewPanel({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Your Feedback</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t("sharedStem.review.yourFeedback")}</h3>
           {myComments.length > 0 && (
             <span className="text-[10px] text-muted-foreground">({myComments.length})</span>
           )}
@@ -927,7 +933,7 @@ function AutonomousReviewPanel({
           onClick={function() { setComposerOpen(true); }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold btn-brand"
         >
-          <MessageSquare className="w-3 h-3" /> Add Comment
+          <MessageSquare className="w-3 h-3" /> {t("sharedStem.review.addComment")}
         </button>
       </div>
 
@@ -940,17 +946,17 @@ function AutonomousReviewPanel({
           <textarea
             value={commentText}
             onChange={function(e) { setCommentText(e.target.value); }}
-            placeholder="Share your feedback on this moment..."
+            placeholder={t("sharedStem.review.feedbackPlaceholder")}
             className="w-full p-3 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/30 resize-none min-h-[60px]"
             autoFocus
           />
           <div className="flex gap-2">
             <button onClick={handleSubmit} disabled={submitting || !commentText.trim()} className="px-4 py-1.5 rounded-lg text-xs font-semibold btn-brand flex items-center gap-1.5">
               {submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-              Send
+              {t("common.send")}
             </button>
             <button onClick={function() { setComposerOpen(false); setCommentText(""); }} className="px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </div>
@@ -959,8 +965,8 @@ function AutonomousReviewPanel({
       {myComments.length === 0 && !composerOpen ? (
         <div className="bg-card border border-border rounded-xl p-8 text-center" style={{ boxShadow: "var(--shadow-card)" }}>
           <MessageSquare className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">No feedback yet</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">Click the button above to leave timecoded feedback</p>
+          <p className="text-sm font-medium text-muted-foreground">{t("sharedStem.review.empty")}</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">{t("sharedStem.review.emptyHint")}</p>
         </div>
       ) : (
         <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border/50" style={{ boxShadow: "var(--shadow-card)" }}>
@@ -985,8 +991,8 @@ function AutonomousReviewPanel({
                           autoFocus
                         />
                         <div className="flex gap-2">
-                          <button onClick={function() { handleEdit(comment.id, editText.trim()); }} className="px-3 py-1 rounded-lg text-xs font-semibold btn-brand">Save</button>
-                          <button onClick={function() { setEditingId(null); }} className="px-3 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors">Cancel</button>
+                          <button onClick={function() { handleEdit(comment.id, editText.trim()); }} className="px-3 py-1 rounded-lg text-xs font-semibold btn-brand">{t("common.save")}</button>
+                          <button onClick={function() { setEditingId(null); }} className="px-3 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors">{t("common.cancel")}</button>
                         </div>
                       </div>
                     ) : (
@@ -996,7 +1002,7 @@ function AutonomousReviewPanel({
                           <span className="text-[10px] text-muted-foreground/50">
                             {new Date(comment.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                           </span>
-                          {comment.updated_at && comment.updated_at !== comment.created_at && <span className="text-[9px] text-muted-foreground/40 italic">Edited</span>}
+                          {comment.updated_at && comment.updated_at !== comment.created_at && <span className="text-[9px] text-muted-foreground/40 italic">{t("sharedStem.review.edited")}</span>}
                         </div>
                       </>
                     )}
@@ -1013,11 +1019,11 @@ function AutonomousReviewPanel({
                         <div className="absolute right-0 top-7 z-20 w-28 bg-popover border border-border rounded-lg shadow-lg py-1" style={{ boxShadow: "var(--shadow-elevated)" }}>
                           <button onClick={function() { setEditingId(comment.id); setEditText(comment.content); setOpenMenuId(null); }}
                             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-secondary transition-colors">
-                            <Edit3 className="w-3 h-3" /> Edit
+                            <Edit3 className="w-3 h-3" /> {t("common.edit")}
                           </button>
                           <button onClick={function() { setDeleteConfirmId(comment.id); setOpenMenuId(null); }}
                             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors">
-                            <Trash2 className="w-3 h-3" /> Delete
+                            <Trash2 className="w-3 h-3" /> {t("common.delete")}
                           </button>
                         </div>
                       )}
@@ -1033,12 +1039,12 @@ function AutonomousReviewPanel({
       <AlertDialog open={!!deleteConfirmId} onOpenChange={function(open) { if (!open) setDeleteConfirmId(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Comment</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure? This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogTitle>{t("sharedStem.review.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("sharedStem.review.deleteDescription")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("common.delete")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1054,13 +1060,14 @@ function SimpleContentList({ stems, shareType, trackData, allowDownload, onDownl
   allowDownload: boolean;
   onDownloadItem: (name: string) => void;
 }) {
+  const { t } = useTranslation();
   if (shareType === "stems" && stems.length > 0) {
     return (
       <div className="bg-card border border-border rounded-2xl overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
         <div className="px-5 py-3 border-b border-border">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs font-semibold text-foreground">{stems.length} Stems</span>
+            <span className="text-xs font-semibold text-foreground">{t("sharedStem.stemsCount", { count: stems.length })}</span>
           </div>
         </div>
         <div className="divide-y divide-border">
@@ -1078,7 +1085,7 @@ function SimpleContentList({ stems, shareType, trackData, allowDownload, onDownl
                   </div>
                 </div>
                 {allowDownload && (
-                  <button onClick={function() { onDownloadItem(stem.file_name); }} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
+                  <button onClick={function() { onDownloadItem(stem.file_name); }} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={t("sharedStem.downloadAction")}>
                     <Download className="w-4 h-4" />
                   </button>
                 )}
@@ -1095,7 +1102,7 @@ function SimpleContentList({ stems, shareType, trackData, allowDownload, onDownl
       <div className="px-5 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <Music className="w-4 h-4 text-muted-foreground" />
-          <span className="text-xs font-semibold text-foreground">Track</span>
+          <span className="text-xs font-semibold text-foreground">{t("sharedStem.trackLabel")}</span>
         </div>
       </div>
       <div className="flex items-center justify-between px-5 py-4 hover:bg-secondary/30 transition-colors">
@@ -1108,12 +1115,12 @@ function SimpleContentList({ stems, shareType, trackData, allowDownload, onDownl
             </div>
           )}
           <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">{trackData?.title || "Track"}</p>
+            <p className="text-sm font-medium text-foreground truncate">{trackData?.title || t("sharedStem.fallback.track")}</p>
             <p className="text-[11px] text-muted-foreground">{trackData?.artist || ""}</p>
           </div>
         </div>
         {allowDownload && (
-          <button onClick={function() { onDownloadItem(trackData?.title || "Track"); }} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
+          <button onClick={function() { onDownloadItem(trackData?.title || t("sharedStem.fallback.track")); }} className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={t("sharedStem.downloadAction")}>
             <Download className="w-4 h-4" />
           </button>
         )}
