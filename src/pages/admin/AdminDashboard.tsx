@@ -8,6 +8,7 @@ import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 import OverviewTab from "@/components/admin/OverviewTab";
 import WaitlistTab from "@/components/admin/WaitlistTab";
+import ContactsTab from "@/components/admin/ContactsTab";
 
 export default function AdminDashboard() {
   const { user, session, loading, signOut } = useAuth();
@@ -71,6 +72,7 @@ export default function AdminDashboard() {
           <TabsList className="mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
+            <TabsTrigger value="contacts">Contacts</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-0">
@@ -79,6 +81,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="waitlist" className="mt-0">
             <WaitlistTab />
+          </TabsContent>
+
+          <TabsContent value="contacts" className="mt-0">
+            <ContactsTab />
           </TabsContent>
         </Tabs>
       </main>

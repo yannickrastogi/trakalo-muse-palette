@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, ListMusic, Briefcase, UserPlus } from "lucide-react";
+import { Users, ListMusic, Briefcase, UserPlus, Contact } from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -20,6 +20,7 @@ interface AdminOverview {
   users_total: number;
   workspaces_total: number;
   tracks_total: number;
+  contacts_total: number;
 }
 
 interface DailyPoint {
@@ -27,15 +28,29 @@ interface DailyPoint {
   count: number;
 }
 
+// get_admin_overview returns nested objects:
+//   { waitlist: { total, this_week }, users: { total }, workspaces: { total },
+//     tracks: { total }, contacts: { total } }
+// Older shape (flat keys) is kept as a fallback.
 function normalizeOverview(raw: unknown): AdminOverview {
   const r = (raw ?? {}) as Record<string, unknown>;
   const num = (v: unknown) => (typeof v === "number" ? v : Number(v) || 0);
+  const group = (key: string): Record<string, unknown> => {
+    const v = r[key];
+    return v && typeof v === "object" ? (v as Record<string, unknown>) : {};
+  };
+  const waitlist = group("waitlist");
+  const users = group("users");
+  const workspaces = group("workspaces");
+  const tracks = group("tracks");
+  const contacts = group("contacts");
   return {
-    waitlist_total: num(r.waitlist_total),
-    waitlist_this_week: num(r.waitlist_this_week),
-    users_total: num(r.users_total),
-    workspaces_total: num(r.workspaces_total),
-    tracks_total: num(r.tracks_total),
+    waitlist_total: num(waitlist.total ?? r.waitlist_total),
+    waitlist_this_week: num(waitlist.this_week ?? r.waitlist_this_week),
+    users_total: num(users.total ?? r.users_total),
+    workspaces_total: num(workspaces.total ?? r.workspaces_total),
+    tracks_total: num(tracks.total ?? r.tracks_total),
+    contacts_total: num(contacts.total ?? r.contacts_total),
   };
 }
 
@@ -101,7 +116,7 @@ export default function OverviewTab() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
         <KpiCard
           icon={<UserPlus className="h-4 w-4" />}
           label="Waitlist"
@@ -126,6 +141,12 @@ export default function OverviewTab() {
           icon={<ListMusic className="h-4 w-4" />}
           label="Tracks"
           value={overview?.tracks_total}
+          loading={!overview}
+        />
+        <KpiCard
+          icon={<Contact className="h-4 w-4" />}
+          label="Contacts"
+          value={overview?.contacts_total}
           loading={!overview}
         />
       </div>
