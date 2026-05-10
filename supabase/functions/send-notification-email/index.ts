@@ -191,8 +191,8 @@ Deno.serve(async (req) => {
     });
 
     if (!res.ok) {
-      const errData = await res.json();
-      console.error("[send-notification-email] Resend error:", errData);
+      const errData = await res.json().catch(() => ({}));
+      console.error("[send-notification-email] Resend send failed (status=" + res.status + ")");
       return new Response(JSON.stringify({ error: errData.message || "Failed to send" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -204,7 +204,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("[send-notification-email] Error:", err);
+    console.error("[send-notification-email] Internal error: " + (err instanceof Error ? err.name : "unknown"));
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

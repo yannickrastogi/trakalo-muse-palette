@@ -283,7 +283,7 @@ Deno.serve(async (req) => {
     });
 
     } catch (groqFetchError) {
-      console.error("smart-ar: Groq API fetch error:", groqFetchError);
+      console.error("smart-ar: Groq API fetch failed (" + (groqFetchError instanceof Error ? groqFetchError.name : "unknown") + ")");
       return new Response(
         JSON.stringify({ error: "Groq API fetch failed: " + (groqFetchError instanceof Error ? groqFetchError.message : String(groqFetchError)) }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -292,7 +292,7 @@ Deno.serve(async (req) => {
 
     if (!groqResponse.ok) {
       const errorText = await groqResponse.text();
-      console.error("smart-ar: Groq API returned " + groqResponse.status + ": " + errorText);
+      console.error("smart-ar: Groq API non-OK (status=" + groqResponse.status + ")");
       return new Response(
         JSON.stringify({ error: "Groq API error: " + errorText }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }

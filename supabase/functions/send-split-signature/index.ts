@@ -135,7 +135,7 @@ serve(async (req) => {
           });
 
         if (insertError) {
-          console.error("Insert error for " + split.email + ": " + insertError.message);
+          console.error("send-split-signature: signature_request insert failed (code=" + (insertError.code || "unknown") + ")");
           continue;
         }
       }
@@ -181,8 +181,7 @@ serve(async (req) => {
       if (res.ok) {
         sent++;
       } else {
-        const errData = await res.json();
-        console.error("Resend error for " + split.email + ": " + (errData.message || res.statusText));
+        console.error("send-split-signature: Resend send failed (status=" + res.status + ")");
       }
     }
 

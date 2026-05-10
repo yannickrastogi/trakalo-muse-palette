@@ -129,8 +129,7 @@ Deno.serve(async (req) => {
     });
 
     if (!wmResponse.ok) {
-      const wmError = await wmResponse.text();
-      console.error("get-watermarked-audio encoding error:", wmError);
+      console.error("get-watermarked-audio: watermark encode failed (status=" + wmResponse.status + ", payload_prefix=" + payload.substring(0, 8) + ")");
       return new Response(
         JSON.stringify({ error: "Failed to generate watermarked audio" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

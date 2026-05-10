@@ -88,7 +88,7 @@ serve(async (req) => {
       .upsert(memberData, { onConflict: "user_id,workspace_id" });
 
     if (memberError) {
-      console.error("accept-invitation member error:", memberError.message);
+      console.error("accept-invitation: workspace_members upsert failed (code=" + (memberError.code || "unknown") + ")");
       return new Response(JSON.stringify({ error: "Failed to join workspace" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -102,7 +102,7 @@ serve(async (req) => {
       .eq("id", invitation.id);
 
     if (updateError) {
-      console.error("accept-invitation update error:", updateError.message);
+      console.error("accept-invitation: invitations update failed (code=" + (updateError.code || "unknown") + ")");
       return new Response(JSON.stringify({ error: "Failed to update invitation" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -122,10 +122,10 @@ serve(async (req) => {
             user_id: ws.owner_id,
             data: { member_name: memberProfile?.full_name || invitation.email, member_email: memberProfile?.email || invitation.email, workspace_name: ws.name },
           }),
-        }).catch((e) => console.error("Notification error:", e));
+        }).catch(() => console.error("accept-invitation: notification email dispatch failed"));
       }
-    } catch (e) {
-      console.error("Notification lookup error:", e);
+    } catch {
+      console.error("accept-invitation: notification lookup failed");
     }
 
     return new Response(JSON.stringify({ success: true, workspace_id: workspaceId }), {

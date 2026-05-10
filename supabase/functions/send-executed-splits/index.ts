@@ -173,8 +173,7 @@ serve(async (req) => {
       if (res.ok) {
         sent++;
       } else {
-        const errData = await res.json();
-        console.error("Resend error for " + sig.collaborator_email + ": " + (errData.message || res.statusText));
+        console.error("send-executed-splits: Resend send failed (status=" + res.status + ")");
       }
     }
 

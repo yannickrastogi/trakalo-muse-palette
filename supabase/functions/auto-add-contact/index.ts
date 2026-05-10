@@ -90,7 +90,7 @@ serve(async (req) => {
       .single();
 
     if (insertError) {
-      console.error("Insert contact error:", insertError.message);
+      console.error("auto-add-contact: contacts insert failed (code=" + (insertError.code || "unknown") + ")");
       return new Response(JSON.stringify({ error: "Failed to save contact" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

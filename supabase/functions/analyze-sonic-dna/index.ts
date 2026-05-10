@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
         });
       }
     } catch (dbErr) {
-      console.error("analyze-sonic-dna DB exception:", dbErr);
+      console.error("analyze-sonic-dna: DB exception (" + (dbErr instanceof Error ? dbErr.name : "unknown") + ")");
       return new Response(JSON.stringify({ error: "Failed to update track analysis" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

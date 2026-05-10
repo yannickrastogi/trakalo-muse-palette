@@ -61,7 +61,7 @@ serve(async (req) => {
       });
 
     if (dlError) {
-      console.error("Error inserting link_downloads:", dlError);
+      console.error("log-link-access: link_downloads insert failed (code=" + (dlError.code || "unknown") + ")");
     }
 
     // Upsert into contacts (only if email doesn't already exist in this workspace)
@@ -86,7 +86,7 @@ serve(async (req) => {
           });
 
         if (contactError) {
-          console.error("Error inserting contact:", contactError);
+          console.error("log-link-access: contact insert failed (code=" + (contactError.code || "unknown") + ")");
         }
       }
     }
@@ -109,10 +109,10 @@ serve(async (req) => {
             user_id: ws.owner_id,
             data: { visitor_name: name, visitor_email: email, track_title: trackTitle, link_slug: slug },
           }),
-        }).catch((e) => console.error("Notification email error:", e));
+        }).catch(() => console.error("log-link-access: notification email dispatch failed"));
       }
-    } catch (e) {
-      console.error("Notification lookup error:", e);
+    } catch {
+      console.error("log-link-access: notification lookup failed");
     }
 
     return new Response(JSON.stringify({ success: true }), {

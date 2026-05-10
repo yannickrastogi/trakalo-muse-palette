@@ -70,7 +70,7 @@ serve(async (req) => {
       });
 
     if (insertError) {
-      console.error("Error inserting link_event:", insertError);
+      console.error("log-link-event: link_events insert failed (code=" + (insertError.code || "unknown") + ")");
       return new Response(JSON.stringify({ error: "Failed to log event" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
