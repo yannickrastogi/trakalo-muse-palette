@@ -1,5 +1,6 @@
 const ALLOWED_ORIGINS = [
   "https://app.trakalog.com",
+  "https://admin.trakalog.com",
   "https://trakalog.com",
   "https://www.trakalog.com",
   "http://localhost:8080",

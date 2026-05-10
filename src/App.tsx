@@ -49,6 +49,9 @@ import RadioPage from "./pages/Radio";
 import StudioSession from "./pages/StudioSession";
 import SignAgreement from "./pages/SignAgreement";
 import LandingPage from "./pages/LandingPage";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import { isAdminMode } from "./lib/adminMode";
 
 const queryClient = new QueryClient();
 
@@ -121,7 +124,25 @@ function AuthLayout() {
   );
 }
 
-const App = () => (
+const AdminApp = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route element={<AuthLayout />}>
+            <Route path="/" element={<AdminLogin />} />
+            <Route path="/dashboard" element={<AdminDashboard />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
+
+const MainApp = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -170,5 +191,7 @@ const App = () => (
     </TooltipProvider>
   </QueryClientProvider>
 );
+
+const App = () => (isAdminMode() ? <AdminApp /> : <MainApp />);
 
 export default App;
