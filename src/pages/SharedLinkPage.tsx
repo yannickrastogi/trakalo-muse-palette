@@ -1405,11 +1405,36 @@ export default function SharedLinkPage() {
                     </div>
                   )}
 
+                  {audioLoading && playingTrackId && linkData?.watermarking_enabled !== false && (
+                    <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (plImmersive ? "bg-white/8 backdrop-blur border border-white/10" : "bg-muted/40 border border-border")}>
+                      <ShieldCheck className={"w-4 h-4 mt-0.5 shrink-0 animate-pulse " + (plImmersive ? "text-white/80" : "text-primary")} />
+                      <div className="min-w-0 flex-1">
+                        <p className={"text-xs font-semibold " + (plImmersive ? "text-white" : "text-foreground")}>{t("sharedLink.watermark.preparing")}</p>
+                        <p className={"text-[10px] mt-0.5 " + (plImmersive ? "text-white/55" : "text-muted-foreground")}>{t("sharedLink.watermark.explanation")}</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Controls row */}
                   <div className="flex items-center justify-between">
-                    <span className={"text-[11px] font-mono tabular-nums w-10 " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
-                      {formatDuration(currentTime)}
-                    </span>
+                    <div className="flex items-center gap-2 min-w-[40px]">
+                      <span className={"text-[11px] font-mono tabular-nums " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
+                        {formatDuration(currentTime)}
+                      </span>
+                      {isWatermarked && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className={"inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full cursor-help " + (plImmersive ? "bg-white/10 text-white/50" : "bg-muted text-muted-foreground")}>
+                              <ShieldCheck className="w-3 h-3" />
+                              {t("sharedLink.watermark.protected")}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs max-w-[260px]">
+                            {t("sharedLink.watermark.tooltip")}
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
 
                     {/* Transport controls */}
                     <div className="flex items-center gap-3">
@@ -1468,6 +1493,11 @@ export default function SharedLinkPage() {
                       </span>
                     </div>
                   </div>
+                  {isWatermarked && !audioLoading && (
+                    <p className={"text-[10px] text-center " + (plImmersive ? "text-white/40" : "text-muted-foreground/60")}>
+                      {t("sharedLink.watermark.confirmation")}
+                    </p>
+                  )}
 
                   {activeTrack && Array.isArray(activeTrack.lyrics_segments) && activeTrack.lyrics_segments.length > 0 && (
                     <KaraokeLyrics
