@@ -44,6 +44,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { WelcomeOnboarding } from "@/components/onboarding/WelcomeOnboarding";
 import { GuidedTour } from "@/components/onboarding/GuidedTour";
 import { useOnboarding } from "@/contexts/OnboardingContext";
+import { useOnboardingStatus } from "@/hooks/use-onboarding-status";
 
 import { DEFAULT_COVER } from "@/lib/constants";
 import { AuroraBackground } from "@/components/visual/AuroraBackground";
@@ -414,9 +415,11 @@ export function DashboardContent() {
   ];
 
   const isFirstSaveUser = localStorage.getItem("trakalog_first_save_done") === "true";
-  const [showWelcome, setShowWelcome] = useState(() => {
-    return !isFirstSaveUser && localStorage.getItem("trakalog_onboarding_complete") !== "true";
-  });
+  const { isLoading: onboardingLoading, isComplete: onboardingComplete, markComplete: markOnboardingComplete } = useOnboardingStatus();
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  // DB (onboarding_complete) is the source of truth — never show the modal once it is true,
+  // regardless of localStorage. Wait for the DB check to settle to avoid a flash.
+  const showWelcome = !isFirstSaveUser && !onboardingLoading && !onboardingComplete && !welcomeDismissed;
 
   const [runTour, setRunTour] = useState(false);
   const [checklistKey, setChecklistKey] = useState(0);
@@ -1288,7 +1291,7 @@ export function DashboardContent() {
       {/* Welcome Onboarding overlay */}
       <AnimatePresence>
         {showWelcome && (
-          <WelcomeOnboarding onComplete={() => setShowWelcome(false)} />
+          <WelcomeOnboarding onComplete={() => { setWelcomeDismissed(true); markOnboardingComplete(); }} />
         )}
       </AnimatePresence>
 

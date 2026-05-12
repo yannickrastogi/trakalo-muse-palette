@@ -38,25 +38,42 @@ export default function Onboarding() {
   const [showButton, setShowButton] = useState(false);
   const [checkingWorkspace, setCheckingWorkspace] = useState(true);
 
-  // Check if user already has a workspace → redirect to dashboard.
-  // Uses get_user_workspaces RPC (SECURITY DEFINER) — direct table queries are
+  // Redirect to dashboard if onboarding is already done.
+  // DB is the source of truth (profiles.onboarding_complete), with get_user_workspaces
+  // as a defensive secondary check. Direct table queries on workspace_members are
   // unreliable here because auth.uid() can return NULL under RLS.
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await supabase.rpc("get_user_workspaces", { _user_id: user.id });
+        const [profileRes, wsRes] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("onboarding_complete")
+            .eq("id", user.id)
+            .maybeSingle(),
+          supabase.rpc("get_user_workspaces", { _user_id: user.id }),
+        ]);
         if (cancelled) return;
-        if (!error && Array.isArray(data) && data.length > 0) {
-          // User already has at least one workspace — never recreate.
+
+        const profileComplete = !!(profileRes.data && (profileRes.data as { onboarding_complete?: boolean }).onboarding_complete);
+        const hasWorkspace = !wsRes.error && Array.isArray(wsRes.data) && wsRes.data.length > 0;
+
+        if (profileComplete || hasWorkspace) {
+          // Backfill DB if a workspace exists but the flag wasn't set (legacy users).
+          if (!profileComplete && hasWorkspace) {
+            supabase.rpc("mark_onboarding_complete", { _user_id: user.id }).then(function (res) {
+              if (res.error) console.error("Error backfilling onboarding flag:", res.error);
+            });
+          }
           safeLocalStorage.setItem("trakalog_onboarding_complete", "true");
           navigate("/dashboard", { replace: true });
           return;
         }
         setCheckingWorkspace(false);
       } catch (err) {
-        console.error("Error checking workspace:", err);
+        console.error("Error checking onboarding status:", err);
         if (!cancelled) setCheckingWorkspace(false);
       }
     })();
@@ -89,6 +106,9 @@ export default function Onboarding() {
     const { data: existingWs } = await supabase.rpc("get_user_workspaces", { _user_id: user.id });
     if (Array.isArray(existingWs) && existingWs.length > 0) {
       safeLocalStorage.setItem("trakalog_onboarding_complete", "true");
+      supabase.rpc("mark_onboarding_complete", { _user_id: user.id }).then(function (res) {
+        if (res.error) console.error("Error marking onboarding complete:", res.error);
+      });
       setSubmitting(false);
       const returnUrl = searchParams.get("return");
       const pendingAutoSave = safeLocalStorage.getItem("trakalog_auto_save");
@@ -119,8 +139,11 @@ export default function Onboarding() {
       return;
     }
 
-    // Mark onboarding complete so WelcomeOnboarding modal doesn't pop up
+    // Mark onboarding complete (DB + localStorage) so the modal never re-appears.
     safeLocalStorage.setItem("trakalog_onboarding_complete", "true");
+    supabase.rpc("mark_onboarding_complete", { _user_id: user.id }).then(function (res) {
+      if (res.error) console.error("Error marking onboarding complete:", res.error);
+    });
 
     // 3. Check for return URL or pending auto-save
     const returnUrl = searchParams.get("return");

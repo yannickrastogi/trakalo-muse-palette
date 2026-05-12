@@ -33,6 +33,12 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
 
   function finish() {
     localStorage.setItem("trakalog_onboarding_complete", "true");
+    // Persist in DB so the modal never re-appears on another device / after cache wipe.
+    if (user) {
+      supabase.rpc("mark_onboarding_complete", { _user_id: user.id }).then(function (res) {
+        if (res.error) console.error("Error marking onboarding complete:", res.error);
+      });
+    }
     onComplete();
   }
 
