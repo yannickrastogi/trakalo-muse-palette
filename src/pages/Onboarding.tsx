@@ -38,26 +38,30 @@ export default function Onboarding() {
   const [showButton, setShowButton] = useState(false);
   const [checkingWorkspace, setCheckingWorkspace] = useState(true);
 
-  // Check if user already has a workspace → redirect to dashboard
+  // Check if user already has a workspace → redirect to dashboard.
+  // Uses get_user_workspaces RPC (SECURITY DEFINER) — direct table queries are
+  // unreliable here because auth.uid() can return NULL under RLS.
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("workspace_members")
-      .select("workspace_id")
-      .eq("user_id", user.id)
-      .limit(1)
-      .then(function (res) {
-        if (res.data && res.data.length > 0) {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc("get_user_workspaces", { _user_id: user.id });
+        if (cancelled) return;
+        if (!error && Array.isArray(data) && data.length > 0) {
+          // User already has at least one workspace — never recreate.
+          safeLocalStorage.setItem("trakalog_onboarding_complete", "true");
           navigate("/dashboard", { replace: true });
-        } else {
-          setCheckingWorkspace(false);
+          return;
         }
-      })
-      .catch(function (err) {
-        console.error("Error checking workspace:", err);
         setCheckingWorkspace(false);
-      });
-  }, [user]);
+      } catch (err) {
+        console.error("Error checking workspace:", err);
+        if (!cancelled) setCheckingWorkspace(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user, navigate]);
 
   // Auto-update workspace name when typing name (unless manually edited)
   const handleNameChange = (value: string) => {
@@ -76,7 +80,27 @@ export default function Onboarding() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !workspaceName.trim() || submitting) return;
+    if (!user) return;
     setSubmitting(true);
+
+    // Final guard against duplicate workspace creation: re-verify the user has
+    // no workspace right before the INSERT (handles races with handle_new_user
+    // trigger or any concurrent auto-create).
+    const { data: existingWs } = await supabase.rpc("get_user_workspaces", { _user_id: user.id });
+    if (Array.isArray(existingWs) && existingWs.length > 0) {
+      safeLocalStorage.setItem("trakalog_onboarding_complete", "true");
+      setSubmitting(false);
+      const returnUrl = searchParams.get("return");
+      const pendingAutoSave = safeLocalStorage.getItem("trakalog_auto_save");
+      if (returnUrl) {
+        navigate(returnUrl, { replace: true });
+      } else if (pendingAutoSave) {
+        navigate("/share/" + pendingAutoSave, { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+      return;
+    }
 
     // 1. Update user profile if name changed
     if (name.trim() !== googleName) {
@@ -94,6 +118,9 @@ export default function Onboarding() {
       setSubmitting(false);
       return;
     }
+
+    // Mark onboarding complete so WelcomeOnboarding modal doesn't pop up
+    safeLocalStorage.setItem("trakalog_onboarding_complete", "true");
 
     // 3. Check for return URL or pending auto-save
     const returnUrl = searchParams.get("return");
