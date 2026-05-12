@@ -37,6 +37,8 @@ interface SharedLinkRow {
   expires_at: string | null;
   status: string;
   created_at: string;
+  watermarking_enabled: boolean;
+  gate_screen_enabled: boolean;
 }
 
 interface TrackRow {
@@ -262,6 +264,13 @@ export default function SharedStemAccess() {
 
     return function () { isMounted = false; };
   }, [linkId]);
+
+  // Auto-skip form when gate is disabled by sender
+  useEffect(function() {
+    if (!link || formCompleted) return;
+    if (link.gate_screen_enabled !== false) return;
+    setFormCompleted(true);
+  }, [link, formCompleted]);
 
   // Fetch comments when form is completed
   useEffect(function() {

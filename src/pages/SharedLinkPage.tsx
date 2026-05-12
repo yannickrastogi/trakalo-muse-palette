@@ -35,6 +35,8 @@ interface SharedLinkData {
   created_at: string;
   pack_items: string[] | null;
   workspace_id: string;
+  watermarking_enabled: boolean;
+  gate_screen_enabled: boolean;
 }
 
 interface WorkspaceBranding {
@@ -504,6 +506,14 @@ export default function SharedLinkPage() {
     logEvent(null, "view");
   }, [linkData]);
 
+  // Auto-skip gate when disabled by sender
+  useEffect(function() {
+    if (!linkData || gateCompleted) return;
+    if (linkData.gate_screen_enabled !== false) return;
+    setGateCompleted(true);
+    logEvent(null, "view");
+  }, [linkData]);
+
   // Fetch workspace branding when link data is available
   useEffect(function() {
     if (!linkData || !linkData.workspace_id) return;
@@ -616,7 +626,8 @@ export default function SharedLinkPage() {
       var currentLinkId = linkData?.id;
       var currentVisitorEmail = visitorEmailRef.current;
       var currentVisitorName = visitorName;
-      if (storagePath && currentLinkId && currentVisitorEmail) {
+      var watermarkingOn = linkData?.watermarking_enabled !== false;
+      if (watermarkingOn && storagePath && currentLinkId && currentVisitorEmail) {
         var wmAbort = new AbortController();
         var wmTimeout = setTimeout(function() { wmAbort.abort(); }, 30000);
         fetch(SUPABASE_URL + "/functions/v1/get-watermarked-audio", {
@@ -1721,7 +1732,7 @@ export default function SharedLinkPage() {
                   </div>
                 )}
 
-                {audioLoading && playingTrackId === trackData.id && (
+                {audioLoading && playingTrackId === trackData.id && linkData?.watermarking_enabled !== false && (
                   <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (immersive ? "bg-white/8 backdrop-blur border border-white/10" : "bg-muted/40 border border-border")}>
                     <ShieldCheck className={"w-4 h-4 mt-0.5 shrink-0 animate-pulse " + (immersive ? "text-white/80" : "text-primary")} />
                     <div className="min-w-0 flex-1">

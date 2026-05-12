@@ -57,6 +57,9 @@ export interface SharedLink extends WorkspaceScoped {
   allowDownload: boolean;
   allowSave?: boolean;
   downloadQuality?: "hi-res" | "low-res";
+  // Protection toggles
+  watermarkingEnabled?: boolean;
+  gateScreenEnabled?: boolean;
   // Event stats
   views?: number;
   plays?: number;
@@ -112,6 +115,8 @@ function mapRowToSharedLink(row: Record<string, unknown>): SharedLink {
     allowDownload: (row.allow_download as boolean) || false,
     allowSave: (row.allow_save as boolean) !== false,
     downloadQuality: (row.download_quality as "hi-res" | "low-res") || undefined,
+    watermarkingEnabled: (row.watermarking_enabled as boolean) !== false,
+    gateScreenEnabled: (row.gate_screen_enabled as boolean) !== false,
   };
 }
 
@@ -220,6 +225,8 @@ export function SharedLinksProvider({ children }: { children: ReactNode }) {
       _download_quality: link.downloadQuality || null,
       _expires_at: link.expirationDate || null,
       _pack_items: link.packItems ? JSON.stringify(link.packItems) : null,
+      _watermarking_enabled: link.watermarkingEnabled !== false,
+      _gate_screen_enabled: link.gateScreenEnabled !== false,
     });
 
     if (error) {

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Link2, Lock, Copy, Check, Music, ListMusic, Download, ShieldOff, Bookmark, Layers, Upload } from "lucide-react";
+import { X, Link2, Lock, Copy, Check, Music, ListMusic, Download, ShieldOff, ShieldCheck, Bookmark, Layers, Upload, User, AlertTriangle } from "lucide-react";
 import { useSharedLinks, type SharedLink, type ShareType } from "@/contexts/SharedLinksContext";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -53,6 +53,8 @@ export function ShareModal({
   const [allowDownload, setAllowDownload] = useState(false);
   const [allowSave, setAllowSave] = useState(true);
   const [downloadQuality, setDownloadQuality] = useState<"hi-res" | "low-res">("low-res");
+  const [watermarkingEnabled, setWatermarkingEnabled] = useState(true);
+  const [gateScreenEnabled, setGateScreenEnabled] = useState(true);
   const [copied, setCopied] = useState(false);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
 
@@ -122,6 +124,8 @@ export function ShareModal({
       allowDownload: shareType === "pack" ? true : allowDownload,
       allowSave: allowSave,
       downloadQuality: (shareType === "pack" || allowDownload) ? downloadQuality : undefined,
+      watermarkingEnabled: watermarkingEnabled === true,
+      gateScreenEnabled: gateScreenEnabled === true,
     };
 
     const created = await createSharedLink(newLink);
@@ -153,6 +157,8 @@ export function ShareModal({
     setMessage("");
     setAllowDownload(false);
     setDownloadQuality("low-res");
+    setWatermarkingEnabled(true);
+    setGateScreenEnabled(true);
     onClose();
   };
 
@@ -398,6 +404,51 @@ export function ShareModal({
                   </div>
                 </div>
                 )}
+
+                {/* Audio watermarking toggle */}
+                <div className="space-y-3 mt-4">
+                  <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block">Protection</label>
+                  <div className={"rounded-xl border transition-all " + (watermarkingEnabled ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/30") + " p-3.5"}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <ShieldCheck className={"w-4 h-4 mt-0.5 shrink-0 " + (watermarkingEnabled ? "text-primary" : "text-muted-foreground")} />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground">Audio watermarking</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">Each playback is uniquely watermarked for leak tracing. Adds 1-2 seconds to playback start.</p>
+                        </div>
+                      </div>
+                      <Switch checked={watermarkingEnabled} onCheckedChange={setWatermarkingEnabled} />
+                    </div>
+                    {!watermarkingEnabled && (
+                      <div className="mt-2.5 pt-2.5 border-t border-border/50 flex items-start gap-1.5">
+                        <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0 text-amber-500" />
+                        <p className="text-[10px] text-amber-500 leading-relaxed">Without watermarking, you can't identify the source if your audio leaks.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Gate screen toggle */}
+                <div className="space-y-3 mt-4">
+                  <div className={"rounded-xl border transition-all " + (gateScreenEnabled ? "border-primary/30 bg-primary/5" : "border-border bg-secondary/30") + " p-3.5"}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <User className={"w-4 h-4 mt-0.5 shrink-0 " + (gateScreenEnabled ? "text-primary" : "text-muted-foreground")} />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground">Gate screen (visitor info)</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">Visitors enter their name, email, role and company before listening. Contacts auto-added to your workspace.</p>
+                        </div>
+                      </div>
+                      <Switch checked={gateScreenEnabled} onCheckedChange={setGateScreenEnabled} />
+                    </div>
+                    {!gateScreenEnabled && (
+                      <div className="mt-2.5 pt-2.5 border-t border-border/50 flex items-start gap-1.5">
+                        <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0 text-amber-500" />
+                        <p className="text-[10px] text-amber-500 leading-relaxed">Without gate screen, you won't collect contact info from visitors.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Item count */}
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 border border-border">
