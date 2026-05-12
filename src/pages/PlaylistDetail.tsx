@@ -131,9 +131,11 @@ export default function PlaylistDetail() {
   const [tracks, setTracks] = useState<Track[]>(() => {
     if (!playlist) return [];
     if (playlist.trackIds && playlist.trackIds.length > 0) {
-      return allTracks.filter((t) => playlist.trackIds!.includes(t.id));
+      return playlist.trackIds
+        .map((numericId) => allTracks.find((t) => t.id === numericId))
+        .filter((t): t is Track => !!t);
     }
-    return allTracks.slice(0, Math.min(playlist.tracks, allTracks.length));
+    return [];
   });
 
   const [dbTracks, setDbTracks] = useState<Track[]>([]);
@@ -196,17 +198,38 @@ export default function PlaylistDetail() {
     }
   }, [playlist, playlistName]);
 
-  // Sync changes back to context
+  // Sync changes back to context (returns the underlying RPC promise so callers can lock)
   const syncToContext = useCallback((updatedTracks: Track[], updatedName?: string) => {
-    if (!id) return;
-    updatePlaylist(id, {
+    if (!id) return Promise.resolve();
+    return Promise.resolve(updatePlaylist(id, {
       tracks: updatedTracks.length,
       duration: `${updatedTracks.length * 4} min`,
       trackIds: updatedTracks.map((t) => t.id),
       updated: "Just now",
       ...(updatedName ? { name: updatedName } : {}),
-    });
+    }));
   }, [id, updatePlaylist]);
+
+  // RPC concurrency lock — only one replace_playlist_tracks in-flight at a time.
+  // Latest pending order wins (squashes intermediate states).
+  const reorderInFlightRef = useRef(false);
+  const pendingReorderRef = useRef<Track[] | null>(null);
+
+  const flushReorder = useCallback(async () => {
+    if (reorderInFlightRef.current) return;
+    while (pendingReorderRef.current) {
+      const toSync = pendingReorderRef.current;
+      pendingReorderRef.current = null;
+      reorderInFlightRef.current = true;
+      try {
+        await syncToContext(toSync);
+      } catch (e) {
+        console.error("Playlist reorder sync failed:", e);
+      } finally {
+        reorderInFlightRef.current = false;
+      }
+    }
+  }, [syncToContext]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -215,24 +238,29 @@ export default function PlaylistDetail() {
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setTracks((prev) => {
-        const oldIdx = prev.findIndex((t) => t.id === active.id);
-        const newIdx = prev.findIndex((t) => t.id === over.id);
-        const reordered = arrayMove(prev, oldIdx, newIdx);
-        syncToContext(reordered);
-        return reordered;
-      });
-    }
-  }, [syncToContext]);
+    if (!over || active.id === over.id) return;
+    // Operate on the list actually rendered (displayTracks may differ from `tracks` while dbTracks is the source).
+    const source = displayTracks.filter((t): t is Track => !!t && t.id != null);
+    const oldIdx = source.findIndex((t) => t.id === active.id);
+    const newIdx = source.findIndex((t) => t.id === over.id);
+    if (oldIdx === -1 || newIdx === -1) return;
+    const reordered = arrayMove(source, oldIdx, newIdx);
+    setTracks(reordered);
+    setDbTracks(reordered);
+    pendingReorderRef.current = reordered;
+    flushReorder();
+  }, [displayTracks, flushReorder]);
 
   const removeTrack = useCallback((trackId: number) => {
-    setTracks((prev) => {
-      const updated = prev.filter((t) => t.id !== trackId);
-      syncToContext(updated);
-      return updated;
-    });
-  }, [syncToContext]);
+    const source = displayTracks.filter((t): t is Track => !!t && t.id != null);
+    if (source.length === 0) return;
+    const updated = source.filter((t) => t.id !== trackId);
+    if (updated.length === source.length) return;
+    setTracks(updated);
+    setDbTracks(updated);
+    pendingReorderRef.current = updated;
+    flushReorder();
+  }, [displayTracks, flushReorder]);
 
   const availableToAdd = allTracks.filter((t) => !displayTracks.some((pt) => pt.id === t.id));
   const filteredAvailable = addSearch
@@ -480,26 +508,31 @@ export default function PlaylistDetail() {
 
         {/* Track list */}
         <motion.div variants={itemVariant}>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={displayTracks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-              {isMobile ? (
-                <MobileTrackList
-                  tracks={displayTracks}
-                  playingTrackId={playingTrackId}
-                  setPlayingTrackId={setPlayingTrackId}
-                  removeTrack={removeTrack}
-                />
-              ) : (
-                <DesktopTrackTable
-                  tracks={displayTracks}
-                  playingTrackId={playingTrackId}
-                  setPlayingTrackId={setPlayingTrackId}
-                  removeTrack={removeTrack}
-                  totalDuration={playlist.duration}
-                />
-              )}
-            </SortableContext>
-          </DndContext>
+          {(() => {
+            const safeTracks = displayTracks.filter((t): t is Track => !!t && t.id != null);
+            return (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={safeTracks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                  {isMobile ? (
+                    <MobileTrackList
+                      tracks={safeTracks}
+                      playingTrackId={playingTrackId}
+                      setPlayingTrackId={setPlayingTrackId}
+                      removeTrack={removeTrack}
+                    />
+                  ) : (
+                    <DesktopTrackTable
+                      tracks={safeTracks}
+                      playingTrackId={playingTrackId}
+                      setPlayingTrackId={setPlayingTrackId}
+                      removeTrack={removeTrack}
+                      totalDuration={playlist.duration}
+                    />
+                  )}
+                </SortableContext>
+              </DndContext>
+            );
+          })()}
         </motion.div>
       </motion.div>
 
