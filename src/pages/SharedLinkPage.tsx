@@ -1247,7 +1247,7 @@ export default function SharedLinkPage() {
             </div>
           )}
 
-          {/* Playlist header */}
+          {/* Playlist header card */}
           <div className={plImmersive ? "rounded-2xl p-px bg-gradient-to-br from-brand-orange/15 via-brand-pink/15 to-brand-purple/15 hover:from-brand-orange/25 hover:via-brand-pink/25 hover:to-brand-purple/25 transition-all duration-500" : ""}>
           <div className={"rounded-2xl overflow-hidden " + (plImmersive ? "bg-white/8 backdrop-blur-xl border border-white/10" : "bg-card border border-border")} style={plImmersive ? { boxShadow: "0 0 40px rgba(255,255,255,0.03), 0 8px 32px rgba(0,0,0,0.4)" } : { boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 p-4 sm:p-6">
@@ -1279,70 +1279,19 @@ export default function SharedLinkPage() {
                 </div>
               </div>
             </div>
+          </div>
+          </div>
 
-            {/* Track list */}
-            {playlistTracks.length > 0 && (
-              <div className={plImmersive ? "border-t border-white/10" : "border-t border-border"}>
-                {playlistTracks.map(function(track, idx) {
-                  var isActive = playingTrackId === track.id;
-                  var isAudioPlaying = isActive && isPlaying;
-                  return (
-                    <div
-                      key={track.id}
-                      onClick={function() { handlePlayTrack(track); }}
-                      className={"flex items-center gap-3 px-6 py-3 last:border-0 transition-colors cursor-pointer select-none " + (plImmersive ? "border-b border-white/5 hover:bg-white/5 " : "border-b border-border/40 hover:bg-secondary/30 ") + (isActive ? (plImmersive ? "bg-white/10" : "bg-primary/5") : "")}
-                    >
-                      {/* Play button / track number */}
-                      <div
-                        className={"w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all " + (isAudioPlaying ? "btn-brand" : (plImmersive ? "bg-white/10 text-white hover:bg-white/20" : "bg-secondary/80 text-foreground hover:bg-primary/15 hover:text-primary"))}
-                      >
-                        {isAudioPlaying ? (
-                          <Pause className="w-3.5 h-3.5 text-primary-foreground" />
-                        ) : (
-                          <Play className="w-3.5 h-3.5 ml-0.5" />
-                        )}
-                      </div>
-
-                      {/* Cover */}
-                      <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-secondary border border-border/50">
-                        <img src={track.cover_url || DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
-                      </div>
-
-                      {/* Info */}
-                      <div className="min-w-0 flex-1">
-                        <p className={"text-[13px] font-semibold truncate " + (isActive ? "text-primary" : (plImmersive ? "text-white" : "text-foreground"))}>{track.title}</p>
-                        <p className={"text-[11px] truncate " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
-                          {track.artist}
-                          {track.featuring ? " ft. " + track.featuring : ""}
-                        </p>
-                      </div>
-
-                      {/* Duration */}
-                      <span className={"text-[11px] font-mono tabular-nums shrink-0 " + (plImmersive ? "text-white/40" : "text-muted-foreground")}>
-                        {track.duration_sec ? formatDuration(track.duration_sec) : "--:--"}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Player bar — prompt or active */}
-            {!playingTrackId && playlistTracks.length > 0 && (
-              <div className={(plImmersive ? "border-t border-white/10 bg-white/5" : "border-t border-border bg-secondary/20") + " px-6 py-4"}>
-                <div className={"flex items-center justify-center gap-2 " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
-                  <Play className="w-4 h-4" />
-                  <span className="text-xs font-medium">{t("sharedLink.selectTrackPrompt")}</span>
-                </div>
-              </div>
-            )}
-            {playingTrackId && (function() {
+          {/* Sticky player — active when a track is playing */}
+          {playingTrackId && (function() {
               var activeTrack = playlistTracks.find(function(t) { return t.id === playingTrackId; });
               var activeIdx = playlistTracks.findIndex(function(t) { return t.id === playingTrackId; });
               var hasPrev = activeIdx > 0;
               var hasNext = activeIdx >= 0 && activeIdx < playlistTracks.length - 1;
               return (
-                <div className={(plImmersive ? "border-t border-white/10 bg-white/5" : "border-t border-border bg-secondary/20") + " px-6 py-4 space-y-3"}>
+                <div className="sticky top-0 z-30">
+                <div className={"rounded-2xl overflow-hidden " + (plImmersive ? "bg-black/80 backdrop-blur-xl border border-white/15" : "bg-card/95 backdrop-blur-md border border-border")} style={plImmersive ? { boxShadow: "0 8px 32px rgba(0,0,0,0.45)" } : { boxShadow: "0 8px 24px rgba(0,0,0,0.14)" }}>
+                <div className={"px-6 py-4 space-y-3"}>
                   {/* Now playing info */}
                   {activeTrack && (
                     <div className="flex items-center gap-3">
@@ -1510,10 +1459,70 @@ export default function SharedLinkPage() {
                     />
                   )}
                 </div>
+                </div>
+                </div>
               );
             })()}
-          </div>
-          </div>
+
+          {/* Track list card */}
+          {playlistTracks.length > 0 && (
+            <div className={plImmersive ? "rounded-2xl p-px bg-gradient-to-br from-brand-orange/15 via-brand-pink/15 to-brand-purple/15 hover:from-brand-orange/25 hover:via-brand-pink/25 hover:to-brand-purple/25 transition-all duration-500" : ""}>
+            <div className={"rounded-2xl overflow-hidden " + (plImmersive ? "bg-white/8 backdrop-blur-xl border border-white/10" : "bg-card border border-border")} style={plImmersive ? { boxShadow: "0 0 40px rgba(255,255,255,0.03), 0 8px 32px rgba(0,0,0,0.4)" } : { boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+              <div>
+                {playlistTracks.map(function(track) {
+                  var isActive = playingTrackId === track.id;
+                  var isAudioPlaying = isActive && isPlaying;
+                  return (
+                    <div
+                      key={track.id}
+                      onClick={function() { handlePlayTrack(track); }}
+                      className={"flex items-center gap-3 px-6 py-3 last:border-0 transition-colors cursor-pointer select-none " + (plImmersive ? "border-b border-white/5 hover:bg-white/5 " : "border-b border-border/40 hover:bg-secondary/30 ") + (isActive ? (plImmersive ? "bg-white/10" : "bg-primary/5") : "")}
+                    >
+                      {/* Play button / track number */}
+                      <div
+                        className={"w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all " + (isAudioPlaying ? "btn-brand" : (plImmersive ? "bg-white/10 text-white hover:bg-white/20" : "bg-secondary/80 text-foreground hover:bg-primary/15 hover:text-primary"))}
+                      >
+                        {isAudioPlaying ? (
+                          <Pause className="w-3.5 h-3.5 text-primary-foreground" />
+                        ) : (
+                          <Play className="w-3.5 h-3.5 ml-0.5" />
+                        )}
+                      </div>
+
+                      {/* Cover */}
+                      <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-secondary border border-border/50">
+                        <img src={track.cover_url || DEFAULT_COVER} alt="" className="w-full h-full object-cover" />
+                      </div>
+
+                      {/* Info */}
+                      <div className="min-w-0 flex-1">
+                        <p className={"text-[13px] font-semibold truncate " + (isActive ? "text-primary" : (plImmersive ? "text-white" : "text-foreground"))}>{track.title}</p>
+                        <p className={"text-[11px] truncate " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
+                          {track.artist}
+                          {track.featuring ? " ft. " + track.featuring : ""}
+                        </p>
+                      </div>
+
+                      {/* Duration */}
+                      <span className={"text-[11px] font-mono tabular-nums shrink-0 " + (plImmersive ? "text-white/40" : "text-muted-foreground")}>
+                        {track.duration_sec ? formatDuration(track.duration_sec) : "--:--"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {!playingTrackId && (
+                <div className={(plImmersive ? "border-t border-white/10 bg-white/5" : "border-t border-border bg-secondary/20") + " px-6 py-4"}>
+                  <div className={"flex items-center justify-center gap-2 " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
+                    <Play className="w-4 h-4" />
+                    <span className="text-xs font-medium">{t("sharedLink.selectTrackPrompt")}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            </div>
+          )}
 
           {linkData?.allow_download && playlistTracks.length > 0 && (
             <div className={"rounded-2xl overflow-hidden p-4 " + (plImmersive ? "bg-white/5 backdrop-blur-xl border border-white/10" : "bg-card border border-border")}>
