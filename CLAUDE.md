@@ -40,6 +40,12 @@ Stack : React 18 + TypeScript + Vite + Tailwind + shadcn/ui + Framer Motion + Su
 - TOUJOURS fournir le SQL à Yannick pour exécution manuelle dans le Supabase SQL Editor. JAMAIS exécuter automatiquement.
 - Nouvelles queries → toujours créer une RPC `SECURITY DEFINER` (pas de query directe avec RLS).
 
+### Storage (transition Supabase → Cloudflare R2)
+- Pendant la migration : les paths storage commencent par `r2://bucket/key` (R2) ou directement par le chemin (Supabase Storage legacy).
+- L'Edge Function `get-audio-url` détecte automatiquement le backend selon le préfixe.
+- Nouveaux uploads → toujours vers R2 via signed URL générée par `get-upload-url`.
+- Voir @docs/TRAKALOG_STORAGE_MIGRATION.md pour les détails.
+
 ## Workflow
 
 - Chaque modification se termine par : `git add . && git commit -m "descriptif concis" && git push`
@@ -48,13 +54,56 @@ Stack : React 18 + TypeScript + Vite + Tailwind + shadcn/ui + Framer Motion + Su
 - Soft deletes au lieu de hard deletes (intégrité légale).
 - Tokens crypto pour les liens partagés (pas uuid v4).
 
+## Vision stratégique en trois couches
+
+Trakalog se construit en **trois couches qui se renforcent mutuellement** :
+
+1. **Trakalog (le SaaS)** — gestion catalogue premium, watermarking, splits, Smart A&R, branding. Revenue : abonnements Stripe.
+2. **GENESIS (l'infrastructure)** — preuve cryptographique de paternité humaine + AI Training License + registre mondial. Revenue : badge premium + API enterprise + AI training royalties.
+3. **SIGNAL (la marketplace)** — marketplace inversée pour le sync licensing : les supervisors postent des briefs, l'IA matche les catalogues Genesis-certified. Revenue : posting fees + commissions sur deals.
+
+Chaque couche débloque la suivante. Aucune ne peut être copiée par un concurrent sans repartir de zéro sur 2-3 ans de produit.
+
 ## Architecture — Références
 
-Pour les détails d'architecture, consulter ces fichiers :
-- Architecture complète : @docs/ARCHITECTURE.md
-- RPCs et patterns DB : @docs/RPCS.md
-- Session auth et localStorage : @docs/AUTH_PATTERNS.md
-- Agents IA (roadmap) : @TRAKALOG_AI_AGENTS_VISION.md
+Pour les détails d'architecture et de produit, consulter ces fichiers :
+
+### Documents fondamentaux
+- **Architecture & vision produit** : @docs/TRAKALOG_ARCHITECTURE.md
+- **RPCs et patterns DB** : @docs/RPCS.md
+- **Session auth et localStorage** : @docs/AUTH_PATTERNS.md
+
+### Infrastructure stratégique
+- **GENESIS — Infrastructure de provenance créative + droits d'entraînement IA** : @docs/TRAKALOG_GENESIS.md
+  (Couche fondamentale transverse — toute feature touchant à la création, signature, ou distribution de tracks doit éventuellement intégrer le Genesis ID. Lancement : Phase 3 de la roadmap, après le beta public)
+- **SIGNAL — Marketplace inversée pour le sync licensing** : @docs/TRAKALOG_SIGNAL.md
+  (Phase 4 de la roadmap — nécessite Genesis MVP + 1000 tracks Genesis-certified + 100 artistes actifs. Combine Sonic DNA + Genesis pour permettre aux supervisors de poster des briefs et matcher automatiquement les catalogues. Le coup de grâce stratégique.)
+- **Migration storage Supabase → Cloudflare R2** : @docs/TRAKALOG_STORAGE_MIGRATION.md
+  (À faire après Stripe/Billing — réduit les coûts storage de 85-90% et offre un egress illimité gratuit)
+
+### Business & onboarding
+- **Billing & Stripe** : @docs/TRAKALOG_BILLING.md
+- **Onboarding** : @docs/ONBOARDING.md
+- **Admin Dashboard** : @docs/TRAKALOG_ADMIN_DASHBOARD.md
+
+### Features produit
+- **Track Versioning** : @docs/TRACK_VERSIONING.md
+- **Agents IA (roadmap)** : @docs/TRAKALOG_AI_AGENTS_VISION.md
+- **Artist Seeker** : @docs/ARTIST_SEEKER.md
+- **Brief Seeker** : @docs/BRIEF_SEEKER.md
+
+## Ordre de priorité actuel
+
+1. Stripe / Billing (en cours — bloquant beta launch)
+2. Onboarding
+3. Beta public launch
+4. Migration storage R2 (optionnel mais recommandé avant scale)
+5. Genesis MVP
+6. Atteindre 1000 tracks Genesis-certified + 100 artistes payants actifs
+7. Recrutement 50 supervisors (founder mode, Yannick en solo)
+8. SIGNAL beta privée invite-only
+9. SIGNAL public launch
+10. Scale + internationalisation
 
 ## Bugs connus
 
