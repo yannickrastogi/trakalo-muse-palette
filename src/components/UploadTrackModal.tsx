@@ -607,31 +607,76 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     bucket: string,
     path: string,
     file: File,
-    _contentType: string,
+    contentType: string,
     onProgress: (pct: number) => void,
     upsert = false,
   ): Promise<{ error: string | null }> => {
-    // Ensure valid session before upload
+    // Ensure valid session before requesting the signed upload URL
     const hasSession = await ensureSession();
     if (!hasSession) {
       return { error: "No auth session — please sign in again" };
     }
 
-    onProgress(10);
-
-    const { error } = await supabase.storage
+    // Request a signed upload URL — bypasses the SDK's progress-less upload()
+    // so we can PUT via XHR with real byte-by-byte progress.
+    const { data: signed, error: signedErr } = await supabase.storage
       .from(bucket)
-      .upload(path, file, {
-        upsert,
-        cacheControl: "3600",
-      });
+      .createSignedUploadUrl(path);
 
-    if (error) {
-      return { error: error.message };
+    if (signedErr || !signed?.signedUrl || !signed?.token) {
+      console.error("createSignedUploadUrl failed:", signedErr);
+      return { error: signedErr?.message || "Could not initiate upload" };
     }
 
-    onProgress(100);
-    return { error: null };
+    onProgress(0);
+
+    return new Promise<{ error: string | null }>((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", signed.signedUrl);
+      xhr.setRequestHeader("Content-Type", contentType || file.type || "audio/mpeg");
+      xhr.setRequestHeader("authorization", "Bearer " + signed.token);
+      xhr.setRequestHeader("cache-control", "3600");
+      xhr.setRequestHeader("x-upsert", upsert ? "true" : "false");
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable && e.total > 0) {
+          onProgress((e.loaded / e.total) * 100);
+        }
+      });
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          onProgress(100);
+          resolve({ error: null });
+          return;
+        }
+        let msg = "Upload failed (HTTP " + xhr.status + ")";
+        try {
+          const body = xhr.responseText;
+          if (body) {
+            const parsed = JSON.parse(body) as { message?: string; error?: string };
+            msg = parsed.message || parsed.error || msg;
+          }
+        } catch { /* keep default msg */ }
+        console.error("Audio upload failed:", xhr.status, msg);
+        resolve({ error: msg });
+      });
+
+      xhr.addEventListener("error", () => {
+        console.error("Audio upload network error");
+        resolve({ error: "Network error during upload" });
+      });
+
+      xhr.addEventListener("abort", () => {
+        resolve({ error: "Upload aborted" });
+      });
+
+      xhr.addEventListener("timeout", () => {
+        resolve({ error: "Upload timed out" });
+      });
+
+      xhr.send(file);
+    });
   }, [ensureSession]);
 
   // ─── Save ──────────────────────────────────────────────────
@@ -657,27 +702,27 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           filePath,
           currentTrack.file,
           currentTrack.file.type || "audio/wav",
-          (pct) => setUploadProgress(Math.round(pct * 0.6)), // 0–60%
+          (pct) => setUploadProgress(Math.round(pct * 0.95)), // 0–95%
         );
 
         if (uploadError) {
           console.error("Error uploading audio:", uploadError);
-          toast.error("Upload failed: " + uploadError + ". Please try again.");
+          toast.error("Upload failed, please try again");
         } else {
           audioUrl = filePath;
         }
       }
-      setUploadProgress(60);
+      setUploadProgress(95);
 
-      // ── Stage 2: Generate waveform (60–85%) ──
+      // ── Stage 2: Generate waveform (95–97%) ──
       setUploadStage(t("uploadTrack.generatingWaveform", "Generating waveform..."));
-      setUploadProgress(65);
+      setUploadProgress(96);
       if (audioUrl && currentTrack.file) {
         try {
           waveformData = await generateWaveform(currentTrack.file, 200);
         } catch (e) { console.error("Waveform generation error:", e); }
       }
-      setUploadProgress(85);
+      setUploadProgress(97);
 
       // ── Stage 4: Save track (85–100%) ──
       setUploadStage(t("uploadTrack.savingTrack", "Saving track..."));
@@ -734,7 +779,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         },
         tags: currentTrack.tags,
       });
-      setUploadProgress(90);
+      setUploadProgress(98);
 
       // Upload cover art if provided — same pattern as TrackDetail.tsx
       if (savedTrack && coverFileToUpload && workspaceId) {
@@ -756,7 +801,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           });
           await refreshTracks();
         }
-        setUploadProgress(98);
+        setUploadProgress(99);
       }
 
       // ── Share to other workspaces if selected ──
@@ -1109,26 +1154,26 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             filePath,
             entry.file,
             entry.file.type || "audio/wav",
-            (pct) => setUploadProgress(Math.round(pct * 0.6)),
+            (pct) => setUploadProgress(Math.round(pct * 0.95)),
           );
 
           if (uploadError) {
             console.error("Error uploading audio:", uploadError);
-            toast.error("Upload failed: " + uploadError + ". Please try again.");
+            toast.error("Upload failed, please try again");
           } else {
             audioUrl = filePath;
           }
         }
-        setUploadProgress(60);
+        setUploadProgress(95);
 
         // ── Waveform ──
-        setUploadProgress(65);
+        setUploadProgress(96);
         if (audioUrl && entry.file) {
           try {
             waveformData = await generateWaveform(entry.file, 200);
           } catch (e) { console.error("Waveform generation error:", e); }
         }
-        setUploadProgress(85);
+        setUploadProgress(97);
 
         // ── Save to DB ──
         const savedTrack = await addTrack({
