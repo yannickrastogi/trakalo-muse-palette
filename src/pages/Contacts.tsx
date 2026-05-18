@@ -1,18 +1,31 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Users, UserPlus, Building2, Download, X, FileText, FileSpreadsheet, ChevronDown, Send } from "lucide-react";
+import { Search, Users, UserPlus, Building2, Download, X, FileText, FileSpreadsheet, ChevronDown, Send, Trash2, Loader2 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { EmptyState } from "@/components/EmptyState";
 import { AddContactModal } from "@/components/AddContactModal";
 import { useTranslation } from "react-i18next";
 import { useContacts } from "@/contexts/ContactsContext";
 import { usePitches } from "@/contexts/PitchContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRole } from "@/contexts/RoleContext";
 import { CreatePitchModal, type PitchEntry } from "@/components/CreatePitchModal";
 import { format, differenceInDays } from "date-fns";
 import { generateContactListPdf } from "@/lib/pdf-generators";
 import { exportContactsCsv, exportContactsXlsx } from "@/lib/contact-export";
 import { toast } from "sonner";
 import { INDUSTRY_ROLES } from "@/lib/constants";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
@@ -117,8 +130,11 @@ function FilterSelect({ label, value, options, onChange }: {
 
 export default function Contacts() {
   const { t } = useTranslation();
-  const { contacts: rawContacts } = useContacts();
+  const { contacts: rawContacts, refreshContacts } = useContacts();
   const { addPitch } = usePitches();
+  const { user } = useAuth();
+  const { accessLevel } = useRole();
+  const isAdmin = accessLevel === "admin";
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -127,7 +143,33 @@ export default function Contacts() {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [pitchContact, setPitchContact] = useState<{ name: string; email: string; company: string } | null>(null);
   const [addContactOpen, setAddContactOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
+
+  const handleDeleteContact = async () => {
+    if (!deleteTarget || !user || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await (supabase.rpc as (fn: string, params: Record<string, unknown>) => Promise<{ error: unknown }>)("delete_contact", {
+        _user_id: user.id,
+        _contact_id: deleteTarget.id,
+      });
+      if (error) {
+        console.error("Error deleting contact:", error);
+        toast.error("Failed to delete contact");
+        return;
+      }
+      toast.success("Contact deleted");
+      setDeleteTarget(null);
+      await refreshContacts();
+    } catch (err) {
+      console.error("Unexpected error deleting contact:", err);
+      toast.error("Failed to delete contact");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Normalize roles on all contacts
   const contacts = useMemo(() => rawContacts.map((c) => ({ ...c, role: normalizeRole(c.role) })), [rawContacts]);
@@ -426,17 +468,32 @@ export default function Contacts() {
                       </td>
                       {/* Actions */}
                       <td className="px-5 py-3.5 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPitchContact({ name: c.firstName + " " + c.lastName, email: c.email, company: c.organization });
-                          }}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
-                          title={t("contacts.sendPitch")}
-                        >
-                          <Send className="w-3.5 h-3.5" />
-                          <span className="hidden xl:inline">{t("contacts.sendPitch")}</span>
-                        </button>
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPitchContact({ name: c.firstName + " " + c.lastName, email: c.email, company: c.organization });
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                            title={t("contacts.sendPitch")}
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                            <span className="hidden xl:inline">{t("contacts.sendPitch")}</span>
+                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteTarget({ id: c.id, name: (c.firstName + " " + c.lastName).trim() });
+                              }}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                              title="Delete contact"
+                              aria-label="Delete contact"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -504,7 +561,7 @@ export default function Contacts() {
                   <span>{formatRelativeDate(c.lastDownload)}</span>
                 </div>
                 {/* Actions */}
-                <div className="flex items-center gap-1 pt-2 border-t border-border/30">
+                <div className="flex items-center justify-between gap-1 pt-2 border-t border-border/30">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -515,6 +572,19 @@ export default function Contacts() {
                     <Send className="w-4 h-4" />
                     {t("contacts.sendPitch")}
                   </button>
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget({ id: c.id, name: (c.firstName + " " + c.lastName).trim() });
+                      }}
+                      className="flex items-center justify-center w-11 h-11 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      title="Delete contact"
+                      aria-label="Delete contact"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </motion.div>
             ))
@@ -532,6 +602,45 @@ export default function Contacts() {
         initialRecipientCompany={pitchContact?.company}
       />
       <AddContactModal open={addContactOpen} onOpenChange={setAddContactOpen} />
+
+      {/* Delete Contact Confirmation */}
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Delete contact</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this contact? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting} className="text-sm border border-border">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeleting}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteContact();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-sm disabled:opacity-60 disabled:pointer-events-none"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 }
