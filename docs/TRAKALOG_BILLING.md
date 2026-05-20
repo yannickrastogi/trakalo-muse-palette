@@ -1,7 +1,7 @@
 # TRAKALOG — Billing & Payment System (Stripe)
 
 > **Document créé le :** 22 avril 2026
-> **Mis à jour le :** 20 mai 2026 (v3 — repricing compétitif post-analyse Postal + marges nettes post-Cloudflare R2)
+> **Mis à jour le :** 20 mai 2026 (v3.1 — Smart A&R Starter 10→15, descriptions Stripe vendeuses, honnêteté Sonic DNA)
 > **Objectif :** Spec complète du système de paiement Trakalog — plans, pricing, AI credits, beta passes, implémentation Stripe.
 > **Statut :** Prêt à implémenter
 > **Priorité :** Bloquant pour le beta launch
@@ -149,7 +149,7 @@ La pricing page doit être claire : **"X tracks que TU uploades"**, pas "X track
 | Leak tracing | ✅ Inclus |
 | Branding custom | ✅ (hero, logo, couleur, socials) |
 | Pitch emails | 15/mois |
-| Smart A&R queries | 10/mois |
+| Smart A&R queries | 15/mois |
 | Splits & signatures | ✅ |
 | Contacts | ✅ Illimités |
 | Radio | ✅ |
@@ -235,7 +235,7 @@ La pricing page doit être claire : **"X tracks que TU uploades"**, pas "X track
 | Plan | Prix mensuel | Prix annuel | Tracks | Storage | Stems | Pitches/mois | Smart A&R/mois | Workspaces | Membres |
 |---|---|---|---|---|---|---|---|---|---|
 | Free | $0 | — | 10 | 1.5 GB | ❌ | 0 | 0 | 1 | 1 |
-| Starter | $10 | $90 | 100 | 40 GB | ✅ | 15 | 10 | 1 | 1 |
+| Starter | $10 | $90 | 100 | 40 GB | ✅ | 15 | 15 | 1 | 1 |
 | Pro | $25 | $225 | 1000 | 400 GB | ✅ | ∞ | 50 | 5 | 5 |
 | Business | $45 | $405 | ∞ | 2 TB | ✅ | ∞ | ∞ | ∞ | ∞ |
 
@@ -249,20 +249,20 @@ Calculs basés sur un usage moyen estimé par plan, avec coûts variables Cloudf
 
 ### Starter — $10/mois
 
-**Usage moyen estimé :** 50 tracks (5 GB), 200 streams/mois, 5 Smart A&R, 8 pitches, 3 transcriptions.
+**Usage moyen estimé :** 50 tracks (5 GB), 200 streams/mois, 8 Smart A&R queries, 8 pitches, 3 transcriptions.
 
 | Poste | Coût |
 |---|---|
 | Storage R2 (5 GB × $0.015) | $0.075 |
 | Egress R2 (200 streams ~1 GB) | $0 |
-| Smart A&R (5 × $0.05) | $0.25 |
+| Smart A&R (8 × $0.05) | $0.40 |
 | Whisper (3 × $0.02) | $0.06 |
 | Resend (8 emails) | $0.003 |
 | Stripe (2.9% + $0.30 sur $10) | $0.59 |
 | Coûts fixes répartis | $0.15 |
-| **Total coûts** | **~$1.13/mois** |
+| **Total coûts** | **~$1.28/mois** |
 
-**Revenue net :** $10 - $1.13 = **$8.87/mois** → **Marge nette 88.7%**
+**Revenue net :** $10 - $1.28 = **$8.72/mois** → **Marge nette 87.2%**
 
 **Annuel ($90) :** économie Stripe de ~$4/an → marge nette annuelle ~**89%**
 
@@ -314,7 +314,7 @@ Calculs basés sur un usage moyen estimé par plan, avec coûts variables Cloudf
 
 | Plan | Prix mensuel | Marge nette mensuelle | Prix annuel | Marge nette annuelle |
 |---|---|---|---|---|
-| **Starter** | $10 | **88.7%** ($8.87) | $90 | **89%** ($80.44) |
+| **Starter** | $10 | **87.2%** ($8.72) | $90 | **88%** ($79.26) |
 | **Pro** | $25 | **86.5%** ($21.63) | $225 | **85%** ($191.59) |
 | **Business** | $45 | **70%** ($31.50) | $405 | **62%** ($251.50) |
 
@@ -341,7 +341,8 @@ Les features IA ont un coût variable (API Groq, Claude). Au lieu de tout inclur
 |---|---|---|---|---|
 | 25 crédits | $5 | $0.20 | ~$0.25 total (~$0.01/crédit) | **95%** |
 | 100 crédits | $15 | $0.15 | ~$1.00 total | **93%** |
-| 500 crédits | $50 | $0.10 | ~$5.00 total | **90%** |
+
+**Note** : un pack 500 crédits ($50) pourrait être ajouté post-launch si l'usage le justifie (power users Pro qui dépassent régulièrement leur quota). Pour le launch, on garde 2 packs pour simplifier le choix utilisateur.
 
 ### Utilisation des crédits
 
@@ -379,7 +380,156 @@ Les features IA ont un coût variable (API Groq, Claude). Au lieu de tout inclur
 
 ---
 
-## 8. Politique commerciale
+## 8. Descriptions Stripe (prêtes à coller)
+
+Descriptions vendeuses + **honnêtes** (basées uniquement sur les features livrées). À utiliser tels quels dans Stripe Dashboard.
+
+### Trakalog Starter — $10/mo
+
+```
+Built for solo artists, beatmakers, and indie songwriters who treat their catalog like a business.
+
+✓ 100 tracks · 40 GB storage · stems included
+✓ Sonic DNA: Automatic BPM & key detection + audio fingerprinting that powers Smart A&R matching
+✓ Invisible audio watermarking with leak tracing — know who shared what
+✓ Unlimited password-protected shared links with custom branding
+✓ Splits & digital signatures — never lose a co-write again
+✓ Smart A&R: AI-powered track matching for briefs (15 queries/month)
+✓ 15 pitch emails per month
+✓ Solo workspace fully branded with your hero image, logo & colors
+
+Manage your catalog like a pro — without the price tag.
+```
+
+### Trakalog Pro — $25/mo
+
+```
+For active producers, small labels, and managers ready to scale.
+
+Everything in Starter, plus:
+✓ 1000 tracks · 400 GB storage
+✓ Unlimited pitch emails (no monthly cap)
+✓ 50 Smart A&R queries per month
+✓ 5 workspaces — manage multiple artists, projects, or clients
+✓ 5 team members per workspace with granular permissions
+✓ Catalog sharing — let labels & managers pitch your tracks under their brand
+✓ QR Studio — collect splits & signatures from collaborators in seconds
+✓ Export contacts (PDF, CSV, XLSX)
+✓ API access
+
+The smart choice for catalog managers who think like a label.
+```
+
+### Trakalog Business — $45/mo
+
+```
+For labels, publishers, and sync agencies that move serious volume.
+
+Everything in Pro, plus:
+✓ Unlimited tracks & 2 TB storage
+✓ Unlimited Smart A&R queries
+✓ Unlimited workspaces & team members
+✓ Priority support with direct line to our team
+✓ Custom onboarding for your team
+
+Built to scale with your entire roster.
+```
+
+### Trakalog Credits — 25 Pack — $5 (one-time)
+
+```
+25 AI credits to power Smart A&R queries, lyrics transcriptions, and Sonic DNA re-analyses.
+
+✓ Use anytime, never expires
+✓ 1 credit = 1 Smart A&R query or 1 lyrics transcription
+✓ Add-on for Starter, Pro, and Business plans
+
+Top up when inspiration strikes.
+```
+
+### Trakalog Credits — 100 Pack — $15 (one-time)
+
+```
+100 AI credits to fuel your most active months.
+
+✓ Best value (save 25% vs the 25-pack)
+✓ Use anytime, never expires
+✓ Works across Smart A&R, lyrics transcriptions, and Sonic DNA re-analyses
+
+Stay ahead without thinking about quotas.
+```
+
+### Note : pack 500 crédits — NOT shipped at launch
+
+Le pack 500 crédits ($50) **n'est PAS inclus dans le launch initial**. Décision du 20 mai 2026 pour simplifier le choix utilisateur (2 packs > 3 packs en termes de conversion).
+
+À réévaluer post-launch si l'usage le justifie. Spec de référence pour future implémentation :
+- **Prix** : $50 one-time
+- **Crédits** : 500
+- **Prix/crédit** : $0.10 (50% off vs 25-pack)
+- **Marge brute** : 90% (~$5 coût réel)
+- **Cible** : labels Business + power users Pro qui consomment massivement
+- **Description Stripe (préparée pour usage futur)** :
+
+```
+500 AI credits for power users and small teams.
+
+✓ Best price per credit (save 50% vs the 25-pack)
+✓ Use anytime, never expires
+✓ Perfect for labels running multiple campaigns or A&R-heavy workflows
+
+Bulk-buy and forget about it.
+```
+
+### Notes pour audit marketing pré-launch
+
+À revoir avant le launch public :
+- Les descriptions seront aussi affichées sur le checkout Stripe — relire avec un œil "premier contact client"
+- Considérer d'ajouter des social proofs / témoignages si disponibles
+- Tester les descriptions en A/B sur la pricing page Trakalog (qu'on contrôle mieux que Stripe)
+- Vérifier que les emojis ✓ s'affichent bien dans tous les contextes Stripe (checkout, factures, customer portal)
+
+---
+
+## 8b. ⚠️ Honnêteté produit — Sonic DNA (note interne CRITIQUE)
+
+**À ne PAS vendre dans les descriptions Stripe ou pricing page tant que ce n'est pas réellement livré et fiable :**
+
+| Feature | Status réel | Vendable ? |
+|---|---|---|
+| **Mood detection automatique** | ❌ **Retiré de l'UI** (inexact en mineur — produit "dark" sur tracks joyeux) | ❌ **NE PAS vendre** |
+| **Détection de structure automatique** | ❌ Retirée (résultats incohérents — tout "chorus" sur tracks high-energy) | ❌ NE PAS vendre |
+| **BPM detection** | ✅ Fiable (Essentia + heuristique 80-180) | ✅ OK |
+| **Key detection** | ✅ Fiable (24 clés) | ✅ OK |
+| **Audio fingerprinting (energy, valence, brightness, warmth, etc.)** | ✅ Stocké en jsonb, usage **backend uniquement** pour Smart A&R | ✅ OK mais "powers Smart A&R" pas "displayed to user" |
+| **Sections waveform** | ✅ Mais **manuel** (double-clic user) | ✅ OK comme "manual sections" |
+| **Smart A&R matching** | ✅ Utilise le Sonic DNA en backend (BPM + key + audio fingerprint + user metadata) | ✅ OK à vendre |
+| **User mood tags manuels** | ✅ 19 presets + custom tags | ✅ OK comme "custom mood tags" |
+
+### Formulations à éviter
+- ❌ "Sonic DNA auto-analysis (BPM, key, mood, energy)"
+- ❌ "AI-powered mood detection"
+- ❌ "Automatic mood tagging"
+- ❌ "Auto-detected song structure"
+
+### Formulations correctes
+- ✅ **"Sonic DNA: Automatic BPM & key detection + audio fingerprinting that powers Smart A&R matching"** ← format recommandé (réintroduit la marque "Sonic DNA" comme catégorie tout en restant honnête sur ce qui est livré)
+- ✅ "Automatic BPM & key detection"
+- ✅ "Audio fingerprinting that powers Smart A&R matching"
+- ✅ "Smart A&R: AI-powered track matching for briefs"
+- ✅ "Custom mood tags you control (19 presets + your own)"
+- ✅ "Manual waveform sections (Intro, Verse, Chorus, Drop...)"
+
+**Règle d'or :** "Sonic DNA" peut être utilisé comme **nom de catégorie/marque** dans les descriptions vendeuses, MAIS doit toujours être suivi d'une explication concrète de ce qu'il fait vraiment (BPM, key, audio fingerprinting). Jamais "Sonic DNA" tout seul ou avec mention de mood/structure auto.
+
+### Si on réactive le mood detection un jour
+Quand l'algorithme sera corrigé (détection plus fiable sur les tracks en mineur), on pourra réactiver l'affichage UI et ajouter "mood detection" aux descriptions Stripe. Pour l'instant, **toute mention de mood auto est mensongère et doit être évitée**.
+
+---
+
+
+
+## 9. Politique commerciale
 
 ### Stripe Tax (day one)
 Stripe Tax est activé dès le lancement. Calcul automatique de la TVA/sales tax selon la localisation du client. Pas de surprise, conformité automatique dans tous les pays supportés.
@@ -403,7 +553,7 @@ Pricing en USD sur un compte Stripe canadien (Yannick Rastogi Productions Inc.).
 
 ---
 
-## 9. Beta Passes (système de comptes gratuits)
+## 10. Beta Passes (système de comptes gratuits)
 
 ### Objectif
 Distribuer manuellement des accès gratuits à des beta testers, influenceurs, partenaires, amis, presse, etc. — sans passer par Stripe.
@@ -453,7 +603,7 @@ Page "Beta Passes" avec :
 
 ---
 
-## 10. Schéma Base de Données
+## 11. Schéma Base de Données
 
 ### Table `subscriptions` (NOUVELLE — user-based)
 
@@ -612,7 +762,7 @@ Pour éviter les jointures à chaque check, on peut éventuellement ajouter une 
 
 ---
 
-## 11. Limites par plan (config TypeScript)
+## 12. Limites par plan (config TypeScript)
 
 ```typescript
 // src/lib/plans.ts
@@ -653,7 +803,7 @@ export const PLAN_LIMITS = {
     tracks_max: 100,
     storage_max_bytes: 42_949_672_960,       // 40 GB
     pitches_max_monthly: 15,
-    smart_ar_queries_monthly: 10,
+    smart_ar_queries_monthly: 15,
     shared_links_max: -1,                    // -1 = illimité
     contacts_max: -1,
     workspaces_max: 1,
@@ -720,7 +870,7 @@ export const PLAN_LIMITS = {
 
 ---
 
-## 12. Architecture Stripe
+## 13. Architecture Stripe
 
 ### Produits Stripe à créer (en mode TEST d'abord)
 
@@ -821,7 +971,7 @@ STRIPE_PUBLISHABLE_KEY   — clé publique (aussi dans le frontend via VITE_STRI
 
 ---
 
-## 13. Frontend — Pages et composants
+## 14. Frontend — Pages et composants
 
 ### Pricing Page (`/pricing`)
 - 4 colonnes : Free / Starter / Pro (highlighted) / Business
@@ -840,7 +990,7 @@ STRIPE_PUBLISHABLE_KEY   — clé publique (aussi dans le frontend via VITE_STRI
 - **Usage actuel** :
   - "X/100 tracks used"
   - "X/40 GB storage used" (barre de progression)
-  - "X/10 Smart A&R queries this month"
+  - "X/15 Smart A&R queries this month"
   - "X/15 pitches sent this month"
 - **AI Credits** : solde actuel (monthly remaining + purchased) + bouton "Buy Credits"
 - **Historique des factures** (via Stripe Portal)
@@ -855,7 +1005,7 @@ Sur la colonne Free, afficher "Stems" avec une croix grisée et un mini tooltip 
 | Upload 11ème track sur Free | "Upgrade to Starter to upload up to 100 tracks" |
 | Essayer de pitcher sur Free | "Upgrade to Starter to send pitches" |
 | Cliquer sur l'onglet Stems (Free) | "Stems are available from Starter — Upgrade to unlock" |
-| 11ème Smart A&R query du mois (Starter) | "You've used all your Smart A&R queries. Buy credits or upgrade to Pro" |
+| 16ème Smart A&R query du mois (Starter) | "You've used all your Smart A&R queries. Buy credits or upgrade to Pro" |
 | Essayer de créer un 2ème workspace (Free/Starter) | "Upgrade to Pro for up to 5 workspaces" |
 | Essayer d'inviter un membre (Free/Starter) | "Upgrade to Pro to invite team members" |
 | Storage à 90% | Banner "You're at 36 GB / 40 GB. Upgrade to Pro for 400 GB" |
@@ -867,7 +1017,7 @@ Sur la colonne Free, afficher "Stems" avec une croix grisée et un mini tooltip 
 
 ---
 
-## 14. Enforcement des limites
+## 15. Enforcement des limites
 
 ### Côté frontend (UX)
 - Vérifier les limites **AVANT** l'action (pas après l'upload)
@@ -907,7 +1057,7 @@ Le frontend catch cette erreur et affiche le modal d'upgrade approprié.
 
 ---
 
-## 15. Migration des utilisateurs existants
+## 16. Migration des utilisateurs existants
 
 ### Beta users (avant le launch Stripe)
 Tous les comptes créés avant la mise en prod de Stripe reçoivent automatiquement un **Beta Pass Lifetime Pro** :
@@ -922,7 +1072,7 @@ Tous les comptes créés avant la mise en prod de Stripe reçoivent automatiquem
 
 ---
 
-## 16. Phases d'implémentation
+## 17. Phases d'implémentation
 
 ### Phase 1 — Setup DB + Stripe (1-2 sessions)
 1. Migration SQL : tables `subscriptions`, `beta_passes`, `credit_purchases`
@@ -976,7 +1126,7 @@ Tous les comptes créés avant la mise en prod de Stripe reçoivent automatiquem
 
 ---
 
-## 17. Risques et mitigations
+## 18. Risques et mitigations
 
 | Risque | Mitigation |
 |---|---|
@@ -994,7 +1144,7 @@ Tous les comptes créés avant la mise en prod de Stripe reçoivent automatiquem
 
 ---
 
-## 18. KPIs à tracker (dans Admin Dashboard)
+## 19. KPIs à tracker (dans Admin Dashboard)
 
 - **MRR** (Monthly Recurring Revenue) — total et par plan
 - **ARR** (Annual Recurring Revenue)
@@ -1013,7 +1163,18 @@ Tous les comptes créés avant la mise en prod de Stripe reçoivent automatiquem
 
 ---
 
-## 19. Décisions figées (changelog v3)
+## 20. Décisions figées (changelog v3.1)
+
+### Changements v3 → v3.1 (20 mai 2026, post-réflexion descriptions)
+
+1. **Smart A&R Starter passé de 10 → 15 queries/mois** : matche les 15 pitches inclus (logique "1 query Smart A&R = 1 pitch potentiel"). Coût additionnel négligeable (~$0.15/user/mois), marge nette ajustée 88.7% → 87.2% (toujours excellente).
+2. **Section 8 ajoutée : Descriptions Stripe vendeuses** prêtes à coller dans le Dashboard Stripe (5 descriptions au launch — 3 plans + 2 packs crédits, descriptions condensées <500 caractères pour limite Stripe).
+3. **Section 8b ajoutée : Honnêteté produit Sonic DNA** — note interne CRITIQUE sur ce qu'il est honnête de vendre vs ce qui a été retiré de l'UI (mood detection auto, détection de structure auto). À relire avant tout audit marketing.
+4. **API access retiré des descriptions Stripe** : pas encore implémenté, on ne le vend pas. La feature reste prévue pour le Business tier (et potentiellement Pro). À ajouter aux descriptions le jour de la livraison.
+5. **Pack 500 crédits NOT shipped at launch** : décision simplification UX (2 packs > 3 packs pour la conversion). Spec préservée pour ajout post-launch si l'usage le justifie.
+6. **Sonic DNA gardé comme marque produit** : format vendeur retenu = "Sonic DNA: Automatic BPM & key detection + audio fingerprinting that powers Smart A&R matching" (marque + explication honnête).
+
+### Changements v2 → v3 (20 mai 2026, post-analyse Postal)
 
 Cette section résume **les changements par rapport à la v2** du doc, validés en session du 20 mai 2026 après analyse compétitive Postal :
 
