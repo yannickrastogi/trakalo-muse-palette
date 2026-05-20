@@ -1,7 +1,7 @@
 # TRAKALOG — Billing & Payment System (Stripe)
 
 > **Document créé le :** 22 avril 2026
-> **Mis à jour le :** 20 mai 2026 (v2 — alignement architecture user-based + storage limits + stems gating)
+> **Mis à jour le :** 20 mai 2026 (v3 — repricing compétitif post-analyse Postal + marges nettes post-Cloudflare R2)
 > **Objectif :** Spec complète du système de paiement Trakalog — plans, pricing, AI credits, beta passes, implémentation Stripe.
 > **Statut :** Prêt à implémenter
 > **Priorité :** Bloquant pour le beta launch
@@ -11,35 +11,50 @@
 ## 1. Philosophie Pricing
 
 ### Positionnement
-Trakalog se positionne **contre le coût TOTAL de Disco** (plan + add-ons), pas contre leur prix de base.
+Trakalog se positionne **contre Postal.music** (concurrent direct le plus proche) et **contre Disco.ac** (positioning premium historique). Notre stratégie :
 
-Un utilisateur Disco qui veut watermarking + AI discovery + analytics paie : $25 (Pro) + $10 (Discovery Suite) + watermarking = **$35-45/mois**.
+- **Bat Postal Artist ($8) sur la valeur** : Starter à $10 avec Sonic DNA + watermarking + splits + Smart A&R inclus (Postal ne les a pas)
+- **Bat Postal Plus ($20) sur la valeur** : Pro à $25 avec multi-workspace + leak tracing + branding custom
+- **Égale Postal Pro ($45) au centime sur le prix brut** : Business à $45 avec 10x plus de features (AI agents, illimité)
+- **Plus généreux que Disco** : 10x plus de valeur incluse à chaque tier sans add-ons cachés
 
-**Message clé :** *"Everything Disco charges extra for is included in every Trakalog plan."*
+**Message clé :** *"At every tier, Trakalog includes features Postal locks behind their $45/month plan — for less or the same price."*
 
-### Benchmarks concurrents
+### Benchmarks concurrents (mai 2026)
 
-| Plateforme | Entrée | Mid | Pro/Enterprise | Add-ons |
-|---|---|---|---|---|
-| Disco.ac | $10/mois (500 tracks) | $15/mois (1K) | $25/mois + custom | Watermark +$/mois, Discovery Suite +$10/mois |
-| DropCue | $5/mois | $15/mois | $599 lifetime | Tout inclus |
-| Music Gateway | £5/mois | £15/mois | £25/mois | Sync rep commission 20-25% |
-| Songspace | ~$10/mois | ~$20/mois | Custom | — |
-| **Trakalog** | **$14/mois** | **$29/mois** | **$59/mois** | **AI Credits uniquement** |
+| Plateforme | Free | Entrée | Mid | Pro/Enterprise | Add-ons |
+|---|---|---|---|---|---|
+| **Postal.music** | $0 (25 tracks, 500 MB) | Artist $8/mo (unlimited tracks) | Plus $20/mo | Pro $45/mo (avec watermark) | Sales-led pour multi-seats |
+| **Disco.ac** | — | $10/mois (500 tracks) | $15/mois (1K) | $25/mois + custom | Watermark +$, Discovery Suite +$10/mois |
+| **DropCue** | — | $5/mois | $15/mois | $599 lifetime | Tout inclus |
+| **Music Gateway** | — | £5/mois | £15/mois | £25/mois | Sync rep commission 20-25% |
+| **Trakalog (v3)** | **$0** (10 tracks, 1.5 GB) | **$10/mois** | **$25/mois** | **$45/mois** | **AI Credits uniquement** |
 
-### Coûts réels par utilisateur (marges 90-95%)
+### Coûts réels par utilisateur (post-migration Cloudflare R2)
 
-Avec **Cloudflare R2** (migration prévue), le storage devient zero-egress et le coût drop drastiquement. Les chiffres ci-dessous reflètent Supabase actuel ; R2 fera mieux.
+Cloudflare R2 = **zero egress fees** + storage à **$0.015/GB/mois**. Migration prévue avant le launch public, ce qui transforme drastiquement les marges (notamment sur Pro et Business).
 
-| Poste | Coût/user/mois |
+**Coûts fixes infrastructure (amortis sur tous les users) :**
+
+| Poste | Coût mensuel |
 |---|---|
-| Supabase Storage (50 tracks ~2GB) | ~$0.04 |
-| Supabase Storage (500 tracks ~20GB) | ~$0.42 |
-| Supabase Storage (2000+ tracks ~100GB) | ~$2.10 |
-| Supabase Bandwidth (streaming) | ~$0.10-0.50 |
-| Groq/AI (Smart A&R query) | ~$0.01/query |
-| Railway (Sonic DNA + Watermark) | ~$10/mois fixe total |
-| Vercel + Resend + Cloudflare | ~$20/mois fixe total |
+| Supabase Pro (DB + Auth + Edge Functions) | $25 |
+| Railway (Sonic DNA + Watermark service) | $10 |
+| Vercel Pro (hébergement frontend) | $20 |
+| Resend (base 50K emails) | $20 |
+| Domain + Cloudflare DNS | $2 |
+| **Total fixes** | **$77/mois** |
+
+Répartis sur 500 users payants → **~$0.15/user en coûts fixes** (négligeable).
+
+**Coûts variables Cloudflare R2 :**
+- Storage : $0.015/GB/mois
+- Egress : **$0** (la killer feature)
+- Operations (R/W) : négligeable
+- Claude API (Smart A&R via Groq Llama) : ~$0.05/query
+- Whisper transcription : ~$0.02/track
+- Resend additional : $0.0004/email
+- Stripe : 2.9% + $0.30 par transaction (USD)
 
 ---
 
@@ -69,8 +84,8 @@ Scénario : Yannick (Pro) crée le workspace "Studio XYZ" et invite Eliot (Free)
 | Action | Résultat |
 |---|---|
 | Yannick uploade dans XYZ | ✅ Compte sur son quota Pro (1000 tracks, 400 GB) |
-| Eliot uploade dans XYZ | ✅ Compte sur son quota Free (5 tracks, 2 GB) — pas sur celui de Yannick |
-| Le workspace XYZ contient 1003 tracks au total | ✅ Pas de limite globale workspace, somme des quotas individuels |
+| Eliot uploade dans XYZ | ✅ Compte sur son quota Free (10 tracks, 1.5 GB) — pas sur celui de Yannick |
+| Le workspace XYZ contient 1010 tracks au total | ✅ Pas de limite globale workspace, somme des quotas individuels |
 | Eliot voit/écoute tous les tracks de XYZ | ✅ Permissions workspace (Editor) le permettent |
 | Eliot lance un Smart A&R query | ❌ Bloqué — son plan Free a 0 query/mois |
 | Eliot envoie un pitch depuis XYZ | ❌ Bloqué — son plan Free a 0 pitch/mois |
@@ -92,8 +107,8 @@ La pricing page doit être claire : **"X tracks que TU uploades"**, pas "X track
 
 | Feature | Limite |
 |---|---|
-| **Tracks (uploads personnels)** | **5 max** |
-| **Storage personnel** | **1 GB** |
+| **Tracks (uploads personnels)** | **10 max** |
+| **Storage personnel** | **1.5 GB** |
 | **Stems (upload, accès, gestion)** | ❌ **Grisé avec upgrade prompt** |
 | Sonic DNA auto-analysis | ✅ Inclus |
 | Shared links | 1 (branding Trakalog, pas custom) |
@@ -114,13 +129,14 @@ La pricing page doit être claire : **"X tracks que TU uploades"**, pas "X track
 | API access | ❌ |
 | AI Credits achat | ❌ Pas disponible sur Free |
 
-**Le Free est volontairement frustrant** — 5 tracks, pas de branding, pas de pitch, pas de stems. Juste assez pour tester et vouloir plus. C'est un teaser, pas un produit.
+**Le Free est volontairement frustrant** — 10 tracks, pas de branding, pas de pitch, pas de stems. Juste assez pour tester et vouloir plus. C'est un teaser, pas un produit. **10 tracks (vs Postal Free à 25) reste compétitif** car compensé par : Sonic DNA réel, watermarking preview, et la qualité de l'UI.
 
 ---
 
-### Starter — $14/mois ($11/mois annuel = $132/an)
+### Starter — $10/mois ($90/an = $7.50/mois équiv, économie 25%)
 
 **Cible :** Artiste solo, beatmaker, songwriter indépendant.
+**vs Postal Artist ($8/mois)** : on est +$2 plus cher mais on offre **10x plus de features** (Sonic DNA, watermarking, splits, Smart A&R inclus — que Postal n'a pas).
 
 | Feature | Limite |
 |---|---|
@@ -147,9 +163,10 @@ La pricing page doit être claire : **"X tracks que TU uploades"**, pas "X track
 
 ---
 
-### Pro — $29/mois ($23/mois annuel = $276/an) ⭐ Plan star
+### Pro — $25/mois ($225/an = $18.75/mois équiv, économie 25%) ⭐ Plan star
 
 **Cible :** Producteur actif, petit label, manager. **80% des revenus attendus.**
+**vs Postal Plus ($20/mois)** : on est +$5 plus cher mais on offre multi-workspace + 5 membres + leak tracing + Smart A&R 50 queries (Postal Plus n'a aucune de ces features).
 
 | Feature | Limite |
 |---|---|
@@ -174,13 +191,14 @@ La pricing page doit être claire : **"X tracks que TU uploades"**, pas "X track
 | API access | ✅ (quand disponible) |
 | AI Credits achat | ✅ Disponible |
 
-**Pourquoi c'est le plan star :** Le saut de $14 à $29 (2x le prix) donne 10x la valeur (1000 tracks vs 100, pitches illimités, 5 workspaces, 5 membres, catalog sharing, QR studio). Le "decoy effect" rend ce plan évident.
+**Pourquoi c'est le plan star :** Le saut de $10 à $25 (2.5x le prix) donne 10x la valeur (1000 tracks vs 100, pitches illimités, 5 workspaces, 5 membres, catalog sharing, QR studio). Le "decoy effect" rend ce plan évident.
 
 ---
 
-### Business — $59/mois ($47/mois annuel = $564/an)
+### Business — $45/mois ($405/an = $33.75/mois équiv, économie 25%)
 
 **Cible :** Label, publisher, agence sync.
+**vs Postal Pro ($45/mois)** : on **égale leur prix au centime**, mais on offre AI agents (Brief Seeker, Artist Seeker), multi-workspace illimité, support prioritaire — features qui n'existent pas chez Postal.
 
 | Feature | Limite |
 |---|---|
@@ -208,24 +226,109 @@ La pricing page doit être claire : **"X tracks que TU uploades"**, pas "X track
 | Support prioritaire | ✅ |
 | AI Credits achat | ✅ Disponible |
 
-**Le Business à $59 ancre la perception** — il rend le Pro à $29 "abordable" par comparaison.
+**Le Business à $45 égale Postal Pro mais offre 10x plus** — argument marketing clair sans guerre des prix.
 
 ---
 
 ## 4. Tableau récapitulatif des plans
 
-| Plan | Prix | Tracks | Storage | Stems | Pitches/mois | Smart A&R/mois | Shared links | Workspaces | Membres |
+| Plan | Prix mensuel | Prix annuel | Tracks | Storage | Stems | Pitches/mois | Smart A&R/mois | Workspaces | Membres |
 |---|---|---|---|---|---|---|---|---|---|
-| Free | $0 | 5 | 1 GB | ❌ | 0 | 0 | 1 (no branding) | 1 | 1 |
-| Starter | $14 | 100 | 40 GB | ✅ | 15 | 10 | ∞ | 1 | 1 |
-| Pro | $29 | 1000 | 400 GB | ✅ | ∞ | 50 | ∞ | 5 | 5 |
-| Business | $59 | ∞ | 2 TB inclus | ✅ | ∞ | ∞ | ∞ | ∞ | ∞ |
+| Free | $0 | — | 10 | 1.5 GB | ❌ | 0 | 0 | 1 | 1 |
+| Starter | $10 | $90 | 100 | 40 GB | ✅ | 15 | 10 | 1 | 1 |
+| Pro | $25 | $225 | 1000 | 400 GB | ✅ | ∞ | 50 | 5 | 5 |
+| Business | $45 | $405 | ∞ | 2 TB | ✅ | ∞ | ∞ | ∞ | ∞ |
 
-**Note storage** : la limite storage est calculée pour couvrir confortablement les WAV + stems associés. Hypothèse moyenne : ~320 MB par track total (1 master + 3 stems en moyenne). Free n'a pas de stems donc 1 GB suffit largement pour 5 tracks WAV (~500 MB). Cloudflare R2 (zero egress) rend ces limites soutenables côté coûts.
+**Note storage** : la limite storage est calculée pour couvrir confortablement les WAV + stems associés. Hypothèse moyenne : ~320 MB par track total (1 master + 3 stems en moyenne). Free n'a pas de stems donc 1.5 GB suffit largement pour 10 tracks WAV (~1 GB). Cloudflare R2 (zero egress) rend ces limites soutenables côté coûts.
 
 ---
 
-## 5. AI Credits (add-on, plans payants uniquement)
+## 5. Marges nettes détaillées (post-Cloudflare R2)
+
+Calculs basés sur un usage moyen estimé par plan, avec coûts variables Cloudflare R2 + Claude API + Whisper + Resend + Stripe + coûts fixes répartis sur 500 users payants.
+
+### Starter — $10/mois
+
+**Usage moyen estimé :** 50 tracks (5 GB), 200 streams/mois, 5 Smart A&R, 8 pitches, 3 transcriptions.
+
+| Poste | Coût |
+|---|---|
+| Storage R2 (5 GB × $0.015) | $0.075 |
+| Egress R2 (200 streams ~1 GB) | $0 |
+| Smart A&R (5 × $0.05) | $0.25 |
+| Whisper (3 × $0.02) | $0.06 |
+| Resend (8 emails) | $0.003 |
+| Stripe (2.9% + $0.30 sur $10) | $0.59 |
+| Coûts fixes répartis | $0.15 |
+| **Total coûts** | **~$1.13/mois** |
+
+**Revenue net :** $10 - $1.13 = **$8.87/mois** → **Marge nette 88.7%**
+
+**Annuel ($90) :** économie Stripe de ~$4/an → marge nette annuelle ~**89%**
+
+---
+
+### Pro — $25/mois ⭐
+
+**Usage moyen estimé :** 400 tracks (48 GB), 1500 streams/mois, 25 Smart A&R, 40 pitches, 10 transcriptions.
+
+| Poste | Coût |
+|---|---|
+| Storage R2 (48 GB × $0.015) | $0.72 |
+| Egress R2 | $0 |
+| Smart A&R (25 × $0.05) | $1.25 |
+| Whisper (10 × $0.02) | $0.20 |
+| Resend (40 emails) | $0.016 |
+| Stripe (2.9% + $0.30 sur $25) | $1.03 |
+| Coûts fixes répartis | $0.15 |
+| **Total coûts** | **~$3.37/mois** |
+
+**Revenue net :** $25 - $3.37 = **$21.63/mois** → **Marge nette 86.5%**
+
+**Annuel ($225) :** économie Stripe ~$5/an → marge nette annuelle ~**85%**
+
+---
+
+### Business — $45/mois
+
+**Usage moyen estimé :** 2000 tracks (240 GB), 5000 streams/mois, 150 Smart A&R, 100 pitches, 30 transcriptions.
+
+| Poste | Coût |
+|---|---|
+| Storage R2 (240 GB × $0.015) | $3.60 |
+| Egress R2 | $0 |
+| Smart A&R (150 × $0.05) | $7.50 |
+| Whisper (30 × $0.02) | $0.60 |
+| Resend (100 emails) | $0.04 |
+| Stripe (2.9% + $0.30 sur $45) | $1.61 |
+| Coûts fixes répartis | $0.15 |
+| **Total coûts** | **~$13.50/mois** |
+
+**Revenue net :** $45 - $13.50 = **$31.50/mois** → **Marge nette 70%**
+
+**Annuel ($405) :** économie Stripe ~$6.50/an → marge nette annuelle ~**62%**
+
+---
+
+### Synthèse marges nettes
+
+| Plan | Prix mensuel | Marge nette mensuelle | Prix annuel | Marge nette annuelle |
+|---|---|---|---|---|
+| **Starter** | $10 | **88.7%** ($8.87) | $90 | **89%** ($80.44) |
+| **Pro** | $25 | **86.5%** ($21.63) | $225 | **85%** ($191.59) |
+| **Business** | $45 | **70%** ($31.50) | $405 | **62%** ($251.50) |
+
+**Verdict CTO :** marges **excellentes** sur Starter et Pro (>85%), **bonnes** sur Business (70% mensuel, 62% annuel). Cloudflare R2 transforme drastiquement la rentabilité du Pro (qui était à 50-60% sur Supabase).
+
+**Pour rappel — coûts pré-Cloudflare R2 (Supabase actuel) :**
+- Pro : marge nette ~55-60% (vs 86% post-R2)
+- Business : marge nette ~45-50% (vs 70% post-R2)
+
+**La migration Cloudflare R2 est donc CRITIQUE avant le launch public.**
+
+---
+
+## 6. AI Credits (add-on, plans payants uniquement)
 
 ### Principe
 Les features IA ont un coût variable (API Groq, Claude). Au lieu de tout inclure en illimité, chaque plan a un quota de base. Les power users achètent des packs de crédits supplémentaires.
@@ -260,21 +363,23 @@ Les features IA ont un coût variable (API Groq, Claude). Au lieu de tout inclur
 
 ---
 
-## 6. Billing annuel vs mensuel
+## 7. Billing annuel vs mensuel (25% off sur l'annuel)
 
-| Plan | Mensuel | Annuel/mois | Annuel total | Économie |
+| Plan | Mensuel | Annuel total | Annuel/mois équiv | Économie |
 |---|---|---|---|---|
-| Starter | $14 | $11 | $132 | 21% |
-| Pro | $29 | $23 | $276 | 21% |
-| Business | $59 | $47 | $564 | 20% |
+| Starter | $10 | **$90** | $7.50 | 25% |
+| Pro | $25 | **$225** | $18.75 | 25% |
+| Business | $45 | **$405** | $33.75 | 25% |
 
 - **Pousser l'annuel** sur la pricing page (afficher le prix annuel par défaut, toggle pour mensuel)
-- Badge "Save 20%" sur l'option annuelle
+- Badge "Save 25%" sur l'option annuelle
 - Cash upfront + 12 mois de rétention garantie
+
+**Pourquoi 25% (pas 20%) :** Cloudflare R2 nous donne des marges supérieures à 85% sur Starter et Pro, donc on peut se permettre un push annuel plus agressif sans casser la rentabilité.
 
 ---
 
-## 7. Politique commerciale
+## 8. Politique commerciale
 
 ### Stripe Tax (day one)
 Stripe Tax est activé dès le lancement. Calcul automatique de la TVA/sales tax selon la localisation du client. Pas de surprise, conformité automatique dans tous les pays supportés.
@@ -293,9 +398,12 @@ Après 21 jours sans paiement → downgrade automatique vers Free.
 ### Pas de Free Trial Pro initial
 Décision : on **n'active pas** de free trial Pro de 14 jours au lancement. Le Free tier sert déjà à tester le produit. Un trial complique la logique de billing et le suivi des conversions. Réévaluable post-launch si conversion < 5%.
 
+### Devise USD
+Pricing en USD sur un compte Stripe canadien (Yannick Rastogi Productions Inc.). Stripe convertit en CAD pour les payouts. Permet de viser le marché international (US + Europe) sans surcoût de positioning.
+
 ---
 
-## 8. Beta Passes (système de comptes gratuits)
+## 9. Beta Passes (système de comptes gratuits)
 
 ### Objectif
 Distribuer manuellement des accès gratuits à des beta testers, influenceurs, partenaires, amis, presse, etc. — sans passer par Stripe.
@@ -343,13 +451,9 @@ Page "Beta Passes" avec :
 - Actions : revoke, extend (rajouter du temps), resend email
 - Stats : total émis, % redeemed, % expiré
 
-### Tables DB
-
-Voir section "Schéma Base de Données" plus bas.
-
 ---
 
-## 9. Schéma Base de Données
+## 10. Schéma Base de Données
 
 ### Table `subscriptions` (NOUVELLE — user-based)
 
@@ -508,7 +612,7 @@ Pour éviter les jointures à chaque check, on peut éventuellement ajouter une 
 
 ---
 
-## 10. Limites par plan (config TypeScript)
+## 11. Limites par plan (config TypeScript)
 
 ```typescript
 // src/lib/plans.ts
@@ -516,8 +620,8 @@ Pour éviter les jointures à chaque check, on peut éventuellement ajouter une 
 export const PLAN_LIMITS = {
   free: {
     // Uploads
-    tracks_max: 5,
-    storage_max_bytes: 1_073_741_824,        // 1 GB
+    tracks_max: 10,
+    storage_max_bytes: 1_610_612_736,        // 1.5 GB
     
     // Actions
     pitches_max_monthly: 0,
@@ -616,21 +720,21 @@ export const PLAN_LIMITS = {
 
 ---
 
-## 11. Architecture Stripe
+## 12. Architecture Stripe
 
 ### Produits Stripe à créer (en mode TEST d'abord)
 
 ```
 Products:
   - trakalog_starter
-    - Price: $14/month (recurring)
-    - Price: $132/year (recurring)
+    - Price: $10/month (recurring)
+    - Price: $90/year (recurring)
   - trakalog_pro
-    - Price: $29/month (recurring)
-    - Price: $276/year (recurring)
+    - Price: $25/month (recurring)
+    - Price: $225/year (recurring)
   - trakalog_business
-    - Price: $59/month (recurring)
-    - Price: $564/year (recurring)
+    - Price: $45/month (recurring)
+    - Price: $405/year (recurring)
   - trakalog_credits_25
     - Price: $5 (one-time)
   - trakalog_credits_100
@@ -645,6 +749,7 @@ Products:
 - **Customer Portal** : activé avec changement de plan, changement de cycle, mise à jour CB, annulation, factures
 - **Smart Retries** : activé (21 jours)
 - **Tax IDs** : collecte activée pour les business
+- **Devise** : USD (compte canadien acceptant paiements USD)
 
 ### Flow d'abonnement
 
@@ -716,15 +821,16 @@ STRIPE_PUBLISHABLE_KEY   — clé publique (aussi dans le frontend via VITE_STRI
 
 ---
 
-## 12. Frontend — Pages et composants
+## 13. Frontend — Pages et composants
 
 ### Pricing Page (`/pricing`)
 - 4 colonnes : Free / Starter / Pro (highlighted) / Business
-- Toggle mensuel/annuel (annuel par défaut, badge "Save 20%")
+- Toggle mensuel/annuel (annuel par défaut, badge "Save 25%")
 - Feature comparison table en dessous
 - CTA "Get Started" (Free) / "Upgrade" (payants) par plan
 - Si déjà abonné → le plan actuel a un badge "Current Plan"
 - Section Stripe Tax notice : "Prices exclude tax — calculated at checkout"
+- Section comparative vs Postal : "Why pay $45 elsewhere for less?"
 
 ### Settings → Billing (nouvelle section)
 - **Plan actuel** + statut (avec icône verte/rouge)
@@ -746,7 +852,7 @@ Sur la colonne Free, afficher "Stems" avec une croix grisée et un mini tooltip 
 
 | Trigger | Modal |
 |---|---|
-| Upload 6ème track sur Free | "Upgrade to Starter to upload up to 100 tracks" |
+| Upload 11ème track sur Free | "Upgrade to Starter to upload up to 100 tracks" |
 | Essayer de pitcher sur Free | "Upgrade to Starter to send pitches" |
 | Cliquer sur l'onglet Stems (Free) | "Stems are available from Starter — Upgrade to unlock" |
 | 11ème Smart A&R query du mois (Starter) | "You've used all your Smart A&R queries. Buy credits or upgrade to Pro" |
@@ -761,7 +867,7 @@ Sur la colonne Free, afficher "Stems" avec une croix grisée et un mini tooltip 
 
 ---
 
-## 13. Enforcement des limites
+## 14. Enforcement des limites
 
 ### Côté frontend (UX)
 - Vérifier les limites **AVANT** l'action (pas après l'upload)
@@ -786,8 +892,8 @@ Si la limite est atteinte → retourner une erreur structurée :
 {
   "error": "plan_limit_reached",
   "limit_type": "tracks" | "storage" | "pitches" | ...,
-  "current": 5,
-  "max": 5,
+  "current": 10,
+  "max": 10,
   "plan": "free",
   "upgrade_to": "starter"
 }
@@ -801,7 +907,7 @@ Le frontend catch cette erreur et affiche le modal d'upgrade approprié.
 
 ---
 
-## 14. Migration des utilisateurs existants
+## 15. Migration des utilisateurs existants
 
 ### Beta users (avant le launch Stripe)
 Tous les comptes créés avant la mise en prod de Stripe reçoivent automatiquement un **Beta Pass Lifetime Pro** :
@@ -811,12 +917,12 @@ Tous les comptes créés avant la mise en prod de Stripe reçoivent automatiquem
 
 ### Nouveaux comptes (après le launch Stripe)
 - Inscription → plan Free automatique
-- Onboarding mentionne les plans payants mais **pas de trial automatique** (cf. section 7)
+- Onboarding mentionne les plans payants mais **pas de trial automatique** (cf. section 8)
 - Le user upgrade quand il veut via Settings → Billing
 
 ---
 
-## 15. Phases d'implémentation
+## 16. Phases d'implémentation
 
 ### Phase 1 — Setup DB + Stripe (1-2 sessions)
 1. Migration SQL : tables `subscriptions`, `beta_passes`, `credit_purchases`
@@ -824,7 +930,7 @@ Tous les comptes créés avant la mise en prod de Stripe reçoivent automatiquem
 3. Trigger `sync_subscription_usage` sur `tracks`
 4. RPCs : `get_my_subscription`, `check_upload_allowed`
 5. Colonne `file_size_bytes` sur `tracks` + backfill
-6. Création Products + Prices Stripe (mode test)
+6. Création Products + Prices Stripe (mode test) avec nouveaux prix $10/$25/$45
 7. Activation Stripe Tax + Customer Portal + Smart Retries
 
 ### Phase 2 — Edge Functions Stripe (1 session)
@@ -854,31 +960,41 @@ Tous les comptes créés avant la mise en prod de Stripe reçoivent automatiquem
 25. Email d'alerte avant expiration (cron)
 26. Script de migration des beta users existants → Lifetime Pro passes
 
-### Phase 6 — Go Live (1 session)
-27. Passer Stripe en mode production
-28. Test du flow complet end-to-end en production avec une vraie CB
-29. Activer le 7-day money-back guarantee dans les CGU
-30. Communication aux beta users (email de bienvenue Lifetime Pro)
+### Phase 6 — Migration Cloudflare R2 (CRITIQUE avant launch public)
+27. Setup compte Cloudflare R2
+28. Migration des buckets Supabase Storage → R2 (tracks, stems, covers)
+29. Update Edge Functions pour utiliser R2 SDK
+30. Mise à jour des signed URLs (R2 + Cloudflare Workers pour auth)
+31. Test exhaustif streaming + uploads + downloads
+32. **Sans cette migration, les marges Pro/Business sont 30-40% inférieures**
+
+### Phase 7 — Go Live (1 session)
+33. Passer Stripe en mode production
+34. Test du flow complet end-to-end en production avec une vraie CB
+35. Activer le 7-day money-back guarantee dans les CGU
+36. Communication aux beta users (email de bienvenue Lifetime Pro)
 
 ---
 
-## 16. Risques et mitigations
+## 17. Risques et mitigations
 
 | Risque | Mitigation |
 |---|---|
 | User contourne les limites frontend | Enforcement côté RPC (backend) — impossible à contourner |
 | Webhook Stripe échoue | Retry automatique Stripe (jusqu'à 3 jours) + logs dans audit_logs + alerte admin |
-| User annule et veut garder ses tracks | Les tracks restent accessibles en lecture seule sur Free, mais pas de nouvelles uploads au-delà de 5 + 1 GB |
+| User annule et veut garder ses tracks | Les tracks restent accessibles en lecture seule sur Free, mais pas de nouvelles uploads au-delà de 10 + 1.5 GB |
 | Downgrade avec plus de tracks que la limite | Les tracks existants restent, mais bloque les nouveaux uploads tant que count > limite |
 | Abus du Beta Pass | 1 pass par email, status `redeemed` une fois utilisé, admin peut revoke |
 | Double charge | Stripe gère nativement la déduplication des webhooks |
 | Storage limit dépassé entre 2 sync triggers | Le check `check_upload_allowed` fait un live check avant upload, pas juste le compteur cached |
 | User invité Free qui consomme trop le workspace Pro du owner | Impossible : chaque user a ses propres quotas, pas de pool partagé |
 | Free user qui crée 50 comptes pour bypass | Email verification obligatoire + détection de patterns (futur) |
+| Postal baisse ses prix après notre launch | Marges nettes confortables (85%+) nous permettent de baisser de $2-3 sans casser le business |
+| Migration Cloudflare R2 cassée | Tests exhaustifs en staging avant migration prod + rollback plan documenté |
 
 ---
 
-## 17. KPIs à tracker (dans Admin Dashboard)
+## 18. KPIs à tracker (dans Admin Dashboard)
 
 - **MRR** (Monthly Recurring Revenue) — total et par plan
 - **ARR** (Annual Recurring Revenue)
@@ -893,28 +1009,44 @@ Tous les comptes créés avant la mise en prod de Stripe reçoivent automatiquem
 - **Beta Pass redemption rate** (% des pass envoyés effectivement utilisés)
 - **Storage usage moyen par plan** (pour valider que les limites sont confortables)
 - **Trial / Money-back refund rate** (cible : < 3%)
+- **Marge nette par plan** (validation post-Cloudflare R2)
 
 ---
 
-## 18. Décisions figées (changelog v2)
+## 19. Décisions figées (changelog v3)
 
-Cette section résume **les changements par rapport à la v1** du doc, validés en session du 20 mai 2026 :
+Cette section résume **les changements par rapport à la v2** du doc, validés en session du 20 mai 2026 après analyse compétitive Postal :
 
-1. **Architecture user-based** : plan vit sur `subscriptions.user_id`, pas sur `workspaces.plan` (changement majeur)
-2. **Free = 5 tracks** (était 3) — décision après débat sur 5 vs 7 vs 10, retenu 5 pour optimiser la conversion
-3. **Storage limits** ajoutées comme safety net : 1 GB / 40 GB / 400 GB / 2 TB (Free réduit car pas de stems)
-4. **Stems = feature premium** : grisé sur Free avec upgrade prompt
-5. **Règle double check upload** : quota perso (tracks count + storage) de l'uploader, pas du workspace owner
-6. **Pas de plafond workspace global** : un workspace peut accumuler la somme des quotas de ses membres
-7. **Tracks restent dans le workspace** quand l'invité part (le owner ne perd rien)
-8. **Downgrade gracieux** : tracks existants restent visibles, bloque seulement les nouveaux uploads
-9. **Beta Passes** ajoutés au système (table + admin UI + flow d'enrollment automatique)
-10. **Stripe Tax** activé day one
-11. **7-day money-back guarantee** ajouté
-12. **21-day dunning** via Stripe Smart Retries
-13. **Pas de Free Trial Pro initial** au lancement (réévaluable post-launch)
-14. **Beta users existants** → tous Lifetime Pro Beta Pass au déploiement
+### Changements de pricing
+1. **Free passé de 5 → 10 tracks** : matcher psychologiquement Postal Free (25 tracks) sans aller jusqu'à 25
+2. **Free storage passé de 1 GB → 1.5 GB** : éviter la frustration à exactement 10 tracks WAV à 100 MB
+3. **Starter passé de $14 → $10/mois** : battre Postal Artist ($8) sur la valeur (+$2 mais 10x plus de features)
+4. **Pro passé de $29 → $25/mois** : battre Postal Plus ($20) sur la valeur (+$5 mais features majeures)
+5. **Business passé de $59 → $45/mois** : égaler Postal Pro ($45) au centime, avec 10x plus de features
+6. **Annuel passé de 20% off → 25% off** : push plus agressif, justifié par marges nettes 85%+ post-R2
+   - Starter annuel : $132 → **$90** ($7.50/mois équiv)
+   - Pro annuel : $276 → **$225** ($18.75/mois équiv)
+   - Business annuel : $564 → **$405** ($33.75/mois équiv)
+
+### Ajouts
+7. **Section 5 "Marges nettes détaillées (post-Cloudflare R2)"** : calculs complets par plan, mensuel et annuel
+8. **Phase 6 "Migration Cloudflare R2"** ajoutée comme critique avant launch public (passe les marges Pro/Business de 50-60% à 70-86%)
+9. **Comparatif Postal explicite** dans chaque description de plan
+10. **Risque "Postal baisse ses prix"** ajouté avec mitigation
+11. **KPI "Marge nette par plan"** ajouté pour validation post-R2
+
+### Maintenu de v2
+- Architecture user-based (`subscriptions.user_id`)
+- Stems = feature premium grisée sur Free
+- Règle double check upload (tracks count + storage)
+- Beta Passes système complet (Lifetime / Annual / Monthly)
+- Stripe Tax day one
+- 7-day money-back guarantee
+- 21-day Smart Retries dunning
+- Pas de Free Trial Pro
+- Beta users existants → Lifetime Pro Beta Pass
+- AI Credits packs ($5/$15/$50 pour 25/100/500) — inchangé
 
 ---
 
-*Ce document est la source de vérité v2 pour l'implémentation du billing Trakalog. Toute décision contradictoire avec ce doc doit déclencher une mise à jour explicite (v3, v4, etc.).*
+*Ce document est la source de vérité v3 pour l'implémentation du billing Trakalog. Toute décision contradictoire avec ce doc doit déclencher une mise à jour explicite (v4, v5, etc.).*
