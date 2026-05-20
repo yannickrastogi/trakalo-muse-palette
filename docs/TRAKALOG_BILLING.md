@@ -491,7 +491,57 @@ Bulk-buy and forget about it.
 
 ---
 
-## 8b. ⚠️ Honnêteté produit — Sonic DNA (note interne CRITIQUE)
+## 8b. Stripe Price IDs (référence technique)
+
+Les IDs des Prices Stripe créés en mode **TEST** le 20 mai 2026. À utiliser dans les Edge Functions `create-checkout-session` pour mapper un plan/cycle/pack au bon Price Stripe.
+
+⚠️ **Ces IDs sont en mode TEST.** À la mise en production, il faudra créer de nouveaux Products/Prices en mode LIVE et mettre à jour ces IDs.
+
+### Test mode IDs
+
+```typescript
+// src/lib/stripe-prices.ts (à créer)
+
+export const STRIPE_PRICE_IDS = {
+  // Subscriptions
+  starter: {
+    monthly: 'price_1TZDemJR5z0DJ4DZy3w5lcwv',   // $10/mo
+    annual:  'price_1TZDemJR5z0DJ4DZuVPhOWzA',   // $90/yr
+  },
+  pro: {
+    monthly: 'price_1TZDkCJR5z0DJ4DZ0nKSC8qw',   // $25/mo
+    annual:  'price_1TZDkZJR5z0DJ4DZOgsP3o4D',   // $225/yr
+  },
+  business: {
+    monthly: 'price_1TZDoBJR5z0DJ4DZg3CK2Sg3',   // $45/mo
+    annual:  'price_1TZDoiJR5z0DJ4DZwYrtlJyT',   // $405/yr
+  },
+  
+  // One-time credits packs
+  credits: {
+    pack_25:  'price_1TZDs4JR5z0DJ4DZyirFwVsn',   // $5  → 25 credits
+    pack_100: 'price_1TZDtdJR5z0DJ4DZ7UdnJSob',   // $15 → 100 credits
+    // pack_500 NOT shipped at launch (see section 6 note)
+  },
+};
+```
+
+### Mapping Price ID → Action backend (pour stripe-webhook)
+
+| Price ID | Plan / Pack | Action attendue |
+|---|---|---|
+| `price_1TZDemJR5z0DJ4DZy3w5lcwv` | Starter monthly | `subscriptions.plan = 'starter'`, `billing_cycle = 'monthly'` |
+| `price_1TZDemJR5z0DJ4DZuVPhOWzA` | Starter annual | `subscriptions.plan = 'starter'`, `billing_cycle = 'annual'` |
+| `price_1TZDkCJR5z0DJ4DZ0nKSC8qw` | Pro monthly | `subscriptions.plan = 'pro'`, `billing_cycle = 'monthly'` |
+| `price_1TZDkZJR5z0DJ4DZOgsP3o4D` | Pro annual | `subscriptions.plan = 'pro'`, `billing_cycle = 'annual'` |
+| `price_1TZDoBJR5z0DJ4DZg3CK2Sg3` | Business monthly | `subscriptions.plan = 'business'`, `billing_cycle = 'monthly'` |
+| `price_1TZDoiJR5z0DJ4DZwYrtlJyT` | Business annual | `subscriptions.plan = 'business'`, `billing_cycle = 'annual'` |
+| `price_1TZDs4JR5z0DJ4DZyirFwVsn` | Credits 25 pack | `subscriptions.ai_credits_purchased += 25` + insert `credit_purchases` |
+| `price_1TZDtdJR5z0DJ4DZ7UdnJSob` | Credits 100 pack | `subscriptions.ai_credits_purchased += 100` + insert `credit_purchases` |
+
+---
+
+## 8c. ⚠️ Honnêteté produit — Sonic DNA (note interne CRITIQUE)
 
 **À ne PAS vendre dans les descriptions Stripe ou pricing page tant que ce n'est pas réellement livré et fiable :**
 
@@ -1169,7 +1219,8 @@ Tous les comptes créés avant la mise en prod de Stripe reçoivent automatiquem
 
 1. **Smart A&R Starter passé de 10 → 15 queries/mois** : matche les 15 pitches inclus (logique "1 query Smart A&R = 1 pitch potentiel"). Coût additionnel négligeable (~$0.15/user/mois), marge nette ajustée 88.7% → 87.2% (toujours excellente).
 2. **Section 8 ajoutée : Descriptions Stripe vendeuses** prêtes à coller dans le Dashboard Stripe (5 descriptions au launch — 3 plans + 2 packs crédits, descriptions condensées <500 caractères pour limite Stripe).
-3. **Section 8b ajoutée : Honnêteté produit Sonic DNA** — note interne CRITIQUE sur ce qu'il est honnête de vendre vs ce qui a été retiré de l'UI (mood detection auto, détection de structure auto). À relire avant tout audit marketing.
+3. **Section 8b ajoutée : Stripe Price IDs (test mode)** — 8 IDs documentés pour usage dans les Edge Functions (`create-checkout-session`, `stripe-webhook`).
+4. **Section 8c ajoutée : Honnêteté produit Sonic DNA** — note interne CRITIQUE sur ce qu'il est honnête de vendre vs ce qui a été retiré de l'UI (mood detection auto, détection de structure auto). À relire avant tout audit marketing.
 4. **API access retiré des descriptions Stripe** : pas encore implémenté, on ne le vend pas. La feature reste prévue pour le Business tier (et potentiellement Pro). À ajouter aux descriptions le jour de la livraison.
 5. **Pack 500 crédits NOT shipped at launch** : décision simplification UX (2 packs > 3 packs pour la conversion). Spec préservée pour ajout post-launch si l'usage le justifie.
 6. **Sonic DNA gardé comme marque produit** : format vendeur retenu = "Sonic DNA: Automatic BPM & key detection + audio fingerprinting that powers Smart A&R matching" (marque + explication honnête).
