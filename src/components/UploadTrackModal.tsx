@@ -64,6 +64,7 @@ import { GenreMultiSelect } from "@/components/GenreMultiSelect";
 interface Split {
   id: string;
   name: string;
+  email: string;
   stage_name: string;
   role: string;
   percentage: number;
@@ -179,7 +180,7 @@ function createEmptyCommonInfo(): CommonInfo {
     producedBy: "",
     mixedBy: "",
     masteredBy: "",
-    splits: [{ id: "1", name: "", stage_name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
+    splits: [{ id: "1", name: "", email: "", stage_name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
     tags: {},
   };
 }
@@ -236,7 +237,7 @@ function createTrackEntry(file: File): TrackEntry {
     customPerformers: [],
     customProduction: [],
     stems: [],
-    splits: [{ id: "1", name: "", stage_name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
+    splits: [{ id: "1", name: "", email: "", stage_name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
     lyrics: "",
     sharedTeams: [],
     sharedWorkspaces: [],
@@ -494,7 +495,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     if (!currentTrack) return;
     const newSplits = [
       ...currentTrack.splits,
-      { id: crypto.randomUUID(), name: "", stage_name: "", role: "", percentage: 0, pro: "", ipi: "", publisher: "" },
+      { id: crypto.randomUUID(), name: "", email: "", stage_name: "", role: "", percentage: 0, pro: "", ipi: "", publisher: "" },
     ];
     if (splitsManuallyEdited) {
       updateCurrent({ splits: newSplits });
@@ -524,6 +525,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const batchUpdateSplit = useCallback((id: string, current: Split, s: CollaboratorSuggestion) => {
     if (!currentTrack) return;
     var patch: Partial<Split> = { name: s.fullName };
+    if (s.email && !current.email) patch.email = s.email;
     if (s.stage_name && !current.stage_name) patch.stage_name = s.stage_name;
     if (s.role && !current.role) patch.role = s.role;
     if (s.pro && !current.pro) patch.pro = s.pro;
@@ -831,7 +833,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                 _workspace_id: activeWorkspace.id,
                 _first_name: parts[0] || "",
                 _last_name: parts.slice(1).join(" ") || null,
-                _email: null,
+                _email: sp.email && sp.email.trim() !== "" ? sp.email.trim() : null,
                 _role: sp.role && sp.role.trim() !== "" ? sp.role.trim() : null,
                 _stage_name: sp.stage_name && sp.stage_name.trim() !== "" ? sp.stage_name.trim() : null,
                 _company: null,
@@ -987,7 +989,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     setCommonInfo((prev) => {
       const next = [
         ...prev.splits,
-        { id: crypto.randomUUID(), name: "", stage_name: "", role: "", percentage: 0, pro: "", ipi: "", publisher: "" },
+        { id: crypto.randomUUID(), name: "", email: "", stage_name: "", role: "", percentage: 0, pro: "", ipi: "", publisher: "" },
       ];
       return { ...prev, splits: commonSplitsManuallyEdited ? next : equalSplit(next, "percentage") };
     });
@@ -1007,6 +1009,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   const batchUpdateCommonSplit = useCallback((id: string, current: Split, s: CollaboratorSuggestion) => {
     var patch: Partial<Split> = { name: s.fullName };
+    if (s.email && !current.email) patch.email = s.email;
     if (s.stage_name && !current.stage_name) patch.stage_name = s.stage_name;
     if (s.role && !current.role) patch.role = s.role;
     if (s.pro && !current.pro) patch.pro = s.pro;
@@ -2552,6 +2555,10 @@ function StepSplits({
                 <input value={split.stage_name} onChange={(e) => onUpdate(split.id, "stage_name", e.target.value)} placeholder="Artist / Stage name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
+                <label className="text-2xs text-muted-foreground font-medium">Email</label>
+                <input type="email" value={split.email || ""} onChange={(e) => onUpdate(split.id, "email", e.target.value)} placeholder={t("signature.emailPlaceholder")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+              </div>
+              <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.role", "Role")}</label>
                 <MultiSelectChips options={SPLIT_ROLES} selected={split.role ? split.role.split(", ").filter(Boolean) : []} onChange={function (vals) { onUpdate(split.id, "role", vals.join(", ")); }} placeholder={t("uploadTrack.selectRole", "Select role")} maxItems={4} />
               </div>
@@ -3150,9 +3157,9 @@ function StepTeams({
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium text-foreground">{value}</span>
+    <div className="min-w-0">
+      <p className="text-2xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-[13px] font-medium text-foreground break-words">{value}</p>
     </div>
   );
 }
