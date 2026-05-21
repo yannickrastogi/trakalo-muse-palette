@@ -363,10 +363,16 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
           user_overrides: updatedOverrides,
         };
 
+        // Atomic write: bpm + key columns AND sonic_dna together so the user's
+        // correction can't be lost to a racing analyze-sonic-dna or a partial save.
         const { error } = await supabase.rpc("update_track", {
           _user_id: user.id,
           _track_id: trackData.uuid,
-          _updates: { sonic_dna: updatedSonicDna },
+          _updates: {
+            bpm: newBpm > 0 ? newBpm : null,
+            key: newKey || null,
+            sonic_dna: updatedSonicDna,
+          },
         });
 
         if (error) {
