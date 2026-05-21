@@ -116,14 +116,25 @@ Deno.serve(async (req) => {
     // 3. Build update payload: always set sonic_dna, conditionally update bpm/key
     // BPM and key are nested objects: sonicDna.bpm = { bpm, confidence, ... }, sonicDna.key = { key, mode, confidence }
 
-    // Fetch existing track metadata to sync into sonic_dna.user_metadata and check BPM/Key
+    // Fetch existing track metadata + existing sonic_dna to:
+    //   - sync columns into sonic_dna.user_metadata
+    //   - read user_overrides so we never overwrite user-corrected fields (sticky, ignored by `force`)
     const { data: existingTrack } = await supabaseAdmin
       .from("tracks")
-      .select("bpm, key, title, artist, featuring, genre, mood, gender, language, track_type, tags")
+      .select("bpm, key, title, artist, featuring, genre, mood, gender, language, track_type, tags, sonic_dna")
       .eq("id", track_id)
       .single();
 
-    // Sync track metadata into sonic_dna.user_metadata
+    const existingSonicDnaObj = (existingTrack?.sonic_dna as Record<string, unknown> | null) || null;
+    const existingUserMeta = (existingSonicDnaObj?.user_metadata as Record<string, unknown>) || {};
+    const userOverrides = (existingSonicDnaObj?.user_overrides as Record<string, boolean>) || {};
+
+    // Preserve user_overrides on the new analysis payload
+    if (Object.keys(userOverrides).length > 0) {
+      sonicDna.user_overrides = userOverrides;
+    }
+
+    // Sync track metadata into sonic_dna.user_metadata; prefer user-overridden values
     if (existingTrack) {
       sonicDna.user_metadata = {
         ...(sonicDna.user_metadata || {}),
@@ -135,16 +146,18 @@ Deno.serve(async (req) => {
         mood: existingTrack.mood || [],
         gender: existingTrack.gender,
         language: existingTrack.language,
-        bpm: existingTrack.bpm,
-        key: existingTrack.key,
+        bpm: userOverrides.bpm ? (existingUserMeta.bpm ?? existingTrack.bpm) : existingTrack.bpm,
+        key: userOverrides.key ? (existingUserMeta.key ?? existingTrack.key) : existingTrack.key,
         tags: existingTrack.tags || {},
       };
     }
 
     const updatePayload: Record<string, unknown> = { sonic_dna: sonicDna };
 
-    const hasUserBpm = !force && existingTrack?.bpm != null && existingTrack.bpm > 0;
-    const hasUserKey = !force && existingTrack?.key != null && existingTrack.key !== "";
+    // User overrides are STICKY: a true flag protects the column even when force=true.
+    // For non-overridden fields, the original guard (don't clobber an existing value) still applies unless force.
+    const hasUserBpm = userOverrides.bpm === true || (!force && existingTrack?.bpm != null && existingTrack.bpm > 0);
+    const hasUserKey = userOverrides.key === true || (!force && existingTrack?.key != null && existingTrack.key !== "");
 
     const bpmData = sonicDna.bpm;
     if (bpmData && typeof bpmData === "object" && bpmData.bpm && bpmData.confidence > 0.7 && !hasUserBpm) {

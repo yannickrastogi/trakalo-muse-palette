@@ -322,8 +322,11 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       })();
     }
 
-    // Sync user metadata to sonic_dna
-    if (trackData?.uuid) {
+    // Sync user metadata to sonic_dna with sticky user_overrides for edited fields.
+    // user_overrides[field] = true tells analyze-sonic-dna to never overwrite the
+    // user's correction, even on a forced re-analyze.
+    let sonicDnaSyncFailed = false;
+    if (trackData?.uuid && user) {
       try {
         const { data: row } = await supabase
           .from("tracks")
@@ -331,40 +334,56 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
           .eq("id", trackData.uuid)
           .single();
 
-        const existingSonicDna = row?.sonic_dna as Record<string, unknown> | null;
-        if (existingSonicDna) {
-          const updatedSonicDna = {
-            ...existingSonicDna,
-            user_metadata: {
-              genre,
-              type: trackType,
-              gender: voice,
-              language,
-              bpm: Number(bpm) || 0,
-              key: trackKey,
-              title: title.trim(),
-              artist: artist.trim(),
-              featuring: featuredArtists.split(",").map((s) => s.trim()).filter(Boolean),
-            },
-          };
-          const { error } = await supabase.rpc("update_track", {
-            _user_id: user?.id || null,
-            _track_id: trackData.uuid,
-            _updates: { sonic_dna: updatedSonicDna },
-          });
+        const existingSonicDna = (row?.sonic_dna as Record<string, unknown>) || {};
+        const existingOverrides = (existingSonicDna.user_overrides as Record<string, boolean>) || {};
 
-          if (!error) {
-            toast.success("Sonic DNA updated");
-          } else {
-            console.error("Failed to sync sonic_dna:", error);
-          }
+        const newBpm = Number(bpm) || 0;
+        const newKey = trackKey;
+        const bpmChanged = bpm !== initialBpm;
+        const keyChanged = trackKey !== initialKey;
+
+        const updatedOverrides: Record<string, boolean> = { ...existingOverrides };
+        if (bpmChanged && newBpm > 0) updatedOverrides.bpm = true;
+        if (keyChanged && newKey) updatedOverrides.key = true;
+
+        const updatedSonicDna = {
+          ...existingSonicDna,
+          user_metadata: {
+            ...(existingSonicDna.user_metadata as Record<string, unknown> || {}),
+            genre,
+            type: trackType,
+            gender: voice,
+            language,
+            bpm: newBpm,
+            key: newKey,
+            title: title.trim(),
+            artist: artist.trim(),
+            featuring: featuredArtists.split(",").map((s) => s.trim()).filter(Boolean),
+          },
+          user_overrides: updatedOverrides,
+        };
+
+        const { error } = await supabase.rpc("update_track", {
+          _user_id: user.id,
+          _track_id: trackData.uuid,
+          _updates: { sonic_dna: updatedSonicDna },
+        });
+
+        if (error) {
+          console.error("Failed to sync sonic_dna:", error);
+          sonicDnaSyncFailed = true;
         }
       } catch (err) {
         console.error("Failed to sync sonic_dna:", err);
+        sonicDnaSyncFailed = true;
       }
     }
 
-    toast.success(t("editTrack.trackUpdated"));
+    if (sonicDnaSyncFailed) {
+      toast.error("Failed to update Sonic DNA", { duration: 5000 });
+    } else {
+      toast.success(t("editTrack.trackUpdated"));
+    }
     onClose();
   };
 
