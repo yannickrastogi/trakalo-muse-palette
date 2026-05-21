@@ -58,6 +58,7 @@
     "uploadTrack": "Subir pista",
     "searchPlaceholder": "Buscar por título, artista o álbum…",
     "filters": {
+      "label": "Filtros",
       "typeChip": "Tipo: {{value}}",
       "genreChip": "Género: {{value}}",
       "keyChip": "Tono: {{value}}",

@@ -289,7 +289,7 @@ export default function Catalog() {
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              {t("catalog.filters")}
+              {t("catalog.filters.label")}
               {activeFilterCount > 0 && (
                 <span className="ml-1 w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold btn-brand" style={{ boxShadow: "none" }}>
                   {activeFilterCount}

@@ -58,6 +58,7 @@
     "uploadTrack": "Carregar faixa",
     "searchPlaceholder": "Pesquisar por título, artista ou álbum…",
     "filters": {
+      "label": "Filtros",
       "typeChip": "Tipo: {{value}}",
       "genreChip": "Gênero: {{value}}",
       "keyChip": "Tom: {{value}}",

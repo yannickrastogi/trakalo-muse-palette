@@ -61,6 +61,7 @@
     "uploadTrack": "Upload Track",
     "searchPlaceholder": "Search by title, artist, or album…",
     "filters": {
+      "label": "Filters",
       "typeChip": "Type: {{value}}",
       "genreChip": "Genre: {{value}}",
       "keyChip": "Key: {{value}}",

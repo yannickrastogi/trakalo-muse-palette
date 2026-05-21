@@ -61,6 +61,7 @@
     "uploadTrack": "Téléverser un morceau",
     "searchPlaceholder": "Rechercher par titre, artiste ou album…",
     "filters": {
+      "label": "Filtres",
       "typeChip": "Type : {{value}}",
       "genreChip": "Genre : {{value}}",
       "keyChip": "Tonalité : {{value}}",

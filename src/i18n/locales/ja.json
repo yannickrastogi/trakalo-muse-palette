@@ -58,6 +58,7 @@
     "uploadTrack": "トラックをアップロード",
     "searchPlaceholder": "タイトル、アーティスト、アルバムで検索…",
     "filters": {
+      "label": "フィルター",
       "typeChip": "タイプ: {{value}}",
       "genreChip": "ジャンル: {{value}}",
       "keyChip": "キー: {{value}}",

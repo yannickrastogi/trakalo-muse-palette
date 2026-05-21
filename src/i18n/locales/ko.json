@@ -58,6 +58,7 @@
     "uploadTrack": "트랙 업로드",
     "searchPlaceholder": "제목, 아티스트 또는 앨범으로 검색…",
     "filters": {
+      "label": "필터",
       "typeChip": "유형: {{value}}",
       "genreChip": "장르: {{value}}",
       "keyChip": "조: {{value}}",
