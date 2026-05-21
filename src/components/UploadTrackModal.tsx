@@ -783,6 +783,53 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       });
       setUploadProgress(98);
 
+      // Persist extended metadata that insert_track doesn't accept natively
+      // (album, upc, released_at, copyright, explicit, written/produced/mixed/mastered_by,
+      // credits, tags) plus a defensive re-write of fields already passed to insert_track
+      // (labels, publishers, isrc, featuring, notes) so the StepDetails state is the
+      // single source of truth in DB. One atomic call, errors surfaced to the user.
+      if (savedTrack && user) {
+        // Normalize comma-joined strings the same way as TrackContext.addTrack
+        // so the two awaited writes don't produce divergent formats in DB.
+        const writtenByJoined = currentTrack.writtenBy
+          ? currentTrack.writtenBy.split(",").map((s) => s.trim()).filter(Boolean).join(", ")
+          : "";
+        const producedByJoined = currentTrack.producedBy
+          ? currentTrack.producedBy.split(",").map((s) => s.trim()).filter(Boolean).join(", ")
+          : "";
+        const extendedPayload: Record<string, unknown> = {
+          album: currentTrack.album || null,
+          upc: currentTrack.upc || null,
+          released_at: currentTrack.releaseDate && currentTrack.releaseDate.trim() ? currentTrack.releaseDate : null,
+          copyright: currentTrack.copyright || null,
+          explicit: !!currentTrack.explicit,
+          written_by: writtenByJoined || null,
+          produced_by: producedByJoined || null,
+          mixed_by: currentTrack.mixedBy || null,
+          mastered_by: currentTrack.masteredBy || null,
+          notes: currentTrack.notes || null,
+          featuring: currentTrack.featuring || null,
+          isrc: currentTrack.isrc || null,
+          labels: currentTrack.label ? [currentTrack.label] : [],
+          publishers: currentTrack.publishers.filter(Boolean),
+          credits: {
+            ...(currentTrack.details || {}),
+            customPerformers: currentTrack.customPerformers.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
+            customProduction: currentTrack.customProduction.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
+          },
+          tags: currentTrack.tags || {},
+        };
+        const { error: extendedErr } = await supabase.rpc("update_track", {
+          _user_id: user.id,
+          _track_id: savedTrack.uuid,
+          _updates: extendedPayload,
+        });
+        if (extendedErr) {
+          console.error("Failed to persist extended metadata:", extendedErr);
+          toast.error("Some metadata could not be saved");
+        }
+      }
+
       // Upload cover art if provided — same pattern as TrackDetail.tsx
       if (savedTrack && coverFileToUpload && workspaceId) {
         setUploadStage(t("uploadTrack.uploadingCover", "Uploading cover..."));
