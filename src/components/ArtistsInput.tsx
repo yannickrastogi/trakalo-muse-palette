@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { X } from "lucide-react";
 import { useContacts } from "@/contexts/ContactsContext";
+import { useTrack } from "@/contexts/TrackContext";
 
 interface ArtistsInputProps {
   value: string[];
@@ -16,6 +17,7 @@ interface ArtistsInputProps {
  */
 export function ArtistsInput({ value, onChange, placeholder, className }: ArtistsInputProps) {
   const { contacts } = useContacts();
+  const { tracks } = useTrack();
   const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(-1);
@@ -31,12 +33,44 @@ export function ArtistsInput({ value, onChange, placeholder, className }: Artist
 
   const existing = useMemo(() => new Set(value.map((v) => v.toLowerCase())), [value]);
 
+  // Distinct artist names already used on tracks of the active workspace
+  // (TrackContext already filters by workspace + RLS). Bands/aliases that aren't
+  // contacts still surface here, which is the whole point of this source.
+  const workspaceArtists = useMemo(() => {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const t of tracks) {
+      const raw = (t.artist || "").trim();
+      if (!raw) continue;
+      for (const part of raw.split(",")) {
+        const name = part.trim();
+        if (!name) continue;
+        const key = name.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(name);
+      }
+    }
+    return out;
+  }, [tracks]);
+
   const suggestions = useMemo(() => {
     if (!debouncedQuery || debouncedQuery.length < 2) return [];
     const q = debouncedQuery.toLowerCase();
     const out: { fullName: string; stageName?: string }[] = [];
     const seen = new Set<string>();
+    // Workspace artists first — most relevant context for an artist field.
+    for (const name of workspaceArtists) {
+      const key = name.toLowerCase();
+      if (seen.has(key) || existing.has(key)) continue;
+      if (key.startsWith(q) || key.indexOf(q) >= 0) {
+        seen.add(key);
+        out.push({ fullName: name });
+      }
+      if (out.length >= 8) break;
+    }
     for (const c of contacts) {
+      if (out.length >= 8) break;
       const full = ((c.firstName || "") + " " + (c.lastName || "")).trim();
       if (!full) continue;
       const key = full.toLowerCase();
@@ -48,10 +82,9 @@ export function ArtistsInput({ value, onChange, placeholder, className }: Artist
         seen.add(key);
         out.push({ fullName: full, stageName: c.stageName || undefined });
       }
-      if (out.length >= 8) break;
     }
     return out;
-  }, [debouncedQuery, contacts, existing]);
+  }, [debouncedQuery, contacts, workspaceArtists, existing]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -74,6 +107,30 @@ export function ArtistsInput({ value, onChange, placeholder, className }: Artist
     setOpen(false);
     setHighlightIdx(-1);
   }, [value, onChange, existing]);
+
+  /** Commit every fully-typed/pasted segment in `raw` (split on , and newlines)
+   *  except a trailing un-terminated segment which becomes the new draft. */
+  const commitBatch = useCallback((raw: string) => {
+    const parts = raw.split(/[,\n]/);
+    const tail = parts.pop() ?? "";
+    const seenLower = new Set(value.map((v) => v.toLowerCase()));
+    const additions: string[] = [];
+    for (const part of parts) {
+      const name = part.trim();
+      if (!name) continue;
+      const key = name.toLowerCase();
+      if (seenLower.has(key)) continue;
+      seenLower.add(key);
+      additions.push(name);
+    }
+    if (additions.length > 0) onChange([...value, ...additions]);
+    const trailing = tail.trimStart();
+    setDraft(trailing);
+    if (!trailing) {
+      setOpen(false);
+      setHighlightIdx(-1);
+    }
+  }, [value, onChange]);
 
   const removeAt = useCallback((idx: number) => {
     const next = value.filter((_, i) => i !== idx);
@@ -132,7 +189,26 @@ export function ArtistsInput({ value, onChange, placeholder, className }: Artist
           ref={inputRef}
           type="text"
           value={draft}
-          onChange={(e) => { setDraft(e.target.value); setOpen(true); setHighlightIdx(-1); }}
+          onChange={(e) => {
+            const next = e.target.value;
+            // Typed input that contains a comma or newline → split into chips so
+            // an auto-parsed filename like "Foo, Bar - Title" or a paste of
+            // "Foo, Bar, Baz" doesn't end up as a single chip.
+            if (/[,\n]/.test(next)) {
+              commitBatch(next);
+              return;
+            }
+            setDraft(next);
+            setOpen(true);
+            setHighlightIdx(-1);
+          }}
+          onPaste={(e) => {
+            const pasted = e.clipboardData.getData("text");
+            if (/[,\n]/.test(pasted)) {
+              e.preventDefault();
+              commitBatch(draft + pasted);
+            }
+          }}
           onFocus={() => { if (draft.trim().length >= 2) setOpen(true); }}
           onBlur={() => { if (draft.trim()) commit(draft); }}
           onKeyDown={handleKeyDown}
