@@ -797,16 +797,15 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         const producedByJoined = currentTrack.producedBy
           ? currentTrack.producedBy.split(",").map((s) => s.trim()).filter(Boolean).join(", ")
           : "";
+        // written_by/produced_by/mixed_by/mastered_by have NO matching columns in
+        // public.tracks — store them inside the credits jsonb so the form data isn't
+        // silently discarded. Top-level keys here MUST map 1:1 to real tracks columns.
         const extendedPayload: Record<string, unknown> = {
           album: currentTrack.album || null,
           upc: currentTrack.upc || null,
           released_at: currentTrack.releaseDate && currentTrack.releaseDate.trim() ? currentTrack.releaseDate : null,
           copyright: currentTrack.copyright || null,
           explicit: !!currentTrack.explicit,
-          written_by: writtenByJoined || null,
-          produced_by: producedByJoined || null,
-          mixed_by: currentTrack.mixedBy || null,
-          mastered_by: currentTrack.masteredBy || null,
           notes: currentTrack.notes || null,
           featuring: currentTrack.featuring || null,
           isrc: currentTrack.isrc || null,
@@ -814,6 +813,10 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           publishers: currentTrack.publishers.filter(Boolean),
           credits: {
             ...(currentTrack.details || {}),
+            written_by: writtenByJoined || null,
+            produced_by: producedByJoined || null,
+            mixed_by: currentTrack.mixedBy || null,
+            mastered_by: currentTrack.masteredBy || null,
             customPerformers: currentTrack.customPerformers.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
             customProduction: currentTrack.customProduction.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
           },
