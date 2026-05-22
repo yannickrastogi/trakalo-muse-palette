@@ -758,6 +758,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         splits: currentTrack.splits.filter((s) => s.name.trim()).map((s) => ({
           id: s.id,
           name: s.name,
+          email: s.email || undefined,
           stage_name: s.stage_name || undefined,
           role: s.role,
           share: Number(s.percentage) || 0,
