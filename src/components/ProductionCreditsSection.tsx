@@ -24,8 +24,9 @@ const PRODUCTION_FIELDS = [
   { key: "mixingEngineer", labelKey: "productionCredits.mixingEngineer" },
   { key: "masteringEngineer", labelKey: "productionCredits.masteringEngineer" },
   { key: "programmingBy", labelKey: "productionCredits.programmingBy" },
-  { key: "mixingStudio", labelKey: "productionCredits.mixingStudio" },
   { key: "recordingStudio", labelKey: "productionCredits.recordingStudio" },
+  { key: "mixingStudio", labelKey: "productionCredits.mixingStudio" },
+  { key: "masteringStudio", labelKey: "productionCredits.masteringStudio" },
   { key: "recordingDate", labelKey: "productionCredits.recordingDate" },
 ];
 
@@ -51,8 +52,8 @@ export function ProductionCreditsSection({
           const raw = details[f.key];
           const entries = Array.isArray(raw) ? raw : raw ? [raw] : [""];
           const isDate = f.key === "recordingDate";
-          const isStudio = f.key === "mixingStudio" || f.key === "recordingStudio";
-          const isNameField = !isDate && !isStudio;
+          // Studios now use NameAutocomplete too — suggestions come from contacts.
+          const isNameField = !isDate;
           return (
             <div key={f.key} className="space-y-1">
               <label className="text-2xs text-muted-foreground font-medium">{t(f.labelKey)}</label>

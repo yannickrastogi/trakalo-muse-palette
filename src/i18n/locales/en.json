@@ -1132,8 +1132,9 @@
     "mixingEngineer": "Mixing Engineer",
     "masteringEngineer": "Mastering Engineer",
     "programmingBy": "Programming By",
-    "mixingStudio": "Mixing Studio",
     "recordingStudio": "Recording Studio",
+    "mixingStudio": "Mixing Studio",
+    "masteringStudio": "Mastering Studio",
     "recordingDate": "Recording Date",
     "addAnother": "Add another"
   },

@@ -24,6 +24,8 @@ import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete"
 import { useContacts } from "@/contexts/ContactsContext";
 import { PerformerCreditsSection, type CustomCreditEntry } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
+import { ArtistsInput } from "@/components/ArtistsInput";
+import { MultiRoleCreditAssigner } from "@/components/MultiRoleCreditAssigner";
 import { TagsSection } from "@/components/TagsSection";
 import type { TrackTags } from "@/lib/tagsVocabulary";
 const TYPES = ["Song", "Instrumental", "Sample", "Acapella"];
@@ -435,7 +437,12 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 </div>
                 <div className="space-y-1.5">
                   <FieldLabel>{t("editTrack.artist") + " *"}</FieldLabel>
-                  <FieldInput value={artist} onChange={setArtist} placeholder={t("editTrack.artistPlaceholder")} />
+                  <ArtistsInput
+                    value={artist ? artist.split(",").map((s) => s.trim()).filter(Boolean) : []}
+                    onChange={(arr) => setArtist(arr.join(", "))}
+                    placeholder={t("editTrack.artistPlaceholder")}
+                    className="w-full rounded-lg bg-secondary border border-border focus-within:border-brand-orange/30 transition-all"
+                  />
                 </div>
               </div>
 
@@ -680,6 +687,26 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                     animate={{ opacity: 1, height: "auto" }}
                     className="mt-4 space-y-3"
                   >
+                    <MultiRoleCreditAssigner
+                      roles={[
+                        { key: "vocalsBy", label: t("performerCredits.leadVocals", "Lead Vocals By") },
+                        { key: "backgroundVocalsBy", label: t("performerCredits.backgroundVocals", "Background Vocals By") },
+                        { key: "drumsBy", label: t("performerCredits.drums", "Drums By") },
+                        { key: "synthsBy", label: t("performerCredits.synths", "Synths By") },
+                        { key: "keysBy", label: t("performerCredits.keys", "Keys By") },
+                        { key: "guitarsBy", label: t("performerCredits.guitars", "Guitars By") },
+                        { key: "bassBy", label: t("performerCredits.bass", "Bass By") },
+                        { key: "producers", label: t("productionCredits.producers", "Producer") },
+                        { key: "songwriters", label: t("productionCredits.songwriters", "Songwriter") },
+                        { key: "recordingEngineer", label: t("productionCredits.recordingEngineer", "Recording Engineer") },
+                        { key: "mixingEngineer", label: t("productionCredits.mixingEngineer", "Mixing Engineer") },
+                        { key: "masteringEngineer", label: t("productionCredits.masteringEngineer", "Mastering Engineer") },
+                        { key: "programmingBy", label: t("productionCredits.programmingBy", "Programming By") },
+                      ]}
+                      details={details}
+                      onAssign={setDetails}
+                      extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))}
+                    />
                     <PerformerCreditsSection
                       details={details}
                       updateDetail={updateDetail}

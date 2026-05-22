@@ -41,6 +41,8 @@ import { useTrack as useTrackContext } from "@/contexts/TrackContext";
 import { PerformerCreditsSection, type CustomCreditEntry } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
 import { TagsSection } from "@/components/TagsSection";
+import { ArtistsInput } from "@/components/ArtistsInput";
+import { MultiRoleCreditAssigner } from "@/components/MultiRoleCreditAssigner";
 import type { TrackTags } from "@/lib/tagsVocabulary";
 import {
   Dialog,
@@ -1513,6 +1515,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   updateDetail={updateDetail}
                   addDetailEntry={addDetailEntry}
                   removeDetailEntry={removeDetailEntry}
+                  onAssignDetails={(next) => updateCurrent({ details: next })}
                   customPerformers={currentTrack.customPerformers}
                   onAddCustomPerformer={addCustomPerformer}
                   onUpdateCustomPerformer={updateCustomPerformer}
@@ -2149,7 +2152,12 @@ function StepCommonInfo({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <FieldLabel>{t("uploadTrack.artist")}</FieldLabel>
-          <FieldInput value={commonInfo.artist} onChange={(v) => onUpdate({ artist: v })} placeholder={t("uploadTrack.artistPlaceholder")} />
+          <ArtistsInput
+            value={commonInfo.artist ? commonInfo.artist.split(",").map((s) => s.trim()).filter(Boolean) : []}
+            onChange={(arr) => onUpdate({ artist: arr.join(", ") })}
+            placeholder={t("uploadTrack.artistPlaceholder")}
+            className="w-full rounded-lg bg-secondary border border-border focus-within:border-brand-orange/30 transition-all"
+          />
         </div>
         <div className="space-y-1.5">
           <FieldLabel>{t("editTrack.featuredArtists", "Featuring")}</FieldLabel>
@@ -2463,7 +2471,12 @@ function StepInfo({
         </div>
         <div className="space-y-1.5">
           <FieldLabel>{t("uploadTrack.artist")} *</FieldLabel>
-          <FieldInput value={artist} onChange={setArtist} placeholder={t("uploadTrack.artistPlaceholder")} />
+          <ArtistsInput
+            value={artist ? artist.split(",").map((s) => s.trim()).filter(Boolean) : []}
+            onChange={(arr) => setArtist(arr.join(", "))}
+            placeholder={t("uploadTrack.artistPlaceholder")}
+            className="w-full rounded-lg bg-secondary border border-border focus-within:border-brand-orange/30 transition-all"
+          />
         </div>
       </div>
       <div className="grid grid-cols-1 gap-4">
@@ -2665,7 +2678,7 @@ function StepSplits({
 
 function StepDetails({
   splits, totalSplit, onAdd, onUpdate, onRemove, onBatchUpdate, onEqualSplit,
-  details, updateDetail, addDetailEntry, removeDetailEntry,
+  details, updateDetail, addDetailEntry, removeDetailEntry, onAssignDetails,
   customPerformers, onAddCustomPerformer, onUpdateCustomPerformer, onRemoveCustomPerformer, onAddCustomPerformerValue, onRemoveCustomPerformerValue,
   customProduction, onAddCustomProduction, onUpdateCustomProduction, onRemoveCustomProduction, onAddCustomProductionValue, onRemoveCustomProductionValue,
   tags, onTagsChange,
@@ -2684,6 +2697,7 @@ function StepDetails({
   updateDetail: (key: string, index: number, value: string) => void;
   addDetailEntry: (key: string) => void;
   removeDetailEntry: (key: string, index: number) => void;
+  onAssignDetails: (next: Record<string, string[]>) => void;
   customPerformers: CustomCreditEntry[];
   onAddCustomPerformer: () => void;
   onUpdateCustomPerformer: (id: string, field: "role" | "values", value: string | string[]) => void;
@@ -2743,6 +2757,26 @@ function StepDetails({
             animate={{ opacity: 1, height: "auto" }}
             className="mt-4 space-y-3"
           >
+            <MultiRoleCreditAssigner
+              roles={[
+                { key: "vocalsBy", label: t("performerCredits.leadVocals", "Lead Vocals By") },
+                { key: "backgroundVocalsBy", label: t("performerCredits.backgroundVocals", "Background Vocals By") },
+                { key: "drumsBy", label: t("performerCredits.drums", "Drums By") },
+                { key: "synthsBy", label: t("performerCredits.synths", "Synths By") },
+                { key: "keysBy", label: t("performerCredits.keys", "Keys By") },
+                { key: "guitarsBy", label: t("performerCredits.guitars", "Guitars By") },
+                { key: "bassBy", label: t("performerCredits.bass", "Bass By") },
+                { key: "producers", label: t("productionCredits.producers", "Producer") },
+                { key: "songwriters", label: t("productionCredits.songwriters", "Songwriter") },
+                { key: "recordingEngineer", label: t("productionCredits.recordingEngineer", "Recording Engineer") },
+                { key: "mixingEngineer", label: t("productionCredits.mixingEngineer", "Mixing Engineer") },
+                { key: "masteringEngineer", label: t("productionCredits.masteringEngineer", "Mastering Engineer") },
+                { key: "programmingBy", label: t("productionCredits.programmingBy", "Programming By") },
+              ]}
+              details={details}
+              onAssign={onAssignDetails}
+              extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))}
+            />
             <PerformerCreditsSection
               details={details}
               updateDetail={updateDetail}
