@@ -705,7 +705,6 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                       ]}
                       details={details}
                       onAssign={setDetails}
-                      extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))}
                     />
                     <PerformerCreditsSection
                       details={details}

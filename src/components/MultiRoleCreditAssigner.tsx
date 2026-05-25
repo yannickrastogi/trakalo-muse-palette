@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { Check, Users2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { NameAutocomplete } from "@/components/NameAutocomplete";
+import { ArtistsInput } from "@/components/ArtistsInput";
 
 export interface CreditRoleOption {
   key: string;
@@ -15,23 +15,21 @@ interface MultiRoleCreditAssignerProps {
   details: Record<string, string[]>;
   /** Replace the value for a given role key. */
   onAssign: (next: Record<string, string[]>) => void;
-  /** Optional extra autocomplete suggestions (e.g. collaborators from splits). */
-  extraSuggestions?: { name: string; stage_name?: string }[];
 }
 
 /**
- * UI to assign ONE person to many credit roles at once.
- * Type a name, tick every role they fulfill, click "Add to credits" —
- * the name is appended (not overwritten) to each selected role in `details`.
+ * UI to assign ONE OR MORE people to many credit roles at once.
+ * Type one or more names (chips + autocomplete via ArtistsInput), tick every
+ * role each person fulfills, click "Add to credits" — every name is appended
+ * (not overwritten) to each selected role in `details`.
  */
 export function MultiRoleCreditAssigner({
   roles,
   details,
   onAssign,
-  extraSuggestions = [],
 }: MultiRoleCreditAssignerProps) {
   const { t } = useTranslation();
-  const [name, setName] = useState("");
+  const [names, setNames] = useState<string[]>([]);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
   const toggle = useCallback((key: string) => {
@@ -39,26 +37,37 @@ export function MultiRoleCreditAssigner({
   }, []);
 
   const handleAdd = useCallback(() => {
-    const cleanName = name.trim();
-    if (!cleanName) return;
+    const cleanNames = names.map((n) => n.trim()).filter(Boolean);
+    if (cleanNames.length === 0) return;
     const selectedKeys = Object.keys(checked).filter((k) => checked[k]);
     if (selectedKeys.length === 0) return;
 
     const next: Record<string, string[]> = { ...details };
     for (const k of selectedKeys) {
       const existing = Array.isArray(next[k]) ? next[k] : (next[k] ? [next[k] as unknown as string] : []);
-      const hasIt = existing.some((v) => v.trim().toLowerCase() === cleanName.toLowerCase());
-      if (hasIt) continue;
       const filtered = existing.filter((v) => v.trim());
-      next[k] = filtered.length === 0 ? [cleanName] : [...filtered, cleanName];
+      const seen = new Set(filtered.map((v) => v.trim().toLowerCase()));
+      const additions: string[] = [];
+      for (const n of cleanNames) {
+        const lower = n.toLowerCase();
+        if (seen.has(lower)) continue;
+        seen.add(lower);
+        additions.push(n);
+      }
+      if (additions.length > 0) {
+        next[k] = [...filtered, ...additions];
+      } else if (filtered.length !== existing.length) {
+        // No new names, but we dropped empty entries — persist the cleaned list.
+        next[k] = filtered;
+      }
     }
     onAssign(next);
-    setName("");
+    setNames([]);
     setChecked({});
-  }, [name, checked, details, onAssign]);
+  }, [names, checked, details, onAssign]);
 
   const selectedCount = Object.values(checked).filter(Boolean).length;
-  const canAdd = name.trim().length > 0 && selectedCount > 0;
+  const canAdd = names.length > 0 && selectedCount > 0;
 
   return (
     <div className="rounded-xl border border-dashed border-brand-orange/30 bg-brand-orange/5 p-4 space-y-3">
@@ -66,23 +75,22 @@ export function MultiRoleCreditAssigner({
         <Users2 className="w-4 h-4 text-brand-orange mt-0.5 shrink-0" />
         <div>
           <p className="text-xs font-semibold text-foreground">
-            {t("multiRoleAssigner.title", "Add a person with multiple roles")}
+            {t("multiRoleAssigner.title", "Add one or more people with multiple roles")}
           </p>
           <p className="text-2xs text-muted-foreground mt-0.5">
             {t(
               "multiRoleAssigner.desc",
-              "Type their name once, tick all the roles they play, and we'll fill them everywhere.",
+              "Type their names, check all the roles they play, and we'll fill them in everywhere.",
             )}
           </p>
         </div>
       </div>
 
-      <NameAutocomplete
-        value={name}
-        onChange={setName}
-        placeholder={t("multiRoleAssigner.namePlaceholder", "Full name")}
-        className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
-        extraSuggestions={extraSuggestions}
+      <ArtistsInput
+        value={names}
+        onChange={setNames}
+        placeholder={t("multiRoleAssigner.namesPlaceholder", "Add names")}
+        className="w-full rounded-lg bg-secondary border border-border focus-within:border-brand-orange/30 transition-all"
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">

@@ -2775,7 +2775,6 @@ function StepDetails({
               ]}
               details={details}
               onAssign={onAssignDetails}
-              extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))}
             />
             <PerformerCreditsSection
               details={details}
