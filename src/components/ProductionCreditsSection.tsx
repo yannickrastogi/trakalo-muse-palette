@@ -1,7 +1,11 @@
+import { useMemo } from "react";
 import { X, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NameAutocomplete } from "@/components/NameAutocomplete";
 import type { CustomCreditEntry } from "@/components/PerformerCreditsSection";
+import { useTrack } from "@/contexts/TrackContext";
+
+const STUDIO_KEYS = ["recordingStudio", "mixingStudio", "masteringStudio"] as const;
 
 interface ProductionCreditsSectionProps {
   details: Record<string, string[]>;
@@ -44,6 +48,33 @@ export function ProductionCreditsSection({
   onRemoveCustomProductionValue,
 }: ProductionCreditsSectionProps) {
   const { t } = useTranslation();
+  const { tracks } = useTrack();
+
+  // Distinct studios already used on workspace tracks (RLS-scoped via TrackContext).
+  // Pooled across the 3 studio keys — a venue used for recording is just as relevant
+  // when typing in the mixing field. Studios live in tracks.credits jsonb, so they
+  // never reach the contacts table.
+  const workspaceStudioSuggestions = useMemo(() => {
+    const out: { name: string }[] = [];
+    const seen = new Set<string>();
+    for (const track of tracks) {
+      const credits = (track.credits || {}) as Record<string, unknown>;
+      for (const key of STUDIO_KEYS) {
+        const raw = credits[key];
+        const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
+        for (const v of values) {
+          const name = typeof v === "string" ? v.trim() : "";
+          if (!name) continue;
+          const lower = name.toLowerCase();
+          if (seen.has(lower)) continue;
+          seen.add(lower);
+          out.push({ name });
+        }
+      }
+    }
+    return out;
+  }, [tracks]);
+
   return (
     <div className="space-y-4">
       <h4 className="text-xs font-semibold text-foreground border-b border-border pb-1 mt-2">{t("productionCredits.title")}</h4>
@@ -52,8 +83,15 @@ export function ProductionCreditsSection({
           const raw = details[f.key];
           const entries = Array.isArray(raw) ? raw : raw ? [raw] : [""];
           const isDate = f.key === "recordingDate";
+          const isStudioField = (STUDIO_KEYS as readonly string[]).includes(f.key);
           // Studios now use NameAutocomplete too — suggestions come from contacts.
           const isNameField = !isDate;
+          // Studio fields get workspace studios first (most relevant); person fields
+          // keep the original contact-only suggestion pool to avoid polluting them
+          // with venue names.
+          const fieldExtraSuggestions = isStudioField
+            ? [...workspaceStudioSuggestions, ...extraSuggestions]
+            : extraSuggestions;
           return (
             <div key={f.key} className="space-y-1">
               <label className="text-2xs text-muted-foreground font-medium">{t(f.labelKey)}</label>
@@ -65,7 +103,7 @@ export function ProductionCreditsSection({
                       onChange={(v) => updateDetail(f.key, idx, v)}
                       placeholder={"Enter " + t(f.labelKey).toLowerCase()}
                       className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
-                      extraSuggestions={extraSuggestions}
+                      extraSuggestions={fieldExtraSuggestions}
                     />
                   ) : (
                     <input
