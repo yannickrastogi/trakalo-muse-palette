@@ -43,6 +43,7 @@ import { ProductionCreditsSection } from "@/components/ProductionCreditsSection"
 import { TagsSection } from "@/components/TagsSection";
 import { ArtistsInput } from "@/components/ArtistsInput";
 import { MultiRoleCreditAssigner } from "@/components/MultiRoleCreditAssigner";
+import { syncPerformerToInstrumentTag, PERFORMER_TO_INSTRUMENT } from "@/lib/performerInstrumentSync";
 import type { TrackTags } from "@/lib/tagsVocabulary";
 import {
   Dialog,
@@ -408,7 +409,19 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     if (!currentTrack) return;
     const arr = [...(currentTrack.details[key] || [])];
     arr[index] = value;
-    updateCurrent({ details: { ...currentTrack.details, [key]: arr } });
+    const nextDetails = { ...currentTrack.details, [key]: arr };
+    // One-way auto-sync: writing a non-empty performer name adds the matching
+    // instrument tag (no-op for non-instrument keys, no-op if already present).
+    if (value.trim() && PERFORMER_TO_INSTRUMENT[key]) {
+      const nextTags = syncPerformerToInstrumentTag(
+        (currentTrack.tags || {}) as TrackTags,
+        key,
+        true,
+      );
+      updateCurrent({ details: nextDetails, tags: nextTags as Record<string, unknown> });
+    } else {
+      updateCurrent({ details: nextDetails });
+    }
   }, [currentTrack, updateCurrent]);
 
   const addDetailEntry = useCallback((key: string) => {
@@ -1515,7 +1528,16 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   updateDetail={updateDetail}
                   addDetailEntry={addDetailEntry}
                   removeDetailEntry={removeDetailEntry}
-                  onAssignDetails={(next) => updateCurrent({ details: next })}
+                  onAssignDetails={(next) => {
+                    // Sync any performer keys that became non-empty to their
+                    // instrument tag (multi-role batch — every assigned role).
+                    let nextTags = (currentTrack.tags || {}) as TrackTags;
+                    for (const k of Object.keys(next)) {
+                      const hasValue = (next[k] || []).some((v) => v.trim().length > 0);
+                      nextTags = syncPerformerToInstrumentTag(nextTags, k, hasValue);
+                    }
+                    updateCurrent({ details: next, tags: nextTags as Record<string, unknown> });
+                  }}
                   customPerformers={currentTrack.customPerformers}
                   onAddCustomPerformer={addCustomPerformer}
                   onUpdateCustomPerformer={updateCustomPerformer}

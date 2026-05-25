@@ -26,6 +26,7 @@ import { PerformerCreditsSection, type CustomCreditEntry } from "@/components/Pe
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
 import { ArtistsInput } from "@/components/ArtistsInput";
 import { MultiRoleCreditAssigner } from "@/components/MultiRoleCreditAssigner";
+import { syncPerformerToInstrumentTag, PERFORMER_TO_INSTRUMENT } from "@/lib/performerInstrumentSync";
 import { TagsSection } from "@/components/TagsSection";
 import type { TrackTags } from "@/lib/tagsVocabulary";
 const TYPES = ["Song", "Instrumental", "Sample", "Acapella"];
@@ -212,6 +213,11 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       arr[index] = value;
       return { ...prev, [key]: arr };
     });
+    // One-way auto-sync: writing a non-empty performer name adds the matching
+    // instrument tag (no-op for non-instrument keys, no-op if already present).
+    if (value.trim() && PERFORMER_TO_INSTRUMENT[key]) {
+      setTags((prev) => syncPerformerToInstrumentTag(prev, key, true));
+    }
   };
 
   const addDetailEntry = (key: string) => {
@@ -704,7 +710,17 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                         { key: "programmingBy", label: t("productionCredits.programmingBy", "Programming By") },
                       ]}
                       details={details}
-                      onAssign={setDetails}
+                      onAssign={(next) => {
+                        setDetails(next);
+                        setTags((prev) => {
+                          let updated = prev;
+                          for (const k of Object.keys(next)) {
+                            const hasValue = (next[k] || []).some((v) => v.trim().length > 0);
+                            updated = syncPerformerToInstrumentTag(updated, k, hasValue);
+                          }
+                          return updated;
+                        });
+                      }}
                     />
                     <PerformerCreditsSection
                       details={details}

@@ -17,10 +17,10 @@ interface TagsSectionProps {
 }
 
 const categoryConfig = [
-  { key: "instruments" as const, label: "Instruments", vocabulary: INSTRUMENTS, color: "pink" },
-  { key: "lyric_themes" as const, label: "Lyric Themes", vocabulary: LYRIC_THEMES, color: "purple" },
-  { key: "mood_feel" as const, label: "Mood & Feel", vocabulary: MOOD_FEEL, color: "orange" },
-  { key: "sync_tags" as const, label: "Sync Tags", vocabulary: SYNC_TAGS, color: "green" },
+  { key: "instruments" as const, label: "Instruments", vocabulary: INSTRUMENTS, color: "pink", allowCustomAdd: true },
+  { key: "lyric_themes" as const, label: "Lyric Themes", vocabulary: LYRIC_THEMES, color: "purple", allowCustomAdd: false },
+  { key: "mood_feel" as const, label: "Mood & Feel", vocabulary: MOOD_FEEL, color: "orange", allowCustomAdd: false },
+  { key: "sync_tags" as const, label: "Sync Tags", vocabulary: SYNC_TAGS, color: "green", allowCustomAdd: false },
 ];
 
 const colorClasses: Record<string, { chip: string; chipHover: string; add: string; addHover: string; dot: string }> = {
@@ -80,6 +80,7 @@ function MultiSelectCategory({
   readOnly,
   onAdd,
   onRemove,
+  allowCustomAdd,
 }: {
   label: string;
   vocabulary: string[];
@@ -88,12 +89,24 @@ function MultiSelectCategory({
   readOnly?: boolean;
   onAdd: (val: string) => void;
   onRemove: (val: string) => void;
+  allowCustomAdd?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [customDraft, setCustomDraft] = useState("");
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const colors = colorClasses[color];
+
+  const commitCustom = () => {
+    const v = customDraft.trim();
+    if (!v) return;
+    const lower = v.toLowerCase();
+    if (!selected.some((s) => s.toLowerCase() === lower)) {
+      onAdd(lower);
+    }
+    setCustomDraft("");
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -132,6 +145,17 @@ function MultiSelectCategory({
             )}
           </span>
         ))}
+        {!readOnly && allowCustomAdd && (
+          <input
+            type="text"
+            value={customDraft}
+            onChange={(e) => setCustomDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitCustom(); } }}
+            onBlur={() => { if (customDraft.trim()) commitCustom(); }}
+            placeholder={`Add custom ${label.toLowerCase()}…`}
+            className={`px-2.5 py-1 rounded-full text-xs bg-secondary/30 border border-dashed border-border text-foreground placeholder:text-muted-foreground outline-none focus:border-pink-400 w-40`}
+          />
+        )}
         {!readOnly && (
           <div className="relative" ref={ref}>
             <button
@@ -246,6 +270,7 @@ export function TagsSection({ tags, onChange, readOnly }: TagsSectionProps) {
             readOnly={readOnly}
             onAdd={(val) => handleAddMulti(cat.key, val)}
             onRemove={(val) => handleRemoveMulti(cat.key, val)}
+            allowCustomAdd={cat.allowCustomAdd}
           />
         );
       })}
