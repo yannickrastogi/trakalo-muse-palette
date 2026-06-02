@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { Search, Bell, HelpCircle, Menu, X, Music, ListMusic, User, Sparkles, Radio } from "lucide-react";
+import { Search, Bell, HelpCircle, Menu, X, Music, ListMusic, User, Sparkles, Radio, Users, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { UserMenu } from "./UserMenu";
 import { FirstUseTooltip } from "@/components/FirstUseTooltip";
@@ -8,6 +8,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
+import { useContacts } from "@/contexts/ContactsContext";
+import { usePitches } from "@/contexts/PitchContext";
 import { motion, AnimatePresence } from "framer-motion";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
@@ -15,12 +17,25 @@ interface TopBarProps {
   onMenuClick?: () => void;
 }
 
+type SuggestionType = "contact_view" | "contact_tracks" | "track" | "playlist" | "pitch";
+type SuggestionSection = "people" | "tracks" | "playlists" | "pitches";
+
 interface Suggestion {
-  type: "track" | "artist" | "playlist";
+  type: SuggestionType;
+  section: SuggestionSection;
   label: string;
   sub?: string;
   route: string;
 }
+
+const SECTION_ORDER: SuggestionSection[] = ["people", "tracks", "playlists", "pitches"];
+const SECTION_TITLE: Record<SuggestionSection, string> = {
+  people: "People",
+  tracks: "Tracks",
+  playlists: "Playlists",
+  pitches: "Pitches",
+};
+const SECTION_CAP: Record<SuggestionSection, number> = { people: 6, tracks: 5, playlists: 5, pitches: 5 };
 
 export function TopBar({ onMenuClick }: TopBarProps) {
   const isMobile = useIsMobile();
@@ -28,6 +43,8 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const navigate = useNavigate();
   const { tracks } = useTrack();
   const { playlists } = usePlaylists();
+  const { contacts } = useContacts();
+  const { pitches } = usePitches();
   const [searchValue, setSearchValue] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -36,41 +53,115 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Build suggestion list
+  // Build suggestion list — multi-entity catch-all (People + Tracks + Playlists + Pitches)
   const suggestions = useMemo<Suggestion[]>(() => {
     const q = searchValue.toLowerCase().trim();
     if (q.length < 2) return [];
 
-    const results: Suggestion[] = [];
-    const seen = new Set<string>();
+    const bySection: Record<SuggestionSection, Suggestion[]> = {
+      people: [],
+      tracks: [],
+      playlists: [],
+      pitches: [],
+    };
+    const seenContact = new Set<string>();
+    const seenTrack = new Set<string>();
 
-    // Tracks
-    tracks.forEach((tr) => {
-      if (tr.title.toLowerCase().includes(q) && !seen.has(`t-${tr.id}`)) {
-        seen.add(`t-${tr.id}`);
-        results.push({ type: "track", label: tr.title, sub: tr.artist, route: `/track/${tr.id}` });
+    // People (Contacts) → 2 shortcuts per match: "See contact" + "See all tracks with"
+    for (const c of contacts) {
+      const first = (c.firstName || "").toLowerCase();
+      const last = (c.lastName || "").toLowerCase();
+      const stage = (c.stageName || "").toLowerCase();
+      const full = (first + " " + last).trim();
+      if (!full && !stage) continue;
+      if (!(first.includes(q) || last.includes(q) || stage.includes(q) || full.includes(q))) continue;
+      const displayName = ((c.firstName || "") + " " + (c.lastName || "")).trim() || c.stageName || c.email;
+      const key = (displayName || c.id).toLowerCase();
+      if (seenContact.has(key)) continue;
+      seenContact.add(key);
+      bySection.people.push({
+        type: "contact_view",
+        section: "people",
+        label: "See contact: " + displayName,
+        sub: c.stageName && c.stageName.toLowerCase() !== displayName.toLowerCase() ? c.stageName : (c.email || c.organization || undefined),
+        route: "/contacts?focus=" + encodeURIComponent(c.id),
+      });
+      bySection.people.push({
+        type: "contact_tracks",
+        section: "people",
+        label: "See all tracks with " + displayName,
+        sub: "Songwriter · Producer · Artist · Musician",
+        route: "/tracks?person=" + encodeURIComponent(displayName),
+      });
+      if (bySection.people.length >= SECTION_CAP.people) break;
+    }
+
+    // Tracks → match title, artist, splits[].name, splits[].stage_name
+    for (const tr of tracks) {
+      if (!tr.uuid) continue;
+      if (seenTrack.has(tr.uuid)) continue;
+      const title = (tr.title || "").toLowerCase();
+      const artist = (tr.artist || "").toLowerCase();
+      let matched = title.includes(q) || artist.includes(q);
+      if (!matched && Array.isArray(tr.splits)) {
+        matched = tr.splits.some((s) => {
+          const n = (s?.name || "").toLowerCase();
+          const sn = (s?.stage_name || "").toLowerCase();
+          return n.includes(q) || sn.includes(q);
+        });
       }
-    });
-
-    // Artists (deduplicated)
-    tracks.forEach((tr) => {
-      const key = `a-${tr.artist.toLowerCase()}`;
-      if (tr.artist.toLowerCase().includes(q) && !seen.has(key)) {
-        seen.add(key);
-        results.push({ type: "artist", label: tr.artist, sub: `${tracks.filter((t) => t.artist === tr.artist).length} tracks`, route: `/tracks?q=${encodeURIComponent(tr.artist)}` });
+      if (!matched && tr.credits && typeof tr.credits === "object") {
+        // credits = Record<string, string[]> (e.g. vocalsBy, drumsBy, synthsBy…)
+        matched = Object.values(tr.credits).some((names) =>
+          Array.isArray(names) && names.some((n) => (n || "").toLowerCase().includes(q))
+        );
       }
-    });
+      if (!matched) continue;
+      seenTrack.add(tr.uuid);
+      bySection.tracks.push({
+        type: "track",
+        section: "tracks",
+        label: tr.title,
+        sub: tr.artist,
+        route: "/track/" + tr.uuid,
+      });
+      if (bySection.tracks.length >= SECTION_CAP.tracks) break;
+    }
 
-    // Playlists
-    playlists.forEach((pl) => {
-      if (pl.name.toLowerCase().includes(q) && !seen.has(`p-${pl.id}`)) {
-        seen.add(`p-${pl.id}`);
-        results.push({ type: "playlist", label: pl.name, sub: `${pl.tracks} tracks`, route: `/playlist/${pl.id}` });
-      }
-    });
+    // Playlists → match name
+    for (const pl of playlists) {
+      if (!(pl.name || "").toLowerCase().includes(q)) continue;
+      bySection.playlists.push({
+        type: "playlist",
+        section: "playlists",
+        label: pl.name,
+        sub: pl.tracks + " tracks",
+        route: "/playlist/" + pl.id,
+      });
+      if (bySection.playlists.length >= SECTION_CAP.playlists) break;
+    }
 
-    return results.slice(0, 8);
-  }, [searchValue, tracks, playlists]);
+    // Pitches → match recipient name/email/company + subject (itemName)
+    for (const p of pitches) {
+      const rn = (p.recipientName || "").toLowerCase();
+      const re = (p.recipientEmail || "").toLowerCase();
+      const rc = (p.recipientCompany || "").toLowerCase();
+      const subj = (p.itemName || "").toLowerCase();
+      if (!(rn.includes(q) || re.includes(q) || rc.includes(q) || subj.includes(q))) continue;
+      const niceLabel = p.itemName || p.recipientName || "Pitch";
+      const niceSub = [p.recipientName, p.recipientCompany].filter(Boolean).join(" · ") || p.recipientEmail || undefined;
+      bySection.pitches.push({
+        type: "pitch",
+        section: "pitches",
+        label: niceLabel,
+        sub: niceSub,
+        route: "/pitch?focus=" + encodeURIComponent(p.id),
+      });
+      if (bySection.pitches.length >= SECTION_CAP.pitches) break;
+    }
+
+    return SECTION_ORDER.flatMap((s) => bySection[s]);
+  }, [searchValue, tracks, playlists, contacts, pitches]);
 
   // Close on outside click
   useEffect(() => {
@@ -123,16 +214,26 @@ export function TopBar({ onMenuClick }: TopBarProps) {
     searchTimerRef.current = setTimeout(() => setSearchValue(e.target.value), 300);
   }, []);
 
-  const iconMap = {
+  const iconMap: Record<SuggestionType, typeof Music> = {
+    contact_view: User,
+    contact_tracks: Music,
     track: Music,
-    artist: User,
     playlist: ListMusic,
+    pitch: Target,
   };
 
-  const typeLabel = {
-    track: "Track",
-    artist: "Artist",
-    playlist: "Playlist",
+  const sectionIcon: Record<SuggestionSection, typeof Music> = {
+    people: Users,
+    tracks: Music,
+    playlists: ListMusic,
+    pitches: Target,
+  };
+
+  const tone: Record<SuggestionSection, string> = {
+    people: "bg-brand-pink/10 text-brand-pink",
+    tracks: "bg-primary/10 text-primary",
+    playlists: "bg-brand-purple/10 text-brand-purple",
+    pitches: "bg-brand-orange/10 text-brand-orange",
   };
 
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -192,34 +293,41 @@ export function TopBar({ onMenuClick }: TopBarProps) {
                   className="absolute left-0 right-0 top-full mt-1.5 bg-card border border-border rounded-xl overflow-hidden z-50"
                   style={{ boxShadow: "var(--shadow-elevated, 0 8px 30px -8px rgba(0,0,0,0.5))" }}
                 >
-                  <div className="py-1">
-                    {suggestions.map((s, idx) => {
-                      const Icon = iconMap[s.type];
-                      const isSelected = idx === selectedIdx;
+                  <div className="py-1 max-h-[420px] overflow-y-auto">
+                    {SECTION_ORDER.map((section) => {
+                      const items = suggestions.filter((s) => s.section === section);
+                      if (items.length === 0) return null;
+                      const SectionIcon = sectionIcon[section];
                       return (
-                        <button
-                          key={`${s.type}-${s.label}-${idx}`}
-                          onClick={() => handleSelect(s)}
-                          onMouseEnter={() => setSelectedIdx(idx)}
-                          className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors ${
-                            isSelected ? "bg-secondary/80" : "hover:bg-secondary/40"
-                          }`}
-                        >
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                            s.type === "track" ? "bg-primary/10 text-primary" :
-                            s.type === "artist" ? "bg-brand-pink/10 text-brand-pink" :
-                            "bg-brand-purple/10 text-brand-purple"
-                          }`}>
-                            <Icon className="w-3.5 h-3.5" />
+                        <div key={section}>
+                          <div className="flex items-center gap-1.5 px-3.5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                            <SectionIcon className="w-3 h-3" />
+                            {SECTION_TITLE[section]}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-medium text-foreground truncate">{s.label}</p>
-                            {s.sub && <p className="text-[11px] text-muted-foreground truncate">{s.sub}</p>}
-                          </div>
-                          <span className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-wider shrink-0">
-                            {typeLabel[s.type]}
-                          </span>
-                        </button>
+                          {items.map((s) => {
+                            const idx = suggestions.indexOf(s);
+                            const Icon = iconMap[s.type];
+                            const isSelected = idx === selectedIdx;
+                            return (
+                              <button
+                                key={`${s.section}-${s.type}-${s.route}-${idx}`}
+                                onClick={() => handleSelect(s)}
+                                onMouseEnter={() => setSelectedIdx(idx)}
+                                className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors ${
+                                  isSelected ? "bg-secondary/80" : "hover:bg-secondary/40"
+                                }`}
+                              >
+                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${tone[s.section]}`}>
+                                  <Icon className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[13px] font-medium text-foreground truncate">{s.label}</p>
+                                  {s.sub && <p className="text-[11px] text-muted-foreground truncate">{s.sub}</p>}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       );
                     })}
                   </div>

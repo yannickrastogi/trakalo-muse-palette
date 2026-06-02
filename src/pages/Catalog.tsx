@@ -11,6 +11,7 @@ import { useEngagement } from "@/contexts/EngagementContext";
 import { GENRES, KEYS, LANGUAGES, GENDERS, DEFAULT_COVER } from "@/lib/constants";
 import { INSTRUMENTS, LYRIC_THEMES, MOOD_FEEL, TEMPO_DESCRIPTORS, SYNC_TAGS } from "@/lib/tagsVocabulary";
 import { TagFilterDropdown, TempoToggle } from "@/components/TagFilterDropdown";
+import { NameAutocomplete } from "@/components/NameAutocomplete";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Music,
@@ -91,7 +92,12 @@ export default function Catalog() {
   const [moodFeelFilter, setMoodFeelFilter] = useState<string[]>([]);
   const [tempoFilter, setTempoFilter] = useState<string | null>(null);
   const [syncTagsFilter, setSyncTagsFilter] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const initialPerson = searchParams.get("person") || "";
+  const [songwriterFilter, setSongwriterFilter] = useState<string | null>(initialPerson || null);
+  const [producerFilter, setProducerFilter] = useState<string | null>(initialPerson || null);
+  const [artistFilter, setArtistFilter] = useState<string | null>(initialPerson || null);
+  const [musicianFilter, setMusicianFilter] = useState<string | null>(initialPerson || null);
+  const [showFilters, setShowFilters] = useState(!!initialPerson);
   const { currentTrack, isPlaying: globalIsPlaying, playTrack, togglePlay, isTrackPlaying, setQueue, progress } = useAudioPlayer();
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -104,11 +110,12 @@ export default function Catalog() {
   // Force grid on mobile
   const effectiveViewMode = isMobile ? "grid" : viewMode;
 
-  // Clear query param after consuming it
+  // Clear consumed URL params (q, person) after initial mount
   useEffect(() => {
-    if (searchParams.has("q")) {
+    if (searchParams.has("q") || searchParams.has("person")) {
       setSearchParams({}, { replace: true });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const types = useMemo(() => [...new Set(allTracks.map((t) => t.type))].sort(), [allTracks]);
@@ -122,7 +129,11 @@ export default function Catalog() {
     (instrumentsFilter.length > 0 ? 1 : 0) +
     (lyricThemesFilter.length > 0 ? 1 : 0) +
     (moodFeelFilter.length > 0 ? 1 : 0) +
-    (syncTagsFilter.length > 0 ? 1 : 0);
+    (syncTagsFilter.length > 0 ? 1 : 0) +
+    (songwriterFilter ? 1 : 0) +
+    (producerFilter ? 1 : 0) +
+    (artistFilter ? 1 : 0) +
+    (musicianFilter ? 1 : 0);
 
   const filteredTracks = useMemo(() => {
     return allTracks.filter((track) => {
@@ -153,9 +164,49 @@ export default function Catalog() {
         const td = typeof trackTags.tempo_descriptor === "string" ? trackTags.tempo_descriptor.toLowerCase() : "";
         if (td !== tempoFilter.toLowerCase()) return false;
       }
+      // Person filters (Songwriter / Producer / Artist / Musician) — OR-internally, AND with rest
+      const anyPersonActive = !!songwriterFilter || !!producerFilter || !!artistFilter || !!musicianFilter;
+      if (anyPersonActive) {
+        const splits = Array.isArray(track.splits) ? track.splits : [];
+        const splitNameMatches = (s: { name?: string; stage_name?: string }, q: string) => {
+          const name = (s?.name || "").toLowerCase();
+          const stage = (s?.stage_name || "").toLowerCase();
+          return name.includes(q) || stage.includes(q);
+        };
+        const splitHasRole = (s: { role?: string }, role: string) => {
+          const r = role.toLowerCase();
+          const maybeRoles = (s as unknown as Record<string, unknown>).roles;
+          const arr = Array.isArray(maybeRoles)
+            ? (maybeRoles as string[])
+            : (s?.role ? [s.role] : []);
+          return arr.some((x) => (x || "").toLowerCase() === r);
+        };
+        const matchRole = (filter: string | null, role: string) => {
+          if (!filter) return false;
+          const q = filter.toLowerCase().trim();
+          if (!q) return false;
+          return splits.some((s) => splitNameMatches(s, q) && splitHasRole(s, role));
+        };
+        const matchArtistStr = (filter: string | null) => {
+          if (!filter) return false;
+          const q = filter.toLowerCase().trim();
+          if (!q) return false;
+          return (track.artist || "")
+            .split(",")
+            .map((a) => a.trim().toLowerCase())
+            .some((a) => a.includes(q));
+        };
+        const personMatch =
+          matchRole(songwriterFilter, "Songwriter") ||
+          matchRole(producerFilter, "Producer") ||
+          matchRole(musicianFilter, "Musician") ||
+          matchRole(artistFilter, "Artist") ||
+          matchArtistStr(artistFilter);
+        if (!personMatch) return false;
+      }
       return true;
     });
-  }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, languageFilter, voiceFilter, instrumentsFilter, lyricThemesFilter, moodFeelFilter, syncTagsFilter, tempoFilter]);
+  }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, languageFilter, voiceFilter, instrumentsFilter, lyricThemesFilter, moodFeelFilter, syncTagsFilter, tempoFilter, songwriterFilter, producerFilter, artistFilter, musicianFilter]);
 
   const clearFilters = () => {
     setTypeFilter(null);
@@ -170,6 +221,10 @@ export default function Catalog() {
     setMoodFeelFilter([]);
     setTempoFilter(null);
     setSyncTagsFilter([]);
+    setSongwriterFilter(null);
+    setProducerFilter(null);
+    setArtistFilter(null);
+    setMusicianFilter(null);
   };
 
   return (
@@ -357,6 +412,28 @@ export default function Catalog() {
                     />
                   </div>
                 </div>
+                {/* People filters row — Songwriter / Producer / Artist / Musician (OR-internally) */}
+                <div className="mt-5 pt-5 border-t border-border/40">
+                  <p className="text-xs font-medium text-muted-foreground mb-3">People</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {([
+                      { label: "Songwriter", value: songwriterFilter, set: setSongwriterFilter },
+                      { label: "Producer", value: producerFilter, set: setProducerFilter },
+                      { label: "Artist", value: artistFilter, set: setArtistFilter },
+                      { label: "Musician", value: musicianFilter, set: setMusicianFilter },
+                    ] as const).map((f) => (
+                      <div key={f.label} className="space-y-1">
+                        <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{f.label}</label>
+                        <NameAutocomplete
+                          value={f.value || ""}
+                          onChange={(v) => f.set(v.trim() ? v : null)}
+                          placeholder="Any"
+                          className="w-full h-9 px-3 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/30"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 {activeFilterCount > 0 && (
                   <div className="mt-4 flex justify-end">
                     <button
@@ -390,6 +467,10 @@ export default function Catalog() {
               {moodFeelFilter.length > 0 && <FilterTag key="mood_feel" label={t("catalog.filters.moodFeelChip", { value: moodFeelFilter.length })} onRemove={() => setMoodFeelFilter([])} />}
               {tempoFilter && <FilterTag key="tempo" label={t("catalog.filters.tempoChip", { value: tempoFilter })} onRemove={() => setTempoFilter(null)} />}
               {syncTagsFilter.length > 0 && <FilterTag key="sync_tags" label={t("catalog.filters.syncTagsChip", { value: syncTagsFilter.length })} onRemove={() => setSyncTagsFilter([])} />}
+              {songwriterFilter && <FilterTag key="songwriter" label={"Songwriter: " + songwriterFilter} onRemove={() => setSongwriterFilter(null)} />}
+              {producerFilter && <FilterTag key="producer" label={"Producer: " + producerFilter} onRemove={() => setProducerFilter(null)} />}
+              {artistFilter && <FilterTag key="artist-person" label={"Artist: " + artistFilter} onRemove={() => setArtistFilter(null)} />}
+              {musicianFilter && <FilterTag key="musician" label={"Musician: " + musicianFilter} onRemove={() => setMusicianFilter(null)} />}
             </AnimatePresence>
             <button onClick={clearFilters} className="text-xs text-brand-orange hover:text-brand-pink ml-1.5 font-semibold transition-colors flex items-center gap-1">
               <X className="w-3 h-3" />
