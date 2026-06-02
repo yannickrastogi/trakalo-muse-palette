@@ -156,12 +156,15 @@ interface CommonInfo {
   publishers: string[];
   releaseDate: string;
   copyright: string;
-  writtenBy: string;
-  producedBy: string;
-  mixedBy: string;
-  masteredBy: string;
+  explicit: boolean;
   splits: Split[];
   tags: Record<string, unknown>;
+  // Structured credits (1:1 with solo StepDetails — written/produced/mixed/mastered are
+  // expressed via details.songwriters / details.producers / details.mixingEngineer / details.masteringEngineer,
+  // not as legacy free-text strings).
+  details: Record<string, string[]>;
+  customPerformers: CustomCreditEntry[];
+  customProduction: CustomCreditEntry[];
 }
 
 function createEmptyCommonInfo(): CommonInfo {
@@ -179,22 +182,24 @@ function createEmptyCommonInfo(): CommonInfo {
     publishers: [""],
     releaseDate: "",
     copyright: "",
-    writtenBy: "",
-    producedBy: "",
-    mixedBy: "",
-    masteredBy: "",
+    explicit: false,
     splits: [{ id: "1", name: "", email: "", stage_name: "", role: "", percentage: 100, pro: "", ipi: "", publisher: "" }],
     tags: {},
+    details: {},
+    customPerformers: [],
+    customProduction: [],
   };
 }
 
 function commonInfoHasContent(c: CommonInfo): boolean {
   if (c.artist || c.featuring || c.coverFile || c.genre.length > 0 || c.trackType || c.voice || c.language) return true;
-  if (c.notes || c.album || c.label || c.releaseDate || c.copyright) return true;
-  if (c.writtenBy || c.producedBy || c.mixedBy || c.masteredBy) return true;
+  if (c.notes || c.album || c.label || c.releaseDate || c.copyright || c.explicit) return true;
   if (c.publishers.some((p) => p.trim())) return true;
   if (c.splits.some((s) => s.name.trim())) return true;
   if (c.tags && Object.values(c.tags).some((v) => Array.isArray(v) ? v.length > 0 : Boolean(v))) return true;
+  if (Object.values(c.details).some((v) => Array.isArray(v) && v.some((n) => n.trim()))) return true;
+  if (c.customPerformers.some((e) => e.role.trim() && e.values.some((v) => v.trim()))) return true;
+  if (c.customProduction.some((e) => e.role.trim() && e.values.some((v) => v.trim()))) return true;
   return false;
 }
 
@@ -1096,6 +1101,104 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   const totalCommonSplit = commonInfo.splits.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0);
 
+  // ─── Common Info — structured credits handlers (mirror per-track StepDetails) ───
+  const updateCommonDetail = useCallback((key: string, index: number, value: string) => {
+    setCommonInfo((prev) => {
+      const arr = [...(prev.details[key] || [])];
+      arr[index] = value;
+      const nextDetails = { ...prev.details, [key]: arr };
+      const hasNonEmptyValue = arr.some((v) => v.trim().length > 0);
+      const nextTags = syncPerformerToInstrumentTag(
+        (prev.tags || {}) as TrackTags,
+        key,
+        hasNonEmptyValue,
+      ) as Record<string, unknown>;
+      return { ...prev, details: nextDetails, tags: nextTags };
+    });
+  }, []);
+
+  const addCommonDetailEntry = useCallback((key: string) => {
+    setCommonInfo((prev) => ({
+      ...prev,
+      details: { ...prev.details, [key]: [...(prev.details[key] || [""]), ""] },
+    }));
+  }, []);
+
+  const removeCommonDetailEntry = useCallback((key: string, index: number) => {
+    setCommonInfo((prev) => {
+      const arr = (prev.details[key] || []).filter((_, i) => i !== index);
+      return { ...prev, details: { ...prev.details, [key]: arr } };
+    });
+  }, []);
+
+  const assignCommonDetails = useCallback((next: Record<string, string[]>) => {
+    setCommonInfo((prev) => {
+      // Auto-sync performer roles → instrument tags (identical pattern to per-track StepDetails)
+      let updatedTags = (prev.tags || {}) as TrackTags;
+      for (const k of Object.keys(next)) {
+        const hasValue = (next[k] || []).some((v) => v.trim().length > 0);
+        updatedTags = syncPerformerToInstrumentTag(updatedTags, k, hasValue);
+      }
+      return { ...prev, details: next, tags: updatedTags as Record<string, unknown> };
+    });
+  }, []);
+
+  const addCommonCustomPerformer = useCallback(() => {
+    setCommonInfo((prev) => ({
+      ...prev,
+      customPerformers: [...prev.customPerformers, { id: crypto.randomUUID(), role: "", values: [""] }],
+    }));
+  }, []);
+  const updateCommonCustomPerformer = useCallback((id: string, field: "role" | "values", value: string | string[]) => {
+    setCommonInfo((prev) => ({
+      ...prev,
+      customPerformers: prev.customPerformers.map((e) => e.id === id ? { ...e, [field]: value } : e),
+    }));
+  }, []);
+  const removeCommonCustomPerformer = useCallback((id: string) => {
+    setCommonInfo((prev) => ({ ...prev, customPerformers: prev.customPerformers.filter((e) => e.id !== id) }));
+  }, []);
+  const addCommonCustomPerformerValue = useCallback((id: string) => {
+    setCommonInfo((prev) => ({
+      ...prev,
+      customPerformers: prev.customPerformers.map((e) => e.id === id ? { ...e, values: [...e.values, ""] } : e),
+    }));
+  }, []);
+  const removeCommonCustomPerformerValue = useCallback((id: string, index: number) => {
+    setCommonInfo((prev) => ({
+      ...prev,
+      customPerformers: prev.customPerformers.map((e) => e.id === id ? { ...e, values: e.values.filter((_, i) => i !== index) } : e),
+    }));
+  }, []);
+
+  const addCommonCustomProduction = useCallback(() => {
+    setCommonInfo((prev) => ({
+      ...prev,
+      customProduction: [...prev.customProduction, { id: crypto.randomUUID(), role: "", values: [""] }],
+    }));
+  }, []);
+  const updateCommonCustomProduction = useCallback((id: string, field: "role" | "values", value: string | string[]) => {
+    setCommonInfo((prev) => ({
+      ...prev,
+      customProduction: prev.customProduction.map((e) => e.id === id ? { ...e, [field]: value } : e),
+    }));
+  }, []);
+  const removeCommonCustomProduction = useCallback((id: string) => {
+    setCommonInfo((prev) => ({ ...prev, customProduction: prev.customProduction.filter((e) => e.id !== id) }));
+  }, []);
+  const addCommonCustomProductionValue = useCallback((id: string) => {
+    setCommonInfo((prev) => ({
+      ...prev,
+      customProduction: prev.customProduction.map((e) => e.id === id ? { ...e, values: [...e.values, ""] } : e),
+    }));
+  }, []);
+  const removeCommonCustomProductionValue = useCallback((id: string, index: number) => {
+    setCommonInfo((prev) => ({
+      ...prev,
+      customProduction: prev.customProduction.map((e) => e.id === id ? { ...e, values: e.values.filter((_, i) => i !== index) } : e),
+    }));
+  }, []);
+
   // Build a partial TrackEntry from CommonInfo, only with non-empty fields.
   const buildCommonPatch = useCallback((c: CommonInfo): Partial<TrackEntry> => {
     const patch: Partial<TrackEntry> = {};
@@ -1111,10 +1214,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     if (c.label.trim()) patch.label = c.label;
     if (c.releaseDate) patch.releaseDate = c.releaseDate;
     if (c.copyright.trim()) patch.copyright = c.copyright;
-    if (c.writtenBy.trim()) patch.writtenBy = c.writtenBy;
-    if (c.producedBy.trim()) patch.producedBy = c.producedBy;
-    if (c.mixedBy.trim()) patch.mixedBy = c.mixedBy;
-    if (c.masteredBy.trim()) patch.masteredBy = c.masteredBy;
+    if (c.explicit) patch.explicit = true;
     const filledPubs = c.publishers.filter((p) => p.trim());
     if (filledPubs.length > 0) patch.publishers = filledPubs;
     const filledSplits = c.splits.filter((s) => s.name.trim());
@@ -1122,6 +1222,17 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       patch.splits = c.splits.map((s) => ({ ...s, id: crypto.randomUUID() }));
     }
     if (c.tags && Object.keys(c.tags).length > 0) patch.tags = c.tags;
+    // Structured credits — propagate as Common Info (overwrite per-track to enforce "shared" semantics)
+    const hasDetails = Object.values(c.details).some((v) => Array.isArray(v) && v.some((n) => n.trim()));
+    if (hasDetails) patch.details = { ...c.details };
+    const filledCustomPerformers = c.customPerformers.filter((e) => e.role.trim() && e.values.some((v) => v.trim()));
+    if (filledCustomPerformers.length > 0) {
+      patch.customPerformers = filledCustomPerformers.map((e) => ({ ...e, id: crypto.randomUUID(), values: [...e.values] }));
+    }
+    const filledCustomProduction = c.customProduction.filter((e) => e.role.trim() && e.values.some((v) => v.trim()));
+    if (filledCustomProduction.length > 0) {
+      patch.customProduction = filledCustomProduction.map((e) => ({ ...e, id: crypto.randomUUID(), values: [...e.values] }));
+    }
     return patch;
   }, []);
 
@@ -1130,11 +1241,24 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     const fieldsCount = Object.keys(patch).length;
     setQueue((prev) => prev.map((entry) => {
       const next: TrackEntry = { ...entry };
-      // Apply each defined patch field, freshly cloning splits per-track
-      const hasSplits = patch.splits !== undefined;
       Object.assign(next, patch);
-      if (hasSplits && patch.splits) {
+      // Deep-clone per-track to avoid shared references across tracks
+      if (patch.splits) {
         next.splits = patch.splits.map((s) => ({ ...s, id: crypto.randomUUID() }));
+      }
+      if (patch.customPerformers) {
+        next.customPerformers = patch.customPerformers.map((e) => ({ ...e, id: crypto.randomUUID(), values: [...e.values] }));
+      }
+      if (patch.customProduction) {
+        next.customProduction = patch.customProduction.map((e) => ({ ...e, id: crypto.randomUUID(), values: [...e.values] }));
+      }
+      if (patch.details) {
+        const cloned: Record<string, string[]> = {};
+        for (const k of Object.keys(patch.details)) cloned[k] = [...patch.details[k]];
+        next.details = cloned;
+      }
+      if (patch.tags) {
+        next.tags = JSON.parse(JSON.stringify(patch.tags));
       }
       return next;
     }));
@@ -1470,6 +1594,20 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   onEqualSplit={equalSplitCommon}
                   contacts={contacts}
                   existingSplitNames={existingSplitNames}
+                  updateCommonDetail={updateCommonDetail}
+                  addCommonDetailEntry={addCommonDetailEntry}
+                  removeCommonDetailEntry={removeCommonDetailEntry}
+                  assignCommonDetails={assignCommonDetails}
+                  addCommonCustomPerformer={addCommonCustomPerformer}
+                  updateCommonCustomPerformer={updateCommonCustomPerformer}
+                  removeCommonCustomPerformer={removeCommonCustomPerformer}
+                  addCommonCustomPerformerValue={addCommonCustomPerformerValue}
+                  removeCommonCustomPerformerValue={removeCommonCustomPerformerValue}
+                  addCommonCustomProduction={addCommonCustomProduction}
+                  updateCommonCustomProduction={updateCommonCustomProduction}
+                  removeCommonCustomProduction={removeCommonCustomProduction}
+                  addCommonCustomProductionValue={addCommonCustomProductionValue}
+                  removeCommonCustomProductionValue={removeCommonCustomProductionValue}
                 />
               )}
               {phase === "upload" && (
@@ -2017,6 +2155,9 @@ function StepCommonInfo({
   trackCount, trackNames, commonInfo, commonInfoApplied, onUpdate,
   splits, totalSplit, onAddSplit, onUpdateSplit, onRemoveSplit, onBatchUpdateSplit, onEqualSplit,
   contacts, existingSplitNames,
+  updateCommonDetail, addCommonDetailEntry, removeCommonDetailEntry, assignCommonDetails,
+  addCommonCustomPerformer, updateCommonCustomPerformer, removeCommonCustomPerformer, addCommonCustomPerformerValue, removeCommonCustomPerformerValue,
+  addCommonCustomProduction, updateCommonCustomProduction, removeCommonCustomProduction, addCommonCustomProductionValue, removeCommonCustomProductionValue,
 }: {
   trackCount: number;
   trackNames: string[];
@@ -2032,6 +2173,21 @@ function StepCommonInfo({
   onEqualSplit: () => void;
   contacts: Contact[];
   existingSplitNames: string[];
+  // Structured credits handlers — mirror per-track StepDetails wiring
+  updateCommonDetail: (key: string, index: number, value: string) => void;
+  addCommonDetailEntry: (key: string) => void;
+  removeCommonDetailEntry: (key: string, index: number) => void;
+  assignCommonDetails: (next: Record<string, string[]>) => void;
+  addCommonCustomPerformer: () => void;
+  updateCommonCustomPerformer: (id: string, field: "role" | "values", value: string | string[]) => void;
+  removeCommonCustomPerformer: (id: string) => void;
+  addCommonCustomPerformerValue: (id: string) => void;
+  removeCommonCustomPerformerValue: (id: string, index: number) => void;
+  addCommonCustomProduction: () => void;
+  updateCommonCustomProduction: (id: string, field: "role" | "values", value: string | string[]) => void;
+  removeCommonCustomProduction: (id: string) => void;
+  addCommonCustomProductionValue: (id: string) => void;
+  removeCommonCustomProductionValue: (id: string, index: number) => void;
 }) {
   const { t } = useTranslation();
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -2251,7 +2407,7 @@ function StepCommonInfo({
         <TagsSection tags={(commonInfo.tags || {}) as TrackTags} onChange={(tags) => onUpdate({ tags: tags as Record<string, unknown> })} />
       </div>
 
-      {/* Credits (collapsible) */}
+      {/* Credits (collapsible) — identical to solo StepDetails */}
       <div className="border-t border-border pt-5">
         <button
           onClick={() => setShowCredits(!showCredits)}
@@ -2259,18 +2415,59 @@ function StepCommonInfo({
         >
           <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showCredits ? "rotate-90" : ""}`} />
           {t("uploadTrack.credits", "Credits")}
-          <span className="text-2xs text-muted-foreground/50 font-normal">— written by, produced by, mixed by, mastered by</span>
+          <span className="text-2xs text-muted-foreground/50 font-normal">{t("uploadTrack.creditsSubtitle", "— performers, production, studios")}</span>
         </button>
         {showCredits && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="mt-4 grid grid-cols-2 gap-3"
+            className="mt-4 space-y-3"
           >
-            <MetadataInput label={t("uploadTrack.writtenBy", "Written By")} value={commonInfo.writtenBy} onChange={(v) => onUpdate({ writtenBy: v })} placeholder="Comma separated" />
-            <MetadataInput label={t("uploadTrack.producedBy", "Produced By")} value={commonInfo.producedBy} onChange={(v) => onUpdate({ producedBy: v })} placeholder="Comma separated" />
-            <MetadataInput label={t("uploadTrack.mixedBy", "Mixed By")} value={commonInfo.mixedBy} onChange={(v) => onUpdate({ mixedBy: v })} />
-            <MetadataInput label={t("uploadTrack.masteredBy", "Mastered By")} value={commonInfo.masteredBy} onChange={(v) => onUpdate({ masteredBy: v })} />
+            <MultiRoleCreditAssigner
+              roles={[
+                { key: "vocalsBy", label: t("performerCredits.leadVocals", "Lead Vocals By") },
+                { key: "backgroundVocalsBy", label: t("performerCredits.backgroundVocals", "Background Vocals By") },
+                { key: "drumsBy", label: t("performerCredits.drums", "Drums By") },
+                { key: "synthsBy", label: t("performerCredits.synths", "Synths By") },
+                { key: "keysBy", label: t("performerCredits.keys", "Keys By") },
+                { key: "guitarsBy", label: t("performerCredits.guitars", "Guitars By") },
+                { key: "bassBy", label: t("performerCredits.bass", "Bass By") },
+                { key: "producers", label: t("productionCredits.producers", "Producer") },
+                { key: "songwriters", label: t("productionCredits.songwriters", "Songwriter") },
+                { key: "recordingEngineer", label: t("productionCredits.recordingEngineer", "Recording Engineer") },
+                { key: "mixingEngineer", label: t("productionCredits.mixingEngineer", "Mixing Engineer") },
+                { key: "masteringEngineer", label: t("productionCredits.masteringEngineer", "Mastering Engineer") },
+                { key: "programmingBy", label: t("productionCredits.programmingBy", "Programming By") },
+              ]}
+              details={commonInfo.details}
+              onAssign={assignCommonDetails}
+            />
+            <PerformerCreditsSection
+              details={commonInfo.details}
+              updateDetail={updateCommonDetail}
+              addDetailEntry={addCommonDetailEntry}
+              removeDetailEntry={removeCommonDetailEntry}
+              extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))}
+              customPerformers={commonInfo.customPerformers}
+              onAddCustomPerformer={addCommonCustomPerformer}
+              onUpdateCustomPerformer={updateCommonCustomPerformer}
+              onRemoveCustomPerformer={removeCommonCustomPerformer}
+              onAddCustomPerformerValue={addCommonCustomPerformerValue}
+              onRemoveCustomPerformerValue={removeCommonCustomPerformerValue}
+            />
+            <ProductionCreditsSection
+              details={commonInfo.details}
+              updateDetail={updateCommonDetail}
+              addDetailEntry={addCommonDetailEntry}
+              removeDetailEntry={removeCommonDetailEntry}
+              extraSuggestions={splits.filter((s) => s.name.trim()).map((s) => ({ name: s.name, stage_name: s.stage_name }))}
+              customProduction={commonInfo.customProduction}
+              onAddCustomProduction={addCommonCustomProduction}
+              onUpdateCustomProduction={updateCommonCustomProduction}
+              onRemoveCustomProduction={removeCommonCustomProduction}
+              onAddCustomProductionValue={addCommonCustomProductionValue}
+              onRemoveCustomProductionValue={removeCommonCustomProductionValue}
+            />
           </motion.div>
         )}
       </div>
@@ -2325,6 +2522,18 @@ function StepCommonInfo({
               />
             </div>
             <MetadataInput label={t("uploadTrack.copyright", "Copyright")} value={commonInfo.copyright} onChange={(v) => onUpdate({ copyright: v })} placeholder="e.g. © 2026 Label Name" />
+            <div className="flex items-center gap-2 self-end pb-2">
+              <input
+                type="checkbox"
+                id="common-explicit-toggle"
+                checked={commonInfo.explicit}
+                onChange={(e) => onUpdate({ explicit: e.target.checked })}
+                className="w-4 h-4 rounded border-border accent-brand-orange"
+              />
+              <label htmlFor="common-explicit-toggle" className="text-sm text-foreground font-medium cursor-pointer">
+                {t("uploadTrack.explicit", "Explicit")}
+              </label>
+            </div>
           </motion.div>
         )}
       </div>
