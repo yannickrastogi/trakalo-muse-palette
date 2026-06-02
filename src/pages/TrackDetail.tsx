@@ -112,6 +112,8 @@ import { toast } from "sonner";
 import type { StemType } from "@/lib/constants";
 import { PerformerCreditsSection } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
+import { MultiRoleCreditAssigner } from "@/components/MultiRoleCreditAssigner";
+import { syncPerformerToInstrumentTag } from "@/lib/performerInstrumentSync";
 import { TagsSection } from "@/components/TagsSection";
 import type { TrackTags } from "@/lib/tagsVocabulary";
 
@@ -1525,19 +1527,51 @@ function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolea
         </div>
         <div className="px-5 pb-5">
           {editingPerformer ? (
-            <PerformerCreditsSection
-              details={editPerformerDetails}
-              updateDetail={updatePerformerDetail}
-              addDetailEntry={addPerformerDetailEntry}
-              removeDetailEntry={removePerformerDetailEntry}
-              extraSuggestions={splitSuggestions}
-              customPerformers={editCustomPerformers}
-              onAddCustomPerformer={() => setEditCustomPerformers(prev => [...prev, { id: crypto.randomUUID(), role: "", values: [""] }])}
-              onUpdateCustomPerformer={(id, field, value) => setEditCustomPerformers(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p))}
-              onRemoveCustomPerformer={(id) => setEditCustomPerformers(prev => prev.filter(p => p.id !== id))}
-              onAddCustomPerformerValue={(id) => setEditCustomPerformers(prev => prev.map(p => p.id === id ? { ...p, values: [...p.values, ""] } : p))}
-              onRemoveCustomPerformerValue={(id, index) => setEditCustomPerformers(prev => prev.map(p => p.id === id ? { ...p, values: p.values.filter((_, i) => i !== index) } : p))}
-            />
+            <div className="space-y-4">
+              <MultiRoleCreditAssigner
+                roles={[
+                  { key: "vocalsBy", label: t("performerCredits.leadVocals", "Lead Vocals By") },
+                  { key: "backgroundVocalsBy", label: t("performerCredits.backgroundVocals", "Background Vocals By") },
+                  { key: "drumsBy", label: t("performerCredits.drums", "Drums By") },
+                  { key: "synthsBy", label: t("performerCredits.synths", "Synths By") },
+                  { key: "keysBy", label: t("performerCredits.keys", "Keys By") },
+                  { key: "guitarsBy", label: t("performerCredits.guitars", "Guitars By") },
+                  { key: "bassBy", label: t("performerCredits.bass", "Bass By") },
+                ]}
+                details={editPerformerDetails}
+                onAssign={(next) => {
+                  setEditPerformerDetails(next);
+                  // Auto-sync performer roles → instrument tags (one-way additive, same as Upload/EditTrackModal)
+                  const baseTags: TrackTags = (editingTags ? editTags : (trackData.tags || {})) as TrackTags;
+                  let updatedTags: TrackTags = baseTags;
+                  for (const k of Object.keys(next)) {
+                    const hasValue = (next[k] || []).some((v) => v.trim().length > 0);
+                    updatedTags = syncPerformerToInstrumentTag(updatedTags, k, hasValue);
+                  }
+                  if (updatedTags !== baseTags) {
+                    if (editingTags) {
+                      setEditTags(updatedTags);
+                    } else {
+                      // Fire-and-forget persist so the tag chip appears in the Tags section atomically
+                      updateTrack(trackId, { tags: updatedTags });
+                    }
+                  }
+                }}
+              />
+              <PerformerCreditsSection
+                details={editPerformerDetails}
+                updateDetail={updatePerformerDetail}
+                addDetailEntry={addPerformerDetailEntry}
+                removeDetailEntry={removePerformerDetailEntry}
+                extraSuggestions={splitSuggestions}
+                customPerformers={editCustomPerformers}
+                onAddCustomPerformer={() => setEditCustomPerformers(prev => [...prev, { id: crypto.randomUUID(), role: "", values: [""] }])}
+                onUpdateCustomPerformer={(id, field, value) => setEditCustomPerformers(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p))}
+                onRemoveCustomPerformer={(id) => setEditCustomPerformers(prev => prev.filter(p => p.id !== id))}
+                onAddCustomPerformerValue={(id) => setEditCustomPerformers(prev => prev.map(p => p.id === id ? { ...p, values: [...p.values, ""] } : p))}
+                onRemoveCustomPerformerValue={(id, index) => setEditCustomPerformers(prev => prev.map(p => p.id === id ? { ...p, values: p.values.filter((_, i) => i !== index) } : p))}
+              />
+            </div>
           ) : (
             renderGrid(performerCredits)
           )}
@@ -1568,19 +1602,36 @@ function OverviewTab({ trackId, readOnly }: { trackId: number; readOnly?: boolea
         </div>
         <div className="px-5 pb-5">
           {editingProduction ? (
-            <ProductionCreditsSection
-              details={editProductionDetails}
-              updateDetail={updateProductionDetail}
-              addDetailEntry={addProductionDetailEntry}
-              removeDetailEntry={removeProductionDetailEntry}
-              extraSuggestions={splitSuggestions}
-              customProduction={editCustomProduction}
-              onAddCustomProduction={() => setEditCustomProduction(prev => [...prev, { id: crypto.randomUUID(), role: "", values: [""] }])}
-              onUpdateCustomProduction={(id, field, value) => setEditCustomProduction(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p))}
-              onRemoveCustomProduction={(id) => setEditCustomProduction(prev => prev.filter(p => p.id !== id))}
-              onAddCustomProductionValue={(id) => setEditCustomProduction(prev => prev.map(p => p.id === id ? { ...p, values: [...p.values, ""] } : p))}
-              onRemoveCustomProductionValue={(id, index) => setEditCustomProduction(prev => prev.map(p => p.id === id ? { ...p, values: p.values.filter((_, i) => i !== index) } : p))}
-            />
+            <div className="space-y-4">
+              <MultiRoleCreditAssigner
+                roles={[
+                  { key: "producers", label: t("productionCredits.producers", "Producer") },
+                  { key: "songwriters", label: t("productionCredits.songwriters", "Songwriter") },
+                  { key: "recordingEngineer", label: t("productionCredits.recordingEngineer", "Recording Engineer") },
+                  { key: "mixingEngineer", label: t("productionCredits.mixingEngineer", "Mixing Engineer") },
+                  { key: "masteringEngineer", label: t("productionCredits.masteringEngineer", "Mastering Engineer") },
+                  { key: "programmingBy", label: t("productionCredits.programmingBy", "Programming By") },
+                ]}
+                details={editProductionDetails}
+                onAssign={(next) => {
+                  // No tag sync — production roles aren't instruments (mirrors performerInstrumentSync map)
+                  setEditProductionDetails(next);
+                }}
+              />
+              <ProductionCreditsSection
+                details={editProductionDetails}
+                updateDetail={updateProductionDetail}
+                addDetailEntry={addProductionDetailEntry}
+                removeDetailEntry={removeProductionDetailEntry}
+                extraSuggestions={splitSuggestions}
+                customProduction={editCustomProduction}
+                onAddCustomProduction={() => setEditCustomProduction(prev => [...prev, { id: crypto.randomUUID(), role: "", values: [""] }])}
+                onUpdateCustomProduction={(id, field, value) => setEditCustomProduction(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p))}
+                onRemoveCustomProduction={(id) => setEditCustomProduction(prev => prev.filter(p => p.id !== id))}
+                onAddCustomProductionValue={(id) => setEditCustomProduction(prev => prev.map(p => p.id === id ? { ...p, values: [...p.values, ""] } : p))}
+                onRemoveCustomProductionValue={(id, index) => setEditCustomProduction(prev => prev.map(p => p.id === id ? { ...p, values: p.values.filter((_, i) => i !== index) } : p))}
+              />
+            </div>
           ) : (
             renderGrid(productionCredits)
           )}
