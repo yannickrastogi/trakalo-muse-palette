@@ -61,7 +61,7 @@ export function NameAutocomplete({
         const firstName = (c.firstName || "").toLowerCase();
         const lastName = (c.lastName || "").toLowerCase();
         const stageLower = (c.stageName || "").toLowerCase();
-        if (firstName.startsWith(query) || lastName.startsWith(query) || key.indexOf(query) >= 0 || (stageLower && stageLower.startsWith(query))) {
+        if (firstName.startsWith(query) || lastName.startsWith(query) || key.indexOf(query) >= 0 || (stageLower && stageLower.indexOf(query) >= 0)) {
           seen.add(key);
           results.push({ fullName: full, stageName: c.stageName || undefined });
         }
@@ -74,7 +74,7 @@ export function NameAutocomplete({
       const key = s.name.toLowerCase();
       if (seen.has(key)) continue;
       const stageLower = (s.stage_name || "").toLowerCase();
-      if (key.indexOf(query) >= 0 || stageLower.startsWith(query)) {
+      if (key.indexOf(query) >= 0 || (stageLower && stageLower.indexOf(query) >= 0)) {
         seen.add(key);
         results.push({ fullName: s.name, stageName: s.stage_name || undefined });
       }

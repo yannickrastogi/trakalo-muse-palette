@@ -55,13 +55,16 @@ export function CollaboratorAutocomplete({
     var results: CollaboratorSuggestion[] = [];
     var seen = new Set<string>();
 
-    // From contacts
+    // From contacts — match against full name OR stage_name (case-insensitive substring)
     for (var i = 0; i < contacts.length; i++) {
       var c = contacts[i];
       var full = ((c.firstName || "") + " " + (c.lastName || "")).trim();
       if (!full) continue;
       var key = full.toLowerCase();
-      if (key.indexOf(query) >= 0 && !seen.has(key)) {
+      var stageLower = (c.stageName || "").toLowerCase();
+      var matchesName = key.indexOf(query) >= 0;
+      var matchesStage = stageLower && stageLower.indexOf(query) >= 0;
+      if ((matchesName || matchesStage) && !seen.has(key)) {
         seen.add(key);
         results.push({
           firstName: c.firstName,

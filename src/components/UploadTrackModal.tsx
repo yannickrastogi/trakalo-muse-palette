@@ -540,8 +540,10 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const batchUpdateSplit = useCallback((id: string, current: Split, s: CollaboratorSuggestion) => {
     if (!currentTrack) return;
     var patch: Partial<Split> = { name: s.fullName };
+    // stage_name: no guard on current — picking a contact always uses the canonical stage_name
+    // (same intent as `name` field above), so Name + Stage Name picks produce identical end state
+    if (s.stage_name) patch.stage_name = s.stage_name;
     if (s.email && !current.email) patch.email = s.email;
-    if (s.stage_name && !current.stage_name) patch.stage_name = s.stage_name;
     if (s.role && !current.role) patch.role = s.role;
     if (s.pro && !current.pro) patch.pro = s.pro;
     if (s.ipi && !current.ipi) patch.ipi = s.ipi;
@@ -1075,8 +1077,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   const batchUpdateCommonSplit = useCallback((id: string, current: Split, s: CollaboratorSuggestion) => {
     var patch: Partial<Split> = { name: s.fullName };
+    if (s.stage_name) patch.stage_name = s.stage_name;
     if (s.email && !current.email) patch.email = s.email;
-    if (s.stage_name && !current.stage_name) patch.stage_name = s.stage_name;
     if (s.role && !current.role) patch.role = s.role;
     if (s.pro && !current.pro) patch.pro = s.pro;
     if (s.ipi && !current.ipi) patch.ipi = s.ipi;
@@ -2638,7 +2640,7 @@ function StepSplits({
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">Stage Name</label>
-                <input value={split.stage_name} onChange={(e) => onUpdate(split.id, "stage_name", e.target.value)} placeholder="Artist / Stage name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                <CollaboratorAutocomplete value={split.stage_name || ""} onChange={(v) => onUpdate(split.id, "stage_name", v)} onSelect={(s) => { onBatchUpdate(split.id, split, s); }} contacts={contacts} existingSplitNames={existingSplitNames} placeholder="Artist / Stage name" className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
               </div>
               <div className="space-y-1">
                 <label className="text-2xs text-muted-foreground font-medium">Email</label>
