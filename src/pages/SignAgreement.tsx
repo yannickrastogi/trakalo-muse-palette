@@ -395,6 +395,7 @@ export default function SignAgreement() {
             <SignatureCanvas
               ref={sigRef}
               penColor="black"
+              backgroundColor="#ffffff"
               onEnd={handleStrokeEnd}
               canvasProps={{
                 className: "w-full",
