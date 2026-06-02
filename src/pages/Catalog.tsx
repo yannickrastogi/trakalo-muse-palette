@@ -138,25 +138,21 @@ export default function Catalog() {
       if (bpmFilter && (track.bpm < bpmFilter.min || track.bpm > bpmFilter.max)) return false;
       if (languageFilter && track.language !== languageFilter) return false;
       if (voiceFilter && track.voice !== voiceFilter) return false;
-      // Tag filters — read from track.tags (jsonb)
+      // Tag filters — read from track.tags (jsonb), case-insensitive
+      // (TagsSection stores values lowercase; vocabulary dropdowns push capitalized labels)
       const trackTags = (track.tags as Record<string, unknown> | undefined) || {};
-      if (instrumentsFilter.length > 0) {
-        const arr = Array.isArray(trackTags.instruments) ? (trackTags.instruments as string[]) : [];
-        if (!instrumentsFilter.some((tag) => arr.includes(tag))) return false;
+      const matchAny = (raw: unknown, picked: string[]) => {
+        const arr = Array.isArray(raw) ? (raw as string[]).map((v) => v.toLowerCase()) : [];
+        return picked.some((tag) => arr.includes(tag.toLowerCase()));
+      };
+      if (instrumentsFilter.length > 0 && !matchAny(trackTags.instruments, instrumentsFilter)) return false;
+      if (lyricThemesFilter.length > 0 && !matchAny(trackTags.lyric_themes, lyricThemesFilter)) return false;
+      if (moodFeelFilter.length > 0 && !matchAny(trackTags.mood_feel, moodFeelFilter)) return false;
+      if (syncTagsFilter.length > 0 && !matchAny(trackTags.sync_tags, syncTagsFilter)) return false;
+      if (tempoFilter) {
+        const td = typeof trackTags.tempo_descriptor === "string" ? trackTags.tempo_descriptor.toLowerCase() : "";
+        if (td !== tempoFilter.toLowerCase()) return false;
       }
-      if (lyricThemesFilter.length > 0) {
-        const arr = Array.isArray(trackTags.lyric_themes) ? (trackTags.lyric_themes as string[]) : [];
-        if (!lyricThemesFilter.some((tag) => arr.includes(tag))) return false;
-      }
-      if (moodFeelFilter.length > 0) {
-        const arr = Array.isArray(trackTags.mood_feel) ? (trackTags.mood_feel as string[]) : [];
-        if (!moodFeelFilter.some((tag) => arr.includes(tag))) return false;
-      }
-      if (syncTagsFilter.length > 0) {
-        const arr = Array.isArray(trackTags.sync_tags) ? (trackTags.sync_tags as string[]) : [];
-        if (!syncTagsFilter.some((tag) => arr.includes(tag))) return false;
-      }
-      if (tempoFilter && trackTags.tempo_descriptor !== tempoFilter) return false;
       return true;
     });
   }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, languageFilter, voiceFilter, instrumentsFilter, lyricThemesFilter, moodFeelFilter, syncTagsFilter, tempoFilter]);
