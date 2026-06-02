@@ -71,7 +71,11 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
       if (bpmFilter && (track.bpm < bpmFilter.min || track.bpm > bpmFilter.max)) return false;
       if (moodFilter && !track.mood.includes(moodFilter)) return false;
       if (languageFilter && track.language !== languageFilter) return false;
-      if (voiceFilter && track.voice !== voiceFilter) return false;
+      if (voiceFilter) {
+        // DB enum track_gender stores "male"|"female"|"duet"|"n_a"; UI shows "Male"|"Female"|"Duet"|"N/A".
+        const normalized = voiceFilter.toLowerCase().replace("n/a", "n_a");
+        if ((track.voice || "").toLowerCase() !== normalized) return false;
+      }
       return true;
     });
   }, [sharedTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, moodFilter, languageFilter, voiceFilter]);
