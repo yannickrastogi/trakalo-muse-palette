@@ -85,10 +85,12 @@ export function ProductionCreditsSection({
           const isDate = f.key === "recordingDate";
           const isStudioField = (STUDIO_KEYS as readonly string[]).includes(f.key);
           const isNameField = !isDate;
-          // Studio fields suggest only studios (workspace studios + extras), never contacts/people.
-          // Person fields keep the original contact-only suggestion pool to avoid venue pollution.
+          // Studio fields suggest ONLY workspace studios — never contacts (excludeContacts handles
+          // the contacts table) and never split collaborator names (which arrive via extraSuggestions
+          // and would otherwise pollute studio dropdowns with people names like "Yannick Rastogi").
+          // Person fields keep the original contact-only suggestion pool.
           const fieldExtraSuggestions = isStudioField
-            ? [...workspaceStudioSuggestions, ...extraSuggestions]
+            ? workspaceStudioSuggestions
             : extraSuggestions;
           return (
             <div key={f.key} className="space-y-1">
