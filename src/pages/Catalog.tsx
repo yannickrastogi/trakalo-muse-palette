@@ -169,45 +169,70 @@ export default function Catalog() {
         const td = typeof trackTags.tempo_descriptor === "string" ? trackTags.tempo_descriptor.toLowerCase() : "";
         if (td !== tempoFilter.toLowerCase()) return false;
       }
-      // Person filters (Songwriter / Producer / Artist / Musician) — OR-internally, AND with rest
-      const anyPersonActive = !!songwriterFilter || !!producerFilter || !!artistFilter || !!musicianFilter;
-      if (anyPersonActive) {
+      // Person filters (Songwriter / Producer / Artist / Musician) — each independent, AND between them.
+      // Each filter checks BOTH splits[].role AND credits jsonb (where the same person is often duplicated).
+      if (songwriterFilter || producerFilter || artistFilter || musicianFilter) {
         const splits = Array.isArray(track.splits) ? track.splits : [];
-        const splitNameMatches = (s: { name?: string; stage_name?: string }, q: string) => {
-          const name = (s?.name || "").toLowerCase();
-          const stage = (s?.stage_name || "").toLowerCase();
-          return name.includes(q) || stage.includes(q);
-        };
-        const splitHasRole = (s: { role?: string }, role: string) => {
+        const credits = (track.credits || {}) as Record<string, unknown>;
+
+        const lowerIncludes = (s: unknown, q: string): boolean =>
+          typeof s === "string" && s.toLowerCase().includes(q);
+
+        const splitHasRoleAndName = (q: string, role: string) => {
           const r = role.toLowerCase();
-          const maybeRoles = (s as unknown as Record<string, unknown>).roles;
-          const arr = Array.isArray(maybeRoles)
-            ? (maybeRoles as string[])
-            : (s?.role ? [s.role] : []);
-          return arr.some((x) => (x || "").toLowerCase() === r);
+          return splits.some((s) => {
+            const nameMatch = lowerIncludes(s?.name, q) || lowerIncludes((s as unknown as { stage_name?: string })?.stage_name, q);
+            if (!nameMatch) return false;
+            // backward compat: split.roles (array, future) OR split.role (string, current)
+            const maybeRoles = (s as unknown as Record<string, unknown>).roles;
+            const arr = Array.isArray(maybeRoles) ? (maybeRoles as string[]) : (s?.role ? [s.role as string] : []);
+            return arr.some((x) => (x || "").toLowerCase() === r);
+          });
         };
-        const matchRole = (filter: string | null, role: string) => {
-          if (!filter) return false;
-          const q = filter.toLowerCase().trim();
-          if (!q) return false;
-          return splits.some((s) => splitNameMatches(s, q) && splitHasRole(s, role));
+
+        const creditArrayMatch = (q: string, key: string) => {
+          const raw = credits[key];
+          if (!Array.isArray(raw)) return false;
+          return (raw as unknown[]).some((v) => lowerIncludes(v, q));
         };
-        const matchArtistStr = (filter: string | null) => {
-          if (!filter) return false;
-          const q = filter.toLowerCase().trim();
-          if (!q) return false;
-          return (track.artist || "")
-            .split(",")
-            .map((a) => a.trim().toLowerCase())
-            .some((a) => a.includes(q));
+
+        const customPerformerMatch = (q: string) => {
+          const raw = credits.customPerformers;
+          if (!Array.isArray(raw)) return false;
+          return (raw as Array<{ values?: unknown }>).some((entry) =>
+            Array.isArray(entry?.values) && entry.values.some((v) => lowerIncludes(v, q))
+          );
         };
-        const personMatch =
-          matchRole(songwriterFilter, "Songwriter") ||
-          matchRole(producerFilter, "Producer") ||
-          matchRole(musicianFilter, "Musician") ||
-          matchRole(artistFilter, "Artist") ||
-          matchArtistStr(artistFilter);
-        if (!personMatch) return false;
+
+        // Songwriter: splits[role=Songwriter] OR credits.songwriters[]
+        if (songwriterFilter) {
+          const q = songwriterFilter.toLowerCase().trim();
+          if (q && !(splitHasRoleAndName(q, "Songwriter") || creditArrayMatch(q, "songwriters"))) return false;
+        }
+        // Producer: splits[role=Producer] OR credits.producers[]
+        if (producerFilter) {
+          const q = producerFilter.toLowerCase().trim();
+          if (q && !(splitHasRoleAndName(q, "Producer") || creditArrayMatch(q, "producers"))) return false;
+        }
+        // Artist: track.artist (comma-string) OR track.featuredArtists[] OR splits[role=Artist]
+        if (artistFilter) {
+          const q = artistFilter.toLowerCase().trim();
+          if (q) {
+            const artistStr = lowerIncludes(track.artist, q);
+            const feat = Array.isArray(track.featuredArtists)
+              && track.featuredArtists.some((a) => lowerIncludes(a, q));
+            if (!(artistStr || feat || splitHasRoleAndName(q, "Artist"))) return false;
+          }
+        }
+        // Musician: splits[role=Musician] OR any credits performer key OR customPerformers[].values[]
+        if (musicianFilter) {
+          const q = musicianFilter.toLowerCase().trim();
+          if (q) {
+            const perfKeys = ["vocalsBy", "backgroundVocalsBy", "drumsBy", "synthsBy", "keysBy", "guitarsBy", "bassBy", "programmingBy"];
+            const inCredits = perfKeys.some((k) => creditArrayMatch(q, k));
+            if (!(splitHasRoleAndName(q, "Musician") || inCredits || customPerformerMatch(q))) return false;
+          }
+        }
       }
       return true;
     });
