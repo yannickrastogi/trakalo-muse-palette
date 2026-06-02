@@ -12,6 +12,8 @@ interface NameAutocompleteProps {
   placeholder?: string;
   className?: string;
   extraSuggestions?: { name: string; stage_name?: string }[];
+  /** When true, skip the contacts pool and only suggest from extraSuggestions (used by studio fields). */
+  excludeContacts?: boolean;
 }
 
 export function NameAutocomplete({
@@ -20,6 +22,7 @@ export function NameAutocomplete({
   placeholder,
   className,
   extraSuggestions = [],
+  excludeContacts = false,
 }: NameAutocompleteProps) {
   const { contacts } = useContacts();
   const [open, setOpen] = useState(false);
@@ -48,18 +51,20 @@ export function NameAutocomplete({
     const results: NameSuggestion[] = [];
     const seen = new Set<string>();
 
-    // From contacts
-    for (const c of contacts) {
-      const full = ((c.firstName || "") + " " + (c.lastName || "")).trim();
-      if (!full) continue;
-      const key = full.toLowerCase();
-      if (seen.has(key)) continue;
-      const firstName = (c.firstName || "").toLowerCase();
-      const lastName = (c.lastName || "").toLowerCase();
-      const stageLower = (c.stageName || "").toLowerCase();
-      if (firstName.startsWith(query) || lastName.startsWith(query) || key.indexOf(query) >= 0 || (stageLower && stageLower.startsWith(query))) {
-        seen.add(key);
-        results.push({ fullName: full, stageName: c.stageName || undefined });
+    // From contacts (skipped for studio fields so we never suggest people as venues)
+    if (!excludeContacts) {
+      for (const c of contacts) {
+        const full = ((c.firstName || "") + " " + (c.lastName || "")).trim();
+        if (!full) continue;
+        const key = full.toLowerCase();
+        if (seen.has(key)) continue;
+        const firstName = (c.firstName || "").toLowerCase();
+        const lastName = (c.lastName || "").toLowerCase();
+        const stageLower = (c.stageName || "").toLowerCase();
+        if (firstName.startsWith(query) || lastName.startsWith(query) || key.indexOf(query) >= 0 || (stageLower && stageLower.startsWith(query))) {
+          seen.add(key);
+          results.push({ fullName: full, stageName: c.stageName || undefined });
+        }
       }
     }
 
@@ -76,7 +81,7 @@ export function NameAutocomplete({
     }
 
     return results.slice(0, 8);
-  }, [debouncedQuery, contacts, extraSuggestions]);
+  }, [debouncedQuery, contacts, extraSuggestions, excludeContacts]);
 
   // Close on outside click
   useEffect(() => {

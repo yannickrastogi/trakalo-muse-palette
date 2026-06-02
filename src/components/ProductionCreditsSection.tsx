@@ -84,11 +84,9 @@ export function ProductionCreditsSection({
           const entries = Array.isArray(raw) ? raw : raw ? [raw] : [""];
           const isDate = f.key === "recordingDate";
           const isStudioField = (STUDIO_KEYS as readonly string[]).includes(f.key);
-          // Studios now use NameAutocomplete too — suggestions come from contacts.
           const isNameField = !isDate;
-          // Studio fields get workspace studios first (most relevant); person fields
-          // keep the original contact-only suggestion pool to avoid polluting them
-          // with venue names.
+          // Studio fields suggest only studios (workspace studios + extras), never contacts/people.
+          // Person fields keep the original contact-only suggestion pool to avoid venue pollution.
           const fieldExtraSuggestions = isStudioField
             ? [...workspaceStudioSuggestions, ...extraSuggestions]
             : extraSuggestions;
@@ -104,6 +102,7 @@ export function ProductionCreditsSection({
                       placeholder={"Enter " + t(f.labelKey).toLowerCase()}
                       className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
                       extraSuggestions={fieldExtraSuggestions}
+                      excludeContacts={isStudioField}
                     />
                   ) : (
                     <input
