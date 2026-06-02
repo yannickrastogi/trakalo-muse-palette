@@ -93,10 +93,7 @@ export default function Catalog() {
   const [tempoFilter, setTempoFilter] = useState<string | null>(null);
   const [syncTagsFilter, setSyncTagsFilter] = useState<string[]>([]);
   const initialPerson = searchParams.get("person") || "";
-  const [songwriterFilter, setSongwriterFilter] = useState<string | null>(initialPerson || null);
-  const [producerFilter, setProducerFilter] = useState<string | null>(initialPerson || null);
-  const [artistFilter, setArtistFilter] = useState<string | null>(initialPerson || null);
-  const [musicianFilter, setMusicianFilter] = useState<string | null>(initialPerson || null);
+  const [personFilter, setPersonFilter] = useState<string | null>(initialPerson || null);
   const [showFilters, setShowFilters] = useState(!!initialPerson);
   const { currentTrack, isPlaying: globalIsPlaying, playTrack, togglePlay, isTrackPlaying, setQueue, progress } = useAudioPlayer();
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
@@ -130,10 +127,7 @@ export default function Catalog() {
     (lyricThemesFilter.length > 0 ? 1 : 0) +
     (moodFeelFilter.length > 0 ? 1 : 0) +
     (syncTagsFilter.length > 0 ? 1 : 0) +
-    (songwriterFilter ? 1 : 0) +
-    (producerFilter ? 1 : 0) +
-    (artistFilter ? 1 : 0) +
-    (musicianFilter ? 1 : 0);
+    (personFilter ? 1 : 0);
 
   const filteredTracks = useMemo(() => {
     return allTracks.filter((track) => {
@@ -169,74 +163,48 @@ export default function Catalog() {
         const td = typeof trackTags.tempo_descriptor === "string" ? trackTags.tempo_descriptor.toLowerCase() : "";
         if (td !== tempoFilter.toLowerCase()) return false;
       }
-      // Person filters (Songwriter / Producer / Artist / Musician) — each independent, AND between them.
-      // Each filter checks BOTH splits[].role AND credits jsonb (where the same person is often duplicated).
-      if (songwriterFilter || producerFilter || artistFilter || musicianFilter) {
-        const splits = Array.isArray(track.splits) ? track.splits : [];
-        const credits = (track.credits || {}) as Record<string, unknown>;
-
-        const lowerIncludes = (s: unknown, q: string): boolean =>
-          typeof s === "string" && s.toLowerCase().includes(q);
-
-        const splitHasRoleAndName = (q: string, role: string) => {
-          const r = role.toLowerCase();
-          return splits.some((s) => {
-            const nameMatch = lowerIncludes(s?.name, q) || lowerIncludes((s as unknown as { stage_name?: string })?.stage_name, q);
-            if (!nameMatch) return false;
-            // backward compat: split.roles (array, future) OR split.role (string, current)
-            const maybeRoles = (s as unknown as Record<string, unknown>).roles;
-            const arr = Array.isArray(maybeRoles) ? (maybeRoles as string[]) : (s?.role ? [s.role as string] : []);
-            return arr.some((x) => (x || "").toLowerCase() === r);
+      // Person filter — UNIFIED: matches if the name appears ANYWHERE a person can be credited.
+      // OR across: track.artist, featuredArtists[], splits (any role, name+stage_name),
+      // credits.{songwriters,producers,8 performer keys}, customPerformers[].values, customProduction[].values.
+      if (personFilter) {
+        const q = personFilter.toLowerCase().trim();
+        if (q) {
+          const splits = Array.isArray(track.splits) ? track.splits : [];
+          const credits = (track.credits || {}) as Record<string, unknown>;
+          const lowerIncludes = (s: unknown): boolean =>
+            typeof s === "string" && s.toLowerCase().includes(q);
+          const creditArrayMatch = (key: string) => {
+            const raw = credits[key];
+            return Array.isArray(raw) && (raw as unknown[]).some(lowerIncludes);
+          };
+          const customListMatch = (key: "customPerformers" | "customProduction") => {
+            const raw = credits[key];
+            if (!Array.isArray(raw)) return false;
+            return (raw as Array<{ values?: unknown }>).some((entry) =>
+              Array.isArray(entry?.values) && entry.values.some(lowerIncludes)
+            );
+          };
+          const splitAnyRoleMatch = splits.some((s) => {
+            return lowerIncludes(s?.name) || lowerIncludes((s as unknown as { stage_name?: string })?.stage_name);
           });
-        };
-
-        const creditArrayMatch = (q: string, key: string) => {
-          const raw = credits[key];
-          if (!Array.isArray(raw)) return false;
-          return (raw as unknown[]).some((v) => lowerIncludes(v, q));
-        };
-
-        const customPerformerMatch = (q: string) => {
-          const raw = credits.customPerformers;
-          if (!Array.isArray(raw)) return false;
-          return (raw as Array<{ values?: unknown }>).some((entry) =>
-            Array.isArray(entry?.values) && entry.values.some((v) => lowerIncludes(v, q))
-          );
-        };
-
-        // Songwriter: splits[role=Songwriter] OR credits.songwriters[]
-        if (songwriterFilter) {
-          const q = songwriterFilter.toLowerCase().trim();
-          if (q && !(splitHasRoleAndName(q, "Songwriter") || creditArrayMatch(q, "songwriters"))) return false;
-        }
-        // Producer: splits[role=Producer] OR credits.producers[]
-        if (producerFilter) {
-          const q = producerFilter.toLowerCase().trim();
-          if (q && !(splitHasRoleAndName(q, "Producer") || creditArrayMatch(q, "producers"))) return false;
-        }
-        // Artist: track.artist (comma-string) OR track.featuredArtists[] OR splits[role=Artist]
-        if (artistFilter) {
-          const q = artistFilter.toLowerCase().trim();
-          if (q) {
-            const artistStr = lowerIncludes(track.artist, q);
-            const feat = Array.isArray(track.featuredArtists)
-              && track.featuredArtists.some((a) => lowerIncludes(a, q));
-            if (!(artistStr || feat || splitHasRoleAndName(q, "Artist"))) return false;
-          }
-        }
-        // Musician: splits[role=Musician] OR any credits performer key OR customPerformers[].values[]
-        if (musicianFilter) {
-          const q = musicianFilter.toLowerCase().trim();
-          if (q) {
-            const perfKeys = ["vocalsBy", "backgroundVocalsBy", "drumsBy", "synthsBy", "keysBy", "guitarsBy", "bassBy", "programmingBy"];
-            const inCredits = perfKeys.some((k) => creditArrayMatch(q, k));
-            if (!(splitHasRoleAndName(q, "Musician") || inCredits || customPerformerMatch(q))) return false;
-          }
+          const creditKeys = [
+            "songwriters", "producers",
+            "vocalsBy", "backgroundVocalsBy", "drumsBy", "synthsBy",
+            "keysBy", "guitarsBy", "bassBy", "programmingBy",
+          ];
+          const personMatch =
+            lowerIncludes(track.artist) ||
+            (Array.isArray(track.featuredArtists) && track.featuredArtists.some(lowerIncludes)) ||
+            splitAnyRoleMatch ||
+            creditKeys.some(creditArrayMatch) ||
+            customListMatch("customPerformers") ||
+            customListMatch("customProduction");
+          if (!personMatch) return false;
         }
       }
       return true;
     });
-  }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, languageFilter, voiceFilter, instrumentsFilter, lyricThemesFilter, moodFeelFilter, syncTagsFilter, tempoFilter, songwriterFilter, producerFilter, artistFilter, musicianFilter]);
+  }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, languageFilter, voiceFilter, instrumentsFilter, lyricThemesFilter, moodFeelFilter, syncTagsFilter, tempoFilter, personFilter]);
 
   const clearFilters = () => {
     setTypeFilter(null);
@@ -251,10 +219,7 @@ export default function Catalog() {
     setMoodFeelFilter([]);
     setTempoFilter(null);
     setSyncTagsFilter([]);
-    setSongwriterFilter(null);
-    setProducerFilter(null);
-    setArtistFilter(null);
-    setMusicianFilter(null);
+    setPersonFilter(null);
   };
 
   return (
@@ -442,26 +407,16 @@ export default function Catalog() {
                     />
                   </div>
                 </div>
-                {/* People filters row — Songwriter / Producer / Artist / Musician (OR-internally) */}
+                {/* Person filter — unified: matches any role (artist, songwriter, producer, performer…) */}
                 <div className="mt-5 pt-5 border-t border-border/40">
-                  <p className="text-xs font-medium text-muted-foreground mb-3">People</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {([
-                      { label: "Songwriter", value: songwriterFilter, set: setSongwriterFilter },
-                      { label: "Producer", value: producerFilter, set: setProducerFilter },
-                      { label: "Artist", value: artistFilter, set: setArtistFilter },
-                      { label: "Musician", value: musicianFilter, set: setMusicianFilter },
-                    ] as const).map((f) => (
-                      <div key={f.label} className="space-y-1">
-                        <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{f.label}</label>
-                        <NameAutocomplete
-                          value={f.value || ""}
-                          onChange={(v) => f.set(v.trim() ? v : null)}
-                          placeholder="Any"
-                          className="w-full h-9 px-3 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/30"
-                        />
-                      </div>
-                    ))}
+                  <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Person</label>
+                  <div className="mt-2 max-w-md">
+                    <NameAutocomplete
+                      value={personFilter || ""}
+                      onChange={(v) => setPersonFilter(v.trim() ? v : null)}
+                      placeholder="Search by person (any role)…"
+                      className="w-full h-9 px-3 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/30"
+                    />
                   </div>
                 </div>
                 {activeFilterCount > 0 && (
@@ -497,10 +452,7 @@ export default function Catalog() {
               {moodFeelFilter.length > 0 && <FilterTag key="mood_feel" label={t("catalog.filters.moodFeelChip", { value: moodFeelFilter.length })} onRemove={() => setMoodFeelFilter([])} />}
               {tempoFilter && <FilterTag key="tempo" label={t("catalog.filters.tempoChip", { value: tempoFilter })} onRemove={() => setTempoFilter(null)} />}
               {syncTagsFilter.length > 0 && <FilterTag key="sync_tags" label={t("catalog.filters.syncTagsChip", { value: syncTagsFilter.length })} onRemove={() => setSyncTagsFilter([])} />}
-              {songwriterFilter && <FilterTag key="songwriter" label={"Songwriter: " + songwriterFilter} onRemove={() => setSongwriterFilter(null)} />}
-              {producerFilter && <FilterTag key="producer" label={"Producer: " + producerFilter} onRemove={() => setProducerFilter(null)} />}
-              {artistFilter && <FilterTag key="artist-person" label={"Artist: " + artistFilter} onRemove={() => setArtistFilter(null)} />}
-              {musicianFilter && <FilterTag key="musician" label={"Musician: " + musicianFilter} onRemove={() => setMusicianFilter(null)} />}
+              {personFilter && <FilterTag key="person" label={"Person: " + personFilter} onRemove={() => setPersonFilter(null)} />}
             </AnimatePresence>
             <button onClick={clearFilters} className="text-xs text-brand-orange hover:text-brand-pink ml-1.5 font-semibold transition-colors flex items-center gap-1">
               <X className="w-3 h-3" />

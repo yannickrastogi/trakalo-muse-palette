@@ -1,4 +1,5 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Users, UserPlus, Building2, Download, X, FileText, FileSpreadsheet, ChevronDown, Send, Trash2, Loader2 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
@@ -147,6 +148,15 @@ export default function Contacts() {
   const [isDeleting, setIsDeleting] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
+  // Focus support — TopBar "See contact" navigates here with ?focus=<contactId>
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [focusedId, setFocusedId] = useState<string | null>(null);
+  const rowRefs = useRef<Map<string, HTMLElement | null>>(new Map());
+  const setRowRef = useCallback((id: string) => (el: HTMLElement | null) => {
+    if (el) rowRefs.current.set(id, el);
+    else rowRefs.current.delete(id);
+  }, []);
+
   const handleDeleteContact = async () => {
     if (!deleteTarget || !user || isDeleting) return;
     setIsDeleting(true);
@@ -183,6 +193,31 @@ export default function Contacts() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Consume ?focus=<contactId> from URL: scroll the matching contact into view,
+  // highlight it for 3s, then clean the URL so back-nav doesn't re-trigger.
+  useEffect(() => {
+    const targetId = searchParams.get("focus");
+    if (!targetId) return;
+    if (contacts.length === 0) return; // wait until contacts load
+    const exists = contacts.some((c) => c.id === targetId);
+    if (!exists) {
+      // Contact deleted / not in this workspace — silently clear the param
+      setSearchParams((prev) => { const n = new URLSearchParams(prev); n.delete("focus"); return n; }, { replace: true });
+      return;
+    }
+    setFocusedId(targetId);
+    // Defer scroll a tick so the row is mounted with its ref
+    const scrollTimer = setTimeout(() => {
+      const el = rowRefs.current.get(targetId);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+    const clearTimer = setTimeout(() => setFocusedId(null), 3000);
+    // Clear the URL param now (we've captured the intent in state)
+    setSearchParams((prev) => { const n = new URLSearchParams(prev); n.delete("focus"); return n; }, { replace: true });
+    return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contacts.length]);
 
   const roles = INDUSTRY_ROLES;
   const roleOptions = useMemo(() => ["All", ...roles], [roles]);
@@ -426,7 +461,11 @@ export default function Contacts() {
                   {filtered.map((c) => (
                     <tr
                       key={c.id}
-                      className="hover:bg-secondary/40 transition-colors duration-200 cursor-pointer"
+                      ref={setRowRef(c.id)}
+                      className={
+                        "hover:bg-secondary/40 transition-colors duration-200 cursor-pointer " +
+                        (focusedId === c.id ? "bg-brand-orange/10 ring-2 ring-brand-orange/50 transition-all" : "")
+                      }
                       onClick={() => copyEmail(c.email)}
                     >
                       {/* Name + Email merged */}
@@ -529,8 +568,12 @@ export default function Contacts() {
             filtered.map((c) => (
               <motion.div
                 key={c.id}
+                ref={setRowRef(c.id)}
                 variants={item}
-                className="card-premium p-4 space-y-3"
+                className={
+                  "card-premium p-4 space-y-3 " +
+                  (focusedId === c.id ? "ring-2 ring-brand-orange/50 bg-brand-orange/10 transition-all" : "")
+                }
                 onClick={() => copyEmail(c.email)}
               >
                 {/* Top: avatar + name + role */}
