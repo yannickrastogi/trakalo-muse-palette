@@ -107,13 +107,20 @@ export default function Catalog() {
   // Force grid on mobile
   const effectiveViewMode = isMobile ? "grid" : viewMode;
 
-  // Clear consumed URL params (q, person) after initial mount
+  // Sync consumable URL params (?person, ?q) to state on every navigation (not just mount),
+  // then clean the URL so refresh / back-nav doesn't re-apply.
+  // Loop-safe: after cleanup, has() returns false → no further setSearchParams.
   useEffect(() => {
+    const personParam = searchParams.get("person");
+    if (personParam) {
+      setPersonFilter(personParam);
+      setShowFilters(true); // open the filter panel so the active filter is visible
+    }
     if (searchParams.has("q") || searchParams.has("person")) {
       setSearchParams({}, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   const types = useMemo(() => [...new Set(allTracks.map((t) => t.type))].sort(), [allTracks]);
   const genres = [...GENRES];
