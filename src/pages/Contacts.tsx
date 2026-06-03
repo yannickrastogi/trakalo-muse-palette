@@ -452,6 +452,9 @@ export default function Contacts() {
                     <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.name")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.role")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">{t("contacts.organization")}</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden 2xl:table-cell">Publisher</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden 2xl:table-cell">IPI</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden 2xl:table-cell">PRO</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.engagement")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">{t("contacts.lastInteraction")}</th>
                     <th className="text-right px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium"></th>
@@ -475,7 +478,12 @@ export default function Contacts() {
                             {c.firstName[0]}{c.lastName[0]}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-semibold text-sm text-foreground truncate">{c.firstName} {c.lastName}</div>
+                            <div className="font-semibold text-sm text-foreground truncate">
+                              {c.firstName} {c.lastName}
+                              {c.stageName?.trim() && (
+                                <span className="font-normal text-muted-foreground"> ({c.stageName})</span>
+                              )}
+                            </div>
                             <div className="text-xs text-muted-foreground truncate">{c.email}</div>
                           </div>
                         </div>
@@ -493,6 +501,24 @@ export default function Contacts() {
                             <Building2 className="w-3 h-3 shrink-0" />
                             {c.organization}
                           </span>
+                        )}
+                      </td>
+                      {/* Publisher */}
+                      <td className="px-4 py-3.5 hidden 2xl:table-cell">
+                        {c.publisher?.trim() && (
+                          <span className="text-xs text-muted-foreground">{c.publisher}</span>
+                        )}
+                      </td>
+                      {/* IPI */}
+                      <td className="px-4 py-3.5 hidden 2xl:table-cell">
+                        {c.ipi?.trim() && (
+                          <span className="text-xs font-mono text-muted-foreground">{c.ipi}</span>
+                        )}
+                      </td>
+                      {/* PRO */}
+                      <td className="px-4 py-3.5 hidden 2xl:table-cell">
+                        {c.pro?.trim() && (
+                          <span className="text-xs text-muted-foreground">{c.pro}</span>
                         )}
                       </td>
                       {/* Engagement: tracks + downloads merged */}
@@ -583,7 +609,12 @@ export default function Contacts() {
                       {c.firstName[0]}{c.lastName[0]}
                     </div>
                     <div className="min-w-0">
-                      <div className="font-semibold text-sm text-foreground truncate">{c.firstName} {c.lastName}</div>
+                      <div className="font-semibold text-sm text-foreground truncate">
+                        {c.firstName} {c.lastName}
+                        {c.stageName?.trim() && (
+                          <span className="font-normal text-muted-foreground"> ({c.stageName})</span>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground truncate">{c.email}</div>
                     </div>
                   </div>
@@ -596,6 +627,14 @@ export default function Contacts() {
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Building2 className="w-3 h-3 shrink-0" />
                     {c.organization}
+                  </div>
+                )}
+                {/* Extra rights metadata — only when at least one field is present */}
+                {(c.ipi?.trim() || c.publisher?.trim() || c.pro?.trim()) && (
+                  <div className="text-[11px] text-muted-foreground/80 flex flex-wrap gap-x-2 gap-y-0.5">
+                    {c.ipi?.trim() && <span><span className="font-medium text-muted-foreground">IPI:</span> <span className="font-mono">{c.ipi}</span></span>}
+                    {c.publisher?.trim() && <span><span className="font-medium text-muted-foreground">Publisher:</span> {c.publisher}</span>}
+                    {c.pro?.trim() && <span><span className="font-medium text-muted-foreground">PROs:</span> {c.pro}</span>}
                   </div>
                 )}
                 {/* Stats + last interaction */}
