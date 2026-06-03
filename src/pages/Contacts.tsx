@@ -242,7 +242,12 @@ export default function Contacts() {
         (c) =>
           (c.firstName + " " + c.lastName).toLowerCase().includes(q) ||
           c.email.toLowerCase().includes(q) ||
-          c.organization.toLowerCase().includes(q)
+          c.organization.toLowerCase().includes(q) ||
+          (c.stageName || "").toLowerCase().includes(q) ||
+          (c.publisher || "").toLowerCase().includes(q) ||
+          (c.ipi || "").toLowerCase().includes(q) ||
+          (c.pro || "").toLowerCase().includes(q) ||
+          (c.role || "").toLowerCase().includes(q)
       );
     }
     if (roleFilter !== "All") {
@@ -274,6 +279,10 @@ export default function Contacts() {
       email: c.email,
       organization: c.organization,
       role: c.role,
+      stageName: c.stageName || "",
+      publisher: c.publisher || "",
+      ipi: c.ipi || "",
+      pro: c.pro || "",
       tracksDownloaded: c.tracksDownloaded,
       totalDownloads: c.totalDownloads,
       lastDownload: c.lastDownload,
@@ -446,17 +455,17 @@ export default function Contacts() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[1300px] text-sm">
                 <thead>
                   <tr className="border-b border-border/50">
                     <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.name")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.role")}</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">{t("contacts.organization")}</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden 2xl:table-cell">Publisher</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden 2xl:table-cell">IPI</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden 2xl:table-cell">PRO</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.organization")}</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Publisher</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">IPI</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">PRO</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.engagement")}</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">{t("contacts.lastInteraction")}</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.lastInteraction")}</th>
                     <th className="text-right px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium"></th>
                   </tr>
                 </thead>
@@ -495,7 +504,7 @@ export default function Contacts() {
                         </span>
                       </td>
                       {/* Organization */}
-                      <td className="px-4 py-3.5 hidden lg:table-cell">
+                      <td className="px-4 py-3.5">
                         {c.organization && (
                           <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Building2 className="w-3 h-3 shrink-0" />
@@ -504,19 +513,19 @@ export default function Contacts() {
                         )}
                       </td>
                       {/* Publisher */}
-                      <td className="px-4 py-3.5 hidden 2xl:table-cell">
+                      <td className="px-4 py-3.5">
                         {c.publisher?.trim() && (
                           <span className="text-xs text-muted-foreground">{c.publisher}</span>
                         )}
                       </td>
                       {/* IPI */}
-                      <td className="px-4 py-3.5 hidden 2xl:table-cell">
+                      <td className="px-4 py-3.5">
                         {c.ipi?.trim() && (
                           <span className="text-xs font-mono text-muted-foreground">{c.ipi}</span>
                         )}
                       </td>
                       {/* PRO */}
-                      <td className="px-4 py-3.5 hidden 2xl:table-cell">
+                      <td className="px-4 py-3.5">
                         {c.pro?.trim() && (
                           <span className="text-xs text-muted-foreground">{c.pro}</span>
                         )}
@@ -528,7 +537,7 @@ export default function Contacts() {
                         </span>
                       </td>
                       {/* Last Interaction — relative */}
-                      <td className="px-4 py-3.5 hidden lg:table-cell">
+                      <td className="px-4 py-3.5">
                         <span className="text-xs text-muted-foreground">{formatRelativeDate(c.lastDownload)}</span>
                       </td>
                       {/* Actions */}
