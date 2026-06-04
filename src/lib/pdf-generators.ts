@@ -43,10 +43,47 @@ function drawLogo(doc: jsPDF, marginX: number) {
     doc.setTextColor(255, 255, 255);
     doc.text("T", marginX + iconSize / 2, y + iconSize / 2 + 1, { align: "center", baseline: "middle" });
   }
-  doc.setFontSize(13);
+  drawTrakalogWordmark(doc, marginX + iconSize + 10, y + iconSize / 2 + 1, 13, { baseline: "middle" });
+}
+
+/**
+ * Renders the TRAKALOG wordmark letter-by-letter with an orange→pink→purple gradient.
+ * Each character is colored along the gradient interpolation (T = orange, A (middle) ≈ pink, G = purple).
+ * Caller controls position, font size, and baseline — replaces a single doc.text("TRAKALOG", ...) call.
+ */
+function drawTrakalogWordmark(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  fontSize: number,
+  options?: { baseline?: "alphabetic" | "top" | "middle" | "bottom" | "hanging" | "ideographic" }
+) {
+  const baseline = options?.baseline ?? "alphabetic";
+  const word = "TRAKALOG";
+  const orange: [number, number, number] = [249, 115, 22];
+  const pink: [number, number, number] = [236, 72, 153];
+  const purple: [number, number, number] = [168, 85, 247];
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(...brandOrange);
-  doc.text("TRAKALOG", marginX + iconSize + 10, y + iconSize / 2 + 1, { baseline: "middle" });
+  doc.setFontSize(fontSize);
+  let cursorX = x;
+  for (let i = 0; i < word.length; i++) {
+    const t = i / (word.length - 1); // 0..1 across T..G
+    let r: number, g: number, b: number;
+    if (t < 0.5) {
+      const tt = t * 2;
+      r = Math.round(orange[0] + (pink[0] - orange[0]) * tt);
+      g = Math.round(orange[1] + (pink[1] - orange[1]) * tt);
+      b = Math.round(orange[2] + (pink[2] - orange[2]) * tt);
+    } else {
+      const tt = (t - 0.5) * 2;
+      r = Math.round(pink[0] + (purple[0] - pink[0]) * tt);
+      g = Math.round(pink[1] + (purple[1] - pink[1]) * tt);
+      b = Math.round(pink[2] + (purple[2] - pink[2]) * tt);
+    }
+    doc.setTextColor(r, g, b);
+    doc.text(word[i], cursorX, y, { baseline });
+    cursorX += doc.getTextWidth(word[i]);
+  }
 }
 
 function drawHeaderCard(doc: jsPDF, marginX: number, contentW: number, pageW: number, title: string, artist: string, badgeLabel: string) {
@@ -613,10 +650,7 @@ export function generateContactListPdf(contacts: ContactExportEntry[]) {
     doc.setTextColor(255, 255, 255);
     doc.text("T", marginX + iconSize / 2, logoY + iconSize / 2 + 1, { align: "center", baseline: "middle" });
   }
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...brandOrange);
-  doc.text("TRAKALOG", marginX + iconSize + 8, logoY + iconSize / 2 + 1, { baseline: "middle" });
+  drawTrakalogWordmark(doc, marginX + iconSize + 8, logoY + iconSize / 2 + 1, 11, { baseline: "middle" });
 
   // Title
   doc.setFont("helvetica", "bold");
@@ -977,68 +1011,76 @@ export function exportContactCardPdf(params: {
   const marginX = 56;
   const contentW = pageW - marginX * 2;
 
-  // Light background (minimalist card style — not the dark catalog style)
-  doc.setFillColor(255, 255, 255);
+  // Dark palette (matches the rest of the Trakalog PDF suite)
+  const bgPage: [number, number, number] = [10, 10, 11];
+  const cardSubtle: [number, number, number] = [20, 20, 22];
+  const textPrimary: [number, number, number] = [245, 245, 250];
+  const textMutedGray: [number, number, number] = [140, 140, 148];
+  const textLabel: [number, number, number] = [110, 110, 118];
+  const dividerColor: [number, number, number] = [40, 40, 45];
+
+  // Page background
+  doc.setFillColor(...bgPage);
   doc.rect(0, 0, pageW, pageH, "F");
 
-  // Header band — solid orange, full width, ~210pt tall
-  const bandH = 210;
-  doc.setFillColor(...brandOrange);
-  doc.rect(0, 0, pageW, bandH, "F");
+  // Top gradient border (orange → pink → purple)
+  drawGradientBar(doc, pageW, 0, 3);
 
-  // Subtle gradient touch — pink overlay rectangle on right third for depth
-  // Approximated via 30 vertical strips fading orange → pink
-  const strips = 40;
-  for (let i = 0; i < strips; i++) {
-    const t = i / strips;
+  // TRAKALOG wordmark (top-left, gradient lettre-par-lettre)
+  drawTrakalogWordmark(doc, marginX, 36, 13, { baseline: "middle" });
+
+  // Header card (subtle dark) with avatar + name + stage
+  const cardY = 60;
+  const cardH = 150;
+  doc.setFillColor(...cardSubtle);
+  doc.roundedRect(marginX, cardY, contentW, cardH, 8, 8, "F");
+
+  // Avatar circle centered, gradient strip-fill orange→pink (~radius 32pt)
+  const avatarCx = pageW / 2;
+  const avatarCy = cardY + 45;
+  const avatarR = 30;
+  // Strip-fill clipped to circle approximated by horizontal strips
+  const avatarStrips = 24;
+  for (let i = 0; i < avatarStrips; i++) {
+    const t = i / (avatarStrips - 1);
     const r = Math.round(brandOrange[0] + (brandPink[0] - brandOrange[0]) * t);
     const g = Math.round(brandOrange[1] + (brandPink[1] - brandOrange[1]) * t);
     const b = Math.round(brandOrange[2] + (brandPink[2] - brandOrange[2]) * t);
     doc.setFillColor(r, g, b);
-    doc.rect((pageW / strips) * i, 0, pageW / strips + 1, bandH, "F");
+    // strip y position from top to bottom of circle bounding box
+    const stripY = avatarCy - avatarR + (i * 2 * avatarR) / avatarStrips;
+    const stripH = (2 * avatarR) / avatarStrips + 0.5;
+    // chord width at this y (circle equation)
+    const dy = stripY + stripH / 2 - avatarCy;
+    const half = Math.sqrt(Math.max(0, avatarR * avatarR - dy * dy));
+    doc.rect(avatarCx - half, stripY, half * 2, stripH, "F");
   }
-
-  // TRAKALOG wordmark top-left
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(255, 255, 255);
-  doc.text("TRAKALOG", marginX, 32);
-
-  // Avatar circle centered
-  const avatarRadius = 38;
-  const avatarCx = pageW / 2;
-  const avatarCy = 110;
-  doc.setFillColor(255, 255, 255);
-  doc.circle(avatarCx, avatarCy, avatarRadius, "F");
-  // Inner gradient (orange→pink) by drawing 12 concentric arcs is overkill — keep solid pink for warmth
-  doc.setFillColor(...brandPink);
-  doc.circle(avatarCx, avatarCy, avatarRadius - 3, "F");
   // Initials
   const a = (contact.firstName?.[0] || "?").toUpperCase();
   const b = (contact.lastName?.[0] || "").toUpperCase();
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(28);
-  doc.setTextColor(255, 255, 255);
-  doc.text(a + b, avatarCx, avatarCy + 10, { align: "center" });
-
-  // Name (centered below avatar, on the band)
-  const fullName = (contact.firstName + " " + contact.lastName).trim();
-  doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
   doc.setTextColor(255, 255, 255);
-  doc.text(fullName, avatarCx, 178, { align: "center" });
+  doc.text(a + b, avatarCx, avatarCy + 8, { align: "center" });
 
-  // Stage name italic (if any)
+  // Name (centered, white bold)
+  const fullName = (contact.firstName + " " + contact.lastName).trim();
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.setTextColor(...textPrimary);
+  doc.text(fullName, avatarCx, cardY + 105, { align: "center" });
+
+  // Stage name (centered, italic, muted)
   if (contact.stageName?.trim()) {
     doc.setFont("helvetica", "italic");
-    doc.setFontSize(12);
-    doc.setTextColor(255, 240, 230);
-    doc.text(contact.stageName, avatarCx, 196, { align: "center" });
+    doc.setFontSize(11);
+    doc.setTextColor(...textMutedGray);
+    doc.text(contact.stageName, avatarCx, cardY + 125, { align: "center" });
   }
 
   // ── Body ──
-  let y = bandH + 50;
-  const labelColW = 90;
+  let y = cardY + cardH + 40;
+  const labelColW = 100;
   const labelX = marginX;
   const valueX = marginX + labelColW;
   const lineGap = 22;
@@ -1049,8 +1091,8 @@ export function exportContactCardPdf(params: {
     doc.setTextColor(...brandOrange);
     doc.text(label.toUpperCase(), marginX, y);
     y += 8;
-    // thin divider
-    doc.setDrawColor(230, 230, 230);
+    // subtle dark divider
+    doc.setDrawColor(...dividerColor);
     doc.setLineWidth(0.5);
     doc.line(marginX, y, marginX + contentW, y);
     y += 18;
@@ -1060,12 +1102,11 @@ export function exportContactCardPdf(params: {
     if (!value) return;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.setTextColor(140, 140, 148);
+    doc.setTextColor(...textLabel);
     doc.text(label, labelX, y);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10.5);
-    doc.setTextColor(30, 30, 35);
-    // Wrap long values within remaining width
+    doc.setTextColor(...textPrimary);
     const maxValW = contentW - labelColW;
     const wrapped = doc.splitTextToSize(value, maxValW) as string[];
     wrapped.forEach((line, i) => {
@@ -1097,18 +1138,20 @@ export function exportContactCardPdf(params: {
     drawRow("PROs", proStr);
   }
 
-  // Footer — centered italic gray
+  // Footer — centered italic muted gray with divider above
   const dateStr = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-  const footerY = pageH - 40;
-  // divider
-  doc.setDrawColor(230, 230, 230);
+  const footerY = pageH - 32;
+  doc.setDrawColor(...dividerColor);
   doc.setLineWidth(0.5);
-  doc.line(marginX, footerY - 16, marginX + contentW, footerY - 16);
+  doc.line(marginX, footerY - 18, marginX + contentW, footerY - 18);
   doc.setFont("helvetica", "italic");
   doc.setFontSize(8.5);
-  doc.setTextColor(150, 150, 158);
+  doc.setTextColor(...textMutedGray);
   const wsLabel = (workspaceName || "Workspace").trim();
   doc.text("Generated via Trakalog  ·  " + wsLabel + "  ·  " + dateStr, pageW / 2, footerY, { align: "center" });
+
+  // Bottom gradient border
+  drawGradientBar(doc, pageW, pageH - 3, 3);
 
   // Save
   const safeFirst = sanitizeFilename(contact.firstName || "Contact");
