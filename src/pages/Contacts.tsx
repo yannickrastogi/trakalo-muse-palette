@@ -370,6 +370,7 @@ export default function Contacts() {
           (c.ipi || "").toLowerCase().includes(q) ||
           (c.pro || "").toLowerCase().includes(q) ||
           (c.role || "").toLowerCase().includes(q) ||
+          (c.phone || "").toLowerCase().includes(q) ||
           (c.city || "").toLowerCase().includes(q) ||
           (c.country || "").toLowerCase().includes(q) ||
           getDisplayRoles(c).some((r) => r.toLowerCase().includes(q))
@@ -421,6 +422,7 @@ export default function Contacts() {
       publisher: c.publisher || "",
       ipi: c.ipi || "",
       pro: c.pro || "",
+      phone: c.phone || "",
       city: c.city || "",
       country: c.country || "",
       tracksDownloaded: c.tracksDownloaded,
@@ -625,11 +627,12 @@ export default function Contacts() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1450px] text-sm">
+              <table className="w-full min-w-[1550px] text-sm">
                 <thead>
                   <tr className="border-b border-border/50">
                     <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.name")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.role")}</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Phone</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.organization")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Publisher</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">IPI</th>
@@ -690,6 +693,12 @@ export default function Contacts() {
                             </div>
                           );
                         })()}
+                      </td>
+                      {/* Phone */}
+                      <td className="px-4 py-3.5">
+                        {c.phone?.trim()
+                          ? <span className="text-xs text-muted-foreground font-mono">{c.phone}</span>
+                          : <span className="text-xs text-muted-foreground/40">—</span>}
                       </td>
                       {/* Organization */}
                       <td className="px-4 py-3.5">
@@ -852,11 +861,12 @@ export default function Contacts() {
                   </div>
                 )}
                 {/* Extra rights metadata — only when at least one field is present */}
-                {(c.ipi?.trim() || c.publisher?.trim() || c.pro?.trim() || c.city?.trim() || c.country?.trim()) && (
+                {(c.ipi?.trim() || c.publisher?.trim() || c.pro?.trim() || c.phone?.trim() || c.city?.trim() || c.country?.trim()) && (
                   <div className="text-[11px] text-muted-foreground/80 flex flex-wrap gap-x-2 gap-y-0.5">
                     {(c.city?.trim() || c.country?.trim()) && (
                       <span><span className="font-medium text-muted-foreground">📍</span> {[c.city?.trim(), c.country?.trim()].filter(Boolean).join(", ")}</span>
                     )}
+                    {c.phone?.trim() && <span><span className="font-medium text-muted-foreground">📞</span> <span className="font-mono">{c.phone}</span></span>}
                     {c.ipi?.trim() && <span><span className="font-medium text-muted-foreground">IPI:</span> <span className="font-mono">{c.ipi}</span></span>}
                     {c.publisher?.trim() && <span><span className="font-medium text-muted-foreground">Publisher:</span> {c.publisher}</span>}
                     {c.pro?.trim() && <span><span className="font-medium text-muted-foreground">PROs:</span> {c.pro}</span>}

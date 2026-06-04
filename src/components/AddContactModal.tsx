@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelectChips } from "@/components/MultiSelectChips";
 import { UserPlus, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -26,7 +27,7 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("");
+  const [roles, setRoles] = useState<string[]>([]);
   const [company, setCompany] = useState("");
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
@@ -38,7 +39,7 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
     if (open && editingContact) {
       setFullName(((editingContact.firstName || "") + " " + (editingContact.lastName || "")).trim());
       setEmail(editingContact.email || "");
-      setRole(editingContact.role || "");
+      setRoles((editingContact.role || "").split(",").map((s) => s.trim()).filter(Boolean));
       setCompany(editingContact.organization || "");
       setPhone(editingContact.phone || "");
       setCity(editingContact.city || "");
@@ -52,7 +53,7 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
   function resetForm() {
     setFullName("");
     setEmail("");
-    setRole("");
+    setRoles([]);
     setCompany("");
     setPhone("");
     setCity("");
@@ -107,7 +108,7 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
         _first_name: firstName,
         _last_name: lastName || null,
         _email: trimmedEmail,
-        _role: role || null,
+        _role: roles.length > 0 ? roles.join(", ") : null,
         _company: company.trim() || null,
         _phone: phone.trim() || null,
         _pro: preservedPro,
@@ -125,7 +126,7 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
         _first_name: firstName,
         _last_name: lastName || null,
         _email: trimmedEmail,
-        _role: role || null,
+        _role: roles.length > 0 ? roles.join(", ") : null,
         _company: company.trim() || null,
         _phone: phone.trim() || null,
         _pro: null,
@@ -192,19 +193,16 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
             />
           </div>
 
-          {/* Role */}
+          {/* Roles — multi-select (a contact may have several industry roles, e.g. "Artist, Songwriter") */}
           <div className="space-y-1.5">
             <Label>Role</Label>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                {INDUSTRY_ROLES.map((r) => (
-                  <SelectItem key={r} value={r}>{r}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectChips
+              options={INDUSTRY_ROLES}
+              selected={roles}
+              onChange={setRoles}
+              placeholder="Select one or more roles"
+              filterable
+            />
           </div>
 
           {/* Company */}

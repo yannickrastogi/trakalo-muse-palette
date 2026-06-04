@@ -10,10 +10,11 @@ function formatDate(iso: string) {
 }
 
 export function exportContactsCsv(contacts: ContactExportEntry[]) {
-  const headers = ["Name", "Email", "Stage Name", "Organization", "Publisher", "IPI", "PRO", "City", "Country", "Role"];
+  const headers = ["Name", "Email", "Phone", "Stage Name", "Organization", "Publisher", "IPI", "PRO", "City", "Country", "Role"];
   const rows = contacts.map((c) => [
     `${c.firstName} ${c.lastName}`,
     c.email,
+    c.phone || "",
     c.stageName || "",
     c.organization,
     c.publisher || "",
@@ -32,13 +33,14 @@ export function exportContactsCsv(contacts: ContactExportEntry[]) {
 }
 
 export function exportContactsXlsx(contacts: ContactExportEntry[]) {
-  const headers = ["Name", "Email", "Stage Name", "Organization", "Publisher", "IPI", "PRO", "City", "Country", "Role"];
+  const headers = ["Name", "Email", "Phone", "Stage Name", "Organization", "Publisher", "IPI", "PRO", "City", "Country", "Role"];
 
   const escapeXml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   const rows = contacts.map((c) => [
     `${c.firstName} ${c.lastName}`,
     c.email,
+    c.phone || "",
     c.stageName || "",
     c.organization,
     c.publisher || "",

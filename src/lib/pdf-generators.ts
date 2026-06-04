@@ -579,6 +579,7 @@ export interface ContactExportEntry {
   publisher: string;
   ipi: string;
   pro: string;
+  phone: string;
   city: string;
   country: string;
   tracksDownloaded: string[];
@@ -629,16 +630,17 @@ export function generateContactListPdf(contacts: ContactExportEntry[]) {
   const dateStr = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   doc.text(`Exported ${dateStr}  ·  ${contacts.length} contact${contacts.length !== 1 ? "s" : ""}`, marginX, 88);
 
-  // Table — 9 columns sized to fit landscape A4 width
+  // Table — 10 columns sized to fit landscape A4 width
   const cols = [
-    { label: "NAME", width: contentW * 0.12 },
-    { label: "EMAIL", width: contentW * 0.16 },
-    { label: "STAGE NAME", width: contentW * 0.10 },
-    { label: "ORGANIZATION", width: contentW * 0.11 },
-    { label: "PUBLISHER", width: contentW * 0.10 },
-    { label: "IPI", width: contentW * 0.08 },
-    { label: "PRO", width: contentW * 0.12 },
-    { label: "LOCATION", width: contentW * 0.11 },
+    { label: "NAME", width: contentW * 0.11 },
+    { label: "EMAIL", width: contentW * 0.14 },
+    { label: "PHONE", width: contentW * 0.09 },
+    { label: "STAGE NAME", width: contentW * 0.09 },
+    { label: "ORGANIZATION", width: contentW * 0.10 },
+    { label: "PUBLISHER", width: contentW * 0.09 },
+    { label: "IPI", width: contentW * 0.07 },
+    { label: "PRO", width: contentW * 0.11 },
+    { label: "LOCATION", width: contentW * 0.10 },
     { label: "ROLE", width: contentW * 0.10 },
   ];
 
@@ -684,41 +686,45 @@ export function generateContactListPdf(contacts: ContactExportEntry[]) {
     // Name
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...textLight);
-    doc.text(`${c.firstName} ${c.lastName}`.slice(0, 18), x, textY, { baseline: "middle" });
+    doc.text(`${c.firstName} ${c.lastName}`.slice(0, 14), x, textY, { baseline: "middle" });
     x += cols[0].width;
 
     // Email
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...textMuted);
-    doc.text(c.email.slice(0, 24), x, textY, { baseline: "middle" });
+    doc.text(c.email.slice(0, 20), x, textY, { baseline: "middle" });
     x += cols[1].width;
+
+    // Phone
+    doc.text((c.phone || "").slice(0, 14), x, textY, { baseline: "middle" });
+    x += cols[2].width;
 
     // Stage Name
     doc.setTextColor(...textLight);
-    doc.text((c.stageName || "").slice(0, 14), x, textY, { baseline: "middle" });
-    x += cols[2].width;
+    doc.text((c.stageName || "").slice(0, 12), x, textY, { baseline: "middle" });
+    x += cols[3].width;
 
     // Organization
-    doc.text((c.organization || "").slice(0, 16), x, textY, { baseline: "middle" });
-    x += cols[3].width;
+    doc.text((c.organization || "").slice(0, 14), x, textY, { baseline: "middle" });
+    x += cols[4].width;
 
     // Publisher
     doc.setTextColor(...textMuted);
-    doc.text((c.publisher || "").slice(0, 15), x, textY, { baseline: "middle" });
-    x += cols[4].width;
-
-    // IPI
-    doc.text((c.ipi || "").slice(0, 12), x, textY, { baseline: "middle" });
+    doc.text((c.publisher || "").slice(0, 13), x, textY, { baseline: "middle" });
     x += cols[5].width;
 
-    // PRO
-    doc.text((c.pro || "").slice(0, 14), x, textY, { baseline: "middle" });
+    // IPI
+    doc.text((c.ipi || "").slice(0, 10), x, textY, { baseline: "middle" });
     x += cols[6].width;
+
+    // PRO
+    doc.text((c.pro || "").slice(0, 12), x, textY, { baseline: "middle" });
+    x += cols[7].width;
 
     // Location — "City, Country" (or whichever is present)
     const locStr = [c.city, c.country].filter((s) => s && s.trim()).join(", ");
-    doc.text(locStr.slice(0, 14), x, textY, { baseline: "middle" });
-    x += cols[7].width;
+    doc.text(locStr.slice(0, 12), x, textY, { baseline: "middle" });
+    x += cols[8].width;
 
     // Role
     doc.setTextColor(...brandOrange);
