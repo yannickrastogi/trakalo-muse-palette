@@ -20,7 +20,7 @@ serve(async (req) => {
   }
 
   try {
-    const { workspace_id, email, first_name, last_name, role, company, pro, ipi, publisher } = await req.json();
+    const { workspace_id, email, first_name, last_name, role, company, pro, ipi, publisher, city, country } = await req.json();
 
     if (!workspace_id || !email || !first_name) {
       return new Response(JSON.stringify({ error: "workspace_id, email, and first_name are required" }), {
@@ -51,9 +51,15 @@ serve(async (req) => {
     }
 
     // Check if contact with this email already exists in this workspace
+    // Validate optional country input (must be a non-empty trimmed string ≤ 100 chars; otherwise null)
+    const cleanCountry = typeof country === "string" && country.trim().length > 0 && country.trim().length <= 100
+      ? country.trim() : null;
+    const cleanCity = typeof city === "string" && city.trim().length > 0 && city.trim().length <= 100
+      ? city.trim() : null;
+
     const { data: existing } = await supabase
       .from("contacts")
-      .select("id, pro, ipi, publisher")
+      .select("id, pro, ipi, publisher, city, country")
       .eq("workspace_id", workspace_id)
       .eq("email", email)
       .maybeSingle();
@@ -64,6 +70,8 @@ serve(async (req) => {
       if (!existing.pro && pro) updates.pro = pro;
       if (!existing.ipi && ipi) updates.ipi = ipi;
       if (!existing.publisher && publisher) updates.publisher = publisher;
+      if (!existing.city && cleanCity) updates.city = cleanCity;
+      if (!existing.country && cleanCountry) updates.country = cleanCountry;
       if (Object.keys(updates).length > 0) {
         updates.updated_at = new Date().toISOString();
         await supabase.from("contacts").update(updates).eq("id", existing.id);
@@ -87,6 +95,8 @@ serve(async (req) => {
         pro: pro || null,
         ipi: ipi || null,
         publisher: publisher || null,
+        city: cleanCity,
+        country: cleanCountry,
       })
       .select("id")
       .single();

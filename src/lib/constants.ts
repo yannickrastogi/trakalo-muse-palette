@@ -1,6 +1,11 @@
 // Centralized constants used across the platform.
 // Any change here automatically reflects in all menus, filters, and forms.
 
+import { getNames } from "country-list";
+
+/** ISO 3166-1 country names, alphabetically sorted, sourced from the country-list npm package. */
+export const COUNTRIES: readonly string[] = (getNames() as string[]).slice().sort((a, b) => a.localeCompare(b));
+
 export const DEFAULT_COVER = "/images/default-cover.png";
 
 export const GENRES = [

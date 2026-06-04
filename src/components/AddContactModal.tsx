@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContacts } from "@/contexts/ContactsContext";
-import { INDUSTRY_ROLES } from "@/lib/constants";
+import { INDUSTRY_ROLES, COUNTRIES } from "@/lib/constants";
 import { toast } from "sonner";
 
 interface AddContactModalProps {
@@ -26,6 +26,8 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
   const [role, setRole] = useState("");
   const [company, setCompany] = useState("");
   const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("");
+  const [country, setCountry] = useState("");
   const [saving, setSaving] = useState(false);
 
   function resetForm() {
@@ -34,6 +36,8 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
     setRole("");
     setCompany("");
     setPhone("");
+    setCity("");
+    setCountry("");
   }
 
   function isValidEmail(value: string): boolean {
@@ -82,6 +86,8 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
       _pro: null,
       _ipi: null,
       _publisher: null,
+      _city: city.trim() || null,
+      _country: country || null,
     });
 
     setSaving(false);
@@ -174,6 +180,32 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+1 555 123 4567"
             />
+          </div>
+
+          {/* City + Country */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="ac-city">City</Label>
+              <Input
+                id="ac-city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="London"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Country</Label>
+              <Select value={country} onValueChange={setCountry}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Actions */}

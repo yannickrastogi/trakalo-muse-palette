@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { slug, name, email, role, company } = await req.json();
+    const { slug, name, email, role, company, city, country } = await req.json();
 
     if (!slug || !name || !email) {
       return new Response(JSON.stringify({ error: "slug, name, and email are required" }), {
@@ -23,6 +23,12 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Validate optional location inputs (trimmed, ≤ 100 chars, otherwise null)
+    const cleanCity = typeof city === "string" && city.trim().length > 0 && city.trim().length <= 100
+      ? city.trim() : null;
+    const cleanCountry = typeof country === "string" && country.trim().length > 0 && country.trim().length <= 100
+      ? country.trim() : null;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -64,11 +70,11 @@ serve(async (req) => {
       console.error("log-link-access: link_downloads insert failed (code=" + (dlError.code || "unknown") + ")");
     }
 
-    // Upsert into contacts (only if email doesn't already exist in this workspace)
+    // Upsert into contacts: insert if new, fill missing city/country if contact already exists
     if (email) {
       var { data: existing } = await supabase
         .from("contacts")
-        .select("id")
+        .select("id, city, country")
         .eq("workspace_id", link.workspace_id)
         .eq("email", email)
         .maybeSingle();
@@ -83,10 +89,22 @@ serve(async (req) => {
             email: email,
             company: company || null,
             role: role || null,
+            city: cleanCity,
+            country: cleanCountry,
           });
 
         if (contactError) {
           console.error("log-link-access: contact insert failed (code=" + (contactError.code || "unknown") + ")");
+        }
+      } else {
+        // Enrich existing contact with newly-provided location if their record was empty.
+        // Don't overwrite existing values (the contact may have manually-curated info).
+        const updates: Record<string, string> = {};
+        if (!existing.city && cleanCity) updates.city = cleanCity;
+        if (!existing.country && cleanCountry) updates.country = cleanCountry;
+        if (Object.keys(updates).length > 0) {
+          updates.updated_at = new Date().toISOString();
+          await supabase.from("contacts").update(updates).eq("id", existing.id);
         }
       }
     }

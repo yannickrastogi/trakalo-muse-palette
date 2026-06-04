@@ -182,6 +182,8 @@ export default function Contacts() {
   const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const [roleFilter, setRoleFilter] = useState("All");
   const [orgFilter, setOrgFilter] = useState("All");
+  const [countryFilter, setCountryFilter] = useState("All");
+  const [cityFilter, setCityFilter] = useState("");
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [pitchContact, setPitchContact] = useState<{ name: string; email: string; company: string } | null>(null);
   const [addContactOpen, setAddContactOpen] = useState(false);
@@ -344,6 +346,11 @@ export default function Contacts() {
     const orgs = [...new Set(contacts.map((c) => c.organization).filter(Boolean))].sort();
     return ["All", ...orgs];
   }, [contacts]);
+  // Countries actually present in the workspace's contacts — alphabetical
+  const countryOptions = useMemo(() => {
+    const set = [...new Set(contacts.map((c) => (c.country || "").trim()).filter(Boolean))].sort();
+    return ["All", ...set];
+  }, [contacts]);
 
   const totalTracksShared = useMemo(() => {
     const allTracks = new Set<string>();
@@ -367,6 +374,8 @@ export default function Contacts() {
           (c.ipi || "").toLowerCase().includes(q) ||
           (c.pro || "").toLowerCase().includes(q) ||
           (c.role || "").toLowerCase().includes(q) ||
+          (c.city || "").toLowerCase().includes(q) ||
+          (c.country || "").toLowerCase().includes(q) ||
           getDisplayRoles(c).some((r) => r.toLowerCase().includes(q))
       );
     }
@@ -380,8 +389,15 @@ export default function Contacts() {
     if (orgFilter !== "All") {
       result = result.filter((c) => c.organization === orgFilter);
     }
+    if (countryFilter !== "All") {
+      result = result.filter((c) => (c.country || "") === countryFilter);
+    }
+    if (cityFilter.trim()) {
+      const cq = cityFilter.toLowerCase().trim();
+      result = result.filter((c) => (c.city || "").toLowerCase().includes(cq));
+    }
     return result;
-  }, [contacts, search, roleFilter, orgFilter, getDisplayRoles]);
+  }, [contacts, search, roleFilter, orgFilter, countryFilter, cityFilter, getDisplayRoles]);
 
   const formatRelativeDate = (iso: string) => {
     try {
@@ -408,6 +424,8 @@ export default function Contacts() {
       publisher: c.publisher || "",
       ipi: c.ipi || "",
       pro: c.pro || "",
+      city: c.city || "",
+      country: c.country || "",
       tracksDownloaded: c.tracksDownloaded,
       totalDownloads: c.totalDownloads,
       lastDownload: c.lastDownload,
@@ -556,6 +574,25 @@ export default function Contacts() {
           {organizations.length > 1 && (
             <FilterSelect label={t("contacts.allOrganizations")} value={orgFilter} options={organizations} onChange={setOrgFilter} />
           )}
+          {/* Country dropdown — only shown when at least one contact has a country */}
+          {countryOptions.length > 1 && (
+            <FilterSelect label="Country" value={countryFilter} options={countryOptions} onChange={setCountryFilter} />
+          )}
+          {/* City free-text filter */}
+          <div className="flex items-center gap-2.5 bg-secondary/50 rounded-xl px-3 py-2 border border-border/50 focus-within:border-primary/30 transition-all min-w-[140px] max-w-[180px]">
+            <input
+              type="text"
+              value={cityFilter}
+              onChange={(e) => setCityFilter(e.target.value)}
+              placeholder="City…"
+              className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
+            />
+            {cityFilter && (
+              <button onClick={() => setCityFilter("")} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </motion.div>
 
         {/* Desktop Table */}
@@ -580,7 +617,7 @@ export default function Contacts() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1300px] text-sm">
+              <table className="w-full min-w-[1450px] text-sm">
                 <thead>
                   <tr className="border-b border-border/50">
                     <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.name")}</th>
@@ -589,6 +626,7 @@ export default function Contacts() {
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Publisher</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">IPI</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">PRO</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Location</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.engagement")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.lastInteraction")}</th>
                     <th className="text-right px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium"></th>
@@ -670,6 +708,14 @@ export default function Contacts() {
                       <td className="px-4 py-3.5">
                         {c.pro?.trim() && (
                           <span className="text-xs text-muted-foreground">{c.pro}</span>
+                        )}
+                      </td>
+                      {/* Location — City + Country, comma-separated, only shown if at least one is present */}
+                      <td className="px-4 py-3.5">
+                        {(c.city?.trim() || c.country?.trim()) && (
+                          <span className="text-xs text-muted-foreground">
+                            {[c.city?.trim(), c.country?.trim()].filter(Boolean).join(", ")}
+                          </span>
                         )}
                       </td>
                       {/* Engagement: tracks + downloads merged */}
@@ -786,8 +832,11 @@ export default function Contacts() {
                   </div>
                 )}
                 {/* Extra rights metadata — only when at least one field is present */}
-                {(c.ipi?.trim() || c.publisher?.trim() || c.pro?.trim()) && (
+                {(c.ipi?.trim() || c.publisher?.trim() || c.pro?.trim() || c.city?.trim() || c.country?.trim()) && (
                   <div className="text-[11px] text-muted-foreground/80 flex flex-wrap gap-x-2 gap-y-0.5">
+                    {(c.city?.trim() || c.country?.trim()) && (
+                      <span><span className="font-medium text-muted-foreground">📍</span> {[c.city?.trim(), c.country?.trim()].filter(Boolean).join(", ")}</span>
+                    )}
                     {c.ipi?.trim() && <span><span className="font-medium text-muted-foreground">IPI:</span> <span className="font-mono">{c.ipi}</span></span>}
                     {c.publisher?.trim() && <span><span className="font-medium text-muted-foreground">Publisher:</span> {c.publisher}</span>}
                     {c.pro?.trim() && <span><span className="font-medium text-muted-foreground">PROs:</span> {c.pro}</span>}

@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark, ShieldCheck, Award } from "lucide-react";
-import { DEFAULT_COVER, INDUSTRY_ROLES } from "@/lib/constants";
+import { DEFAULT_COVER, INDUSTRY_ROLES, COUNTRIES } from "@/lib/constants";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import JSZip from "jszip";
 import {
@@ -267,6 +267,9 @@ export default function SharedLinkPage() {
   var visitorEmailRef = useRef(savedVisitor?.email || "");
   var [visitorRole, setVisitorRole] = useState(savedVisitor?.role || "");
   var [visitorCompany, setVisitorCompany] = useState(savedVisitor?.company || "");
+  var [visitorCity, setVisitorCity] = useState("");
+  var [visitorCountry, setVisitorCountry] = useState("");
+  var [showLocationOptional, setShowLocationOptional] = useState(false);
   var [gateError, setGateError] = useState("");
 
   // Password state
@@ -781,7 +784,15 @@ export default function SharedLinkPage() {
     fetch(SUPABASE_URL + "/functions/v1/log-link-access", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY },
-      body: JSON.stringify({ slug: slug, name: visitorName.trim(), email: visitorEmail.trim(), role: visitorRole.trim(), company: visitorCompany.trim() }),
+      body: JSON.stringify({
+        slug: slug,
+        name: visitorName.trim(),
+        email: visitorEmail.trim(),
+        role: visitorRole.trim(),
+        company: visitorCompany.trim(),
+        city: visitorCity.trim(),
+        country: visitorCountry,
+      }),
     }).catch(function(err) { console.error("Failed to log access:", err); });
 
     // Log view event
@@ -1150,6 +1161,37 @@ export default function SharedLinkPage() {
                   maxLength={100}
                   className="w-full h-11 px-4 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
                 />
+              </div>
+              {/* Optional location — collapsed by default to keep the gate compact */}
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={function() { setShowLocationOptional(!showLocationOptional); }}
+                  className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                >
+                  <span>{showLocationOptional ? "−" : "+"}</span>
+                  <span>Add your location (optional)</span>
+                </button>
+                {showLocationOptional && (
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <input
+                      type="text"
+                      value={visitorCity}
+                      onChange={function(e) { setVisitorCity(e.target.value); }}
+                      placeholder="City"
+                      maxLength={100}
+                      className="h-11 px-3 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium placeholder:text-muted-foreground/40"
+                    />
+                    <select
+                      value={visitorCountry}
+                      onChange={function(e) { setVisitorCountry(e.target.value); }}
+                      className="h-11 px-3 rounded-xl bg-secondary border border-border text-sm text-foreground outline-none focus:border-primary/40 transition-colors font-medium appearance-none cursor-pointer"
+                    >
+                      <option value="">Country</option>
+                      {COUNTRIES.map(function(c) { return <option key={c} value={c}>{c}</option>; })}
+                    </select>
+                  </div>
+                )}
               </div>
               {gateError && (
                 <p className="text-xs text-destructive text-center">{gateError}</p>

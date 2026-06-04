@@ -579,6 +579,8 @@ export interface ContactExportEntry {
   publisher: string;
   ipi: string;
   pro: string;
+  city: string;
+  country: string;
   tracksDownloaded: string[];
   totalDownloads: number;
   lastDownload: string;
@@ -627,15 +629,16 @@ export function generateContactListPdf(contacts: ContactExportEntry[]) {
   const dateStr = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   doc.text(`Exported ${dateStr}  ·  ${contacts.length} contact${contacts.length !== 1 ? "s" : ""}`, marginX, 88);
 
-  // Table — 8 columns sized to fit landscape A4 width
+  // Table — 9 columns sized to fit landscape A4 width
   const cols = [
-    { label: "NAME", width: contentW * 0.14 },
-    { label: "EMAIL", width: contentW * 0.18 },
-    { label: "STAGE NAME", width: contentW * 0.11 },
-    { label: "ORGANIZATION", width: contentW * 0.13 },
-    { label: "PUBLISHER", width: contentW * 0.12 },
-    { label: "IPI", width: contentW * 0.09 },
-    { label: "PRO", width: contentW * 0.13 },
+    { label: "NAME", width: contentW * 0.12 },
+    { label: "EMAIL", width: contentW * 0.16 },
+    { label: "STAGE NAME", width: contentW * 0.10 },
+    { label: "ORGANIZATION", width: contentW * 0.11 },
+    { label: "PUBLISHER", width: contentW * 0.10 },
+    { label: "IPI", width: contentW * 0.08 },
+    { label: "PRO", width: contentW * 0.12 },
+    { label: "LOCATION", width: contentW * 0.11 },
     { label: "ROLE", width: contentW * 0.10 },
   ];
 
@@ -709,12 +712,17 @@ export function generateContactListPdf(contacts: ContactExportEntry[]) {
     x += cols[5].width;
 
     // PRO
-    doc.text((c.pro || "").slice(0, 16), x, textY, { baseline: "middle" });
+    doc.text((c.pro || "").slice(0, 14), x, textY, { baseline: "middle" });
     x += cols[6].width;
+
+    // Location — "City, Country" (or whichever is present)
+    const locStr = [c.city, c.country].filter((s) => s && s.trim()).join(", ");
+    doc.text(locStr.slice(0, 14), x, textY, { baseline: "middle" });
+    x += cols[7].width;
 
     // Role
     doc.setTextColor(...brandOrange);
-    doc.text((c.role || "").slice(0, 14), x, textY, { baseline: "middle" });
+    doc.text((c.role || "").slice(0, 12), x, textY, { baseline: "middle" });
 
     y += rowH;
   });
