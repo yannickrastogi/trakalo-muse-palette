@@ -85,7 +85,7 @@ export const SPLIT_ROLES = [
 
 export const INDUSTRY_ROLES = [
   "Songwriter", "Producer", "Artist", "A&R", "Manager", "Musician",
-  "Mix Engineer", "Mastering Engineer", "Publisher", "DJ",
+  "Recording Engineer", "Mix Engineer", "Mastering Engineer", "Publisher", "DJ",
   "Label Representative", "Booking Agent", "Music Director",
   "Music Supervisor", "PR", "Assistant", "Lawyer", "Photographer", "Videographer",
 ] as const;
