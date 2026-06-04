@@ -14,7 +14,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/contexts/RoleContext";
 import { CreatePitchModal, type PitchEntry } from "@/components/CreatePitchModal";
 import { format, differenceInDays } from "date-fns";
-import { generateContactListPdf } from "@/lib/pdf-generators";
+import { generateContactListPdf, exportContactCardPdf } from "@/lib/pdf-generators";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { exportContactsCsv, exportContactsXlsx } from "@/lib/contact-export";
 import { toast } from "sonner";
 import { INDUSTRY_ROLES } from "@/lib/constants";
@@ -177,6 +178,7 @@ export default function Contacts() {
   const { addPitch } = usePitches();
   const { user } = useAuth();
   const { accessLevel } = useRole();
+  const { activeWorkspace } = useWorkspace();
   const isAdmin = accessLevel === "admin";
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -465,6 +467,37 @@ export default function Contacts() {
     if (type === "pdf") generateContactListPdf(data);
     else if (type === "csv") exportContactsCsv(data);
     else exportContactsXlsx(data);
+  };
+
+  const handleDownloadContactCard = (c: Contact, roles: string[]) => {
+    try {
+      exportContactCardPdf({
+        contact: {
+          firstName: c.firstName,
+          lastName: c.lastName,
+          email: c.email,
+          organization: c.organization,
+          role: roles.join(", "),
+          stageName: c.stageName || "",
+          publisher: c.publisher || "",
+          ipi: c.ipi || "",
+          pro: c.pro || "",
+          phone: c.phone || "",
+          city: c.city || "",
+          country: c.country || "",
+          collaborationsCount: getCollaborationsCount(c),
+          tracksDownloaded: c.tracksDownloaded,
+          totalDownloads: c.totalDownloads,
+          lastDownload: c.lastDownload,
+        },
+        workspaceName: activeWorkspace?.name || "Workspace",
+        displayRoles: roles,
+      });
+      toast.success("Contact card downloaded");
+    } catch (err) {
+      console.error("Failed to generate contact card PDF", err);
+      toast.error("Could not generate PDF");
+    }
   };
 
   return (
@@ -968,6 +1001,7 @@ export default function Contacts() {
           setDeleteTarget({ id: c.id, name: (c.firstName + " " + c.lastName).trim() });
           setDetailContact(null);
         }}
+        onDownload={handleDownloadContactCard}
         isAdmin={isAdmin}
         contactTracks={detailContact ? getContactTracks(detailContact) : []}
         displayRoles={detailContact ? getDisplayRoles(detailContact) : []}

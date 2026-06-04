@@ -959,3 +959,160 @@ export function generateSignedAgreementPdfBase64(title: string, artist: string, 
   var doc = buildSignedAgreementDoc(title, artist, entries);
   return doc.output("datauristring").split(",")[1];
 }
+
+// ─── Contact Card PDF (single contact, A4 portrait, minimalist) ──────
+function sanitizeFilename(s: string): string {
+  return s.replace(/[\/\\?%*:|"<>]/g, "_").replace(/\s+/g, "_").replace(/_+/g, "_");
+}
+
+export function exportContactCardPdf(params: {
+  contact: ContactExportEntry;
+  workspaceName: string;
+  displayRoles: string[];
+}) {
+  const { contact, workspaceName, displayRoles } = params;
+  const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();   // ~595pt
+  const pageH = doc.internal.pageSize.getHeight();  // ~842pt
+  const marginX = 56;
+  const contentW = pageW - marginX * 2;
+
+  // Light background (minimalist card style — not the dark catalog style)
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, pageW, pageH, "F");
+
+  // Header band — solid orange, full width, ~210pt tall
+  const bandH = 210;
+  doc.setFillColor(...brandOrange);
+  doc.rect(0, 0, pageW, bandH, "F");
+
+  // Subtle gradient touch — pink overlay rectangle on right third for depth
+  // Approximated via 30 vertical strips fading orange → pink
+  const strips = 40;
+  for (let i = 0; i < strips; i++) {
+    const t = i / strips;
+    const r = Math.round(brandOrange[0] + (brandPink[0] - brandOrange[0]) * t);
+    const g = Math.round(brandOrange[1] + (brandPink[1] - brandOrange[1]) * t);
+    const b = Math.round(brandOrange[2] + (brandPink[2] - brandOrange[2]) * t);
+    doc.setFillColor(r, g, b);
+    doc.rect((pageW / strips) * i, 0, pageW / strips + 1, bandH, "F");
+  }
+
+  // TRAKALOG wordmark top-left
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(255, 255, 255);
+  doc.text("TRAKALOG", marginX, 32);
+
+  // Avatar circle centered
+  const avatarRadius = 38;
+  const avatarCx = pageW / 2;
+  const avatarCy = 110;
+  doc.setFillColor(255, 255, 255);
+  doc.circle(avatarCx, avatarCy, avatarRadius, "F");
+  // Inner gradient (orange→pink) by drawing 12 concentric arcs is overkill — keep solid pink for warmth
+  doc.setFillColor(...brandPink);
+  doc.circle(avatarCx, avatarCy, avatarRadius - 3, "F");
+  // Initials
+  const a = (contact.firstName?.[0] || "?").toUpperCase();
+  const b = (contact.lastName?.[0] || "").toUpperCase();
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(28);
+  doc.setTextColor(255, 255, 255);
+  doc.text(a + b, avatarCx, avatarCy + 10, { align: "center" });
+
+  // Name (centered below avatar, on the band)
+  const fullName = (contact.firstName + " " + contact.lastName).trim();
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(255, 255, 255);
+  doc.text(fullName, avatarCx, 178, { align: "center" });
+
+  // Stage name italic (if any)
+  if (contact.stageName?.trim()) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(12);
+    doc.setTextColor(255, 240, 230);
+    doc.text(contact.stageName, avatarCx, 196, { align: "center" });
+  }
+
+  // ── Body ──
+  let y = bandH + 50;
+  const labelColW = 90;
+  const labelX = marginX;
+  const valueX = marginX + labelColW;
+  const lineGap = 22;
+
+  const drawSectionHeader = (label: string) => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...brandOrange);
+    doc.text(label.toUpperCase(), marginX, y);
+    y += 8;
+    // thin divider
+    doc.setDrawColor(230, 230, 230);
+    doc.setLineWidth(0.5);
+    doc.line(marginX, y, marginX + contentW, y);
+    y += 18;
+  };
+
+  const drawRow = (label: string, value: string) => {
+    if (!value) return;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(140, 140, 148);
+    doc.text(label, labelX, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10.5);
+    doc.setTextColor(30, 30, 35);
+    // Wrap long values within remaining width
+    const maxValW = contentW - labelColW;
+    const wrapped = doc.splitTextToSize(value, maxValW) as string[];
+    wrapped.forEach((line, i) => {
+      doc.text(line, valueX, y + i * 13);
+    });
+    y += Math.max(lineGap, wrapped.length * 13 + 8);
+  };
+
+  // CONTACT section
+  drawSectionHeader("Contact");
+  drawRow("Email", contact.email || "");
+  drawRow("Phone", contact.phone || "");
+  const locationParts = [contact.city, contact.country].map((s) => (s || "").trim()).filter(Boolean);
+  drawRow("Location", locationParts.join(", "));
+  y += 14;
+
+  // INDUSTRY section — only if at least one field present
+  const rolesStr = displayRoles.join(", ");
+  const publisherStr = (contact.publisher || "").split(",").map((s) => s.trim()).filter(Boolean).join(", ");
+  const proStr = (contact.pro || "").split(",").map((s) => s.trim()).filter(Boolean).join(", ");
+  const hasIndustry = !!(rolesStr || contact.organization || publisherStr || (contact.ipi || "").trim() || proStr);
+
+  if (hasIndustry) {
+    drawSectionHeader("Industry");
+    drawRow("Roles", rolesStr);
+    drawRow("Organization", contact.organization || "");
+    drawRow("Publisher", publisherStr);
+    drawRow("IPI", (contact.ipi || "").trim());
+    drawRow("PROs", proStr);
+  }
+
+  // Footer — centered italic gray
+  const dateStr = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  const footerY = pageH - 40;
+  // divider
+  doc.setDrawColor(230, 230, 230);
+  doc.setLineWidth(0.5);
+  doc.line(marginX, footerY - 16, marginX + contentW, footerY - 16);
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8.5);
+  doc.setTextColor(150, 150, 158);
+  const wsLabel = (workspaceName || "Workspace").trim();
+  doc.text("Generated via Trakalog  ·  " + wsLabel + "  ·  " + dateStr, pageW / 2, footerY, { align: "center" });
+
+  // Save
+  const safeFirst = sanitizeFilename(contact.firstName || "Contact");
+  const safeLast = sanitizeFilename(contact.lastName || "");
+  const filename = (safeLast ? safeFirst + "_" + safeLast : safeFirst) + "_Contact.pdf";
+  doc.save(filename);
+}

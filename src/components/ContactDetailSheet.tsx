@@ -1,7 +1,9 @@
-import type { ComponentType } from "react";
+import { useState, useEffect, type ComponentType } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Pencil, Send, Trash2, Mail, MapPin, Briefcase, Music2, Activity, ChevronRight } from "lucide-react";
+import { Pencil, Send, Trash2, Mail, MapPin, Briefcase, Music2, Activity, ChevronRight, ChevronDown, ChevronUp, Download } from "lucide-react";
 import type { Contact } from "@/contexts/ContactsContext";
+
+const COLLAB_PREVIEW_LIMIT = 5;
 
 export interface ContactTrackPreview {
   id: string;
@@ -16,6 +18,7 @@ interface ContactDetailSheetProps {
   onEdit: (contact: Contact) => void;
   onPitch: (contact: Contact) => void;
   onDelete: (contact: Contact) => void;
+  onDownload: (contact: Contact, displayRoles: string[]) => void;
   isAdmin: boolean;
   contactTracks: ContactTrackPreview[];
   displayRoles: string[];
@@ -65,9 +68,13 @@ function Chips({ items }: { items: string[] }) {
 }
 
 export function ContactDetailSheet({
-  contact, onClose, onEdit, onPitch, onDelete, isAdmin,
+  contact, onClose, onEdit, onPitch, onDelete, onDownload, isAdmin,
   contactTracks, displayRoles, onTrackClick, formatLastInteraction,
 }: ContactDetailSheetProps) {
+  const [showAllTracks, setShowAllTracks] = useState(false);
+  const contactId = contact?.id ?? "";
+  useEffect(() => { setShowAllTracks(false); }, [contactId]);
+
   if (!contact) {
     return (
       <Sheet open={false} onOpenChange={() => onClose()}>
@@ -122,28 +129,57 @@ export function ContactDetailSheet({
           <SectionHeader icon={Music2} label={`Collaborations (${contactTracks.length})`} />
           {contactTracks.length === 0 ? (
             <p className="text-xs text-muted-foreground italic">No catalog appearances yet.</p>
-          ) : (
-            <div className="space-y-1.5">
-              {contactTracks.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => onTrackClick(t.id)}
-                  className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-left group"
-                >
-                  {t.coverUrl ? (
-                    <img src={t.coverUrl} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
-                  ) : (
-                    <div className="w-8 h-8 rounded bg-gradient-to-br from-brand-orange via-brand-pink to-brand-purple shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{t.title}</p>
-                    {t.artist && <p className="text-xs text-muted-foreground truncate">{t.artist}</p>}
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
-                </button>
-              ))}
-            </div>
-          )}
+          ) : (() => {
+            const needsCollapse = contactTracks.length > COLLAB_PREVIEW_LIMIT;
+            const visible = needsCollapse && !showAllTracks
+              ? contactTracks.slice(0, COLLAB_PREVIEW_LIMIT)
+              : contactTracks;
+            const listClass = showAllTracks && needsCollapse
+              ? "space-y-1.5 max-h-80 overflow-y-auto pr-1"
+              : "space-y-1.5";
+            return (
+              <>
+                <div className={listClass}>
+                  {visible.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => onTrackClick(t.id)}
+                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-left group"
+                    >
+                      {t.coverUrl ? (
+                        <img src={t.coverUrl} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
+                      ) : (
+                        <div className="w-8 h-8 rounded bg-gradient-to-br from-brand-orange via-brand-pink to-brand-purple shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{t.title}</p>
+                        {t.artist && <p className="text-xs text-muted-foreground truncate">{t.artist}</p>}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+                    </button>
+                  ))}
+                </div>
+                {needsCollapse && (
+                  <button
+                    onClick={() => setShowAllTracks((v) => !v)}
+                    className="inline-flex items-center gap-1 text-xs text-brand-orange hover:underline mt-2"
+                  >
+                    {showAllTracks ? (
+                      <>
+                        <ChevronUp className="w-3.5 h-3.5" />
+                        Show less
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-3.5 h-3.5" />
+                        View all {contactTracks.length} tracks
+                      </>
+                    )}
+                  </button>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Engagement section */}
@@ -158,17 +194,25 @@ export function ContactDetailSheet({
         </div>
 
         {/* Footer actions */}
-        <div className="p-5 flex items-center gap-2 sticky bottom-0 bg-background border-t border-border/40">
+        <div className="p-5 flex items-center flex-wrap gap-2 sticky bottom-0 bg-background border-t border-border/40">
+          <button
+            onClick={() => onDownload(c, displayRoles)}
+            className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+            aria-label="Download contact card"
+            title="Download contact card (PDF)"
+          >
+            <Download className="w-4 h-4" />
+          </button>
           <button
             onClick={() => onEdit(c)}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-secondary transition-colors"
+            className="flex-1 min-w-[90px] inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-secondary transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
             Edit
           </button>
           <button
             onClick={() => onPitch(c)}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-sm font-semibold btn-brand"
+            className="flex-1 min-w-[130px] inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-sm font-semibold btn-brand"
           >
             <Send className="w-3.5 h-3.5" />
             Send Pitch
