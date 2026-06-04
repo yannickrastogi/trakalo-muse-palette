@@ -464,7 +464,7 @@ export default function Contacts() {
       totalDownloads: c.totalDownloads,
       lastDownload: c.lastDownload,
     }));
-    if (type === "pdf") generateContactListPdf(data);
+    if (type === "pdf") generateContactListPdf(data, activeWorkspace?.name || "Workspace");
     else if (type === "csv") exportContactsCsv(data);
     else exportContactsXlsx(data);
   };

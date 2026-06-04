@@ -625,154 +625,199 @@ export interface ContactExportEntry {
   lastDownload: string;
 }
 
-export function generateContactListPdf(contacts: ContactExportEntry[]) {
+export function generateContactListPdf(contacts: ContactExportEntry[], workspaceName: string = "Workspace") {
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const marginX = 40;
   const contentW = pageW - marginX * 2;
 
-  // Background + gradient bar
-  doc.setFillColor(...bgDark);
-  doc.rect(0, 0, pageW, pageH, "F");
-  drawGradientBar(doc, pageW, 0, 5);
+  // Cell rendering constants (clean wrap pattern, same as buildSignedAgreementDoc)
+  const CELL_MAX_LINES = 2;
+  const LINE_HEIGHT = 9.5;       // pt — tuned to fontSize 8.5
+  const MIN_ROW_H = 22;
+  const CELL_PADDING_X = 4;
+  const CELL_PADDING_Y = 6;      // top/bottom vertical padding inside a row
+  const FOOTER_RESERVED = 40;    // reserve space at bottom of page for footer line
 
-  // Logo
-  const logoY = 24;
-  const iconSize = 22;
-  try {
-    doc.addImage(trakalogLogo, "PNG", marginX, logoY, iconSize, iconSize);
-  } catch {
-    doc.setFillColor(...brandOrange);
-    doc.roundedRect(marginX, logoY, iconSize, iconSize, 4, 4, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(255, 255, 255);
-    doc.text("T", marginX + iconSize / 2, logoY + iconSize / 2 + 1, { align: "center", baseline: "middle" });
-  }
-  drawTrakalogWordmark(doc, marginX + iconSize + 8, logoY + iconSize / 2 + 1, 11, { baseline: "middle" });
+  const drawPageBackground = () => {
+    doc.setFillColor(...bgDark);
+    doc.rect(0, 0, pageW, pageH, "F");
+    drawGradientBar(doc, pageW, 0, 5);
+  };
 
-  // Title
+  const drawHeaderBlock = () => {
+    // Logo (icon + gradient wordmark)
+    const logoY = 24;
+    const iconSize = 22;
+    try {
+      doc.addImage(trakalogLogo, "PNG", marginX, logoY, iconSize, iconSize);
+    } catch {
+      doc.setFillColor(...brandOrange);
+      doc.roundedRect(marginX, logoY, iconSize, iconSize, 4, 4, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      doc.text("T", marginX + iconSize / 2, logoY + iconSize / 2 + 1, { align: "center", baseline: "middle" });
+    }
+    drawTrakalogWordmark(doc, marginX + iconSize + 8, logoY + iconSize / 2 + 1, 11, { baseline: "middle" });
+  };
+
+  drawPageBackground();
+  drawHeaderBlock();
+
+  // Title — "{Workspace} — Contacts" (em-dash unicode \u2014)
+  const wsLabel = (workspaceName || "Workspace").trim() || "Workspace";
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(...textLight);
-  doc.text("Contact List", marginX, 72);
+  doc.text(`${wsLabel} \u2014 Contacts`, marginX, 72);
 
   // Date + count badge
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...textMuted);
   const dateStr = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-  doc.text(`Exported ${dateStr}  ·  ${contacts.length} contact${contacts.length !== 1 ? "s" : ""}`, marginX, 88);
+  doc.text(`Exported ${dateStr}  \u00B7  ${contacts.length} contact${contacts.length !== 1 ? "s" : ""}`, marginX, 88);
 
-  // Table — 10 columns sized to fit landscape A4 width
+  // Table — 10 columns. Widths rebalanced: more room for EMAIL / LOCATION / ROLE
+  // (visibly truncated before), shrink PHONE / IPI / PUBLISHER / STAGE which fit shorter content.
   const cols = [
-    { label: "NAME", width: contentW * 0.11 },
-    { label: "EMAIL", width: contentW * 0.14 },
-    { label: "PHONE", width: contentW * 0.09 },
-    { label: "STAGE NAME", width: contentW * 0.09 },
+    { label: "NAME",         width: contentW * 0.10 },
+    { label: "EMAIL",        width: contentW * 0.17 },
+    { label: "PHONE",        width: contentW * 0.08 },
+    { label: "STAGE NAME",   width: contentW * 0.08 },
     { label: "ORGANIZATION", width: contentW * 0.10 },
-    { label: "PUBLISHER", width: contentW * 0.09 },
-    { label: "IPI", width: contentW * 0.07 },
-    { label: "PRO", width: contentW * 0.11 },
-    { label: "LOCATION", width: contentW * 0.10 },
-    { label: "ROLE", width: contentW * 0.10 },
+    { label: "PUBLISHER",    width: contentW * 0.08 },
+    { label: "IPI",          width: contentW * 0.06 },
+    { label: "PRO",          width: contentW * 0.10 },
+    { label: "LOCATION",     width: contentW * 0.11 },
+    { label: "ROLE",         width: contentW * 0.12 },
   ];
 
-  const rowH = 26;
-  const headerY = 108;
-  let y = headerY;
+  const headerRowH = 22;
+  const headerStartY = 108;
+  let y = headerStartY;
 
   const drawTableHeader = () => {
     doc.setFillColor(28, 28, 32);
-    doc.roundedRect(marginX, y, contentW, rowH, 4, 4, "F");
+    doc.roundedRect(marginX, y, contentW, headerRowH, 4, 4, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
     doc.setTextColor(...textMuted);
     let x = marginX + 12;
     cols.forEach((col) => {
-      doc.text(col.label, x, y + rowH / 2 + 1, { baseline: "middle" });
+      doc.text(col.label, x, y + headerRowH / 2 + 1, { baseline: "middle" });
       x += col.width;
     });
-    y += rowH + 2;
+    y += headerRowH + 2;
   };
 
   drawTableHeader();
 
+  // Helper: wrap a cell's text to N lines max, ellipsize on overflow
+  // (using fontSize 8.5 which is already set on rendering — call this AFTER setting font)
+  const wrapCell = (text: string, colWidth: number): string[] => {
+    if (!text) return [];
+    const maxW = Math.max(8, colWidth - 2 * CELL_PADDING_X);
+    let lines = doc.splitTextToSize(text, maxW) as string[];
+    if (lines.length > CELL_MAX_LINES) {
+      const kept = lines.slice(0, CELL_MAX_LINES);
+      // Re-wrap last line to fit ellipsis "…" within col width
+      const last = kept[CELL_MAX_LINES - 1];
+      // Trim characters from the end until "last + ellipsis" fits
+      let candidate = last + "\u2026";
+      while (candidate.length > 1 && doc.getTextWidth(candidate) > maxW) {
+        candidate = candidate.slice(0, -2) + "\u2026";
+      }
+      kept[CELL_MAX_LINES - 1] = candidate;
+      lines = kept;
+    }
+    return lines;
+  };
+
   contacts.forEach((c, idx) => {
-    if (y + rowH > pageH - 40) {
+    // Use the same fontSize wrapCell will measure with
+    doc.setFontSize(8.5);
+
+    // First pass — compute wrapped lines per cell
+    const locStr = [c.city, c.country].filter((s) => s && s.trim()).join(", ");
+    const cells: string[][] = [
+      wrapCell(`${c.firstName} ${c.lastName}`.trim(), cols[0].width),
+      wrapCell(c.email || "", cols[1].width),
+      wrapCell(c.phone || "", cols[2].width),
+      wrapCell(c.stageName || "", cols[3].width),
+      wrapCell(c.organization || "", cols[4].width),
+      wrapCell(c.publisher || "", cols[5].width),
+      wrapCell(c.ipi || "", cols[6].width),
+      wrapCell(c.pro || "", cols[7].width),
+      wrapCell(locStr, cols[8].width),
+      wrapCell(c.role || "", cols[9].width),
+    ];
+    const maxLines = Math.max(1, ...cells.map((c2) => c2.length));
+    const rowH = Math.max(MIN_ROW_H, maxLines * LINE_HEIGHT + 2 * CELL_PADDING_Y);
+
+    // Pagination — break before this row if it would overflow
+    if (y + rowH > pageH - FOOTER_RESERVED) {
       doc.addPage();
-      doc.setFillColor(...bgDark);
-      doc.rect(0, 0, pageW, pageH, "F");
-      drawGradientBar(doc, pageW, 0, 5);
-      y = 24;
+      drawPageBackground();
+      // On continuation pages, redraw the table header only (no title, no logo block)
+      y = 60;
       drawTableHeader();
     }
 
+    // Zebra striping
     if (idx % 2 === 0) {
       doc.setFillColor(22, 22, 26);
       doc.rect(marginX, y, contentW, rowH, "F");
     }
 
-    doc.setFontSize(8.5);
+    // Render cells — vertically centered block of `maxLines * LINE_HEIGHT`
+    const blockH = maxLines * LINE_HEIGHT;
+    const blockTop = y + (rowH - blockH) / 2;
     let x = marginX + 12;
-    const textY = y + rowH / 2 + 1;
 
-    // Name
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...textLight);
-    doc.text(`${c.firstName} ${c.lastName}`.slice(0, 14), x, textY, { baseline: "middle" });
-    x += cols[0].width;
+    // Per-column font/color setup
+    const styles: Array<{ font: "bold" | "normal"; color: [number, number, number] }> = [
+      { font: "bold",   color: textLight },     // NAME
+      { font: "normal", color: textMuted },     // EMAIL
+      { font: "normal", color: textMuted },     // PHONE
+      { font: "normal", color: textLight },     // STAGE
+      { font: "normal", color: textLight },     // ORG
+      { font: "normal", color: textMuted },     // PUBLISHER
+      { font: "normal", color: textMuted },     // IPI
+      { font: "normal", color: textMuted },     // PRO
+      { font: "normal", color: textMuted },     // LOCATION
+      { font: "normal", color: brandOrange },   // ROLE
+    ];
 
-    // Email
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...textMuted);
-    doc.text(c.email.slice(0, 20), x, textY, { baseline: "middle" });
-    x += cols[1].width;
-
-    // Phone
-    doc.text((c.phone || "").slice(0, 14), x, textY, { baseline: "middle" });
-    x += cols[2].width;
-
-    // Stage Name
-    doc.setTextColor(...textLight);
-    doc.text((c.stageName || "").slice(0, 12), x, textY, { baseline: "middle" });
-    x += cols[3].width;
-
-    // Organization
-    doc.text((c.organization || "").slice(0, 14), x, textY, { baseline: "middle" });
-    x += cols[4].width;
-
-    // Publisher
-    doc.setTextColor(...textMuted);
-    doc.text((c.publisher || "").slice(0, 13), x, textY, { baseline: "middle" });
-    x += cols[5].width;
-
-    // IPI
-    doc.text((c.ipi || "").slice(0, 10), x, textY, { baseline: "middle" });
-    x += cols[6].width;
-
-    // PRO
-    doc.text((c.pro || "").slice(0, 12), x, textY, { baseline: "middle" });
-    x += cols[7].width;
-
-    // Location — "City, Country" (or whichever is present)
-    const locStr = [c.city, c.country].filter((s) => s && s.trim()).join(", ");
-    doc.text(locStr.slice(0, 12), x, textY, { baseline: "middle" });
-    x += cols[8].width;
-
-    // Role
-    doc.setTextColor(...brandOrange);
-    doc.text((c.role || "").slice(0, 12), x, textY, { baseline: "middle" });
+    cells.forEach((lines, colIdx) => {
+      const style = styles[colIdx];
+      doc.setFont("helvetica", style.font);
+      doc.setTextColor(...style.color);
+      lines.forEach((line, li) => {
+        // baseline:"top" lets us position by line index from blockTop
+        doc.text(line, x + CELL_PADDING_X, blockTop + li * LINE_HEIGHT, { baseline: "top" });
+      });
+      x += cols[colIdx].width;
+    });
 
     y += rowH;
   });
 
-  // Footer
-  doc.setFontSize(7);
-  doc.setTextColor(...textMuted);
-  doc.text("Generated by Trakalog", marginX, pageH - 20);
-  doc.text("trakalog.com", pageW - marginX, pageH - 20, { align: "right" });
+  // Footer — drawn on EVERY page
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...textMuted);
+    doc.text("Generated by Trakalog", marginX, pageH - 20);
+    if (totalPages > 1) {
+      doc.text(`${p} / ${totalPages}`, pageW / 2, pageH - 20, { align: "center" });
+    }
+    doc.text("trakalog.com", pageW - marginX, pageH - 20, { align: "right" });
+  }
 
   doc.save("trakalog-contacts.pdf");
 }
