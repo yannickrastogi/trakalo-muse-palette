@@ -251,7 +251,11 @@ export default function Contacts() {
       );
     }
     if (roleFilter !== "All") {
-      result = result.filter((c) => c.role === roleFilter);
+      // c.role is a comma-separated string (e.g. "Artist, Songwriter") — match any token (case-insensitive)
+      const needle = roleFilter.toLowerCase();
+      result = result.filter((c) =>
+        (c.role || "").split(",").map((s) => s.trim().toLowerCase()).includes(needle)
+      );
     }
     if (orgFilter !== "All") {
       result = result.filter((c) => c.organization === orgFilter);
