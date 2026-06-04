@@ -4,12 +4,49 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
-import { UserPlus, Pencil } from "lucide-react";
+import { UserPlus, Pencil, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContacts, type Contact } from "@/contexts/ContactsContext";
-import { INDUSTRY_ROLES, COUNTRIES } from "@/lib/constants";
+import { INDUSTRY_ROLES, COUNTRIES, PROS } from "@/lib/constants";
+
+/** Simple freeform multi-chip input — type a value + Enter (or blur) to add as a chip. */
+function ChipsInput({ value, onChange, placeholder }: { value: string[]; onChange: (v: string[]) => void; placeholder?: string }) {
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const v = draft.trim();
+    setDraft("");
+    if (!v) return;
+    if (value.some((x) => x.toLowerCase() === v.toLowerCase())) return; // dedup case-insensitive
+    onChange([...value, v]);
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 px-2 py-1.5 rounded-md border border-input bg-background min-h-[40px]">
+      {value.map((p) => (
+        <span key={p} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-secondary text-secondary-foreground">
+          {p}
+          <button
+            type="button"
+            onClick={() => onChange(value.filter((x) => x !== p))}
+            className="hover:text-destructive transition-colors"
+            aria-label={`Remove ${p}`}
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </span>
+      ))}
+      <input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
+        onBlur={add}
+        placeholder={value.length === 0 ? placeholder : ""}
+        className="bg-transparent outline-none flex-1 min-w-[120px] text-sm py-1"
+      />
+    </div>
+  );
+}
 import { toast } from "sonner";
 
 interface AddContactModalProps {
@@ -32,6 +69,10 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
+  const [stageName, setStageName] = useState("");
+  const [publishers, setPublishers] = useState<string[]>([]);
+  const [ipi, setIpi] = useState("");
+  const [pros, setPros] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   // Pre-fill (or reset) the form when editingContact changes or the modal opens
@@ -44,6 +85,11 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
       setPhone(editingContact.phone || "");
       setCity(editingContact.city || "");
       setCountry(editingContact.country || "");
+      setStageName(editingContact.stageName || "");
+      setPublishers((editingContact.publisher || "").split(",").map((s) => s.trim()).filter(Boolean));
+      setIpi(editingContact.ipi || "");
+      // editingContact.pro is comma-joined on the frontend (mapped from DB text[] in ContactsContext)
+      setPros((editingContact.pro || "").split(",").map((s) => s.trim()).filter(Boolean));
     } else if (open && !editingContact) {
       resetForm();
     }
@@ -58,6 +104,10 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
     setPhone("");
     setCity("");
     setCountry("");
+    setStageName("");
+    setPublishers([]);
+    setIpi("");
+    setPros([]);
   }
 
   function isValidEmail(value: string): boolean {
@@ -94,46 +144,55 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
     const firstName = spaceIdx > 0 ? trimmedName.slice(0, spaceIdx) : trimmedName;
     const lastName = spaceIdx > 0 ? trimmedName.slice(spaceIdx + 1) : "";
 
+    // Build shared field set from local state (now first-class in the UI for both add + edit modes)
+    const cleanFirstName = firstName;
+    const cleanLastName = lastName || null;
+    const cleanRole = roles.length > 0 ? roles.join(", ") : null;
+    const cleanCompany = company.trim() || null;
+    const cleanPhone = phone.trim() || null;
+    const cleanStageName = stageName.trim() || null;
+    const cleanPublisher = publishers.length > 0 ? publishers.join(", ") : null;
+    const cleanIpi = ipi.trim() || null;
+    const cleanPros = pros.length > 0 ? pros : null; // DB column is text[] — pass array directly
+    const cleanCity = city.trim() || null;
+    const cleanCountry = country || null;
+
     let error: unknown = null;
     if (isEditMode && editingContact) {
-      // Preserve fields not exposed in this modal — sending null would silently overwrite DB values.
-      // pro is stored as text[] in DB; mapped to comma-string in app — split back to array on update.
-      const preservedPro = editingContact.pro
-        ? editingContact.pro.split(",").map((s) => s.trim()).filter(Boolean)
-        : null;
       const res = await supabase.rpc("update_contact", {
         _user_id: user.id,
         _workspace_id: activeWorkspace.id,
         _contact_id: editingContact.id,
-        _first_name: firstName,
-        _last_name: lastName || null,
+        _first_name: cleanFirstName,
+        _last_name: cleanLastName,
         _email: trimmedEmail,
-        _role: roles.length > 0 ? roles.join(", ") : null,
-        _company: company.trim() || null,
-        _phone: phone.trim() || null,
-        _pro: preservedPro,
-        _ipi: editingContact.ipi || null,
-        _publisher: editingContact.publisher || null,
-        _stage_name: editingContact.stageName || null,
-        _city: city.trim() || null,
-        _country: country || null,
+        _role: cleanRole,
+        _company: cleanCompany,
+        _phone: cleanPhone,
+        _pro: cleanPros,
+        _ipi: cleanIpi,
+        _publisher: cleanPublisher,
+        _stage_name: cleanStageName,
+        _city: cleanCity,
+        _country: cleanCountry,
       });
       error = res.error;
     } else {
       const res = await supabase.rpc("add_contact_manual", {
         _user_id: user.id,
         _workspace_id: activeWorkspace.id,
-        _first_name: firstName,
-        _last_name: lastName || null,
+        _first_name: cleanFirstName,
+        _last_name: cleanLastName,
         _email: trimmedEmail,
-        _role: roles.length > 0 ? roles.join(", ") : null,
-        _company: company.trim() || null,
-        _phone: phone.trim() || null,
-        _pro: null,
-        _ipi: null,
-        _publisher: null,
-        _city: city.trim() || null,
-        _country: country || null,
+        _role: cleanRole,
+        _company: cleanCompany,
+        _phone: cleanPhone,
+        _pro: cleanPros,
+        _ipi: cleanIpi,
+        _publisher: cleanPublisher,
+        _stage_name: cleanStageName,
+        _city: cleanCity,
+        _country: cleanCountry,
       });
       error = res.error;
     }
@@ -167,7 +226,7 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
             {isEditMode ? "Edit Contact" : "Add Contact"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-2 max-h-[75vh] overflow-y-auto pr-1">
           {/* Full Name */}
           <div className="space-y-1.5">
             <Label htmlFor="ac-name">Full Name *</Label>
@@ -252,6 +311,51 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Stage Name + IPI (compact pair) */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="ac-stage">Stage Name</Label>
+              <Input
+                id="ac-stage"
+                value={stageName}
+                onChange={(e) => setStageName(e.target.value)}
+                placeholder="e.g. KNY Factory"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ac-ipi">IPI</Label>
+              <Input
+                id="ac-ipi"
+                value={ipi}
+                onChange={(e) => setIpi(e.target.value)}
+                placeholder="e.g. 00528847833"
+                inputMode="numeric"
+              />
+            </div>
+          </div>
+
+          {/* Publisher — freeform multi-chip */}
+          <div className="space-y-1.5">
+            <Label>Publisher</Label>
+            <ChipsInput
+              value={publishers}
+              onChange={setPublishers}
+              placeholder="Add publisher and press Enter"
+            />
+          </div>
+
+          {/* PROs — multi-select filterable from INDUSTRY-known list */}
+          <div className="space-y-1.5">
+            <Label>PROs</Label>
+            <MultiSelectChips
+              options={PROS}
+              selected={pros}
+              onChange={setPros}
+              placeholder="Select one or more PROs"
+              filterable
+            />
           </div>
 
           {/* Actions */}
