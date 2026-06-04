@@ -633,7 +633,7 @@ export function generateContactListPdf(contacts: ContactExportEntry[], workspace
   const contentW = pageW - marginX * 2;
 
   // Cell rendering constants (clean wrap pattern, same as buildSignedAgreementDoc)
-  const CELL_MAX_LINES = 2;
+  // No line cap — long values wrap fully; rowH grows dynamically.
   const LINE_HEIGHT = 9.5;       // pt — tuned to fontSize 8.5
   const MIN_ROW_H = 22;
   const CELL_PADDING_X = 4;
@@ -684,15 +684,15 @@ export function generateContactListPdf(contacts: ContactExportEntry[], workspace
   // (visibly truncated before), shrink PHONE / IPI / PUBLISHER / STAGE which fit shorter content.
   const cols = [
     { label: "NAME",         width: contentW * 0.10 },
-    { label: "EMAIL",        width: contentW * 0.17 },
-    { label: "PHONE",        width: contentW * 0.08 },
+    { label: "EMAIL",        width: contentW * 0.16 },
+    { label: "PHONE",        width: contentW * 0.10 },
     { label: "STAGE NAME",   width: contentW * 0.08 },
     { label: "ORGANIZATION", width: contentW * 0.10 },
     { label: "PUBLISHER",    width: contentW * 0.08 },
-    { label: "IPI",          width: contentW * 0.06 },
+    { label: "IPI",          width: contentW * 0.07 },
     { label: "PRO",          width: contentW * 0.10 },
-    { label: "LOCATION",     width: contentW * 0.11 },
-    { label: "ROLE",         width: contentW * 0.12 },
+    { label: "LOCATION",     width: contentW * 0.10 },
+    { label: "ROLE",         width: contentW * 0.11 },
   ];
 
   const headerRowH = 22;
@@ -715,25 +715,13 @@ export function generateContactListPdf(contacts: ContactExportEntry[], workspace
 
   drawTableHeader();
 
-  // Helper: wrap a cell's text to N lines max, ellipsize on overflow
+  // Helper: wrap a cell's text to as many lines as needed (no cap, no ellipsis).
+  // rowH grows dynamically so long values stay fully readable.
   // (using fontSize 8.5 which is already set on rendering — call this AFTER setting font)
   const wrapCell = (text: string, colWidth: number): string[] => {
     if (!text) return [];
     const maxW = Math.max(8, colWidth - 2 * CELL_PADDING_X);
-    let lines = doc.splitTextToSize(text, maxW) as string[];
-    if (lines.length > CELL_MAX_LINES) {
-      const kept = lines.slice(0, CELL_MAX_LINES);
-      // Re-wrap last line to fit ellipsis "…" within col width
-      const last = kept[CELL_MAX_LINES - 1];
-      // Trim characters from the end until "last + ellipsis" fits
-      let candidate = last + "\u2026";
-      while (candidate.length > 1 && doc.getTextWidth(candidate) > maxW) {
-        candidate = candidate.slice(0, -2) + "\u2026";
-      }
-      kept[CELL_MAX_LINES - 1] = candidate;
-      lines = kept;
-    }
-    return lines;
+    return doc.splitTextToSize(text, maxW) as string[];
   };
 
   contacts.forEach((c, idx) => {
