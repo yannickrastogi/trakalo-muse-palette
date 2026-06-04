@@ -582,6 +582,7 @@ export interface ContactExportEntry {
   phone: string;
   city: string;
   country: string;
+  collaborationsCount: number;
   tracksDownloaded: string[];
   totalDownloads: number;
   lastDownload: string;

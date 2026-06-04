@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Users, UserPlus, Building2, Download, X, FileText, FileSpreadsheet, ChevronDown, Send, Trash2, Loader2, Pencil } from "lucide-react";
+import { Search, Users, UserPlus, Building2, Download, X, FileText, FileSpreadsheet, ChevronDown, Send, Trash2, Loader2, Pencil, Music } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { EmptyState } from "@/components/EmptyState";
 import { AddContactModal } from "@/components/AddContactModal";
@@ -232,21 +232,23 @@ export default function Contacts() {
   // Key = full name OR stage name (lowercase, trimmed). Both registered independently so
   // a track-side mention of either tags the corresponding contact.
   const { tracks } = useTrack();
-  const computedRolesByPerson = useMemo(() => {
-    const map = new Map<string, Set<string>>();
-    const add = (rawName: unknown, role: string) => {
+  const computedByPerson = useMemo(() => {
+    const map = new Map<string, { roles: Set<string>; trackIds: Set<string> }>();
+    const add = (rawName: unknown, role: string, trackId: string) => {
       if (typeof rawName !== "string") return;
       const key = rawName.trim().toLowerCase();
       if (!key) return;
-      let set = map.get(key);
-      if (!set) { set = new Set(); map.set(key, set); }
-      set.add(role);
+      let entry = map.get(key);
+      if (!entry) { entry = { roles: new Set(), trackIds: new Set() }; map.set(key, entry); }
+      entry.roles.add(role);
+      if (trackId) entry.trackIds.add(trackId);
     };
     for (const track of tracks) {
+      const tid = track.uuid || "";
       // track.artist (comma-separated string) → "Artist"
-      (track.artist || "").split(",").forEach((s) => add(s, "Artist"));
+      (track.artist || "").split(",").forEach((s) => add(s, "Artist", tid));
       // track.featuredArtists[] → "Artist"
-      if (Array.isArray(track.featuredArtists)) track.featuredArtists.forEach((s) => add(s, "Artist"));
+      if (Array.isArray(track.featuredArtists)) track.featuredArtists.forEach((s) => add(s, "Artist", tid));
       // splits[]: role-mapped, on both name and stage_name
       const splits = Array.isArray(track.splits) ? track.splits : [];
       for (const s of splits) {
@@ -257,21 +259,21 @@ export default function Contacts() {
         for (const r of arr) {
           const canon = canonicalSplitRole(r);
           if (!canon) continue;
-          add(s?.name, canon);
-          add((s as unknown as { stage_name?: string })?.stage_name, canon);
+          add(s?.name, canon, tid);
+          add((s as unknown as { stage_name?: string })?.stage_name, canon, tid);
         }
       }
       // credits.{songwriters, producers, 8 performer keys, 3 engineers}
       const credits = (track.credits || {}) as Record<string, unknown>;
       for (const [key, role] of Object.entries(CREDIT_KEY_TO_ROLE)) {
         const raw = credits[key];
-        if (Array.isArray(raw)) (raw as unknown[]).forEach((v) => add(v, role));
+        if (Array.isArray(raw)) (raw as unknown[]).forEach((v) => add(v, role, tid));
       }
       // customPerformers[].values → "Musician" (customProduction intentionally skipped)
       const cp = credits.customPerformers;
       if (Array.isArray(cp)) {
         (cp as Array<{ values?: unknown }>).forEach((entry) => {
-          if (Array.isArray(entry?.values)) entry.values.forEach((v) => add(v, "Musician"));
+          if (Array.isArray(entry?.values)) entry.values.forEach((v) => add(v, "Musician", tid));
         });
       }
     }
@@ -294,8 +296,8 @@ export default function Contacts() {
     const fullName = (c.firstName + " " + c.lastName).trim().toLowerCase();
     const stage = (c.stageName || "").trim().toLowerCase();
     const computed = new Set<string>();
-    if (fullName) (computedRolesByPerson.get(fullName) || new Set()).forEach((r) => computed.add(r));
-    if (stage)    (computedRolesByPerson.get(stage)    || new Set()).forEach((r) => computed.add(r));
+    if (fullName) (computedByPerson.get(fullName)?.roles || new Set<string>()).forEach((r) => computed.add(r));
+    if (stage)    (computedByPerson.get(stage)?.roles    || new Set<string>()).forEach((r) => computed.add(r));
     for (const r of COMPUTED_ROLE_ORDER) {
       if (!computed.has(r)) continue;
       const k = r.toLowerCase();
@@ -304,7 +306,18 @@ export default function Contacts() {
       out.push(r);
     }
     return out;
-  }, [computedRolesByPerson]);
+  }, [computedByPerson]);
+
+  // Returns the count of distinct workspace tracks where this contact appears,
+  // unioning lookups by full name AND stage name (a track tagged via both keys counts once).
+  const getCollaborationsCount = useCallback((c: Contact): number => {
+    const fullName = (c.firstName + " " + c.lastName).trim().toLowerCase();
+    const stage = (c.stageName || "").trim().toLowerCase();
+    const ids = new Set<string>();
+    if (fullName) (computedByPerson.get(fullName)?.trackIds || new Set<string>()).forEach((id) => ids.add(id));
+    if (stage)    (computedByPerson.get(stage)?.trackIds    || new Set<string>()).forEach((id) => ids.add(id));
+    return ids.size;
+  }, [computedByPerson]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -425,6 +438,7 @@ export default function Contacts() {
       phone: c.phone || "",
       city: c.city || "",
       country: c.country || "",
+      collaborationsCount: getCollaborationsCount(c),
       tracksDownloaded: c.tracksDownloaded,
       totalDownloads: c.totalDownloads,
       lastDownload: c.lastDownload,
@@ -627,7 +641,7 @@ export default function Contacts() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1550px] text-sm">
+              <table className="w-full min-w-[1620px] text-sm">
                 <thead>
                   <tr className="border-b border-border/50">
                     <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.name")}</th>
@@ -639,6 +653,7 @@ export default function Contacts() {
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">PRO</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Location</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.engagement")}</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Collab</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.lastInteraction")}</th>
                     <th className="text-right px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium"></th>
                   </tr>
@@ -740,6 +755,15 @@ export default function Contacts() {
                         <span className="text-xs text-muted-foreground">
                           {c.tracksDownloaded.length} {c.tracksDownloaded.length === 1 ? "track" : "tracks"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
                         </span>
+                      </td>
+                      {/* Collaborations: distinct catalog tracks where this person appears */}
+                      <td className="px-4 py-3.5">
+                        {(() => {
+                          const n = getCollaborationsCount(c);
+                          return n > 0
+                            ? <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Music className="w-3 h-3 shrink-0" /><span className="font-mono">{n}</span></span>
+                            : <span className="text-xs text-muted-foreground/40">—</span>;
+                        })()}
                       </td>
                       {/* Last Interaction — relative */}
                       <td className="px-4 py-3.5">
@@ -861,17 +885,23 @@ export default function Contacts() {
                   </div>
                 )}
                 {/* Extra rights metadata — only when at least one field is present */}
-                {(c.ipi?.trim() || c.publisher?.trim() || c.pro?.trim() || c.phone?.trim() || c.city?.trim() || c.country?.trim()) && (
-                  <div className="text-[11px] text-muted-foreground/80 flex flex-wrap gap-x-2 gap-y-0.5">
-                    {(c.city?.trim() || c.country?.trim()) && (
-                      <span><span className="font-medium text-muted-foreground">📍</span> {[c.city?.trim(), c.country?.trim()].filter(Boolean).join(", ")}</span>
-                    )}
-                    {c.phone?.trim() && <span><span className="font-medium text-muted-foreground">📞</span> <span className="font-mono">{c.phone}</span></span>}
-                    {c.ipi?.trim() && <span><span className="font-medium text-muted-foreground">IPI:</span> <span className="font-mono">{c.ipi}</span></span>}
-                    {c.publisher?.trim() && <span><span className="font-medium text-muted-foreground">Publisher:</span> {c.publisher}</span>}
-                    {c.pro?.trim() && <span><span className="font-medium text-muted-foreground">PROs:</span> {c.pro}</span>}
-                  </div>
-                )}
+                {(() => {
+                  const collabs = getCollaborationsCount(c);
+                  const showBlock = c.ipi?.trim() || c.publisher?.trim() || c.pro?.trim() || c.phone?.trim() || c.city?.trim() || c.country?.trim() || collabs > 0;
+                  if (!showBlock) return null;
+                  return (
+                    <div className="text-[11px] text-muted-foreground/80 flex flex-wrap gap-x-2 gap-y-0.5">
+                      {(c.city?.trim() || c.country?.trim()) && (
+                        <span><span className="font-medium text-muted-foreground">📍</span> {[c.city?.trim(), c.country?.trim()].filter(Boolean).join(", ")}</span>
+                      )}
+                      {c.phone?.trim() && <span><span className="font-medium text-muted-foreground">📞</span> <span className="font-mono">{c.phone}</span></span>}
+                      {collabs > 0 && <span><span className="font-medium text-muted-foreground">🎵</span> {collabs} {collabs === 1 ? "track" : "tracks"}</span>}
+                      {c.ipi?.trim() && <span><span className="font-medium text-muted-foreground">IPI:</span> <span className="font-mono">{c.ipi}</span></span>}
+                      {c.publisher?.trim() && <span><span className="font-medium text-muted-foreground">Publisher:</span> {c.publisher}</span>}
+                      {c.pro?.trim() && <span><span className="font-medium text-muted-foreground">PROs:</span> {c.pro}</span>}
+                    </div>
+                  );
+                })()}
                 {/* Stats + last interaction */}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{c.tracksDownloaded.length} {c.tracksDownloaded.length === 1 ? "track" : "tracks"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}</span>
