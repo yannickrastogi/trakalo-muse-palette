@@ -63,18 +63,24 @@ const roleColors: Record<string, string> = {
   Producer: "bg-brand-purple/12 text-brand-purple",
   Songwriter: "bg-rose-500/12 text-rose-400",
   Musician: "bg-teal-500/12 text-teal-400",
-  Engineer: "bg-sky-500/12 text-sky-400",
   "A&R": "bg-brand-pink/12 text-brand-pink",
   Manager: "bg-emerald-500/12 text-emerald-400",
+  "Recording Engineer": "bg-sky-500/12 text-sky-400",
   "Mix Engineer": "bg-sky-500/12 text-sky-400",
   "Mastering Engineer": "bg-sky-500/12 text-sky-400",
   Publisher: "bg-amber-500/12 text-amber-400",
 };
 
 // Canonical order for computed role chips (manual roles come first, then these in this order)
-const COMPUTED_ROLE_ORDER = ["Artist", "Songwriter", "Producer", "Musician", "Engineer"] as const;
+const COMPUTED_ROLE_ORDER = [
+  "Artist", "Songwriter", "Producer", "Musician",
+  "Recording Engineer", "Mix Engineer", "Mastering Engineer",
+] as const;
 
-// Maps a track credit jsonb key to a canonical role tag. Engineers collapse to "Engineer".
+// Maps a track credit jsonb key to a canonical role tag. Engineer keys use the EXACT
+// INDUSTRY_ROLES strings so the role filter dropdown matches ("Mix Engineer", "Mastering Engineer").
+// "Recording Engineer" isn't in INDUSTRY_ROLES so it won't appear in the filter dropdown,
+// but the chip is still displayed and search still matches it.
 // customProduction is intentionally skipped (user-defined arbitrary roles).
 const CREDIT_KEY_TO_ROLE: Record<string, string> = {
   songwriters: "Songwriter",
@@ -87,9 +93,9 @@ const CREDIT_KEY_TO_ROLE: Record<string, string> = {
   guitarsBy: "Musician",
   bassBy: "Musician",
   programmingBy: "Musician",
-  recordingEngineer: "Engineer",
-  mixingEngineer: "Engineer",
-  masteringEngineer: "Engineer",
+  recordingEngineer: "Recording Engineer",
+  mixingEngineer: "Mix Engineer",
+  masteringEngineer: "Mastering Engineer",
 };
 
 // Canonical role from a split's role string (case-insensitive).
