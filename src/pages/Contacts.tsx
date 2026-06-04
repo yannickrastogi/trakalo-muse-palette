@@ -1,10 +1,11 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Users, UserPlus, Building2, Download, X, FileText, FileSpreadsheet, ChevronDown, Send, Trash2, Loader2, Pencil, Music } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { EmptyState } from "@/components/EmptyState";
 import { AddContactModal } from "@/components/AddContactModal";
+import { ContactDetailSheet, type ContactTrackPreview } from "@/components/ContactDetailSheet";
 import { useTranslation } from "react-i18next";
 import { useContacts, type Contact } from "@/contexts/ContactsContext";
 import { useTrack } from "@/contexts/TrackContext";
@@ -188,7 +189,9 @@ export default function Contacts() {
   const [pitchContact, setPitchContact] = useState<{ name: string; email: string; company: string } | null>(null);
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [detailContact, setDetailContact] = useState<Contact | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
@@ -319,6 +322,22 @@ export default function Contacts() {
     return ids.size;
   }, [computedByPerson]);
 
+  // Returns track previews (id/title/artist/coverUrl) for the drawer Collaborations section.
+  const getContactTracks = useCallback((c: Contact): ContactTrackPreview[] => {
+    const fullName = (c.firstName + " " + c.lastName).trim().toLowerCase();
+    const stage = (c.stageName || "").trim().toLowerCase();
+    const ids = new Set<string>();
+    if (fullName) (computedByPerson.get(fullName)?.trackIds || new Set<string>()).forEach((id) => ids.add(id));
+    if (stage)    (computedByPerson.get(stage)?.trackIds    || new Set<string>()).forEach((id) => ids.add(id));
+    const previews: ContactTrackPreview[] = [];
+    for (const id of ids) {
+      const t = tracks.find((tr) => tr.uuid === id);
+      if (!t) continue;
+      previews.push({ id: t.uuid, title: t.title || "Untitled", artist: t.artist || "", coverUrl: t.coverImage });
+    }
+    return previews;
+  }, [computedByPerson, tracks]);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
@@ -446,11 +465,6 @@ export default function Contacts() {
     if (type === "pdf") generateContactListPdf(data);
     else if (type === "csv") exportContactsCsv(data);
     else exportContactsXlsx(data);
-  };
-
-  const copyEmail = (email: string) => {
-    navigator.clipboard.writeText(email);
-    toast.success(t("contacts.emailCopied"));
   };
 
   return (
@@ -641,19 +655,16 @@ export default function Contacts() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1620px] text-sm">
+              <table className="w-full min-w-[1320px] text-sm">
                 <thead>
                   <tr className="border-b border-border/50">
                     <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.name")}</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.role")}</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Email</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Phone</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.role")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.organization")}</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Publisher</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">IPI</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">PRO</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Location</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.engagement")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Collab</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.engagement")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.lastInteraction")}</th>
                     <th className="text-right px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium"></th>
                   </tr>
@@ -667,7 +678,7 @@ export default function Contacts() {
                         "hover:bg-secondary/40 transition-colors duration-200 cursor-pointer " +
                         (focusedId === c.id ? "bg-brand-orange/10 ring-2 ring-brand-orange/50 transition-all" : "")
                       }
-                      onClick={() => copyEmail(c.email)}
+                      onClick={() => setDetailContact(c)}
                     >
                       {/* Name + Email merged */}
                       <td className="px-5 py-3.5">
@@ -682,9 +693,18 @@ export default function Contacts() {
                                 <span className="font-normal text-muted-foreground"> ({c.stageName})</span>
                               )}
                             </div>
-                            <div className="text-xs text-muted-foreground truncate">{c.email}</div>
                           </div>
                         </div>
+                      </td>
+                      {/* Email — dedicated column */}
+                      <td className="px-4 py-3.5">
+                        <span className="text-xs text-muted-foreground truncate">{c.email}</span>
+                      </td>
+                      {/* Phone */}
+                      <td className="px-4 py-3.5">
+                        {c.phone?.trim()
+                          ? <span className="text-xs text-muted-foreground font-mono">{c.phone}</span>
+                          : <span className="text-xs text-muted-foreground/40">—</span>}
                       </td>
                       {/* Role badges — manual + computed, cap at 3 visible + "+N more" */}
                       <td className="px-4 py-3.5">
@@ -709,12 +729,6 @@ export default function Contacts() {
                           );
                         })()}
                       </td>
-                      {/* Phone */}
-                      <td className="px-4 py-3.5">
-                        {c.phone?.trim()
-                          ? <span className="text-xs text-muted-foreground font-mono">{c.phone}</span>
-                          : <span className="text-xs text-muted-foreground/40">—</span>}
-                      </td>
                       {/* Organization */}
                       <td className="px-4 py-3.5">
                         {c.organization && (
@@ -724,38 +738,6 @@ export default function Contacts() {
                           </span>
                         )}
                       </td>
-                      {/* Publisher */}
-                      <td className="px-4 py-3.5">
-                        {c.publisher?.trim() && (
-                          <span className="text-xs text-muted-foreground">{c.publisher}</span>
-                        )}
-                      </td>
-                      {/* IPI */}
-                      <td className="px-4 py-3.5">
-                        {c.ipi?.trim() && (
-                          <span className="text-xs font-mono text-muted-foreground">{c.ipi}</span>
-                        )}
-                      </td>
-                      {/* PRO */}
-                      <td className="px-4 py-3.5">
-                        {c.pro?.trim() && (
-                          <span className="text-xs text-muted-foreground">{c.pro}</span>
-                        )}
-                      </td>
-                      {/* Location — City + Country, comma-separated, only shown if at least one is present */}
-                      <td className="px-4 py-3.5">
-                        {(c.city?.trim() || c.country?.trim()) && (
-                          <span className="text-xs text-muted-foreground">
-                            {[c.city?.trim(), c.country?.trim()].filter(Boolean).join(", ")}
-                          </span>
-                        )}
-                      </td>
-                      {/* Engagement: tracks + downloads merged */}
-                      <td className="px-4 py-3.5">
-                        <span className="text-xs text-muted-foreground">
-                          {c.tracksDownloaded.length} {c.tracksDownloaded.length === 1 ? "track" : "tracks"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
-                        </span>
-                      </td>
                       {/* Collaborations: distinct catalog tracks where this person appears */}
                       <td className="px-4 py-3.5">
                         {(() => {
@@ -764,6 +746,12 @@ export default function Contacts() {
                             ? <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Music className="w-3 h-3 shrink-0" /><span className="font-mono">{n}</span></span>
                             : <span className="text-xs text-muted-foreground/40">—</span>;
                         })()}
+                      </td>
+                      {/* Engagement: tracks + downloads merged */}
+                      <td className="px-4 py-3.5">
+                        <span className="text-xs text-muted-foreground">
+                          {c.tracksDownloaded.length} {c.tracksDownloaded.length === 1 ? "track" : "tracks"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
+                        </span>
                       </td>
                       {/* Last Interaction — relative */}
                       <td className="px-4 py-3.5">
@@ -850,7 +838,7 @@ export default function Contacts() {
                   "card-premium p-4 space-y-3 " +
                   (focusedId === c.id ? "ring-2 ring-brand-orange/50 bg-brand-orange/10 transition-all" : "")
                 }
-                onClick={() => copyEmail(c.email)}
+                onClick={() => setDetailContact(c)}
               >
                 {/* Top: avatar + name + role */}
                 <div className="flex items-start justify-between gap-3">
@@ -884,21 +872,18 @@ export default function Contacts() {
                     {c.organization}
                   </div>
                 )}
-                {/* Extra rights metadata — only when at least one field is present */}
+                {/* Compact metadata: Phone · Collabs · Location (tap card to see full details in drawer) */}
                 {(() => {
                   const collabs = getCollaborationsCount(c);
-                  const showBlock = c.ipi?.trim() || c.publisher?.trim() || c.pro?.trim() || c.phone?.trim() || c.city?.trim() || c.country?.trim() || collabs > 0;
+                  const showBlock = c.phone?.trim() || collabs > 0 || c.city?.trim() || c.country?.trim();
                   if (!showBlock) return null;
                   return (
                     <div className="text-[11px] text-muted-foreground/80 flex flex-wrap gap-x-2 gap-y-0.5">
+                      {c.phone?.trim() && <span><span className="font-medium text-muted-foreground">📞</span> <span className="font-mono">{c.phone}</span></span>}
+                      {collabs > 0 && <span><span className="font-medium text-muted-foreground">🎵</span> {collabs} {collabs === 1 ? "track" : "tracks"}</span>}
                       {(c.city?.trim() || c.country?.trim()) && (
                         <span><span className="font-medium text-muted-foreground">📍</span> {[c.city?.trim(), c.country?.trim()].filter(Boolean).join(", ")}</span>
                       )}
-                      {c.phone?.trim() && <span><span className="font-medium text-muted-foreground">📞</span> <span className="font-mono">{c.phone}</span></span>}
-                      {collabs > 0 && <span><span className="font-medium text-muted-foreground">🎵</span> {collabs} {collabs === 1 ? "track" : "tracks"}</span>}
-                      {c.ipi?.trim() && <span><span className="font-medium text-muted-foreground">IPI:</span> <span className="font-mono">{c.ipi}</span></span>}
-                      {c.publisher?.trim() && <span><span className="font-medium text-muted-foreground">Publisher:</span> {c.publisher}</span>}
-                      {c.pro?.trim() && <span><span className="font-medium text-muted-foreground">PROs:</span> {c.pro}</span>}
                     </div>
                   );
                 })()}
@@ -969,6 +954,25 @@ export default function Contacts() {
           if (!open) setEditingContact(null);
         }}
         editingContact={editingContact}
+      />
+
+      <ContactDetailSheet
+        contact={detailContact}
+        onClose={() => setDetailContact(null)}
+        onEdit={(c) => { setEditingContact(c); setAddContactOpen(true); setDetailContact(null); }}
+        onPitch={(c) => {
+          setPitchContact({ name: c.firstName + " " + c.lastName, email: c.email, company: c.organization });
+          setDetailContact(null);
+        }}
+        onDelete={(c) => {
+          setDeleteTarget({ id: c.id, name: (c.firstName + " " + c.lastName).trim() });
+          setDetailContact(null);
+        }}
+        isAdmin={isAdmin}
+        contactTracks={detailContact ? getContactTracks(detailContact) : []}
+        displayRoles={detailContact ? getDisplayRoles(detailContact) : []}
+        onTrackClick={(trackId) => { navigate("/track/" + trackId); setDetailContact(null); }}
+        formatLastInteraction={formatRelativeDate}
       />
 
       {/* Delete Contact Confirmation */}
