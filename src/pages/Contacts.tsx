@@ -6,7 +6,8 @@ import { PageShell } from "@/components/PageShell";
 import { EmptyState } from "@/components/EmptyState";
 import { AddContactModal } from "@/components/AddContactModal";
 import { useTranslation } from "react-i18next";
-import { useContacts } from "@/contexts/ContactsContext";
+import { useContacts, type Contact } from "@/contexts/ContactsContext";
+import { useTrack } from "@/contexts/TrackContext";
 import { usePitches } from "@/contexts/PitchContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -60,12 +61,46 @@ function normalizeRole(role: string): string {
 const roleColors: Record<string, string> = {
   Artist: "bg-brand-orange/12 text-brand-orange",
   Producer: "bg-brand-purple/12 text-brand-purple",
+  Songwriter: "bg-rose-500/12 text-rose-400",
+  Musician: "bg-teal-500/12 text-teal-400",
+  Engineer: "bg-sky-500/12 text-sky-400",
   "A&R": "bg-brand-pink/12 text-brand-pink",
   Manager: "bg-emerald-500/12 text-emerald-400",
   "Mix Engineer": "bg-sky-500/12 text-sky-400",
   "Mastering Engineer": "bg-sky-500/12 text-sky-400",
   Publisher: "bg-amber-500/12 text-amber-400",
 };
+
+// Canonical order for computed role chips (manual roles come first, then these in this order)
+const COMPUTED_ROLE_ORDER = ["Artist", "Songwriter", "Producer", "Musician", "Engineer"] as const;
+
+// Maps a track credit jsonb key to a canonical role tag. Engineers collapse to "Engineer".
+// customProduction is intentionally skipped (user-defined arbitrary roles).
+const CREDIT_KEY_TO_ROLE: Record<string, string> = {
+  songwriters: "Songwriter",
+  producers: "Producer",
+  vocalsBy: "Musician",
+  backgroundVocalsBy: "Musician",
+  drumsBy: "Musician",
+  synthsBy: "Musician",
+  keysBy: "Musician",
+  guitarsBy: "Musician",
+  bassBy: "Musician",
+  programmingBy: "Musician",
+  recordingEngineer: "Engineer",
+  mixingEngineer: "Engineer",
+  masteringEngineer: "Engineer",
+};
+
+// Canonical role from a split's role string (case-insensitive).
+function canonicalSplitRole(role: string): string | null {
+  const r = role.trim().toLowerCase();
+  if (r === "songwriter") return "Songwriter";
+  if (r === "producer") return "Producer";
+  if (r === "artist") return "Artist";
+  if (r === "musician") return "Musician";
+  return null;
+}
 
 function getRoleColor(role: string) {
   return roleColors[role] || "bg-secondary text-secondary-foreground";
@@ -184,6 +219,84 @@ export default function Contacts() {
   // Normalize roles on all contacts
   const contacts = useMemo(() => rawContacts.map((c) => ({ ...c, role: normalizeRole(c.role) })), [rawContacts]);
 
+  // Compute canonical roles per person from their appearances in workspace tracks.
+  // Key = full name OR stage name (lowercase, trimmed). Both registered independently so
+  // a track-side mention of either tags the corresponding contact.
+  const { tracks } = useTrack();
+  const computedRolesByPerson = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    const add = (rawName: unknown, role: string) => {
+      if (typeof rawName !== "string") return;
+      const key = rawName.trim().toLowerCase();
+      if (!key) return;
+      let set = map.get(key);
+      if (!set) { set = new Set(); map.set(key, set); }
+      set.add(role);
+    };
+    for (const track of tracks) {
+      // track.artist (comma-separated string) → "Artist"
+      (track.artist || "").split(",").forEach((s) => add(s, "Artist"));
+      // track.featuredArtists[] → "Artist"
+      if (Array.isArray(track.featuredArtists)) track.featuredArtists.forEach((s) => add(s, "Artist"));
+      // splits[]: role-mapped, on both name and stage_name
+      const splits = Array.isArray(track.splits) ? track.splits : [];
+      for (const s of splits) {
+        const maybeRoles = (s as unknown as Record<string, unknown>).roles;
+        const arr = Array.isArray(maybeRoles)
+          ? (maybeRoles as string[])
+          : (s?.role ? [s.role as string] : []);
+        for (const r of arr) {
+          const canon = canonicalSplitRole(r);
+          if (!canon) continue;
+          add(s?.name, canon);
+          add((s as unknown as { stage_name?: string })?.stage_name, canon);
+        }
+      }
+      // credits.{songwriters, producers, 8 performer keys, 3 engineers}
+      const credits = (track.credits || {}) as Record<string, unknown>;
+      for (const [key, role] of Object.entries(CREDIT_KEY_TO_ROLE)) {
+        const raw = credits[key];
+        if (Array.isArray(raw)) (raw as unknown[]).forEach((v) => add(v, role));
+      }
+      // customPerformers[].values → "Musician" (customProduction intentionally skipped)
+      const cp = credits.customPerformers;
+      if (Array.isArray(cp)) {
+        (cp as Array<{ values?: unknown }>).forEach((entry) => {
+          if (Array.isArray(entry?.values)) entry.values.forEach((v) => add(v, "Musician"));
+        });
+      }
+    }
+    return map;
+  }, [tracks]);
+
+  // Returns the display roles for a contact: manual roles first (in their original order),
+  // then computed roles in canonical order. Dedup case-insensitive, preserves original casing.
+  const getDisplayRoles = useCallback((c: Contact): string[] => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    // Manual roles (comma-split)
+    for (const tok of (c.role || "").split(",").map((s) => s.trim()).filter(Boolean)) {
+      const k = tok.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(tok);
+    }
+    // Computed roles — lookup by fullName AND stageName, then sort by canonical order
+    const fullName = (c.firstName + " " + c.lastName).trim().toLowerCase();
+    const stage = (c.stageName || "").trim().toLowerCase();
+    const computed = new Set<string>();
+    if (fullName) (computedRolesByPerson.get(fullName) || new Set()).forEach((r) => computed.add(r));
+    if (stage)    (computedRolesByPerson.get(stage)    || new Set()).forEach((r) => computed.add(r));
+    for (const r of COMPUTED_ROLE_ORDER) {
+      if (!computed.has(r)) continue;
+      const k = r.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(r);
+    }
+    return out;
+  }, [computedRolesByPerson]);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
@@ -247,21 +360,22 @@ export default function Contacts() {
           (c.publisher || "").toLowerCase().includes(q) ||
           (c.ipi || "").toLowerCase().includes(q) ||
           (c.pro || "").toLowerCase().includes(q) ||
-          (c.role || "").toLowerCase().includes(q)
+          (c.role || "").toLowerCase().includes(q) ||
+          getDisplayRoles(c).some((r) => r.toLowerCase().includes(q))
       );
     }
     if (roleFilter !== "All") {
-      // c.role is a comma-separated string (e.g. "Artist, Songwriter") — match any token (case-insensitive)
+      // Match against displayRoles (manual + computed from track appearances), case-insensitive
       const needle = roleFilter.toLowerCase();
       result = result.filter((c) =>
-        (c.role || "").split(",").map((s) => s.trim().toLowerCase()).includes(needle)
+        getDisplayRoles(c).some((r) => r.toLowerCase() === needle)
       );
     }
     if (orgFilter !== "All") {
       result = result.filter((c) => c.organization === orgFilter);
     }
     return result;
-  }, [contacts, search, roleFilter, orgFilter]);
+  }, [contacts, search, roleFilter, orgFilter, getDisplayRoles]);
 
   const formatRelativeDate = (iso: string) => {
     try {
@@ -282,7 +396,8 @@ export default function Contacts() {
       lastName: c.lastName,
       email: c.email,
       organization: c.organization,
-      role: c.role,
+      // Export the full display roles (manual + computed), not just the manual c.role
+      role: getDisplayRoles(c).join(", "),
       stageName: c.stageName || "",
       publisher: c.publisher || "",
       ipi: c.ipi || "",
@@ -501,11 +616,28 @@ export default function Contacts() {
                           </div>
                         </div>
                       </td>
-                      {/* Role badge */}
+                      {/* Role badges — manual + computed, cap at 3 visible + "+N more" */}
                       <td className="px-4 py-3.5">
-                        <span className={"inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold " + getRoleColor(c.role)}>
-                          {c.role}
-                        </span>
+                        {(() => {
+                          const dr = getDisplayRoles(c);
+                          if (dr.length === 0) return null;
+                          const visible = dr.slice(0, 3);
+                          const overflow = dr.length - visible.length;
+                          return (
+                            <div className="flex flex-wrap gap-1">
+                              {visible.map((r) => (
+                                <span key={r} className={"inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold " + getRoleColor(r)}>
+                                  {r}
+                                </span>
+                              ))}
+                              {overflow > 0 && (
+                                <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-secondary text-muted-foreground" title={dr.slice(3).join(", ")}>
+                                  +{overflow}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                       {/* Organization */}
                       <td className="px-4 py-3.5">
@@ -631,9 +763,14 @@ export default function Contacts() {
                       <div className="text-xs text-muted-foreground truncate">{c.email}</div>
                     </div>
                   </div>
-                  <span className={"inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-semibold shrink-0 " + getRoleColor(c.role)}>
-                    {c.role}
-                  </span>
+                  {/* Mobile: role chips wrap, no cap */}
+                  <div className="flex flex-wrap gap-1 justify-end shrink-0 max-w-[55%]">
+                    {getDisplayRoles(c).map((r) => (
+                      <span key={r} className={"inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold " + getRoleColor(r)}>
+                        {r}
+                      </span>
+                    ))}
+                  </div>
                 </div>
                 {/* Organization */}
                 {c.organization && (
