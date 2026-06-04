@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Users, UserPlus, Building2, Download, X, FileText, FileSpreadsheet, ChevronDown, Send, Trash2, Loader2 } from "lucide-react";
+import { Search, Users, UserPlus, Building2, Download, X, FileText, FileSpreadsheet, ChevronDown, Send, Trash2, Loader2, Pencil } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { EmptyState } from "@/components/EmptyState";
 import { AddContactModal } from "@/components/AddContactModal";
@@ -182,11 +182,12 @@ export default function Contacts() {
   const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const [roleFilter, setRoleFilter] = useState("All");
   const [orgFilter, setOrgFilter] = useState("All");
-  const [countryFilter, setCountryFilter] = useState("All");
+  const [countryFilter, setCountryFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [pitchContact, setPitchContact] = useState<{ name: string; email: string; company: string } | null>(null);
   const [addContactOpen, setAddContactOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
@@ -346,11 +347,6 @@ export default function Contacts() {
     const orgs = [...new Set(contacts.map((c) => c.organization).filter(Boolean))].sort();
     return ["All", ...orgs];
   }, [contacts]);
-  // Countries actually present in the workspace's contacts — alphabetical
-  const countryOptions = useMemo(() => {
-    const set = [...new Set(contacts.map((c) => (c.country || "").trim()).filter(Boolean))].sort();
-    return ["All", ...set];
-  }, [contacts]);
 
   const totalTracksShared = useMemo(() => {
     const allTracks = new Set<string>();
@@ -389,8 +385,9 @@ export default function Contacts() {
     if (orgFilter !== "All") {
       result = result.filter((c) => c.organization === orgFilter);
     }
-    if (countryFilter !== "All") {
-      result = result.filter((c) => (c.country || "") === countryFilter);
+    if (countryFilter.trim()) {
+      const cq = countryFilter.toLowerCase().trim();
+      result = result.filter((c) => (c.country || "").toLowerCase().includes(cq));
     }
     if (cityFilter.trim()) {
       const cq = cityFilter.toLowerCase().trim();
@@ -574,10 +571,21 @@ export default function Contacts() {
           {organizations.length > 1 && (
             <FilterSelect label={t("contacts.allOrganizations")} value={orgFilter} options={organizations} onChange={setOrgFilter} />
           )}
-          {/* Country dropdown — only shown when at least one contact has a country */}
-          {countryOptions.length > 1 && (
-            <FilterSelect label="Country" value={countryFilter} options={countryOptions} onChange={setCountryFilter} />
-          )}
+          {/* Country free-text filter — always visible for consistency with City */}
+          <div className="flex items-center gap-2.5 bg-secondary/50 rounded-xl px-3 py-2 border border-border/50 focus-within:border-primary/30 transition-all min-w-[140px] max-w-[180px]">
+            <input
+              type="text"
+              value={countryFilter}
+              onChange={(e) => setCountryFilter(e.target.value)}
+              placeholder="Country…"
+              className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
+            />
+            {countryFilter && (
+              <button onClick={() => setCountryFilter("")} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
           {/* City free-text filter */}
           <div className="flex items-center gap-2.5 bg-secondary/50 rounded-xl px-3 py-2 border border-border/50 focus-within:border-primary/30 transition-all min-w-[140px] max-w-[180px]">
             <input
@@ -742,6 +750,18 @@ export default function Contacts() {
                             <Send className="w-3.5 h-3.5" />
                             <span className="hidden xl:inline">{t("contacts.sendPitch")}</span>
                           </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingContact(c);
+                              setAddContactOpen(true);
+                            }}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                            title="Edit contact"
+                            aria-label="Edit contact"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
                           {isAdmin && (
                             <button
                               onClick={(e) => {
@@ -859,6 +879,19 @@ export default function Contacts() {
                     <Send className="w-4 h-4" />
                     {t("contacts.sendPitch")}
                   </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingContact(c);
+                        setAddContactOpen(true);
+                      }}
+                      className="flex items-center justify-center w-11 h-11 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                      title="Edit contact"
+                      aria-label="Edit contact"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
                   {isAdmin && (
                     <button
                       onClick={(e) => {
@@ -872,6 +905,7 @@ export default function Contacts() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}
+                  </div>
                 </div>
               </motion.div>
             ))
@@ -888,7 +922,14 @@ export default function Contacts() {
         initialRecipientEmail={pitchContact?.email}
         initialRecipientCompany={pitchContact?.company}
       />
-      <AddContactModal open={addContactOpen} onOpenChange={setAddContactOpen} />
+      <AddContactModal
+        open={addContactOpen}
+        onOpenChange={(open) => {
+          setAddContactOpen(open);
+          if (!open) setEditingContact(null);
+        }}
+        editingContact={editingContact}
+      />
 
       {/* Delete Contact Confirmation */}
       <AlertDialog

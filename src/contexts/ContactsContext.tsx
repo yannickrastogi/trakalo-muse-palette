@@ -15,6 +15,7 @@ export interface Contact extends WorkspaceScoped {
   pro: string;
   ipi: string;
   publisher: string;
+  phone: string;
   city: string;
   country: string;
   firstInteraction: string;
@@ -46,6 +47,7 @@ function mapRowToContact(row: Record<string, unknown>): Contact {
     pro: Array.isArray(row.pro) ? (row.pro as string[]).join(", ") : (row.pro as string) || "",
     ipi: (row.ipi as string) || "",
     publisher: (row.publisher as string) || "",
+    phone: (row.phone as string) || "",
     city: (row.city as string) || "",
     country: (row.country as string) || "",
     firstInteraction: (row.created_at as string) || "",

@@ -1,25 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useContacts } from "@/contexts/ContactsContext";
+import { useContacts, type Contact } from "@/contexts/ContactsContext";
 import { INDUSTRY_ROLES, COUNTRIES } from "@/lib/constants";
 import { toast } from "sonner";
 
 interface AddContactModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** When set, the modal opens in edit mode and pre-fills all fields. */
+  editingContact?: Contact | null;
 }
 
-export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
+export function AddContactModal({ open, onOpenChange, editingContact }: AddContactModalProps) {
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
   const { contacts, refreshContacts } = useContacts();
+  const isEditMode = !!editingContact;
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -29,6 +32,22 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Pre-fill (or reset) the form when editingContact changes or the modal opens
+  useEffect(() => {
+    if (open && editingContact) {
+      setFullName(((editingContact.firstName || "") + " " + (editingContact.lastName || "")).trim());
+      setEmail(editingContact.email || "");
+      setRole(editingContact.role || "");
+      setCompany(editingContact.organization || "");
+      setPhone(editingContact.phone || "");
+      setCity(editingContact.city || "");
+      setCountry(editingContact.country || "");
+    } else if (open && !editingContact) {
+      resetForm();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editingContact?.id]);
 
   function resetForm() {
     setFullName("");
@@ -58,9 +77,9 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
       return;
     }
 
-    // Check for duplicate email in workspace
-    const duplicate = contacts.find(
-      (c) => c.email.toLowerCase() === trimmedEmail
+    // Check for duplicate email in workspace (skip in edit mode if email unchanged)
+    const duplicate = contacts.find((c) =>
+      c.email.toLowerCase() === trimmedEmail && c.id !== editingContact?.id
     );
     if (duplicate) {
       toast.error("A contact with this email already exists");
@@ -74,36 +93,65 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
     const firstName = spaceIdx > 0 ? trimmedName.slice(0, spaceIdx) : trimmedName;
     const lastName = spaceIdx > 0 ? trimmedName.slice(spaceIdx + 1) : "";
 
-    const { error } = await supabase.rpc("add_contact_manual", {
-      _user_id: user.id,
-      _workspace_id: activeWorkspace.id,
-      _first_name: firstName,
-      _last_name: lastName || null,
-      _email: trimmedEmail,
-      _role: role || null,
-      _company: company.trim() || null,
-      _phone: phone.trim() || null,
-      _pro: null,
-      _ipi: null,
-      _publisher: null,
-      _city: city.trim() || null,
-      _country: country || null,
-    });
+    let error: unknown = null;
+    if (isEditMode && editingContact) {
+      // Preserve fields not exposed in this modal — sending null would silently overwrite DB values.
+      // pro is stored as text[] in DB; mapped to comma-string in app — split back to array on update.
+      const preservedPro = editingContact.pro
+        ? editingContact.pro.split(",").map((s) => s.trim()).filter(Boolean)
+        : null;
+      const res = await supabase.rpc("update_contact", {
+        _user_id: user.id,
+        _workspace_id: activeWorkspace.id,
+        _contact_id: editingContact.id,
+        _first_name: firstName,
+        _last_name: lastName || null,
+        _email: trimmedEmail,
+        _role: role || null,
+        _company: company.trim() || null,
+        _phone: phone.trim() || null,
+        _pro: preservedPro,
+        _ipi: editingContact.ipi || null,
+        _publisher: editingContact.publisher || null,
+        _stage_name: editingContact.stageName || null,
+        _city: city.trim() || null,
+        _country: country || null,
+      });
+      error = res.error;
+    } else {
+      const res = await supabase.rpc("add_contact_manual", {
+        _user_id: user.id,
+        _workspace_id: activeWorkspace.id,
+        _first_name: firstName,
+        _last_name: lastName || null,
+        _email: trimmedEmail,
+        _role: role || null,
+        _company: company.trim() || null,
+        _phone: phone.trim() || null,
+        _pro: null,
+        _ipi: null,
+        _publisher: null,
+        _city: city.trim() || null,
+        _country: country || null,
+      });
+      error = res.error;
+    }
 
     setSaving(false);
 
     if (error) {
+      const err = error as { code?: string };
       // Handle unique constraint violation from DB
-      if (error.code === "23505") {
+      if (err.code === "23505") {
         toast.error("A contact with this email already exists");
       } else {
-        toast.error("Failed to add contact");
-        console.error("Error adding contact:", error);
+        toast.error(isEditMode ? "Failed to update contact" : "Failed to add contact");
+        console.error(isEditMode ? "Error updating contact:" : "Error adding contact:", error);
       }
       return;
     }
 
-    toast.success("Contact added successfully");
+    toast.success(isEditMode ? "Contact updated successfully" : "Contact added successfully");
     resetForm();
     onOpenChange(false);
     await refreshContacts();
@@ -114,8 +162,8 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-brand-orange" />
-            Add Contact
+            {isEditMode ? <Pencil className="w-5 h-5 text-brand-orange" /> : <UserPlus className="w-5 h-5 text-brand-orange" />}
+            {isEditMode ? "Edit Contact" : "Add Contact"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
@@ -222,7 +270,7 @@ export function AddContactModal({ open, onOpenChange }: AddContactModalProps) {
               disabled={saving || !fullName.trim() || !email.trim()}
               className="px-5 py-2 rounded-xl text-[13px] font-semibold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 hover:from-orange-600 hover:via-pink-600 hover:to-purple-600 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {saving ? "Adding..." : "Add Contact"}
+              {saving ? (isEditMode ? "Saving..." : "Adding...") : (isEditMode ? "Save Changes" : "Add Contact")}
             </button>
           </div>
         </form>
