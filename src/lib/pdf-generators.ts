@@ -1026,35 +1026,22 @@ export function exportContactCardPdf(params: {
   // Top gradient border (orange → pink → purple)
   drawGradientBar(doc, pageW, 0, 3);
 
-  // TRAKALOG wordmark (top-left, gradient lettre-par-lettre)
-  drawTrakalogWordmark(doc, marginX, 36, 13, { baseline: "middle" });
+  // TRAKALOG logo (icon + gradient wordmark, shared with all other PDFs)
+  drawLogo(doc, marginX);
 
   // Header card (subtle dark) with avatar + name + stage
-  const cardY = 60;
+  // cardY pushed below drawLogo footprint (icon spans y=42..70 with wordmark baseline 59)
+  const cardY = 90;
   const cardH = 150;
   doc.setFillColor(...cardSubtle);
   doc.roundedRect(marginX, cardY, contentW, cardH, 8, 8, "F");
 
-  // Avatar circle centered, gradient strip-fill orange→pink (~radius 32pt)
+  // Avatar — solid pink circle (clean, matches Trakalog splits PDF dot style)
   const avatarCx = pageW / 2;
   const avatarCy = cardY + 45;
   const avatarR = 30;
-  // Strip-fill clipped to circle approximated by horizontal strips
-  const avatarStrips = 24;
-  for (let i = 0; i < avatarStrips; i++) {
-    const t = i / (avatarStrips - 1);
-    const r = Math.round(brandOrange[0] + (brandPink[0] - brandOrange[0]) * t);
-    const g = Math.round(brandOrange[1] + (brandPink[1] - brandOrange[1]) * t);
-    const b = Math.round(brandOrange[2] + (brandPink[2] - brandOrange[2]) * t);
-    doc.setFillColor(r, g, b);
-    // strip y position from top to bottom of circle bounding box
-    const stripY = avatarCy - avatarR + (i * 2 * avatarR) / avatarStrips;
-    const stripH = (2 * avatarR) / avatarStrips + 0.5;
-    // chord width at this y (circle equation)
-    const dy = stripY + stripH / 2 - avatarCy;
-    const half = Math.sqrt(Math.max(0, avatarR * avatarR - dy * dy));
-    doc.rect(avatarCx - half, stripY, half * 2, stripH, "F");
-  }
+  doc.setFillColor(...brandPink);
+  doc.circle(avatarCx, avatarCy, avatarR, "F");
   // Initials
   const a = (contact.firstName?.[0] || "?").toUpperCase();
   const b = (contact.lastName?.[0] || "").toUpperCase();
