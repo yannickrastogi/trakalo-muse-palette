@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -34,6 +35,7 @@ import {
   Scale,
   Sparkles,
   Layers,
+  ListMusic,
 } from "lucide-react";
 import { CollaboratorAutocomplete, type CollaboratorSuggestion } from "@/components/CollaboratorAutocomplete";
 import { useContacts, type Contact } from "@/contexts/ContactsContext";
@@ -1045,6 +1047,10 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     setIsPlayingPreview(false);
     setQuickUploadIdx(-1);
     setQuickUploadDone(false);
+    setSkipReviewIdx(-1);
+    setSkipReviewDone(false);
+    setSkipReviewSuccessCount(0);
+    setSkipReviewErrors([]);
     setCommonInfo(createEmptyCommonInfo());
     setCommonInfoApplied(false);
     setAppliedFieldsCount(0);
@@ -1321,6 +1327,16 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const [quickUploadIdx, setQuickUploadIdx] = useState(-1);
   const [quickUploadDone, setQuickUploadDone] = useState(false);
 
+  // ─── Skip Review bulk upload (from step Review, queue.length >= 2) ───────
+  // skipReviewIdx >= 0  → progress UI (replaces StepReview)
+  // skipReviewDone      → success UI (replaces StepReview)
+  // Otherwise           → existing per-track review workflow
+  const navigate = useNavigate();
+  const [skipReviewIdx, setSkipReviewIdx] = useState(-1);
+  const [skipReviewDone, setSkipReviewDone] = useState(false);
+  const [skipReviewSuccessCount, setSkipReviewSuccessCount] = useState(0);
+  const [skipReviewErrors, setSkipReviewErrors] = useState<Array<{ fileName: string; reason: string }>>([]);
+
   const handleQuickUpload = useCallback(async () => {
     if (queue.length === 0 || isSaving) return;
     setIsSaving(true);
@@ -1482,6 +1498,297 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       setQuickUploadDone(false);
     }
   }, [queue, isSaving, addTrack, activeWorkspace, uploadFileWithProgress, onOpenChange]);
+
+  // ─── Skip Review — bulk upload all queue entries with FULL per-entry metadata ──
+  // Mirrors saveCurrentTrack's logic per track (audio upload + waveform + addTrack +
+  // extended update_track + cover + catalog shares + collaborators + MP3/lyrics
+  // fire-and-forget) but iterates the whole queue sequentially. Errors on a single
+  // track are caught so the batch keeps going; results surface on the success screen.
+  const handleSkipReviewUploadAll = useCallback(async () => {
+    if (queue.length === 0 || isSaving) return;
+    setIsSaving(true);
+    setSkipReviewDone(false);
+    setSkipReviewSuccessCount(0);
+    setSkipReviewErrors([]);
+    const localErrors: Array<{ fileName: string; reason: string }> = [];
+    let successCount = 0;
+
+    try {
+      for (let qi = 0; qi < queue.length; qi++) {
+        const entry = queue[qi];
+        setSkipReviewIdx(qi);
+        setUploadProgress(0);
+        setUploadStage(t("uploadTrack.skipReviewUploadingX", { current: qi + 1, total: queue.length, defaultValue: "Uploading track " + (qi + 1) + " of " + queue.length + "..." }));
+
+        try {
+          // ── Stage 1: Upload audio (0–95%) ──
+          let audioUrl: string | undefined;
+          let waveformData: number[] | undefined;
+          if (entry.file && activeWorkspace) {
+            const fileExt = entry.file.name.split(".").pop() || "wav";
+            const filePath = activeWorkspace.id + "/" + crypto.randomUUID() + "." + fileExt;
+            const { error: uploadError } = await uploadFileWithProgress(
+              "tracks",
+              filePath,
+              entry.file,
+              entry.file.type || "audio/wav",
+              (pct) => setUploadProgress(Math.round(pct * 0.95)),
+            );
+            if (uploadError) {
+              throw new Error("Audio upload failed");
+            }
+            audioUrl = filePath;
+          }
+          setUploadProgress(95);
+
+          // ── Stage 2: Waveform (95–97%) ──
+          if (audioUrl && entry.file) {
+            try {
+              waveformData = await generateWaveform(entry.file, 200);
+            } catch (e) { console.error("Waveform generation error:", e); }
+          }
+          setUploadProgress(97);
+
+          // ── Stage 3: addTrack with FULL per-entry metadata (mirrors saveCurrentTrack) ──
+          const coverFileToUpload = entry.coverFile;
+          const workspaceId = activeWorkspace?.id;
+          const savedTrack = await addTrack({
+            title: entry.title.trim() || "Untitled",
+            artist: entry.artist.trim() || "Unknown Artist",
+            featuredArtists: entry.featuring ? entry.featuring.split(",").map((s) => s.trim()).filter(Boolean) : [],
+            genre: entry.genre || [],
+            bpm: parseInt(entry.bpm) || 0,
+            key: entry.trackKey || "",
+            duration: entry.analysisResult?.duration || "0:00",
+            status: "Available",
+            language: entry.language || "",
+            voice: entry.voice || "N/A",
+            type: entry.trackType || "Song",
+            originalFileUrl: audioUrl,
+            previewFileUrl: undefined,
+            originalFileName: entry.fileName,
+            originalFileSize: entry.file.size,
+            notes: entry.notes,
+            lyrics: entry.lyrics || undefined,
+            waveformData: waveformData,
+            chapters: null,
+            splits: entry.splits.filter((s) => s.name.trim()).map((s) => ({
+              id: s.id,
+              name: s.name,
+              email: s.email || undefined,
+              stage_name: s.stage_name || undefined,
+              role: s.role,
+              share: Number(s.percentage) || 0,
+              pro: s.pro,
+              ipi: s.ipi,
+              publisher: s.publisher,
+            })),
+            isrc: entry.isrc || undefined,
+            label: entry.label || undefined,
+            publishers: entry.publishers.filter(Boolean),
+            writtenBy: entry.writtenBy ? entry.writtenBy.split(",").map((s) => s.trim()).filter(Boolean) : [],
+            producedBy: entry.producedBy ? entry.producedBy.split(",").map((s) => s.trim()).filter(Boolean) : [],
+            mixedBy: entry.mixedBy || undefined,
+            masteredBy: entry.masteredBy || undefined,
+            copyright: entry.copyright || undefined,
+            explicit: entry.explicit || undefined,
+            credits: {
+              ...(entry.details || {}),
+              customPerformers: entry.customPerformers.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
+              customProduction: entry.customProduction.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
+            },
+            tags: entry.tags,
+          });
+          setUploadProgress(98);
+
+          // ── Stage 4: Extended metadata update_track (mirrors saveCurrentTrack BUG-03 path) ──
+          if (savedTrack && user) {
+            const writtenByJoined = entry.writtenBy
+              ? entry.writtenBy.split(",").map((s) => s.trim()).filter(Boolean).join(", ")
+              : "";
+            const producedByJoined = entry.producedBy
+              ? entry.producedBy.split(",").map((s) => s.trim()).filter(Boolean).join(", ")
+              : "";
+            const extendedPayload: Record<string, unknown> = {
+              album: entry.album || null,
+              upc: entry.upc || null,
+              released_at: entry.releaseDate && entry.releaseDate.trim() ? entry.releaseDate : null,
+              copyright: entry.copyright || null,
+              explicit: !!entry.explicit,
+              notes: entry.notes || null,
+              featuring: entry.featuring || null,
+              isrc: entry.isrc || null,
+              labels: entry.label ? [entry.label] : [],
+              publishers: entry.publishers.filter(Boolean),
+              credits: {
+                ...(entry.details || {}),
+                written_by: writtenByJoined || null,
+                produced_by: producedByJoined || null,
+                mixed_by: entry.mixedBy || null,
+                mastered_by: entry.masteredBy || null,
+                customPerformers: entry.customPerformers.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
+                customProduction: entry.customProduction.filter((e) => e.role.trim() && e.values.some((v) => v.trim())),
+              },
+              tags: entry.tags || {},
+            };
+            const { error: extendedErr } = await supabase.rpc("update_track", {
+              _user_id: user.id,
+              _track_id: savedTrack.uuid,
+              _updates: extendedPayload,
+            });
+            if (extendedErr) {
+              console.error("Failed to persist extended metadata for", entry.fileName, ":", extendedErr);
+            }
+          }
+
+          // ── Stage 5: Cover upload (if any) ──
+          if (savedTrack && coverFileToUpload && workspaceId && user) {
+            const coverPath = workspaceId + "/" + savedTrack.uuid + ".jpg";
+            const { error: coverError } = await supabase.storage
+              .from("covers")
+              .upload(coverPath, coverFileToUpload, { upsert: true, contentType: coverFileToUpload.type });
+            if (!coverError) {
+              const { data: urlData } = supabase.storage.from("covers").getPublicUrl(coverPath);
+              await supabase.rpc("update_track", {
+                _user_id: user.id,
+                _track_id: savedTrack.uuid,
+                _updates: { cover_url: urlData.publicUrl },
+              });
+            }
+          }
+
+          // ── Stage 6: Catalog shares (if any) ──
+          if (savedTrack && entry.sharedWorkspaces.length > 0 && user && activeWorkspace) {
+            for (let si = 0; si < entry.sharedWorkspaces.length; si++) {
+              await supabase.rpc("insert_catalog_share", {
+                _user_id: user.id,
+                _track_id: savedTrack.uuid,
+                _source_workspace_id: activeWorkspace.id,
+                _target_workspace_id: entry.sharedWorkspaces[si],
+                _access_level: "pitcher",
+              });
+            }
+          }
+
+          // ── Stage 7: Auto-save collaborators to contacts (fire-and-forget) ──
+          if (savedTrack && user && activeWorkspace && entry.splits.length > 0) {
+            const splitsToSave = entry.splits;
+            const uid = user.id;
+            const wid = activeWorkspace.id;
+            (async () => {
+              for (let si = 0; si < splitsToSave.length; si++) {
+                const sp = splitsToSave[si];
+                if (!sp.name.trim()) continue;
+                const parts = sp.name.trim().split(" ");
+                const proArray = sp.pro ? sp.pro.split(", ").filter(Boolean) : null;
+                try {
+                  await supabase.rpc("upsert_contact", {
+                    _user_id: uid,
+                    _workspace_id: wid,
+                    _first_name: parts[0] || "",
+                    _last_name: parts.slice(1).join(" ") || null,
+                    _email: sp.email && sp.email.trim() !== "" ? sp.email.trim() : null,
+                    _role: sp.role && sp.role.trim() !== "" ? sp.role.trim() : null,
+                    _stage_name: sp.stage_name && sp.stage_name.trim() !== "" ? sp.stage_name.trim() : null,
+                    _company: null,
+                    _phone: null,
+                    _pro: proArray && proArray.length > 0 ? proArray : null,
+                    _ipi: sp.ipi && sp.ipi.trim() !== "" ? sp.ipi.trim() : null,
+                    _publisher: sp.publisher && sp.publisher.trim() !== "" ? sp.publisher.trim() : null,
+                  });
+                } catch (err) {
+                  console.error("[SKIP-REVIEW SPLITS SAVE-BACK] Failed for", sp.name, ":", err);
+                }
+              }
+              refreshContacts();
+            })();
+          }
+
+          setUploadProgress(100);
+
+          // ── Stage 8: Fire-and-forget MP3 compression + lyrics transcription ──
+          if (savedTrack && audioUrl && entry.file && user) {
+            const bgFile = entry.file;
+            const bgTrackUuid = savedTrack.uuid;
+            const bgAudioPath = audioUrl;
+            const bgUserId = user.id;
+            const bgHasLyrics = !!entry.lyrics?.trim();
+            (async () => {
+              try {
+                const mp3Blob = await encodeToMp3(bgFile);
+                const previewPath = bgAudioPath.replace(/\.[^.]+$/, "_preview.mp3");
+                const { error: upErr } = await supabase.storage
+                  .from("tracks")
+                  .upload(previewPath, mp3Blob, { contentType: "audio/mp3", upsert: true });
+                if (upErr) throw upErr;
+                await supabase.rpc("update_track", { _user_id: bgUserId, _track_id: bgTrackUuid, _updates: { audio_preview_url: previewPath } });
+              } catch (err) {
+                console.error("Background MP3 compression failed for", bgFile.name, ":", err);
+              }
+              if (!bgHasLyrics) {
+                try {
+                  const res = await fetch(SUPABASE_URL + "/functions/v1/transcribe-lyrics", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+                      "apikey": SUPABASE_PUBLISHABLE_KEY,
+                    },
+                    body: JSON.stringify({ track_id: bgTrackUuid }),
+                  });
+                  const json = await res.json();
+                  if (json.success) {
+                    try {
+                      const { data: row } = await supabase
+                        .from("tracks")
+                        .select("sonic_dna, lyrics")
+                        .eq("id", bgTrackUuid)
+                        .single();
+                      const existingSonicDna = row?.sonic_dna as Record<string, unknown> | null;
+                      if (existingSonicDna && row?.lyrics) {
+                        const rawLyrics = (row.lyrics as string).replace(/^\[auto-transcribed\]\n/, "");
+                        const updatedSonicDna = {
+                          ...existingSonicDna,
+                          user_metadata: {
+                            ...(existingSonicDna.user_metadata as Record<string, unknown> || {}),
+                            lyrics: rawLyrics,
+                          },
+                        };
+                        await supabase.rpc("update_track", { _user_id: bgUserId, _track_id: bgTrackUuid, _updates: { sonic_dna: updatedSonicDna } });
+                      }
+                    } catch (err) {
+                      console.error("Failed to sync lyrics to sonic_dna:", err);
+                    }
+                  }
+                } catch (err) {
+                  console.error("Lyrics transcription failed for", bgFile.name, ":", err);
+                }
+              }
+            })();
+          }
+
+          successCount++;
+          setSkipReviewSuccessCount(successCount);
+        } catch (perTrackErr) {
+          const reason = perTrackErr instanceof Error ? perTrackErr.message : "Unknown error";
+          console.error("[SKIP-REVIEW] Track failed:", entry.fileName, reason);
+          localErrors.push({ fileName: entry.fileName, reason });
+          setSkipReviewErrors([...localErrors]);
+        }
+      }
+
+      // Final refresh of the catalog so the new tracks appear without remount
+      await refreshTracks();
+      setSkipReviewDone(true);
+    } catch (err) {
+      console.error("Skip Review bulk upload outer error:", err);
+    } finally {
+      setIsSaving(false);
+      setUploadProgress(0);
+      setUploadStage("");
+      // Note: don't reset skipReviewIdx / skipReviewDone here — the success UI reads them.
+    }
+  }, [queue, isSaving, addTrack, activeWorkspace, uploadFileWithProgress, user, refreshTracks, refreshContacts]);
 
   // ─── Render ────────────────────────────────────────────────
 
@@ -1706,25 +2013,120 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   existingSplitNames={existingSplitNames}
                 />
               )}
-              {phase === "edit" && currentTrack && editStep === 4 && (
-                <StepReview
-                  title={currentTrack.title} artist={currentTrack.artist}
-                  bpm={currentTrack.bpm} trackKey={currentTrack.trackKey}
-                  genre={currentTrack.genre}
-                  trackType={currentTrack.trackType}
-                  voice={currentTrack.voice}
-                  language={currentTrack.language} notes={currentTrack.notes}
-                  audioFile={currentTrack.file} stems={currentTrack.stems}
-                  splits={currentTrack.splits} totalSplit={totalSplit}
-                  details={currentTrack.details} lyrics={currentTrack.lyrics}
-                  coverFile={currentTrack.coverFile}
-                  isrc={currentTrack.isrc} upc={currentTrack.upc}
-                  album={currentTrack.album} label={currentTrack.label}
-                  publishers={currentTrack.publishers} releaseDate={currentTrack.releaseDate}
-                  writtenBy={currentTrack.writtenBy} producedBy={currentTrack.producedBy}
-                  mixedBy={currentTrack.mixedBy} masteredBy={currentTrack.masteredBy}
-                  copyright={currentTrack.copyright} explicit={currentTrack.explicit}
-                />
+              {phase === "edit" && currentTrack && editStep === 4 && skipReviewDone && (
+                <div className="flex flex-col items-center justify-center text-center py-10 px-6 space-y-5">
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                    <CheckCircle2 className="w-9 h-9 text-emerald-400" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="text-lg font-bold text-foreground">
+                      {t("uploadTrack.skipReviewSuccessHeading", { count: skipReviewSuccessCount, defaultValue: skipReviewSuccessCount + (skipReviewSuccessCount === 1 ? " track uploaded successfully" : " tracks uploaded successfully") })}
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      {t("uploadTrack.skipReviewSuccessSubtitle", "Sonic DNA analysis in progress — BPM, key & mood will appear shortly. Review and edit anytime in your Catalog.")}
+                    </p>
+                  </div>
+                  {skipReviewErrors.length > 0 && (
+                    <div className="w-full max-w-md p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-left">
+                      <p className="text-xs font-semibold text-destructive mb-1.5">
+                        {t("uploadTrack.skipReviewErrorsHeading", { count: skipReviewErrors.length, defaultValue: skipReviewErrors.length + (skipReviewErrors.length === 1 ? " track failed" : " tracks failed") })}
+                      </p>
+                      <ul className="text-xs text-destructive/80 space-y-0.5 max-h-24 overflow-y-auto">
+                        {skipReviewErrors.map((err, i) => (
+                          <li key={i} className="truncate">• {err.fileName} — {err.reason}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <div className="flex flex-col sm:flex-row items-center gap-2 pt-2 w-full max-w-md">
+                    <button
+                      onClick={() => { handleReset(); }}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-semibold border border-border text-foreground hover:bg-secondary transition-colors"
+                    >
+                      {t("uploadTrack.uploadMore", "Upload more")}
+                    </button>
+                    <button
+                      onClick={() => { onOpenChange(false); handleReset(); navigate("/tracks"); }}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-[13px] font-semibold btn-brand"
+                    >
+                      <ListMusic className="w-4 h-4" />
+                      {t("uploadTrack.goToCatalog", "Go to Catalog")}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {phase === "edit" && currentTrack && editStep === 4 && !skipReviewDone && skipReviewIdx >= 0 && (
+                <div className="flex flex-col items-center justify-center text-center py-12 px-6 space-y-5">
+                  <Loader2 className="w-10 h-10 animate-spin text-brand-orange" />
+                  <div className="space-y-1.5 w-full max-w-md">
+                    <p className="text-sm font-semibold text-foreground">
+                      {t("uploadTrack.skipReviewUploadingX", { current: skipReviewIdx + 1, total: queue.length, defaultValue: "Uploading track " + (skipReviewIdx + 1) + " of " + queue.length + "..." })}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {queue[skipReviewIdx]?.fileName}
+                    </p>
+                  </div>
+                  <div className="w-full max-w-md space-y-1.5">
+                    <Progress value={uploadProgress} className="h-2" />
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{uploadStage}</span>
+                      <span className="tabular-nums">{uploadProgress}%</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground max-w-md">
+                    {t("uploadTrack.skipReviewSonicDnaHint", "Sonic DNA will analyze BPM, key & mood in background.")}
+                  </p>
+                </div>
+              )}
+              {phase === "edit" && currentTrack && editStep === 4 && !skipReviewDone && skipReviewIdx < 0 && (
+                <>
+                  {queue.length >= 2 && (
+                    <div className="mx-2 mb-4 p-4 rounded-xl border border-brand-orange/30 bg-gradient-to-br from-brand-orange/10 via-brand-pink/10 to-brand-purple/10">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-orange via-brand-pink to-brand-purple flex items-center justify-center shrink-0">
+                          <Zap className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-foreground">
+                            {t("uploadTrack.skipReviewBannerTitle", { count: queue.length - 1, defaultValue: "Skip review for the other " + (queue.length - 1) + (queue.length - 1 === 1 ? " track?" : " tracks?") })}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {t("uploadTrack.skipReviewBannerSubtitle", { count: queue.length, defaultValue: "Common metadata is already applied. We'll upload all " + queue.length + " tracks at once." })}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleSkipReviewUploadAll}
+                        disabled={isSaving}
+                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-semibold text-white bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple hover:opacity-95 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Zap className="w-4 h-4" />
+                        {t("uploadTrack.skipReviewButton", { count: queue.length, defaultValue: "Skip review — Upload all " + queue.length + " tracks now" })}
+                      </button>
+                      <p className="text-2xs text-muted-foreground text-center mt-2">
+                        {t("uploadTrack.skipReviewHint", "Or continue reviewing each track using the buttons below")}
+                      </p>
+                    </div>
+                  )}
+                  <StepReview
+                    title={currentTrack.title} artist={currentTrack.artist}
+                    bpm={currentTrack.bpm} trackKey={currentTrack.trackKey}
+                    genre={currentTrack.genre}
+                    trackType={currentTrack.trackType}
+                    voice={currentTrack.voice}
+                    language={currentTrack.language} notes={currentTrack.notes}
+                    audioFile={currentTrack.file} stems={currentTrack.stems}
+                    splits={currentTrack.splits} totalSplit={totalSplit}
+                    details={currentTrack.details} lyrics={currentTrack.lyrics}
+                    coverFile={currentTrack.coverFile}
+                    isrc={currentTrack.isrc} upc={currentTrack.upc}
+                    album={currentTrack.album} label={currentTrack.label}
+                    publishers={currentTrack.publishers} releaseDate={currentTrack.releaseDate}
+                    writtenBy={currentTrack.writtenBy} producedBy={currentTrack.producedBy}
+                    mixedBy={currentTrack.mixedBy} masteredBy={currentTrack.masteredBy}
+                    copyright={currentTrack.copyright} explicit={currentTrack.explicit}
+                  />
+                </>
               )}
               {phase === "edit" && currentTrack && editStep === 5 && (
                 <StepTeams
@@ -1743,8 +2145,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           </AnimatePresence>
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-border">
+        {/* Footer — hidden during Skip Review bulk upload (progress + success UI live in the body) */}
+        <div className={`px-6 py-4 border-t border-border ${(skipReviewIdx >= 0 || skipReviewDone) ? "hidden" : ""}`}>
           {isSaving && quickUploadIdx >= 0 ? (
             <div className="space-y-3">
               {quickUploadDone ? (
