@@ -138,6 +138,10 @@ export function formatGenre(genre: unknown): string {
 
 // Helper: convert Supabase row to TrackData
 export function mapRowToTrack(row: Record<string, unknown>, index: number, stems: TrackStem[] = []): TrackData {
+  // Writer credits are stored in the `credits` jsonb (snake_case) since `tracks` has no
+  // written_by/produced_by/mixed_by/mastered_by columns. Read from there, falling back to
+  // the legacy top-level row.* (which never resolved) for safety.
+  const rowCredits = (row.credits as Record<string, unknown> | null) || {};
   return {
     id: index + 1, // numeric id for frontend compatibility
     uuid: row.id as string,
@@ -168,10 +172,10 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
       ? (row.labels as string[])[0]
       : "",
     publishers: Array.isArray(row.publishers) ? (row.publishers as string[]) : [],
-    writtenBy: (row.written_by as string) ? (row.written_by as string).split(",").map((s) => s.trim()).filter(Boolean) : [],
-    producedBy: (row.produced_by as string) ? (row.produced_by as string).split(",").map((s) => s.trim()).filter(Boolean) : [],
-    mixedBy: (row.mixed_by as string) || "",
-    masteredBy: (row.mastered_by as string) || "",
+    writtenBy: ((rowCredits.written_by ?? row.written_by) as string) ? String(rowCredits.written_by ?? row.written_by).split(",").map((s) => s.trim()).filter(Boolean) : [],
+    producedBy: ((rowCredits.produced_by ?? row.produced_by) as string) ? String(rowCredits.produced_by ?? row.produced_by).split(",").map((s) => s.trim()).filter(Boolean) : [],
+    mixedBy: ((rowCredits.mixed_by ?? row.mixed_by) as string) || "",
+    masteredBy: ((rowCredits.mastered_by ?? row.mastered_by) as string) || "",
     copyright: (row.copyright as string) || "",
     language: (row.language as string) || "",
     explicit: (row.explicit as boolean) || false,
@@ -660,14 +664,20 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       // Save metadata fields via update_track after creation (not in insert_track signature)
       if (trackUuid) {
         const metaPayload: Record<string, unknown> = {};
-        if (trackInput.writtenBy?.length) metaPayload.written_by = trackInput.writtenBy.join(", ");
-        if (trackInput.producedBy?.length) metaPayload.produced_by = trackInput.producedBy.join(", ");
-        if (trackInput.mixedBy) metaPayload.mixed_by = trackInput.mixedBy;
-        if (trackInput.masteredBy) metaPayload.mastered_by = trackInput.masteredBy;
+        // writer/producer/mixer/masterer credits have NO matching columns on `tracks`
+        // (passing them top-level makes update_track roll back the whole UPDATE) — nest
+        // them in the `credits` jsonb: snake_case keys + comma-joined strings, mirroring
+        // UploadTrackModal (commit 965a323) so all upload paths store credits identically.
+        const writerCredits: Record<string, unknown> = {};
+        if (trackInput.writtenBy?.length) writerCredits.written_by = trackInput.writtenBy.join(", ");
+        if (trackInput.producedBy?.length) writerCredits.produced_by = trackInput.producedBy.join(", ");
+        if (trackInput.mixedBy) writerCredits.mixed_by = trackInput.mixedBy;
+        if (trackInput.masteredBy) writerCredits.mastered_by = trackInput.masteredBy;
         if (trackInput.copyright) metaPayload.copyright = trackInput.copyright;
         if (trackInput.explicit) metaPayload.explicit = trackInput.explicit;
         if (trackInput.chapters) metaPayload.chapters = trackInput.chapters;
-        if (trackInput.credits && Object.keys(trackInput.credits).length > 0) metaPayload.credits = trackInput.credits;
+        const mergedCredits = { ...(trackInput.credits || {}), ...writerCredits };
+        if (Object.keys(mergedCredits).length > 0) metaPayload.credits = mergedCredits;
         if (trackInput.tags && Object.keys(trackInput.tags).length > 0) metaPayload.tags = trackInput.tags;
         if (Object.keys(metaPayload).length > 0) {
           await supabase.rpc("update_track", {
@@ -753,13 +763,25 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (updates.releaseDate !== undefined) payload.released_at = updates.releaseDate || null;
       if (updates.chapters !== undefined) payload.chapters = updates.chapters || null;
       if (updates.waveformData !== undefined) payload.waveform_data = updates.waveformData || null;
-      if (updates.writtenBy !== undefined) payload.written_by = updates.writtenBy.length ? updates.writtenBy.join(", ") : null;
-      if (updates.producedBy !== undefined) payload.produced_by = updates.producedBy.length ? updates.producedBy.join(", ") : null;
-      if (updates.mixedBy !== undefined) payload.mixed_by = updates.mixedBy || null;
-      if (updates.masteredBy !== undefined) payload.mastered_by = updates.masteredBy || null;
       if (updates.copyright !== undefined) payload.copyright = updates.copyright || null;
       if (updates.explicit !== undefined) payload.explicit = updates.explicit || false;
-      if (updates.credits !== undefined) payload.credits = updates.credits;
+      // writer credits live in the `credits` jsonb (snake_case, joined strings) — same as
+      // addTrack / UploadTrackModal. MERGE into existing credits so editing a writer field
+      // never clobbers customPerformers / customProduction already stored on the track.
+      const hasWriterEdit =
+        updates.writtenBy !== undefined || updates.producedBy !== undefined ||
+        updates.mixedBy !== undefined || updates.masteredBy !== undefined;
+      if (updates.credits !== undefined || hasWriterEdit) {
+        const mergedCredits: Record<string, unknown> = {
+          ...((track.credits as Record<string, unknown>) || {}),
+          ...((updates.credits as Record<string, unknown>) || {}),
+        };
+        if (updates.writtenBy !== undefined) mergedCredits.written_by = updates.writtenBy.length ? updates.writtenBy.join(", ") : null;
+        if (updates.producedBy !== undefined) mergedCredits.produced_by = updates.producedBy.length ? updates.producedBy.join(", ") : null;
+        if (updates.mixedBy !== undefined) mergedCredits.mixed_by = updates.mixedBy || null;
+        if (updates.masteredBy !== undefined) mergedCredits.mastered_by = updates.masteredBy || null;
+        payload.credits = mergedCredits;
+      }
       if (updates.tags !== undefined) payload.tags = updates.tags;
 
       if (Object.keys(payload).length > 0 && user) {
