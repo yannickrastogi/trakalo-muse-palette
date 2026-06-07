@@ -387,33 +387,43 @@ export default function SharedLinkPage() {
       setLinkData(link);
 
       if (link.share_type === "playlist" && link.playlist_id) {
-        // Fetch playlist metadata
+        // P0 (post-CRIT-01): call the SECURITY DEFINER RPC directly, aligned
+        // with the track branch below. The previous code gated this RPC behind
+        // a `GET /rest/v1/playlist_tracks` pre-check, which silently returns
+        // [] for anon ever since CRIT-01 stripped the anon SELECT policy on
+        // shared_links (the playlist_tracks anon policy depends on it via a
+        // sub-SELECT). Result: the RPC was never invoked → playlist render
+        // fell through to "no track data available".
+        var tracksRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_playlist_tracks_for_shared_link", {
+          method: "POST",
+          headers: { ...SB_HEADERS, "Content-Type": "application/json" },
+          body: JSON.stringify({ _slug: slug }),
+        });
+        var tracks = tracksRes.ok ? await tracksRes.json() : null;
+        if (!tracksRes.ok) {
+          console.error("Failed to fetch playlist tracks for shared link:", tracksRes.status, "slug:", slug);
+        }
+        if (Array.isArray(tracks) && tracks.length > 0) {
+          // RPC already returns rows ordered by playlist position
+          setPlaylistTracks(tracks as unknown as TrackData[]);
+        }
+
+        // Playlist metadata is best-effort: the direct REST call hits an anon
+        // RLS gap (same root cause as above) and 406s. Fall back on the
+        // shared link's own name + first track's cover so the playlist render
+        // branch still has something to display.
         var plRes = await fetch(REST_URL + "/playlists?select=id,name,description,cover_url&id=eq." + encodeURIComponent(link.playlist_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } });
         var pl = plRes.ok ? await plRes.json() : null;
-
-        if (pl) {
-          setPlaylistData(pl as unknown as PlaylistData);
+        var fallbackCover: string | null = null;
+        if (Array.isArray(tracks) && tracks.length > 0 && tracks[0] && typeof tracks[0].cover_url === "string") {
+          fallbackCover = tracks[0].cover_url as string;
         }
-
-        // Fetch playlist tracks via playlist_tracks join
-        var ptRes = await fetch(REST_URL + "/playlist_tracks?select=track_id,position&playlist_id=eq." + encodeURIComponent(link.playlist_id) + "&order=position.asc", { headers: SB_HEADERS });
-        var ptRows = ptRes.ok ? await ptRes.json() : null;
-
-        if (ptRows && ptRows.length > 0) {
-          // P0-04: SECURITY DEFINER RPC scoped to this exact shared link's slug.
-          // Replaces a direct SELECT on tracks that allowed cross-workspace reads.
-          var tracksRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_playlist_tracks_for_shared_link", {
-            method: "POST",
-            headers: { ...SB_HEADERS, "Content-Type": "application/json" },
-            body: JSON.stringify({ _slug: slug }),
-          });
-          var tracks = tracksRes.ok ? await tracksRes.json() : null;
-
-          if (Array.isArray(tracks) && tracks.length > 0) {
-            // RPC already returns rows ordered by playlist position
-            setPlaylistTracks(tracks as unknown as TrackData[]);
-          }
-        }
+        setPlaylistData((pl as unknown as PlaylistData) || {
+          id: link.playlist_id,
+          name: link.link_name || "",
+          description: null,
+          cover_url: fallbackCover,
+        });
       } else if (link.track_id) {
         // Single track (also used by stems and pack share types).
         // P0-04: SECURITY DEFINER RPC scoped to this shared link's slug.
@@ -531,17 +541,24 @@ export default function SharedLinkPage() {
     logEvent(null, "view");
   }, [linkData]);
 
-  // Fetch workspace branding when link data is available
+  // Fetch workspace branding via SECURITY DEFINER RPC scoped to this shared
+  // link's slug. The previous code did a direct `GET /rest/v1/workspaces`,
+  // which 406s for anon since no SELECT policy exists on `workspaces` for the
+  // anon role — exactly the same anon-RLS gap that broke the playlist branch.
   useEffect(function() {
-    if (!linkData || !linkData.workspace_id) return;
-    fetch(REST_URL + "/workspaces?select=name,hero_image_url,hero_position,hero_focal_point,logo_url,brand_color,social_instagram,social_tiktok,social_youtube,social_facebook,social_x,social_website,bio&id=eq." + encodeURIComponent(linkData.workspace_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } })
+    if (!slug || !linkData) return;
+    fetch(SUPABASE_URL + "/rest/v1/rpc/get_workspace_branding_for_shared_link", {
+      method: "POST",
+      headers: { ...SB_HEADERS, "Content-Type": "application/json" },
+      body: JSON.stringify({ _slug: slug }),
+    })
       .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
-      .then(function(data) {
-        if (data) {
-          setBranding(data as WorkspaceBranding);
-        }
-      }).catch(function(err) { console.error("Failed to fetch workspace branding:", err); });
-  }, [linkData]);
+      .then(function(rows) {
+        var data = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+        if (data) setBranding(data as WorkspaceBranding);
+      })
+      .catch(function(err) { console.error("Failed to fetch workspace branding:", err); });
+  }, [slug, linkData]);
 
   // Setup audio element (single instance for lifetime of page)
   useEffect(function() {
