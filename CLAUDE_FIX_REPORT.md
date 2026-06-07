@@ -201,6 +201,75 @@ $func$;
 GRANT EXECUTE ON FUNCTION public.delete_track_comment_via_token(uuid, text) TO anon, authenticated;
 ```
 
+### Migration 4 — P0-04 tracks cross-workspace via RPCs
+
+> **Note:** the user-supplied snippet defined `get_track_for_shared_link` with 18 columns; expanded below to cover every column the front actually consumes (`featuring`, `mood`, `lyrics_segments`, `splits`, `labels`, `publishers`, `language`, `gender`). Add the playlist sibling.
+
+```sql
+-- Drop the cross-workspace authenticated policy
+DROP POLICY IF EXISTS "Authenticated users can view tracks via shared links" ON public.tracks;
+
+-- Single-track RPC (covers share_type IN ('track','stems','pack'))
+CREATE OR REPLACE FUNCTION public.get_track_for_shared_link(_slug text)
+RETURNS TABLE (
+  id uuid, title text, artist text, featuring text,
+  bpm numeric, key text, genre text, mood text[],
+  cover_url text, duration_sec numeric, audio_url text,
+  waveform_data jsonb, sonic_dna jsonb, credits jsonb,
+  lyrics text, lyrics_segments jsonb,
+  splits jsonb, isrc text, album text, labels text[], publishers text[],
+  language text, gender text,
+  released_at date, copyright text, explicit boolean
+)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $func$
+BEGIN
+  RETURN QUERY
+  SELECT t.id, t.title, t.artist, t.featuring,
+    t.bpm, t.key, t.genre, t.mood,
+    t.cover_url, t.duration_sec, t.audio_url,
+    t.waveform_data, t.sonic_dna, t.credits,
+    t.lyrics, t.lyrics_segments,
+    t.splits, t.isrc, t.album, t.labels, t.publishers,
+    t.language, t.gender,
+    t.released_at, t.copyright, t.explicit
+  FROM public.tracks t
+  JOIN public.shared_links sl ON sl.track_id = t.id
+  WHERE sl.link_slug = _slug AND sl.status = 'active'
+    AND (sl.expires_at IS NULL OR sl.expires_at > now());
+END;
+$func$;
+GRANT EXECUTE ON FUNCTION public.get_track_for_shared_link(text) TO anon, authenticated;
+
+-- Playlist tracks RPC (ordered by playlist position)
+CREATE OR REPLACE FUNCTION public.get_playlist_tracks_for_shared_link(_slug text)
+RETURNS TABLE (
+  id uuid, title text, artist text, featuring text,
+  bpm numeric, key text, genre text, mood text[],
+  cover_url text, duration_sec numeric, audio_url text,
+  waveform_data jsonb, lyrics text, lyrics_segments jsonb,
+  position integer
+)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $func$
+BEGIN
+  RETURN QUERY
+  SELECT t.id, t.title, t.artist, t.featuring,
+    t.bpm, t.key, t.genre, t.mood,
+    t.cover_url, t.duration_sec, t.audio_url,
+    t.waveform_data, t.lyrics, t.lyrics_segments,
+    pt.position
+  FROM public.tracks t
+  JOIN public.playlist_tracks pt ON pt.track_id = t.id
+  JOIN public.shared_links sl ON sl.playlist_id = pt.playlist_id
+  WHERE sl.link_slug = _slug AND sl.status = 'active'
+    AND (sl.expires_at IS NULL OR sl.expires_at > now())
+  ORDER BY pt.position ASC;
+END;
+$func$;
+GRANT EXECUTE ON FUNCTION public.get_playlist_tracks_for_shared_link(text) TO anon, authenticated;
+```
+
+**Residual:** if an anon-side broad policy on `tracks` exists (e.g. `anon_read_tracks_via_shared_links`), it should also be dropped — the audit only flagged the `authenticated` variant. Confirm via `SELECT polname, roles FROM pg_policies WHERE tablename = 'tracks'` before/after.
+
 (other migrations populated per fix below)
 
 ---

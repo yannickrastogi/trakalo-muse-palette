@@ -399,24 +399,30 @@ export default function SharedLinkPage() {
         var ptRows = ptRes.ok ? await ptRes.json() : null;
 
         if (ptRows && ptRows.length > 0) {
-          var trackIds = ptRows.map(function(r) { return r.track_id; });
-          var tracksRes = await fetch(REST_URL + "/tracks?select=id,title,artist,featuring,genre,bpm,key,duration_sec,cover_url,audio_url,mood,waveform_data,lyrics,lyrics_segments&id=in.(" + trackIds.map(encodeURIComponent).join(",") + ")", { headers: SB_HEADERS });
+          // P0-04: SECURITY DEFINER RPC scoped to this exact shared link's slug.
+          // Replaces a direct SELECT on tracks that allowed cross-workspace reads.
+          var tracksRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_playlist_tracks_for_shared_link", {
+            method: "POST",
+            headers: { ...SB_HEADERS, "Content-Type": "application/json" },
+            body: JSON.stringify({ _slug: slug }),
+          });
           var tracks = tracksRes.ok ? await tracksRes.json() : null;
 
-          if (tracks) {
-            // Sort tracks by playlist position
-            var trackMap: Record<string, TrackData> = {};
-            tracks.forEach(function(t) { trackMap[t.id] = t as unknown as TrackData; });
-            var sorted = trackIds
-              .map(function(tid) { return trackMap[tid]; })
-              .filter(function(t) { return !!t; });
-            setPlaylistTracks(sorted);
+          if (Array.isArray(tracks) && tracks.length > 0) {
+            // RPC already returns rows ordered by playlist position
+            setPlaylistTracks(tracks as unknown as TrackData[]);
           }
         }
       } else if (link.track_id) {
-        // Single track (also used by stems and pack share types)
-        var trackRes = await fetch(REST_URL + "/tracks?select=id,title,artist,featuring,genre,bpm,key,duration_sec,cover_url,audio_url,mood,waveform_data,lyrics,lyrics_segments,splits,isrc,labels,publishers,language,gender,released_at&id=eq." + encodeURIComponent(link.track_id), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } });
-        var track = trackRes.ok ? await trackRes.json() : null;
+        // Single track (also used by stems and pack share types).
+        // P0-04: SECURITY DEFINER RPC scoped to this shared link's slug.
+        var trackRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_track_for_shared_link", {
+          method: "POST",
+          headers: { ...SB_HEADERS, "Content-Type": "application/json" },
+          body: JSON.stringify({ _slug: slug }),
+        });
+        var trackRows = trackRes.ok ? await trackRes.json() : null;
+        var track = Array.isArray(trackRows) && trackRows.length > 0 ? trackRows[0] : null;
         var trackErr = trackRes.ok ? null : { message: trackRes.statusText };
 
         if (trackErr) {
