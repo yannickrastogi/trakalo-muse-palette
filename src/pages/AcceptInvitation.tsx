@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { AlertCircle, Mail, Users, Loader2, CheckCircle2 } from "lucide-react";
 import trakalogLogo from "@/assets/trakalog-logo.png";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface InvitationData {
   id: string;
@@ -48,29 +49,22 @@ export default function AcceptInvitation() {
   var { token } = useParams<{ token: string }>();
   var navigate = useNavigate();
 
+  // P1-07 (BUG-02): trust the live AuthContext session instead of parsing
+  // localStorage.trakalog_session_backup ourselves. The previous approach
+  // could see a stale/missing backup right after a Google OAuth redirect.
+  var { session: authSession } = useAuth();
+
   var [loading, setLoading] = useState(true);
   var [error, setError] = useState<string | null>(null);
   var [invitation, setInvitation] = useState<InvitationData | null>(null);
-  var [session, setSession] = useState<any>(null);
   var [accepting, setAccepting] = useState(false);
   var [accepted, setAccepted] = useState(false);
 
+  // Alias kept so existing render branches reading `session` continue to work.
+  var session = authSession;
+
   useEffect(function () {
     var isMounted = true;
-
-    function checkSession() {
-      try {
-        var backup = localStorage.getItem("trakalog_session_backup");
-        if (backup) {
-          var parsed = JSON.parse(backup);
-          if (parsed && parsed.user && isMounted) {
-            setSession(parsed);
-          }
-        }
-      } catch (e) {
-        // ignore parse errors
-      }
-    }
 
     async function loadInvitation() {
       if (!token) {
@@ -113,7 +107,6 @@ export default function AcceptInvitation() {
     }
 
     loadInvitation();
-    checkSession();
 
     return function () { isMounted = false; };
   }, [token]);

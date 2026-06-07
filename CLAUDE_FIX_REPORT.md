@@ -389,7 +389,18 @@ supabase functions deploy add-to-waitlist --project-ref xhmeitivkclbeziqavxw
 
 ### Deploy 2 — P1-07 `accept-invitation`
 
-(populated by the P1-07 section below)
+```bash
+supabase functions deploy accept-invitation --project-ref xhmeitivkclbeziqavxw
+```
+
+- Same function body, with one added step after the invitation is marked
+  accepted: look up `auth.users.email` via `supabase.auth.admin.getUserById(userId)`
+  and `upsert` it into `whitelisted_emails` (idempotent on `email`).
+- Closes BUG-02: the invited user can now log in even when the invitation email
+  differs from the email of their authenticated account (the very thing the old
+  whitelist check rejected).
+- The upsert is wrapped in try/catch + `console.error` so a transient whitelist
+  failure does NOT block the invitation acceptance flow that already succeeded.
 
 ---
 

@@ -111,6 +111,28 @@ serve(async (req) => {
       });
     }
 
+    // 6. P1-07 (BUG-02): whitelist the auth user's REAL email so they can log
+    // back in even when the invitation was sent to a different email than the
+    // one they used at signup. Without this, the user accepts the invite once
+    // but is then trapped in the login loop because `is_email_whitelisted` is
+    // checked against auth.email, not invitation.email.
+    try {
+      const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+      const authEmail = authUser?.user?.email?.toLowerCase().trim();
+      if (authEmail) {
+        const { error: whitelistErr } = await supabase
+          .from("whitelisted_emails")
+          .upsert({ email: authEmail }, { onConflict: "email" });
+        if (whitelistErr) {
+          console.error("accept-invitation: whitelist upsert failed (code=" + (whitelistErr.code || "unknown") + ")");
+        }
+      } else {
+        console.error("accept-invitation: could not resolve auth email for user " + userId);
+      }
+    } catch (whitelistEx) {
+      console.error("accept-invitation: whitelist lookup threw", whitelistEx);
+    }
+
     // Send notification to workspace owner (fire-and-forget)
     try {
       const { data: ws } = await supabase.from("workspaces").select("owner_id, name").eq("id", workspaceId).maybeSingle();
