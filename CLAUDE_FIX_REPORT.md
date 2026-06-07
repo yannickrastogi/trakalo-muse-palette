@@ -145,6 +145,62 @@ $func$;
 GRANT EXECUTE ON FUNCTION public.sign_agreement_via_token(text, text) TO anon, authenticated;
 ```
 
+### Migration 3 — CRIT-03 `track_comments` token-bound RPCs
+
+```sql
+-- Drop broad anon write policies
+DROP POLICY IF EXISTS "track_comments_anon_update" ON public.track_comments;
+DROP POLICY IF EXISTS "track_comments_anon_delete" ON public.track_comments;
+
+CREATE OR REPLACE FUNCTION public.update_track_comment_via_token(
+  _comment_id uuid, _shared_link_token text, _new_content text
+)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $func$
+DECLARE v_link_id uuid;
+BEGIN
+  SELECT id INTO v_link_id
+  FROM public.shared_links
+  WHERE link_slug = _shared_link_token AND status = 'active'
+  LIMIT 1;
+
+  IF v_link_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid token');
+  END IF;
+
+  UPDATE public.track_comments
+  SET content = _new_content, updated_at = now()
+  WHERE id = _comment_id AND shared_link_id = v_link_id;
+
+  RETURN jsonb_build_object('success', FOUND);
+END;
+$func$;
+GRANT EXECUTE ON FUNCTION public.update_track_comment_via_token(uuid, text, text) TO anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.delete_track_comment_via_token(
+  _comment_id uuid, _shared_link_token text
+)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $func$
+DECLARE v_link_id uuid;
+BEGIN
+  SELECT id INTO v_link_id
+  FROM public.shared_links
+  WHERE link_slug = _shared_link_token AND status = 'active'
+  LIMIT 1;
+
+  IF v_link_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid token');
+  END IF;
+
+  UPDATE public.track_comments
+  SET deleted_at = now()
+  WHERE id = _comment_id AND shared_link_id = v_link_id;
+
+  RETURN jsonb_build_object('success', FOUND);
+END;
+$func$;
+GRANT EXECUTE ON FUNCTION public.delete_track_comment_via_token(uuid, text) TO anon, authenticated;
+```
+
 (other migrations populated per fix below)
 
 ---

@@ -831,6 +831,7 @@ function TrackDetailTabs({
           <AutonomousReviewPanel
             trackId={trackData.id}
             linkId={link.id}
+            linkSlug={link.link_slug}
             recipientName={recipientName}
             recipientEmail={recipientEmail}
             comments={comments}
@@ -849,6 +850,7 @@ function TrackDetailTabs({
 function AutonomousReviewPanel({
   trackId,
   linkId,
+  linkSlug,
   recipientName,
   recipientEmail,
   comments,
@@ -859,6 +861,7 @@ function AutonomousReviewPanel({
 }: {
   trackId: string;
   linkId: string;
+  linkSlug: string;
   recipientName: string;
   recipientEmail: string;
   comments: CommentRow[];
@@ -907,33 +910,65 @@ function AutonomousReviewPanel({
       }).catch(function (err) { console.error("Error:", err); });
   };
 
+  // CRIT-03: writes via SECURITY DEFINER RPCs that bind the operation to the
+  // current shared link's slug. Previously the anon UPDATE/DELETE policies
+  // allowed editing comments across ANY active shared link.
   var handleEdit = function(commentId: string, newText: string) {
-    anonSupabase
-      .from("track_comments")
-      .update({ content: newText, updated_at: new Date().toISOString() })
-      .eq("id", commentId)
-      .then(function() {
-        setComments(function(prev) {
-          return prev.map(function(c) {
-            if (c.id === commentId) return Object.assign({}, c, { content: newText, updated_at: new Date().toISOString() });
-            return c;
+    fetch(SUPABASE_URL + "/rest/v1/rpc/update_track_comment_via_token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+        "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({
+        _comment_id: commentId,
+        _shared_link_token: linkSlug,
+        _new_content: newText,
+      }),
+    })
+      .then(function(res) { return res.ok ? res.json() : null; })
+      .then(function(json) {
+        if (json && json.success) {
+          setComments(function(prev) {
+            return prev.map(function(c) {
+              if (c.id === commentId) return Object.assign({}, c, { content: newText, updated_at: new Date().toISOString() });
+              return c;
+            });
           });
-        });
-        setEditingId(null);
-      }).catch(function (err) { console.error("Error:", err); });
+          setEditingId(null);
+        } else {
+          console.error("update_track_comment_via_token failed:", json);
+        }
+      })
+      .catch(function (err) { console.error("Error:", err); });
   };
 
   var handleDelete = function() {
     if (!deleteConfirmId) return;
     var id = deleteConfirmId;
-    anonSupabase
-      .from("track_comments")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", id)
-      .then(function() {
-        setComments(function(prev) { return prev.filter(function(c) { return c.id !== id; }); });
-        setDeleteConfirmId(null);
-      }).catch(function (err) { console.error("Error:", err); });
+    fetch(SUPABASE_URL + "/rest/v1/rpc/delete_track_comment_via_token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+        "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({
+        _comment_id: id,
+        _shared_link_token: linkSlug,
+      }),
+    })
+      .then(function(res) { return res.ok ? res.json() : null; })
+      .then(function(json) {
+        if (json && json.success) {
+          setComments(function(prev) { return prev.filter(function(c) { return c.id !== id; }); });
+          setDeleteConfirmId(null);
+        } else {
+          console.error("delete_track_comment_via_token failed:", json);
+        }
+      })
+      .catch(function (err) { console.error("Error:", err); });
   };
 
   return (
