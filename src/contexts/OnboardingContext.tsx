@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from "react";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 export type OnboardingStep =
   | "create_team"
@@ -26,7 +27,7 @@ const defaultState: OnboardingState = {
 
 function loadState(): OnboardingState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = safeLocalStorage.getItem(STORAGE_KEY);
     if (raw) return { ...defaultState, ...JSON.parse(raw) };
   } catch {}
   return defaultState;
@@ -34,7 +35,7 @@ function loadState(): OnboardingState {
 
 function saveState(state: OnboardingState) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    safeLocalStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {}
 }
 

@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { toast } from "sonner";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 interface WelcomeOnboardingProps {
   onComplete: () => void;
@@ -32,7 +33,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
   const [savingWorkspace, setSavingWorkspace] = useState(false);
 
   function finish() {
-    localStorage.setItem("trakalog_onboarding_complete", "true");
+    safeLocalStorage.setItem("trakalog_onboarding_complete", "true");
     // Persist in DB so the modal never re-appears on another device / after cache wipe.
     if (user) {
       supabase.rpc("mark_onboarding_complete", { _user_id: user.id }).then(function (res) {

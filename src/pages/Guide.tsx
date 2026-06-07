@@ -9,6 +9,7 @@ import { PageShell } from "@/components/PageShell";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } };
@@ -40,15 +41,15 @@ function Entry({ title, children }: { title: string; children: string }) {
 
 export default function Guide() {
   const navigate = useNavigate();
-  const [checklistDismissed] = useState(() => localStorage.getItem("trakalog_checklist_dismissed") === "true");
+  const [checklistDismissed] = useState(() => safeLocalStorage.getItem("trakalog_checklist_dismissed") === "true");
 
   function handleReplayTour() {
-    localStorage.removeItem("trakalog_tour_complete");
+    safeLocalStorage.removeItem("trakalog_tour_complete");
     navigate("/dashboard?replay_tour=true");
   }
 
   function handleShowChecklist() {
-    localStorage.removeItem("trakalog_checklist_dismissed");
+    safeLocalStorage.removeItem("trakalog_checklist_dismissed");
     navigate("/dashboard?show_checklist=true");
   }
 

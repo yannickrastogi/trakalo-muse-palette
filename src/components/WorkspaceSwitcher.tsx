@@ -8,6 +8,7 @@ import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { supabase } from "@/integrations/supabase/client";
 import { CreateWorkspaceModal } from "@/components/CreateWorkspaceModal";
 import { useTranslation } from "react-i18next";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean; onSwitch?: () => void }) {
   const { activeWorkspace, workspaces, switchWorkspace } = useWorkspace();
@@ -27,7 +28,7 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
     var hasCached = false;
     try {
       for (var i = 0; i < workspaces.length; i++) {
-        var val = localStorage.getItem("trakalog_track_count_" + workspaces[i].id);
+        var val = safeLocalStorage.getItem("trakalog_track_count_" + workspaces[i].id);
         if (val) {
           cached[workspaces[i].id] = parseInt(val, 10) || 0;
           hasCached = true;
@@ -235,7 +236,7 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
       // Cache counts in localStorage for instant display on next page load
       try {
         for (var ci = 0; ci < ids.length; ci++) {
-          localStorage.setItem("trakalog_track_count_" + ids[ci], String(counts[ids[ci]] || 0));
+          safeLocalStorage.setItem("trakalog_track_count_" + ids[ci], String(counts[ids[ci]] || 0));
         }
       } catch (e) { /* ignore quota errors */ }
     }).catch(function (err) { console.error("WorkspaceSwitcher track count error:", err); });

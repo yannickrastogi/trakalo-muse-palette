@@ -16,6 +16,7 @@ import {
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { normalizeSocialUrl } from "@/lib/social-urls";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 interface SharedLinkData {
   id: string;
@@ -448,7 +449,7 @@ export default function SharedLinkPage() {
   useEffect(function() {
     if (!linkData?.allow_save) return;
     if (wsCheckedRef.current) return;
-    var backup = localStorage.getItem("trakalog_session_backup");
+    var backup = safeLocalStorage.getItem("trakalog_session_backup");
     if (!backup) return;
     var backupSession: any;
     try {
@@ -461,7 +462,7 @@ export default function SharedLinkPage() {
     var userId = backupSession.user.id;
     var token = backupSession.access_token;
     setCurrentUserSession(backupSession);
-    var pendingAutoSave = localStorage.getItem("trakalog_auto_save");
+    var pendingAutoSave = safeLocalStorage.getItem("trakalog_auto_save");
     var autoSave = pendingAutoSave === slug;
     var rpcHeaders = { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + token };
     fetch(SUPABASE_URL + "/rest/v1/rpc/get_user_workspaces", {
@@ -484,7 +485,7 @@ export default function SharedLinkPage() {
             body: JSON.stringify({ _track_id: linkData!.track_id, _source_workspace_id: linkData!.workspace_id, _target_workspace_id: ws.id, _user_id: userId }),
           }).then(function(saveRes) {
             if (saveRes.ok) {
-              localStorage.removeItem("trakalog_auto_save");
+              safeLocalStorage.removeItem("trakalog_auto_save");
               fetch(SUPABASE_URL + "/rest/v1/rpc/write_audit_log", {
                 method: "POST",
                 headers: rpcHeaders,
@@ -834,7 +835,7 @@ export default function SharedLinkPage() {
       });
       if (res.ok) {
         setSavedToTrakalog(true);
-        localStorage.removeItem("trakalog_auto_save");
+        safeLocalStorage.removeItem("trakalog_auto_save");
         logEvent(linkData.track_id, "save");
       }
     } catch (_e) { /* silent */ }
@@ -1959,7 +1960,7 @@ export default function SharedLinkPage() {
                 ) : currentUserSession && userHasNoWorkspace ? (
                   <a
                     href="/onboarding"
-                    onClick={function() { localStorage.setItem("trakalog_auto_save", JSON.stringify({ slug: slug!, track_id: linkData?.track_id, source_workspace_id: linkData?.workspace_id })); }}
+                    onClick={function() { safeLocalStorage.setItem("trakalog_auto_save", JSON.stringify({ slug: slug!, track_id: linkData?.track_id, source_workspace_id: linkData?.workspace_id })); }}
                     className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] " + (immersive ? "bg-white/10 backdrop-blur-xl border border-white/15 text-white hover:bg-white/20" : "btn-brand")}
                   >
                     <Bookmark className="w-4 h-4" />
@@ -1968,7 +1969,7 @@ export default function SharedLinkPage() {
                 ) : (
                   <a
                     href="/auth"
-                    onClick={function() { localStorage.setItem("trakalog_auto_save", JSON.stringify({ slug: slug!, track_id: linkData?.track_id, source_workspace_id: linkData?.workspace_id })); }}
+                    onClick={function() { safeLocalStorage.setItem("trakalog_auto_save", JSON.stringify({ slug: slug!, track_id: linkData?.track_id, source_workspace_id: linkData?.workspace_id })); }}
                     className={"inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all min-h-[44px] " + (immersive ? "bg-white/10 backdrop-blur-xl border border-white/15 text-white hover:bg-white/20" : "border border-border bg-card text-foreground hover:bg-secondary")}
                   >
                     <Bookmark className="w-4 h-4" />

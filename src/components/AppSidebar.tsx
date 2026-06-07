@@ -26,6 +26,7 @@ import { useRole } from "@/contexts/RoleContext";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 const navItems = [
   { titleKey: "nav.dashboard", icon: LayoutDashboard, url: "/dashboard", permKey: null, tourKey: "sidebar-dashboard" },
@@ -208,7 +209,7 @@ export function MobileBottomNav() {
 }
 
 export function AppSidebar() {
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("trakalog-sidebar-collapsed") === "1");
+  const [collapsed, setCollapsed] = useState(() => safeLocalStorage.getItem("trakalog-sidebar-collapsed") === "1");
   const isMobile = useIsMobile();
 
   // Listen for settings changes
@@ -280,7 +281,7 @@ export function AppSidebar() {
 
       <div className="mx-5 h-px" style={{ background: "var(--gradient-brand-horizontal)", opacity: 0.08 }} />
       <button
-        onClick={() => { const next = !collapsed; setCollapsed(next); localStorage.setItem("trakalog-sidebar-collapsed", next ? "1" : "0"); }}
+        onClick={() => { const next = !collapsed; setCollapsed(next); safeLocalStorage.setItem("trakalog-sidebar-collapsed", next ? "1" : "0"); }}
         className="flex items-center justify-center h-12 text-muted-foreground hover:text-foreground transition-colors"
       >
         {collapsed ? <ChevronRight className="w-4.5 h-4.5" /> : <ChevronLeft className="w-4.5 h-4.5" />}

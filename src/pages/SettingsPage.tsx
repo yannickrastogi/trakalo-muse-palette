@@ -64,6 +64,7 @@ import {
 import type { AccessLevel } from "@/contexts/RoleContext";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { applyTheme, applyAccent, getStoredTheme, getStoredAccent, watchSystemTheme, applyCompactMode, applyReduceMotion, setSidebarCollapsed, getStoredCompact, getStoredReduceMotion, getStoredSidebarCollapsed, type ThemeMode, type AccentPalette } from "@/lib/theme";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 /* ─── Helpers ─── */
 async function ensureSession(session: { access_token: string; refresh_token: string } | null | undefined) {
@@ -813,9 +814,9 @@ function SecuritySection() {
         setSigningOut(false);
         return;
       }
-      localStorage.removeItem("trakalog_was_auth");
-      localStorage.removeItem("trakalog_session_backup");
-      localStorage.removeItem("trakalog_active_workspace");
+      safeLocalStorage.removeItem("trakalog_was_auth");
+      safeLocalStorage.removeItem("trakalog_session_backup");
+      safeLocalStorage.removeItem("trakalog_active_workspace");
       toast.success("Signed out from all devices");
       window.location.href = "/auth";
     } catch (err: any) {

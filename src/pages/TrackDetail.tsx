@@ -9,6 +9,7 @@ import { useTrack, mapRowToTrack, type TrackData, type TrackStem, type TrackSpli
 import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrackReview, formatTimestamp } from "@/contexts/TrackReviewContext";
 import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf, generateCreditsPdf, type CreditEntry } from "@/lib/pdf-generators";
+import { safeLocalStorage } from "@/lib/safeStorage";
 import { DownloadTrackModal } from "@/components/DownloadTrackModal";
 import { SharePackModal } from "@/components/SharePackModal";
 import { EditTrackModal } from "@/components/EditTrackModal";
@@ -3203,7 +3204,7 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           try {
-            const backup = localStorage.getItem("trakalog_session_backup");
+            const backup = safeLocalStorage.getItem("trakalog_session_backup");
             if (backup) {
               const parsed = JSON.parse(backup);
               const accessToken = parsed?.access_token || parsed?.currentSession?.access_token;

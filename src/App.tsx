@@ -52,6 +52,7 @@ import LandingPage from "./pages/LandingPage";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import { isAdminMode } from "./lib/adminMode";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 const queryClient = new QueryClient();
 
@@ -72,9 +73,9 @@ function HomeRoute() {
   }
   if (session) {
     // Check for stored redirect from OAuth flow
-    const storedRedirect = localStorage.getItem("trakalog_auth_redirect");
+    const storedRedirect = safeLocalStorage.getItem("trakalog_auth_redirect");
     if (storedRedirect) {
-      localStorage.removeItem("trakalog_auth_redirect");
+      safeLocalStorage.removeItem("trakalog_auth_redirect");
       return <Navigate to={storedRedirect} replace />;
     }
     return <Navigate to="/dashboard" replace />;

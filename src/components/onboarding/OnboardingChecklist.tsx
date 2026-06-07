@@ -52,7 +52,7 @@ export function OnboardingChecklist({
   onUpload,
 }: ChecklistProps) {
   const navigate = useNavigate();
-  const [dismissed, setDismissed] = useState(() => localStorage.getItem("trakalog_checklist_dismissed") === "true");
+  const [dismissed, setDismissed] = useState(() => safeLocalStorage.getItem("trakalog_checklist_dismissed") === "true");
 
   const meta = user?.user_metadata || {};
   const hasProfile = !!(meta.full_name || (meta.first_name && meta.last_name)) && !!meta.avatar_url;

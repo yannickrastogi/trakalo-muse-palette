@@ -14,6 +14,7 @@ import { useTeams } from "@/contexts/TeamContext";
 import { Link, useNavigate } from "react-router-dom";
 import { useContacts } from "@/contexts/ContactsContext";
 import { usePitches } from "@/contexts/PitchContext";
+import { safeLocalStorage } from "@/lib/safeStorage";
 import {
   Music,
   ListMusic,
@@ -111,7 +112,7 @@ export function DashboardContent() {
 
   // Auto-save track to trakalog if pending
   useEffect(function() {
-    var pendingSave = localStorage.getItem("trakalog_auto_save");
+    var pendingSave = safeLocalStorage.getItem("trakalog_auto_save");
     if (!pendingSave || !activeWorkspace || !user) return;
     if (autoSaveAttemptedRef.current) return;
     autoSaveAttemptedRef.current = true;
@@ -136,7 +137,7 @@ export function DashboardContent() {
           .eq("slug", slug!)
           .maybeSingle();
         if (!linkRow) {
-          localStorage.removeItem("trakalog_auto_save");
+          safeLocalStorage.removeItem("trakalog_auto_save");
           return;
         }
         trackId = linkRow.track_id;
@@ -150,9 +151,9 @@ export function DashboardContent() {
         _user_id: user.id,
       });
 
-      localStorage.removeItem("trakalog_auto_save");
+      safeLocalStorage.removeItem("trakalog_auto_save");
       if (!error) {
-        localStorage.setItem("trakalog_first_save_done", "true");
+        safeLocalStorage.setItem("trakalog_first_save_done", "true");
         supabase.rpc("write_audit_log", { _user_id: user.id, _workspace_id: activeWorkspace.id, _action: "track.saved_from_share", _entity_type: "track", _entity_id: trackId }).then(() => {}).catch(() => {});
         toast.success("Track saved to your Trakalog!");
         refreshTracks();
@@ -414,11 +415,11 @@ export function DashboardContent() {
     { id: "pitches", label: t("pitch.title"), value: allPitches.length, icon: Send, change: t("pitch.active", { count: allPitches.filter(function(p) { return p.status === "Sent" || p.status === "Opened"; }).length }), changeColor: "text-brand-orange", accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", hoverRing: "hover:ring-1 hover:ring-brand-orange/20", clickable: true },
   ];
 
-  const isFirstSaveUser = localStorage.getItem("trakalog_first_save_done") === "true";
+  const isFirstSaveUser = safeLocalStorage.getItem("trakalog_first_save_done") === "true";
   const { isLoading: onboardingLoading, isComplete: onboardingComplete, markComplete: markOnboardingComplete } = useOnboardingStatus();
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
   // DB (onboarding_complete) is the source of truth — never show the modal once it is true,
-  // regardless of localStorage. Wait for the DB check to settle to avoid a flash.
+  // regardless of safeLocalStorage. Wait for the DB check to settle to avoid a flash.
   const showWelcome = !isFirstSaveUser && !onboardingLoading && !onboardingComplete && !welcomeDismissed;
 
   const [runTour, setRunTour] = useState(false);
@@ -428,7 +429,7 @@ export function DashboardContent() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("show_checklist") === "true") {
-      localStorage.setItem("trakalog_checklist_dismissed", "false");
+      safeLocalStorage.setItem("trakalog_checklist_dismissed", "false");
       params.delete("show_checklist");
       const qs = params.toString();
       window.history.replaceState({}, "", window.location.pathname + (qs ? "?" + qs : ""));
@@ -445,7 +446,7 @@ export function DashboardContent() {
     const isReplay = params.get("replay_tour") === "true";
 
     if (isReplay) {
-      localStorage.removeItem("trakalog_tour_complete");
+      safeLocalStorage.removeItem("trakalog_tour_complete");
       params.delete("replay_tour");
       const qs = params.toString();
       window.history.replaceState({}, "", window.location.pathname + (qs ? "?" + qs : ""));
@@ -454,21 +455,21 @@ export function DashboardContent() {
     }
 
     // Normal first-time launch
-    if (localStorage.getItem("trakalog_tour_complete") === "true") return;
-    if (localStorage.getItem("trakalog_onboarding_complete") !== "true") return;
+    if (safeLocalStorage.getItem("trakalog_tour_complete") === "true") return;
+    if (safeLocalStorage.getItem("trakalog_onboarding_complete") !== "true") return;
     const timer = setTimeout(() => setRunTour(true), 800);
     return () => clearTimeout(timer);
   }, [showWelcome, isFirstSaveUser]);
 
   const [showSaveBanner, setShowSaveBanner] = useState(() => {
-    return isFirstSaveUser && localStorage.getItem("trakalog_first_save_banner_dismissed") !== "true";
+    return isFirstSaveUser && safeLocalStorage.getItem("trakalog_first_save_banner_dismissed") !== "true";
   });
 
   useEffect(() => {
     if (!showSaveBanner) return;
     const timer = setTimeout(() => {
       setShowSaveBanner(false);
-      localStorage.setItem("trakalog_first_save_banner_dismissed", "true");
+      safeLocalStorage.setItem("trakalog_first_save_banner_dismissed", "true");
     }, 10000);
     return () => clearTimeout(timer);
   }, [showSaveBanner]);
@@ -535,7 +536,7 @@ export function DashboardContent() {
             </Link>
           </p>
           <button
-            onClick={() => { setShowSaveBanner(false); localStorage.setItem("trakalog_first_save_banner_dismissed", "true"); }}
+            onClick={() => { setShowSaveBanner(false); safeLocalStorage.setItem("trakalog_first_save_banner_dismissed", "true"); }}
             className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
@@ -1299,7 +1300,7 @@ export function DashboardContent() {
         run={runTour}
         onFinish={() => {
           setRunTour(false);
-          localStorage.setItem("trakalog_tour_complete", "true");
+          safeLocalStorage.setItem("trakalog_tour_complete", "true");
         }}
         onUploadClick={() => setShowUploadModal(true)}
       />

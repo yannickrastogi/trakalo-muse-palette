@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!initSession) {
         // Try ONE refreshSession from backup — if it fails, give up cleanly
         try {
-          const backup = localStorage.getItem("trakalog_session_backup");
+          const backup = safeLocalStorage.getItem("trakalog_session_backup");
           if (backup) {
             const backupSession = JSON.parse(backup);
             if (backupSession?.refresh_token) {
@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 refresh_token: backupSession.refresh_token,
               });
               if (refreshed?.session && !refreshError) {
-                localStorage.setItem("trakalog_session_backup", JSON.stringify(refreshed.session));
+                safeLocalStorage.setItem("trakalog_session_backup", JSON.stringify(refreshed.session));
                 const allowed = await checkWhitelist(refreshed.session);
                 if (!allowed) return;
                 supabase.auth.startAutoRefresh();
@@ -190,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: { session: refreshedSession } } = await supabase.auth.getSession();
       if (refreshedSession) {
         setSession(refreshedSession);
-        localStorage.setItem("trakalog_session_backup", JSON.stringify(refreshedSession));
+        safeLocalStorage.setItem("trakalog_session_backup", JSON.stringify(refreshedSession));
       }
       return {};
     } catch (e) {

@@ -6,6 +6,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
+import { safeLocalStorage } from "@/lib/safeStorage";
 import { toast } from "sonner";
 import { useTeams } from "@/contexts/TeamContext";
 import { analyzeAudio, type AudioAnalysisResult } from "@/lib/audio-analysis";
@@ -612,7 +613,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     if (session) return true;
     // Restore from backup
     try {
-      const backup = localStorage.getItem("trakalog_session_backup");
+      const backup = safeLocalStorage.getItem("trakalog_session_backup");
       if (backup) {
         const parsed = JSON.parse(backup);
         const accessToken = parsed?.access_token || parsed?.currentSession?.access_token;

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import { useTranslation } from "react-i18next";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 export default function Auth() {
   const { t } = useTranslation();
@@ -30,7 +31,7 @@ export default function Auth() {
   }
 
   if (session && !needsMfaVerification) {
-    localStorage.setItem("trakalog_just_logged_in", "1");
+    safeLocalStorage.setItem("trakalog_just_logged_in", "1");
     if (inviteParam) {
       return <Navigate to={"/invite/" + inviteParam} replace />;
     }
@@ -120,7 +121,7 @@ export default function Auth() {
     setSubmitting(true);
     // Store redirect URL so we can use it after OAuth callback
     if (redirectParam) {
-      localStorage.setItem("trakalog_auth_redirect", redirectParam);
+      safeLocalStorage.setItem("trakalog_auth_redirect", redirectParam);
     }
     const { error } = await signInWithGoogle();
     if (error) toast.error(error.message);

@@ -1,3 +1,5 @@
+import { safeLocalStorage } from "@/lib/safeStorage";
+
 const STORAGE_KEY = "trakalog-saved-contacts";
 
 export interface SavedContact {
@@ -9,7 +11,7 @@ export interface SavedContact {
 
 export function getSavedContacts(): SavedContact[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = safeLocalStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -29,5 +31,5 @@ export function saveContact(contact: Omit<SavedContact, "lastUsed">) {
   }
   // Keep max 50 contacts, sorted by most recent
   contacts.sort((a, b) => b.lastUsed - a.lastUsed);
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts.slice(0, 50))); } catch { /* quota exceeded or private browsing */ }
+  try { safeLocalStorage.setItem(STORAGE_KEY, JSON.stringify(contacts.slice(0, 50))); } catch { /* quota exceeded or private browsing */ }
 }
