@@ -164,17 +164,21 @@ export default function SignAgreement() {
 
     var base64 = sigRef.current.toDataURL("image/png");
 
-    var { error: updateErr } = await anonClient
-      .from("signature_requests")
-      .update({
-        status: "signed",
-        signature_data: base64,
-        signed_at: new Date().toISOString(),
-      })
-      .eq("id", request.id);
-
-    if (updateErr) {
-      setSigError(updateErr.message);
+    // CRIT-02: write via SECURITY DEFINER RPC that re-validates the token server-side.
+    // The previous direct UPDATE relied on an anon RLS policy that did not bind the
+    // token to the row, so any pending row could be PATCHed by id alone.
+    var rpcRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/sign_agreement_via_token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+        "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({ _token: token, _signature_data: base64 }),
+    });
+    var rpcJson = rpcRes.ok ? await rpcRes.json() : null;
+    if (!rpcRes.ok || !rpcJson?.success) {
+      setSigError((rpcJson && rpcJson.error) || "Could not sign — invalid or expired token");
       setSigning(false);
       return;
     }

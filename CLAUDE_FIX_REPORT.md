@@ -111,6 +111,40 @@ $func$;
 GRANT EXECUTE ON FUNCTION public.get_shared_link_by_id(uuid) TO anon, authenticated;
 ```
 
+### Migration 2 — CRIT-02 `signature_requests` UPDATE token-bound
+
+```sql
+-- Drop the broken anon-update policy that allowed PATCH by id alone
+DROP POLICY IF EXISTS "signature_requests_anon_update_signing" ON public.signature_requests;
+
+-- Server-side token validation + atomic update
+CREATE OR REPLACE FUNCTION public.sign_agreement_via_token(
+  _token text, _signature_data text
+)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $func$
+DECLARE v_request_id uuid;
+BEGIN
+  SELECT id INTO v_request_id
+  FROM public.signature_requests
+  WHERE token = _token AND status = 'pending'
+  LIMIT 1;
+
+  IF v_request_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid or expired token');
+  END IF;
+
+  UPDATE public.signature_requests
+  SET status = 'signed',
+      signature_data = _signature_data,
+      signed_at = now()
+  WHERE id = v_request_id;
+
+  RETURN jsonb_build_object('success', true, 'request_id', v_request_id);
+END;
+$func$;
+GRANT EXECUTE ON FUNCTION public.sign_agreement_via_token(text, text) TO anon, authenticated;
+```
+
 (other migrations populated per fix below)
 
 ---
