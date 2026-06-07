@@ -412,4 +412,46 @@ supabase functions deploy accept-invitation --project-ref xhmeitivkclbeziqavxw
 
 ## Runtime test checklist (post-push)
 
-(populated at the end)
+Run these in order after Yannick has executed the SQL migrations and deployed the two Edge Functions.
+
+### Pre-flight
+- [ ] SQL migrations 1–5 applied successfully in production SQL Editor (no errors).
+- [ ] `supabase functions deploy add-to-waitlist` succeeds.
+- [ ] `supabase functions deploy accept-invitation` succeeds.
+
+### CRIT-01 (shared_links)
+- [ ] Open an existing shared track link `/s/{slug}` while logged out → page loads (no 401, no 404).
+- [ ] Same for an existing shared playlist link.
+- [ ] Same for an existing stems share `/shared/{linkId}`.
+- [ ] In DevTools network tab, confirm responses no longer contain `password_hash`.
+
+### CRIT-02 (signature_requests)
+- [ ] Open a fresh `signature_requests` token URL → sign → success.
+- [ ] Try to re-sign the same token → returns "Invalid or expired token" (expected: status='pending' no longer matches).
+
+### CRIT-03 (track_comments)
+- [ ] On a stems share page (`/shared/{linkId}`), post a comment → edit it → delete it. All three operations succeed.
+- [ ] Try editing the same comment from a DIFFERENT active shared link (manual REST hit) → server should return `{success:false}`.
+
+### P0-04 (tracks cross-workspace)
+- [ ] Single-track share displays metadata, audio plays.
+- [ ] Playlist share displays all tracks in correct order.
+- [ ] Logged-in user from another workspace cannot read a track via `/rest/v1/tracks?id=eq.{x}` if no shared_link covers it (manual REST verification optional).
+
+### P0-05 (waitlist)
+- [ ] LandingPage signup with new email → success toast.
+- [ ] Same email again → "already on waitlist" toast (duplicate flag).
+- [ ] Spam 6 submissions from the same IP within 15 minutes → the 6th returns 429.
+
+### P1-06 (update_track)
+- [ ] Edit a track from `TrackDetail` (title, BPM, genre, mood, splits, credits, tags, lyrics, language) → save → reload → values persisted.
+- [ ] In server logs, no "column does not exist" errors after an upload Skip Review batch.
+
+### P1-07 (invitation login loop)
+- [ ] Send a fresh invitation to a Gmail address that differs from the recipient's Google OAuth account.
+- [ ] Recipient signs in with Google (account email ≠ invitation email) → lands on `/invite/{token}` → Accept → lands on Dashboard.
+- [ ] Log out → log back in with the same Google account → no "email not whitelisted" loop.
+
+### P1-08 (safeLocalStorage)
+- [ ] App still boots normally in regular browsing.
+- [ ] In Firefox / Chrome private mode → app boots, no white screen, theme + workspace preferences still load (silently noop on quota errors instead of crashing).
