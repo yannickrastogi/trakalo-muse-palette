@@ -278,7 +278,21 @@ GRANT EXECUTE ON FUNCTION public.get_playlist_tracks_for_shared_link(text) TO an
 
 > From repo root with the Supabase CLI logged in to project ref `xhmeitivkclbeziqavxw`.
 
-(populated per fix below)
+### Deploy 1 — P0-05 `add-to-waitlist`
+
+```bash
+supabase functions deploy add-to-waitlist --project-ref xhmeitivkclbeziqavxw
+```
+
+- Service role write (waitlist has no anon INSERT policy).
+- Rate limit: **5 req / 15 min / IP** via `check_rate_limit` RPC.
+- Email regex + 254-char cap + lowercase trim.
+- Duplicate `email` (23505) returns `{success:true, duplicate:true}` so the UX stays positive.
+- DB errors masked, `console.error` keeps server-side trace.
+
+### Deploy 2 — P1-07 `accept-invitation`
+
+(populated by the P1-07 section below)
 
 ---
 

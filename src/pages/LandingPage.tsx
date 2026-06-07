@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { toast } from "sonner";
 import { Music, Rocket, Link2, BarChart3, Disc3, Building2, Mic2, ArrowRight, ChevronDown } from "lucide-react";
 import trakalogLogo from "@/assets/trakalog-logo.png";
@@ -100,23 +100,41 @@ function WaitlistForm({ id }: { id?: string }) {
     if (!email.trim() || submitting) return;
 
     setSubmitting(true);
-    const { error } = await supabase
-      .from("waitlist")
-      .insert({ email: email.trim().toLowerCase() });
-
-    setSubmitting(false);
-
-    if (error) {
-      if (error.code === "23505") {
-        toast.success(t("landing.alreadyOnWaitlist"));
-        setSubmitted(true);
-      } else {
-        toast.error(t("landing.somethingWentWrong"));
-      }
+    // P0-05: write goes through the add-to-waitlist Edge Function (CORS + rate
+    // limit + email validation + service-role insert) instead of the authed
+    // client. The public Landing page must not import the native supabase client.
+    let res: Response;
+    try {
+      res = await fetch(SUPABASE_URL + "/functions/v1/add-to-waitlist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), source: "landing" }),
+      });
+    } catch (err) {
+      console.error("waitlist network error:", err);
+      setSubmitting(false);
+      toast.error(t("landing.somethingWentWrong"));
       return;
     }
 
-    toast.success(t("landing.onTheList"));
+    setSubmitting(false);
+    const json = res.ok ? await res.json().catch(() => null) : null;
+
+    if (!res.ok || !json?.success) {
+      // Server-rate-limit or generic error
+      toast.error(t("landing.somethingWentWrong"));
+      return;
+    }
+
+    if (json.duplicate) {
+      toast.success(t("landing.alreadyOnWaitlist"));
+    } else {
+      toast.success(t("landing.onTheList"));
+    }
     setSubmitted(true);
   };
 
