@@ -270,6 +270,103 @@ GRANT EXECUTE ON FUNCTION public.get_playlist_tracks_for_shared_link(text) TO an
 
 **Residual:** if an anon-side broad policy on `tracks` exists (e.g. `anon_read_tracks_via_shared_links`), it should also be dropped — the audit only flagged the `authenticated` variant. Confirm via `SELECT polname, roles FROM pg_policies WHERE tablename = 'tracks'` before/after.
 
+### Migration 5 — P1-06 `update_track` column whitelist
+
+> Patches `public.update_track` (current body in `supabase/migrations/rls_phase2_rpc_access_level.sql:234-300`).
+> Adds a static `v_allowed_columns` whitelist; unknown keys are now silently ignored (`CONTINUE`) instead of being injected into the dynamic UPDATE (which previously caused the whole UPDATE to rollback on the first unknown key — the BUG-03 class fragility).
+> Permission checks + jsonb→column casts are preserved verbatim.
+
+```sql
+CREATE OR REPLACE FUNCTION public.update_track(
+  _user_id uuid,
+  _track_id uuid,
+  _updates jsonb
+)
+RETURNS void AS $func$
+DECLARE
+  workspace_uuid uuid;
+  uploader_uuid uuid;
+  k text;
+  v jsonb;
+  set_clauses text := '';
+  genre_array text[];
+  -- P1-06: explicit whitelist. Any key not in this set is silently dropped.
+  v_allowed_columns text[] := ARRAY[
+    'title', 'artist', 'featuring', 'type', 'status',
+    'bpm', 'key', 'genre', 'mood',
+    'language', 'gender', 'voice',
+    'notes', 'lyrics',
+    'audio_url', 'audio_preview_url', 'cover_url',
+    'duration_sec', 'waveform_data', 'sonic_dna', 'chapters',
+    'album', 'upc', 'isrc',
+    'released_at', 'copyright', 'explicit',
+    'labels', 'publishers',
+    'credits', 'tags', 'splits',
+    'qr_token'
+  ];
+BEGIN
+  -- Lookup workspace + uploader
+  SELECT workspace_id, uploaded_by INTO workspace_uuid, uploader_uuid
+  FROM public.tracks WHERE id = _track_id;
+
+  IF workspace_uuid IS NULL THEN
+    RAISE EXCEPTION 'Track % not found', _track_id;
+  END IF;
+
+  -- Phase 2 access_level check : editor+ OU (pitcher+ AND own track)
+  IF NOT (
+    public.has_workspace_access_level(_user_id, workspace_uuid, 'editor')
+    OR (
+      public.has_workspace_access_level(_user_id, workspace_uuid, 'pitcher')
+      AND uploader_uuid = _user_id
+    )
+  ) THEN
+    RAISE EXCEPTION 'Insufficient access level for update_track: editor required to edit any track, or pitcher to edit own track'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  -- Build dynamic UPDATE from jsonb keys (preserved casts, added whitelist guard)
+  FOR k, v IN SELECT * FROM jsonb_each(_updates) LOOP
+    -- Whitelist guard: silently skip any key that is not a real, writable column.
+    IF NOT (k = ANY(v_allowed_columns)) THEN
+      CONTINUE;
+    END IF;
+
+    IF k = 'genre' THEN
+      IF v IS NULL OR jsonb_typeof(v) = 'null' THEN
+        set_clauses := set_clauses || format(', %I = NULL', k);
+      ELSIF jsonb_typeof(v) = 'array' THEN
+        SELECT ARRAY(SELECT jsonb_array_elements_text(v)) INTO genre_array;
+        set_clauses := set_clauses || format(', %I = %L::text[]', k, genre_array);
+      ELSIF jsonb_typeof(v) = 'string' THEN
+        set_clauses := set_clauses || format(', %I = ARRAY[%L]::text[]', k, v #>> '{}');
+      ELSE
+        set_clauses := set_clauses || format(', %I = NULL', k);
+      END IF;
+    ELSIF jsonb_typeof(v) = 'null' THEN
+      set_clauses := set_clauses || format(', %I = NULL', k);
+    ELSIF jsonb_typeof(v) IN ('object', 'array') THEN
+      set_clauses := set_clauses || format(', %I = %L::jsonb', k, v::text);
+    ELSIF jsonb_typeof(v) = 'boolean' THEN
+      set_clauses := set_clauses || format(', %I = %L::boolean', k, (v #>> '{}'));
+    ELSIF jsonb_typeof(v) = 'number' THEN
+      set_clauses := set_clauses || format(', %I = %L', k, (v #>> '{}'));
+    ELSE
+      set_clauses := set_clauses || format(', %I = %L', k, (v #>> '{}'));
+    END IF;
+  END LOOP;
+
+  IF length(set_clauses) > 0 THEN
+    set_clauses := substring(set_clauses from 3);
+    EXECUTE format('UPDATE public.tracks SET %s, updated_at = now() WHERE id = %L',
+                   set_clauses, _track_id);
+  END IF;
+END;
+$func$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+```
+
+**Risk surface:** if a caller still relies on a column NAME not in the whitelist (e.g. a recent migration added a new column), that write is now silently dropped instead of crashing the whole UPDATE. Net-positive overall (the previous behaviour was a hard failure), but Yannick should confirm the whitelist matches the production `tracks` schema before rolling out. Expand the array if needed.
+
 (other migrations populated per fix below)
 
 ---
