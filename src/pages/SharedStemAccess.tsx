@@ -30,7 +30,7 @@ interface SharedLinkRow {
   link_name: string;
   link_slug: string;
   link_type: string;
-  password_hash: string | null;
+  has_password: boolean;
   message: string | null;
   allow_download: boolean;
   download_quality: string | null;
@@ -151,12 +151,20 @@ export default function SharedStemAccess() {
     }
 
     async function fetchData() {
-      // Fetch shared link by id
-      var { data: linkRow, error: linkErr } = await anonSupabase
-        .from("shared_links")
-        .select("*")
-        .eq("id", linkId!)
-        .single();
+      // Fetch shared link by id via SECURITY DEFINER RPC (CRIT-01). The RPC
+      // never returns password_hash — presence flagged via has_password boolean.
+      var linkRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_shared_link_by_id", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ _link_id: linkId }),
+      });
+      var linkRows = linkRes.ok ? await linkRes.json() : null;
+      var linkRow = Array.isArray(linkRows) && linkRows.length > 0 ? linkRows[0] : null;
+      var linkErr = linkRes.ok ? null : { message: linkRes.statusText };
 
       if (!isMounted) return;
 

@@ -25,7 +25,7 @@ interface SharedLinkData {
   link_name: string;
   link_slug: string;
   link_type: string;
-  password_hash: string | null;
+  has_password: boolean;
   message: string | null;
   allow_download: boolean;
   allow_save: boolean;
@@ -340,8 +340,15 @@ export default function SharedLinkPage() {
     }
 
     async function fetchLink() {
-      var slRes = await fetch(REST_URL + "/shared_links?select=*&link_slug=eq." + encodeURIComponent(slug!), { headers: { ...SB_HEADERS, "Accept": "application/vnd.pgrst.object+json" } });
-      var data = slRes.ok ? await slRes.json() : null;
+      // RPC SECURITY DEFINER — replaces direct SELECT (CRIT-01). password_hash is
+      // never exposed to the client; presence is reflected via has_password boolean.
+      var slRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_shared_link_by_slug", {
+        method: "POST",
+        headers: { ...SB_HEADERS, "Content-Type": "application/json" },
+        body: JSON.stringify({ _slug: slug }),
+      });
+      var rows = slRes.ok ? await slRes.json() : null;
+      var data = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
       var fetchErr = slRes.ok ? null : { message: slRes.statusText };
 
       if (fetchErr || !data) {
