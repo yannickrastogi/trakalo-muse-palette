@@ -24,7 +24,6 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const rawEmail = typeof body.email === "string" ? body.email : "";
-    const source = typeof body.source === "string" ? body.source.slice(0, 64) : "landing";
 
     const email = rawEmail.trim().toLowerCase();
     if (!email || email.length > MAX_EMAIL_LEN || !EMAIL_RE.test(email)) {
@@ -55,9 +54,9 @@ serve(async (req) => {
 
     // Service-role insert. The waitlist table is otherwise un-writeable from the client
     // (no anon INSERT policy). The UNIQUE index on email surfaces duplicates as 23505.
-    const insertPayload: Record<string, unknown> = { email };
-    if (source) insertPayload.source = source;
-    const { error: insertErr } = await supabaseAdmin.from("waitlist").insert(insertPayload);
+    // The table has 5 real columns: id, email, created_at, invited_at,
+    // invitation_sent_by — `email` is the only one we set; the rest default.
+    const { error: insertErr } = await supabaseAdmin.from("waitlist").insert({ email });
 
     if (insertErr) {
       // Duplicate email is a success-equivalent for the user-facing flow.
