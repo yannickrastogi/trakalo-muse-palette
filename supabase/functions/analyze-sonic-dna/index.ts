@@ -10,6 +10,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { isValidUUID } from "../_shared/validation.ts";
+import { getStorageProvider } from "../_shared/storage.ts";
 
 Deno.serve(async (req) => {
   // CORS preflight
@@ -53,13 +54,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 1. Create a signed URL for the audio file
-    const { data: signedData, error: signErr } = await supabaseAdmin
-      .storage
-      .from("tracks")
-      .createSignedUrl(storage_path, 600); // 10 min validity
-
-    if (signErr || !signedData?.signedUrl) {
+    // 1. Create a signed URL for the audio file (10 min validity for the Sonic DNA service).
+    // Routed through the storage abstraction (Supabase or R2 via STORAGE_PROVIDER env).
+    //
+    // Legacy Supabase-direct call (kept here as comment for Phase 2 rollback reference):
+    //   const { data: signedData, error: signErr } = await supabaseAdmin
+    //     .storage.from("tracks").createSignedUrl(storage_path, 600);
+    let audioSignedUrl: string;
+    try {
+      audioSignedUrl = await getStorageProvider().createSignedUrl("tracks", storage_path, 600);
+    } catch (e) {
+      console.error("analyze-sonic-dna: sign failed (" + (e instanceof Error ? e.message : "unknown") + ")");
       return new Response(JSON.stringify({ error: "Failed to generate signed URL for audio" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -88,7 +93,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
           "x-api-key": sonicDnaApiKey,
         },
-        body: JSON.stringify({ source_url: signedData.signedUrl }),
+        body: JSON.stringify({ source_url: audioSignedUrl }),
         signal: controller.signal,
       });
     } catch (err) {

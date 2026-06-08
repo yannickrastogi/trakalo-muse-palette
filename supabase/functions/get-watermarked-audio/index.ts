@@ -10,6 +10,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { isValidUUID } from "../_shared/validation.ts";
+import { getStorageProvider } from "../_shared/storage.ts";
 
 async function sha256Hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input);
@@ -81,24 +82,39 @@ Deno.serve(async (req) => {
     const cacheKey = await sha256Hex(`${link_id}_${visitor_email}_${storage_path}`);
     const watermarkedPath = `${cacheKey}.wav`;
 
-    // Check if watermarked file already exists in cache (bucket "watermarked")
-    const { data: existingFile } = await supabaseAdmin.storage
-      .from("watermarked")
-      .createSignedUrl(watermarkedPath, 300);
+    // All storage I/O routed through the storage abstraction (Supabase or R2 via STORAGE_PROVIDER).
+    //
+    // Legacy Supabase-direct calls (kept here as comment for Phase 2 rollback reference):
+    //   const { data: existingFile } = await supabaseAdmin.storage.from("watermarked")
+    //     .createSignedUrl(watermarkedPath, 300);
+    //   const { data: originalSigned, error: signErr } = await supabaseAdmin.storage
+    //     .from("tracks").createSignedUrl(storage_path, 60);
+    //   const { error: uploadErr } = await supabaseAdmin.storage.from("watermarked")
+    //     .upload(watermarkedPath, watermarkedBuffer, { contentType: "audio/wav", upsert: false });
+    //   const { data: wmSigned, error: wmSignErr } = await supabaseAdmin.storage
+    //     .from("watermarked").createSignedUrl(watermarkedPath, 300);
+    const storage = getStorageProvider();
 
-    if (existingFile?.signedUrl) {
-      return new Response(JSON.stringify({ url: existingFile.signedUrl }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Check if watermarked file already exists in cache (bucket "watermarked")
+    if (await storage.exists("watermarked", watermarkedPath)) {
+      try {
+        const cachedUrl = await storage.createSignedUrl("watermarked", watermarkedPath, 300);
+        return new Response(JSON.stringify({ url: cachedUrl }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        // Cache hit but URL signing failed — fall through and regenerate.
+        console.error("get-watermarked-audio: cache sign failed (" + (e instanceof Error ? e.message : "unknown") + ")");
+      }
     }
 
-    // 1. Create a signed URL for the original audio (60s)
-    const { data: originalSigned, error: signErr } = await supabaseAdmin.storage
-      .from("tracks")
-      .createSignedUrl(storage_path, 60);
-
-    if (signErr || !originalSigned?.signedUrl) {
+    // 1. Create a signed URL for the original audio (60s) — passed to the Railway watermark service.
+    let originalSignedUrl: string;
+    try {
+      originalSignedUrl = await storage.createSignedUrl("tracks", storage_path, 60);
+    } catch (e) {
+      console.error("get-watermarked-audio: original sign failed (" + (e instanceof Error ? e.message : "unknown") + ")");
       return new Response(
         JSON.stringify({ error: "Failed to access original audio" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -123,7 +139,7 @@ Deno.serve(async (req) => {
         "x-api-key": WATERMARK_API_KEY,
       },
       body: JSON.stringify({
-        source_url: originalSigned.signedUrl,
+        source_url: originalSignedUrl,
         payload,
       }),
     });
@@ -136,18 +152,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 4. Upload watermarked audio to "watermarked" bucket
+    // 4. Upload watermarked audio to "watermarked" bucket via storage abstraction.
     const watermarkedBuffer = await wmResponse.arrayBuffer();
-
-    const { error: uploadErr } = await supabaseAdmin.storage
-      .from("watermarked")
-      .upload(watermarkedPath, watermarkedBuffer, {
-        contentType: "audio/wav",
-        upsert: false,
-      });
-
-    if (uploadErr) {
-      console.error("get-watermarked-audio upload error:", uploadErr.message);
+    try {
+      await storage.upload("watermarked", watermarkedPath, watermarkedBuffer, "audio/wav");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "unknown";
+      console.error("get-watermarked-audio upload error:", msg);
       return new Response(
         JSON.stringify({ error: "Failed to generate watermarked audio" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -155,18 +166,18 @@ Deno.serve(async (req) => {
     }
 
     // 5. Create signed URL for the watermarked file (300s)
-    const { data: wmSigned, error: wmSignErr } = await supabaseAdmin.storage
-      .from("watermarked")
-      .createSignedUrl(watermarkedPath, 300);
-
-    if (wmSignErr || !wmSigned?.signedUrl) {
+    let watermarkedUrl: string;
+    try {
+      watermarkedUrl = await storage.createSignedUrl("watermarked", watermarkedPath, 300);
+    } catch (e) {
+      console.error("get-watermarked-audio: watermarked sign failed (" + (e instanceof Error ? e.message : "unknown") + ")");
       return new Response(
         JSON.stringify({ error: "Failed to generate watermarked audio URL" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    return new Response(JSON.stringify({ url: wmSigned.signedUrl }), {
+    return new Response(JSON.stringify({ url: watermarkedUrl }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

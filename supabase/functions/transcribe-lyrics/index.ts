@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { isValidUUID } from "../_shared/validation.ts";
+import { getStorageProvider } from "../_shared/storage.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -81,17 +82,26 @@ serve(async (req) => {
       });
     }
 
-    // 2. Download audio via fresh signed URL — try original first, fallback to preview if too large
+    // 2. Download audio via fresh signed URL — try original first, fallback to preview if too large.
+    // Routed through the storage abstraction (Supabase or R2 via STORAGE_PROVIDER env).
+    //
+    // Legacy Supabase-direct call (kept here as comment for Phase 2 rollback reference):
+    //   const { data: signedData, error: signErr } = await supabaseAdmin.storage
+    //     .from("tracks").createSignedUrl(path, 3600);
     let audioPath = originalPath || previewPath;
     let fileData: Blob | null = null;
+    const storage = getStorageProvider();
 
     // Helper: create a fresh signed URL and fetch the file
     async function fetchViaSignedUrl(path: string): Promise<Blob | null> {
-      const { data: signedData, error: signErr } = await supabaseAdmin.storage
-        .from("tracks")
-        .createSignedUrl(path, 3600);
-      if (signErr || !signedData?.signedUrl) return null;
-      const res = await fetch(signedData.signedUrl);
+      let signedUrl: string;
+      try {
+        signedUrl = await storage.createSignedUrl("tracks", path, 3600);
+      } catch (e) {
+        console.error("transcribe-lyrics: sign failed for " + path + " (" + (e instanceof Error ? e.message : "unknown") + ")");
+        return null;
+      }
+      const res = await fetch(signedUrl);
       if (!res.ok) return null;
       return await res.blob();
     }

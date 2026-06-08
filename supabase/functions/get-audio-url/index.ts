@@ -10,6 +10,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { isValidUUID } from "../_shared/validation.ts";
+import { getStorageProvider } from "../_shared/storage.ts";
 
 Deno.serve(async (req) => {
   // CORS preflight
@@ -135,20 +136,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 4. Generate a signed URL (5 min validity — DRM: short-lived URLs)
-    const { data: signedData, error: signErr } = await supabaseAdmin
-      .storage
-      .from("tracks")
-      .createSignedUrl(audioPath, 300);
-
-    if (signErr || !signedData?.signedUrl) {
+    // 4. Generate a signed URL (5 min validity — DRM: short-lived URLs).
+    // Routed through the storage abstraction (Supabase or R2 via STORAGE_PROVIDER env).
+    //
+    // Legacy Supabase-direct call (kept here as comment for Phase 2 rollback reference):
+    //   const { data: signedData, error: signErr } = await supabaseAdmin
+    //     .storage.from("tracks").createSignedUrl(audioPath, 300);
+    let signedUrl: string;
+    try {
+      signedUrl = await getStorageProvider().createSignedUrl("tracks", audioPath, 300);
+    } catch (e) {
+      console.error("get-audio-url: createSignedUrl failed (" + (e instanceof Error ? e.message : "unknown") + ")");
       return new Response(JSON.stringify({ error: "Failed to generate audio URL" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ url: signedData.signedUrl }), {
+    return new Response(JSON.stringify({ url: signedUrl }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
