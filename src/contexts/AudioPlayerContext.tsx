@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useRef, useEffect, us
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { TrackData } from "@/contexts/TrackContext";
+import { getAudioPlaybackUrl, getStorageSignedUrl } from "@/lib/audio";
 
 interface AudioPlayerState {
   currentTrack: TrackData | null;
@@ -122,46 +123,31 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       return cached.url;
     }
 
-    // Try Edge Function first (works without session)
+    // Phase 5: route 100% via Edge Functions (R2 honored).
+    // - If we have the track UUID, use get-audio-url (preview-aware).
+    // - Else, fall back to the generic get-storage-url for the raw path.
+    //
+    // Legacy Supabase-direct fallback (kept here as comment for Phase 5 rollback reference):
+    //   const { data, error } = await supabase.storage
+    //     .from("tracks").createSignedUrl(rawUrl, 3600);
     try {
+      // Cache TTL = 240s (URL is 300s for preview; 3600s for storage-url helper).
+      // Conservative: align to the shorter of the two so we never hand out a
+      // stale URL to <audio>. The lib/audio LRU also caches at 4 min — this
+      // local cache only matters if multiple callsites share the same rawUrl.
+      const localTtlMs = 240 * 1000;
       if (trackUuid) {
-        const res = await fetch(SUPABASE_URL + "/functions/v1/get-audio-url", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
-            "apikey": SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ track_id: trackUuid, quality: "preview" }),
-        });
-        const data = await res.json();
-        if (data.url) {
-          signedUrlCache.current[rawUrl] = {
-            url: data.url,
-            expires: Date.now() + 3500 * 1000,
-          };
-          return data.url;
-        }
+        const url = await getAudioPlaybackUrl(trackUuid, "preview");
+        signedUrlCache.current[rawUrl] = { url, expires: Date.now() + localTtlMs };
+        return url;
       }
+      const url = await getStorageSignedUrl("tracks", rawUrl, { expiresInSec: 3600 });
+      signedUrlCache.current[rawUrl] = { url, expires: Date.now() + localTtlMs };
+      return url;
     } catch (e) {
-      console.error("Edge function audio URL failed, falling back to createSignedUrl:", e);
-    }
-
-    // Fallback: direct storage signing
-    const { data, error } = await supabase.storage
-      .from("tracks")
-      .createSignedUrl(rawUrl, 3600);
-
-    if (error || !data?.signedUrl) {
-      console.error("Failed to sign audio URL:", error);
+      console.error("resolveAudioUrl failed:", e instanceof Error ? e.message : e);
       return null;
     }
-
-    signedUrlCache.current[rawUrl] = {
-      url: data.signedUrl,
-      expires: Date.now() + 3500 * 1000,
-    };
-    return data.signedUrl;
   }, []);
 
   const playTrackInternal = useCallback(async (track: TrackData) => {

@@ -23,6 +23,7 @@ import {
 } from "@/lib/pdf-generators";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_COVER } from "@/lib/constants";
+import { getStorageSignedUrl } from "@/lib/audio";
 import type { TrackData } from "@/contexts/TrackContext";
 
 interface DownloadTrackModalProps {
@@ -98,11 +99,16 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
       // Get cover art for embedding in audio files (used by stems)
       const coverArrayBuffer = await getCoverArtArrayBuffer(trackData);
 
-      // Track — real audio file from Supabase Storage
+      // Track — real audio file. Phase 5: originalFileUrl is now a raw storage
+      // path (TrackContext no longer pre-signs); resolve via Edge Function (R2 honored).
+      // If a caller still passes a full http(s) URL, we use it directly.
       if (selectedItems.has("track") && trackData.originalFileUrl) {
         const trackFolder = root.folder("Track")!;
         const fileName = trackData.originalFileName || (trackData.title + ".mp3");
-        const audioRes = await fetch(trackData.originalFileUrl);
+        const audioUrl = trackData.originalFileUrl.startsWith("http")
+          ? trackData.originalFileUrl
+          : await getStorageSignedUrl("tracks", trackData.originalFileUrl, { expiresInSec: 3600 });
+        const audioRes = await fetch(audioUrl);
         if (!audioRes.ok) throw new Error("Failed to download track audio: " + audioRes.status);
         const audioBytes = await audioRes.arrayBuffer();
         trackFolder.file(fileName, audioBytes);
@@ -197,12 +203,18 @@ export function DownloadTrackModal({ open, onClose, trackData, meta }: DownloadT
         if (docs && docs.length > 0) {
           const paperworkFolder = root.folder("Paperwork")!;
           for (const doc of docs) {
-            const { data: signedData } = await supabase.storage
-              .from("documents")
-              .createSignedUrl(doc.file_path, 3600);
-            if (!signedData?.signedUrl) continue;
+            // Phase 5: route signing via Edge Function (R2 honored).
+            // Legacy Supabase-direct call (kept here as comment for Phase 5 rollback reference):
+            //   const { data: signedData } = await supabase.storage
+            //     .from("documents").createSignedUrl(doc.file_path, 3600);
+            let signedDocUrl: string;
+            try {
+              signedDocUrl = await getStorageSignedUrl("documents", doc.file_path, { expiresInSec: 3600 });
+            } catch {
+              continue;
+            }
 
-            const docRes = await fetch(signedData.signedUrl);
+            const docRes = await fetch(signedDocUrl);
             if (!docRes.ok) throw new Error("Failed to download document: " + docRes.status);
             const fileBytes = await docRes.arrayBuffer();
 

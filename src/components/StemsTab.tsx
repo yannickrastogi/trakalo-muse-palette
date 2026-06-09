@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { getStorageSignedUrl } from "@/lib/audio";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack } from "@/contexts/TrackContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -201,12 +202,16 @@ export function StemsTab({ trackId, autoOpenUpload = false, readOnly = false }: 
           continue;
         }
 
-        // Get signed URL
-        const { data: signedData } = await supabase.storage
-          .from("stems")
-          .createSignedUrl(filePath, 3600);
-
-        const fileUrl = signedData?.signedUrl || "";
+        // Get signed URL — Phase 5: route via Edge Function (R2 honored).
+        // Legacy Supabase-direct call (kept here as comment for Phase 5 rollback reference):
+        //   const { data: signedData } = await supabase.storage
+        //     .from("stems").createSignedUrl(filePath, 3600);
+        let fileUrl = "";
+        try {
+          fileUrl = await getStorageSignedUrl("stems", filePath, { expiresInSec: 3600 });
+        } catch (e) {
+          console.error("Failed to sign stem URL:", e);
+        }
 
         // Insert record in stems table
         const { error: insertError } = await supabase.rpc("insert_stem", {

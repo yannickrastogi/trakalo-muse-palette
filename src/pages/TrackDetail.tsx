@@ -10,6 +10,7 @@ import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrackReview, formatTimestamp } from "@/contexts/TrackReviewContext";
 import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf, generateCreditsPdf, type CreditEntry } from "@/lib/pdf-generators";
 import { safeLocalStorage } from "@/lib/safeStorage";
+import { getStorageSignedUrl } from "@/lib/audio";
 import { DownloadTrackModal } from "@/components/DownloadTrackModal";
 import { SharePackModal } from "@/components/SharePackModal";
 import { EditTrackModal } from "@/components/EditTrackModal";
@@ -317,12 +318,17 @@ export default function TrackDetail() {
     // Fetch the audio file and regenerate peaks
     (async function() {
       try {
-        // If the URL is already signed/absolute, fetch directly; otherwise get a signed URL
+        // Phase 5: route signing via Edge Function (R2 honored).
+        // Legacy Supabase-direct call (kept here as comment for Phase 5 rollback reference):
+        //   var signed = await supabase.storage.from("tracks").createSignedUrl(url, 300);
         var url = audioPath;
         if (!url.startsWith("http")) {
-          var signed = await supabase.storage.from("tracks").createSignedUrl(url, 300);
-          if (signed.error || !signed.data?.signedUrl) return;
-          url = signed.data.signedUrl;
+          try {
+            url = await getStorageSignedUrl("tracks", url, { expiresInSec: 300 });
+          } catch (e) {
+            console.error("Failed to sign audio URL for waveform regen:", e);
+            return;
+          }
         }
         var response = await fetch(url);
         if (!response.ok) return;
@@ -678,10 +684,14 @@ export default function TrackDetail() {
                                       .single();
                                     if (fetchErr || !row?.audio_url) throw new Error("No audio file for this track");
                                     const storagePath = row.audio_url as string;
-                                    const { data: fileData, error: dlErr } = await supabase.storage
-                                      .from("tracks")
-                                      .download(storagePath);
-                                    if (dlErr || !fileData) throw new Error("Failed to download audio");
+                                    // Phase 5: download via signed URL from Edge Function (R2 honored).
+                                    // Legacy Supabase-direct call (kept here as comment for Phase 5 rollback reference):
+                                    //   const { data: fileData, error: dlErr } = await supabase.storage
+                                    //     .from("tracks").download(storagePath);
+                                    const signedAudioUrl = await getStorageSignedUrl("tracks", storagePath, { expiresInSec: 3600 });
+                                    const dlResp = await fetch(signedAudioUrl);
+                                    if (!dlResp.ok) throw new Error("Failed to download audio (HTTP " + dlResp.status + ")");
+                                    const fileData = await dlResp.blob();
                                     const audioFile = new File([fileData], "audio.wav", { type: fileData.type });
                                     const mp3Blob = await encodeToMp3(audioFile);
                                     const previewPath = storagePath.replace(/\.[^.]+$/, "_preview.mp3");
@@ -3270,13 +3280,14 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
 
   const handleOpen = async (doc: TrackDocument) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("documents")
-        .createSignedUrl(doc.file_path, 3600);
-      if (error) throw error;
+      // Phase 5: route signing via Edge Function (R2 honored).
+      // Legacy Supabase-direct call (kept here as comment for Phase 5 rollback reference):
+      //   const { data, error } = await supabase.storage
+      //     .from("documents").createSignedUrl(doc.file_path, 3600);
+      const signedDocUrl = await getStorageSignedUrl("documents", doc.file_path, { expiresInSec: 3600 });
 
       if (doc.mime_type && doc.mime_type.includes("pdf")) {
-        const pdfBytes = await fetch(data.signedUrl).then(r => { if (!r.ok) throw new Error("Failed to fetch PDF"); return r.arrayBuffer(); });
+        const pdfBytes = await fetch(signedDocUrl).then(r => { if (!r.ok) throw new Error("Failed to fetch PDF"); return r.arrayBuffer(); });
         const pdfDoc = await PDFDocument.load(pdfBytes);
         const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
         const pages = pdfDoc.getPages();
@@ -3303,8 +3314,10 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
         const blob = new Blob([watermarkedBytes], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
         window.open(url, "_blank", "noopener,noreferrer");
+        // Release the Blob memory once the new tab has a chance to load the PDF.
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
       } else {
-        window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+        window.open(signedDocUrl, "_blank", "noopener,noreferrer");
       }
     } catch (err) {
       console.error("Failed to open document:", err);
@@ -3313,12 +3326,13 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
 
   const handleDownload = async (doc: TrackDocument) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("documents")
-        .createSignedUrl(doc.file_path, 3600);
-      if (error) throw error;
+      // Phase 5: route signing via Edge Function (R2 honored).
+      // Legacy Supabase-direct call (kept here as comment for Phase 5 rollback reference):
+      //   const { data, error } = await supabase.storage
+      //     .from("documents").createSignedUrl(doc.file_path, 3600);
+      const signedDlUrl = await getStorageSignedUrl("documents", doc.file_path, { expiresInSec: 3600 });
 
-      const response = await fetch(data.signedUrl);
+      const response = await fetch(signedDlUrl);
       const arrayBuffer = await response.arrayBuffer();
 
       if (doc.mime_type && doc.mime_type.includes("pdf")) {

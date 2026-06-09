@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import { getAudioPlaybackUrl, getStorageSignedUrl } from "@/lib/audio";
 
 export interface CrossfadeTrack {
   id: number;
@@ -133,29 +134,20 @@ class CrossfadePlayer {
     const cached = this.urlCache[rawUrl];
     if (cached && cached.expires > Date.now()) return cached.url;
 
+    // Phase 5: route 100% via Edge Functions (R2 honored).
+    // Legacy Supabase-direct fallback (kept here as comment for Phase 5 rollback reference):
+    //   const { data, error } = await supabase.storage.from("tracks").createSignedUrl(rawUrl, 3600);
     try {
-      const res = await fetch(SUPABASE_URL + "/functions/v1/get-audio-url", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
-          "apikey": SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({ track_id: track.uuid, quality: "preview" }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        this.urlCache[rawUrl] = { url: data.url, expires: Date.now() + 3500000 };
-        return data.url;
-      }
+      const url = track.uuid
+        ? await getAudioPlaybackUrl(track.uuid, "preview")
+        : await getStorageSignedUrl("tracks", rawUrl, { expiresInSec: 3600 });
+      // Cache TTL = 240s — preview URLs expire after 300s. Avoid stale URLs.
+      this.urlCache[rawUrl] = { url, expires: Date.now() + 240_000 };
+      return url;
     } catch (e) {
-      // fallback to storage signing
+      console.error("crossfadePlayer.resolveUrl failed:", e instanceof Error ? e.message : e);
+      return null;
     }
-
-    const { data, error } = await supabase.storage.from("tracks").createSignedUrl(rawUrl, 3600);
-    if (error || !data?.signedUrl) return null;
-    this.urlCache[rawUrl] = { url: data.signedUrl, expires: Date.now() + 3500000 };
-    return data.signedUrl;
   }
 
   private async preloadNext() {

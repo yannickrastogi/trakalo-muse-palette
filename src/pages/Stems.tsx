@@ -8,6 +8,7 @@ import { SelectTrackForStemsModal } from "@/components/SelectTrackForStemsModal"
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
+import { getStorageSignedUrl } from "@/lib/audio";
 
 // Use centralized constants
 import { STEM_TYPES, GENRES, DEFAULT_COVER } from "@/lib/constants";
@@ -157,10 +158,12 @@ function StemsInner() {
       togglePlay();
       return;
     }
-    // Create a fresh signed URL then play
+    // Create a fresh signed URL then play — Phase 5: route via Edge Function (R2 honored).
+    // Legacy Supabase-direct call (kept here as comment for Phase 5 rollback reference):
+    //   supabase.storage.from("stems").createSignedUrl(storagePath, 3600).then(...)
     var storagePath = activeWorkspace.id + "/" + stem.trackUuid + "/" + stem.id + "/" + stem.fileName;
-    supabase.storage.from("stems").createSignedUrl(storagePath, 3600).then(function(res) {
-      if (!res.data?.signedUrl) return;
+    getStorageSignedUrl("stems", storagePath, { expiresInSec: 3600 }).then(function(signedUrl) {
+      if (!signedUrl) return;
       playTrack({
         id: numId,
         uuid: stem.id,
@@ -191,26 +194,33 @@ function StemsInner() {
         type: "Stem",
         coverIdx: 0,
         coverImage: stem.trackCover,
-        previewUrl: res.data.signedUrl,
+        previewUrl: signedUrl,
         notes: "",
         credits: {},
         stems: [],
         splits: [],
         statusHistory: [],
       } as any);
+    }).catch(function(e) {
+      console.error("Failed to sign stem play URL:", e);
     });
   }, [activeWorkspace, currentTrack, togglePlay, playTrack, stemNumericId]);
 
   const handleDownloadStem = useCallback(function(stem: FlatStem) {
     if (stem.isPack || !activeWorkspace) return;
+    // Phase 5: route signing via Edge Function (R2 honored).
+    // Legacy Supabase-direct call (kept here as comment for Phase 5 rollback reference):
+    //   supabase.storage.from("stems").createSignedUrl(storagePath, 3600).then(...)
     var storagePath = activeWorkspace.id + "/" + stem.trackUuid + "/" + stem.id + "/" + stem.fileName;
-    supabase.storage.from("stems").createSignedUrl(storagePath, 3600).then(function(res) {
-      if (!res.data?.signedUrl) return;
+    getStorageSignedUrl("stems", storagePath, { expiresInSec: 3600 }).then(function(signedUrl) {
+      if (!signedUrl) return;
       var link = document.createElement("a");
-      link.href = res.data.signedUrl;
+      link.href = signedUrl;
       link.download = stem.fileName;
       link.target = "_blank";
       link.click();
+    }).catch(function(e) {
+      console.error("Failed to sign stem download URL:", e);
     });
   }, [activeWorkspace]);
 

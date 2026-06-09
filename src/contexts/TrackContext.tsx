@@ -535,34 +535,16 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // Resolve storage paths to signed URLs for audio (preview + original)
-        const pathsToSign = new Set<string>();
-        mapped.forEach((t) => {
-          if (t.previewUrl && !t.previewUrl.startsWith("http")) pathsToSign.add(t.previewUrl);
-          if (t.originalFileUrl && !t.originalFileUrl.startsWith("http")) pathsToSign.add(t.originalFileUrl);
-        });
-        if (pathsToSign.size > 0) {
-          const { data: signedUrls } = await supabase.storage
-            .from("tracks")
-            .createSignedUrls(Array.from(pathsToSign), 3600);
-
-          if (signedUrls) {
-            const urlMap: Record<string, string> = {};
-            signedUrls.forEach((entry) => {
-              if (entry.signedUrl && !entry.error) {
-                urlMap[entry.path || ""] = entry.signedUrl;
-              }
-            });
-            mapped.forEach((t) => {
-              if (t.previewUrl && !t.previewUrl.startsWith("http") && urlMap[t.previewUrl]) {
-                t.previewUrl = urlMap[t.previewUrl];
-              }
-              if (t.originalFileUrl && !t.originalFileUrl.startsWith("http") && urlMap[t.originalFileUrl]) {
-                t.originalFileUrl = urlMap[t.originalFileUrl];
-              }
-            });
-          }
-        }
+        // Phase 5 — audio URLs are NOT signed upfront here.
+        // previewUrl / originalFileUrl now stay as raw storage paths and are
+        // resolved lazily by AudioPlayerContext.resolveAudioUrl, crossfadePlayer,
+        // and any other consumer via src/lib/audio.ts (get-audio-url EF / R2 routed).
+        // This removes a per-workspace-load batch of up to ~N createSignedUrls
+        // calls and centralises signing through the storage abstraction.
+        //
+        // Legacy Supabase-direct batch sign (kept here as comment for Phase 5 rollback reference):
+        //   const { data: signedUrls } = await supabase.storage
+        //     .from("tracks").createSignedUrls(Array.from(pathsToSign), 3600);
 
         setTracks(mapped);
       }
