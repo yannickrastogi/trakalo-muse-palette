@@ -291,6 +291,15 @@ export default function SharedLinkPage() {
 
   // Audio loading
   var [audioLoading, setAudioLoading] = useState(false);
+  // Media-load error surface (null = no error).
+  //   "fallback" = watermarked stream failed, now playing the original audio
+  //   "error"    = playback failed entirely
+  var [watermarkError, setWatermarkError] = useState<string | null>(null);
+
+  // Refs used by the media-error recovery path (see handleWatermarkFailover).
+  var originalUrlRef = useRef<string | null>(null);   // current track's non-watermarked URL (fallback)
+  var watermarkActiveRef = useRef<boolean>(false);    // is the currently-loaded src the watermarked one?
+  var loadWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Comments
   var [comments, setComments] = useState<TrackComment[]>([]);
@@ -560,11 +569,51 @@ export default function SharedLinkPage() {
       .catch(function(err) { console.error("Failed to fetch workspace branding:", err); });
   }, [slug, linkData]);
 
+  // Recover from a media-element failure. Falls back from the watermarked stream
+  // to the original audio when possible, otherwise surfaces an error. ALWAYS clears
+  // the loading state so the "Preparing your secure copy" UI can never hang forever.
+  // Logs are prefixed [watermark-audio] and only ever include the URL host (never
+  // the signed query string / token).
+  var handleWatermarkFailover = useCallback(function(context: string) {
+    var audio = audioRef.current;
+    if (loadWatchdogRef.current) { clearTimeout(loadWatchdogRef.current); loadWatchdogRef.current = null; }
+    var host = "";
+    try { host = audio && audio.currentSrc ? new URL(audio.currentSrc).hostname : ""; } catch (e) { host = ""; }
+    var mediaErr = audio && audio.error ? audio.error : null;
+    console.error(
+      "[watermark-audio] " + context +
+      " code=" + (mediaErr ? mediaErr.code : "n/a") +
+      " message=" + (mediaErr && mediaErr.message ? mediaErr.message : "") +
+      " host=" + host +
+      " watermarked=" + watermarkActiveRef.current
+    );
+    if (audio && watermarkActiveRef.current && originalUrlRef.current) {
+      // Watermarked stream failed → play the original so the visitor can still listen.
+      watermarkActiveRef.current = false;
+      setIsWatermarked(false);
+      setWatermarkError("fallback");
+      audio.src = originalUrlRef.current;
+      audio.play().catch(function(e) {
+        console.error("[watermark-audio] fallback play failed:", e && e.name, e && e.message);
+        setAudioLoading(false);
+        setWatermarkError("error");
+      });
+    } else {
+      // No watermarked source involved, or the original also failed → stop spinner, show error.
+      setAudioLoading(false);
+      setWatermarkError("error");
+    }
+  }, []);
+
   // Setup audio element (single instance for lifetime of page)
   useEffect(function() {
     var audio = new Audio();
     audio.volume = volume;
     audioRef.current = audio;
+
+    var clearWatchdog = function() {
+      if (loadWatchdogRef.current) { clearTimeout(loadWatchdogRef.current); loadWatchdogRef.current = null; }
+    };
 
     var onTimeUpdate = function() {
       setCurrentTime(audio.currentTime);
@@ -587,10 +636,13 @@ export default function SharedLinkPage() {
       setCurrentTime(0);
       setDuration(0);
     };
-    var onPlay = function() { setIsPlaying(true); setAudioLoading(false); };
+    var onPlay = function() { setIsPlaying(true); setAudioLoading(false); clearWatchdog(); };
     var onPause = function() { setIsPlaying(false); };
     var onWaiting = function() { setAudioLoading(true); };
-    var onCanPlay = function() { setAudioLoading(false); };
+    var onCanPlay = function() { setAudioLoading(false); clearWatchdog(); };
+    // Surface and recover from <audio> load/decode failures (e.g. a watermarked
+    // stream that won't play) instead of leaving the "Preparing" spinner forever.
+    var onError = function() { handleWatermarkFailover("audio element error event"); };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("loadedmetadata", onLoadedMetadata);
@@ -599,8 +651,11 @@ export default function SharedLinkPage() {
     audio.addEventListener("pause", onPause);
     audio.addEventListener("waiting", onWaiting);
     audio.addEventListener("canplay", onCanPlay);
+    audio.addEventListener("error", onError);
 
     return function() {
+      // Remove the error listener FIRST so clearing src below doesn't trigger failover.
+      audio.removeEventListener("error", onError);
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("loadedmetadata", onLoadedMetadata);
       audio.removeEventListener("ended", onEnded);
@@ -608,6 +663,7 @@ export default function SharedLinkPage() {
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("waiting", onWaiting);
       audio.removeEventListener("canplay", onCanPlay);
+      clearWatchdog();
       audio.pause();
       audio.src = "";
     };
@@ -648,13 +704,31 @@ export default function SharedLinkPage() {
     setCurrentTime(0);
     setDuration(0);
     setIsWatermarked(false);
+    setWatermarkError(null);
+    watermarkActiveRef.current = false;
+    originalUrlRef.current = null;
+    if (loadWatchdogRef.current) { clearTimeout(loadWatchdogRef.current); loadWatchdogRef.current = null; }
     fetchAudioUrl(track.id, "preview").then(function(url) {
       if (!url) {
-        console.error("No audio URL returned for track", track.id);
+        console.error("[watermark-audio] no audio URL returned for track", track.id);
         loadedTrackIdRef.current = null;
         setPlayingTrackId(null);
+        setAudioLoading(false);
+        setWatermarkError("error");
         return;
       }
+      originalUrlRef.current = url;
+      // Watchdog: if the chosen source never reaches playback (silent stall, no
+      // "error" event), recover anyway so "Preparing" can't hang forever.
+      var armLoadWatchdog = function() {
+        if (loadWatchdogRef.current) clearTimeout(loadWatchdogRef.current);
+        loadWatchdogRef.current = setTimeout(function() {
+          var a = audioRef.current;
+          if (loadedTrackIdRef.current === track.id && a && a.paused && a.currentTime === 0) {
+            handleWatermarkFailover("media load watchdog (no playback within 25s)");
+          }
+        }, 25000);
+      };
       // Try to get watermarked version first, wait up to 5s, then fallback to original
       var storagePath = track.audio_url;
       var currentLinkId = linkData?.id;
@@ -684,26 +758,38 @@ export default function SharedLinkPage() {
         }).then(function(wmJson) {
           if (wmJson.url && loadedTrackIdRef.current === track.id) {
             audio.src = wmJson.url;
+            watermarkActiveRef.current = true;
             setIsWatermarked(true);
           } else {
             audio.src = url;
+            watermarkActiveRef.current = false;
           }
-          audio.play().catch(function(err) { console.error("Play error:", err); });
+          armLoadWatchdog();
+          audio.play().catch(function(err) { console.error("[watermark-audio] play error:", err && err.name, err && err.message); setAudioLoading(false); });
         }).catch(function(wmErr) {
           clearTimeout(wmTimeout);
-          console.warn("Watermarking unavailable, using original audio:", wmErr);
+          console.warn("[watermark-audio] watermark request unavailable, using original audio:", wmErr && wmErr.name, wmErr && wmErr.message);
           if (loadedTrackIdRef.current === track.id) {
             audio.src = url;
-            audio.play().catch(function(err) { console.error("Play error:", err); });
+            watermarkActiveRef.current = false;
+            setWatermarkError("fallback");
+            armLoadWatchdog();
+            audio.play().catch(function(err) { console.error("[watermark-audio] play error:", err && err.name, err && err.message); setAudioLoading(false); });
           }
         });
       } else {
         // No watermark possible, play original directly
         audio.src = url;
-        audio.play().catch(function(err) { console.error("Play error:", err); });
+        watermarkActiveRef.current = false;
+        armLoadWatchdog();
+        audio.play().catch(function(err) { console.error("[watermark-audio] play error:", err && err.name, err && err.message); setAudioLoading(false); });
       }
-    }).catch(function (err) { console.error("Error:", err); });
-  }, [fetchAudioUrl, linkData, visitorName]);
+    }).catch(function (err) {
+      console.error("[watermark-audio] loadAndPlayTrack error:", err && err.name, err && err.message);
+      setAudioLoading(false);
+      setWatermarkError("error");
+    });
+  }, [fetchAudioUrl, linkData, visitorName, handleWatermarkFailover]);
 
   // Keep ref in sync so onEnded can call it without stale closure
   useEffect(function() { loadAndPlayTrackRef.current = loadAndPlayTrack; }, [loadAndPlayTrack]);
@@ -1427,12 +1513,26 @@ export default function SharedLinkPage() {
                     </div>
                   )}
 
-                  {audioLoading && playingTrackId && linkData?.watermarking_enabled !== false && (
+                  {audioLoading && !watermarkError && playingTrackId && linkData?.watermarking_enabled !== false && (
                     <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (plImmersive ? "bg-white/8 backdrop-blur border border-white/10" : "bg-muted/40 border border-border")}>
                       <ShieldCheck className={"w-4 h-4 mt-0.5 shrink-0 animate-pulse " + (plImmersive ? "text-white/80" : "text-primary")} />
                       <div className="min-w-0 flex-1">
                         <p className={"text-xs font-semibold " + (plImmersive ? "text-white" : "text-foreground")}>{t("sharedLink.watermark.preparing")}</p>
                         <p className={"text-[10px] mt-0.5 " + (plImmersive ? "text-white/55" : "text-muted-foreground")}>{t("sharedLink.watermark.explanation")}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {watermarkError && playingTrackId && (
+                    <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (plImmersive ? "bg-amber-500/10 border border-amber-400/25" : "bg-destructive/10 border border-destructive/25")}>
+                      <AlertCircle className={"w-4 h-4 mt-0.5 shrink-0 " + (plImmersive ? "text-amber-300" : "text-destructive")} />
+                      <div className="min-w-0 flex-1">
+                        <p className={"text-xs font-semibold " + (plImmersive ? "text-white" : "text-foreground")}>
+                          {watermarkError === "fallback" ? "Protection unavailable" : "Playback failed"}
+                        </p>
+                        <p className={"text-[10px] mt-0.5 " + (plImmersive ? "text-white/55" : "text-muted-foreground")}>
+                          {watermarkError === "fallback" ? "Playing the original audio instead." : "Couldn't load this track — please try again."}
+                        </p>
                       </div>
                     </div>
                   )}
@@ -1844,12 +1944,26 @@ export default function SharedLinkPage() {
                   </div>
                 )}
 
-                {audioLoading && playingTrackId === trackData.id && linkData?.watermarking_enabled !== false && (
+                {audioLoading && !watermarkError && playingTrackId === trackData.id && linkData?.watermarking_enabled !== false && (
                   <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (immersive ? "bg-white/8 backdrop-blur border border-white/10" : "bg-muted/40 border border-border")}>
                     <ShieldCheck className={"w-4 h-4 mt-0.5 shrink-0 animate-pulse " + (immersive ? "text-white/80" : "text-primary")} />
                     <div className="min-w-0 flex-1">
                       <p className={"text-xs font-semibold " + (immersive ? "text-white" : "text-foreground")}>{t("sharedLink.watermark.preparing")}</p>
                       <p className={"text-[10px] mt-0.5 " + (immersive ? "text-white/55" : "text-muted-foreground")}>{t("sharedLink.watermark.explanation")}</p>
+                    </div>
+                  </div>
+                )}
+
+                {watermarkError && playingTrackId === trackData.id && (
+                  <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (immersive ? "bg-amber-500/10 border border-amber-400/25" : "bg-destructive/10 border border-destructive/25")}>
+                    <AlertCircle className={"w-4 h-4 mt-0.5 shrink-0 " + (immersive ? "text-amber-300" : "text-destructive")} />
+                    <div className="min-w-0 flex-1">
+                      <p className={"text-xs font-semibold " + (immersive ? "text-white" : "text-foreground")}>
+                        {watermarkError === "fallback" ? "Protection unavailable" : "Playback failed"}
+                      </p>
+                      <p className={"text-[10px] mt-0.5 " + (immersive ? "text-white/55" : "text-muted-foreground")}>
+                        {watermarkError === "fallback" ? "Playing the original audio instead." : "Couldn't load this track — please try again."}
+                      </p>
                     </div>
                   </div>
                 )}

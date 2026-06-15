@@ -112,6 +112,14 @@ async function callEdgeFunction<T>(
       let payload: unknown = null;
       try { payload = text ? JSON.parse(text) : null; } catch { payload = null; }
       if (!res.ok) {
+        // Structured diagnostics. These EF requests carry no signed URL / token,
+        // so logging the function name + status + size headers leaks nothing sensitive.
+        console.error(
+          "[audio-lib] " + fnName + " HTTP " + res.status +
+          " content-type=" + (res.headers.get("content-type") || "") +
+          " content-length=" + (res.headers.get("content-length") || "") +
+          " attempt=" + (attempt + 1)
+        );
         // 4xx is non-recoverable; bail without retry.
         if (res.status >= 400 && res.status < 500) {
           const msg = (payload && typeof payload === "object" && "error" in payload)
@@ -129,7 +137,8 @@ async function callEdgeFunction<T>(
       if (msg.startsWith("[" + fnName + "] ") && !msg.includes("HTTP 5")) {
         throw e;
       }
-      // Else: network / 5xx — one retry.
+      // Network / 5xx — log and retry once.
+      console.error("[audio-lib] " + fnName + " network/5xx error (attempt " + (attempt + 1) + "): " + msg);
     }
   }
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
