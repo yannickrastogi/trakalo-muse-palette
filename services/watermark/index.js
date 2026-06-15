@@ -25,6 +25,7 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
+    exposedHeaders: ["X-Watermark-Format"],
   })
 );
 
@@ -62,6 +63,31 @@ function cleanup(...files) {
       // ignore cleanup errors
     }
   }
+}
+
+// Promise wrapper for execFile
+function execFileP(cmd, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    execFile(cmd, args, options, (error, stdout, stderr) => {
+      if (error) {
+        error.stdout = stdout;
+        error.stderr = stderr;
+        return reject(error);
+      }
+      resolve({ stdout, stderr });
+    });
+  });
+}
+
+// Parse audiowmark "get" output to extract first detected payload (hex string)
+function parseAudiowmarkPayload(stdout) {
+  const lines = stdout.trim().split("\n");
+  for (const line of lines) {
+    const match = line.match(/^pattern\s+\d+\s+(\S+)\s+([\d.]+)/);
+    if (match) return match[1];
+  }
+  const trimmed = stdout.trim();
+  return /^[0-9a-f]{32}$/i.test(trimmed) ? trimmed : null;
 }
 
 // Download a file from URL to a local path
@@ -122,34 +148,77 @@ app.post(
       return res.status(400).json({ error: "Payload must be a 128-bit hex string (32 hex chars)" });
     }
 
-    const outputPath = path.join(tmpDir, `${uuidv4()}.wav`);
+    const wavOutputPath = path.join(tmpDir, `${uuidv4()}.wav`);
+    const mp3OutputPath = path.join(tmpDir, `${uuidv4()}.mp3`);
 
     const timeout = setTimeout(() => {
-      cleanup(inputPath, outputPath);
+      cleanup(inputPath, wavOutputPath, mp3OutputPath);
       if (!res.headersSent) {
         res.status(504).json({ error: "Processing timeout" });
       }
     }, 120000);
 
-    execFile(
-      "audiowmark",
-      ["add", inputPath, outputPath, payload],
-      { timeout: 110000 },
-      (error, stdout, stderr) => {
-        clearTimeout(timeout);
+    try {
+      // 1. audiowmark add → WAV watermarked
+      await execFileP("audiowmark", ["add", inputPath, wavOutputPath, payload], { timeout: 80000 });
+    } catch (error) {
+      clearTimeout(timeout);
+      cleanup(inputPath, wavOutputPath, mp3OutputPath);
+      return res.status(500).json({
+        error: "Watermark encoding failed",
+        details: error.stderr || error.message,
+      });
+    }
 
-        if (error) {
-          cleanup(inputPath, outputPath);
-          return res
-            .status(500)
-            .json({ error: "Watermark encoding failed", details: stderr });
-        }
+    // Source no longer needed
+    cleanup(inputPath);
 
-        res.download(outputPath, "watermarked.wav", () => {
-          cleanup(inputPath, outputPath);
-        });
+    // 2. Re-encode WAV → MP3 192 kbps (libmp3lame). On failure, fallback to WAV.
+    let useMp3 = false;
+    try {
+      await execFileP(
+        "ffmpeg",
+        ["-i", wavOutputPath, "-c:a", "libmp3lame", "-b:a", "192k", "-y", mp3OutputPath],
+        { timeout: 40000 }
+      );
+
+      // 3. CRITICAL — Validate watermark survives MP3 compression
+      const { stdout } = await execFileP("audiowmark", ["get", mp3OutputPath], { timeout: 30000 });
+      const detected = parseAudiowmarkPayload(stdout);
+
+      if (!detected || detected.toLowerCase() !== payload.toLowerCase()) {
+        // Validation failed → log and fallback to WAV
+        console.error(
+          `[watermark] MP3 validation FAILED — expected=${payload.substring(0, 8)}..., detected=${
+            detected ? detected.substring(0, 8) + "..." : "none"
+          }. Falling back to WAV.`
+        );
+        cleanup(mp3OutputPath);
+      } else {
+        useMp3 = true;
       }
-    );
+    } catch (mp3Err) {
+      console.error(`[watermark] MP3 encode/validate error: ${mp3Err.message}. Falling back to WAV.`);
+      cleanup(mp3OutputPath);
+    }
+
+    clearTimeout(timeout);
+
+    if (useMp3) {
+      // res.download will set Content-Type from .mp3 filename
+      res.setHeader("X-Watermark-Format", "mp3");
+      res.setHeader("Access-Control-Expose-Headers", "X-Watermark-Format");
+      return res.download(mp3OutputPath, "watermarked.mp3", () => {
+        cleanup(wavOutputPath, mp3OutputPath);
+      });
+    }
+
+    // Fallback path — WAV output (legacy compat)
+    res.setHeader("X-Watermark-Format", "wav");
+    res.setHeader("Access-Control-Expose-Headers", "X-Watermark-Format");
+    return res.download(wavOutputPath, "watermarked.wav", () => {
+      cleanup(wavOutputPath);
+    });
   }
 );
 

@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     libgcrypt20-dev \
     libzita-resampler-dev \
     libmpg123-dev \
+    ffmpeg \
     git \
     curl \
     ca-certificates \
