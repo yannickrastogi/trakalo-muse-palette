@@ -17,6 +17,7 @@ import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { normalizeSocialUrl } from "@/lib/social-urls";
 import { safeLocalStorage } from "@/lib/safeStorage";
+import type { TrackChapter } from "@/contexts/TrackContext";
 
 interface SharedLinkData {
   id: string;
@@ -78,6 +79,7 @@ interface TrackData {
   language: string | null;
   gender: string | null;
   released_at: string | null;
+  chapters: TrackChapter[] | null;
 }
 
 interface PlaylistData {
@@ -142,6 +144,45 @@ function CommentMarkers({ comments, totalDuration }: { comments: TrackComment[];
               </div>
             </div>
           </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ChapterPills({ chapters, duration, onSeek, dark }: {
+  chapters: TrackChapter[] | null | undefined;
+  duration: number;
+  onSeek: (percent: number) => void;
+  dark: boolean;
+}) {
+  if (!Array.isArray(chapters) || chapters.length === 0) return null;
+  // Audio metadata may not be loaded yet (watermark prep can take seconds on shared links).
+  // Without a known duration, handleSeekPercent silently no-ops — disable the pills until ready.
+  var ready = duration > 0;
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1 mt-3 scrollbar-hide" role="list" aria-label="Track chapters">
+      {chapters.map(function(ch) {
+        var hasSec = typeof ch.startSec === "number" || ready;
+        var sec = typeof ch.startSec === "number"
+          ? ch.startSec
+          : (ch.startPercent / 100) * duration;
+        return (
+          <button
+            key={ch.id}
+            type="button"
+            disabled={!ready}
+            onClick={function() { onSeek(ch.startPercent); }}
+            className={"flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors disabled:opacity-40 disabled:cursor-wait " + (dark
+              ? "bg-white/10 hover:bg-white/20 text-white/80 hover:text-white"
+              : "bg-secondary/80 hover:bg-secondary text-foreground/80 hover:text-foreground border border-border")}
+            aria-label={hasSec ? ("Jump to " + ch.label + " at " + formatDuration(sec)) : ("Jump to " + ch.label)}
+          >
+            {hasSec && (
+              <span className={(dark ? "text-white/40" : "text-muted-foreground") + " mr-1"}>{formatDuration(sec)}</span>
+            )}
+            {ch.label}
+          </button>
         );
       })}
     </div>
@@ -1480,6 +1521,12 @@ export default function SharedLinkPage() {
                     />
                     <CommentMarkers comments={comments} totalDuration={effectiveDuration} />
                   </div>
+                  <ChapterPills
+                    chapters={activeTrack ? activeTrack.chapters : null}
+                    duration={effectiveDuration || (activeTrack?.duration_sec || 0)}
+                    onSeek={handleSeekPercent}
+                    dark={plImmersive}
+                  />
                   <p className={"text-[10px] text-center " + (plImmersive ? "text-white/40" : "text-muted-foreground/40")}>{t("sharedLink.doubleClickHint")}</p>
 
                   {commentComposerOpen && (
@@ -1911,6 +1958,12 @@ export default function SharedLinkPage() {
                   />
                   <CommentMarkers comments={comments} totalDuration={effectiveDuration} />
                 </div>
+                <ChapterPills
+                  chapters={trackData.chapters}
+                  duration={effectiveDuration || (trackData.duration_sec || 0)}
+                  onSeek={handleSeekPercent}
+                  dark={immersive}
+                />
                 <p className={"text-[10px] text-center " + (immersive ? "text-white/40" : "text-muted-foreground/40")}>Double-click waveform to leave a comment</p>
 
                 {commentComposerOpen && (
