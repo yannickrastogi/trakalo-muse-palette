@@ -173,12 +173,13 @@ app.post(
     // Source no longer needed
     cleanup(inputPath);
 
-    // 2. Re-encode WAV → MP3 192 kbps (libmp3lame). On failure, fallback to WAV.
+    // 2. Re-encode WAV → MP3 320 kbps (libmp3lame). On failure, fallback to WAV.
+    //    320 kbps preserves audiowmark robustness (192k was breaking validation).
     let useMp3 = false;
     try {
       await execFileP(
         "ffmpeg",
-        ["-i", wavOutputPath, "-c:a", "libmp3lame", "-b:a", "192k", "-y", mp3OutputPath],
+        ["-i", wavOutputPath, "-c:a", "libmp3lame", "-b:a", "320k", "-y", mp3OutputPath],
         { timeout: 40000 }
       );
 
