@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { useRole } from "@/contexts/RoleContext";
 import { FirstUseTooltip } from "@/components/FirstUseTooltip";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
+import { StarRating } from "@/components/StarRating";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { GENRES, KEYS, LANGUAGES, GENDERS, DEFAULT_COVER, PRODUCTION_STAGES } from "@/lib/constants";
@@ -84,7 +85,7 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 
 export default function Catalog() {
   const { t } = useTranslation();
-  const { tracks: allTracks, deleteTrack } = useTrack();
+  const { tracks: allTracks, deleteTrack, submitRating } = useTrack();
   const { getTotalPlaysForTrack, getTotalDownloadsForTrack } = useEngagement();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
@@ -629,6 +630,12 @@ export default function Catalog() {
                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold ${pb.className}`}>{pb.label}</span>
                                  ) : null;
                                })()}
+                               <StarRating
+                                 compact
+                                 stats={track.ratingStats}
+                                 onRate={(r) => submitRating(track.id, r)}
+                                 readOnly={!!track.isShared}
+                               />
                              </div>
                           </td>
                           <td className="px-4 py-3">
@@ -734,7 +741,15 @@ export default function Catalog() {
                       </div>
                       {/* Info */}
                       <div className="p-3 space-y-1.5">
-                        <p className="font-semibold text-foreground text-[13px] tracking-tight truncate leading-tight">{track.title}</p>
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-semibold text-foreground text-[13px] tracking-tight truncate leading-tight flex-1 min-w-0">{track.title}</p>
+                          <StarRating
+                            compact
+                            stats={track.ratingStats}
+                            onRate={(r) => submitRating(track.id, r)}
+                            readOnly={!!track.isShared}
+                          />
+                        </div>
                         <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
                         {track.isShared && track.sharedFrom && (
                           <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/10 text-brand-purple">

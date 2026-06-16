@@ -118,6 +118,7 @@ import { MultiRoleCreditAssigner } from "@/components/MultiRoleCreditAssigner";
 import { syncPerformerToInstrumentTag } from "@/lib/performerInstrumentSync";
 import { TagsSection } from "@/components/TagsSection";
 import type { TrackTags } from "@/lib/tagsVocabulary";
+import { StarRating } from "@/components/StarRating";
 
 interface StemFile {
   id: string;
@@ -241,7 +242,7 @@ export default function TrackDetail() {
   const { permissions } = useRole();
   const { activeWorkspace, workspaces } = useWorkspace();
   const navigate = useNavigate();
-  const { getTrackByUuid, getTrack, updateTrack, updateTrackStatus, deleteTrack, refreshTracks } = useTrack();
+  const { getTrackByUuid, getTrack, updateTrack, updateTrackStatus, deleteTrack, refreshTracks, submitRating } = useTrack();
   const { getTrackEngagement } = useEngagement();
   const { getCommentsForTrack, addComment } = useTrackReview();
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -655,6 +656,15 @@ export default function TrackDetail() {
                       #{m}
                     </span>
                   ))}
+                </div>
+
+                {/* Team rating */}
+                <div className="pt-1">
+                  <StarRating
+                    stats={track.ratingStats}
+                    onRate={(r) => submitRating(track.id, r)}
+                    readOnly={isViewerShared}
+                  />
                 </div>
 
                 {/* Action buttons */}

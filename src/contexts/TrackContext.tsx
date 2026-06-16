@@ -99,6 +99,13 @@ export interface TrackData extends WorkspaceScoped {
   // deno-lint-ignore no-explicit-any
   tags?: Record<string, any>;
   productionStage?: ProductionStage;
+  ratingStats?: RatingStats;
+}
+
+export interface RatingStats {
+  average: number;       // 0..5
+  count: number;         // total ratings
+  myRating: number | null;
 }
 
 const stemTypeColors: Record<string, string> = {
@@ -273,6 +280,7 @@ interface TrackContextValue {
   updateTrackSplits: (id: number, splits: TrackSplit[]) => void;
   deleteTrack: (uuid: string) => Promise<boolean>;
   refreshTracks: () => Promise<void>;
+  submitRating: (id: number, rating: number) => Promise<void>;
 }
 
 const TrackContext = createContext<TrackContextValue | null>(null);
@@ -298,8 +306,8 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     try {
-      // Fetch own tracks, stems, individual shares, and full catalog shares in parallel
-      const [tracksRes, stemsRes, catalogSharesRes] = await Promise.all([
+      // Fetch own tracks, stems, ratings, individual shares, and full catalog shares in parallel
+      const [tracksRes, stemsRes, ratingsRes, catalogSharesRes] = await Promise.all([
         supabase
           .from("tracks")
           .select("*")
@@ -310,6 +318,12 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           .select("*")
           .eq("workspace_id", activeWorkspace.id)
           .order("created_at", { ascending: true }),
+        // All ratings in the current workspace (RLS allows members to read peers' ratings).
+        // We aggregate client-side: avg, count and myRating per track.
+        supabase
+          .from("track_ratings")
+          .select("track_id, user_id, rating")
+          .eq("workspace_id", activeWorkspace.id),
         // Fetch all active catalog shares TO this workspace via RPC (bypasses RLS)
         supabase.rpc("get_workspace_catalog_shares", { _workspace_id: activeWorkspace.id }),
       ]);
@@ -330,10 +344,33 @@ export function TrackProvider({ children }: { children: ReactNode }) {
           stemsByTrack[tid].push(mapStemRow(row as unknown as Record<string, unknown>));
         }
 
+        // Aggregate ratings per track (sum, count, current-user value).
+        const ratingAgg: Record<string, { sum: number; count: number; myRating: number | null }> = {};
+        if (!ratingsRes.error && Array.isArray(ratingsRes.data)) {
+          for (const row of ratingsRes.data as Array<{ track_id: string; user_id: string; rating: number }>) {
+            const agg = ratingAgg[row.track_id] || { sum: 0, count: 0, myRating: null };
+            agg.sum += row.rating;
+            agg.count += 1;
+            if (user && row.user_id === user.id) agg.myRating = row.rating;
+            ratingAgg[row.track_id] = agg;
+          }
+        }
+
         const mapped = (tracksRes.data || []).map((row, i) => {
           const r = row as unknown as Record<string, unknown>;
           const trackStems = stemsByTrack[r.id as string] || [];
-          return mapRowToTrack(r, i, trackStems);
+          const track = mapRowToTrack(r, i, trackStems);
+          const agg = ratingAgg[r.id as string];
+          if (agg && agg.count > 0) {
+            track.ratingStats = {
+              average: Math.round((agg.sum / agg.count) * 10) / 10,
+              count: agg.count,
+              myRating: agg.myRating,
+            };
+          } else {
+            track.ratingStats = { average: 0, count: 0, myRating: null };
+          }
+          return track;
         });
 
         // Collect share info and pre-fetched track row data
@@ -969,6 +1006,42 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     [activeWorkspace, user]
   );
 
+  const submitRating = useCallback(
+    async (id: number, rating: number) => {
+      const track = tracks.find((t) => t.id === id);
+      if (!track || !user || !activeWorkspace) return;
+      if (rating < 1 || rating > 5) return;
+
+      const prev = track.ratingStats || { average: 0, count: 0, myRating: null };
+      // Optimistic update — recompute the rolling sum from previous avg×count.
+      const prevSum = prev.average * prev.count;
+      const next = prev.myRating == null
+        ? { count: prev.count + 1, sum: prevSum + rating }
+        : { count: prev.count, sum: prevSum - prev.myRating + rating };
+      const nextStats: RatingStats = {
+        count: next.count,
+        average: next.count > 0 ? Math.round((next.sum / next.count) * 10) / 10 : 0,
+        myRating: rating,
+      };
+      setTracks((ts) => ts.map((t) => (t.id === id ? { ...t, ratingStats: nextStats } : t)));
+
+      const { error } = await supabase.rpc("upsert_track_rating", {
+        _user_id: user.id,
+        _track_id: track.uuid,
+        _workspace_id: activeWorkspace.id,
+        _rating: rating,
+      });
+
+      if (error) {
+        // Don't revert: rapid successive clicks would race the optimistic state.
+        // Toast and let the user retry; the next fetchTracks resync will reconcile.
+        console.error("Error saving rating:", error);
+        toast.error("Failed to save rating");
+      }
+    },
+    [tracks, user, activeWorkspace]
+  );
+
   const contextValue = useMemo(() => ({
     tracks,
     loading,
@@ -982,7 +1055,8 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     updateTrackSplits,
     deleteTrack,
     refreshTracks: fetchTracks,
-  }), [tracks, loading, getTrack, getTrackByUuid, addTrack, updateTrack, updateTrackStatus, updateTrackLyrics, updateTrackStems, updateTrackSplits, deleteTrack, fetchTracks]);
+    submitRating,
+  }), [tracks, loading, getTrack, getTrackByUuid, addTrack, updateTrack, updateTrackStatus, updateTrackLyrics, updateTrackStems, updateTrackSplits, deleteTrack, fetchTracks, submitRating]);
 
   return (
     <TrackContext.Provider value={contextValue}>
