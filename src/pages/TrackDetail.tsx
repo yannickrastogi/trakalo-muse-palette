@@ -104,7 +104,7 @@ import { type PitchEntry } from "@/components/CreatePitchModal";
 import { StemsTab } from "@/components/StemsTab";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
 import { useContacts } from "@/contexts/ContactsContext";
-import { STEM_TYPES, DEFAULT_COVER, PROS, SPLIT_ROLES } from "@/lib/constants";
+import { STEM_TYPES, DEFAULT_COVER, PROS, SPLIT_ROLES, PRODUCTION_STAGES, type ProductionStage } from "@/lib/constants";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { generateWaveform } from "@/lib/waveformGenerator";
@@ -256,6 +256,7 @@ export default function TrackDetail() {
   const [shareExpanded, setShareExpanded] = useState(false);
   const [shareToWorkspaceOpen, setShareToWorkspaceOpen] = useState(false);
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
+  const [productionStagePopoverOpen, setProductionStagePopoverOpen] = useState(false);
   const [commentFilterAuthor, setCommentFilterAuthor] = useState<string | null>(null);
   const [commentFilterLink, setCommentFilterLink] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState(false);
@@ -580,6 +581,49 @@ export default function TrackDetail() {
                       </PopoverContent>
                     </Popover>
                     )}
+                    {/* Production-stage chip (editable popover for editors, static for viewers).
+                        Hidden entirely when no stage is set (legacy tracks pre-migration). */}
+                    {(() => {
+                      const stage = track.productionStage;
+                      if (!stage) return null;
+                      const chipClass = stage === "finished"
+                        ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                        : "bg-amber-500/20 text-amber-400 border border-amber-500/30";
+                      const shortLabel = stage === "finished" ? "Finished" : "WIP";
+                      if (isViewerShared || !permissions.canEditTracks) {
+                        return (
+                          <span className={"inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium " + chipClass}>
+                            {shortLabel}
+                          </span>
+                        );
+                      }
+                      return (
+                        <Popover open={productionStagePopoverOpen} onOpenChange={setProductionStagePopoverOpen}>
+                          <PopoverTrigger asChild>
+                            <button className={"inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity " + chipClass}>
+                              {shortLabel}
+                              <ChevronDown className="w-3 h-3" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent align="start" className="w-56 p-1.5">
+                            {PRODUCTION_STAGES.map((opt) => (
+                              <button
+                                key={opt.value}
+                                onClick={() => {
+                                  if (opt.value !== stage) {
+                                    updateTrack(track.id, { productionStage: opt.value as ProductionStage });
+                                  }
+                                  setProductionStagePopoverOpen(false);
+                                }}
+                                className={"flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm transition-colors " + (opt.value === stage ? "bg-amber-500/15 text-amber-400 font-medium" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </PopoverContent>
+                        </Popover>
+                      );
+                    })()}
                     {track.isrc && <span className="text-xs text-muted-foreground">{track.isrc}</span>}
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{track.title}</h1>

@@ -8,7 +8,7 @@ import { FirstUseTooltip } from "@/components/FirstUseTooltip";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useEngagement } from "@/contexts/EngagementContext";
-import { GENRES, KEYS, LANGUAGES, GENDERS, DEFAULT_COVER } from "@/lib/constants";
+import { GENRES, KEYS, LANGUAGES, GENDERS, DEFAULT_COVER, PRODUCTION_STAGES } from "@/lib/constants";
 import { INSTRUMENTS, LYRIC_THEMES, MOOD_FEEL, TEMPO_DESCRIPTORS, SYNC_TAGS } from "@/lib/tagsVocabulary";
 import { TagFilterDropdown, TempoToggle } from "@/components/TagFilterDropdown";
 import { NameAutocomplete } from "@/components/NameAutocomplete";
@@ -68,6 +68,17 @@ export const statusColors: Record<string, string> = {
   Released: "bg-brand-purple/12 text-brand-purple",
 };
 
+// Production-stage chip: short label + colored pill. Returns null when stage is undefined.
+function productionStageBadgeProps(stage: string | undefined | null) {
+  if (stage === "work_in_progress") {
+    return { label: "WIP", className: "bg-amber-500/20 text-amber-400 border border-amber-500/30" };
+  }
+  if (stage === "finished") {
+    return { label: "Finished", className: "bg-green-500/20 text-green-400 border border-green-500/30" };
+  }
+  return null;
+}
+
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } } };
 
@@ -84,6 +95,7 @@ export default function Catalog() {
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [keyFilter, setKeyFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [productionStageFilter, setProductionStageFilter] = useState<string | null>(null);
   const [bpmFilter, setBpmFilter] = useState<{ label: string; min: number; max: number } | null>(null);
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [voiceFilter, setVoiceFilter] = useState<string | null>(null);
@@ -129,7 +141,7 @@ export default function Catalog() {
   const voices = [...GENDERS];
 
   const activeFilterCount =
-    [typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, languageFilter, voiceFilter, tempoFilter].filter(Boolean).length +
+    [typeFilter, genreFilter, keyFilter, statusFilter, productionStageFilter, bpmFilter, languageFilter, voiceFilter, tempoFilter].filter(Boolean).length +
     (instrumentsFilter.length > 0 ? 1 : 0) +
     (lyricThemesFilter.length > 0 ? 1 : 0) +
     (moodFeelFilter.length > 0 ? 1 : 0) +
@@ -147,6 +159,7 @@ export default function Catalog() {
       }
       if (keyFilter && track.key !== keyFilter) return false;
       if (statusFilter && track.status !== statusFilter) return false;
+      if (productionStageFilter && track.productionStage !== productionStageFilter) return false;
       if (bpmFilter && (track.bpm < bpmFilter.min || track.bpm > bpmFilter.max)) return false;
       if (languageFilter && track.language !== languageFilter) return false;
       if (voiceFilter) {
@@ -211,13 +224,14 @@ export default function Catalog() {
       }
       return true;
     });
-  }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, bpmFilter, languageFilter, voiceFilter, instrumentsFilter, lyricThemesFilter, moodFeelFilter, syncTagsFilter, tempoFilter, personFilter]);
+  }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, productionStageFilter, bpmFilter, languageFilter, voiceFilter, instrumentsFilter, lyricThemesFilter, moodFeelFilter, syncTagsFilter, tempoFilter, personFilter]);
 
   const clearFilters = () => {
     setTypeFilter(null);
     setGenreFilter(null);
     setKeyFilter(null);
     setStatusFilter(null);
+    setProductionStageFilter(null);
     setBpmFilter(null);
     setLanguageFilter(null);
     setVoiceFilter(null);
@@ -378,6 +392,15 @@ export default function Catalog() {
                   <FilterSelect label={t("catalog.language")} value={languageFilter} options={languages} onChange={setLanguageFilter} />
                   <FilterSelect label={t("catalog.filters.genderLabel")} value={voiceFilter} options={voices} onChange={setVoiceFilter} />
                   <FilterSelect label={t("catalog.status")} value={statusFilter} options={statuses} onChange={setStatusFilter} />
+                  <FilterSelect
+                    label="Production Stage"
+                    value={productionStageFilter ? (PRODUCTION_STAGES.find((s) => s.value === productionStageFilter)?.label ?? null) : null}
+                    options={PRODUCTION_STAGES.map((s) => s.label)}
+                    onChange={(v) => {
+                      const match = PRODUCTION_STAGES.find((s) => s.label === v);
+                      setProductionStageFilter(match ? match.value : null);
+                    }}
+                  />
                 </div>
                 {/* Tag Filters row */}
                 <div className="mt-5 pt-5 border-t border-border/40">
@@ -454,6 +477,7 @@ export default function Catalog() {
               {languageFilter && <FilterTag key="lang" label={t("catalog.filters.langChip", { value: languageFilter })} onRemove={() => setLanguageFilter(null)} />}
               {voiceFilter && <FilterTag key="voice" label={t("catalog.filters.genderChip", { value: voiceFilter })} onRemove={() => setVoiceFilter(null)} />}
               {statusFilter && <FilterTag key="status" label={t("catalog.filters.statusChip", { value: statusFilter })} onRemove={() => setStatusFilter(null)} />}
+              {productionStageFilter && <FilterTag key="prod_stage" label={"Stage: " + (PRODUCTION_STAGES.find((s) => s.value === productionStageFilter)?.label ?? "")} onRemove={() => setProductionStageFilter(null)} />}
               {instrumentsFilter.length > 0 && <FilterTag key="instruments" label={t("catalog.filters.instrumentsChip", { value: instrumentsFilter.length })} onRemove={() => setInstrumentsFilter([])} />}
               {lyricThemesFilter.length > 0 && <FilterTag key="lyric_themes" label={t("catalog.filters.lyricThemesChip", { value: lyricThemesFilter.length })} onRemove={() => setLyricThemesFilter([])} />}
               {moodFeelFilter.length > 0 && <FilterTag key="mood_feel" label={t("catalog.filters.moodFeelChip", { value: moodFeelFilter.length })} onRemove={() => setMoodFeelFilter([])} />}
@@ -597,7 +621,15 @@ export default function Catalog() {
                              })()}
                            </td>
                            <td className="px-4 py-3">
-                             <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
+                             <div className="flex flex-wrap items-center gap-1.5">
+                               <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
+                               {(() => {
+                                 const pb = productionStageBadgeProps(track.productionStage);
+                                 return pb ? (
+                                   <span className={`inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold ${pb.className}`}>{pb.label}</span>
+                                 ) : null;
+                               })()}
+                             </div>
                           </td>
                           <td className="px-4 py-3">
                             {!permissions.isReadOnly && (
@@ -687,10 +719,18 @@ export default function Catalog() {
                             )}
                           </button>
                         </div>
-                        {/* Status badge */}
-                        <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-2xs font-semibold backdrop-blur-md ${statusColors[track.status]}`}>
-                          {track.status}
-                        </span>
+                        {/* Status + Production-stage badges */}
+                        <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                          {(() => {
+                            const pb = productionStageBadgeProps(track.productionStage);
+                            return pb ? (
+                              <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold backdrop-blur-md ${pb.className}`}>{pb.label}</span>
+                            ) : null;
+                          })()}
+                          <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold backdrop-blur-md ${statusColors[track.status]}`}>
+                            {track.status}
+                          </span>
+                        </div>
                       </div>
                       {/* Info */}
                       <div className="p-3 space-y-1.5">

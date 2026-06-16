@@ -17,7 +17,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-import { KEYS, LANGUAGES } from "@/lib/constants";
+import { KEYS, LANGUAGES, PRODUCTION_STAGES, type ProductionStage } from "@/lib/constants";
 import { GenreMultiSelect } from "@/components/GenreMultiSelect";
 import { equalSplit } from "@/lib/split-utils";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
@@ -149,6 +149,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
   const [voice, setVoice] = useState("");
   const [language, setLanguage] = useState("");
   const [trackType, setTrackType] = useState("");
+  const [productionStage, setProductionStage] = useState<ProductionStage>("work_in_progress");
   const [notes, setNotes] = useState("");
   const [isrc, setIsrc] = useState("");
   const [upc, setUpc] = useState("");
@@ -190,6 +191,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       setVoice(trackData.voice || "");
       setLanguage(trackData.language);
       setTrackType(trackData.type);
+      setProductionStage(trackData.productionStage || "work_in_progress");
       setNotes(trackData.notes);
       setIsrc(trackData.isrc);
       setUpc(trackData.upc);
@@ -279,6 +281,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       voice,
       language,
       type: trackType,
+      productionStage,
       notes: notes.trim(),
       isrc: isrc.trim(),
       upc: upc.trim(),
@@ -493,6 +496,22 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 <div className="space-y-1.5">
                   <FieldLabel>{t("editTrack.language")}</FieldLabel>
                   <LanguageMultiSelect value={language} onChange={setLanguage} placeholder={t("editTrack.selectLanguage")} />
+                </div>
+              </div>
+
+              {/* Production stage */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <FieldLabel>Production Stage</FieldLabel>
+                  <select
+                    value={productionStage}
+                    onChange={(e) => setProductionStage(e.target.value as ProductionStage)}
+                    className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none font-medium"
+                  >
+                    {PRODUCTION_STAGES.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

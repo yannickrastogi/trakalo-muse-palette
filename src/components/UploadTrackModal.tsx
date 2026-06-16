@@ -60,7 +60,7 @@ const MAX_TRACKS = 50;
 
 const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
-import { KEYS, LANGUAGES, PROS, SPLIT_ROLES } from "@/lib/constants";
+import { KEYS, LANGUAGES, PROS, SPLIT_ROLES, PRODUCTION_STAGES, type ProductionStage } from "@/lib/constants";
 import { equalSplit } from "@/lib/split-utils";
 import { extractTextFromPdf } from "@/lib/pdf-text-extract";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
@@ -108,6 +108,7 @@ interface TrackEntry {
   trackKey: string;
   genre: string[];
   trackType: string;
+  productionStage: ProductionStage;
   voice: string;
   language: string;
   notes: string;
@@ -151,6 +152,7 @@ interface CommonInfo {
   coverFile: File | null;
   genre: string[];
   trackType: string;
+  productionStage: ProductionStage;
   voice: string;
   language: string;
   notes: string;
@@ -177,6 +179,7 @@ function createEmptyCommonInfo(): CommonInfo {
     coverFile: null,
     genre: [],
     trackType: "",
+    productionStage: "work_in_progress",
     voice: "",
     language: "",
     notes: "",
@@ -241,6 +244,7 @@ function createTrackEntry(file: File): TrackEntry {
     trackKey: "",
     genre: [],
     trackType: "Song",
+    productionStage: "work_in_progress",
     voice: "",
     language: "",
     notes: "",
@@ -772,6 +776,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         language: currentTrack.language || "",
         voice: currentTrack.voice || "N/A",
         type: currentTrack.trackType || "Song",
+        productionStage: currentTrack.productionStage || "work_in_progress",
         originalFileUrl: audioUrl,
         previewFileUrl: undefined,
         originalFileName: currentTrack.fileName,
@@ -1214,6 +1219,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     if (c.coverFile) patch.coverFile = c.coverFile;
     if (c.genre.length > 0) patch.genre = c.genre;
     if (c.trackType) patch.trackType = c.trackType;
+    if (c.productionStage && c.productionStage !== "work_in_progress") patch.productionStage = c.productionStage;
     if (c.voice) patch.voice = c.voice;
     if (c.language) patch.language = c.language;
     if (c.notes.trim()) patch.notes = c.notes;
@@ -1938,6 +1944,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   trackKey={currentTrack.trackKey} setTrackKey={(v) => updateCurrent({ trackKey: v })}
                   genre={currentTrack.genre} setGenre={(v) => updateCurrent({ genre: v })}
                   trackType={currentTrack.trackType} setTrackType={(v) => updateCurrent({ trackType: v })}
+                  productionStage={currentTrack.productionStage || "work_in_progress"} setProductionStage={(v) => updateCurrent({ productionStage: v })}
                   voice={currentTrack.voice} setVoice={(v) => updateCurrent({ voice: v })}
                   language={currentTrack.language} setLanguage={(v) => updateCurrent({ language: v })}
                   notes={currentTrack.notes} setNotes={(v) => updateCurrent({ notes: v })}
@@ -2766,11 +2773,23 @@ function StepCommonInfo({
         </div>
       </div>
 
-      {/* Language */}
+      {/* Language + Production Stage */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <FieldLabel>{t("uploadTrack.language")}</FieldLabel>
           <LanguageMultiSelect value={commonInfo.language} onChange={(v) => onUpdate({ language: v })} placeholder={t("uploadTrack.selectLanguage")} />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel>Production Stage</FieldLabel>
+          <select
+            value={commonInfo.productionStage}
+            onChange={(e) => onUpdate({ productionStage: e.target.value as ProductionStage })}
+            className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none font-medium"
+          >
+            {PRODUCTION_STAGES.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -2951,6 +2970,7 @@ function StepInfo({
   title, setTitle, artist, setArtist, bpm, setBpm,
   trackKey, setTrackKey, genre, setGenre,
   trackType, setTrackType,
+  productionStage, setProductionStage,
   voice, setVoice,
   language, setLanguage, notes, setNotes,
   analysisResult, analyzing,
@@ -2963,6 +2983,7 @@ function StepInfo({
   trackKey: string; setTrackKey: (v: string) => void;
   genre: string[]; setGenre: (v: string[]) => void;
   trackType: string; setTrackType: (v: string) => void;
+  productionStage: ProductionStage; setProductionStage: (v: ProductionStage) => void;
   voice: string; setVoice: (v: string) => void;
   language: string; setLanguage: (v: string) => void;
   notes: string; setNotes: (v: string) => void;
@@ -3135,6 +3156,18 @@ function StepInfo({
         <div className="space-y-1.5">
           <FieldLabel>{t("uploadTrack.language")}</FieldLabel>
           <LanguageMultiSelect value={language} onChange={setLanguage} placeholder={t("uploadTrack.selectLanguage")} />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel>Production Stage</FieldLabel>
+          <select
+            value={productionStage}
+            onChange={(e) => setProductionStage(e.target.value as ProductionStage)}
+            className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none font-medium"
+          >
+            {PRODUCTION_STAGES.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
         </div>
       </div>
       <div className="space-y-1.5">

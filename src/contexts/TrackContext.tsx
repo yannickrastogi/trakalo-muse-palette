@@ -4,6 +4,7 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import type { WorkspaceScoped } from "@/types/workspace";
+import type { ProductionStage } from "@/lib/constants";
 import { toast } from "sonner";
 
 export interface TrackStem {
@@ -97,6 +98,7 @@ export interface TrackData extends WorkspaceScoped {
   sonicDna?: Record<string, any>;
   // deno-lint-ignore no-explicit-any
   tags?: Record<string, any>;
+  productionStage?: ProductionStage;
 }
 
 const stemTypeColors: Record<string, string> = {
@@ -201,6 +203,9 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     statusHistory: [],
     sonicDna: row.sonic_dna ? (row.sonic_dna as Record<string, any>) : undefined,
     tags: row.tags ? (row.tags as Record<string, any>) : {},
+    productionStage: (row.production_stage === "finished" || row.production_stage === "work_in_progress")
+      ? (row.production_stage as ProductionStage)
+      : undefined,
   };
 }
 
@@ -658,6 +663,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         if (trackInput.copyright) metaPayload.copyright = trackInput.copyright;
         if (trackInput.explicit) metaPayload.explicit = trackInput.explicit;
         if (trackInput.chapters) metaPayload.chapters = trackInput.chapters;
+        if (trackInput.productionStage) metaPayload.production_stage = trackInput.productionStage;
         const mergedCredits = { ...(trackInput.credits || {}), ...writerCredits };
         if (Object.keys(mergedCredits).length > 0) metaPayload.credits = mergedCredits;
         if (trackInput.tags && Object.keys(trackInput.tags).length > 0) metaPayload.tags = trackInput.tags;
@@ -765,6 +771,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         payload.credits = mergedCredits;
       }
       if (updates.tags !== undefined) payload.tags = updates.tags;
+      if (updates.productionStage !== undefined) payload.production_stage = updates.productionStage || "work_in_progress";
 
       if (Object.keys(payload).length > 0 && user) {
         const { error } = await supabase.rpc("update_track", {

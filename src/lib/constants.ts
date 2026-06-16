@@ -41,6 +41,13 @@ export const TRACK_TYPES = ["Instrumental", "Sample", "Acapella", "Song"] as con
 
 export const STATUSES = ["Available", "On Hold", "Released"] as const;
 
+export const PRODUCTION_STAGES = [
+  { value: "work_in_progress", label: "Work in Progress" },
+  { value: "finished", label: "Finished" },
+] as const;
+
+export type ProductionStage = "work_in_progress" | "finished";
+
 export const GENDERS = ["Male", "Female", "Duet", "N/A"] as const;
 
 export const KEYS = [
