@@ -25,6 +25,17 @@ interface AudioPlayerContextValue extends AudioPlayerState {
   setQueue: (tracks: TrackData[]) => void;
   queue: TrackData[];
   isTrackPlaying: (trackId: number) => boolean;
+  /**
+   * Swap the underlying audio source while preserving the current timecode and
+   * play state. Used by Track Versioning A/B switch — caller passes a raw
+   * storage path inside the "tracks" bucket. Caller is responsible for ensuring
+   * the swap targets the same logical track (currentTrack stays unchanged).
+   *
+   * `playWhenReady` forces playback after the swap even if the audio element
+   * is currently paused — used by the initial "play a non-active version"
+   * flow where the underlying element hasn't started yet when we trigger.
+   */
+  swapAudioSource: (rawStoragePath: string, opts?: { playWhenReady?: boolean }) => Promise<void>;
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextValue | null>(null);
@@ -264,6 +275,40 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     return state.currentTrack?.id === trackId && state.isPlaying;
   }, [state.currentTrack?.id, state.isPlaying]);
 
+  const swapAudioSource = useCallback(async (rawStoragePath: string, opts?: { playWhenReady?: boolean }) => {
+    const audio = audioRef.current;
+    if (!audio || !rawStoragePath) return;
+
+    // Capture intent BEFORE we kick off the (async) sign — by the time the URL
+    // comes back, the underlying element may have re-initialized (e.g. when
+    // chained right after playTrack).
+    const wasPlaying = !audio.paused || !!opts?.playWhenReady;
+    const savedTime = audio.currentTime;
+
+    let signedUrl: string;
+    try {
+      signedUrl = await getStorageSignedUrl("tracks", rawStoragePath, { expiresInSec: 3600 });
+    } catch (e) {
+      console.error("swapAudioSource: failed to sign URL:", e instanceof Error ? e.message : e);
+      toast.error("Could not load this version.");
+      return;
+    }
+
+    const onLoaded = () => {
+      audio.removeEventListener("loadedmetadata", onLoaded);
+      try {
+        audio.currentTime = Math.min(savedTime, audio.duration || savedTime);
+      } catch {
+        // ignore — some browsers throw if duration is unknown
+      }
+      if (wasPlaying) {
+        audio.play().catch(() => {});
+      }
+    };
+    audio.addEventListener("loadedmetadata", onLoaded);
+    audio.src = signedUrl;
+  }, []);
+
   return (
     <AudioPlayerContext.Provider value={useMemo(() => ({
       ...state,
@@ -278,7 +323,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       setQueue,
       queue,
       isTrackPlaying,
-    }), [state, playTrack, togglePlay, pause, seek, seekToTime, setVolume, nextTrack, prevTrack, setQueue, queue, isTrackPlaying])}>
+      swapAudioSource,
+    }), [state, playTrack, togglePlay, pause, seek, seekToTime, setVolume, nextTrack, prevTrack, setQueue, queue, isTrackPlaying, swapAudioSource])}>
       {children}
     </AudioPlayerContext.Provider>
   );

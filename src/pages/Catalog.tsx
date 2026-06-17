@@ -569,6 +569,14 @@ export default function Catalog() {
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5">
                                   <p className="font-semibold text-foreground truncate text-[13px] tracking-tight leading-tight">{track.title}</p>
+                                  {(track.versionCount ?? 1) > 1 && (
+                                    <span
+                                      className="shrink-0 text-[10px] text-muted-foreground/60 font-medium"
+                                      title={(track.versionCount ?? 1) + " versions"}
+                                    >
+                                      {(track.versionCount ?? 1) + " versions"}
+                                    </span>
+                                  )}
                                   {track.isShared && track.sharedFrom && (
                                     <span className="shrink-0 inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/10 text-brand-purple">
                                       via {track.sharedFrom}
@@ -751,11 +759,21 @@ export default function Catalog() {
                           />
                         </div>
                         <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
-                        {track.isShared && track.sharedFrom && (
-                          <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/10 text-brand-purple">
-                            via {track.sharedFrom}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {(track.versionCount ?? 1) > 1 && (
+                            <span
+                              className="text-[10px] text-muted-foreground/60 font-medium"
+                              title={(track.versionCount ?? 1) + " versions"}
+                            >
+                              {(track.versionCount ?? 1) + " versions"}
+                            </span>
+                          )}
+                          {track.isShared && track.sharedFrom && (
+                            <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-purple/10 text-brand-purple">
+                              via {track.sharedFrom}
+                            </span>
+                          )}
+                        </div>
                          <div className="flex items-center gap-2 pt-1 flex-wrap">
                            <span className="text-2xs text-muted-foreground shrink-0 truncate max-w-[140px]">{(Array.isArray(track.genre) ? track.genre.join(", ") : track.genre) || "—"}</span>
                            <span className="w-px h-3 bg-border shrink-0" />

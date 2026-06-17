@@ -5,7 +5,7 @@ import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTeams } from "@/contexts/TeamContext";
-import { useTrack, mapRowToTrack, type TrackData, type TrackStem, type TrackSplit } from "@/contexts/TrackContext";
+import { useTrack, mapRowToTrack, type TrackData, type TrackStem, type TrackSplit, type TrackVersion } from "@/contexts/TrackContext";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrackReview, formatTimestamp } from "@/contexts/TrackReviewContext";
 import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf, generateCreditsPdf, type CreditEntry } from "@/lib/pdf-generators";
@@ -103,6 +103,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
 import { StemsTab } from "@/components/StemsTab";
 import { VideoSection } from "@/components/VideoSection";
+import { VersionSelector } from "@/components/VersionSelector";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
 import { useContacts } from "@/contexts/ContactsContext";
 import { STEM_TYPES, DEFAULT_COVER, PROS, SPLIT_ROLES, PRODUCTION_STAGES, type ProductionStage } from "@/lib/constants";
@@ -216,7 +217,7 @@ export default function TrackDetail() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Global audio player
-  const { currentTrack, isPlaying: globalIsPlaying, progress: globalProgress, playTrack: globalPlayTrack, togglePlay, seek, volume, setVolume } = useAudioPlayer();
+  const { currentTrack, isPlaying: globalIsPlaying, progress: globalProgress, playTrack: globalPlayTrack, togglePlay, seek, volume, setVolume, swapAudioSource } = useAudioPlayer();
 
   const isThisTrackPlaying = currentTrack?.uuid === id && globalIsPlaying;
   const currentProgress = currentTrack?.uuid === id ? globalProgress : 0;
@@ -243,7 +244,9 @@ export default function TrackDetail() {
   const { permissions } = useRole();
   const { activeWorkspace, workspaces } = useWorkspace();
   const navigate = useNavigate();
-  const { getTrackByUuid, getTrack, updateTrack, updateTrackStatus, deleteTrack, refreshTracks, submitRating } = useTrack();
+  const { getTrackByUuid, getTrack, updateTrack, updateTrackStatus, deleteTrack, refreshTracks, submitRating, fetchTrackVersions } = useTrack();
+  const [versions, setVersions] = useState<TrackVersion[]>([]);
+  const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const { getTrackEngagement } = useEngagement();
   const { getCommentsForTrack, addComment } = useTrackReview();
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -307,6 +310,32 @@ export default function TrackDetail() {
   const hadTrackRef = useRef(false);
   if (track) hadTrackRef.current = true;
 
+  // Track Versioning — fetch on TrackDetail open (not on the catalog list).
+  const refreshVersions = useCallback(async () => {
+    if (!track?.uuid) return;
+    const rows = await fetchTrackVersions(track.uuid);
+    setVersions(rows);
+    // Default the player to the active version if we haven't picked one yet,
+    // OR if the previously-selected one was removed.
+    setCurrentVersionId((prev) => {
+      if (prev && rows.some((r) => r.id === prev)) return prev;
+      const active = rows.find((r) => r.is_active);
+      return active?.id ?? rows[0]?.id ?? null;
+    });
+  }, [track?.uuid, fetchTrackVersions]);
+
+  useEffect(() => {
+    refreshVersions();
+  }, [refreshVersions]);
+
+  const activeVersion = useMemo(() => versions.find((v) => v.is_active) || null, [versions]);
+  const currentVersion = useMemo(
+    () => versions.find((v) => v.id === currentVersionId) || null,
+    [versions, currentVersionId]
+  );
+  // Versions stored for this track, used to drive the A/B comparison player UI.
+  const isPlayingNonActive = !!(currentVersion && activeVersion && currentVersion.id !== activeVersion.id);
+
   // Auto-regenerate waveform peaks for tracks that have waveform_data = NULL
   const waveformRegenRef = useRef<string | null>(null);
   useEffect(function() {
@@ -356,10 +385,32 @@ export default function TrackDetail() {
   const handlePlayPause = useCallback(() => {
     if (currentTrack?.uuid === id) {
       togglePlay();
-    } else if (track) {
-      globalPlayTrack(track);
+      return;
     }
-  }, [track, currentTrack, id, togglePlay, globalPlayTrack]);
+    if (!track) return;
+    globalPlayTrack(track);
+    // If a non-active version is currently selected in the UI, swap the audio
+    // source to that version's storage path. globalPlayTrack just kicked off an
+    // async sign for the active version; swapAudioSource awaits its own sign,
+    // and `playWhenReady` guarantees playback resumes on the chosen version
+    // even though the element is still paused at the moment of the swap.
+    if (currentVersion && activeVersion && currentVersion.id !== activeVersion.id) {
+      const path = currentVersion.audio_preview_url || currentVersion.audio_url;
+      if (path) {
+        swapAudioSource(path, { playWhenReady: true });
+      }
+    }
+  }, [track, currentTrack, id, togglePlay, globalPlayTrack, currentVersion, activeVersion, swapAudioSource]);
+
+  // Switching versions: update local state + (if this track is currently loaded
+  // in the global player) swap the audio source while preserving the timecode.
+  const handleSelectVersion = useCallback(async (v: TrackVersion) => {
+    setCurrentVersionId(v.id);
+    if (currentTrack?.uuid === id) {
+      const path = v.audio_preview_url || v.audio_url;
+      if (path) await swapAudioSource(path);
+    }
+  }, [currentTrack?.uuid, id, swapAudioSource]);
 
   const numericId = track?.id;
   const engagement = numericId ? getTrackEngagement(numericId) : undefined;
@@ -659,6 +710,21 @@ export default function TrackDetail() {
                   ))}
                 </div>
 
+                {/* Version selector — visible when track has multiple versions,
+                    or when the user can edit (so they can add a second version). */}
+                {versions.length > 0 && (versions.length > 1 || (!isViewerShared && permissions.canEditTracks)) && (
+                  <div className="pt-1">
+                    <VersionSelector
+                      trackUuid={track.uuid}
+                      versions={versions}
+                      currentVersionId={currentVersionId}
+                      canEdit={!isViewerShared && permissions.canEditTracks}
+                      onSelectVersion={handleSelectVersion}
+                      onVersionsChanged={async () => { await refreshVersions(); await refreshTracks(); }}
+                    />
+                  </div>
+                )}
+
                 {/* Team rating */}
                 <div className="pt-1">
                   <StarRating
@@ -904,9 +970,14 @@ export default function TrackDetail() {
                 </div>
               </div>
               <div className="relative">
+                {isPlayingNonActive && (
+                  <p className="text-[10px] text-brand-orange/80 mb-1.5 font-medium">
+                    Previewing {currentVersion?.version_name} — not the active version
+                  </p>
+                )}
                 <TrackWaveformPlayer
                   seed={track.id}
-                  peaks={track.waveformData}
+                  peaks={isPlayingNonActive && Array.isArray(currentVersion?.waveform_data) ? (currentVersion!.waveform_data as number[]) : track.waveformData}
                   progress={currentProgress}
                   onSeek={handleWaveformClick}
                   onDoubleClick={handleWaveformDoubleClick}

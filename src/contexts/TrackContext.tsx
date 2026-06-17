@@ -39,6 +39,23 @@ export interface TrackChapter {
   color: string;
 }
 
+export interface TrackVersion {
+  id: string;
+  track_id: string;
+  version_number: number;
+  version_name: string;
+  audio_url: string | null;
+  audio_preview_url: string | null;
+  // deno-lint-ignore no-explicit-any
+  waveform_data: any | null;
+  // deno-lint-ignore no-explicit-any
+  sonic_dna: any | null;
+  duration_sec: number | null;
+  is_active: boolean;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface TrackStatusEntry {
   status: string;
   date: string;
@@ -103,6 +120,8 @@ export interface TrackData extends WorkspaceScoped {
   videoUrl?: string | null;
   videoFilename?: string | null;
   videoVisibleOnShare?: boolean;
+  hasVersions?: boolean;
+  versionCount?: number;
 }
 
 export interface RatingStats {
@@ -219,6 +238,8 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     videoUrl: (row.video_url as string) || null,
     videoFilename: (row.video_filename as string) || null,
     videoVisibleOnShare: (row.video_visible_on_share as boolean) || false,
+    hasVersions: (row.has_versions as boolean) || false,
+    versionCount: typeof row.version_count === "number" ? (row.version_count as number) : 1,
   };
 }
 
@@ -287,6 +308,8 @@ interface TrackContextValue {
   deleteTrack: (uuid: string) => Promise<boolean>;
   refreshTracks: () => Promise<void>;
   submitRating: (id: number, rating: number) => Promise<void>;
+  fetchTrackVersions: (trackUuid: string) => Promise<TrackVersion[]>;
+  queueSonicDnaAnalysis: (trackUuid: string, storagePath: string) => void;
 }
 
 const TrackContext = createContext<TrackContextValue | null>(null);
@@ -1048,6 +1071,25 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     [tracks, user, activeWorkspace]
   );
 
+  const fetchTrackVersions = useCallback(async (trackUuid: string): Promise<TrackVersion[]> => {
+    const { data, error } = await supabase
+      .from("track_versions")
+      .select("*")
+      .eq("track_id", trackUuid)
+      .order("version_number", { ascending: true });
+    if (error) {
+      console.error("Error fetching track versions:", error);
+      return [];
+    }
+    return (data || []) as TrackVersion[];
+  }, []);
+
+  const queueSonicDnaAnalysis = useCallback((trackUuid: string, storagePath: string) => {
+    if (!trackUuid || !storagePath) return;
+    sonicDnaQueueRef.current.push({ track_id: trackUuid, storage_path: storagePath });
+    processSonicDnaQueue();
+  }, [processSonicDnaQueue]);
+
   const contextValue = useMemo(() => ({
     tracks,
     loading,
@@ -1062,7 +1104,9 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     deleteTrack,
     refreshTracks: fetchTracks,
     submitRating,
-  }), [tracks, loading, getTrack, getTrackByUuid, addTrack, updateTrack, updateTrackStatus, updateTrackLyrics, updateTrackStems, updateTrackSplits, deleteTrack, fetchTracks, submitRating]);
+    fetchTrackVersions,
+    queueSonicDnaAnalysis,
+  }), [tracks, loading, getTrack, getTrackByUuid, addTrack, updateTrack, updateTrackStatus, updateTrackLyrics, updateTrackStems, updateTrackSplits, deleteTrack, fetchTracks, submitRating, fetchTrackVersions, queueSonicDnaAnalysis]);
 
   return (
     <TrackContext.Provider value={contextValue}>
