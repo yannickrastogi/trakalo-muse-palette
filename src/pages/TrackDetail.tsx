@@ -102,6 +102,7 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbP
 import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
 import { StemsTab } from "@/components/StemsTab";
+import { VideoSection } from "@/components/VideoSection";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
 import { useContacts } from "@/contexts/ContactsContext";
 import { STEM_TYPES, DEFAULT_COVER, PROS, SPLIT_ROLES, PRODUCTION_STAGES, type ProductionStage } from "@/lib/constants";
@@ -1014,6 +1015,17 @@ export default function TrackDetail() {
                    <section>
                      <h3 className="text-lg font-semibold text-foreground mb-4">Metadata</h3>
                      <OverviewTab trackId={track.id} readOnly={isViewerShared || !permissions.canEditTracks} />
+                   </section>
+                   <div className="border-t border-border" />
+                   <section>
+                     <h3 className="text-lg font-semibold text-foreground mb-4">Video</h3>
+                     <VideoSection
+                       trackUuid={track.uuid}
+                       videoUrl={track.videoUrl ?? null}
+                       videoFilename={track.videoFilename ?? null}
+                       videoVisibleOnShare={!!track.videoVisibleOnShare}
+                       readOnly={isViewerShared || !permissions.canEditTracks}
+                     />
                    </section>
                    {!isViewerShared && permissions.canEditTracks && (
                    <>

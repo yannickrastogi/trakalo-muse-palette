@@ -80,6 +80,8 @@ interface TrackData {
   gender: string | null;
   released_at: string | null;
   chapters: TrackChapter[] | null;
+  video_url: string | null;
+  video_visible_on_share: boolean | null;
 }
 
 interface PlaylistData {
@@ -323,6 +325,13 @@ export default function SharedLinkPage() {
   var audioRef = useRef<HTMLAudioElement | null>(null);
   var loadedTrackIdRef = useRef<string | null>(null);
   var [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+  // Signed URLs for tracks whose owner opted-in to surfacing the attached video.
+  // Keyed by track UUID; resolved lazily via the public get-shared-link-video EF.
+  var [videoUrls, setVideoUrls] = useState<Record<string, string>>({});
+  // Ref mirror — read from inside the resolution effect to avoid making `videoUrls`
+  // a dep (which would cause a re-render loop every time the map is mutated).
+  var videoUrlsRef = useRef<Record<string, string>>({});
+  useEffect(function() { videoUrlsRef.current = videoUrls; }, [videoUrls]);
   var [isPlaying, setIsPlaying] = useState(false);
   var [currentTime, setCurrentTime] = useState(0);
   var [duration, setDuration] = useState(0);
@@ -381,6 +390,49 @@ export default function SharedLinkPage() {
     html.style.overflowX = "hidden";
     return function() { html.style.overflowX = prevOverflow; };
   }, []);
+
+  // Resolve a signed URL for the active track's attached video (if owner opted-in).
+  // Lazy + memoized: only the currently-relevant track triggers a fetch, and we never
+  // refetch a URL already cached in `videoUrls`. The 30-minute EF expiry comfortably
+  // covers a typical listening session.
+  useEffect(function() {
+    if (!slug || !gateCompleted) return;
+    var active: TrackData | null = null;
+    if (trackData && trackData.video_visible_on_share && trackData.video_url) {
+      active = trackData;
+    } else if (playingTrackId) {
+      var t = playlistTracks.find(function(p) { return p.id === playingTrackId; });
+      if (t && t.video_visible_on_share && t.video_url) active = t;
+    }
+    if (!active) return;
+    if (videoUrlsRef.current[active.id]) return;
+    var cancelled = false;
+    var trackId = active.id;
+    fetch(SUPABASE_URL + "/functions/v1/get-shared-link-video", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({ slug: slug, track_id: trackId }),
+    })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(json) {
+        if (cancelled || !json || !json.url) return;
+        setVideoUrls(function(prev) {
+          if (prev[trackId]) return prev;
+          var next = { ...prev };
+          next[trackId] = json.url;
+          return next;
+        });
+      })
+      .catch(function() { /* silent — video is opt-in nice-to-have */ });
+    return function() { cancelled = true; };
+    // `videoUrls` intentionally omitted: we read from `videoUrlsRef.current` to
+    // avoid a render→effect→setState→render loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, gateCompleted, trackData, playingTrackId, playlistTracks]);
 
   // Fetch link data
   useEffect(function() {
@@ -1508,6 +1560,19 @@ export default function SharedLinkPage() {
                     </div>
                   )}
 
+                  {/* Attached video (opt-in by the artist) */}
+                  {activeTrack && activeTrack.video_visible_on_share && videoUrls[activeTrack.id] && (
+                    <div className="w-full rounded-xl overflow-hidden bg-black">
+                      <video
+                        src={videoUrls[activeTrack.id]}
+                        controls
+                        className="w-full"
+                        preload="metadata"
+                        playsInline
+                      />
+                    </div>
+                  )}
+
                   {/* Progress bar / Waveform */}
                   <div className="relative">
                     <TrackWaveformPlayer
@@ -1946,6 +2011,18 @@ export default function SharedLinkPage() {
               <>
               {immersive && <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mx-6" />}
               <div className={"px-6 py-4 space-y-3 " + (immersive ? "" : "border-t border-border")}>
+                {/* Attached video (opt-in by the artist) */}
+                {trackData.video_visible_on_share && videoUrls[trackData.id] && (
+                  <div className="w-full rounded-xl overflow-hidden bg-black">
+                    <video
+                      src={videoUrls[trackData.id]}
+                      controls
+                      className="w-full"
+                      preload="metadata"
+                      playsInline
+                    />
+                  </div>
+                )}
                 <div className="relative">
                   <TrackWaveformPlayer
                     seed={hashId(trackData.id)}

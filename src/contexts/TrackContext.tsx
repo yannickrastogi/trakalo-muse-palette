@@ -100,6 +100,9 @@ export interface TrackData extends WorkspaceScoped {
   tags?: Record<string, any>;
   productionStage?: ProductionStage;
   ratingStats?: RatingStats;
+  videoUrl?: string | null;
+  videoFilename?: string | null;
+  videoVisibleOnShare?: boolean;
 }
 
 export interface RatingStats {
@@ -213,6 +216,9 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     productionStage: (row.production_stage === "finished" || row.production_stage === "work_in_progress")
       ? (row.production_stage as ProductionStage)
       : undefined,
+    videoUrl: (row.video_url as string) || null,
+    videoFilename: (row.video_filename as string) || null,
+    videoVisibleOnShare: (row.video_visible_on_share as boolean) || false,
   };
 }
 
