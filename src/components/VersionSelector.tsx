@@ -160,10 +160,11 @@ export function VersionSelector({
   };
 
   const handleSetActive = useCallback(async (v: TrackVersion) => {
-    if (!user || v.is_active) return;
+    if (!user || !activeWorkspace || v.is_active) return;
     const { error } = await supabase.rpc("set_track_version_active", {
       _user_id: user.id,
       _track_id: trackUuid,
+      _workspace_id: activeWorkspace.id,
       _version_id: v.id,
     });
     if (error) {
@@ -173,19 +174,21 @@ export function VersionSelector({
     }
     toast.success(v.version_name + " is now the active version");
     await onVersionsChanged();
-  }, [user, trackUuid, onVersionsChanged]);
+  }, [user, activeWorkspace, trackUuid, onVersionsChanged]);
 
   const handleConfirmDelete = useCallback(async () => {
-    if (!user || !deleteTarget || deleting) return;
+    if (!user || !activeWorkspace || !deleteTarget || deleting) return;
     setDeleting(true);
     try {
-      const { data, error } = await supabase.rpc("delete_track_version", {
+      const { error } = await supabase.rpc("delete_track_version", {
         _user_id: user.id,
         _version_id: deleteTarget.id,
+        _track_id: trackUuid,
+        _workspace_id: activeWorkspace.id,
       });
       if (error) {
-        // RPC returns string codes for known errors via data, but generic errors
-        // surface here. Map common ones for a cleaner UX.
+        // The SQL function RAISEs exceptions for known states — Postgres surfaces
+        // the exception name inside error.message.
         const msg = error.message || "";
         if (msg.includes("cannot_delete_last_version")) {
           toast.error("Can't delete the only version of a track");
@@ -197,28 +200,21 @@ export function VersionSelector({
         }
         return;
       }
-      const code = typeof data === "string" ? data : "";
-      if (code === "cannot_delete_last_version") {
-        toast.error("Can't delete the only version of a track");
-        return;
-      }
-      if (code === "cannot_delete_active_version") {
-        toast.error("Set another version as active before deleting this one");
-        return;
-      }
       toast.success(deleteTarget.version_name + " deleted");
       setDeleteTarget(null);
       await onVersionsChanged();
     } finally {
       setDeleting(false);
     }
-  }, [user, deleteTarget, deleting, onVersionsChanged]);
+  }, [user, activeWorkspace, trackUuid, deleteTarget, deleting, onVersionsChanged]);
 
   const handleSaveNotes = useCallback(async (versionId: string, notes: string) => {
-    if (!user) return;
+    if (!user || !activeWorkspace) return;
     const { error } = await supabase.rpc("update_track_version_notes", {
       _user_id: user.id,
       _version_id: versionId,
+      _track_id: trackUuid,
+      _workspace_id: activeWorkspace.id,
       _notes: notes,
     });
     if (error) {
@@ -227,7 +223,7 @@ export function VersionSelector({
       return;
     }
     await onVersionsChanged();
-  }, [user, onVersionsChanged]);
+  }, [user, activeWorkspace, trackUuid, onVersionsChanged]);
 
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1">
