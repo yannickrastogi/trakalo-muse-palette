@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import type { WorkspaceScoped } from "@/types/workspace";
+import { toast } from "sonner";
 
 export interface Contact extends WorkspaceScoped {
   id: string;
@@ -24,12 +25,25 @@ export interface Contact extends WorkspaceScoped {
   totalDownloads: number;
 }
 
+export interface ArtistAlias {
+  id: string;
+  workspace_id: string;
+  alias_name: string;
+  contact_ids: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 interface ContactsContextValue {
   contacts: Contact[];
+  aliases: ArtistAlias[];
   addOrUpdateContact: (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => void;
   getContact: (email: string) => Contact | undefined;
   upsertCollaborator: (data: { firstName: string; lastName: string; email?: string; role?: string; stageName?: string; pro?: string; ipi?: string; publisher?: string }) => void;
   refreshContacts: () => Promise<void>;
+  refreshAliases: () => Promise<void>;
+  upsertAlias: (aliasId: string | null, aliasName: string, contactIds: string[]) => Promise<boolean>;
+  deleteAlias: (aliasId: string) => Promise<boolean>;
 }
 
 const ContactsContext = createContext<ContactsContextValue | null>(null);
@@ -61,6 +75,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [aliases, setAliases] = useState<ArtistAlias[]>([]);
 
   const fetchContacts = useCallback(async () => {
     if (!activeWorkspace || !user) {
@@ -82,9 +97,73 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
     }
   }, [activeWorkspace, user]);
 
+  const fetchAliases = useCallback(async () => {
+    if (!activeWorkspace || !user) {
+      setAliases([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("artist_aliases")
+      .select("id, workspace_id, alias_name, contact_ids, created_at, updated_at")
+      .eq("workspace_id", activeWorkspace.id)
+      .order("alias_name", { ascending: true });
+    if (error) {
+      // Silent dégradation : table absente (migration non appliquée) ou RLS — pas d'erreur fatale
+      console.warn("Error fetching artist aliases:", error.message);
+      setAliases([]);
+    } else {
+      setAliases((data || []) as ArtistAlias[]);
+    }
+  }, [activeWorkspace, user]);
+
   useEffect(() => {
     fetchContacts();
-  }, [fetchContacts]);
+    fetchAliases();
+  }, [fetchContacts, fetchAliases]);
+
+  const upsertAlias = useCallback(
+    async (aliasId: string | null, aliasName: string, contactIds: string[]): Promise<boolean> => {
+      if (!activeWorkspace || !user) return false;
+      const trimmed = aliasName.trim();
+      if (!trimmed) {
+        toast.error("Alias name is required");
+        return false;
+      }
+      const { error } = await supabase.rpc("upsert_artist_alias", {
+        _user_id: user.id,
+        _workspace_id: activeWorkspace.id,
+        _alias_id: aliasId,
+        _alias_name: trimmed,
+        _contact_ids: contactIds,
+      });
+      if (error) {
+        console.error("Error upserting alias:", error);
+        toast.error("Failed to save alias");
+        return false;
+      }
+      await fetchAliases();
+      return true;
+    },
+    [activeWorkspace, user, fetchAliases]
+  );
+
+  const deleteAlias = useCallback(
+    async (aliasId: string): Promise<boolean> => {
+      if (!user) return false;
+      const { error } = await supabase.rpc("delete_artist_alias", {
+        _user_id: user.id,
+        _alias_id: aliasId,
+      });
+      if (error) {
+        console.error("Error deleting alias:", error);
+        toast.error("Failed to delete alias");
+        return false;
+      }
+      await fetchAliases();
+      return true;
+    },
+    [user, fetchAliases]
+  );
 
   const addOrUpdateContact = useCallback(
     async (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => {
@@ -150,7 +229,17 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <ContactsContext.Provider value={useMemo(() => ({ contacts, addOrUpdateContact, getContact, upsertCollaborator, refreshContacts: fetchContacts }), [contacts, addOrUpdateContact, getContact, upsertCollaborator, fetchContacts])}>
+    <ContactsContext.Provider value={useMemo(() => ({
+      contacts,
+      aliases,
+      addOrUpdateContact,
+      getContact,
+      upsertCollaborator,
+      refreshContacts: fetchContacts,
+      refreshAliases: fetchAliases,
+      upsertAlias,
+      deleteAlias,
+    }), [contacts, aliases, addOrUpdateContact, getContact, upsertCollaborator, fetchContacts, fetchAliases, upsertAlias, deleteAlias])}>
       {children}
     </ContactsContext.Provider>
   );

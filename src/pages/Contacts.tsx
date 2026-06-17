@@ -8,6 +8,7 @@ import { AddContactModal } from "@/components/AddContactModal";
 import { ContactDetailSheet, type ContactTrackPreview } from "@/components/ContactDetailSheet";
 import { useTranslation } from "react-i18next";
 import { useContacts, type Contact } from "@/contexts/ContactsContext";
+import { ArtistAliasesTab } from "@/components/ArtistAliasesTab";
 import { useTrack } from "@/contexts/TrackContext";
 import { usePitches } from "@/contexts/PitchContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -196,6 +197,7 @@ export default function Contacts() {
   const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<"contacts" | "aliases">("contacts");
 
   // Focus support — TopBar "See contact" navigates here with ?focus=<contactId>
   const [searchParams, setSearchParams] = useSearchParams();
@@ -502,6 +504,39 @@ export default function Contacts() {
 
   return (
     <PageShell>
+      {/* Tab switcher (Contacts / Artist Aliases) */}
+      <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 max-w-[1400px]">
+        <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-secondary/60 border border-border/50">
+          <button
+            onClick={() => setActiveTab("contacts")}
+            className={"px-4 py-2 rounded-lg text-sm font-medium transition-all " + (activeTab === "contacts" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+          >
+            Contacts
+          </button>
+          <button
+            onClick={() => setActiveTab("aliases")}
+            className={"px-4 py-2 rounded-lg text-sm font-medium transition-all " + (activeTab === "aliases" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+          >
+            Artist Aliases
+          </button>
+        </div>
+      </div>
+
+      {activeTab === "aliases" ? (
+        <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
+          <motion.div variants={item}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Artist Aliases</h1>
+            </div>
+          </motion.div>
+          <motion.div variants={item}>
+            <ArtistAliasesTab />
+          </motion.div>
+        </motion.div>
+      ) : (
       <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 max-w-[1400px]">
         {/* Header */}
         <motion.div variants={item}>
@@ -970,6 +1005,7 @@ export default function Contacts() {
           )}
         </div>
       </motion.div>
+      )}
 
       {/* Pitch Modal */}
       <CreatePitchModal

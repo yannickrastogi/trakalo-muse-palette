@@ -61,7 +61,7 @@ const MAX_TRACKS = 50;
 const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
 import { KEYS, LANGUAGES, PROS, SPLIT_ROLES, PRODUCTION_STAGES, type ProductionStage } from "@/lib/constants";
-import { equalSplit } from "@/lib/split-utils";
+import { equalSplit, parseArtistsToCollaborators, type ParsedCollaborator } from "@/lib/split-utils";
 import { extractTextFromPdf } from "@/lib/pdf-text-extract";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
 import { NameAutocomplete } from "@/components/NameAutocomplete";
@@ -278,7 +278,9 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const { t } = useTranslation();
   const { tracks, addTrack, updateTrack, refreshTracks } = useTrack();
   const { tracks: allTracks } = useTrackContext();
-  const { contacts, refreshContacts } = useContacts();
+  const { contacts, refreshContacts, aliases } = useContacts();
+  // Dismissed auto-split banners (keyed by track entry id) — persists for the modal session.
+  const [dismissedAutoSplit, setDismissedAutoSplit] = useState<Record<string, true>>({});
   const { teams } = useTeams();
   const { activeWorkspace, workspaces } = useWorkspace();
   const { user } = useAuth();
@@ -1970,8 +1972,69 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   onRemove={removeStem}
                 />
               )}
-              {phase === "edit" && currentTrack && editStep === 3 && (
-                <StepDetails
+              {phase === "edit" && currentTrack && editStep === 3 && (() => {
+                // Auto-detection — surfaces a banner when splits are still empty
+                // and the artist field maps to >=1 known collaborator (alias or contact).
+                const splitsAreEmpty = currentTrack.splits.length === 1
+                  && !currentTrack.splits[0].name.trim()
+                  && (Number(currentTrack.splits[0].percentage) === 100 || Number(currentTrack.splits[0].percentage) === 0);
+                const dismissed = !!dismissedAutoSplit[currentTrack.id];
+                const shouldCompute = splitsAreEmpty && !dismissed && !!currentTrack.artist.trim();
+                const suggested: ParsedCollaborator[] = shouldCompute
+                  ? parseArtistsToCollaborators(
+                      currentTrack.artist,
+                      aliases,
+                      contacts.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, email: c.email, stageName: c.stageName })),
+                    ).filter((c) => c.contact || c.fromAlias) // only show when at least 1 was resolved
+                  : [];
+                const applyAutoSplit = () => {
+                  if (!currentTrack) return;
+                  const newSplits = suggested.map((c) => ({
+                    id: crypto.randomUUID(),
+                    name: c.name,
+                    email: c.contact?.email || "",
+                    stage_name: c.contact?.stageName || "",
+                    role: "",
+                    percentage: 0,
+                    pro: "",
+                    ipi: "",
+                    publisher: "",
+                  }));
+                  updateCurrent({ splits: equalSplit(newSplits, "percentage") });
+                };
+                const dismissBanner = () => {
+                  setDismissedAutoSplit((prev) => ({ ...prev, [currentTrack.id]: true }));
+                };
+                const showBanner = splitsAreEmpty && !dismissed && suggested.length > 0;
+                return (
+                  <>
+                    {showBanner && (
+                      <div className="mb-3 rounded-lg border border-sky-500/30 bg-sky-500/10 p-3 flex flex-wrap items-center gap-2 justify-between">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-sky-300 font-semibold">Auto-detected collaborators</p>
+                          <p className="text-xs text-sky-200/80 mt-0.5 truncate">
+                            {suggested.map((c) => c.name).join(", ")} — ~{parseFloat((100 / suggested.length).toFixed(2))}% each
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={applyAutoSplit}
+                            className="text-xs bg-sky-500 hover:bg-sky-600 text-white px-3 py-1.5 rounded-full font-semibold transition-colors"
+                          >
+                            Apply
+                          </button>
+                          <button
+                            type="button"
+                            onClick={dismissBanner}
+                            className="text-xs text-sky-300/70 hover:text-sky-200 px-2 py-1.5 rounded-full transition-colors"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    <StepDetails
                   splits={currentTrack.splits}
                   totalSplit={totalSplit}
                   onAdd={addSplit}
@@ -2020,7 +2083,9 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   contacts={contacts}
                   existingSplitNames={existingSplitNames}
                 />
-              )}
+                  </>
+                );
+              })()}
               {phase === "edit" && currentTrack && editStep === 4 && skipReviewDone && (
                 <div className="flex flex-col items-center justify-center text-center py-10 px-6 space-y-5">
                   <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
