@@ -6,6 +6,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
+import { getStorageSignedUrl } from "@/lib/audio";
 import { safeLocalStorage } from "@/lib/safeStorage";
 import { toast } from "sonner";
 import { useTeams } from "@/contexts/TeamContext";
@@ -961,8 +962,38 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               .from("tracks")
               .upload(previewPath, mp3Blob, { contentType: "audio/mp3", upsert: true });
             if (upErr) throw upErr;
-            await supabase.rpc("update_track", { _user_id: user!.id, _track_id: bgTrackUuid, _updates: { audio_preview_url: previewPath } });
-            toast.success(t("uploadTrack.mp3PreviewReady", "MP3 preview ready"));
+
+            // The Supabase Storage SDK upload returns OK as soon as the proxy
+            // accepts the bytes — but R2 (the bucket consumed by reads via
+            // STORAGE_PROVIDER=r2) may not yet have the object visible. We
+            // confirm readiness by signing + HEADing the preview path. Only
+            // when the HEAD succeeds do we write audio_preview_url to the DB
+            // so get-audio-url never returns a path that 404s in R2.
+            let previewReady = false;
+            const MAX_ATTEMPTS = 4;
+            for (let attempt = 0; attempt < MAX_ATTEMPTS && !previewReady; attempt++) {
+              try {
+                const signed = await getStorageSignedUrl("tracks", previewPath, { expiresInSec: 300, noCache: true });
+                const head = await fetch(signed, { method: "HEAD" });
+                if (head.ok) {
+                  previewReady = true;
+                  break;
+                }
+              } catch (e) {
+                console.warn("preview HEAD probe failed (attempt " + (attempt + 1) + "):", e instanceof Error ? e.message : e);
+              }
+              if (attempt < MAX_ATTEMPTS - 1) {
+                await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
+              }
+            }
+
+            if (!previewReady) {
+              console.warn("MP3 preview uploaded but not yet readable via R2 — leaving audio_preview_url null; player will fall back to original.");
+              toast.warning(t("uploadTrack.mp3PreviewPending", "MP3 preview is still propagating — original audio will play in the meantime"));
+            } else {
+              await supabase.rpc("update_track", { _user_id: user!.id, _track_id: bgTrackUuid, _updates: { audio_preview_url: previewPath } });
+              toast.success(t("uploadTrack.mp3PreviewReady", "MP3 preview ready"));
+            }
           } catch (err) {
             console.error("Background MP3 compression failed:", err);
             toast.warning(t("uploadTrack.mp3PreviewFailed", "MP3 preview failed — track is still available"));

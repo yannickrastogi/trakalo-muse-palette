@@ -96,9 +96,31 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const onError = () => {
+    // Single safety-net: when the loaded variant was the MP3 preview, retry
+    // once on the original audio URL before surfacing an error. Covers the
+    // window where a freshly-uploaded preview is in the DB but not yet
+    // readable from the storage backend.
+    const onError = async () => {
       console.error("Audio playback error:", audio.error);
-      toast.error("Audio playback error. The file may be unavailable.");
+      const variant = audio.dataset.audioVariant;
+      const trackUuid = audio.dataset.trackUuid;
+      const fallbackTried = audio.dataset.fallbackAttempted === "1";
+      if (variant === "preview" && trackUuid && !fallbackTried) {
+        audio.dataset.fallbackAttempted = "1";
+        try {
+          const fullUrl = await getAudioPlaybackUrl(trackUuid, "full", { noCache: true });
+          audio.dataset.audioVariant = "full";
+          audio.src = fullUrl;
+          audio.play().catch(() => {
+            toast.error("Audio playback failed.");
+            setState((prev) => ({ ...prev, isPlaying: false }));
+          });
+          return;
+        } catch (e) {
+          console.error("Audio fallback to original failed:", e instanceof Error ? e.message : e);
+        }
+      }
+      toast.error("Audio playback failed.");
       setState((prev) => ({ ...prev, isPlaying: false }));
     };
 
@@ -191,6 +213,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
     audio.src = signedUrl;
     audio.dataset.trackId = String(track.id);
+    audio.dataset.trackUuid = track.uuid;
+    audio.dataset.audioVariant = "preview";
+    delete audio.dataset.fallbackAttempted;
     audio.play().catch(function(err) {
       console.error("Play failed:", err);
       toast.error("Audio playback failed.");
@@ -306,6 +331,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       }
     };
     audio.addEventListener("loadedmetadata", onLoaded);
+    // Mark this as a manually-selected source (version A/B switch); the
+    // preview-fallback safety net only kicks in for plain "preview" loads.
+    audio.dataset.audioVariant = "swap";
+    delete audio.dataset.fallbackAttempted;
     audio.src = signedUrl;
   }, []);
 

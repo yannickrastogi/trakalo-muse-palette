@@ -123,10 +123,31 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use preview URL when requested, fall back to original if no preview exists
-    const audioPath = (quality === "preview" && track.audio_preview_url)
-      ? (track.audio_preview_url as string)
-      : (track.audio_url as string);
+    // Decide which audio variant to serve. Default: preview when asked, original
+    // otherwise. We layer a readiness probe on top so that a freshly-uploaded
+    // track whose `_preview.mp3` has been written to the DB but isn't yet
+    // visible to R2 doesn't return a 404-bound signed URL to the player.
+    const provider = getStorageProvider();
+    const previewPath = track.audio_preview_url as string | null;
+    const originalPath = track.audio_url as string;
+
+    let audioPath: string = originalPath;
+    if (quality === "preview" && previewPath) {
+      // Only serve the preview path if the object is actually retrievable from
+      // the active storage backend. If absent (e.g. eventual-consistency window
+      // right after upload), transparently fall back to the original so the
+      // player never sees a broken URL.
+      try {
+        const previewExists = await provider.exists("tracks", previewPath);
+        audioPath = previewExists ? previewPath : originalPath;
+        if (!previewExists) {
+          console.warn("get-audio-url: preview missing in " + provider.name + " for track " + track_id + " — falling back to original");
+        }
+      } catch (e) {
+        console.warn("get-audio-url: preview HEAD probe threw (" + (e instanceof Error ? e.message : "unknown") + ") — falling back to original");
+        audioPath = originalPath;
+      }
+    }
 
     // If it's already a full URL (legacy), return as-is
     if (audioPath.startsWith("http")) {
@@ -136,7 +157,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 4. Generate a signed URL (5 min validity — DRM: short-lived URLs).
+    // Generate a signed URL (5 min validity — DRM: short-lived URLs).
     // Routed through the storage abstraction (Supabase or R2 via STORAGE_PROVIDER env).
     //
     // Legacy Supabase-direct call (kept here as comment for Phase 2 rollback reference):
@@ -144,7 +165,7 @@ Deno.serve(async (req) => {
     //     .storage.from("tracks").createSignedUrl(audioPath, 300);
     let signedUrl: string;
     try {
-      signedUrl = await getStorageProvider().createSignedUrl("tracks", audioPath, 300);
+      signedUrl = await provider.createSignedUrl("tracks", audioPath, 300);
     } catch (e) {
       console.error("get-audio-url: createSignedUrl failed (" + (e instanceof Error ? e.message : "unknown") + ")");
       return new Response(JSON.stringify({ error: "Failed to generate audio URL" }), {
