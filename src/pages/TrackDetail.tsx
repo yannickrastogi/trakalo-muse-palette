@@ -111,6 +111,7 @@ import { MultiSelectChips } from "@/components/MultiSelectChips";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { generateWaveform } from "@/lib/waveformGenerator";
 import { equalSplit } from "@/lib/split-utils";
+import { autoPopulateAliasesFromSplits } from "@/lib/aliasAutoPopulate";
 import { extractTextFromPdf } from "@/lib/pdf-text-extract";
 import { toast } from "sonner";
 import type { StemType } from "@/lib/constants";
@@ -2894,7 +2895,14 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
             console.error("[SPLITS SAVE-BACK] Failed for", sp.name, ":", err);
           }
         }
-        refreshContacts();
+        await refreshContacts();
+        // Auto-populate aliases for any split whose stage_name differs from
+        // the real name — fire-and-forget so it can't slow down save UX.
+        autoPopulateAliasesFromSplits({
+          splits: filtered.map((s) => ({ name: s.name, email: s.email, stage_name: s.stage_name })),
+          workspaceId: activeWorkspace.id,
+          userId: user.id,
+        }).catch(() => {});
       })();
     }
     // Auto-sync splits → metadata (only fill empty fields)

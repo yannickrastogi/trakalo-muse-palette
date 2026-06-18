@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { getStorageSignedUrl } from "@/lib/audio";
+import { autoPopulateAliasesFromSplits } from "@/lib/aliasAutoPopulate";
 import { safeLocalStorage } from "@/lib/safeStorage";
 import { toast } from "sonner";
 import { useTeams } from "@/contexts/TeamContext";
@@ -931,7 +932,21 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               console.error("[SPLITS SAVE-BACK] Failed for", sp.name, ":", err);
             }
           }
-          refreshContacts();
+          await refreshContacts();
+          // Silently mirror any (name, stage_name) pair from the splits into
+          // the artist aliases table — keeps Artist Aliases tab fresh without
+          // a manual step. Fully fire-and-forget; never surfaces a toast.
+          autoPopulateAliasesFromSplits({
+            splits: currentTrack.splits
+              .filter((sp) => sp.name && sp.name.trim().length > 0)
+              .map((sp) => ({
+                name: sp.name,
+                email: sp.email,
+                stage_name: sp.stage_name,
+              })),
+            workspaceId: activeWorkspace.id,
+            userId: user.id,
+          }).catch(() => {});
         })();
       }
 
@@ -1740,7 +1755,18 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   console.error("[SKIP-REVIEW SPLITS SAVE-BACK] Failed for", sp.name, ":", err);
                 }
               }
-              refreshContacts();
+              await refreshContacts();
+              autoPopulateAliasesFromSplits({
+                splits: splitsToSave
+                  .filter((sp) => sp.name && sp.name.trim().length > 0)
+                  .map((sp) => ({
+                    name: sp.name,
+                    email: sp.email,
+                    stage_name: sp.stage_name,
+                  })),
+                workspaceId: wid,
+                userId: uid,
+              }).catch(() => {});
             })();
           }
 
@@ -2005,19 +2031,69 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               )}
               {phase === "edit" && currentTrack && editStep === 3 && (() => {
                 // Auto-detection — surfaces a banner when splits are still empty
-                // and the artist field maps to >=1 known collaborator (alias or contact).
+                // and any credit field maps to >=1 known collaborator (alias or
+                // contact). Sources scanned: Artist, Featuring, Written/Produced/
+                // Mixed/Mastered by, and every entry in `details` (vocals, bass,
+                // guitars, etc.) plus customPerformers / customProduction.
                 const splitsAreEmpty = currentTrack.splits.length === 1
                   && !currentTrack.splits[0].name.trim()
                   && (Number(currentTrack.splits[0].percentage) === 100 || Number(currentTrack.splits[0].percentage) === 0);
                 const dismissed = !!dismissedAutoSplit[currentTrack.id];
-                const shouldCompute = splitsAreEmpty && !dismissed && !!currentTrack.artist.trim();
-                const suggested: ParsedCollaborator[] = shouldCompute
-                  ? parseArtistsToCollaborators(
-                      currentTrack.artist,
-                      aliases,
-                      contacts.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, email: c.email, stageName: c.stageName })),
-                    ).filter((c) => c.contact || c.fromAlias) // only show when at least 1 was resolved
-                  : [];
+
+                // detail keys → human labels mirror the production/performer
+                // sections so the banner reads like the form the user sees.
+                const detailLabels: Record<string, string> = {
+                  vocalsBy: "Vocals by", backgroundVocalsBy: "Background vocals by",
+                  drumsBy: "Drums by", synthsBy: "Synths by", keysBy: "Keys by",
+                  guitarsBy: "Guitars by", bassBy: "Bass by",
+                  producers: "Producers", songwriters: "Songwriters",
+                  mixingEngineer: "Mixing engineer", masteringEngineer: "Mastering engineer",
+                  programmingBy: "Programming by",
+                };
+                const creditSources: Array<{ label: string; value: string }> = [
+                  { label: "Artist", value: currentTrack.artist },
+                  { label: "Featuring", value: currentTrack.featuring },
+                  { label: "Written by", value: currentTrack.writtenBy },
+                  { label: "Produced by", value: currentTrack.producedBy },
+                  { label: "Mixed by", value: currentTrack.mixedBy },
+                  { label: "Mastered by", value: currentTrack.masteredBy },
+                ];
+                for (const [key, arr] of Object.entries(currentTrack.details || {})) {
+                  if (Array.isArray(arr) && arr.length > 0) {
+                    const joined = arr.filter((v) => typeof v === "string" && v.trim()).join(", ");
+                    if (joined) creditSources.push({ label: detailLabels[key] || key, value: joined });
+                  }
+                }
+                for (const entry of [...(currentTrack.customPerformers || []), ...(currentTrack.customProduction || [])]) {
+                  if (entry?.role?.trim() && Array.isArray(entry.values) && entry.values.length > 0) {
+                    const joined = entry.values.filter((v) => typeof v === "string" && v.trim()).join(", ");
+                    if (joined) creditSources.push({ label: entry.role.trim(), value: joined });
+                  }
+                }
+
+                const contactInputs = contacts.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, email: c.email, stageName: c.stageName }));
+
+                type DetectedSuggestion = ParsedCollaborator & { sources: string[] };
+                const detectionMap = new Map<string, DetectedSuggestion>();
+                const shouldCompute = splitsAreEmpty && !dismissed;
+                if (shouldCompute) {
+                  for (const src of creditSources) {
+                    if (!src.value || !src.value.trim()) continue;
+                    const parsed = parseArtistsToCollaborators(src.value, aliases, contactInputs);
+                    for (const c of parsed) {
+                      if (!c.contact && !c.fromAlias) continue;
+                      const key = c.contact?.id || c.name.toLowerCase();
+                      const existing = detectionMap.get(key);
+                      if (existing) {
+                        if (!existing.sources.includes(src.label)) existing.sources.push(src.label);
+                      } else {
+                        detectionMap.set(key, { ...c, sources: [src.label] });
+                      }
+                    }
+                  }
+                }
+                const suggested: DetectedSuggestion[] = Array.from(detectionMap.values());
+
                 const applyAutoSplit = () => {
                   if (!currentTrack) return;
                   const newSplits = suggested.map((c) => ({
@@ -2044,7 +2120,11 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                         <div className="min-w-0 flex-1">
                           <p className="text-sm text-sky-300 font-semibold">Auto-detected collaborators</p>
                           <p className="text-xs text-sky-200/80 mt-0.5 truncate">
-                            {suggested.map((c) => c.name).join(", ")} — ~{parseFloat((100 / suggested.length).toFixed(2))}% each
+                            {suggested
+                              .map((c) => c.sources.length > 0 ? c.name + " (" + c.sources.join(", ") + ")" : c.name)
+                              .join(", ")}
+                            {" — ~"}
+                            {parseFloat((100 / suggested.length).toFixed(2))}% each
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">

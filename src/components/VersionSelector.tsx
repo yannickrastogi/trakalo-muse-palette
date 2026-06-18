@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { Star, Plus, MoreHorizontal, Loader2, StickyNote, Trash2, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -62,8 +62,21 @@ export function VersionSelector({
   const [deleteTarget, setDeleteTarget] = useState<TrackVersion | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Single-version + no edit permission → hide entirely
-  if (versions.length <= 1 && !canEdit) return null;
+  // Defensive: collapse duplicate rows (same id) that a stale migration or a
+  // doubled INSERT could have left in the DB. Keeps the same insertion order.
+  const uniqueVersions = useMemo(() => {
+    const seen = new Set<string>();
+    const out: TrackVersion[] = [];
+    for (const v of versions) {
+      if (seen.has(v.id)) continue;
+      seen.add(v.id);
+      out.push(v);
+    }
+    return out;
+  }, [versions]);
+
+  // Single-version + no edit permission → hide entirely (nothing to interact with)
+  if (uniqueVersions.length <= 1 && !canEdit) return null;
 
   const handleSelectVersion = (v: TrackVersion) => {
     if (v.id === currentVersionId) return;
@@ -109,8 +122,12 @@ export function VersionSelector({
     setUploading(true);
 
     try {
-      const nextVersionNumber = versions.length > 0
-        ? Math.max(...versions.map((v) => v.version_number)) + 1
+      // Compute the next version number from the deduped list so a stale
+      // duplicate row doesn't push the client display name out of sync with
+      // what the server RPC will assign (server recomputes MAX+1 anyway).
+      const dedupedNumbers = Array.from(new Set(versions.map((v) => v.version_number)));
+      const nextVersionNumber = dedupedNumbers.length > 0
+        ? Math.max(...dedupedNumbers) + 1
         : 1;
       const ext = (file.name.split(".").pop() || "wav").toLowerCase();
       const filePath = activeWorkspace.id + "/" + trackUuid + "_v" + nextVersionNumber + "." + ext;
@@ -225,9 +242,48 @@ export function VersionSelector({
     await onVersionsChanged();
   }, [user, activeWorkspace, trackUuid, onVersionsChanged]);
 
+  // Single-version view: no tabs, no star — there's nothing to switch between.
+  // Just label the lone version "Main Version" and expose the Add button.
+  if (uniqueVersions.length <= 1) {
+    return (
+      <div className="flex items-center gap-1.5 pb-1">
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-lg border border-border bg-card/60 text-xs font-medium text-muted-foreground">
+          Main Version
+        </span>
+        {canEdit && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ACCEPTED_EXTENSIONS.join(",") + "," + ACCEPTED_TYPES.join(",")}
+              onChange={handleFileInput}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => !uploading && fileInputRef.current?.click()}
+              disabled={uploading}
+              className="shrink-0 inline-flex items-center gap-1 px-3 py-1 rounded-lg border border-dashed border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-brand-pink/40 transition-colors disabled:opacity-60"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" /> Uploading…
+                </>
+              ) : (
+                <>
+                  <Plus className="w-3 h-3" /> Add Version
+                </>
+              )}
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1">
-      {versions.map((v) => {
+      {uniqueVersions.map((v) => {
         const isCurrent = v.id === currentVersionId;
         const isRenaming = renamingId === v.id;
         return (
