@@ -665,7 +665,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
     onProgress(0);
 
-    return new Promise<{ error: string | null }>((resolve) => {
+    const putResult = await new Promise<{ error: string | null }>((resolve) => {
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", signed.signedUrl);
       xhr.setRequestHeader("Content-Type", contentType || file.type || "audio/mpeg");
@@ -712,6 +712,40 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
       xhr.send(file);
     });
+
+    if (putResult.error) return putResult;
+
+    // R2 propagation guard: the Supabase Storage proxy responds OK as soon as
+    // bytes are accepted, but with STORAGE_PROVIDER=r2 the object isn't always
+    // immediately readable via R2's GET path. Downstream Edge Functions
+    // (transcribe-lyrics, analyze-sonic-dna) and the audio player rely on R2
+    // reads — if they fire before propagation completes they see 503/404. We
+    // confirm readability via a HEAD on a fresh signed URL with backoff before
+    // returning, so callers can trust that audioUrl is live.
+    let readable = false;
+    const HEAD_ATTEMPTS = 3;
+    for (let attempt = 0; attempt < HEAD_ATTEMPTS && !readable; attempt++) {
+      try {
+        const probeUrl = await getStorageSignedUrl(bucket, path, { expiresInSec: 300, noCache: true });
+        const head = await fetch(probeUrl, { method: "HEAD" });
+        if (head.ok) {
+          readable = true;
+          break;
+        }
+      } catch (e) {
+        console.warn("R2 HEAD probe failed for " + path + " (attempt " + (attempt + 1) + "):", e instanceof Error ? e.message : e);
+      }
+      if (attempt < HEAD_ATTEMPTS - 1) {
+        // 1s, 2s, 4s backoff per spec
+        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      }
+    }
+
+    if (!readable) {
+      return { error: "Upload failed — please try again" };
+    }
+
+    return { error: null };
   }, [ensureSession]);
 
   // ─── Save ──────────────────────────────────────────────────
@@ -866,6 +900,21 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           console.error("Failed to persist extended metadata:", extendedErr);
           toast.error("Some metadata could not be saved");
         }
+      }
+
+      // Register the uploaded audio as V1 in track_versions so the version
+      // selector renders immediately and the user can add V2/V3 without
+      // having to "promote" the original audio first. Fire-and-forget; a
+      // failed insert just hides the selector for legacy fallback behavior.
+      if (savedTrack && audioUrl && user && activeWorkspace) {
+        const { error: v1Err } = await supabase.rpc("add_track_version", {
+          _user_id: user.id,
+          _track_id: savedTrack.uuid,
+          _workspace_id: activeWorkspace.id,
+          _audio_url: audioUrl,
+          _version_name: "V1",
+        });
+        if (v1Err) console.error("Failed to register V1 track version:", v1Err);
       }
 
       // Upload cover art if provided — same pattern as TrackDetail.tsx
@@ -1470,6 +1519,19 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         });
         setUploadProgress(100);
 
+        // Register the uploaded audio as V1 in track_versions so the version
+        // selector renders immediately for this newly-created track.
+        if (savedTrack && audioUrl && user && activeWorkspace) {
+          const { error: v1Err } = await supabase.rpc("add_track_version", {
+            _user_id: user.id,
+            _track_id: savedTrack.uuid,
+            _workspace_id: activeWorkspace.id,
+            _audio_url: audioUrl,
+            _version_name: "V1",
+          });
+          if (v1Err) console.error("Failed to register V1 track version (quick upload):", v1Err);
+        }
+
         // ── Fire-and-forget: MP3 + lyrics transcription ──
         if (savedTrack && audioUrl && entry.file) {
           const bgFile = entry.file;
@@ -1694,6 +1756,19 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             if (extendedErr) {
               console.error("Failed to persist extended metadata for", entry.fileName, ":", extendedErr);
             }
+          }
+
+          // Register the uploaded audio as V1 in track_versions so the version
+          // selector renders immediately for each newly-created track.
+          if (savedTrack && audioUrl && user && activeWorkspace) {
+            const { error: v1Err } = await supabase.rpc("add_track_version", {
+              _user_id: user.id,
+              _track_id: savedTrack.uuid,
+              _workspace_id: activeWorkspace.id,
+              _audio_url: audioUrl,
+              _version_name: "V1",
+            });
+            if (v1Err) console.error("Failed to register V1 track version for", entry.fileName, ":", v1Err);
           }
 
           // ── Stage 5: Cover upload (if any) ──

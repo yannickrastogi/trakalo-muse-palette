@@ -712,8 +712,10 @@ export default function TrackDetail() {
                 </div>
 
                 {/* Version selector — visible when track has multiple versions,
-                    or when the user can edit (so they can add a second version). */}
-                {versions.length > 0 && (versions.length > 1 || (!isViewerShared && permissions.canEditTracks)) && (
+                    or when the user can edit (so they can add a version, even
+                    if the track has no track_versions rows yet — legacy tracks
+                    or pre-V1-registration uploads). */}
+                {(versions.length > 1 || (!isViewerShared && permissions.canEditTracks)) && (
                   <div className="pt-1">
                     <VersionSelector
                       trackUuid={track.uuid}
