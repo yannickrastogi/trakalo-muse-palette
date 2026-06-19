@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo } from "react";
 import { Star, Plus, MoreHorizontal, Loader2, StickyNote, Trash2, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getStorageUploadUrl } from "@/lib/audio";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack, type TrackVersion } from "@/contexts/TrackContext";
@@ -132,14 +133,39 @@ export function VersionSelector({
       const ext = (file.name.split(".").pop() || "wav").toLowerCase();
       const filePath = activeWorkspace.id + "/" + trackUuid + "_v" + nextVersionNumber + "." + ext;
 
-      const { error: uploadError } = await supabase.storage
-        .from("tracks")
-        .upload(filePath, file, {
-          contentType: file.type || "audio/mpeg",
-          upsert: true,
+      // Upload directly to R2 (provider-agnostic) via signed PUT URL. Matches
+      // the UploadTrackModal pipeline so reads through get-audio-url / get-storage-url
+      // resolve the object in the same bucket the EF inspects (STORAGE_PROVIDER=r2).
+      const contentType = file.type || "audio/mpeg";
+      let descriptor;
+      try {
+        descriptor = await getStorageUploadUrl("tracks", filePath, contentType);
+      } catch (e) {
+        console.error("getStorageUploadUrl failed:", e);
+        toast.error("Upload failed — please try again");
+        return;
+      }
+
+      const putError = await new Promise<string | null>((resolve) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open(descriptor.method, descriptor.uploadUrl);
+        for (const [name, value] of Object.entries(descriptor.headers)) {
+          xhr.setRequestHeader(name, value);
+        }
+        xhr.addEventListener("load", () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(null);
+            return;
+          }
+          resolve("HTTP " + xhr.status);
         });
-      if (uploadError) {
-        console.error("Version upload failed:", uploadError);
+        xhr.addEventListener("error", () => resolve("Network error during upload"));
+        xhr.addEventListener("abort", () => resolve("Upload aborted"));
+        xhr.addEventListener("timeout", () => resolve("Upload timed out"));
+        xhr.send(file);
+      });
+      if (putError) {
+        console.error("Version upload failed:", putError);
         toast.error("Upload failed — please try again");
         return;
       }
