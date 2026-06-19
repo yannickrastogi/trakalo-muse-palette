@@ -25,6 +25,16 @@ export type BucketName =
   | "covers"
   | "documents";
 
+/** Provider-agnostic upload descriptor — what the frontend needs to PUT bytes
+ *  directly to the underlying object store. Returned by `createSignedUploadUrl`.
+ *  - R2: `{ method: "PUT", url: <presigned>, headers: { "Content-Type": ... } }`
+ *  - Supabase: same shape but headers include `Authorization` + `x-upsert`. */
+export interface SignedUploadDescriptor {
+  method: "PUT";
+  url: string;
+  headers: Record<string, string>;
+}
+
 export interface StorageProvider {
   /** Génère une signed URL courte pour lecture protégée (GET). Default expires: 300s. */
   createSignedUrl(
@@ -32,6 +42,15 @@ export interface StorageProvider {
     key: string,
     expiresInSec?: number,
   ): Promise<string>;
+
+  /** Génère une signed URL PUT pour upload direct depuis le client.
+   *  Renvoie l'URL + les headers exacts à utiliser pour le PUT. Default expires: 600s. */
+  createSignedUploadUrl(
+    bucket: BucketName,
+    key: string,
+    contentType: string,
+    expiresInSec?: number,
+  ): Promise<SignedUploadDescriptor>;
 
   /** Upload un fichier (server-side, utilisé par get-watermarked-audio etc.). */
   upload(
@@ -92,6 +111,31 @@ class SupabaseStorageProvider implements StorageProvider {
       );
     }
     return data.signedUrl;
+  }
+
+  async createSignedUploadUrl(
+    bucket: BucketName,
+    key: string,
+    contentType: string,
+    _expiresInSec = 600,
+  ): Promise<SignedUploadDescriptor> {
+    const { data, error } = await this.client.storage
+      .from(bucket)
+      .createSignedUploadUrl(key);
+    if (error || !data?.signedUrl || !data?.token) {
+      throw new Error(
+        `[storage:supabase] createSignedUploadUrl failed for ${bucket}/${key}: ${error?.message ?? "no signed URL/token returned"}`,
+      );
+    }
+    return {
+      method: "PUT",
+      url: data.signedUrl,
+      headers: {
+        "Content-Type": contentType,
+        "Authorization": `Bearer ${data.token}`,
+        "x-upsert": "true",
+      },
+    };
   }
 
   async upload(
@@ -185,6 +229,22 @@ class R2StorageProvider implements StorageProvider {
     expiresInSec = 300,
   ): Promise<string> {
     return await presignR2Url("GET", bucket, key, expiresInSec);
+  }
+
+  async createSignedUploadUrl(
+    bucket: BucketName,
+    key: string,
+    contentType: string,
+    expiresInSec = 600,
+  ): Promise<SignedUploadDescriptor> {
+    const url = await presignR2Url("PUT", bucket, key, expiresInSec);
+    return {
+      method: "PUT",
+      url,
+      headers: {
+        "Content-Type": contentType,
+      },
+    };
   }
 
   async upload(

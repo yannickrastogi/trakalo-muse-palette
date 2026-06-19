@@ -25,12 +25,20 @@ import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations
 // ---------------------------------------------------------------------------
 
 export type StorageBucket = "tracks" | "stems" | "covers" | "watermarked" | "documents";
+export type UploadBucket = "tracks" | "stems" | "covers" | "documents";
 
 export interface SignedUrlOpts {
   /** Desired TTL for the signed URL, in seconds. Clamped 60..3600 server-side. */
   expiresInSec?: number;
   /** Bypass the in-memory cache (forces a fresh signing). */
   noCache?: boolean;
+}
+
+export interface UploadDescriptor {
+  uploadUrl: string;
+  method: "PUT";
+  headers: Record<string, string>;
+  expiresIn: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -176,6 +184,47 @@ export async function getStorageSignedUrl(
   }
   cacheSet(cacheKey, data.signedUrl);
   return data.signedUrl;
+}
+
+/**
+ * Returns a provider-agnostic upload descriptor (PUT URL + headers) for a
+ * storage object. The frontend PUTs bytes directly to the underlying object
+ * store (Cloudflare R2 in prod) — no Supabase Storage proxy hop, so the
+ * object is immediately readable through the matching R2 GET signed URL
+ * without propagation lag.
+ *
+ * Auth + workspace permission check happen server-side in `get-upload-url`.
+ */
+export async function getStorageUploadUrl(
+  bucket: UploadBucket,
+  key: string,
+  contentType: string,
+  opts: { expiresInSec?: number } = {},
+): Promise<UploadDescriptor> {
+  if (!key) throw new Error("getStorageUploadUrl: missing key");
+  if (!contentType) throw new Error("getStorageUploadUrl: missing contentType");
+
+  const data = await callEdgeFunction<{
+    uploadUrl?: string;
+    method?: "PUT";
+    headers?: Record<string, string>;
+    expiresIn?: number;
+  }>("get-upload-url", {
+    bucket,
+    key,
+    contentType,
+    expiresInSec: opts.expiresInSec ?? 600,
+  });
+
+  if (!data?.uploadUrl || data.method !== "PUT" || !data.headers) {
+    throw new Error("get-upload-url: malformed response");
+  }
+  return {
+    uploadUrl: data.uploadUrl,
+    method: data.method,
+    headers: data.headers,
+    expiresIn: data.expiresIn ?? 600,
+  };
 }
 
 /**

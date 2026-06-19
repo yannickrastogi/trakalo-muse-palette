@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { getStorageSignedUrl } from "@/lib/audio";
+import { getStorageSignedUrl, getStorageUploadUrl } from "@/lib/audio";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack } from "@/contexts/TrackContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -188,24 +188,23 @@ export function StemsTab({ trackId, autoOpenUpload = false, readOnly = false }: 
       for (const pf of pendingFiles) {
         const fileExt = pf.file.name.split(".").pop() || "wav";
         const filePath = activeWorkspace.id + "/" + trackUuid + "/" + crypto.randomUUID() + "." + fileExt;
+        const contentType = pf.file.type || "audio/wav";
 
-        // Upload file to Storage
-        const { error: uploadError } = await supabase.storage
-          .from("stems")
-          .upload(filePath, pf.file, {
-            contentType: pf.file.type || "audio/wav",
-            upsert: false,
+        // PUT directly to R2 via get-upload-url EF — no Supabase Storage hop,
+        // so the stem is immediately readable through R2 GET signed URLs.
+        try {
+          const desc = await getStorageUploadUrl("stems", filePath, contentType);
+          const res = await fetch(desc.uploadUrl, {
+            method: desc.method,
+            headers: desc.headers,
+            body: pf.file,
           });
-
-        if (uploadError) {
-          console.error("Error uploading stem:", uploadError);
+          if (!res.ok) throw new Error("Stem PUT failed (HTTP " + res.status + ")");
+        } catch (e) {
+          console.error("Error uploading stem:", e instanceof Error ? e.message : e);
           continue;
         }
 
-        // Get signed URL — Phase 5: route via Edge Function (R2 honored).
-        // Legacy Supabase-direct call (kept here as comment for Phase 5 rollback reference):
-        //   const { data: signedData } = await supabase.storage
-        //     .from("stems").createSignedUrl(filePath, 3600);
         let fileUrl = "";
         try {
           fileUrl = await getStorageSignedUrl("stems", filePath, { expiresInSec: 3600 });

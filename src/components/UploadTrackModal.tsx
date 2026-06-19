@@ -6,7 +6,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
-import { getStorageSignedUrl } from "@/lib/audio";
+import { getStorageUploadUrl, type UploadBucket } from "@/lib/audio";
 import { autoPopulateAliasesFromSplits } from "@/lib/aliasAutoPopulate";
 import { safeLocalStorage } from "@/lib/safeStorage";
 import { toast } from "sonner";
@@ -639,39 +639,37 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   }, []);
 
   const uploadFileWithProgress = useCallback(async (
-    bucket: string,
+    bucket: UploadBucket,
     path: string,
     file: File,
     contentType: string,
     onProgress: (pct: number) => void,
-    upsert = false,
   ): Promise<{ error: string | null }> => {
-    // Ensure valid session before requesting the signed upload URL
     const hasSession = await ensureSession();
     if (!hasSession) {
       return { error: "No auth session — please sign in again" };
     }
 
-    // Request a signed upload URL — bypasses the SDK's progress-less upload()
-    // so we can PUT via XHR with real byte-by-byte progress.
-    const { data: signed, error: signedErr } = await supabase.storage
-      .from(bucket)
-      .createSignedUploadUrl(path);
-
-    if (signedErr || !signed?.signedUrl || !signed?.token) {
-      console.error("createSignedUploadUrl failed:", signedErr);
-      return { error: signedErr?.message || "Could not initiate upload" };
+    // Request a provider-agnostic upload descriptor. With STORAGE_PROVIDER=r2
+    // the URL points directly at R2 (PUT, no Authorization needed), so the
+    // object is immediately readable through R2 GET — no propagation lag.
+    let descriptor;
+    try {
+      descriptor = await getStorageUploadUrl(bucket, path, contentType || file.type || "application/octet-stream");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not initiate upload";
+      console.error("getStorageUploadUrl failed:", msg);
+      return { error: msg };
     }
 
     onProgress(0);
 
-    const putResult = await new Promise<{ error: string | null }>((resolve) => {
+    return await new Promise<{ error: string | null }>((resolve) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("PUT", signed.signedUrl);
-      xhr.setRequestHeader("Content-Type", contentType || file.type || "audio/mpeg");
-      xhr.setRequestHeader("authorization", "Bearer " + signed.token);
-      xhr.setRequestHeader("cache-control", "3600");
-      xhr.setRequestHeader("x-upsert", upsert ? "true" : "false");
+      xhr.open(descriptor.method, descriptor.uploadUrl);
+      for (const [name, value] of Object.entries(descriptor.headers)) {
+        xhr.setRequestHeader(name, value);
+      }
 
       xhr.upload.addEventListener("progress", (e) => {
         if (e.lengthComputable && e.total > 0) {
@@ -693,12 +691,12 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             msg = parsed.message || parsed.error || msg;
           }
         } catch { /* keep default msg */ }
-        console.error("Audio upload failed:", xhr.status, msg);
+        console.error("Upload failed:", xhr.status, msg);
         resolve({ error: msg });
       });
 
       xhr.addEventListener("error", () => {
-        console.error("Audio upload network error");
+        console.error("Upload network error");
         resolve({ error: "Network error during upload" });
       });
 
@@ -712,40 +710,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
       xhr.send(file);
     });
-
-    if (putResult.error) return putResult;
-
-    // R2 propagation guard: the Supabase Storage proxy responds OK as soon as
-    // bytes are accepted, but with STORAGE_PROVIDER=r2 the object isn't always
-    // immediately readable via R2's GET path. Downstream Edge Functions
-    // (transcribe-lyrics, analyze-sonic-dna) and the audio player rely on R2
-    // reads — if they fire before propagation completes they see 503/404. We
-    // confirm readability via a HEAD on a fresh signed URL with backoff before
-    // returning, so callers can trust that audioUrl is live.
-    let readable = false;
-    const HEAD_ATTEMPTS = 3;
-    for (let attempt = 0; attempt < HEAD_ATTEMPTS && !readable; attempt++) {
-      try {
-        const probeUrl = await getStorageSignedUrl(bucket, path, { expiresInSec: 300, noCache: true });
-        const head = await fetch(probeUrl, { method: "HEAD" });
-        if (head.ok) {
-          readable = true;
-          break;
-        }
-      } catch (e) {
-        console.warn("R2 HEAD probe failed for " + path + " (attempt " + (attempt + 1) + "):", e instanceof Error ? e.message : e);
-      }
-      if (attempt < HEAD_ATTEMPTS - 1) {
-        // 1s, 2s, 4s backoff per spec
-        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
-      }
-    }
-
-    if (!readable) {
-      return { error: "Upload failed — please try again" };
-    }
-
-    return { error: null };
   }, [ensureSession]);
 
   // ─── Save ──────────────────────────────────────────────────
@@ -1017,47 +981,22 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         const bgTrackUuid = savedTrack.uuid;
         const bgAudioPath = audioUrl;
         (async () => {
-          // Step 1: MP3 compression
+          // Step 1: MP3 compression — direct PUT to R2 (no propagation lag).
           try {
             toast.info(t("uploadTrack.compressingPreview", "Compressing MP3 preview..."));
             const mp3Blob = await encodeToMp3(bgFile);
             const previewPath = bgAudioPath.replace(/\.[^.]+$/, "_preview.mp3");
-            const { error: upErr } = await supabase.storage
-              .from("tracks")
-              .upload(previewPath, mp3Blob, { contentType: "audio/mp3", upsert: true });
-            if (upErr) throw upErr;
-
-            // The Supabase Storage SDK upload returns OK as soon as the proxy
-            // accepts the bytes — but R2 (the bucket consumed by reads via
-            // STORAGE_PROVIDER=r2) may not yet have the object visible. We
-            // confirm readiness by signing + HEADing the preview path. Only
-            // when the HEAD succeeds do we write audio_preview_url to the DB
-            // so get-audio-url never returns a path that 404s in R2.
-            let previewReady = false;
-            const MAX_ATTEMPTS = 4;
-            for (let attempt = 0; attempt < MAX_ATTEMPTS && !previewReady; attempt++) {
-              try {
-                const signed = await getStorageSignedUrl("tracks", previewPath, { expiresInSec: 300, noCache: true });
-                const head = await fetch(signed, { method: "HEAD" });
-                if (head.ok) {
-                  previewReady = true;
-                  break;
-                }
-              } catch (e) {
-                console.warn("preview HEAD probe failed (attempt " + (attempt + 1) + "):", e instanceof Error ? e.message : e);
-              }
-              if (attempt < MAX_ATTEMPTS - 1) {
-                await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
-              }
+            const desc = await getStorageUploadUrl("tracks", previewPath, "audio/mp3");
+            const previewRes = await fetch(desc.uploadUrl, {
+              method: desc.method,
+              headers: desc.headers,
+              body: mp3Blob,
+            });
+            if (!previewRes.ok) {
+              throw new Error("Preview PUT failed (HTTP " + previewRes.status + ")");
             }
-
-            if (!previewReady) {
-              console.warn("MP3 preview uploaded but not yet readable via R2 — leaving audio_preview_url null; player will fall back to original.");
-              toast.warning(t("uploadTrack.mp3PreviewPending", "MP3 preview is still propagating — original audio will play in the meantime"));
-            } else {
-              await supabase.rpc("update_track", { _user_id: user!.id, _track_id: bgTrackUuid, _updates: { audio_preview_url: previewPath } });
-              toast.success(t("uploadTrack.mp3PreviewReady", "MP3 preview ready"));
-            }
+            await supabase.rpc("update_track", { _user_id: user!.id, _track_id: bgTrackUuid, _updates: { audio_preview_url: previewPath } });
+            toast.success(t("uploadTrack.mp3PreviewReady", "MP3 preview ready"));
           } catch (err) {
             console.error("Background MP3 compression failed:", err);
             toast.warning(t("uploadTrack.mp3PreviewFailed", "MP3 preview failed — track is still available"));
@@ -1542,10 +1481,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               toast.info(t("uploadTrack.compressingPreview", "Compressing MP3 preview..."));
               const mp3Blob = await encodeToMp3(bgFile);
               const previewPath = bgAudioPath.replace(/\.[^.]+$/, "_preview.mp3");
-              const { error: upErr } = await supabase.storage
-                .from("tracks")
-                .upload(previewPath, mp3Blob, { contentType: "audio/mp3", upsert: true });
-              if (upErr) throw upErr;
+              const desc = await getStorageUploadUrl("tracks", previewPath, "audio/mp3");
+              const previewRes = await fetch(desc.uploadUrl, {
+                method: desc.method,
+                headers: desc.headers,
+                body: mp3Blob,
+              });
+              if (!previewRes.ok) throw new Error("Preview PUT failed (HTTP " + previewRes.status + ")");
               await supabase.rpc("update_track", { _user_id: user!.id, _track_id: bgTrackUuid, _updates: { audio_preview_url: previewPath } });
               toast.success(t("uploadTrack.mp3PreviewReady", "MP3 preview ready"));
             } catch (err) {
@@ -1858,10 +1800,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               try {
                 const mp3Blob = await encodeToMp3(bgFile);
                 const previewPath = bgAudioPath.replace(/\.[^.]+$/, "_preview.mp3");
-                const { error: upErr } = await supabase.storage
-                  .from("tracks")
-                  .upload(previewPath, mp3Blob, { contentType: "audio/mp3", upsert: true });
-                if (upErr) throw upErr;
+                const desc = await getStorageUploadUrl("tracks", previewPath, "audio/mp3");
+                const previewRes = await fetch(desc.uploadUrl, {
+                  method: desc.method,
+                  headers: desc.headers,
+                  body: mp3Blob,
+                });
+                if (!previewRes.ok) throw new Error("Preview PUT failed (HTTP " + previewRes.status + ")");
                 await supabase.rpc("update_track", { _user_id: bgUserId, _track_id: bgTrackUuid, _updates: { audio_preview_url: previewPath } });
               } catch (err) {
                 console.error("Background MP3 compression failed for", bgFile.name, ":", err);

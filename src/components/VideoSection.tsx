@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Film, Upload, Trash2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { getStorageSignedUrl } from "@/lib/audio";
+import { getStorageSignedUrl, getStorageUploadUrl } from "@/lib/audio";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack } from "@/contexts/TrackContext";
@@ -107,18 +107,19 @@ export function VideoSection({
       const ext = (file.name.split(".").pop() || "mp4").toLowerCase();
       const safeExt = ACCEPTED_EXTENSIONS.includes("." + ext) ? ext : "mp4";
       const filePath = activeWorkspace.id + "/" + trackUuid + "/video." + safeExt;
+      const contentType = file.type || videoMimeFromExt(file.name);
 
-      // Upload via Supabase Storage SDK — routed to R2 via STORAGE_PROVIDER on the EF layer.
-      // Same pattern as StemsTab. upsert: true to replace any previous video at the same path.
-      const { error: uploadError } = await supabase.storage
-        .from("documents")
-        .upload(filePath, file, {
-          contentType: file.type || videoMimeFromExt(file.name),
-          upsert: true,
+      // PUT directly to R2 via get-upload-url EF — no Supabase Storage hop.
+      try {
+        const desc = await getStorageUploadUrl("documents", filePath, contentType);
+        const res = await fetch(desc.uploadUrl, {
+          method: desc.method,
+          headers: desc.headers,
+          body: file,
         });
-
-      if (uploadError) {
-        console.error("Video upload failed:", uploadError);
+        if (!res.ok) throw new Error("Video PUT failed (HTTP " + res.status + ")");
+      } catch (e) {
+        console.error("Video upload failed:", e instanceof Error ? e.message : e);
         toast.error("Upload failed — please try again");
         return;
       }
