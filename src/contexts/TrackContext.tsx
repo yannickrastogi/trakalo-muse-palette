@@ -53,6 +53,7 @@ export interface TrackVersion {
   duration_sec: number | null;
   is_active: boolean;
   notes: string | null;
+  chapters: TrackChapter[] | null;
   created_at: string;
 }
 

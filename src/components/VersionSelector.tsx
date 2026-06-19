@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useMemo } from "react";
 import { Star, Plus, MoreHorizontal, Loader2, StickyNote, Trash2, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getStorageUploadUrl } from "@/lib/audio";
+import { generateWaveform } from "@/lib/waveformGenerator";
+import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack, type TrackVersion } from "@/contexts/TrackContext";
@@ -183,8 +185,78 @@ export function VersionSelector({
         return;
       }
 
-      toast.success("Version V" + nextVersionNumber + " uploaded — Sonic DNA analysis in progress...");
+      // Look up the inserted row by its unique audio_url so the per-version
+      // waveform / preview writes target the right row even if the server
+      // recomputed version_number under contention.
+      let newVersionId: string | null = null;
+      try {
+        const { data: row } = await supabase
+          .from("track_versions")
+          .select("id")
+          .eq("track_id", trackUuid)
+          .eq("audio_url", filePath)
+          .maybeSingle();
+        newVersionId = row?.id ?? null;
+      } catch (e) {
+        console.error("Lookup new version row failed:", e);
+      }
+
+      toast.success("Version V" + nextVersionNumber + " uploaded — analyzing...");
       await onVersionsChanged();
+
+      // Generate waveform client-side from the in-memory File (no extra fetch),
+      // then persist to the version row so the player switches to per-version
+      // peaks immediately when the user A/B's between versions.
+      if (newVersionId) {
+        const versionIdForWaveform = newVersionId;
+        generateWaveform(file, 200)
+          .then(async (peaks) => {
+            if (!peaks || peaks.length === 0) return;
+            const { error } = await supabase.rpc("update_track_version_waveform", {
+              _user_id: user.id,
+              _version_id: versionIdForWaveform,
+              _track_id: trackUuid,
+              _workspace_id: activeWorkspace.id,
+              _waveform_data: peaks,
+            });
+            if (error) {
+              console.error("update_track_version_waveform failed:", error);
+              return;
+            }
+            await onVersionsChanged();
+          })
+          .catch((e) => console.error("Waveform generation failed:", e));
+      }
+
+      // Fire-and-forget MP3 preview compression. Mirrors UploadTrackModal:
+      // client-side encode → direct PUT to R2 → record the preview path on
+      // the version row. RLS on track_versions gates this write.
+      if (newVersionId) {
+        const versionIdForPreview = newVersionId;
+        (async () => {
+          try {
+            const mp3Blob = await encodeToMp3(file);
+            const previewPath = filePath.replace(/\.[^.]+$/, "_preview.mp3");
+            const desc = await getStorageUploadUrl("tracks", previewPath, "audio/mp3");
+            const previewRes = await fetch(desc.uploadUrl, {
+              method: desc.method,
+              headers: desc.headers,
+              body: mp3Blob,
+            });
+            if (!previewRes.ok) {
+              throw new Error("Preview PUT failed (HTTP " + previewRes.status + ")");
+            }
+            const { error: updErr } = await supabase
+              .from("track_versions")
+              .update({ audio_preview_url: previewPath })
+              .eq("id", versionIdForPreview);
+            if (updErr) throw updErr;
+            await onVersionsChanged();
+          } catch (e) {
+            console.error("MP3 preview for version failed:", e);
+          }
+        })();
+      }
 
       // Queue Sonic DNA analysis on the new version's audio path. Reuses the
       // global sequential queue from TrackContext to prevent Railway OOM when

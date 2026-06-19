@@ -5,7 +5,7 @@ import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTeams } from "@/contexts/TeamContext";
-import { useTrack, mapRowToTrack, type TrackData, type TrackStem, type TrackSplit, type TrackVersion } from "@/contexts/TrackContext";
+import { useTrack, mapRowToTrack, type TrackData, type TrackStem, type TrackSplit, type TrackVersion, type TrackChapter } from "@/contexts/TrackContext";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrackReview, formatTimestamp } from "@/contexts/TrackReviewContext";
 import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf, generateCreditsPdf, type CreditEntry } from "@/lib/pdf-generators";
@@ -336,6 +336,18 @@ export default function TrackDetail() {
   );
   // Versions stored for this track, used to drive the A/B comparison player UI.
   const isPlayingNonActive = !!(currentVersion && activeVersion && currentVersion.id !== activeVersion.id);
+
+  // Per-version waveform / chapters / duration with fallback to the track
+  // parent's columns. A legacy track without versions falls through to the
+  // track row; a brand-new version not yet analyzed surfaces a pending UI.
+  const versionPeaks = Array.isArray(currentVersion?.waveform_data) && currentVersion!.waveform_data.length > 0
+    ? (currentVersion!.waveform_data as number[])
+    : null;
+  const displayPeaks = versionPeaks ?? (track?.waveformData ?? undefined);
+  const displayChapters = Array.isArray(currentVersion?.chapters)
+    ? (currentVersion!.chapters as TrackChapter[])
+    : (track?.chapters || []);
+  const versionWaveformPending = !!(currentVersion && !versionPeaks);
 
   // Auto-regenerate waveform peaks for tracks that have waveform_data = NULL
   const waveformRegenRef = useRef<string | null>(null);
@@ -978,19 +990,55 @@ export default function TrackDetail() {
                     Previewing {currentVersion?.version_name} — not the active version
                   </p>
                 )}
+                {versionWaveformPending && (
+                  <p className="text-[10px] text-muted-foreground mb-1.5 font-medium">
+                    Analyzing waveform for {currentVersion?.version_name}…
+                  </p>
+                )}
                 <TrackWaveformPlayer
                   seed={track.id}
-                  peaks={isPlayingNonActive && Array.isArray(currentVersion?.waveform_data) ? (currentVersion!.waveform_data as number[]) : track.waveformData}
+                  peaks={displayPeaks}
                   progress={currentProgress}
                   onSeek={handleWaveformClick}
                   onDoubleClick={handleWaveformDoubleClick}
-                  chapters={track.chapters || []}
+                  chapters={displayChapters}
                   isPlaying={isThisTrackPlaying}
                   editable={!isViewerShared && permissions.canEditTracks}
                   onChaptersChange={async (newChapters) => {
+                    // Versioned track → write chapters to the current version row.
+                    // The RPC also syncs the active version's chapters to the
+                    // tracks.chapters column (handled server-side), so playback
+                    // and shared links keep matching the active version.
+                    if (currentVersion && activeWorkspace) {
+                      const { error } = await supabase.rpc("update_track_version_chapters", {
+                        _user_id: user!.id,
+                        _version_id: currentVersion.id,
+                        _track_id: track.uuid,
+                        _workspace_id: activeWorkspace.id,
+                        _chapters: newChapters,
+                      });
+                      if (error) {
+                        console.error("update_track_version_chapters failed:", error);
+                        toast.error("Failed to save sections");
+                        return;
+                      }
+                      setVersions((prev) => prev.map((v) =>
+                        v.id === currentVersion.id ? { ...v, chapters: newChapters } : v
+                      ));
+                      // Mirror to local TrackData so shared links / catalog views
+                      // reflect the change immediately if this is the active version.
+                      if (currentVersion.is_active) {
+                        updateTrack(track.id, { chapters: newChapters });
+                      }
+                      toast.success("Sections saved");
+                      return;
+                    }
+
+                    // Legacy path (track without any version row): preserve the
+                    // previous flow that writes to tracks.chapters + syncs
+                    // sonic_dna.structure.
                     updateTrack(track.id, { chapters: newChapters });
 
-                    // Sync to sonic_dna.structure if sonic_dna exists
                     const { data: row } = await supabase
                       .from("tracks")
                       .select("sonic_dna")
