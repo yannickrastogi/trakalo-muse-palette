@@ -149,9 +149,10 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
 
   const deleteAlias = useCallback(
     async (aliasId: string): Promise<boolean> => {
-      if (!user) return false;
+      if (!activeWorkspace || !user) return false;
       const { error } = await supabase.rpc("delete_artist_alias", {
         _user_id: user.id,
+        _workspace_id: activeWorkspace.id,
         _alias_id: aliasId,
       });
       if (error) {
@@ -162,7 +163,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
       await fetchAliases();
       return true;
     },
-    [user, fetchAliases]
+    [activeWorkspace, user, fetchAliases]
   );
 
   const addOrUpdateContact = useCallback(
