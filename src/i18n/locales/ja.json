@@ -1514,7 +1514,17 @@
     "failedNotes": "メモの保存に失敗しました"
   },
   "starRating": {
-    "noRatings": "まだ評価がありません"
+    "noRatings": "まだ評価がありません",
+    "label1": "好みではない",
+    "label2": "まあまあ",
+    "label3": "良い",
+    "label4": "とても良い",
+    "label5": "素晴らしい",
+    "tapToRate": "星をタップして評価",
+    "yourRating": "あなたの評価：{{rating}}/5",
+    "teamAvg": "チーム平均 {{avg}}",
+    "rating": "件の評価",
+    "ratings": "件の評価"
   },
   "artistAliases": {
     "newAlias": "新規エイリアス",
@@ -1534,7 +1544,8 @@
     "deleteTitle": "エイリアスを削除しますか？",
     "deleteDescription": "「{{name}}」が削除されます。元の連絡先はそのまま残ります。",
     "deleting": "削除中…",
-    "delete": "削除"
+    "delete": "削除",
+    "introText": "アーティスト名やグループ名（例：<1>「Banx & Ranx」</1>）を1人以上の連絡先に関連付けます。アップロードモーダルはこれらを使用して、アップロード時に適切なスプリットを自動的に提案します。"
   },
   "audioPlayer": {
     "playbackFailed": "オーディオの再生に失敗しました。",

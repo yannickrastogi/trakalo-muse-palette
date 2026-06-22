@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Plus, Pencil, Trash2, X, Search, Check, Users } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { useTranslation, Trans } from "react-i18next";
 import { useContacts, type ArtistAlias, type Contact } from "@/contexts/ContactsContext";
 import { EmptyState } from "@/components/EmptyState";
 import {
@@ -47,8 +47,9 @@ export function ArtistAliasesTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground max-w-2xl">
-          Map an artist or group name (e.g. <span className="text-foreground font-medium">"Banx &amp; Ranx"</span>) to one or more
-          contacts. The upload modal uses these to suggest the right splits automatically.
+          <Trans i18nKey="artistAliases.introText">
+            Map an artist or group name (e.g. <span className="text-foreground font-medium">"Banx &amp; Ranx"</span>) to one or more contacts. The upload modal uses these to suggest the right splits automatically.
+          </Trans>
         </p>
         <button
           type="button"

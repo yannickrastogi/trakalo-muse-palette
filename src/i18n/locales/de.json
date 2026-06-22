@@ -1514,7 +1514,17 @@
     "failedNotes": "Notizen konnten nicht gespeichert werden"
   },
   "starRating": {
-    "noRatings": "Noch keine Bewertungen"
+    "noRatings": "Noch keine Bewertungen",
+    "label1": "Nichts für mich",
+    "label2": "Okay",
+    "label3": "Gut",
+    "label4": "Stark",
+    "label5": "Herausragend",
+    "tapToRate": "Tippe einen Stern zum Bewerten",
+    "yourRating": "Deine Bewertung: {{rating}}/5",
+    "teamAvg": "Team-Schnitt {{avg}}",
+    "rating": "Bewertung",
+    "ratings": "Bewertungen"
   },
   "artistAliases": {
     "newAlias": "Neuer Alias",
@@ -1534,7 +1544,8 @@
     "deleteTitle": "Alias löschen?",
     "deleteDescription": "\"{{name}}\" wird entfernt. Die zugrunde liegenden Kontakte bleiben unberührt.",
     "deleting": "Wird gelöscht…",
-    "delete": "Löschen"
+    "delete": "Löschen",
+    "introText": "Ordne einen Künstler- oder Gruppennamen (z. B. <1>\"Banx & Ranx\"</1>) einem oder mehreren Kontakten zu. Das Upload-Fenster nutzt diese, um automatisch die richtigen Splits vorzuschlagen."
   },
   "audioPlayer": {
     "playbackFailed": "Audiowiedergabe fehlgeschlagen.",

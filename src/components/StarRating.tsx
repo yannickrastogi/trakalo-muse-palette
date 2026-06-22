@@ -24,12 +24,14 @@ interface StarRatingProps {
   className?: string;
 }
 
-const RATING_LABELS = [
-  "Not for me",
-  "Okay",
-  "Good",
-  "Strong",
-  "Outstanding",
+// i18n keys for the 5 rating labels (resolved via t() at render time so they
+// react to language changes). Index order is unchanged from the old static array.
+const RATING_LABEL_KEYS = [
+  "starRating.label1",
+  "starRating.label2",
+  "starRating.label3",
+  "starRating.label4",
+  "starRating.label5",
 ];
 
 export function StarRating({
@@ -112,12 +114,12 @@ export function StarRating({
             <p className="mt-1 text-2xs text-center text-muted-foreground">
               {(() => {
                 const idx = (hover ?? myRating ?? 0) - 1;
-                return idx >= 0 ? RATING_LABELS[idx] : "Tap a star to rate";
+                return idx >= 0 ? t(RATING_LABEL_KEYS[idx]) : t("starRating.tapToRate");
               })()}
             </p>
             {count > 0 && (
               <p className="mt-1 text-2xs text-center text-muted-foreground/60">
-                Team avg {average.toFixed(1)} · {count} rating{count > 1 ? "s" : ""}
+                {t("starRating.teamAvg", { avg: average.toFixed(1) })} · {count} {count > 1 ? t("starRating.ratings") : t("starRating.rating")}
               </p>
             )}
           </PopoverContent>
@@ -144,7 +146,7 @@ export function StarRating({
               {average.toFixed(1)}
             </span>
             <span>
-              · {count} rating{count > 1 ? "s" : ""}
+              · {count} {count > 1 ? t("starRating.ratings") : t("starRating.rating")}
             </span>
           </>
         ) : (
@@ -152,7 +154,7 @@ export function StarRating({
         )}
         {myRating != null && (
           <span className="ml-auto text-amber-400 font-medium">
-            Your rating: {myRating}/5
+            {t("starRating.yourRating", { rating: myRating })}
           </span>
         )}
       </div>

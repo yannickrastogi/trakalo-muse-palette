@@ -1514,7 +1514,17 @@
     "failedNotes": "Falha ao salvar as notas"
   },
   "starRating": {
-    "noRatings": "Ainda sem avaliações"
+    "noRatings": "Ainda sem avaliações",
+    "label1": "Não é para mim",
+    "label2": "Razoável",
+    "label3": "Bom",
+    "label4": "Muito bom",
+    "label5": "Excepcional",
+    "tapToRate": "Toque numa estrela para avaliar",
+    "yourRating": "Sua avaliação: {{rating}}/5",
+    "teamAvg": "Média da equipe {{avg}}",
+    "rating": "avaliação",
+    "ratings": "avaliações"
   },
   "artistAliases": {
     "newAlias": "Novo alias",
@@ -1534,7 +1544,8 @@
     "deleteTitle": "Excluir alias?",
     "deleteDescription": "\"{{name}}\" será removido. Os contatos subjacentes permanecem intactos.",
     "deleting": "Excluindo…",
-    "delete": "Excluir"
+    "delete": "Excluir",
+    "introText": "Associe um nome de artista ou grupo (ex. <1>\"Banx & Ranx\"</1>) a um ou mais contatos. O módulo de upload os usa para sugerir automaticamente os splits corretos."
   },
   "audioPlayer": {
     "playbackFailed": "Falha na reprodução de áudio.",

@@ -1595,7 +1595,17 @@
     "failedNotes": "Failed to save notes"
   },
   "starRating": {
-    "noRatings": "No ratings yet"
+    "noRatings": "No ratings yet",
+    "label1": "Not for me",
+    "label2": "Okay",
+    "label3": "Good",
+    "label4": "Strong",
+    "label5": "Outstanding",
+    "tapToRate": "Tap a star to rate",
+    "yourRating": "Your rating: {{rating}}/5",
+    "teamAvg": "Team avg {{avg}}",
+    "rating": "rating",
+    "ratings": "ratings"
   },
   "artistAliases": {
     "newAlias": "New Alias",
@@ -1615,7 +1625,8 @@
     "deleteTitle": "Delete alias?",
     "deleteDescription": "\"{{name}}\" will be removed. The underlying contacts stay untouched.",
     "deleting": "Deleting…",
-    "delete": "Delete"
+    "delete": "Delete",
+    "introText": "Map an artist or group name (e.g. <1>\"Banx & Ranx\"</1>) to one or more contacts. The upload modal uses these to suggest the right splits automatically."
   },
   "audioPlayer": {
     "playbackFailed": "Audio playback failed.",
