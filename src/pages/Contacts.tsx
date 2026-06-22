@@ -815,11 +815,18 @@ export default function Contacts() {
                             : <span className="text-xs text-muted-foreground/40">—</span>;
                         })()}
                       </td>
-                      {/* Engagement: tracks + downloads merged */}
+                      {/* Engagement: plays (principal) + downloads (secondaire) */}
                       <td className="px-4 py-3.5">
-                        <span className="text-xs text-muted-foreground">
-                          {c.tracksEngaged} {c.tracksEngaged === 1 ? "track" : "tracks"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
-                        </span>
+                        {c.totalPlays === 0 && c.totalDownloads === 0 && c.tracksEngaged === 0 ? (
+                          <span className="text-xs text-muted-foreground/60">No activity yet</span>
+                        ) : (
+                          <span
+                            className="text-xs text-muted-foreground"
+                            title={`Sur ${c.tracksEngaged} ${c.tracksEngaged === 1 ? "track distinct" : "tracks distincts"}`}
+                          >
+                            <span className="text-foreground">{c.totalPlays} {c.totalPlays === 1 ? "play" : "plays"}</span> · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
+                          </span>
+                        )}
                       </td>
                       {/* Last Interaction — relative */}
                       <td className="px-4 py-3.5">
@@ -957,7 +964,13 @@ export default function Contacts() {
                 })()}
                 {/* Stats + last interaction */}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{c.tracksEngaged} {c.tracksEngaged === 1 ? "track" : "tracks"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}</span>
+                  {c.totalPlays === 0 && c.totalDownloads === 0 && c.tracksEngaged === 0 ? (
+                    <span className="text-muted-foreground/60">No activity yet</span>
+                  ) : (
+                    <span title={`Sur ${c.tracksEngaged} ${c.tracksEngaged === 1 ? "track distinct" : "tracks distincts"}`}>
+                      <span className="text-foreground">{c.totalPlays} {c.totalPlays === 1 ? "play" : "plays"}</span> · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
+                    </span>
+                  )}
                   <span>{formatRelativeDate(c.lastInteraction)}</span>
                 </div>
                 {/* Actions */}

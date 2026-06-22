@@ -185,11 +185,20 @@ export function ContactDetailSheet({
         {/* Engagement section */}
         <div className="p-5 border-b border-border/40 space-y-2">
           <SectionHeader icon={Activity} label="Engagement" />
-          <p className="text-sm text-foreground">
-            {c.tracksEngaged} {c.tracksEngaged === 1 ? "track" : "tracks"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
-          </p>
-          {c.lastInteraction && (
-            <p className="text-xs text-muted-foreground">Last interaction: {formatLastInteraction(c.lastInteraction)}</p>
+          {c.totalPlays === 0 && c.totalDownloads === 0 && c.tracksEngaged === 0 ? (
+            <p className="text-sm text-muted-foreground">No activity yet</p>
+          ) : (
+            <>
+              <p className="text-sm text-foreground">
+                {c.totalPlays} {c.totalPlays === 1 ? "play" : "plays"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Sur {c.tracksEngaged} {c.tracksEngaged === 1 ? "track distinct" : "tracks distincts"}
+              </p>
+              {c.lastInteraction && (
+                <p className="text-xs text-muted-foreground">Last interaction: {formatLastInteraction(c.lastInteraction)}</p>
+              )}
+            </>
           )}
         </div>
 
