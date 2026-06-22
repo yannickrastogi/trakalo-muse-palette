@@ -1200,8 +1200,16 @@ export default function SharedLinkPage() {
 
       // Signed Split Agreement
       if (items.indexOf("metadata") >= 0 && trackData.id) {
-        var sigRes = await fetch(REST_URL + "/signature_requests?select=collaborator_name,collaborator_email,status,signed_at,signature_data,split_share&track_id=eq." + encodeURIComponent(trackData.id), { headers: SB_HEADERS });
-        var signatures = sigRes.ok ? await sigRes.json() : null;
+        // Read split signatures via the slug-validated EF (service role). The
+        // signature_requests table is no longer readable by anon — this closes
+        // the PII leak (collaborator emails + signature images) while still
+        // returning only the signatures of this link's track.
+        var sigRes = await fetch(SUPABASE_URL + "/functions/v1/get-shared-link-asset", {
+          method: "POST",
+          headers: { ...SB_HEADERS, "Content-Type": "application/json" },
+          body: JSON.stringify({ slug: slug, action: "signatures", trackId: trackData.id }),
+        });
+        var signatures = sigRes.ok ? ((await sigRes.json()).signatures ?? null) : null;
 
         if (signatures) {
           var signedEntries = signatures

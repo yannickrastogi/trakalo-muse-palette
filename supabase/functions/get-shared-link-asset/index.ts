@@ -13,6 +13,15 @@
 // Returns: { assets: { file_name: string, mime_type: string|null, signed_url: string }[] }
 //          or { error: string }
 //
+// Signatures mode (closes the signature_requests PII leak — that table had an
+// anon SELECT USING(true) policy exposing every collaborator email + signature
+// image across all workspaces). Anonymous visitors now read split signatures only
+// through this slug-validated service-role path, scoped to the link's track(s).
+// POST /get-shared-link-asset
+// Body: { slug: string, action: "signatures", trackId?: string }
+// Returns: { signatures: { collaborator_name, collaborator_email, status,
+//            signed_at, signature_data, split_share, track_id }[] }
+//
 // Deploy: supabase functions deploy get-shared-link-asset
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -37,10 +46,11 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
-    const { slug, bucket } = await req.json();
+    const { slug, bucket, action, trackId } = await req.json();
+    const isSignatures = action === "signatures";
 
     if (!slug || typeof slug !== "string" || !SLUG_RE.test(slug)) return json({ error: "Invalid slug" }, 400);
-    if (!ALLOWED_BUCKETS.includes(bucket as AllowedBucket)) return json({ error: "Invalid bucket" }, 400);
+    if (!isSignatures && !ALLOWED_BUCKETS.includes(bucket as AllowedBucket)) return json({ error: "Invalid bucket" }, 400);
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -74,7 +84,25 @@ Deno.serve(async (req) => {
     } else if (link.track_id) {
       allowedTrackIds = [link.track_id as string];
     }
-    if (allowedTrackIds.length === 0) return json({ assets: [] }, 200);
+    if (allowedTrackIds.length === 0) return json(isSignatures ? { signatures: [] } : { assets: [] }, 200);
+
+    // 2b. Signatures mode — return split signatures for the link's track(s),
+    // optionally narrowed to a single track that must belong to this link.
+    if (isSignatures) {
+      let ids = allowedTrackIds;
+      if (trackId && typeof trackId === "string") {
+        if (!allowedTrackIds.includes(trackId)) return json({ signatures: [] }, 200);
+        ids = [trackId];
+      }
+      // collaborator_email is intentionally NOT selected — it is PII the public
+      // pack never renders, so it must not reach the anonymous browser.
+      const { data: sigs } = await supabaseAdmin
+        .from("signature_requests")
+        .select("collaborator_name, status, signed_at, signature_data, split_share, track_id")
+        .in("track_id", ids)
+        .order("split_share", { ascending: false });
+      return json({ signatures: sigs ?? [] }, 200);
+    }
 
     // 3. Fetch the link-scoped assets and sign each (short-lived R2 URLs).
     const provider = getStorageProvider();

@@ -87,19 +87,30 @@ export default function SignAgreement() {
   useEffect(function () {
     async function load() {
       try {
-        var { data: reqData, error: reqErr } = await anonClient
-          .from("signature_requests")
-          .select("*")
-          .eq("token", token)
-          .single();
+        // Read the agreement via a token-validated SECURITY DEFINER RPC. The
+        // signature_requests table is no longer readable by anon (it had an open
+        // anon SELECT policy that leaked every collaborator email + signature
+        // image across all workspaces). The RPC validates the token server-side
+        // and returns ONLY this signer's row plus the track's splits with other
+        // collaborators' PRO/IPI/publisher/email masked.
+        var rpcRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_signature_agreement_by_token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_PUBLISHABLE_KEY,
+            "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ _token: token }),
+        });
+        var payload = rpcRes.ok ? await rpcRes.json() : null;
 
-        if (reqErr || !reqData) {
+        if (!payload || !payload.request) {
           setError(t("signature.invalidToken"));
           setLoading(false);
           return;
         }
 
-        var req = reqData as SignatureRequest;
+        var req = payload.request as SignatureRequest;
         setRequest(req);
 
         if (req.status === "signed") {
@@ -116,27 +127,10 @@ export default function SignAgreement() {
           setTrackInfo(trackData as TrackInfo);
         }
 
-        var { data: splitsData } = await anonClient
-          .from("signature_requests")
-          .select("collaborator_name, role, split_share, pro, ipi, publisher, collaborator_email")
-          .eq("track_id", req.track_id)
-          .order("split_share", { ascending: false });
-
-        if (splitsData) {
-          // Mask IPI/PRO/publisher of other collaborators — only show the current signer's own data
-          var masked = (splitsData as AllSplit[]).map(function (s) {
-            if (s.collaborator_email === req.collaborator_email) return s;
-            return {
-              collaborator_name: s.collaborator_name,
-              role: s.role,
-              split_share: s.split_share,
-              pro: "",
-              ipi: "",
-              publisher: "",
-              collaborator_email: "",
-            };
-          });
-          setAllSplits(masked);
+        // Splits are already masked server-side (only the signer's own
+        // PRO/IPI/publisher/email is returned in full).
+        if (Array.isArray(payload.splits)) {
+          setAllSplits(payload.splits as AllSplit[]);
         }
       } catch (e) {
         setError(t("signature.invalidToken"));
