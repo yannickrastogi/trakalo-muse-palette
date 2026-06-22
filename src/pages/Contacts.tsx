@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Users, UserPlus, Building2, Download, X, FileText, FileSpreadsheet, ChevronDown, Send, Trash2, Loader2, Pencil, Music } from "lucide-react";
+import { Search, Users, UserPlus, Building2, Download, X, FileText, FileSpreadsheet, ChevronDown, Send, Trash2, Loader2, Pencil, Music, CheckSquare } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { EmptyState } from "@/components/EmptyState";
 import { AddContactModal } from "@/components/AddContactModal";
@@ -21,6 +21,7 @@ import { exportContactsCsv, exportContactsXlsx } from "@/lib/contact-export";
 import { toast } from "sonner";
 import { INDUSTRY_ROLES } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -196,6 +197,11 @@ export default function Contacts() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
+  // Multi-select bulk delete
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<"contacts" | "aliases">("contacts");
 
@@ -229,6 +235,46 @@ export default function Contacts() {
       toast.error(t("contacts.failedToDeleteContact"));
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const exitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0 || !user || !activeWorkspace || isBulkDeleting) return;
+    setIsBulkDeleting(true);
+    try {
+      const { error } = await (supabase.rpc as (fn: string, params: Record<string, unknown>) => Promise<{ error: unknown }>)("delete_contacts", {
+        _user_id: user.id,
+        _workspace_id: activeWorkspace.id,
+        _ids: Array.from(selectedIds),
+      });
+      if (error) {
+        console.error("Error bulk-deleting contacts:", error);
+        toast.error(t("contacts.failedToDeleteContacts"));
+        return;
+      }
+      toast.success(t("contacts.contactsDeleted", { count: selectedIds.size }));
+      setBulkConfirmOpen(false);
+      exitSelectionMode();
+      await refreshContacts();
+    } catch (err) {
+      console.error("Unexpected error bulk-deleting contacts:", err);
+      toast.error(t("contacts.failedToDeleteContacts"));
+    } finally {
+      setIsBulkDeleting(false);
     }
   };
 
@@ -433,6 +479,22 @@ export default function Contacts() {
     return result;
   }, [contacts, search, roleFilter, orgFilter, countryFilter, cityFilter, getDisplayRoles]);
 
+  // Keep selection in sync with what's visible: never bulk-delete contacts hidden by filters
+  useEffect(() => {
+    if (!selectionMode) return;
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const visible = new Set(filtered.map((c) => c.id));
+      let changed = false;
+      const next = new Set<string>();
+      prev.forEach((id) => {
+        if (visible.has(id)) next.add(id);
+        else changed = true;
+      });
+      return changed ? next : prev;
+    });
+  }, [filtered, selectionMode]);
+
   const formatRelativeDate = (iso: string) => {
     try {
       const date = new Date(iso);
@@ -561,6 +623,26 @@ export default function Contacts() {
               </div>
             </div>
             <div className="flex items-center gap-2.5">
+              {/* Select / Cancel selection mode (admins only) */}
+              {isAdmin && contacts.length > 0 && (
+                selectionMode ? (
+                  <button
+                    onClick={exitSelectionMode}
+                    className="px-5 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 shrink-0 min-h-[44px] border border-border text-foreground hover:bg-secondary/60 transition-all"
+                  >
+                    <X className="w-4 h-4" />
+                    {t("contacts.cancel")}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setSelectionMode(true)}
+                    className="px-5 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 shrink-0 min-h-[44px] border border-border text-foreground hover:bg-secondary/60 transition-all"
+                  >
+                    <CheckSquare className="w-4 h-4" />
+                    {t("contacts.select")}
+                  </button>
+                )
+              )}
               {/* Add Contact button */}
               <button
                 onClick={() => setAddContactOpen(true)}
@@ -726,6 +808,22 @@ export default function Contacts() {
               <table className="w-full min-w-[1320px] text-sm">
                 <thead>
                   <tr className="border-b border-border/50">
+                    {selectionMode && (
+                      <th className="px-5 py-3 w-px">
+                        <Checkbox
+                          checked={filtered.length > 0 && filtered.every((c) => selectedIds.has(c.id))}
+                          onCheckedChange={(checked) => {
+                            setSelectedIds((prev) => {
+                              const next = new Set(prev);
+                              if (checked) filtered.forEach((c) => next.add(c.id));
+                              else filtered.forEach((c) => next.delete(c.id));
+                              return next;
+                            });
+                          }}
+                          aria-label={t("contacts.selectAll")}
+                        />
+                      </th>
+                    )}
                     <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.name")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.email")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.phone")}</th>
@@ -744,10 +842,20 @@ export default function Contacts() {
                       ref={setRowRef(c.id)}
                       className={
                         "hover:bg-secondary/40 transition-colors duration-200 cursor-pointer " +
+                        (selectionMode && selectedIds.has(c.id) ? "bg-brand-orange/5 " : "") +
                         (focusedId === c.id ? "bg-brand-orange/10 ring-2 ring-brand-orange/50 transition-all" : "")
                       }
-                      onClick={() => setDetailContact(c)}
+                      onClick={() => selectionMode ? toggleSelect(c.id) : setDetailContact(c)}
                     >
+                      {selectionMode && (
+                        <td className="px-5 py-3.5 w-px" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedIds.has(c.id)}
+                            onCheckedChange={() => toggleSelect(c.id)}
+                            aria-label={t("contacts.select")}
+                          />
+                        </td>
+                      )}
                       {/* Name + Email merged */}
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
@@ -911,13 +1019,23 @@ export default function Contacts() {
                 variants={item}
                 className={
                   "card-premium p-4 space-y-3 " +
+                  (selectionMode && selectedIds.has(c.id) ? "ring-2 ring-brand-orange/50 bg-brand-orange/5 " : "") +
                   (focusedId === c.id ? "ring-2 ring-brand-orange/50 bg-brand-orange/10 transition-all" : "")
                 }
-                onClick={() => setDetailContact(c)}
+                onClick={() => selectionMode ? toggleSelect(c.id) : setDetailContact(c)}
               >
                 {/* Top: avatar + name + role */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
+                    {selectionMode && (
+                      <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                        <Checkbox
+                          checked={selectedIds.has(c.id)}
+                          onCheckedChange={() => toggleSelect(c.id)}
+                          aria-label={t("contacts.select")}
+                        />
+                      </div>
+                    )}
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center text-xs font-semibold text-white shrink-0">
                       {c.firstName[0]}{c.lastName[0]}
                     </div>
@@ -1019,6 +1137,76 @@ export default function Contacts() {
         </div>
       </motion.div>
       )}
+
+      {/* Floating bulk-action bar */}
+      <AnimatePresence>
+        {selectionMode && selectedIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.18 }}
+            className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl bg-card border border-border shadow-2xl"
+            style={{ boxShadow: "var(--shadow-card)" }}
+          >
+            <span className="text-sm font-medium text-foreground whitespace-nowrap">
+              {t("contacts.selectedCount", { count: selectedIds.size })}
+            </span>
+            <button
+              onClick={() => setBulkConfirmOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors min-h-[40px]"
+            >
+              <Trash2 className="w-4 h-4" />
+              {t("contacts.deleteSelected")}
+            </button>
+            <button
+              onClick={exitSelectionMode}
+              className="inline-flex items-center px-4 py-2 rounded-xl text-[13px] font-semibold border border-border text-foreground hover:bg-secondary/60 transition-colors min-h-[40px]"
+            >
+              {t("contacts.cancel")}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog
+        open={bulkConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open && !isBulkDeleting) setBulkConfirmOpen(false);
+        }}
+      >
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">{t("contacts.deleteSelected")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("contacts.bulkDeleteConfirm", { count: selectedIds.size })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkDeleting} className="text-sm border border-border">
+              {t("contacts.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isBulkDeleting}
+              onClick={(e) => {
+                e.preventDefault();
+                handleBulkDelete();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-sm disabled:opacity-60 disabled:pointer-events-none"
+            >
+              {isBulkDeleting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                  {t("contacts.deleting")}
+                </>
+              ) : (
+                t("contacts.deleteSelected")
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Pitch Modal */}
       <CreatePitchModal

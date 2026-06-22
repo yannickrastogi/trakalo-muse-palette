@@ -22,6 +22,11 @@ serve(async (req) => {
   try {
     const { workspace_id, email, first_name, last_name, role, company, pro, ipi, publisher, city, country } = await req.json();
 
+    // Normalize email (lowercase + trim) to align with case-insensitive dedup & unique index lower(email)
+    const normEmail = typeof email === "string" ? email.trim().toLowerCase() : email;
+    // Escape LIKE wildcards (_ and % are common-ish in emails) for an exact case-insensitive match
+    const emailPattern = typeof normEmail === "string" ? normEmail.replace(/([%_\\])/g, "\\$1") : normEmail;
+
     if (!workspace_id || !email || !first_name) {
       return new Response(JSON.stringify({ error: "workspace_id, email, and first_name are required" }), {
         status: 400,
@@ -61,7 +66,7 @@ serve(async (req) => {
       .from("contacts")
       .select("id, pro, ipi, publisher, city, country")
       .eq("workspace_id", workspace_id)
-      .eq("email", email)
+      .ilike("email", emailPattern)
       .maybeSingle();
 
     if (existing) {
@@ -87,7 +92,7 @@ serve(async (req) => {
       .from("contacts")
       .insert({
         workspace_id,
-        email,
+        email: normEmail,
         first_name,
         last_name: last_name || null,
         role: role || null,
