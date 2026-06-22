@@ -168,7 +168,7 @@ export default function Pitch() {
       .then(function (data) {
         if (!data.url) {
           setLoadingAudioId(null);
-          toast.error("Could not load audio preview");
+          toast.error(t("pitch.couldNotLoadPreview"));
           return;
         }
         var audio = new Audio(data.url);
@@ -179,7 +179,7 @@ export default function Pitch() {
         audio.addEventListener("error", function () {
           if (audioRef.current !== audio) return;
           setPlayingTrackId(null); setLoadingAudioId(null); setAudioProgress(0);
-          toast.error("Error playing audio");
+          toast.error(t("pitch.errorPlaying"));
         });
         audio.play().then(function () {
           if (audioRef.current !== audio) return;
@@ -187,12 +187,12 @@ export default function Pitch() {
         }).catch(function () {
           if (audioRef.current !== audio) return;
           setLoadingAudioId(null);
-          toast.error("Could not play audio");
+          toast.error(t("pitch.couldNotPlay"));
         });
       })
       .catch(function () {
         setLoadingAudioId(null);
-        toast.error("Could not load audio preview");
+        toast.error(t("pitch.couldNotLoadPreview"));
       });
   }, [playingTrackId]);
 
@@ -415,11 +415,11 @@ export default function Pitch() {
           {pitches.length === 0 ? (
             <EmptyState
               icon={Target}
-              title="No pitches sent yet"
-              description="Start pitching your tracks to A&R, labels, and music supervisors. Trakalog tracks every interaction."
-              actionLabel="Create Pitch"
+              title={t("pitch.noPitchesYet")}
+              description={t("pitch.noPitchesDesc")}
+              actionLabel={t("pitch.createPitch")}
               onAction={() => setCreateOpen(true)}
-              note="Your contacts are built automatically when people listen to your shared links."
+              note={t("pitch.noPitchesNote")}
             />
           ) : filtered.length === 0 ? (
             <div className="card-premium py-20 text-center">
@@ -513,11 +513,11 @@ function DesktopPitchTable({
         <table className="w-full text-[13px]">
           <thead>
             <tr className="border-b border-border/50">
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Track / Playlist</th>
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Recipient</th>
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden sm:table-cell">Date</th>
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden md:table-cell">Engagement</th>
-              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">Status</th>
+              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">{t("pitch.columns.trackPlaylist")}</th>
+              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">{t("pitch.columns.recipient")}</th>
+              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden sm:table-cell">{t("pitch.columns.date")}</th>
+              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider hidden md:table-cell">{t("pitch.columns.engagement")}</th>
+              <th className="text-left px-5 py-3 font-medium text-muted-foreground text-[11px] uppercase tracking-wider">{t("pitch.columns.status")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/30">
@@ -599,7 +599,7 @@ function DesktopPitchTable({
                         </div>
                         <p className="text-[11px] text-muted-foreground truncate">{p.artist}</p>
                         {isMultiMember && pitchSentBy[p.id] && senderProfiles[pitchSentBy[p.id]!] && (
-                          <p className="text-[10px] text-muted-foreground/60 mt-0.5">Sent by {senderProfiles[pitchSentBy[p.id]!]}</p>
+                          <p className="text-[10px] text-muted-foreground/60 mt-0.5">{t("pitch.sentBy", { name: senderProfiles[pitchSentBy[p.id]!] })}</p>
                         )}
                       </div>
                     </div>
@@ -661,24 +661,24 @@ function DesktopPitchTable({
             >
               <div className="px-5 py-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">Email</p>
+                  <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">{t("pitch.columns.email")}</p>
                   <p className="text-xs text-foreground/80 font-mono mt-0.5">{p.recipientEmail}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">Company</p>
+                  <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">{t("pitch.columns.company")}</p>
                   <p className="text-xs text-foreground/80 mt-0.5">{p.recipientCompany}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">Type</p>
+                  <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">{t("pitch.columns.type")}</p>
                   <p className="text-xs text-foreground/80 mt-0.5 capitalize">{p.type}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">Date</p>
+                  <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">{t("pitch.columns.date")}</p>
                   <p className="text-xs text-foreground/80 mt-0.5">{p.date}</p>
                 </div>
                 {p.notes && (
                   <div className="col-span-2 md:col-span-4">
-                    <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">Notes</p>
+                    <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-semibold">{t("pitch.columns.notes")}</p>
                     <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{p.notes}</p>
                   </div>
                 )}
@@ -734,6 +734,7 @@ function MobilePitchList({
   pitchSentBy: Record<string, string | null>;
   senderProfiles: Record<string, string>;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2.5">
       {pitches.map((p) => {
@@ -816,7 +817,7 @@ function MobilePitchList({
                   → {p.recipientName} · {p.recipientCompany}
                 </p>
                 {isMultiMember && pitchSentBy[p.id] && senderProfiles[pitchSentBy[p.id]!] && (
-                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">Sent by {senderProfiles[pitchSentBy[p.id]!]}</p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">{t("pitch.sentBy", { name: senderProfiles[pitchSentBy[p.id]!] })}</p>
                 )}
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <span className="text-2xs text-muted-foreground/60">{p.date}</span>
@@ -857,17 +858,17 @@ function MobilePitchList({
                   <div className="px-4 pb-4 pt-0 space-y-2 border-t border-border/40">
                     <div className="pt-3 grid grid-cols-2 gap-2">
                       <div>
-                        <p className="text-2xs text-muted-foreground/50 uppercase tracking-widest font-semibold">Email</p>
+                        <p className="text-2xs text-muted-foreground/50 uppercase tracking-widest font-semibold">{t("pitch.columns.email")}</p>
                         <p className="text-xs text-foreground/80 font-mono mt-0.5">{p.recipientEmail}</p>
                       </div>
                       <div>
-                        <p className="text-2xs text-muted-foreground/50 uppercase tracking-widest font-semibold">Type</p>
+                        <p className="text-2xs text-muted-foreground/50 uppercase tracking-widest font-semibold">{t("pitch.columns.type")}</p>
                         <p className="text-xs text-foreground/80 mt-0.5 capitalize">{p.type}</p>
                       </div>
                     </div>
                     {p.notes && (
                       <div>
-                        <p className="text-2xs text-muted-foreground/50 uppercase tracking-widest font-semibold">Notes</p>
+                        <p className="text-2xs text-muted-foreground/50 uppercase tracking-widest font-semibold">{t("pitch.columns.notes")}</p>
                         <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{p.notes}</p>
                       </div>
                     )}

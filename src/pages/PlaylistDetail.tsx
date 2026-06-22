@@ -282,7 +282,7 @@ export default function PlaylistDetail() {
         hadPlaylistRef.current ? (
           <div className="p-8 flex items-center justify-center gap-3 text-muted-foreground">
             <ListMusic className="w-5 h-5 animate-pulse" />
-            <span className="text-sm">Loading playlist...</span>
+            <span className="text-sm">{t("playlistDetail.loading")}</span>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-32 text-center px-4">
@@ -398,7 +398,7 @@ export default function PlaylistDetail() {
                 <h1
                   className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight cursor-pointer hover:text-primary/80 transition-colors group/name"
                   onClick={() => { if (permissions.canEditPlaylists) { setRenameValue(playlistName); setEditingName(true); } }}
-                  title={permissions.canEditPlaylists ? "Click to edit" : undefined}
+                  title={permissions.canEditPlaylists ? t("playlistDetail.clickToEdit") : undefined}
                 >
                   {playlistName}
                   {permissions.canEditPlaylists && <Edit3 className="w-4 h-4 inline ml-2 opacity-0 group-hover/name:opacity-40 transition-opacity" />}
@@ -425,9 +425,9 @@ export default function PlaylistDetail() {
                 <p
                   className={"text-sm text-muted-foreground mt-1.5 leading-relaxed max-w-lg" + (permissions.canEditPlaylists ? " cursor-pointer hover:text-foreground/70 transition-colors" : "")}
                   onClick={() => { if (permissions.canEditPlaylists) { setDescValue(playlist.description); setEditingDesc(true); } }}
-                  title={permissions.canEditPlaylists ? "Click to edit" : undefined}
+                  title={permissions.canEditPlaylists ? t("playlistDetail.clickToEdit") : undefined}
                 >
-                  {playlist.description || (permissions.canEditPlaylists ? "Click to add a description…" : "")}
+                  {playlist.description || (permissions.canEditPlaylists ? t("playlistDetail.clickToAddDescription") : "")}
                 </p>
               )}
             </div>
@@ -435,7 +435,7 @@ export default function PlaylistDetail() {
              <div className="flex items-center gap-4 text-muted-foreground">
                <span className="flex items-center gap-1.5 text-xs font-medium">
                  <Music className="w-3.5 h-3.5" />
-                 {displayTracks.length} tracks
+                 {displayTracks.length} {t("playlistDetail.tracksCount")}
                </span>
                <span className="w-px h-4 bg-border" />
                <span className="flex items-center gap-1.5 text-xs font-medium">
@@ -447,12 +447,12 @@ export default function PlaylistDetail() {
                    <span className="w-px h-4 bg-border" />
                    <span className="flex items-center gap-1.5 text-xs font-semibold text-brand-pink">
                      <Headphones className="w-3.5 h-3.5" />
-                     {plEngagement.totalPlays} plays
+                     {plEngagement.totalPlays} {t("playlistDetail.playsCount")}
                    </span>
                  </>
                )}
                <span className="w-px h-4 bg-border hidden sm:block" />
-               <span className="text-xs font-medium hidden sm:inline">Updated {playlist.updated}</span>
+               <span className="text-xs font-medium hidden sm:inline">{t("playlistDetail.updated", { date: playlist.updated })}</span>
              </div>
 
             <div className="flex flex-wrap gap-2 pt-1">
@@ -468,14 +468,14 @@ export default function PlaylistDetail() {
                 className="btn-brand flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold min-h-[44px]"
               >
                 {playingTrackId ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-                {playingTrackId ? "Pause" : "Play All"}
+                {playingTrackId ? t("playlistDetail.pause") : t("playlistDetail.playAll")}
               </button>
               {permissions.canEditPlaylists && (
                 <button
                   onClick={() => setAddTrackOpen(true)}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors min-h-[44px]"
                 >
-                  <Plus className="w-4 h-4" /> Add Track
+                  <Plus className="w-4 h-4" /> {t("playlistDetail.addTrack")}
                 </button>
               )}
 
@@ -485,21 +485,21 @@ export default function PlaylistDetail() {
                   onClick={handleDuplicate}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors min-h-[44px]"
                 >
-                  <Copy className="w-4 h-4" /> Duplicate
+                  <Copy className="w-4 h-4" /> {t("playlistDetail.duplicate")}
                 </button>
               )}
               <button
                 onClick={() => setShareOpen(true)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors min-h-[44px]"
               >
-                <Share2 className="w-4 h-4" /> Share
+                <Share2 className="w-4 h-4" /> {t("playlistDetail.share")}
               </button>
               {permissions.canEditPlaylists && (
                 <button
                   onClick={() => setDeleteConfirmOpen(true)}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border border-destructive/30 bg-card text-destructive hover:bg-destructive/10 transition-colors min-h-[44px]"
                 >
-                  <Trash2 className="w-4 h-4" /> Delete
+                  <Trash2 className="w-4 h-4" /> {t("playlistDetail.delete")}
                 </button>
               )}
             </div>
@@ -540,14 +540,14 @@ export default function PlaylistDetail() {
       <Dialog open={addTrackOpen} onOpenChange={setAddTrackOpen}>
         <DialogContent className="sm:max-w-lg bg-card border-border max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Add Tracks</DialogTitle>
-            <DialogDescription>Select tracks from your catalog to add to this playlist.</DialogDescription>
+            <DialogTitle className="text-foreground">{t("playlistDetail.addTracks")}</DialogTitle>
+            <DialogDescription>{t("playlistDetail.addTracksDesc")}</DialogDescription>
           </DialogHeader>
           <div className="flex items-center gap-2 bg-secondary/50 rounded-lg px-3 py-2 border border-border/50">
             <Music className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
             <input
               type="text"
-              placeholder="Search tracks…"
+              placeholder={t("playlistDetail.searchTracks")}
               value={addSearch}
               onChange={(e) => setAddSearch(e.target.value)}
               className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none w-full"
@@ -556,8 +556,8 @@ export default function PlaylistDetail() {
           <div className="flex-1 overflow-y-auto space-y-1 min-h-0 -mx-6 px-6">
             {filteredAvailable.length === 0 ? (
               <div className="py-10 text-center text-muted-foreground">
-                <p className="text-sm font-medium">No tracks available</p>
-                <p className="text-xs mt-1 text-muted-foreground/60">All catalog tracks are already in this playlist</p>
+                <p className="text-sm font-medium">{t("playlistDetail.noTracksAvailable")}</p>
+                <p className="text-xs mt-1 text-muted-foreground/60">{t("playlistDetail.allTracksAdded")}</p>
               </div>
             ) : (
               filteredAvailable.map((track) => (
@@ -588,7 +588,7 @@ export default function PlaylistDetail() {
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-card border border-border shadow-lg text-sm font-medium text-foreground"
         >
           <Check className="w-4 h-4 text-emerald-400" />
-          Playlist duplicated successfully
+          {t("playlistDetail.duplicatedSuccess")}
       </motion.div>
       )}
       <ShareModal
@@ -612,13 +612,13 @@ export default function PlaylistDetail() {
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-foreground">Delete Playlist</AlertDialogTitle>
+            <AlertDialogTitle className="text-foreground">{t("playlistDetail.deletePlaylist")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {"Are you sure you want to delete \"" + playlistName + "\"? This action cannot be undone."}
+              {t("playlistDetail.deleteConfirm", { name: playlistName })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="text-sm">{t("playlistDetail.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-sm"
               onClick={async () => {
@@ -628,7 +628,7 @@ export default function PlaylistDetail() {
                 }
               }}
             >
-              Delete
+              {t("playlistDetail.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -654,6 +654,7 @@ function SortableDesktopRow({
   removeTrack: (id: number) => void;
 }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { isTrackPlaying, progress } = useAudioPlayer();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: track.id });
 
@@ -739,7 +740,7 @@ function SortableDesktopRow({
         <button
           onClick={(e) => { e.stopPropagation(); removeTrack(track.id); }}
           className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors text-muted-foreground/40 hover:text-destructive opacity-0 group-hover/row:opacity-100"
-          title="Remove from playlist"
+          title={t("playlistDetail.removeFromPlaylist")}
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -762,6 +763,7 @@ function DesktopTrackTable({
   removeTrack: (id: number) => void;
   totalDuration: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="card-premium overflow-hidden">
       <div className="overflow-x-auto">
@@ -770,15 +772,15 @@ function DesktopTrackTable({
             <tr className="border-b border-border">
               <th className="text-left pl-3 pr-1 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-6"></th>
               <th className="text-left pl-2 pr-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-8">#</th>
-              <th className="text-left px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Track</th>
-              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Type</th>
-              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Genre</th>
-              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">BPM</th>
-              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Key</th>
-              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Mood</th>
-               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Language</th>
-               <th className="text-center px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Plays</th>
-               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
+              <th className="text-left px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("playlistDetail.columns.track")}</th>
+              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">{t("playlistDetail.columns.type")}</th>
+              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("playlistDetail.columns.genre")}</th>
+              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">{t("playlistDetail.columns.bpm")}</th>
+              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">{t("playlistDetail.columns.key")}</th>
+              <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("playlistDetail.columns.mood")}</th>
+               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">{t("playlistDetail.columns.language")}</th>
+               <th className="text-center px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">{t("playlistDetail.columns.plays")}</th>
+               <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("playlistDetail.columns.status")}</th>
                <th className="px-2 py-3 w-20"></th>
             </tr>
           </thead>
@@ -787,8 +789,8 @@ function DesktopTrackTable({
               <tr>
                 <td colSpan={11} className="px-5 py-20 text-center text-muted-foreground">
                   <Music className="w-10 h-10 mx-auto mb-4 opacity-15" />
-                  <p className="text-sm font-semibold">No tracks in this playlist</p>
-                  <p className="text-xs mt-1.5 text-muted-foreground/70">Add tracks from your catalog</p>
+                  <p className="text-sm font-semibold">{t("playlistDetail.noTracksInPlaylist")}</p>
+                  <p className="text-xs mt-1.5 text-muted-foreground/70">{t("playlistDetail.addFromCatalog")}</p>
                 </td>
               </tr>
             ) : (
@@ -813,7 +815,7 @@ function DesktopTrackTable({
           borderImage: "linear-gradient(90deg, hsl(24 100% 55% / 0.1), hsl(330 80% 60% / 0.06), transparent) 1",
         }}
       >
-        <span>{tracks.length} tracks · {totalDuration}</span>
+        <span>{tracks.length} {t("playlistDetail.tracksCount")} · {totalDuration}</span>
         <span className="text-2xs text-muted-foreground/50">TRAKALOG Playlist</span>
       </div>
     </div>
@@ -906,12 +908,13 @@ function MobileTrackList({
   setPlayingTrackId: (id: number | null) => void;
   removeTrack: (id: number) => void;
 }) {
+  const { t } = useTranslation();
   if (tracks.length === 0) {
     return (
       <div className="card-premium py-16 text-center">
         <Music className="w-10 h-10 mx-auto mb-4 text-muted-foreground/15" />
-        <p className="text-sm font-semibold text-foreground">No tracks yet</p>
-        <p className="text-xs mt-1 text-muted-foreground/60">Add tracks from your catalog</p>
+        <p className="text-sm font-semibold text-foreground">{t("playlistDetail.noTracksYet")}</p>
+        <p className="text-xs mt-1 text-muted-foreground/60">{t("playlistDetail.addFromCatalog")}</p>
       </div>
     );
   }

@@ -82,6 +82,7 @@ function FilterSelect({
   options: string[];
   onChange: (v: string | null) => void;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -103,7 +104,7 @@ function FilterSelect({
           onClick={function () { setOpen(!open); }}
           className={"flex items-center justify-between w-full h-10 px-3 rounded-xl bg-card text-[13px] font-medium transition-all " + (value ? "border-2 border-brand-orange/40 text-brand-orange" : "border border-border text-muted-foreground hover:border-brand-pink/20 hover:text-foreground")}
         >
-          <span className="truncate">{value || "All"}</span>
+          <span className="truncate">{value || t("playlists.all")}</span>
           <ChevronDown className={"w-3.5 h-3.5 shrink-0 ml-2 transition-transform duration-200 " + (open ? "rotate-180" : "")} />
         </button>
         <AnimatePresence>
@@ -121,7 +122,7 @@ function FilterSelect({
                   onClick={function () { onChange(null); setOpen(false); }}
                   className={"w-full text-left px-4 py-2.5 rounded-lg text-[13px] transition-colors " + (!value ? "bg-brand-orange/10 text-brand-orange font-medium" : "text-foreground hover:bg-secondary/60")}
                 >
-                  All
+                  {t("playlists.all")}
                 </button>
                 {options.map(function (opt) {
                   return (
@@ -352,12 +353,12 @@ export default function Playlists() {
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
                 <ListMusic className="w-3 h-3" />
-                {playlists.length + " collections"}
+                {playlists.length + " " + t("playlists.collections")}
               </span>
               <span className="text-muted-foreground/40 text-xs">·</span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
                 <Music className="w-3 h-3" />
-                {totalTracks + " tracks"}
+                {totalTracks + " " + t("playlists.trackCount")}
               </span>
             </div>
           </div>
@@ -397,7 +398,7 @@ export default function Playlists() {
             )}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
-            Filters
+            {t("playlists.filters.label")}
             {activeFilterCount > 0 && (
               <span className="ml-1 w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold btn-brand" style={{ boxShadow: "none" }}>
                 {activeFilterCount}
@@ -417,9 +418,9 @@ export default function Playlists() {
             >
               <div className="card-premium p-5" style={{ overflow: "visible" }}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  <FilterSelect label="Mood" value={moodFilter} options={playlistMoods} onChange={setMoodFilter} />
-                  <FilterSelect label="Style" value={styleFilter} options={[...GENRES]} onChange={setStyleFilter} />
-                  <FilterSelect label="Tracks" value={trackCountFilter} options={trackCountRanges.slice(1).map(function (r) { return r.label; })} onChange={setTrackCountFilter} />
+                  <FilterSelect label={t("playlists.filters.mood")} value={moodFilter} options={playlistMoods} onChange={setMoodFilter} />
+                  <FilterSelect label={t("playlists.filters.style")} value={styleFilter} options={[...GENRES]} onChange={setStyleFilter} />
+                  <FilterSelect label={t("playlists.filters.tracks")} value={trackCountFilter} options={trackCountRanges.slice(1).map(function (r) { return r.label; })} onChange={setTrackCountFilter} />
                 </div>
                 {activeFilterCount > 0 && (
                   <div className="mt-4 flex justify-end">
@@ -428,7 +429,7 @@ export default function Playlists() {
                       className="flex items-center gap-1.5 text-xs font-semibold text-brand-orange hover:text-brand-pink transition-colors"
                     >
                       <X className="w-3 h-3" />
-                      Clear all
+                      {t("playlists.clearAll")}
                     </button>
                   </div>
                 )}
@@ -440,10 +441,10 @@ export default function Playlists() {
         {/* Active filter tags */}
         {activeFilterCount > 0 && !showFilters && (
           <motion.div variants={item} className="flex flex-wrap gap-2 items-center">
-            <span className="text-xs text-muted-foreground mr-1 font-medium">Active filters:</span>
+            <span className="text-xs text-muted-foreground mr-1 font-medium">{t("playlists.activeFilters")}</span>
             <AnimatePresence>
-              {moodFilter && <FilterTag key="mood" label={"Mood: " + moodFilter} onRemove={function () { setMoodFilter(null); }} />}
-              {styleFilter && <FilterTag key="style" label={"Style: " + styleFilter} onRemove={function () { setStyleFilter(null); }} />}
+              {moodFilter && <FilterTag key="mood" label={t("playlists.filters.mood") + ": " + moodFilter} onRemove={function () { setMoodFilter(null); }} />}
+              {styleFilter && <FilterTag key="style" label={t("playlists.filters.style") + ": " + styleFilter} onRemove={function () { setStyleFilter(null); }} />}
               {trackCountFilter && <FilterTag key="tracks" label={trackCountFilter} onRemove={function () { setTrackCountFilter(null); }} />}
             </AnimatePresence>
           </motion.div>
@@ -454,11 +455,11 @@ export default function Playlists() {
           <motion.div variants={item}>
             <EmptyState
               icon={ListMusic}
-              title="No playlists yet"
-              description="Create a playlist to organize and pitch your tracks together."
-              actionLabel="Create Playlist"
+              title={t("playlists.noPlaylistsYet")}
+              description={t("playlists.noPlaylistsDesc")}
+              actionLabel={t("playlists.createPlaylist")}
               onAction={() => setCreateOpen(true)}
-              note={allTracks.length === 0 ? "You need at least one track to create a playlist." : undefined}
+              note={allTracks.length === 0 ? t("playlists.noTracksNote") : undefined}
             />
           </motion.div>
         ) : filtered.length === 0 ? (
@@ -468,7 +469,7 @@ export default function Playlists() {
             </div>
             <p className="text-sm font-semibold text-foreground">{t("playlists.noPlaylists")}</p>
             <p className="text-xs mt-1.5 text-muted-foreground/70 max-w-sm mx-auto">
-              No playlists match your filters.
+              {t("playlists.noPlaylistsMatchFilters")}
             </p>
           </motion.div>
         ) : (
@@ -555,7 +556,7 @@ export default function Playlists() {
                               }}
                             >
                               <Edit3 className="w-3.5 h-3.5 mr-2" />
-                              Edit
+                              {t("playlists.editPlaylist")}
                             </DropdownMenuItem>
                           )}
                           {permissions.canEditPlaylists && (
@@ -567,7 +568,7 @@ export default function Playlists() {
                               className="text-destructive focus:text-destructive"
                             >
                               <Trash2 className="w-3.5 h-3.5 mr-2" />
-                              Delete
+                              {t("playlists.deletePlaylist")}
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
@@ -575,12 +576,12 @@ export default function Playlists() {
                     </div>
                     <p className="text-xs text-muted-foreground/70 mt-1.5 leading-relaxed line-clamp-2">{pl.description}</p>
                     <div className="flex items-center gap-3 mt-3 text-muted-foreground">
-                      <span className="flex items-center gap-1 text-2xs font-medium"><Music className="w-3 h-3" />{pl.tracks} tracks</span>
+                      <span className="flex items-center gap-1 text-2xs font-medium"><Music className="w-3 h-3" />{pl.tracks} {t("playlists.trackCount")}</span>
                       <span className="w-px h-3 bg-border" />
                       <span className="flex items-center gap-1 text-2xs font-medium"><Clock className="w-3 h-3" />{pl.duration}</span>
                     </div>
                     <div className="flex items-center justify-between mt-auto pt-3.5 border-t border-border/50 mt-3.5">
-                      <span className="text-2xs text-muted-foreground/60 font-medium">Updated {pl.updated}</span>
+                      <span className="text-2xs text-muted-foreground/60 font-medium">{t("playlists.updated")} {pl.updated}</span>
                       {dominantMood && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-brand-purple/12 text-brand-purple">#{dominantMood}</span>
                       )}
@@ -598,13 +599,13 @@ export default function Playlists() {
       <AlertDialog open={!!deleteTarget} onOpenChange={function (open) { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-foreground">Delete Playlist</AlertDialogTitle>
+            <AlertDialogTitle className="text-foreground">{t("playlists.deletePlaylist")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {"Are you sure you want to delete \"" + (deleteTarget?.name || "") + "\"? This action cannot be undone."}
+              {t("playlists.deleteConfirm", { name: deleteTarget?.name || "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="text-sm border border-border">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="text-sm border border-border">{t("playlists.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-sm"
               onClick={function () {
@@ -614,7 +615,7 @@ export default function Playlists() {
                 }
               }}
             >
-              Delete
+              {t("playlists.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -624,11 +625,11 @@ export default function Playlists() {
       <Dialog open={!!editTarget} onOpenChange={function (open) { if (!open) setEditTarget(null); }}>
         <DialogContent className="sm:max-w-md bg-card border-border">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Edit Playlist</DialogTitle>
+            <DialogTitle className="text-foreground">{t("playlists.editPlaylist")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">Name</label>
+              <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">{t("playlists.name")}</label>
               <input
                 type="text"
                 value={editName}
@@ -638,7 +639,7 @@ export default function Playlists() {
               />
             </div>
             <div>
-              <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">Description</label>
+              <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium block mb-1.5">{t("playlists.description")}</label>
               <textarea
                 value={editDesc}
                 onChange={function (e) { setEditDesc(e.target.value); }}
@@ -648,7 +649,7 @@ export default function Playlists() {
             </div>
           </div>
           <DialogFooter>
-            <button onClick={function () { setEditTarget(null); }} className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border border-border">Cancel</button>
+            <button onClick={function () { setEditTarget(null); }} className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border border-border">{t("playlists.cancel")}</button>
             <button
               onClick={function () {
                 if (editTarget && editName.trim()) {
@@ -658,7 +659,7 @@ export default function Playlists() {
               }}
               className="btn-brand px-5 py-2 rounded-lg text-sm font-semibold"
             >
-              Save
+              {t("playlists.save")}
             </button>
           </DialogFooter>
         </DialogContent>

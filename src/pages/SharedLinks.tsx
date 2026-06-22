@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Link2, Link as LinkIcon, Copy, Lock, Globe, Eye, EyeOff, BarChart3, ChevronDown, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/PageShell";
 import { EmptyState } from "@/components/EmptyState";
 import { useSharedLinks } from "@/contexts/SharedLinksContext";
@@ -90,6 +91,7 @@ function FilterSelect({ label, value, options, onChange }: {
 }
 
 export default function SharedLinks() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { sharedLinks, updateLinkStatus } = useSharedLinks();
   const { permissions } = useRole();
@@ -158,7 +160,7 @@ export default function SharedLinks() {
 
   const copyLink = (slug: string) => {
     navigator.clipboard.writeText(window.location.origin + "/share/" + slug);
-    toast.success("Link copied!");
+    toast.success(t("sharedLinks.linkCopied"));
   };
 
   const totalViews = sharedLinks.reduce((s, l) => s + (l.views || 0), 0);
@@ -179,7 +181,7 @@ export default function SharedLinks() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
               <Link2 className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Shared Links</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("sharedLinks.title")}</h1>
           </div>
           <div className="flex flex-wrap gap-2 mt-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
@@ -209,7 +211,7 @@ export default function SharedLinks() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by link name or track…"
+              placeholder={t("sharedLinks.searchPlaceholder")}
               className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
             />
             {search && (
@@ -218,8 +220,8 @@ export default function SharedLinks() {
               </button>
             )}
           </div>
-          <FilterSelect label="Share Type" value={shareTypeFilter} options={shareTypeOptions} onChange={setShareTypeFilter} />
-          <FilterSelect label="Status" value={statusFilter} options={statusOptions} onChange={setStatusFilter} />
+          <FilterSelect label={t("sharedLinks.columns.shareType")} value={shareTypeFilter} options={shareTypeOptions} onChange={setShareTypeFilter} />
+          <FilterSelect label={t("sharedLinks.filterStatus")} value={statusFilter} options={statusOptions} onChange={setStatusFilter} />
         </motion.div>
 
         {/* Desktop Table */}
@@ -227,9 +229,9 @@ export default function SharedLinks() {
           {sharedLinks.length === 0 ? (
             <EmptyState
               icon={LinkIcon}
-              title="No shared links yet"
-              description="Share your tracks with secure, branded links. Track who listens and how they engage."
-              actionLabel="Go to Tracks"
+              title={t("sharedLinks.noLinksYet")}
+              description={t("sharedLinks.noLinksDesc")}
+              actionLabel={t("sharedLinks.goToTracks")}
               onAction={() => navigate("/tracks")}
             />
           ) : filtered.length === 0 ? (
@@ -237,9 +239,9 @@ export default function SharedLinks() {
               <div className="w-14 h-14 rounded-2xl icon-brand flex items-center justify-center mb-4">
                 <Link2 className="w-6 h-6 text-primary" />
               </div>
-              <h2 className="text-lg font-semibold text-foreground">No shared links match</h2>
+              <h2 className="text-lg font-semibold text-foreground">{t("sharedLinks.noLinksMatch")}</h2>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-sm">
-                Try adjusting your search or filters.
+                {t("sharedLinks.adjustFilters")}
               </p>
             </div>
           ) : (
@@ -247,13 +249,13 @@ export default function SharedLinks() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/50">
-                    <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Link</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Share Type</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Link Type</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Engagement</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Created</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Status</th>
-                    <th className="text-right px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Actions</th>
+                    <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("sharedLinks.columns.link")}</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("sharedLinks.columns.shareType")}</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">{t("sharedLinks.columns.linkType")}</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("sharedLinks.columns.engagement")}</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">{t("sharedLinks.columns.created")}</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("sharedLinks.columns.status")}</th>
+                    <th className="text-right px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("sharedLinks.columns.actions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/30">
@@ -268,7 +270,7 @@ export default function SharedLinks() {
                             {link.shareType === "playlist" ? link.playlistName : link.trackTitle}
                           </div>
                           {isMultiMember && linkCreatedBy[link.id] && creatorProfiles[linkCreatedBy[link.id]!] && (
-                            <div className="text-[10px] text-muted-foreground/60 mt-0.5">Created by {creatorProfiles[linkCreatedBy[link.id]!]}</div>
+                            <div className="text-[10px] text-muted-foreground/60 mt-0.5">{t("sharedLinks.createdBy", { name: creatorProfiles[linkCreatedBy[link.id]!] })}</div>
                           )}
                         </td>
                         {/* Share Type */}
@@ -281,7 +283,7 @@ export default function SharedLinks() {
                         <td className="px-4 py-3.5 hidden lg:table-cell">
                           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                             {link.linkType === "public" ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                            {link.linkType === "public" ? "Public" : "Secured"}
+                            {link.linkType === "public" ? t("sharedLinks.linkTypePublic") : t("sharedLinks.linkTypeSecured")}
                           </span>
                         </td>
                         {/* Engagement compact */}
@@ -301,14 +303,14 @@ export default function SharedLinks() {
                         {/* Actions */}
                         <td className="px-5 py-3.5">
                           <div className="flex items-center justify-end gap-1.5">
-                            <button onClick={() => copyLink(link.linkSlug || link.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Copy Link">
+                            <button onClick={() => copyLink(link.linkSlug || link.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title={t("sharedLinks.copyLink")}>
                               <Copy className="w-3.5 h-3.5" />
                             </button>
                             {permissions.canCreateSharedLinks && (
                             <button
                               onClick={() => updateLinkStatus(link.id, status === "disabled" ? "active" : "disabled")}
                               className={"p-1.5 rounded-lg transition-colors " + (status === "disabled" ? "text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-400" : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive")}
-                              title={status === "disabled" ? "Enable link" : "Disable link"}
+                              title={status === "disabled" ? t("sharedLinks.enableLink") : t("sharedLinks.disableLink")}
                             >
                               {status === "disabled" ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                             </button>
@@ -316,7 +318,7 @@ export default function SharedLinks() {
                             <button
                               onClick={() => setActivityLinkId(link.id)}
                               className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                              title="View Activity"
+                              title={t("sharedLinks.viewActivity")}
                             >
                               <BarChart3 className="w-3.5 h-3.5" />
                             </button>
@@ -337,9 +339,9 @@ export default function SharedLinks() {
             <motion.div variants={item}>
               <EmptyState
                 icon={LinkIcon}
-                title="No shared links yet"
-                description="Share your tracks with secure, branded links. Track who listens and how they engage."
-                actionLabel="Go to Tracks"
+                title={t("sharedLinks.noLinksYet")}
+                description={t("sharedLinks.noLinksDesc")}
+                actionLabel={t("sharedLinks.goToTracks")}
                 onAction={() => navigate("/tracks")}
               />
             </motion.div>
@@ -349,9 +351,9 @@ export default function SharedLinks() {
                 <div className="w-14 h-14 rounded-2xl icon-brand flex items-center justify-center mb-4">
                   <Link2 className="w-6 h-6 text-primary" />
                 </div>
-                <h2 className="text-lg font-semibold text-foreground">No shared links match</h2>
+                <h2 className="text-lg font-semibold text-foreground">{t("sharedLinks.noLinksMatch")}</h2>
                 <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                  Try adjusting your search or filters.
+                  {t("sharedLinks.adjustFilters")}
                 </p>
               </div>
             </motion.div>
@@ -368,7 +370,7 @@ export default function SharedLinks() {
                         {link.shareType === "playlist" ? link.playlistName : link.trackTitle}
                       </div>
                       {isMultiMember && linkCreatedBy[link.id] && creatorProfiles[linkCreatedBy[link.id]!] && (
-                        <div className="text-[10px] text-muted-foreground/60 mt-0.5">Created by {creatorProfiles[linkCreatedBy[link.id]!]}</div>
+                        <div className="text-[10px] text-muted-foreground/60 mt-0.5">{t("sharedLinks.createdBy", { name: creatorProfiles[linkCreatedBy[link.id]!] })}</div>
                       )}
                     </div>
                     <span className={"inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium capitalize shrink-0 " + statusColors[status]}>
@@ -382,7 +384,7 @@ export default function SharedLinks() {
                     </span>
                     <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
                       {link.linkType === "public" ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                      {link.linkType === "public" ? "Public" : "Secured"}
+                      {link.linkType === "public" ? t("sharedLinks.linkTypePublic") : t("sharedLinks.linkTypeSecured")}
                     </span>
                   </div>
                   {/* Stats */}
@@ -391,14 +393,14 @@ export default function SharedLinks() {
                   </div>
                   {/* Actions */}
                   <div className="flex items-center gap-1 pt-1 border-t border-border/30">
-                    <button onClick={() => copyLink(link.linkSlug || link.id)} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Copy Link">
+                    <button onClick={() => copyLink(link.linkSlug || link.id)} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title={t("sharedLinks.copyLink")}>
                       <Copy className="w-4 h-4" />
                     </button>
                     {permissions.canCreateSharedLinks && (
                     <button
                       onClick={() => updateLinkStatus(link.id, status === "disabled" ? "active" : "disabled")}
                       className={"p-2 rounded-lg transition-colors " + (status === "disabled" ? "text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-400" : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive")}
-                      title={status === "disabled" ? "Enable link" : "Disable link"}
+                      title={status === "disabled" ? t("sharedLinks.enableLink") : t("sharedLinks.disableLink")}
                     >
                       {status === "disabled" ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                     </button>
@@ -406,7 +408,7 @@ export default function SharedLinks() {
                     <button
                       onClick={() => setActivityLinkId(link.id)}
                       className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                      title="View Activity"
+                      title={t("sharedLinks.viewActivity")}
                     >
                       <BarChart3 className="w-4 h-4" />
                     </button>
@@ -430,7 +432,7 @@ export default function SharedLinks() {
             >
               <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground">Link Activity</h3>
+                  <h3 className="text-sm font-semibold text-foreground">{t("sharedLinks.activityTitle")}</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">{activityLink.linkName}</p>
                 </div>
                 <button onClick={() => setActivityLinkId(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
@@ -439,7 +441,7 @@ export default function SharedLinks() {
               </div>
               <div className="max-h-96 overflow-y-auto">
                 {activityLink.downloads.length === 0 ? (
-                  <div className="py-12 text-center text-muted-foreground text-sm">No activity recorded yet</div>
+                  <div className="py-12 text-center text-muted-foreground text-sm">{t("sharedLinks.noActivity")}</div>
                 ) : (
                   <div className="divide-y divide-border">
                     {activityLink.downloads.map((dl) => (

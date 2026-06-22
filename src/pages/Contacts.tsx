@@ -218,15 +218,15 @@ export default function Contacts() {
       });
       if (error) {
         console.error("Error deleting contact:", error);
-        toast.error("Failed to delete contact");
+        toast.error(t("contacts.failedToDeleteContact"));
         return;
       }
-      toast.success("Contact deleted");
+      toast.success(t("contacts.contactDeleted"));
       setDeleteTarget(null);
       await refreshContacts();
     } catch (err) {
       console.error("Unexpected error deleting contact:", err);
-      toast.error("Failed to delete contact");
+      toast.error(t("contacts.failedToDeleteContact"));
     } finally {
       setIsDeleting(false);
     }
@@ -495,10 +495,10 @@ export default function Contacts() {
         workspaceName: activeWorkspace?.name || "Workspace",
         displayRoles: roles,
       });
-      toast.success("Contact card downloaded");
+      toast.success(t("contacts.contactCardDownloaded"));
     } catch (err) {
       console.error("Failed to generate contact card PDF", err);
-      toast.error("Could not generate PDF");
+      toast.error(t("contacts.couldNotGeneratePdf"));
     }
   };
 
@@ -511,13 +511,13 @@ export default function Contacts() {
             onClick={() => setActiveTab("contacts")}
             className={"px-4 py-2 rounded-lg text-sm font-medium transition-all " + (activeTab === "contacts" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
           >
-            Contacts
+            {t("contacts.title")}
           </button>
           <button
             onClick={() => setActiveTab("aliases")}
             className={"px-4 py-2 rounded-lg text-sm font-medium transition-all " + (activeTab === "aliases" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
           >
-            Artist Aliases
+            {t("contacts.artistAliases")}
           </button>
         </div>
       </div>
@@ -529,7 +529,7 @@ export default function Contacts() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
                 <Users className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Artist Aliases</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("contacts.artistAliases")}</h1>
             </div>
           </motion.div>
           <motion.div variants={item}>
@@ -567,7 +567,7 @@ export default function Contacts() {
                 className="px-5 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 shrink-0 min-h-[44px] bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 hover:from-orange-600 hover:via-pink-600 hover:to-purple-600 text-white transition-all"
               >
                 <UserPlus className="w-4 h-4" />
-                Add Contact
+                {t("contacts.addContact")}
               </button>
               {/* Export button */}
               <div className="relative" ref={exportRef}>
@@ -675,7 +675,7 @@ export default function Contacts() {
               type="text"
               value={countryFilter}
               onChange={(e) => setCountryFilter(e.target.value)}
-              placeholder="Country…"
+              placeholder={t("contacts.countryPlaceholder")}
               className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
             />
             {countryFilter && (
@@ -690,7 +690,7 @@ export default function Contacts() {
               type="text"
               value={cityFilter}
               onChange={(e) => setCityFilter(e.target.value)}
-              placeholder="City…"
+              placeholder={t("contacts.cityPlaceholder")}
               className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
             />
             {cityFilter && (
@@ -706,9 +706,9 @@ export default function Contacts() {
           {contacts.length === 0 ? (
             <EmptyState
               icon={Users}
-              title="No contacts yet"
-              description="Your contacts are built automatically when someone listens to your shared links or scans your studio QR code. You can also add them manually."
-              actionLabel="Add Contact"
+              title={t("contacts.noContactsYet")}
+              description={t("contacts.noContactsDesc")}
+              actionLabel={t("contacts.addContact")}
               onAction={() => setAddContactOpen(true)}
             />
           ) : filtered.length === 0 ? (
@@ -727,11 +727,11 @@ export default function Contacts() {
                 <thead>
                   <tr className="border-b border-border/50">
                     <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.name")}</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Email</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Phone</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.email")}</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.phone")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.role")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.organization")}</th>
-                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Collab</th>
+                    <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.collab")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.engagement")}</th>
                     <th className="text-left px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t("contacts.lastInteraction")}</th>
                     <th className="text-right px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground font-medium"></th>
@@ -818,7 +818,7 @@ export default function Contacts() {
                       {/* Engagement: plays (principal) + downloads (secondaire) */}
                       <td className="px-4 py-3.5">
                         {c.totalPlays === 0 && c.totalDownloads === 0 && c.tracksEngaged === 0 ? (
-                          <span className="text-xs text-muted-foreground/60">No activity yet</span>
+                          <span className="text-xs text-muted-foreground/60">{t("contacts.noActivityYet")}</span>
                         ) : (
                           <span
                             className="text-xs text-muted-foreground"
@@ -853,7 +853,7 @@ export default function Contacts() {
                               setAddContactOpen(true);
                             }}
                             className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
-                            title="Edit contact"
+                            title={t("contacts.editContact")}
                             aria-label="Edit contact"
                           >
                             <Pencil className="w-3.5 h-3.5" />
@@ -865,7 +865,7 @@ export default function Contacts() {
                                 setDeleteTarget({ id: c.id, name: (c.firstName + " " + c.lastName).trim() });
                               }}
                               className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                              title="Delete contact"
+                              title={t("contacts.deleteContact")}
                               aria-label="Delete contact"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -887,8 +887,8 @@ export default function Contacts() {
             <motion.div variants={item}>
               <EmptyState
                 icon={Users}
-                title="No contacts yet"
-                description="Your contacts are built automatically when someone listens to your shared links or scans your studio QR code. You can also add them manually."
+                title={t("contacts.noContactsYet")}
+                description={t("contacts.noContactsDesc")}
               />
             </motion.div>
           ) : filtered.length === 0 ? (
@@ -965,7 +965,7 @@ export default function Contacts() {
                 {/* Stats + last interaction */}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   {c.totalPlays === 0 && c.totalDownloads === 0 && c.tracksEngaged === 0 ? (
-                    <span className="text-muted-foreground/60">No activity yet</span>
+                    <span className="text-muted-foreground/60">{t("contacts.noActivityYet")}</span>
                   ) : (
                     <span title={`Sur ${c.tracksEngaged} ${c.tracksEngaged === 1 ? "track distinct" : "tracks distincts"}`}>
                       <span className="text-foreground">{c.totalPlays} {c.totalPlays === 1 ? "play" : "plays"}</span> · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
@@ -993,7 +993,7 @@ export default function Contacts() {
                         setAddContactOpen(true);
                       }}
                       className="flex items-center justify-center w-11 h-11 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
-                      title="Edit contact"
+                      title={t("contacts.editContact")}
                       aria-label="Edit contact"
                     >
                       <Pencil className="w-4 h-4" />
@@ -1005,7 +1005,7 @@ export default function Contacts() {
                         setDeleteTarget({ id: c.id, name: (c.firstName + " " + c.lastName).trim() });
                       }}
                       className="flex items-center justify-center w-11 h-11 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      title="Delete contact"
+                      title={t("contacts.deleteContact")}
                       aria-label="Delete contact"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1067,14 +1067,14 @@ export default function Contacts() {
       >
         <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-foreground">Delete contact</AlertDialogTitle>
+            <AlertDialogTitle className="text-foreground">{t("contacts.deleteContact")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this contact? This action cannot be undone.
+              {t("contacts.deleteContactConfirm")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting} className="text-sm border border-border">
-              Cancel
+              {t("contacts.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               disabled={isDeleting}
@@ -1087,10 +1087,10 @@ export default function Contacts() {
               {isDeleting ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                  Deleting…
+                  {t("contacts.deleting")}
                 </>
               ) : (
-                "Delete"
+                t("contacts.delete")
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

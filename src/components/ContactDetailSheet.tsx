@@ -1,4 +1,5 @@
 import { useState, useEffect, type ComponentType } from "react";
+import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Pencil, Send, Trash2, Mail, MapPin, Briefcase, Music2, Activity, ChevronRight, ChevronDown, ChevronUp, Download } from "lucide-react";
 import type { Contact } from "@/contexts/ContactsContext";
@@ -71,6 +72,7 @@ export function ContactDetailSheet({
   contact, onClose, onEdit, onPitch, onDelete, onDownload, isAdmin,
   contactTracks, displayRoles, onTrackClick, formatLastInteraction,
 }: ContactDetailSheetProps) {
+  const { t } = useTranslation();
   const [showAllTracks, setShowAllTracks] = useState(false);
   const contactId = contact?.id ?? "";
   useEffect(() => { setShowAllTracks(false); }, [contactId]);
@@ -106,29 +108,29 @@ export function ContactDetailSheet({
 
         {/* Contact section */}
         <div className="p-5 border-b border-border/40 space-y-3">
-          <SectionHeader icon={Mail} label="Contact" />
-          {c.email && <Row label="Email">{c.email}</Row>}
-          {c.phone?.trim() && <Row label="Phone"><span className="font-mono">{c.phone}</span></Row>}
-          {locationStr && <Row label="Location"><span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3 text-muted-foreground" />{locationStr}</span></Row>}
+          <SectionHeader icon={Mail} label={t("contactDetail.contact")} />
+          {c.email && <Row label={t("contactDetail.email")}>{c.email}</Row>}
+          {c.phone?.trim() && <Row label={t("contactDetail.phone")}><span className="font-mono">{c.phone}</span></Row>}
+          {locationStr && <Row label={t("contactDetail.location")}><span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3 text-muted-foreground" />{locationStr}</span></Row>}
         </div>
 
         {/* Industry section — only if at least one industry field is set */}
         {hasIndustry && (
           <div className="p-5 border-b border-border/40 space-y-3">
-            <SectionHeader icon={Briefcase} label="Industry" />
-            {displayRoles.length > 0 && <Row label="Roles"><Chips items={displayRoles} /></Row>}
-            {c.organization && <Row label="Organization">{c.organization}</Row>}
-            {publisherChips.length > 0 && <Row label="Publisher"><Chips items={publisherChips} /></Row>}
-            {c.ipi?.trim() && <Row label="IPI"><span className="font-mono">{c.ipi}</span></Row>}
-            {proChips.length > 0 && <Row label="PROs"><Chips items={proChips} /></Row>}
+            <SectionHeader icon={Briefcase} label={t("contactDetail.industry")} />
+            {displayRoles.length > 0 && <Row label={t("contactDetail.roles")}><Chips items={displayRoles} /></Row>}
+            {c.organization && <Row label={t("contactDetail.organization")}>{c.organization}</Row>}
+            {publisherChips.length > 0 && <Row label={t("contactDetail.publisher")}><Chips items={publisherChips} /></Row>}
+            {c.ipi?.trim() && <Row label={t("contactDetail.ipi")}><span className="font-mono">{c.ipi}</span></Row>}
+            {proChips.length > 0 && <Row label={t("contactDetail.pros")}><Chips items={proChips} /></Row>}
           </div>
         )}
 
         {/* Collaborations section */}
         <div className="p-5 border-b border-border/40 space-y-3">
-          <SectionHeader icon={Music2} label={`Collaborations (${contactTracks.length})`} />
+          <SectionHeader icon={Music2} label={`${t("contactDetail.collaborations")} (${contactTracks.length})`} />
           {contactTracks.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic">No catalog appearances yet.</p>
+            <p className="text-xs text-muted-foreground italic">{t("contactDetail.noCollabs")}</p>
           ) : (() => {
             const needsCollapse = contactTracks.length > COLLAB_PREVIEW_LIMIT;
             const visible = needsCollapse && !showAllTracks
@@ -140,20 +142,20 @@ export function ContactDetailSheet({
             return (
               <>
                 <div className={listClass}>
-                  {visible.map((t) => (
+                  {visible.map((track) => (
                     <button
-                      key={t.id}
-                      onClick={() => onTrackClick(t.id)}
+                      key={track.id}
+                      onClick={() => onTrackClick(track.id)}
                       className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-left group"
                     >
-                      {t.coverUrl ? (
-                        <img src={t.coverUrl} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
+                      {track.coverUrl ? (
+                        <img src={track.coverUrl} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
                       ) : (
                         <div className="w-8 h-8 rounded bg-gradient-to-br from-brand-orange via-brand-pink to-brand-purple shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{t.title}</p>
-                        {t.artist && <p className="text-xs text-muted-foreground truncate">{t.artist}</p>}
+                        <p className="text-sm font-medium text-foreground truncate">{track.title}</p>
+                        {track.artist && <p className="text-xs text-muted-foreground truncate">{track.artist}</p>}
                       </div>
                       <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
                     </button>
@@ -167,12 +169,12 @@ export function ContactDetailSheet({
                     {showAllTracks ? (
                       <>
                         <ChevronUp className="w-3.5 h-3.5" />
-                        Show less
+                        {t("contactDetail.showLess")}
                       </>
                     ) : (
                       <>
                         <ChevronDown className="w-3.5 h-3.5" />
-                        View all {contactTracks.length} tracks
+                        {t("contactDetail.viewAllTracks", { count: contactTracks.length })}
                       </>
                     )}
                   </button>
@@ -184,19 +186,19 @@ export function ContactDetailSheet({
 
         {/* Engagement section */}
         <div className="p-5 border-b border-border/40 space-y-2">
-          <SectionHeader icon={Activity} label="Engagement" />
+          <SectionHeader icon={Activity} label={t("contactDetail.engagement")} />
           {c.totalPlays === 0 && c.totalDownloads === 0 && c.tracksEngaged === 0 ? (
-            <p className="text-sm text-muted-foreground">No activity yet</p>
+            <p className="text-sm text-muted-foreground">{t("contactDetail.noActivity")}</p>
           ) : (
             <>
               <p className="text-sm text-foreground">
-                {c.totalPlays} {c.totalPlays === 1 ? "play" : "plays"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
+                {c.totalPlays} {c.totalPlays === 1 ? t("contactDetail.play") : t("contactDetail.plays")} · {c.totalDownloads} {c.totalDownloads === 1 ? t("contactDetail.download") : t("contactDetail.downloads")}
               </p>
               <p className="text-xs text-muted-foreground">
-                Sur {c.tracksEngaged} {c.tracksEngaged === 1 ? "track distinct" : "tracks distincts"}
+                {t("contactDetail.acrossTracksEngaged", { count: c.tracksEngaged })}
               </p>
               {c.lastInteraction && (
-                <p className="text-xs text-muted-foreground">Last interaction: {formatLastInteraction(c.lastInteraction)}</p>
+                <p className="text-xs text-muted-foreground">{t("contactDetail.lastInteraction")}: {formatLastInteraction(c.lastInteraction)}</p>
               )}
             </>
           )}
@@ -208,7 +210,7 @@ export function ContactDetailSheet({
             onClick={() => onDownload(c, displayRoles)}
             className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
             aria-label="Download contact card"
-            title="Download contact card (PDF)"
+            title={t("contactDetail.downloadCardTitle")}
           >
             <Download className="w-4 h-4" />
           </button>
@@ -217,21 +219,21 @@ export function ContactDetailSheet({
             className="flex-1 min-w-[90px] inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-secondary transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
-            Edit
+            {t("contactDetail.edit")}
           </button>
           <button
             onClick={() => onPitch(c)}
             className="flex-1 min-w-[130px] inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-sm font-semibold btn-brand"
           >
             <Send className="w-3.5 h-3.5" />
-            Send Pitch
+            {t("contactDetail.sendPitch")}
           </button>
           {isAdmin && (
             <button
               onClick={() => onDelete(c)}
               className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
               aria-label="Delete contact"
-              title="Delete contact"
+              title={t("contactDetail.deleteContact")}
             >
               <Trash2 className="w-4 h-4" />
             </button>

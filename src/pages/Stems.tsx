@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Upload, Play, Pause, Download, ExternalLink, Layers, ChevronDown, X, SlidersHorizontal } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
@@ -123,6 +124,7 @@ export default function Stems() {
 }
 
 function StemsInner() {
+  const { t } = useTranslation();
   const { tracks } = useTrack();
   const navigate = useNavigate();
   const { currentTrack, isPlaying: globalIsPlaying, togglePlay, playTrack } = useAudioPlayer();
@@ -369,16 +371,16 @@ function StemsInner() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
                 <Layers className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Stems</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("stems.title")}</h1>
             </div>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
                 <Layers className="w-3 h-3" />
-                {allStems.length + " stem" + (allStems.length !== 1 ? "s" : "")}
+                {allStems.length + " " + t("stems.stemsWord")}
               </span>
               <span className="text-muted-foreground/40 text-xs">·</span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
-                {tracks.filter((t) => t.stems.length > 0).length + " tracks with stems"}
+                {tracks.filter((trk) => trk.stems.length > 0).length + " " + t("stems.tracksWithStems")}
               </span>
               <span className="text-muted-foreground/40 text-xs">·</span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/60 border border-border/50 text-xs font-medium text-muted-foreground">
@@ -388,7 +390,7 @@ function StemsInner() {
                     return acc + (isNaN(num) ? 0 : num);
                   }, 0);
                   return totalMB >= 1000 ? (totalMB / 1000).toFixed(1) + " GB" : totalMB.toFixed(1) + " MB";
-                })() + " total"}
+                })() + " " + t("stems.total")}
               </span>
             </div>
           </div>
@@ -397,7 +399,7 @@ function StemsInner() {
             className="btn-brand px-5 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 shrink-0 min-h-[44px]"
           >
             <Upload className="w-4 h-4" />
-            Upload Stems
+            {t("stems.uploadStems")}
           </button>
         </motion.div>
 
@@ -410,7 +412,7 @@ function StemsInner() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by stem name, track, artist, genre…"
+                placeholder={t("stems.searchPlaceholder")}
                 className="bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
               />
               {search && (
@@ -428,7 +430,7 @@ function StemsInner() {
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              Filters
+              {t("stems.filters.label")}
               {activeFilterCount > 0 && (
                 <span className="ml-1 w-5 h-5 rounded-full text-2xs flex items-center justify-center font-bold btn-brand" style={{ boxShadow: "none" }}>
                   {activeFilterCount}
@@ -449,19 +451,19 @@ function StemsInner() {
                 <div className="card-premium p-5" style={{ overflow: "visible" }}>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                     <FilterSelect
-                      label="Track"
+                      label={t("stems.filters.track")}
                       value={trackFilter}
                       onChange={setTrackFilter}
                       options={[{ value: "all", label: "All Tracks" }, ...uniqueTracks.map((t) => ({ value: t, label: t }))]}
                     />
                     <FilterSelect
-                      label="Artist"
+                      label={t("stems.filters.artist")}
                       value={artistFilter}
                       onChange={setArtistFilter}
                       options={[{ value: "all", label: "All Artists" }, ...uniqueArtists.map((a) => ({ value: a, label: a }))]}
                     />
                     <FilterSelect
-                      label="Stem Type"
+                      label={t("stems.filters.stemType")}
                       value={typeFilter}
                       onChange={setTypeFilter}
                       options={[
@@ -471,26 +473,26 @@ function StemsInner() {
                       ]}
                     />
                     <FilterSelect
-                      label="Genre"
+                      label={t("stems.filters.genre")}
                       value={genreFilter}
                       onChange={setGenreFilter}
                       options={[{ value: "all", label: "All Genres" }, ...uniqueGenres.map((g) => ({ value: g, label: g }))]}
                     />
                     <FilterSelect
-                      label="Key"
+                      label={t("stems.filters.key")}
                       value={keyFilter}
                       onChange={setKeyFilter}
                       options={[{ value: "all", label: "All Keys" }, ...uniqueKeys.map((k) => ({ value: k, label: k }))]}
                     />
                     {/* BPM Range */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">BPM Range</label>
+                      <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("stems.bpmRange")}</label>
                       <div className="flex items-center gap-1.5">
                         <input
                           type="number"
                           value={bpmMin}
                           onChange={(e) => setBpmMin(e.target.value)}
-                          placeholder="Min"
+                          placeholder={t("stems.minPlaceholder")}
                           className="w-full h-10 px-3 rounded-xl bg-card border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-colors font-mono placeholder:text-muted-foreground"
                         />
                         <span className="text-muted-foreground text-xs">–</span>
@@ -498,7 +500,7 @@ function StemsInner() {
                           type="number"
                           value={bpmMax}
                           onChange={(e) => setBpmMax(e.target.value)}
-                          placeholder="Max"
+                          placeholder={t("stems.maxPlaceholder")}
                           className="w-full h-10 px-3 rounded-xl bg-card border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-colors font-mono placeholder:text-muted-foreground"
                         />
                       </div>
@@ -506,24 +508,24 @@ function StemsInner() {
                   </div>
                   {/* Tag Filters row */}
                   <div className="mt-5 pt-5 border-t border-border/40">
-                    <p className="text-xs font-medium text-muted-foreground mb-3">Tag Filters</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-3">{t("stems.tagFilters")}</p>
                     <div className="flex flex-wrap gap-2">
                       <TagFilterDropdown
-                        label="Instruments"
+                        label={t("stems.filters.instruments")}
                         color="pink"
                         options={INSTRUMENTS}
                         values={instrumentsFilter}
                         onChange={setInstrumentsFilter}
                       />
                       <TagFilterDropdown
-                        label="Lyric Themes"
+                        label={t("stems.filters.lyricThemes")}
                         color="purple"
                         options={LYRIC_THEMES}
                         values={lyricThemesFilter}
                         onChange={setLyricThemesFilter}
                       />
                       <TagFilterDropdown
-                        label="Mood & Feel"
+                        label={t("stems.filters.moodFeel")}
                         color="orange"
                         options={MOOD_FEEL}
                         values={moodFeelFilter}
@@ -531,7 +533,7 @@ function StemsInner() {
                       />
                       <TempoToggle value={tempoFilter} onChange={setTempoFilter} options={TEMPO_DESCRIPTORS} />
                       <TagFilterDropdown
-                        label="Sync Tags"
+                        label={t("stems.filters.syncTags")}
                         color="green"
                         options={SYNC_TAGS}
                         values={syncTagsFilter}
@@ -546,7 +548,7 @@ function StemsInner() {
                         className="flex items-center gap-1.5 text-xs font-semibold text-brand-orange hover:text-brand-pink transition-colors"
                       >
                         <X className="w-3 h-3" />
-                        Clear All
+                        {t("stems.clearAll")}
                       </button>
                     </div>
                   )}
@@ -558,7 +560,7 @@ function StemsInner() {
           {/* Active filter tags (when panel closed) */}
           {activeFilterCount > 0 && !showFilters && (
             <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-xs text-muted-foreground mr-1 font-medium">Active filters:</span>
+              <span className="text-xs text-muted-foreground mr-1 font-medium">{t("stems.activeFilters")}</span>
               <AnimatePresence>
                 {trackFilter !== "all" && <FilterTag key="track" label={"Track: " + trackFilter} onRemove={() => setTrackFilter("all")} />}
                 {artistFilter !== "all" && <FilterTag key="artist" label={"Artist: " + artistFilter} onRemove={() => setArtistFilter("all")} />}
@@ -574,7 +576,7 @@ function StemsInner() {
               </AnimatePresence>
               <button onClick={clearAllFilters} className="text-xs text-brand-orange hover:text-brand-pink ml-1.5 font-semibold transition-colors flex items-center gap-1">
                 <X className="w-3 h-3" />
-                Clear
+                {t("stems.clear")}
               </button>
             </div>
           )}
@@ -584,7 +586,7 @@ function StemsInner() {
         {filtered.length !== allStems.length && (
           <motion.div variants={item} className="flex items-center gap-4">
             <span className="text-xs text-muted-foreground">
-              Showing <span className="font-semibold text-foreground">{filtered.length}</span> of {allStems.length} stems
+              {t("stems.showing")} <span className="font-semibold text-foreground">{filtered.length}</span> {t("stems.of")} {allStems.length} {t("stems.stemsWord")}
             </span>
           </motion.div>
         )}
@@ -624,29 +626,29 @@ function StemsInner() {
                           {stem.trackTitle}
                         </button>
                         <span className={"inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide " + typeClass}>
-                          {stem.isPack ? "Stems Pack" : stem.type}
+                          {stem.isPack ? t("stems.stemsPack") : stem.type}
                         </span>
                       </div>
                       {details && <p className="text-[10px] text-muted-foreground mt-1.5">{details}</p>}
                       {stem.isPack && stem.stemCount && (
-                        <p className="text-[10px] text-muted-foreground">{stem.stemCount} stems included</p>
+                        <p className="text-[10px] text-muted-foreground">{stem.stemCount} {t("stems.stemsIncluded")}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0">
                       {!stem.isPack && (
-                        <button onClick={() => handlePlayStem(stem)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Play">
+                        <button onClick={() => handlePlayStem(stem)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={t("stems.play")}>
                           {currentTrack?.id === stemNumericId(stem.id) && globalIsPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                         </button>
                       )}
                       {!stem.isPack && (
-                        <button onClick={() => handleDownloadStem(stem)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Download">
+                        <button onClick={() => handleDownloadStem(stem)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title={t("stems.download")}>
                           <Download className="w-3.5 h-3.5" />
                         </button>
                       )}
                       <button
                         onClick={() => navigate("/track/" + stem.trackUuid)}
                         className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                        title="Open Track"
+                        title={t("stems.openTrack")}
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </button>
@@ -662,13 +664,13 @@ function StemsInner() {
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Stem</th>
-                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Track</th>
-                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Type</th>
-                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Details</th>
-                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">Size</th>
-                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden xl:table-cell">Uploaded</th>
-                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium text-right">Actions</th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{t("stems.columns.stem")}</th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{t("stems.columns.track")}</th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{t("stems.columns.type")}</th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">{t("stems.columns.details")}</th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden lg:table-cell">{t("stems.columns.size")}</th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium hidden xl:table-cell">{t("stems.columns.uploaded")}</th>
+                      <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium text-right">{t("stems.columns.actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -699,7 +701,7 @@ function StemsInner() {
                                 <span className={"text-xs font-semibold truncate max-w-[200px] " + (stem.isPack ? "text-brand-orange" : "text-foreground")}>{stem.fileName}</span>
                                 <span className="text-xs text-muted-foreground truncate max-w-[160px]">{stem.trackArtist}</span>
                                 {stem.isPack && stem.stemCount && (
-                                  <span className="text-[10px] text-muted-foreground">{stem.stemCount} stems included</span>
+                                  <span className="text-[10px] text-muted-foreground">{stem.stemCount} {t("stems.stemsIncluded")}</span>
                                 )}
                               </div>
                             </div>
@@ -716,7 +718,7 @@ function StemsInner() {
                           {/* Type */}
                           <td className="px-4 py-3">
                             <span className={"inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide " + typeClass}>
-                              {stem.isPack ? "Stems Pack" : stem.type}
+                              {stem.isPack ? t("stems.stemsPack") : stem.type}
                             </span>
                           </td>
                           {/* Details (BPM · Key · Genre) */}
@@ -737,19 +739,19 @@ function StemsInner() {
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-1">
                               {!stem.isPack && (
-                                <button onClick={() => handlePlayStem(stem)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title="Play">
+                                <button onClick={() => handlePlayStem(stem)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title={t("stems.play")}>
                                   {currentTrack?.id === stemNumericId(stem.id) && globalIsPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                                 </button>
                               )}
                               {!stem.isPack && (
-                                <button onClick={() => handleDownloadStem(stem)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title="Download">
+                                <button onClick={() => handleDownloadStem(stem)} className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100" title={t("stems.download")}>
                                   <Download className="w-3.5 h-3.5" />
                                 </button>
                               )}
                               <button
                                 onClick={() => navigate("/track/" + stem.trackUuid)}
                                 className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
-                                title="Open Track"
+                                title={t("stems.openTrack")}
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </button>
@@ -769,7 +771,7 @@ function StemsInner() {
                   borderImage: "linear-gradient(90deg, hsl(24 100% 55% / 0.1), hsl(330 80% 60% / 0.06), transparent) 1",
                 }}
               >
-                <span>{filtered.length} stem{filtered.length !== 1 ? "s" : ""}</span>
+                <span>{filtered.length} {t("stems.stemsWord")}</span>
                 <span className="text-2xs text-muted-foreground/50">TRAKALOG Stems</span>
               </div>
             </motion.div>
@@ -780,12 +782,12 @@ function StemsInner() {
               <Layers className="w-6 h-6 text-brand-orange" />
             </div>
             <h2 className="text-lg font-semibold text-foreground tracking-tight">
-              {allStems.length === 0 ? "No stems yet" : "No stems match your search"}
+              {allStems.length === 0 ? t("stems.noStemsYet") : t("stems.noStemsMatch")}
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 max-w-sm">
               {allStems.length === 0
-                ? "Upload stems to your tracks to see them here."
-                : "Try adjusting your search or filters."}
+                ? t("stems.noStemsYetHint")
+                : t("stems.noStemsMatchHint")}
             </p>
           </motion.div>
         )}
