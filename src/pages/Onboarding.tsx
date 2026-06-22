@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +23,7 @@ const ROLES = [
 ];
 
 export default function Onboarding() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -211,19 +213,19 @@ export default function Onboarding() {
             >
               {/* Title */}
               <div className="text-center mb-6">
-                <h2 className="text-3xl font-bold text-foreground">Welcome to Trakalog ✦</h2>
-                <p className="text-muted-foreground text-sm mt-2">Let's set up your personal workspace in seconds</p>
+                <h2 className="text-3xl font-bold text-foreground">{t("onboardingFlow.title")}</h2>
+                <p className="text-muted-foreground text-sm mt-2">{t("onboardingFlow.subtitle")}</p>
               </div>
 
               {/* Form card */}
               <div className="card-premium p-6">
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="onb-name">Your Name</Label>
+                    <Label htmlFor="onb-name">{t("onboardingFlow.labelName")}</Label>
                     <Input
                       id="onb-name"
                       type="text"
-                      placeholder="Your name"
+                      placeholder={t("onboardingFlow.placeholderName")}
                       value={name}
                       onChange={(e) => handleNameChange(e.target.value)}
                       required
@@ -232,11 +234,11 @@ export default function Onboarding() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="onb-ws">Workspace Name</Label>
+                    <Label htmlFor="onb-ws">{t("onboardingFlow.labelWorkspace")}</Label>
                     <Input
                       id="onb-ws"
                       type="text"
-                      placeholder="My Workspace"
+                      placeholder={t("onboardingFlow.placeholderWorkspace")}
                       value={workspaceName}
                       onChange={(e) => handleWsNameChange(e.target.value)}
                       required
@@ -245,7 +247,7 @@ export default function Onboarding() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Your Role <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                    <Label>{t("onboardingFlow.labelRole")} <span className="text-muted-foreground font-normal">({t("onboardingFlow.optional")})</span></Label>
                     <div className="relative">
                       <button
                         type="button"
@@ -253,7 +255,7 @@ export default function Onboarding() {
                         className="flex items-center justify-between w-full h-11 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       >
                         <span className={role ? "text-foreground" : "text-muted-foreground"}>
-                          {role || "Select a role"}
+                          {role || t("onboardingFlow.selectRole")}
                         </span>
                         <ChevronDown className="w-4 h-4 text-muted-foreground" />
                       </button>
@@ -282,10 +284,10 @@ export default function Onboarding() {
                     {submitting ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Creating...
+                        {t("onboardingFlow.creating")}
                       </>
                     ) : (
-                      "Create my Trakalog"
+                      t("onboardingFlow.submit")
                     )}
                   </button>
                 </form>
@@ -315,8 +317,8 @@ export default function Onboarding() {
                     <Check className="w-8 h-8 text-emerald-400" />
                   </motion.div>
 
-                  <h2 className="text-2xl font-bold text-foreground">Your Trakalog is ready! 🎉</h2>
-                  <p className="text-muted-foreground text-sm mt-2">You're all set to manage your music catalog</p>
+                  <h2 className="text-2xl font-bold text-foreground">{t("onboardingFlow.successTitle")}</h2>
+                  <p className="text-muted-foreground text-sm mt-2">{t("onboardingFlow.successSubtitle")}</p>
 
                   <AnimatePresence>
                     {showButton && (
@@ -327,7 +329,7 @@ export default function Onboarding() {
                         onClick={handleGoToDashboard}
                         className="btn-brand w-full h-12 rounded-lg text-sm font-semibold mt-8"
                       >
-                        Go to Dashboard
+                        {t("onboardingFlow.goToDashboard")}
                       </motion.button>
                     )}
                   </AnimatePresence>

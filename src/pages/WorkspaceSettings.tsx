@@ -59,13 +59,15 @@ const fadeUp = {
 
 type WsSection = "info" | "branding" | "members" | "catalogSharing" | "leakTracing";
 
-const wsSections: { id: WsSection; label: string; icon: React.ElementType; desc: string }[] = [
-  { id: "info", label: "Info", icon: Building2, desc: "Workspace name & details" },
-  { id: "branding", label: "Branding", icon: Palette, desc: "Logo, hero & colors" },
-  { id: "members", label: "Members", icon: Users, desc: "Team access & roles" },
-  { id: "catalogSharing", label: "Catalog Sharing", icon: ArrowRightLeft, desc: "Share catalogs between workspaces" },
-  { id: "leakTracing", label: "Leak Tracing", icon: Search, desc: "Detect watermarks in leaked audio" },
-];
+function getWsSections(t: (key: string) => string): { id: WsSection; label: string; icon: React.ElementType; desc: string }[] {
+  return [
+    { id: "info", label: t("workspaceSettings.nav.info"), icon: Building2, desc: t("workspaceSettings.nav.infoDesc") },
+    { id: "branding", label: t("workspaceSettings.nav.branding"), icon: Palette, desc: t("workspaceSettings.nav.brandingDesc") },
+    { id: "members", label: t("workspaceSettings.nav.members"), icon: Users, desc: t("workspaceSettings.nav.membersDesc") },
+    { id: "catalogSharing", label: t("workspaceSettings.nav.catalogSharing"), icon: ArrowRightLeft, desc: t("workspaceSettings.nav.catalogSharingDesc") },
+    { id: "leakTracing", label: t("workspaceSettings.nav.leakTracing"), icon: Search, desc: t("workspaceSettings.nav.leakTracingDesc") },
+  ];
+}
 
 /* ═══════════════════════════════════════════════════════
    SHARED PRIMITIVES (same as SettingsPage)
@@ -131,6 +133,7 @@ function slugify(name: string): string {
 }
 
 function InfoSection() {
+  const { t } = useTranslation();
   const { activeWorkspace, refreshWorkspaces } = useWorkspace();
   const { user } = useAuth();
   const [name, setName] = useState(activeWorkspace?.name || "");
@@ -163,18 +166,18 @@ function InfoSection() {
       setSlug(newSlug);
     }
 
-    toast.success("Workspace name saved");
+    toast.success(t("workspaceSettings.toasts.workspaceNameSaved"));
     await refreshWorkspaces();
   };
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title="General" subtitle="Basic workspace information" icon={Building2} onSave={handleSave} saveLabel="Save Changes">
+      <SectionBlock title={t("workspaceSettings.general")} subtitle={t("workspaceSettings.generalSubtitle")} icon={Building2} onSave={handleSave} saveLabel="Save Changes">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <FieldGroup label="Workspace Name" hint="The name visible to your team and on shared links">
+          <FieldGroup label={t("workspaceSettings.workspaceName")} hint="The name visible to your team and on shared links">
             <PremiumInput value={name} placeholder="Your workspace" onChange={setName} />
           </FieldGroup>
-          <FieldGroup label="Workspace URL" hint="trakalog.app/w/">
+          <FieldGroup label={t("workspaceSettings.workspaceUrl")} hint="trakalog.app/w/">
             <PremiumInput value={slug} placeholder="your-workspace" onChange={() => {}} prefix={<span className="text-[11px]">/w/</span>} readOnly />
           </FieldGroup>
         </div>
@@ -294,7 +297,7 @@ function BrandingSection() {
     if (error) { toast.error(error.message); return; }
     setHeroPosition(pos);
     setRepositioning(false);
-    toast.success("Hero position saved");
+    toast.success(t("workspaceSettings.toasts.heroPositionSaved"));
     await refreshWorkspaces();
   };
 
@@ -322,7 +325,7 @@ function BrandingSection() {
     });
     if (error) { toast.error(error.message); return; }
     setEditingFocal(false);
-    toast.success("Focal point saved");
+    toast.success(t("workspaceSettings.toasts.focalPointSaved"));
     await refreshWorkspaces();
   };
 
@@ -401,7 +404,7 @@ function BrandingSection() {
       _bio: bio || null,
     });
     if (error) toast.error(error.message);
-    else { toast.success("Brand color saved"); await refreshWorkspaces(); }
+    else { toast.success(t("workspaceSettings.toasts.brandColorSaved")); await refreshWorkspaces(); }
   };
 
   const handleSocialSave = async () => {
@@ -426,13 +429,13 @@ function BrandingSection() {
       _bio: bio || null,
     });
     if (error) toast.error(error.message);
-    else { toast.success("Social links saved"); await refreshWorkspaces(); }
+    else { toast.success(t("workspaceSettings.toasts.socialLinksSaved")); await refreshWorkspaces(); }
   };
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
       {/* Background Image */}
-      <SectionBlock title="Background Image" subtitle="Full-screen background for your shared links" icon={Image}>
+      <SectionBlock title={t("workspaceSettings.backgroundImage")} subtitle={t("workspaceSettings.backgroundImageSubtitle")} icon={Image}>
         <FieldGroup label="Background Image" hint="Full-screen background shown to recipients on your shared links. Recommended: high-resolution photo (min 1920x1080px). The image will be darkened for readability.">
           {heroUrl ? (
             <div className="space-y-3">
@@ -492,7 +495,7 @@ function BrandingSection() {
                 {repositioning && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="bg-black/50 text-white text-[12px] font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
-                      Drag to reposition
+                      {t("workspaceSettings.dragToReposition")}
                     </div>
                   </div>
                 )}
@@ -500,16 +503,16 @@ function BrandingSection() {
                 {!repositioning && !editingFocal && (
                   <div className="absolute inset-0 bg-black/0 group-hover/hero:bg-black/40 transition-all duration-200">
                     <div className="absolute top-2.5 right-2.5 flex items-center gap-2 opacity-0 group-hover/hero:opacity-100 transition-opacity duration-200">
-                      <button onClick={startReposition} className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm" title="Reposition">
+                      <button onClick={startReposition} className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm" title={t("workspaceSettings.reposition")}>
                         <Move className="w-3.5 h-3.5 text-gray-700" />
                       </button>
-                      <button onClick={() => setEditingFocal(true)} className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm" title="Set focal point">
+                      <button onClick={() => setEditingFocal(true)} className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm" title={t("workspaceSettings.setFocalPoint")}>
                         <Crosshair className="w-3.5 h-3.5 text-gray-700" />
                       </button>
-                      <button onClick={() => handleUpload("hero")} className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm" title="Change">
+                      <button onClick={() => handleUpload("hero")} className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm" title={t("workspaceSettings.change")}>
                         <Edit3 className="w-3.5 h-3.5 text-gray-700" />
                       </button>
-                      <button onClick={() => handleRemove("hero")} className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm" title="Remove">
+                      <button onClick={() => handleRemove("hero")} className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center transition-colors shadow-sm" title={t("workspaceSettings.remove")}>
                         <Trash2 className="w-3.5 h-3.5 text-red-500" />
                       </button>
                     </div>
@@ -527,13 +530,13 @@ function BrandingSection() {
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white" />
                     </div>
                     <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg backdrop-blur-sm">
-                      Click to set focal point ({focalPoint})
+                      {t("workspaceSettings.clickToSetFocalPoint")} ({focalPoint})
                     </div>
                   </div>
                 )}
                 {uploading === "hero" && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <span className="text-white text-[12px] font-semibold">Uploading...</span>
+                    <span className="text-white text-[12px] font-semibold">{t("workspaceSettings.uploading")}</span>
                   </div>
                 )}
               </div>
@@ -541,20 +544,20 @@ function BrandingSection() {
               {repositioning && (
                 <div className="flex items-center gap-3">
                   <button onClick={handleSavePosition} className="px-4 py-2 text-[12px] font-bold rounded-lg text-white transition-opacity hover:opacity-90" style={{ background: "var(--gradient-brand-horizontal)" }}>
-                    Save Position
+                    {t("workspaceSettings.savePosition")}
                   </button>
                   <button onClick={handleCancelReposition} className="px-4 py-2 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors">
-                    Cancel
+                    {t("workspaceSettings.cancel")}
                   </button>
                 </div>
               )}
               {editingFocal && (
                 <div className="flex items-center gap-3">
                   <button onClick={handleSaveFocalPoint} className="px-4 py-2 text-[12px] font-bold rounded-lg text-white transition-opacity hover:opacity-90" style={{ background: "var(--gradient-brand-horizontal)" }}>
-                    Save Focal Point
+                    {t("workspaceSettings.saveFocalPoint")}
                   </button>
                   <button onClick={() => { setFocalPoint(activeWorkspace?.hero_focal_point || "50% 50%"); setEditingFocal(false); }} className="px-4 py-2 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors">
-                    Cancel
+                    {t("workspaceSettings.cancel")}
                   </button>
                 </div>
               )}
@@ -569,7 +572,7 @@ function BrandingSection() {
                 <Upload className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
               <span className="text-[12px] font-semibold text-muted-foreground/60 group-hover:text-foreground transition-colors">
-                {uploading === "hero" ? "Uploading..." : "Click to upload background image"}
+                {uploading === "hero" ? t("workspaceSettings.uploading") : "Click to upload background image"}
               </span>
             </button>
           )}
@@ -577,7 +580,7 @@ function BrandingSection() {
       </SectionBlock>
 
       {/* Logo */}
-      <SectionBlock title="Logo" subtitle="Your brand logo for shared links" icon={Image}>
+      <SectionBlock title={t("workspaceSettings.logo")} subtitle={t("workspaceSettings.logoSubtitle")} icon={Image}>
         <FieldGroup label="Workspace Logo" hint="Displayed on shared links and pitch emails. Square or horizontal format recommended.">
           {logoUrl ? (
             <div className="flex items-center gap-4">
@@ -586,10 +589,10 @@ function BrandingSection() {
               </div>
               <div className="flex gap-2">
                 <button onClick={() => handleUpload("logo")} className="px-3 py-2 rounded-lg text-[12px] font-medium bg-secondary hover:bg-secondary/80 transition-colors">
-                  Change
+                  {t("workspaceSettings.change")}
                 </button>
                 <button onClick={() => handleRemove("logo")} className="px-3 py-2 rounded-lg text-[12px] font-medium text-destructive hover:bg-destructive/10 transition-colors">
-                  Remove
+                  {t("workspaceSettings.remove")}
                 </button>
               </div>
             </div>
@@ -603,7 +606,7 @@ function BrandingSection() {
                 <Upload className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
               <span className="text-[12px] font-semibold text-muted-foreground/60 group-hover:text-foreground transition-colors">
-                {uploading === "logo" ? "Uploading..." : "Click to upload logo"}
+                {uploading === "logo" ? t("workspaceSettings.uploading") : "Click to upload logo"}
               </span>
             </button>
           )}
@@ -611,7 +614,7 @@ function BrandingSection() {
       </SectionBlock>
 
       {/* Brand Color */}
-      <SectionBlock title="Brand Color" subtitle="Accent color for buttons and links" icon={Palette} onSave={handleColorSave} saveLabel="Save Color">
+      <SectionBlock title={t("workspaceSettings.brandColor")} subtitle={t("workspaceSettings.brandColorSubtitle")} icon={Palette} onSave={handleColorSave} saveLabel="Save Color">
         <FieldGroup label="Brand Color" hint="Used for play buttons, download buttons, and accents on shared links.">
           <div className="flex items-center gap-3 flex-wrap">
             {BRAND_PRESET_COLORS.map((c) => (
@@ -637,7 +640,7 @@ function BrandingSection() {
       </SectionBlock>
 
       {/* About / Bio */}
-      <SectionBlock title="About" subtitle="A short bio shown to recipients on your shared links" icon={Edit3} onSave={async () => {
+      <SectionBlock title={t("workspaceSettings.about")} subtitle={t("workspaceSettings.aboutSubtitle")} icon={Edit3} onSave={async () => {
         if (!activeWorkspace || !user) return;
         const { error } = await supabase.rpc("update_workspace_branding", {
           _user_id: user.id, _workspace_id: activeWorkspace.id,
@@ -648,7 +651,7 @@ function BrandingSection() {
           _bio: bio || null,
         });
         if (error) toast.error(error.message);
-        else { toast.success("Bio saved"); await refreshWorkspaces(); }
+        else { toast.success(t("workspaceSettings.toasts.bioSaved")); await refreshWorkspaces(); }
       }} saveLabel="Save Bio">
         <FieldGroup label="Bio" hint="A short bio to introduce your workspace to recipients (max 280 characters)">
           <div className="relative">
@@ -666,7 +669,7 @@ function BrandingSection() {
       </SectionBlock>
 
       {/* Social Links */}
-      <SectionBlock title="Social Links" subtitle="Add your social media profiles — they'll appear on your shared links" icon={Link2} onSave={handleSocialSave} saveLabel="Save Social Links">
+      <SectionBlock title={t("workspaceSettings.socialLinks")} subtitle={t("workspaceSettings.socialLinksSubtitle")} icon={Link2} onSave={handleSocialSave} saveLabel="Save Social Links">
         <div className="space-y-3">
           <div className="relative group/input">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40">
@@ -739,7 +742,7 @@ function MembersSection() {
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title={"Members (" + members.length + ")"} subtitle="Manage workspace members and their access levels" icon={Users}>
+      <SectionBlock title={"Members (" + members.length + ")"} subtitle={t("workspaceSettings.manageMembersSubtitle")} icon={Users}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-[12px] text-muted-foreground/60">{members.length} member{members.length !== 1 ? "s" : ""}</p>
@@ -759,9 +762,9 @@ function MembersSection() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-border/20">
-                  <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Member</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Title</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Access</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("workspaceSettings.member")}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">{t("workspaceSettings.title")}</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("workspaceSettings.access")}</th>
                   <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-32"></th>
                 </tr>
               </thead>
@@ -791,7 +794,7 @@ function MembersSection() {
                               onClick={() => setEditTarget({ member: m, mode: editMode })}
                               className="text-[11px] text-brand-orange/80 hover:text-brand-orange transition-colors font-semibold"
                             >
-                              {isAdmin ? "Edit" : "Edit my title"}
+                              {isAdmin ? t("workspaceSettings.editMember") : t("workspaceSettings.editMyTitle")}
                             </button>
                           )}
                           {permissions.canManageTeam && m.id !== activeWorkspace?.owner_id && (
@@ -799,7 +802,7 @@ function MembersSection() {
                               onClick={() => handleRemoveMember(m.id)}
                               className="text-[11px] text-destructive/60 hover:text-destructive transition-colors"
                             >
-                              Remove
+                              {t("workspaceSettings.removeMember")}
                             </button>
                           )}
                         </div>
@@ -829,6 +832,7 @@ function MembersSection() {
    ═══════════════════════════════════════════════════════ */
 
 function CatalogSharingSection() {
+  const { t } = useTranslation();
   const { activeWorkspace, workspaces } = useWorkspace();
   const { user } = useAuth();
   const [outgoing, setOutgoing] = useState<any[]>([]);
@@ -880,7 +884,7 @@ function CatalogSharingSection() {
       _access_level: "pitcher",
     });
     if (error) { toast.error(error.message); }
-    else { toast.success("Full catalog shared with " + targetWs.name); fetchShares(); }
+    else { toast.success(t("workspaceSettings.toasts.fullCatalogSharedWith") + " " + targetWs.name); fetchShares(); }
     setSharing(null);
     setShareDropdownOpen(false);
   };
@@ -890,7 +894,7 @@ function CatalogSharingSection() {
     setRevoking(true);
     const { error } = await supabase.rpc("revoke_catalog_share", { _user_id: user.id, _share_id: revokeTarget.id });
     if (error) toast.error(error.message);
-    else { setOutgoing((prev) => prev.filter((x) => x.id !== revokeTarget.id)); toast.success("Share revoked"); }
+    else { setOutgoing((prev) => prev.filter((x) => x.id !== revokeTarget.id)); toast.success(t("workspaceSettings.toasts.shareRevoked")); }
     setRevoking(false);
     setRevokeTarget(null);
   };
@@ -905,18 +909,18 @@ function CatalogSharingSection() {
           style={{ background: "var(--gradient-brand-horizontal)" }}
         >
           <ArrowRightLeft className="w-4 h-4" />
-          Share Full Catalog
+          {t("workspaceSettings.shareFullCatalog")}
           <ChevronDown className={"w-3.5 h-3.5 transition-transform " + (shareDropdownOpen ? "rotate-180" : "")} />
         </button>
         {shareDropdownOpen && (
           <div className="absolute left-0 top-full mt-2 w-80 rounded-xl border border-border/30 bg-card/95 backdrop-blur-md shadow-xl z-50 overflow-hidden">
             <div className="px-4 py-3 border-b border-border/20">
-              <p className="text-[12px] font-semibold text-foreground">Share full catalog with...</p>
-              <p className="text-[10px] text-muted-foreground/50 mt-0.5">Select a workspace to share your entire catalog</p>
+              <p className="text-[12px] font-semibold text-foreground">{t("workspaceSettings.shareFullCatalogWith")}</p>
+              <p className="text-[10px] text-muted-foreground/50 mt-0.5">{t("workspaceSettings.selectWorkspaceToShare")}</p>
             </div>
             {availableWorkspaces.length === 0 ? (
               <div className="px-4 py-6 text-center">
-                <p className="text-[12px] text-muted-foreground/50">No other workspaces available to share with</p>
+                <p className="text-[12px] text-muted-foreground/50">{t("workspaceSettings.noOtherWorkspacesAvailable")}</p>
               </div>
             ) : (
               <div className="max-h-60 overflow-y-auto py-1">
@@ -934,7 +938,7 @@ function CatalogSharingSection() {
                       className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                       style={{ background: "var(--gradient-brand-horizontal)" }}
                     >
-                      {sharing === ws.id ? "Sharing..." : "Share"}
+                      {sharing === ws.id ? t("workspaceSettings.sharing") : t("workspaceSettings.share")}
                     </button>
                   </div>
                 ))}
@@ -944,9 +948,9 @@ function CatalogSharingSection() {
         )}
       </motion.div>
 
-      <SectionBlock title={"Outgoing Shares (" + outgoing.length + ")"} subtitle="Catalogs you share with other workspaces" icon={ExternalLink}>
+      <SectionBlock title={"Outgoing Shares (" + outgoing.length + ")"} subtitle={t("workspaceSettings.catalogsYouShare")} icon={ExternalLink}>
         {outgoing.length === 0 ? (
-          <p className="text-[12px] text-muted-foreground/50">No outgoing catalog shares yet.</p>
+          <p className="text-[12px] text-muted-foreground/50">{t("workspaceSettings.noOutgoingShares")}</p>
         ) : (
           <div className="space-y-2">
             {outgoing.map((s) => (
@@ -959,7 +963,7 @@ function CatalogSharingSection() {
                   onClick={() => setRevokeTarget({ id: s.id, name: (s as any).workspaces?.name || "Unknown", isTrack: !!s.track_id })}
                   className="text-[11px] text-destructive/60 hover:text-destructive transition-colors"
                 >
-                  Revoke
+                  {t("workspaceSettings.revoke")}
                 </button>
               </div>
             ))}
@@ -967,9 +971,9 @@ function CatalogSharingSection() {
         )}
       </SectionBlock>
 
-      <SectionBlock title={"Incoming Shares (" + incoming.length + ")"} subtitle="Catalogs shared with you" icon={Link2}>
+      <SectionBlock title={"Incoming Shares (" + incoming.length + ")"} subtitle={t("workspaceSettings.catalogsSharedWithYou")} icon={Link2}>
         {incoming.length === 0 ? (
-          <p className="text-[12px] text-muted-foreground/50">No incoming catalog shares.</p>
+          <p className="text-[12px] text-muted-foreground/50">{t("workspaceSettings.noIncomingShares")}</p>
         ) : (
           <div className="space-y-2">
             {incoming.map((s) => (
@@ -989,21 +993,21 @@ function CatalogSharingSection() {
       <AlertDialog open={!!revokeTarget} onOpenChange={(open) => { if (!open) setRevokeTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Revoke catalog share?</AlertDialogTitle>
+            <AlertDialogTitle>{t("workspaceSettings.revokeCatalogShare")}</AlertDialogTitle>
             <AlertDialogDescription>
               {revokeTarget?.isTrack
-                ? "Are you sure you want to revoke the track share with " + revokeTarget.name + "? They will no longer have access to this track."
-                : "Are you sure you want to revoke the share of your catalog with " + (revokeTarget?.name || "") + "? They will no longer have access to your tracks."}
+                ? t("workspaceSettings.revokeTrackShareConfirm", { name: revokeTarget.name })
+                : t("workspaceSettings.revokeCatalogShareConfirm", { name: revokeTarget?.name || "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={revoking}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={revoking}>{t("workspaceSettings.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRevoke}
               disabled={revoking}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {revoking ? "Revoking..." : "Revoke"}
+              {revoking ? t("workspaceSettings.revoking") : t("workspaceSettings.revoke")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1017,6 +1021,7 @@ function CatalogSharingSection() {
    ═══════════════════════════════════════════════════════ */
 
 function LeakTracingSection() {
+  const { t } = useTranslation();
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
   const REST_URL = SUPABASE_URL + "/rest/v1";
@@ -1073,7 +1078,7 @@ function LeakTracingSection() {
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title="Leak Tracing" subtitle="Detect watermarks in leaked audio files" icon={Search}>
+      <SectionBlock title={t("workspaceSettings.leakTracing")} subtitle={t("workspaceSettings.leakTracingSubtitle")} icon={Search}>
         <div
           onDragOver={(e) => { e.preventDefault(); setLeakDragOver(true); }}
           onDragLeave={() => setLeakDragOver(false)}
@@ -1091,14 +1096,14 @@ function LeakTracingSection() {
           {leakAnalyzing ? (
             <>
               <Loader2 className="w-8 h-8 text-brand-orange animate-spin" />
-              <p className="text-[13px] font-semibold text-foreground">Analyzing audio watermark...</p>
-              <p className="text-[11px] text-muted-foreground/50">This may take a few seconds</p>
+              <p className="text-[13px] font-semibold text-foreground">{t("workspaceSettings.analyzingAudioWatermark")}</p>
+              <p className="text-[11px] text-muted-foreground/50">{t("workspaceSettings.thisMayTakeSeconds")}</p>
             </>
           ) : (
             <>
               <Search className="w-8 h-8 text-muted-foreground/40" />
-              <p className="text-[13px] font-semibold text-foreground">Drop audio file here or click to upload</p>
-              <p className="text-[11px] text-muted-foreground/50">Supports WAV, MP3, FLAC, OGG, M4A, AAC</p>
+              <p className="text-[13px] font-semibold text-foreground">{t("workspaceSettings.dropAudioFileHere")}</p>
+              <p className="text-[11px] text-muted-foreground/50">{t("workspaceSettings.supportsFormats")}</p>
             </>
           )}
         </div>
@@ -1109,13 +1114,13 @@ function LeakTracingSection() {
               <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-destructive" />
-                  <p className="text-[13px] text-destructive font-semibold">Watermark detected — Leak source identified</p>
+                  <p className="text-[13px] text-destructive font-semibold">{t("workspaceSettings.watermarkDetected")}</p>
                 </div>
                 <div className="pl-6 space-y-0.5">
-                  {leakResult.visitor_name && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">Name:</span> {leakResult.visitor_name}</p>}
-                  {leakResult.visitor_email && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">Email:</span> {leakResult.visitor_email}</p>}
-                  {leakResult.link_id && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">Shared Link:</span> {leakResult.link_id}</p>}
-                  {leakResult.confidence != null && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">Confidence:</span> {Math.round(leakResult.confidence * 100)}%</p>}
+                  {leakResult.visitor_name && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">{t("workspaceSettings.leakName")}</span> {leakResult.visitor_name}</p>}
+                  {leakResult.visitor_email && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">{t("workspaceSettings.leakEmail")}</span> {leakResult.visitor_email}</p>}
+                  {leakResult.link_id && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">{t("workspaceSettings.leakSharedLink")}</span> {leakResult.link_id}</p>}
+                  {leakResult.confidence != null && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">{t("workspaceSettings.leakConfidence")}</span> {Math.round(leakResult.confidence * 100)}%</p>}
                 </div>
               </div>
             ) : (
@@ -1123,8 +1128,8 @@ function LeakTracingSection() {
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   <div>
-                    <p className="text-[13px] text-emerald-400 font-semibold">No watermark detected in this file</p>
-                    <p className="text-[11px] text-emerald-400/50 mt-0.5">The audio appears clean or the watermark could not be read</p>
+                    <p className="text-[13px] text-emerald-400 font-semibold">{t("workspaceSettings.noWatermarkDetected")}</p>
+                    <p className="text-[11px] text-emerald-400/50 mt-0.5">{t("workspaceSettings.audioAppearsClean")}</p>
                   </div>
                 </div>
               </div>
@@ -1134,7 +1139,7 @@ function LeakTracingSection() {
 
         {leakTraces.length > 0 && (
           <div className="mt-4 space-y-2">
-            <h4 className="text-[12px] font-bold text-muted-foreground/50 uppercase tracking-widest">Recent Traces</h4>
+            <h4 className="text-[12px] font-bold text-muted-foreground/50 uppercase tracking-widest">{t("workspaceSettings.recentTraces")}</h4>
             {leakTraces.map((trace) => (
               <div key={trace.id} className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-secondary/20 border border-border/15">
                 <div>
@@ -1142,7 +1147,7 @@ function LeakTracingSection() {
                   <p className="text-[10px] text-muted-foreground/40">{new Date(trace.created_at).toLocaleString()}</p>
                 </div>
                 <span className={"text-[11px] font-semibold px-2 py-0.5 rounded-full " + (trace.match ? "bg-destructive/10 text-destructive" : "bg-emerald-500/10 text-emerald-500")}>
-                  {trace.match ? "Leak" : "Clean"}
+                  {trace.match ? t("workspaceSettings.traceLeak") : t("workspaceSettings.traceClean")}
                 </span>
               </div>
             ))}
@@ -1171,13 +1176,14 @@ export default function WorkspaceSettings() {
   const isMobile = useIsMobile();
   const [activeSection, setActiveSection] = useState<WsSection>("info");
   const ActiveComponent = sectionComponents[activeSection];
+  const wsSections = getWsSections(t);
 
   return (
     <PageShell>
       <motion.div variants={stagger} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 max-w-[1200px]">
         {/* Page header */}
         <motion.div variants={fadeUp} className="mb-8">
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Workspace Settings</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("workspaceSettings.pageTitle")}</h1>
           <p className="text-muted-foreground text-xs sm:text-sm mt-1">{activeWorkspace?.name || "Workspace"}</p>
         </motion.div>
 

@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ interface WelcomeOnboardingProps {
 }
 
 export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { activeWorkspace, refreshWorkspaces } = useWorkspace();
 
@@ -51,7 +53,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("File too large (max 5MB)");
+        toast.error(t("welcomeOnboarding.fileTooLarge"));
         return;
       }
       avatarFileRef.current = file;
@@ -171,28 +173,28 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
           >
             {/* Logo */}
             <h1 className="text-3xl font-bold gradient-text tracking-tight">TRAKALOG</h1>
-            <p className="text-xs tracking-widest text-muted-foreground uppercase mt-1">Catalog Manager</p>
+            <p className="text-xs tracking-widest text-muted-foreground uppercase mt-1">{t("welcomeOnboarding.catalogManager")}</p>
 
             {/* Separator */}
             <div className="h-px bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 my-6" />
 
-            <h2 className="text-2xl font-semibold text-foreground">Welcome to Trakalog</h2>
+            <h2 className="text-2xl font-semibold text-foreground">{t("welcomeOnboarding.welcomeTitle")}</h2>
             <p className="text-muted-foreground text-sm mt-2 max-w-sm mx-auto">
-              Your intelligent catalog manager — manage, protect, pitch and connect your music.
+              {t("welcomeOnboarding.welcomeSubtitle")}
             </p>
 
             <button
               onClick={() => setStep(1)}
               className="mt-8 w-full sm:w-auto px-8 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 hover:from-orange-600 hover:via-pink-600 hover:to-purple-600 text-white transition-all"
             >
-              Get Started
+              {t("welcomeOnboarding.getStarted")}
             </button>
 
             <button
               onClick={finish}
               className="block mx-auto mt-3 text-sm text-muted-foreground underline cursor-pointer hover:text-foreground transition-colors"
             >
-              Skip for now
+              {t("welcomeOnboarding.skipForNow")}
             </button>
           </motion.div>
         )}
@@ -209,9 +211,9 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
             className="w-full max-w-lg bg-card border border-border rounded-2xl p-8 sm:p-10"
             style={{ boxShadow: "0 25px 60px rgba(0,0,0,0.4)" }}
           >
-            <h2 className="text-xl font-semibold text-foreground">Set up your profile</h2>
+            <h2 className="text-xl font-semibold text-foreground">{t("welcomeOnboarding.setUpProfile")}</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              This is how your collaborators and contacts will see you.
+              {t("welcomeOnboarding.setUpProfileSubtitle")}
             </p>
 
             {/* Avatar */}
@@ -236,12 +238,12 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
 
             {/* Full Name */}
             <div className="mt-5 space-y-1.5">
-              <Label htmlFor="ob-name">Full Name</Label>
+              <Label htmlFor="ob-name">{t("welcomeOnboarding.fullName")}</Label>
               <Input
                 id="ob-name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Your name"
+                placeholder={t("welcomeOnboarding.fullNamePlaceholder")}
               />
             </div>
 
@@ -250,14 +252,14 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
               disabled={savingProfile}
               className="mt-6 w-full px-6 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 hover:from-orange-600 hover:via-pink-600 hover:to-purple-600 text-white transition-all disabled:opacity-50"
             >
-              {savingProfile ? "Saving..." : "Next \u2192"}
+              {savingProfile ? t("welcomeOnboarding.saving") : t("welcomeOnboarding.next")}
             </button>
 
             <button
               onClick={() => setStep(2)}
               className="block mx-auto mt-3 text-sm text-muted-foreground underline cursor-pointer hover:text-foreground transition-colors"
             >
-              Skip
+              {t("welcomeOnboarding.skip")}
             </button>
           </motion.div>
         )}
@@ -274,21 +276,21 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
             className="w-full max-w-lg bg-card border border-border rounded-2xl p-8 sm:p-10"
             style={{ boxShadow: "0 25px 60px rgba(0,0,0,0.4)" }}
           >
-            <h2 className="text-xl font-semibold text-foreground">Name your workspace</h2>
+            <h2 className="text-xl font-semibold text-foreground">{t("welcomeOnboarding.nameWorkspace")}</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              A workspace is your creative space — your artist name, label, studio, or project.
+              {t("welcomeOnboarding.nameWorkspaceSubtitle")}
             </p>
 
             <div className="mt-6 space-y-1.5">
-              <Label htmlFor="ob-ws">Workspace Name</Label>
+              <Label htmlFor="ob-ws">{t("welcomeOnboarding.workspaceName")}</Label>
               <Input
                 id="ob-ws"
                 value={workspaceName}
                 onChange={(e) => setWorkspaceName(e.target.value)}
-                placeholder="e.g. My Studio, Artist Name"
+                placeholder={t("welcomeOnboarding.workspaceNamePlaceholder")}
               />
               <p className="text-xs text-muted-foreground mt-1.5">
-                You can create multiple workspaces later for different projects or clients.
+                {t("welcomeOnboarding.workspaceNameHint")}
               </p>
             </div>
 
@@ -297,14 +299,14 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
               disabled={savingWorkspace}
               className="mt-6 w-full px-6 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 hover:from-orange-600 hover:via-pink-600 hover:to-purple-600 text-white transition-all disabled:opacity-50"
             >
-              {savingWorkspace ? "Saving..." : "Let\u2019s go! \u2192"}
+              {savingWorkspace ? t("welcomeOnboarding.saving") : t("welcomeOnboarding.letsGo")}
             </button>
 
             <button
               onClick={finish}
               className="block mx-auto mt-3 text-sm text-muted-foreground underline cursor-pointer hover:text-foreground transition-colors"
             >
-              Skip
+              {t("welcomeOnboarding.skip")}
             </button>
           </motion.div>
         )}

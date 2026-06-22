@@ -521,7 +521,15 @@
     "cancel": "취소",
     "delete": "삭제",
     "deleting": "삭제 중…",
-    "adjustFilters": "검색어나 필터를 조정해 보세요."
+    "adjustFilters": "검색어나 필터를 조정해 보세요.",
+    "tracksEngaged_one": "{{count}}개의 고유 트랙",
+    "tracksEngaged_other": "{{count}}개의 고유 트랙",
+    "plays_one": "{{count}}회 재생",
+    "plays_other": "{{count}}회 재생",
+    "downloads_one": "{{count}}회 다운로드",
+    "downloads_other": "{{count}}회 다운로드",
+    "collabTracks_one": "{{count}}개 트랙",
+    "collabTracks_other": "{{count}}개 트랙"
   },
   "notifications": {
     "title": "알림 센터",
@@ -554,7 +562,13 @@
     "timeFilter24h": "24시간",
     "timeFilter7d": "7일",
     "timeFilter30d": "30일",
-    "timeFilter1y": "1년"
+    "timeFilter1y": "1년",
+    "timeFilterAll": "전체",
+    "today": "오늘",
+    "thisWeek": "이번 주",
+    "noActivityYet": "아직 활동 내역이 없습니다",
+    "noActivityDesc": "팀이 활동을 시작하면 여기에 표시됩니다. 필터를 조정하거나 나중에 다시 확인하세요.",
+    "savedType": "Trakalog에 저장됨"
   },
   "sharedLinks": {
     "title": "공유 링크",
@@ -806,7 +820,53 @@
     "passwordUpdated": "비밀번호가 성공적으로 업데이트되었습니다",
     "fileTooLarge": "파일이 너무 큽니다 — 최대 5 MB",
     "photoUpdated": "프로필 사진이 업데이트되었습니다",
-    "photoRemoved": "프로필 사진이 제거되었습니다"
+    "photoRemoved": "프로필 사진이 제거되었습니다",
+    "accentPalette": "강조 팔레트",
+    "activeNow": "현재 활성",
+    "appearancePreferencesSaved": "화면 환경설정이 저장되었습니다",
+    "authenticatorApp": "인증 앱",
+    "authenticatorAppDesc": "Google Authenticator 또는 Authy 같은 앱을 사용하세요",
+    "change": "변경",
+    "chooseVisualMode": "화면 모드를 선택하세요",
+    "collapsedSidebar": "사이드바 접기",
+    "collapsedSidebarDesc": "기본적으로 사이드바를 접은 상태로 시작",
+    "compactModeDescDense": "정보 집약적인 보기를 위해 여백과 간격을 줄입니다",
+    "dataPrivacy": "데이터 및 개인정보",
+    "dataPrivacyDesc": "데이터를 내보내거나 삭제하세요",
+    "deleteYourAccount": "계정 삭제",
+    "deleteYourAccountDesc": "계정과 관련된 모든 데이터가 영구적으로 삭제됩니다",
+    "deliveredTo": "{{email}}(으)로 전송됨",
+    "disable2FA": "2FA 비활성화",
+    "enterSixDigitCode": "앱에서 6자리 코드를 입력하세요",
+    "exportAllData": "모든 데이터 내보내기",
+    "exportAllDataDesc": "트랙, 플레이리스트, 연락처 및 메타데이터를 ZIP 아카이브로 다운로드",
+    "exportZip": "ZIP 내보내기",
+    "fineTuneLayout": "워크스페이스 레이아웃을 세밀하게 조정하세요",
+    "googlePasswordManaged": "비밀번호 관리는 Google 계정에서 처리됩니다",
+    "layoutDisplay": "레이아웃 및 표시",
+    "manageSignedIn": "로그인된 기기를 관리하세요",
+    "motionAnimations": "모션 및 애니메이션",
+    "motionAnimationsDesc": "진입 애니메이션 및 마이크로 인터랙션 활성화",
+    "passwordTooShort": "비밀번호는 최소 6자 이상이어야 합니다",
+    "pwStrengthFair": "보통",
+    "pwStrengthGood": "좋음",
+    "pwStrengthStrong": "강력",
+    "pwStrengthTooShort": "너무 짧음",
+    "saveAppearance": "화면 설정 저장",
+    "saveLayout": "레이아웃 저장",
+    "scanQrCode": "인증 앱으로 이 QR 코드를 스캔하세요",
+    "signedInWithGoogle": "Google로 로그인됨",
+    "signedOutAllDevices": "모든 기기에서 로그아웃됨",
+    "signingOut": "로그아웃 중…",
+    "signOutAll": "모두 로그아웃",
+    "signOutEverywhere": "모든 곳에서 로그아웃",
+    "signOutEverywhereDesc": "모든 기기 및 세션에서 로그아웃됩니다",
+    "twoFaDisabled": "2FA 비활성화됨",
+    "twoFaEnabled": "2FA 활성화됨!",
+    "twoFaIsActive": "2FA가 활성화되어 있습니다",
+    "twoFaProtectionDesc": "계정에 추가 보안 레이어가 적용되어 있습니다",
+    "unknownBrowser": "브라우저",
+    "unknownDevice": "알 수 없는 기기"
   },
   "uploadTrack": {
     "title": "트랙 업로드",
@@ -1730,5 +1790,289 @@
     "deleteContact": "연락처 삭제",
     "edit": "편집",
     "sendPitch": "피치 보내기"
+  },
+  "workspaceSettings": {
+    "pageTitle": "워크스페이스 설정",
+    "general": "일반",
+    "generalSubtitle": "기본 워크스페이스 정보",
+    "workspaceName": "워크스페이스 이름",
+    "workspaceUrl": "워크스페이스 URL",
+    "backgroundImage": "배경 이미지",
+    "backgroundImageSubtitle": "공유 링크용 전체 화면 배경",
+    "logo": "로고",
+    "logoSubtitle": "공유 링크용 브랜드 로고",
+    "brandColor": "브랜드 색상",
+    "brandColorSubtitle": "버튼 및 링크의 강조 색상",
+    "about": "소개",
+    "aboutSubtitle": "공유 링크에서 수신자에게 표시되는 짧은 소개",
+    "socialLinks": "소셜 링크",
+    "socialLinksSubtitle": "소셜 미디어 프로필을 추가하면 공유 링크에 표시됩니다",
+    "reposition": "위치 조정",
+    "setFocalPoint": "초점 설정",
+    "change": "변경",
+    "remove": "삭제",
+    "uploading": "업로드 중...",
+    "dragToReposition": "드래그하여 위치 조정",
+    "clickToSetFocalPoint": "클릭하여 초점 설정",
+    "savePosition": "위치 저장",
+    "saveFocalPoint": "초점 저장",
+    "cancel": "취소",
+    "member": "멤버",
+    "title": "직함",
+    "access": "접근 권한",
+    "manageMembersSubtitle": "워크스페이스 멤버 및 접근 수준을 관리하세요",
+    "editMember": "편집",
+    "editMyTitle": "내 직함 편집",
+    "removeMember": "삭제",
+    "shareFullCatalog": "전체 카탈로그 공유",
+    "shareFullCatalogWith": "전체 카탈로그를 공유할 대상...",
+    "selectWorkspaceToShare": "전체 카탈로그를 공유할 워크스페이스를 선택하세요",
+    "noOtherWorkspacesAvailable": "공유할 수 있는 다른 워크스페이스가 없습니다",
+    "share": "공유",
+    "sharing": "공유 중...",
+    "catalogsYouShare": "다른 워크스페이스와 공유 중인 카탈로그",
+    "noOutgoingShares": "아직 발신 카탈로그 공유가 없습니다.",
+    "catalogsSharedWithYou": "나와 공유된 카탈로그",
+    "noIncomingShares": "수신된 카탈로그 공유가 없습니다.",
+    "revokeCatalogShare": "카탈로그 공유를 취소하시겠습니까?",
+    "revokeTrackShareConfirm": "{{name}}과(와)의 트랙 공유를 취소하시겠습니까? 해당 트랙에 더 이상 접근할 수 없게 됩니다.",
+    "revokeCatalogShareConfirm": "{{name}}과(와)의 카탈로그 공유를 취소하시겠습니까? 귀하의 트랙에 더 이상 접근할 수 없게 됩니다.",
+    "revoke": "취소",
+    "revoking": "취소 중...",
+    "leakTracing": "유출 추적",
+    "leakTracingSubtitle": "유출된 오디오 파일의 워터마크를 감지합니다",
+    "analyzingAudioWatermark": "오디오 워터마크 분석 중...",
+    "thisMayTakeSeconds": "몇 초 정도 걸릴 수 있습니다",
+    "dropAudioFileHere": "여기에 오디오 파일을 드롭하거나 클릭하여 업로드",
+    "supportsFormats": "WAV, MP3, FLAC, OGG, M4A, AAC 형식 지원",
+    "watermarkDetected": "워터마크 감지됨 — 유출 출처 확인",
+    "noWatermarkDetected": "이 파일에서 워터마크가 감지되지 않았습니다",
+    "audioAppearsClean": "오디오가 깨끗하거나 워터마크를 읽을 수 없습니다",
+    "leakName": "이름:",
+    "leakEmail": "이메일:",
+    "leakSharedLink": "공유 링크:",
+    "leakConfidence": "신뢰도:",
+    "recentTraces": "최근 추적 내역",
+    "traceLeak": "유출",
+    "traceClean": "정상",
+    "nav": {
+      "info": "정보",
+      "infoDesc": "워크스페이스 이름 및 세부 정보",
+      "branding": "브랜딩",
+      "brandingDesc": "로고, 히어로 및 색상",
+      "members": "멤버",
+      "membersDesc": "팀 접근 권한 및 역할",
+      "catalogSharing": "카탈로그 공유",
+      "catalogSharingDesc": "워크스페이스 간 카탈로그 공유",
+      "leakTracing": "유출 추적",
+      "leakTracingDesc": "유출된 오디오의 워터마크 감지"
+    },
+    "toasts": {
+      "workspaceNameSaved": "워크스페이스 이름이 저장되었습니다",
+      "heroPositionSaved": "히어로 위치가 저장되었습니다",
+      "focalPointSaved": "초점이 저장되었습니다",
+      "brandColorSaved": "브랜드 색상이 저장되었습니다",
+      "socialLinksSaved": "소셜 링크가 저장되었습니다",
+      "bioSaved": "소개가 저장되었습니다",
+      "fullCatalogSharedWith": "전체 카탈로그가 공유됨",
+      "shareRevoked": "공유가 취소되었습니다"
+    }
+  },
+  "guide": {
+    "header": {
+      "title": "도움말 및 가이드",
+      "subtitle": "Trakalog에 대해 알아야 할 모든 것",
+      "replayTour": "투어 다시 보기",
+      "showChecklist": "체크리스트 보기"
+    },
+    "gettingStarted": {
+      "title": "시작하기",
+      "whatIsTrakalog": {
+        "title": "Trakalog이란 무엇인가요?",
+        "body": "Trakalog은 음악 카탈로그를 위한 지능형 신경 시스템입니다. 트랙을 업로드하면 Trakalog이 보이지 않는 오디오 워터마킹으로 보호하고, Sonic DNA로 분석하며, Smart A&R을 통해 기회와 연결하고, 공유 링크의 모든 상호작용을 추적합니다."
+      },
+      "settingUpWorkspace": {
+        "title": "워크스페이스 설정하기",
+        "body": "워크스페이스는 귀하의 창작 공간입니다 — 아티스트 프로젝트, 레이블, 스튜디오. Settings → Branding에서 브랜딩(히어로 이미지, 로고, 색상)으로 커스터마이징하세요."
+      },
+      "uploadingFirstTrack": {
+        "title": "첫 번째 트랙 업로드하기",
+        "body": "트랙 메뉴로 이동하여 트랙 업로드를 클릭하세요. 즉각적인 대량 가져오기에는 빠른 업로드를 사용하거나, 전체 세부 정보(가사, 스템, 분배, 메타데이터)를 단계별로 추가하세요."
+      }
+    },
+    "sonicDna": {
+      "title": "Sonic DNA & Smart A&R",
+      "whatIsSonicDna": {
+        "title": "Sonic DNA란 무엇인가요?",
+        "body": "트랙을 업로드하면 Trakalog이 오디오를 분석하여 고유한 지문을 생성합니다: BPM, 키, 에너지 곡선, 스펙트럼 특성(밝기, 따뜻함) 및 구조. 이를 통해 Smart A&R 매칭이 구동됩니다."
+      },
+      "maximizeSonicDna": {
+        "title": "Sonic DNA를 최대화하는 방법",
+        "body": "더 많은 메타데이터(장르, 분위기 태그, 가사, 언어, 유형, 성별)를 추가할수록 AI가 음악을 더 잘 이해하고 기회를 찾아냅니다."
+      },
+      "usingSmartAr": {
+        "title": "Smart A&R 활용하기",
+        "body": "헤더의 Smart A&R 아이콘을 클릭하세요. 원하는 조건이나 설명을 붙여넣거나 입력하세요. Trakalog이 Sonic DNA 데이터를 사용하여 전체 카탈로그를 스캔하여 최적의 매칭을 찾습니다."
+      }
+    },
+    "catalogManagement": {
+      "title": "카탈로그 관리",
+      "uploadingTracks": {
+        "title": "트랙 업로드",
+        "body": "단일 또는 대량 업로드. 빠른 업로드는 모든 세부 정보를 건너뜁니다. Sonic DNA가 업로드 후 BPM과 키를 자동으로 감지합니다."
+      },
+      "editingTrackDetails": {
+        "title": "트랙 세부 정보 편집",
+        "body": "트랙을 클릭하여 17개 이상의 메타데이터 필드를 편집하세요: 제목, 아티스트, 장르, 분위기 태그, BPM, 키, 언어, 유형, ISRC, UPC 등."
+      },
+      "managingStems": {
+        "title": "스템 관리",
+        "body": "각 트랙의 스템 탭에서 스템(보컬, 드럼, 베이스 등)을 업로드하세요. 유형별로 정리하세요."
+      },
+      "trackSections": {
+        "title": "트랙 섹션",
+        "body": "파형을 더블 클릭하여 섹션 마커(인트로, 버스, 코러스, 드롭)를 추가하세요. 레이블을 더블 클릭하여 이름을 변경하세요."
+      },
+      "lyrics": {
+        "title": "가사",
+        "body": "가사를 직접 추가하거나 PDF/TXT에서 가져오거나 AI로 자동 전사하세요. 가사는 텍스트 기반 매칭을 위해 Sonic DNA와 동기화됩니다."
+      }
+    },
+    "playlists": {
+      "title": "플레이리스트",
+      "creatingPlaylists": {
+        "title": "플레이리스트 만들기",
+        "body": "사용자 지정 그라데이션 색상과 분위기/장르 태그로 테마 플레이리스트를 만드세요."
+      },
+      "sharingPlaylists": {
+        "title": "플레이리스트 공유하기",
+        "body": "하나의 브랜드 링크로 전체 플레이리스트를 공유하세요. 수신자는 귀하의 브랜딩을 볼 수 있습니다."
+      }
+    },
+    "pitching": {
+      "title": "피칭",
+      "creatingPitch": {
+        "title": "피치 만들기",
+        "body": "트랙 또는 플레이리스트를 선택하고 연락처를 추가한 후 메시지를 작성하세요. Trakalog이 보안 청취 링크가 포함된 브랜드 이메일을 발송합니다."
+      },
+      "trackingEngagement": {
+        "title": "참여도 추적",
+        "body": "피치를 누가 열었는지, 얼마나 오래 들었는지, 어떤 섹션을 다시 재생했는지 확인하세요. 파이프라인 보기: 초안 → 발송 → 열람 → 응답."
+      }
+    },
+    "sharingSecurity": {
+      "title": "공유 및 보안",
+      "sharedLinks": {
+        "title": "공유 링크",
+        "body": "트랙, 플레이리스트, 스템 또는 전체 Trakalog Pack(트랙, 커버, 가사 PDF, 분배 PDF가 포함된 ZIP)에 대한 보안 링크를 생성하세요."
+      },
+      "gateScreen": {
+        "title": "게이트 화면",
+        "body": "모든 공유 링크에는 방문자가 청취하기 전에 이름, 이메일, 역할 및 회사를 수집하는 게이트 화면이 있습니다."
+      },
+      "passwordProtection": {
+        "title": "비밀번호 보호",
+        "body": "선택적으로 비밀번호로 링크를 보호하세요. 만료 날짜를 설정하세요."
+      },
+      "audioWatermarking": {
+        "title": "오디오 워터마킹",
+        "body": "모든 청취자는 보이지 않는 워터마크가 적용된 오디오 버전을 받습니다. 각 워터마크는 방문자마다 고유합니다."
+      },
+      "leakTracing": {
+        "title": "유출 추적",
+        "body": "음악이 유출된 경우 Settings → Security → Leak Tracing으로 이동하세요. 유출된 파일을 업로드하면 Trakalog이 해당 버전을 받은 사람을 정확히 식별합니다."
+      }
+    },
+    "contacts": {
+      "title": "연락처",
+      "howCollected": {
+        "title": "연락처 수집 방법",
+        "body": "연락처는 누군가 공유 링크를 통해 청취할 때(게이트 화면), 협업자가 스튜디오 QR 코드를 스캔할 때, 또는 직접 추가할 때 자동으로 추가됩니다."
+      },
+      "exportingContacts": {
+        "title": "연락처 내보내기",
+        "body": "언제든지 연락처 목록을 PDF, CSV 또는 Excel로 내보내세요."
+      }
+    },
+    "splitsSignatures": {
+      "title": "분배 및 서명",
+      "addingSplits": {
+        "title": "분배 추가하기",
+        "body": "각 트랙의 세부 정보에서 협업자의 역할(작곡가, 프로듀서, 아티스트, 뮤지션), PRO 및 IPI 번호를 추가하세요. 자동 완성이 워크스페이스의 연락처를 제안합니다."
+      },
+      "digitalSignatures": {
+        "title": "디지털 서명",
+        "body": "서명을 위해 분배를 전송하세요. 각 협업자는 캔버스 서명이 있는 전용 페이지에서 서명합니다. 서명된 PDF를 다운로드하세요."
+      },
+      "studioQrCode": {
+        "title": "스튜디오 QR 코드",
+        "body": "스튜디오 세션을 위한 QR 코드를 생성하세요. 협업자가 스캔하여 원격으로 정보와 기여 내용을 입력할 수 있습니다."
+      }
+    },
+    "workspaceTeam": {
+      "title": "워크스페이스 및 팀",
+      "multiWorkspace": {
+        "title": "멀티 워크스페이스",
+        "body": "다양한 프로젝트를 위한 별도의 워크스페이스를 만드세요: 아티스트 이름, 레이블, 클라이언트. 워크스페이스 전환기로 이동하세요."
+      },
+      "teamPermissions": {
+        "title": "팀 권한",
+        "body": "4가지 권한 수준으로 팀원을 초대하세요: Viewer(청취 전용), Pitcher(플레이리스트 및 피치 생성), Editor(메타데이터 및 스템 수정), Admin(전체 관리). 각 멤버에게는 크레딧에 표시될 전문 직함이 부여됩니다."
+      },
+      "catalogSharing": {
+        "title": "카탈로그 공유",
+        "body": "다른 워크스페이스(레이블, 매니저)와 전체 카탈로그를 공유하세요. 귀하가 완전한 통제권을 유지하는 동안 상대방은 자신의 브랜딩으로 트랙을 피칭할 수 있습니다. 언제든지 접근 권한을 취소하세요."
+      }
+    },
+    "tipsBestPractices": {
+      "title": "팁 및 모범 사례",
+      "tips": [
+        "메타데이터를 더 많이 추가할수록 Smart A&R이 트랙을 브리프와 더 잘 매칭합니다.",
+        "분위기 태그를 추가하세요 — A&R 전문가가 원하는 것을 정확히 찾는 데 도움이 됩니다.",
+        "텍스트 기반 검색 및 매칭을 활성화하려면 가사를 추가하세요.",
+        "링크를 공유하기 전에 브랜딩을 설정하세요 — 첫인상이 중요합니다.",
+        "대량 가져오기에는 빠른 업로드를 사용하고, 나중에 원하는 속도로 세부 정보를 추가하세요.",
+        "전문적인 트랙 프레젠테이션을 위해 파형에 섹션을 만드세요.",
+        "공유 링크 대시보드를 정기적으로 확인하세요 — 누가 듣고 있는지 파악하세요.",
+        "실시간으로 분배를 기록하기 위해 녹음 세션 중에 스튜디오 QR 코드를 사용하세요."
+      ]
+    }
+  },
+  "welcomeOnboarding": {
+    "catalogManager": "카탈로그 매니저",
+    "welcomeTitle": "Trakalog에 오신 것을 환영합니다",
+    "welcomeSubtitle": "지능형 카탈로그 매니저 — 음악을 관리하고, 보호하고, 피칭하고, 연결하세요.",
+    "getStarted": "시작하기",
+    "skipForNow": "나중에 하기",
+    "setUpProfile": "프로필 설정",
+    "setUpProfileSubtitle": "협업자와 연락처가 귀하를 이렇게 보게 됩니다.",
+    "fullName": "전체 이름",
+    "fullNamePlaceholder": "귀하의 이름",
+    "saving": "저장 중...",
+    "next": "다음 →",
+    "skip": "건너뛰기",
+    "nameWorkspace": "워크스페이스 이름 짓기",
+    "nameWorkspaceSubtitle": "워크스페이스는 귀하의 창작 공간입니다 — 아티스트 이름, 레이블, 스튜디오 또는 프로젝트.",
+    "workspaceName": "워크스페이스 이름",
+    "workspaceNamePlaceholder": "예: 내 스튜디오, 아티스트 이름",
+    "workspaceNameHint": "나중에 다양한 프로젝트나 클라이언트를 위해 여러 워크스페이스를 만들 수 있습니다.",
+    "letsGo": "시작합시다! →",
+    "fileTooLarge": "파일이 너무 큽니다 (최대 5MB)"
+  },
+  "onboardingFlow": {
+    "title": "Trakalog에 오신 것을 환영합니다 ✦",
+    "subtitle": "몇 초 안에 개인 워크스페이스를 설정하세요",
+    "labelName": "이름",
+    "placeholderName": "귀하의 이름",
+    "labelWorkspace": "워크스페이스 이름",
+    "placeholderWorkspace": "내 워크스페이스",
+    "labelRole": "역할",
+    "optional": "선택 사항",
+    "selectRole": "역할 선택",
+    "creating": "생성 중...",
+    "submit": "내 Trakalog 만들기",
+    "successTitle": "Trakalog이 준비되었습니다! 🎉",
+    "successSubtitle": "음악 카탈로그를 관리할 준비가 완료되었습니다",
+    "goToDashboard": "대시보드로 이동"
   }
 }

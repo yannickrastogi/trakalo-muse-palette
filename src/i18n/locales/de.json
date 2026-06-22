@@ -521,7 +521,15 @@
     "cancel": "Abbrechen",
     "delete": "Löschen",
     "deleting": "Wird gelöscht…",
-    "adjustFilters": "Passe deine Suche oder Filter an."
+    "adjustFilters": "Passe deine Suche oder Filter an.",
+    "tracksEngaged_one": "{{count}} einzelner Track",
+    "tracksEngaged_other": "{{count}} einzelne Tracks",
+    "plays_one": "{{count}} Wiedergabe",
+    "plays_other": "{{count}} Wiedergaben",
+    "downloads_one": "{{count}} Download",
+    "downloads_other": "{{count}} Downloads",
+    "collabTracks_one": "{{count}} Track",
+    "collabTracks_other": "{{count}} Tracks"
   },
   "notifications": {
     "title": "Benachrichtigungszentrum",
@@ -554,7 +562,13 @@
     "timeFilter24h": "24h",
     "timeFilter7d": "7 Tage",
     "timeFilter30d": "30 Tage",
-    "timeFilter1y": "1 Jahr"
+    "timeFilter1y": "1 Jahr",
+    "timeFilterAll": "Alle",
+    "today": "heute",
+    "thisWeek": "diese Woche",
+    "noActivityYet": "Noch keine Aktivität",
+    "noActivityDesc": "Wenn dein Team aktiv wird, erscheint es hier. Passe deine Filter an oder schau später nochmal vorbei.",
+    "savedType": "In Trakalog gespeichert"
   },
   "sharedLinks": {
     "title": "Geteilte Links",
@@ -806,7 +820,53 @@
     "passwordUpdated": "Passwort erfolgreich aktualisiert",
     "fileTooLarge": "Datei zu groß — max 5 MB",
     "photoUpdated": "Profilfoto aktualisiert",
-    "photoRemoved": "Profilfoto entfernt"
+    "photoRemoved": "Profilfoto entfernt",
+    "accentPalette": "Akzentpalette",
+    "activeNow": "Jetzt aktiv",
+    "appearancePreferencesSaved": "Darstellungseinstellungen gespeichert",
+    "authenticatorApp": "Authenticator-App",
+    "authenticatorAppDesc": "Verwende eine App wie Google Authenticator oder Authy",
+    "change": "Ändern",
+    "chooseVisualMode": "Wähle deinen visuellen Modus",
+    "collapsedSidebar": "Eingeklappte Seitenleiste",
+    "collapsedSidebarDesc": "Seitenleiste standardmäßig eingeklappt starten",
+    "compactModeDescDense": "Abstände und Padding für informationsdichte Ansichten reduzieren",
+    "dataPrivacy": "Daten & Datenschutz",
+    "dataPrivacyDesc": "Deine Daten exportieren oder löschen",
+    "deleteYourAccount": "Dein Konto löschen",
+    "deleteYourAccountDesc": "Dies entfernt dein Konto und alle zugehörigen Daten dauerhaft",
+    "deliveredTo": "Gesendet an {{email}}",
+    "disable2FA": "2FA deaktivieren",
+    "enterSixDigitCode": "Gib den 6-stelligen Code aus deiner App ein",
+    "exportAllData": "Alle Daten exportieren",
+    "exportAllDataDesc": "Tracks, Playlists, Kontakte und Metadaten als ZIP-Archiv herunterladen",
+    "exportZip": "ZIP exportieren",
+    "fineTuneLayout": "Dein Workspace-Layout anpassen",
+    "googlePasswordManaged": "Die Passwortverwaltung erfolgt über dein Google-Konto",
+    "layoutDisplay": "Layout & Darstellung",
+    "manageSignedIn": "Verwalte deine angemeldeten Geräte",
+    "motionAnimations": "Bewegung & Animationen",
+    "motionAnimationsDesc": "Eingangsanimationen und Mikrointeraktionen aktivieren",
+    "passwordTooShort": "Das Passwort muss mindestens 6 Zeichen lang sein",
+    "pwStrengthFair": "Ausreichend",
+    "pwStrengthGood": "Gut",
+    "pwStrengthStrong": "Stark",
+    "pwStrengthTooShort": "Zu kurz",
+    "saveAppearance": "Darstellung speichern",
+    "saveLayout": "Layout speichern",
+    "scanQrCode": "Scanne diesen QR-Code mit deiner Authenticator-App",
+    "signedInWithGoogle": "Mit Google angemeldet",
+    "signedOutAllDevices": "Von allen Geräten abgemeldet",
+    "signingOut": "Abmelden…",
+    "signOutAll": "Überall abmelden",
+    "signOutEverywhere": "Überall abmelden",
+    "signOutEverywhereDesc": "Dies meldet dich von allen Geräten und Sitzungen ab",
+    "twoFaDisabled": "2FA deaktiviert",
+    "twoFaEnabled": "2FA aktiviert!",
+    "twoFaIsActive": "2FA ist aktiv",
+    "twoFaProtectionDesc": "Dein Konto ist durch eine zusätzliche Schutzebene gesichert",
+    "unknownBrowser": "Browser",
+    "unknownDevice": "Unbekanntes Gerät"
   },
   "uploadTrack": {
     "title": "Titel hochladen",
@@ -1730,5 +1790,289 @@
     "deleteContact": "Kontakt löschen",
     "edit": "Bearbeiten",
     "sendPitch": "Pitch senden"
+  },
+  "workspaceSettings": {
+    "pageTitle": "Workspace-Einstellungen",
+    "general": "Allgemein",
+    "generalSubtitle": "Grundlegende Workspace-Informationen",
+    "workspaceName": "Workspace-Name",
+    "workspaceUrl": "Workspace-URL",
+    "backgroundImage": "Hintergrundbild",
+    "backgroundImageSubtitle": "Vollbild-Hintergrund für deine geteilten Links",
+    "logo": "Logo",
+    "logoSubtitle": "Dein Markenlogo für geteilte Links",
+    "brandColor": "Markenfarbe",
+    "brandColorSubtitle": "Akzentfarbe für Buttons und Links",
+    "about": "Über mich",
+    "aboutSubtitle": "Eine kurze Biografie, die Empfängern auf deinen geteilten Links angezeigt wird",
+    "socialLinks": "Social-Links",
+    "socialLinksSubtitle": "Füge deine Social-Media-Profile hinzu — sie erscheinen auf deinen geteilten Links",
+    "reposition": "Neu positionieren",
+    "setFocalPoint": "Fokuspunkt setzen",
+    "change": "Ändern",
+    "remove": "Entfernen",
+    "uploading": "Wird hochgeladen...",
+    "dragToReposition": "Ziehen zum Neupositionieren",
+    "clickToSetFocalPoint": "Klicken zum Setzen des Fokuspunkts",
+    "savePosition": "Position speichern",
+    "saveFocalPoint": "Fokuspunkt speichern",
+    "cancel": "Abbrechen",
+    "member": "Mitglied",
+    "title": "Titel",
+    "access": "Zugriff",
+    "manageMembersSubtitle": "Workspace-Mitglieder und deren Zugriffsebenen verwalten",
+    "editMember": "Bearbeiten",
+    "editMyTitle": "Meinen Titel bearbeiten",
+    "removeMember": "Entfernen",
+    "shareFullCatalog": "Gesamtkatalog teilen",
+    "shareFullCatalogWith": "Gesamtkatalog teilen mit...",
+    "selectWorkspaceToShare": "Wähle einen Workspace, mit dem du deinen gesamten Katalog teilen möchtest",
+    "noOtherWorkspacesAvailable": "Keine weiteren Workspaces zum Teilen verfügbar",
+    "share": "Teilen",
+    "sharing": "Wird geteilt...",
+    "catalogsYouShare": "Kataloge, die du mit anderen Workspaces teilst",
+    "noOutgoingShares": "Noch keine ausgehenden Katalogfreigaben.",
+    "catalogsSharedWithYou": "Mit dir geteilte Kataloge",
+    "noIncomingShares": "Keine eingehenden Katalogfreigaben.",
+    "revokeCatalogShare": "Katalogfreigabe widerrufen?",
+    "revokeTrackShareConfirm": "Möchtest du die Track-Freigabe mit {{name}} wirklich widerrufen? Sie werden keinen Zugriff mehr auf diesen Track haben.",
+    "revokeCatalogShareConfirm": "Möchtest du die Freigabe deines Katalogs mit {{name}} wirklich widerrufen? Sie werden keinen Zugriff mehr auf deine Tracks haben.",
+    "revoke": "Widerrufen",
+    "revoking": "Wird widerrufen...",
+    "leakTracing": "Leak Tracing",
+    "leakTracingSubtitle": "Wasserzeichen in geleakten Audiodateien erkennen",
+    "analyzingAudioWatermark": "Audio-Wasserzeichen wird analysiert...",
+    "thisMayTakeSeconds": "Dies kann einige Sekunden dauern",
+    "dropAudioFileHere": "Audiodatei hier ablegen oder klicken zum Hochladen",
+    "supportsFormats": "Unterstützt WAV, MP3, FLAC, OGG, M4A, AAC",
+    "watermarkDetected": "Wasserzeichen erkannt — Leak-Quelle identifiziert",
+    "noWatermarkDetected": "Kein Wasserzeichen in dieser Datei gefunden",
+    "audioAppearsClean": "Die Audiodatei scheint sauber zu sein oder das Wasserzeichen konnte nicht gelesen werden",
+    "leakName": "Name:",
+    "leakEmail": "E-Mail:",
+    "leakSharedLink": "Geteilter Link:",
+    "leakConfidence": "Konfidenz:",
+    "recentTraces": "Neueste Traces",
+    "traceLeak": "Leak",
+    "traceClean": "Sauber",
+    "nav": {
+      "info": "Info",
+      "infoDesc": "Workspace-Name & Details",
+      "branding": "Branding",
+      "brandingDesc": "Logo, Hero & Farben",
+      "members": "Mitglieder",
+      "membersDesc": "Team-Zugriff & Rollen",
+      "catalogSharing": "Katalog-Sharing",
+      "catalogSharingDesc": "Kataloge zwischen Workspaces teilen",
+      "leakTracing": "Leak Tracing",
+      "leakTracingDesc": "Wasserzeichen in geleaktem Audio erkennen"
+    },
+    "toasts": {
+      "workspaceNameSaved": "Workspace-Name gespeichert",
+      "heroPositionSaved": "Hero-Position gespeichert",
+      "focalPointSaved": "Fokuspunkt gespeichert",
+      "brandColorSaved": "Markenfarbe gespeichert",
+      "socialLinksSaved": "Social-Links gespeichert",
+      "bioSaved": "Biografie gespeichert",
+      "fullCatalogSharedWith": "Gesamtkatalog geteilt mit",
+      "shareRevoked": "Freigabe widerrufen"
+    }
+  },
+  "guide": {
+    "header": {
+      "title": "Hilfe & Leitfaden",
+      "subtitle": "Alles, was du über Trakalog wissen musst",
+      "replayTour": "Tour wiederholen",
+      "showChecklist": "Checkliste anzeigen"
+    },
+    "gettingStarted": {
+      "title": "Erste Schritte",
+      "whatIsTrakalog": {
+        "title": "Was ist Trakalog?",
+        "body": "Trakalog ist das intelligente Nervensystem für deinen Musikkatalog. Lade deine Tracks hoch, und Trakalog schützt sie mit unsichtbarem Audio-Wasserzeichen, analysiert sie mit Sonic DNA, verbindet sie mit Möglichkeiten via Smart A&R und verfolgt jede Interaktion auf deinen geteilten Links."
+      },
+      "settingUpWorkspace": {
+        "title": "Deinen Workspace einrichten",
+        "body": "Dein Workspace ist dein kreativer Raum — ein Künstlerprojekt, ein Label, ein Studio. Passe ihn mit deinem Branding an (Hero-Bild, Logo, Farben) unter Settings → Branding."
+      },
+      "uploadingFirstTrack": {
+        "title": "Deinen ersten Track hochladen",
+        "body": "Gehe zu Tracks und klicke auf Track hochladen. Nutze Quick Upload für den schnellen Massenimport oder gehe Schritt für Schritt vor, um alle Details hinzuzufügen (Lyrics, Stems, Splits, Metadaten)."
+      }
+    },
+    "sonicDna": {
+      "title": "Sonic DNA & Smart A&R",
+      "whatIsSonicDna": {
+        "title": "Was ist Sonic DNA?",
+        "body": "Wenn du einen Track hochlädst, analysiert Trakalog das Audio und erstellt einen einzigartigen Fingerabdruck: BPM, Tonart, Energiekurven, spektrale Eigenschaften (Helligkeit, Wärme) und Struktur. Dies unterstützt das Smart A&R-Matching."
+      },
+      "maximizeSonicDna": {
+        "title": "So nutzt du Sonic DNA optimal",
+        "body": "Je mehr Metadaten du hinzufügst (Genre, Stimmungs-Tags, Lyrics, Sprache, Typ, Geschlecht), desto besser versteht die KI deine Musik und findet passende Möglichkeiten."
+      },
+      "usingSmartAr": {
+        "title": "Smart A&R verwenden",
+        "body": "Klicke auf das Smart A&R-Symbol in der Kopfzeile. Füge ein Briefing ein oder beschreibe, wonach du suchst. Trakalog durchsucht deinen gesamten Katalog anhand von Sonic DNA-Daten, um die besten Übereinstimmungen zu finden."
+      }
+    },
+    "catalogManagement": {
+      "title": "Katalogverwaltung",
+      "uploadingTracks": {
+        "title": "Tracks hochladen",
+        "body": "Einzel- oder Massen-Upload. Quick Upload überspringt alle Details. Sonic DNA erkennt BPM und Tonart nach dem Upload automatisch."
+      },
+      "editingTrackDetails": {
+        "title": "Track-Details bearbeiten",
+        "body": "Klicke auf einen Track, um über 17 Metadatenfelder zu bearbeiten: Titel, Künstler, Genre, Stimmungs-Tags, BPM, Tonart, Sprache, Typ, ISRC, UPC und mehr."
+      },
+      "managingStems": {
+        "title": "Stems verwalten",
+        "body": "Lade Stems (Vocals, Drums, Bass usw.) im Stems-Tab des jeweiligen Tracks hoch. Nach Typ organisieren."
+      },
+      "trackSections": {
+        "title": "Track-Abschnitte",
+        "body": "Doppelklicke auf die Wellenform, um Abschnittsmarker hinzuzufügen (Intro, Verse, Chorus, Drop). Durch Doppelklick auf das Label umbenennen."
+      },
+      "lyrics": {
+        "title": "Lyrics",
+        "body": "Lyrics manuell hinzufügen, aus PDF/TXT importieren oder automatisch per KI transkribieren. Lyrics werden mit Sonic DNA für textbasiertes Matching synchronisiert."
+      }
+    },
+    "playlists": {
+      "title": "Playlists",
+      "creatingPlaylists": {
+        "title": "Playlists erstellen",
+        "body": "Thematische Playlists mit benutzerdefinierten Verlaufsfarben und Stimmungs-/Genre-Tags erstellen."
+      },
+      "sharingPlaylists": {
+        "title": "Playlists teilen",
+        "body": "Ganze Playlists mit einem einzigen Marken-Link teilen. Empfänger sehen dein Branding."
+      }
+    },
+    "pitching": {
+      "title": "Pitching",
+      "creatingPitch": {
+        "title": "Einen Pitch erstellen",
+        "body": "Tracks oder eine Playlist auswählen, Kontakte hinzufügen, eine Nachricht verfassen. Trakalog sendet eine gebrandete E-Mail mit einem sicheren Abhör-Link."
+      },
+      "trackingEngagement": {
+        "title": "Engagement verfolgen",
+        "body": "Sieh, wer deinen Pitch geöffnet hat, wie lange gehört wurde und welche Abschnitte wiederholt wurden. Pipeline-Ansicht: Draft → Sent → Opened → Responded."
+      }
+    },
+    "sharingSecurity": {
+      "title": "Teilen & Sicherheit",
+      "sharedLinks": {
+        "title": "Geteilte Links",
+        "body": "Erstelle sichere Links für Tracks, Playlists, Stems oder vollständige Trakalog Packs (ZIP mit Track, Cover, Lyrics-PDF, Splits-PDF)."
+      },
+      "gateScreen": {
+        "title": "Gate-Screen",
+        "body": "Jeder geteilte Link hat einen Gate-Screen, der Name, E-Mail, Rolle und Unternehmen des Besuchers erfasst, bevor er zuhören kann."
+      },
+      "passwordProtection": {
+        "title": "Passwortschutz",
+        "body": "Links optional mit einem Passwort schützen. Ablaufdaten festlegen."
+      },
+      "audioWatermarking": {
+        "title": "Audio-Wasserzeichen",
+        "body": "Jeder Zuhörer erhält eine unsichtbar wassergezeichnete Version deines Audios. Jedes Wasserzeichen ist einzigartig pro Besucher."
+      },
+      "leakTracing": {
+        "title": "Leak Tracing",
+        "body": "Wenn deine Musik geleakt wird, gehe zu Settings → Security → Leak Tracing. Lade die geleakte Datei hoch und Trakalog identifiziert genau, wer diese Version erhalten hat."
+      }
+    },
+    "contacts": {
+      "title": "Kontakte",
+      "howCollected": {
+        "title": "Wie Kontakte gesammelt werden",
+        "body": "Kontakte werden automatisch hinzugefügt, wenn jemand deine geteilten Links anhört (Gate-Screen), wenn Kollaborateure deinen Studio-QR-Code scannen oder wenn du sie manuell hinzufügst."
+      },
+      "exportingContacts": {
+        "title": "Kontakte exportieren",
+        "body": "Exportiere deine Kontaktliste jederzeit als PDF, CSV oder Excel."
+      }
+    },
+    "splitsSignatures": {
+      "title": "Splits & Signaturen",
+      "addingSplits": {
+        "title": "Splits hinzufügen",
+        "body": "In den Details jedes Tracks kannst du Kollaborateure mit ihrer Rolle (Songwriter, Producer, Artist, Musician), PRO und IPI-Nummer hinzufügen. Die Autovervollständigung schlägt Kontakte aus deinem Workspace vor."
+      },
+      "digitalSignatures": {
+        "title": "Digitale Signaturen",
+        "body": "Splits zur Unterzeichnung senden. Jeder Kollaborateur unterzeichnet auf einer eigenen Seite mit einer Canvas-Signatur. Das unterzeichnete PDF herunterladen."
+      },
+      "studioQrCode": {
+        "title": "Studio-QR-Code",
+        "body": "Generiere einen QR-Code für deine Studio-Session. Kollaborateure scannen ihn, um ihre Informationen und Beiträge aus der Ferne einzutragen."
+      }
+    },
+    "workspaceTeam": {
+      "title": "Workspace & Team",
+      "multiWorkspace": {
+        "title": "Multi-Workspace",
+        "body": "Erstelle separate Workspaces für verschiedene Projekte: deinen Künstlernamen, ein Label, einen Kunden. Wechsle zwischen ihnen mit dem Workspace-Wechsler."
+      },
+      "teamPermissions": {
+        "title": "Team-Berechtigungen",
+        "body": "Lade Teammitglieder mit 4 Berechtigungsstufen ein: Viewer (nur zuhören), Pitcher (Playlists erstellen & pitchen), Editor (Metadaten & Stems bearbeiten), Admin (vollständige Kontrolle). Jedes Mitglied erhält einen professionellen Titel, der in den Credits angezeigt wird."
+      },
+      "catalogSharing": {
+        "title": "Katalog-Sharing",
+        "body": "Teile deinen gesamten Katalog mit einem anderen Workspace (Label, Manager). Sie können deine Tracks unter ihrem Branding pitchen, während du die volle Kontrolle behältst. Zugriff jederzeit widerrufen."
+      }
+    },
+    "tipsBestPractices": {
+      "title": "Tipps & Best Practices",
+      "tips": [
+        "Je mehr Metadaten du hinzufügst, desto besser matcht Smart A&R deine Tracks mit Briefings.",
+        "Füge Stimmungs-Tags hinzu — sie helfen A&R-Profis, genau das zu finden, wonach sie suchen.",
+        "Füge Lyrics hinzu, um textbasierte Suche und Matching freizuschalten.",
+        "Richte dein Branding ein, bevor du Links teilst — der erste Eindruck zählt.",
+        "Nutze Quick Upload für Massenimporte und füge Details später in deinem eigenen Tempo hinzu.",
+        "Erstelle Abschnitte auf deiner Wellenform für professionelle Track-Präsentationen.",
+        "Überprüfe regelmäßig dein Shared-Links-Dashboard — sieh, wer zuhört.",
+        "Nutze den Studio-QR-Code während Aufnahmesessions, um Splits in Echtzeit zu erfassen."
+      ]
+    }
+  },
+  "welcomeOnboarding": {
+    "catalogManager": "Katalog-Manager",
+    "welcomeTitle": "Willkommen bei Trakalog",
+    "welcomeSubtitle": "Dein intelligenter Katalog-Manager — verwalte, schütze, pitche und vernetz deine Musik.",
+    "getStarted": "Loslegen",
+    "skipForNow": "Jetzt überspringen",
+    "setUpProfile": "Profil einrichten",
+    "setUpProfileSubtitle": "So werden dich deine Kollaborateure und Kontakte sehen.",
+    "fullName": "Vollständiger Name",
+    "fullNamePlaceholder": "Dein Name",
+    "saving": "Wird gespeichert...",
+    "next": "Weiter →",
+    "skip": "Überspringen",
+    "nameWorkspace": "Workspace benennen",
+    "nameWorkspaceSubtitle": "Ein Workspace ist dein kreativer Raum — dein Künstlername, Label, Studio oder Projekt.",
+    "workspaceName": "Workspace-Name",
+    "workspaceNamePlaceholder": "z. B. Mein Studio, Künstlername",
+    "workspaceNameHint": "Du kannst später mehrere Workspaces für verschiedene Projekte oder Kunden erstellen.",
+    "letsGo": "Los geht's! →",
+    "fileTooLarge": "Datei zu groß (max. 5 MB)"
+  },
+  "onboardingFlow": {
+    "title": "Willkommen bei Trakalog ✦",
+    "subtitle": "Richten wir deinen persönlichen Workspace in Sekunden ein",
+    "labelName": "Dein Name",
+    "placeholderName": "Dein Name",
+    "labelWorkspace": "Workspace-Name",
+    "placeholderWorkspace": "Mein Workspace",
+    "labelRole": "Deine Rolle",
+    "optional": "optional",
+    "selectRole": "Rolle auswählen",
+    "creating": "Wird erstellt...",
+    "submit": "Mein Trakalog erstellen",
+    "successTitle": "Dein Trakalog ist bereit! 🎉",
+    "successSubtitle": "Du kannst deinen Musikkatalog jetzt verwalten",
+    "goToDashboard": "Zum Dashboard"
   }
 }

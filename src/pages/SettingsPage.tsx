@@ -378,7 +378,7 @@ function ProfileSection() {
             </div>
             <div className="absolute inset-0 rounded-2xl bg-background/70 backdrop-blur-sm opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all duration-200">
               <Camera className="w-5 h-5 text-foreground mb-0.5" />
-              <span className="text-[9px] font-semibold text-foreground/80 uppercase tracking-wider">Change</span>
+              <span className="text-[9px] font-semibold text-foreground/80 uppercase tracking-wider">{t("settings.change")}</span>
             </div>
           </div>
           <div className="space-y-1">
@@ -512,7 +512,7 @@ function NotificationsSection() {
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title={t("settings.emailNotifications")} subtitle={user?.email ? "Delivered to " + user.email : ""} icon={Mail}>
+      <SectionBlock title={t("settings.emailNotifications")} subtitle={user?.email ? t("settings.deliveredTo", { email: user.email }) : ""} icon={Mail}>
         <SettingToggleRow label={t("settings.notifLinkActivity")} description={t("settings.notifLinkActivityDesc")} enabled={prefs.link_activity} onToggle={() => toggle("link_activity")} />
         <Divider />
         <SettingToggleRow label={t("settings.notifComments")} description={t("settings.notifCommentsDesc")} enabled={prefs.comments} onToggle={() => toggle("comments")} />
@@ -574,18 +574,18 @@ function AppearanceSection() {
     { id: "mono", colors: "from-[hsl(0,0%,75%)] to-[hsl(0,0%,50%)]", name: "Mono" },
   ];
 
-  const handleSave = () => toast.success("Appearance preferences saved");
+  const handleSave = () => toast.success(t("settings.appearancePreferencesSaved"));
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title="Theme" subtitle="Choose your visual mode" icon={Palette} onSave={handleSave} saveLabel="Save Appearance">
+      <SectionBlock title={t("settings.theme")} subtitle={t("settings.chooseVisualMode")} icon={Palette} onSave={handleSave} saveLabel={t("settings.saveAppearance")}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-          {themes.map((t) => {
-            const active = theme === t.id;
+          {themes.map((themeOpt) => {
+            const active = theme === themeOpt.id;
             return (
               <button
-                key={t.id}
-                onClick={() => handleThemeChange(t.id)}
+                key={themeOpt.id}
+                onClick={() => handleThemeChange(themeOpt.id)}
                 className={`relative rounded-2xl border-2 transition-all duration-300 p-3.5 flex flex-col items-center gap-3 group ${
                   active
                     ? "border-primary/60 shadow-[0_0_20px_hsl(24_95%_53%/0.1)]"
@@ -593,22 +593,22 @@ function AppearanceSection() {
                 }`}
               >
                 {/* Mini window preview */}
-                <div className={`w-full aspect-[4/3] rounded-xl ${t.bg} border border-border/20 p-2.5 flex gap-1.5 overflow-hidden`}>
+                <div className={`w-full aspect-[4/3] rounded-xl ${themeOpt.bg} border border-border/20 p-2.5 flex gap-1.5 overflow-hidden`}>
                   <div className="w-1/4 flex flex-col gap-1">
-                    <div className={`h-1.5 rounded-full ${t.bar1} w-full`} />
-                    <div className={`h-1.5 rounded-full ${t.bar1} w-3/4`} />
-                    <div className={`h-1.5 rounded-full ${t.bar3} w-2/3`} />
-                    <div className={`h-1.5 rounded-full ${t.bar1} w-full`} />
+                    <div className={`h-1.5 rounded-full ${themeOpt.bar1} w-full`} />
+                    <div className={`h-1.5 rounded-full ${themeOpt.bar1} w-3/4`} />
+                    <div className={`h-1.5 rounded-full ${themeOpt.bar3} w-2/3`} />
+                    <div className={`h-1.5 rounded-full ${themeOpt.bar1} w-full`} />
                   </div>
                   <div className="flex-1 flex flex-col gap-1.5">
-                    <div className={`h-2 rounded ${t.bar2} w-2/3`} />
-                    <div className={`flex-1 rounded-lg ${t.bar1}`} />
+                    <div className={`h-2 rounded ${themeOpt.bar2} w-2/3`} />
+                    <div className={`flex-1 rounded-lg ${themeOpt.bar1}`} />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <t.icon className={`w-3.5 h-3.5 ${active ? "text-primary" : "text-muted-foreground/50"}`} />
+                  <themeOpt.icon className={`w-3.5 h-3.5 ${active ? "text-primary" : "text-muted-foreground/50"}`} />
                   <span className={`text-[12px] font-bold tracking-tight ${active ? "text-primary" : "text-muted-foreground/60"}`}>
-                    {t.label}
+                    {themeOpt.label}
                   </span>
                 </div>
                 {active && (
@@ -625,7 +625,7 @@ function AppearanceSection() {
         <Divider />
 
         <div className="pt-5">
-          <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Accent Palette</p>
+          <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">{t("settings.accentPalette")}</p>
           <div className="flex items-center gap-3">
             {accents.map((a) => (
               <button
@@ -645,12 +645,12 @@ function AppearanceSection() {
         </div>
       </SectionBlock>
 
-      <SectionBlock title="Layout & Display" subtitle="Fine-tune your workspace layout" icon={Monitor} onSave={handleSave} saveLabel="Save Layout">
-        <SettingToggleRow icon={Laptop} label="Compact Mode" description="Reduce padding and spacing for information-dense views" enabled={compactMode} onToggle={async () => { const next = !compactMode; setCompactMode(next); applyCompactMode(next); await ensureSession(session); supabase.auth.updateUser({ data: { compact_mode: next } }).catch(() => {}); }} />
+      <SectionBlock title={t("settings.layoutDisplay")} subtitle={t("settings.fineTuneLayout")} icon={Monitor} onSave={handleSave} saveLabel={t("settings.saveLayout")}>
+        <SettingToggleRow icon={Laptop} label={t("settings.compactMode")} description={t("settings.compactModeDescDense")} enabled={compactMode} onToggle={async () => { const next = !compactMode; setCompactMode(next); applyCompactMode(next); await ensureSession(session); supabase.auth.updateUser({ data: { compact_mode: next } }).catch(() => {}); }} />
         <Divider />
-        <SettingToggleRow icon={ChevronDown} label="Collapsed Sidebar" description="Start with the sidebar collapsed by default" enabled={sidebarCollapsed} onToggle={async () => { const next = !sidebarCollapsed; setSidebarCollapsedState(next); setSidebarCollapsed(next); await ensureSession(session); supabase.auth.updateUser({ data: { sidebar_collapsed: next } }).catch(() => {}); }} />
+        <SettingToggleRow icon={ChevronDown} label={t("settings.collapsedSidebar")} description={t("settings.collapsedSidebarDesc")} enabled={sidebarCollapsed} onToggle={async () => { const next = !sidebarCollapsed; setSidebarCollapsedState(next); setSidebarCollapsed(next); await ensureSession(session); supabase.auth.updateUser({ data: { sidebar_collapsed: next } }).catch(() => {}); }} />
         <Divider />
-        <SettingToggleRow icon={Sparkles} label="Motion & Animations" description="Enable entrance animations and micro-interactions" enabled={animations} onToggle={async () => { const next = !animations; setAnimations(next); applyReduceMotion(!next); await ensureSession(session); supabase.auth.updateUser({ data: { reduce_motion: !next } }).catch(() => {}); }} />
+        <SettingToggleRow icon={Sparkles} label={t("settings.motionAnimations")} description={t("settings.motionAnimationsDesc")} enabled={animations} onToggle={async () => { const next = !animations; setAnimations(next); applyReduceMotion(!next); await ensureSession(session); supabase.auth.updateUser({ data: { reduce_motion: !next } }).catch(() => {}); }} />
       </SectionBlock>
 
       <ResetOnboardingBlock />
@@ -659,6 +659,7 @@ function AppearanceSection() {
 }
 
 function ResetOnboardingBlock() {
+  const { t } = useTranslation();
   const { resetOnboarding } = useOnboarding();
   return (
     <motion.div variants={fadeUp} className="card-premium p-5 flex items-center justify-between gap-4">
@@ -667,15 +668,15 @@ function ResetOnboardingBlock() {
           <RotateCcw className="w-4 h-4 text-primary" />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">Restart Onboarding</p>
-          <p className="text-2xs text-muted-foreground mt-0.5">Show the welcome modal and getting started checklist again</p>
+          <p className="text-sm font-semibold text-foreground">{t("settings.restartOnboarding")}</p>
+          <p className="text-2xs text-muted-foreground mt-0.5">{t("settings.restartOnboardingDesc")}</p>
         </div>
       </div>
       <button
-        onClick={() => { resetOnboarding(); toast.success("Onboarding reset — refresh to see the welcome screen"); }}
+        onClick={() => { resetOnboarding(); toast.success(t("settings.onboardingReset")); }}
         className="px-4 py-2 rounded-lg border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"
       >
-        Reset
+        {t("settings.reset")}
       </button>
     </motion.div>
   );
@@ -724,7 +725,7 @@ function SecuritySection() {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("2FA disabled");
+        toast.success(t("settings.twoFaDisabled"));
         setTwoFa(false);
         setMfaFactorId(null);
       }
@@ -762,7 +763,7 @@ function SecuritySection() {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("2FA enabled!");
+      toast.success(t("settings.twoFaEnabled"));
       setTwoFa(true);
       setMfaEnrolling(false);
       setMfaQrCode(null);
@@ -781,16 +782,16 @@ function SecuritySection() {
   };
 
   const currentSession = {
-    device: navigator.userAgent.includes("Mac") ? "Mac" : navigator.userAgent.includes("Windows") ? "Windows" : navigator.userAgent.includes("Linux") ? "Linux" : "Unknown Device",
-    browser: navigator.userAgent.includes("Chrome") ? "Chrome" : navigator.userAgent.includes("Firefox") ? "Firefox" : navigator.userAgent.includes("Safari") ? "Safari" : "Browser",
-    time: "Active now",
+    device: navigator.userAgent.includes("Mac") ? "Mac" : navigator.userAgent.includes("Windows") ? "Windows" : navigator.userAgent.includes("Linux") ? "Linux" : t("settings.unknownDevice"),
+    browser: navigator.userAgent.includes("Chrome") ? "Chrome" : navigator.userAgent.includes("Firefox") ? "Firefox" : navigator.userAgent.includes("Safari") ? "Safari" : t("settings.unknownBrowser"),
+    time: t("settings.activeNow"),
     current: true,
     icon: navigator.userAgent.includes("Mac") ? Laptop : navigator.userAgent.includes("iPhone") ? Smartphone : Monitor,
   };
 
   const handlePasswordChange = async () => {
     if (!newPw || newPw.length < 6) {
-      toast.error("Password must be at least 6 characters");
+      toast.error(t("settings.passwordTooShort"));
       return;
     }
     await ensureSession(session);
@@ -817,7 +818,7 @@ function SecuritySection() {
       safeLocalStorage.removeItem("trakalog_was_auth");
       safeLocalStorage.removeItem("trakalog_session_backup");
       safeLocalStorage.removeItem("trakalog_active_workspace");
-      toast.success("Signed out from all devices");
+      toast.success(t("settings.signedOutAllDevices"));
       window.location.href = "/auth";
     } catch (err: any) {
       toast.error(err?.message || "Failed to sign out");
@@ -834,8 +835,8 @@ function SecuritySection() {
               <Lock className="w-4 h-4 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-[13px] text-foreground font-semibold">Signed in with Google</p>
-              <p className="text-[11px] text-muted-foreground/50 mt-0.5">Password management is handled by your Google account</p>
+              <p className="text-[13px] text-foreground font-semibold">{t("settings.signedInWithGoogle")}</p>
+              <p className="text-[11px] text-muted-foreground/50 mt-0.5">{t("settings.googlePasswordManaged")}</p>
             </div>
           </div>
         </SectionBlock>
@@ -881,7 +882,7 @@ function SecuritySection() {
                 ))}
               </div>
               <p className="text-[10px] text-muted-foreground/40 mt-1.5 font-medium">
-                {newPw.length < 6 ? "Too short" : newPw.length < 9 ? "Fair" : newPw.length < 12 ? "Good" : "Strong"}
+                {newPw.length < 6 ? t("settings.pwStrengthTooShort") : newPw.length < 9 ? t("settings.pwStrengthFair") : newPw.length < 12 ? t("settings.pwStrengthGood") : t("settings.pwStrengthStrong")}
               </p>
             </motion.div>
           )}
@@ -895,8 +896,8 @@ function SecuritySection() {
               <Smartphone className={`w-[18px] h-[18px] ${twoFa ? "text-emerald-400" : "text-muted-foreground"}`} />
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-foreground tracking-tight">Authenticator App</p>
-              <p className="text-[11px] text-muted-foreground/50 mt-0.5">Use an app like Google Authenticator or Authy</p>
+              <p className="text-[13px] font-semibold text-foreground tracking-tight">{t("settings.authenticatorApp")}</p>
+              <p className="text-[11px] text-muted-foreground/50 mt-0.5">{t("settings.authenticatorAppDesc")}</p>
             </div>
           </div>
           <ToggleSwitch enabled={twoFa || mfaEnrolling} onToggle={mfaEnrolling ? handleCancelEnroll : handleToggle2FA} />
@@ -905,14 +906,14 @@ function SecuritySection() {
           {mfaEnrolling && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-4 overflow-hidden">
               <div className="p-4 rounded-xl border border-border/40 bg-secondary/30 space-y-4">
-                <p className="text-[13px] text-foreground font-semibold">Scan this QR code with your authenticator app</p>
+                <p className="text-[13px] text-foreground font-semibold">{t("settings.scanQrCode")}</p>
                 {mfaQrCode && (
                   <div className="flex justify-center">
                     <img src={mfaQrCode} alt="TOTP QR Code" className="w-48 h-48 rounded-lg" />
                   </div>
                 )}
                 <div className="space-y-2">
-                  <p className="text-[11px] text-muted-foreground/50">Enter the 6-digit code from your app</p>
+                  <p className="text-[11px] text-muted-foreground/50">{t("settings.enterSixDigitCode")}</p>
                   <div className="flex gap-3">
                     <input
                       type="text"
@@ -929,7 +930,7 @@ function SecuritySection() {
                       className="h-10 px-4 rounded-lg bg-brand-orange text-white text-[13px] font-semibold hover:bg-brand-orange/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       {mfaLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                      Verify
+                      {t("auth.verify")}
                     </button>
                   </div>
                 </div>
@@ -944,8 +945,8 @@ function SecuritySection() {
                     <Check className="w-4 h-4 text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-[13px] text-emerald-400 font-semibold">2FA is active</p>
-                    <p className="text-[11px] text-emerald-400/50 mt-0.5">Your account has an extra layer of protection</p>
+                    <p className="text-[13px] text-emerald-400 font-semibold">{t("settings.twoFaIsActive")}</p>
+                    <p className="text-[11px] text-emerald-400/50 mt-0.5">{t("settings.twoFaProtectionDesc")}</p>
                   </div>
                 </div>
                 <button
@@ -954,7 +955,7 @@ function SecuritySection() {
                   className="text-[11px] text-destructive/70 hover:text-destructive font-medium transition-colors disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {mfaLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                  Disable 2FA
+                  {t("settings.disable2FA")}
                 </button>
               </div>
             </motion.div>
@@ -962,7 +963,7 @@ function SecuritySection() {
         </AnimatePresence>
       </SectionBlock>
 
-      <SectionBlock title="Active Sessions" subtitle="Manage where you're signed in" icon={Key}>
+      <SectionBlock title={t("settings.activeSessions")} subtitle={t("settings.manageSignedIn")} icon={Key}>
         <div className="flex items-center justify-between gap-3 py-4">
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10">
@@ -973,7 +974,7 @@ function SecuritySection() {
                 <p className="text-[13px] font-semibold text-foreground tracking-tight">{currentSession.device}</p>
                 <span className="text-[11px] text-muted-foreground/40">· {currentSession.browser}</span>
                 <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Current
+                  {t("settings.currentSession")}
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground/40 mt-0.5">{currentSession.time}</p>
@@ -983,33 +984,33 @@ function SecuritySection() {
         <Divider />
         <div className="flex items-center justify-between gap-3 py-4">
           <div>
-            <p className="text-[13px] font-semibold text-foreground">Sign out everywhere</p>
-            <p className="text-[11px] text-muted-foreground/50 mt-0.5">This will sign you out from all devices and sessions</p>
+            <p className="text-[13px] font-semibold text-foreground">{t("settings.signOutEverywhere")}</p>
+            <p className="text-[11px] text-muted-foreground/50 mt-0.5">{t("settings.signOutEverywhereDesc")}</p>
           </div>
           <button onClick={handleSignOutEverywhere} disabled={signingOut} className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-destructive/30 text-destructive hover:bg-destructive/10 transition-all min-h-[40px] flex items-center gap-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
-            <LogOut className="w-3.5 h-3.5" /> {signingOut ? "Signing out…" : "Sign Out All"}
+            <LogOut className="w-3.5 h-3.5" /> {signingOut ? t("settings.signingOut") : t("settings.signOutAll")}
           </button>
         </div>
       </SectionBlock>
 
-      <SectionBlock title="Data & Privacy" subtitle="Export or delete your data" icon={Download}>
+      <SectionBlock title={t("settings.dataPrivacy")} subtitle={t("settings.dataPrivacyDesc")} icon={Download}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2">
           <div>
-            <p className="text-[13px] font-semibold text-foreground">Export all data</p>
-            <p className="text-[11px] text-muted-foreground/50 mt-0.5">Download tracks, playlists, contacts, and metadata as a ZIP archive</p>
+            <p className="text-[13px] font-semibold text-foreground">{t("settings.exportAllData")}</p>
+            <p className="text-[11px] text-muted-foreground/50 mt-0.5">{t("settings.exportAllDataDesc")}</p>
           </div>
           <button className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-border/60 text-foreground hover:bg-secondary transition-all min-h-[40px] flex items-center gap-2 shrink-0">
-            <Download className="w-3.5 h-3.5" /> Export ZIP
+            <Download className="w-3.5 h-3.5" /> {t("settings.exportZip")}
           </button>
         </div>
         <Divider />
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4">
           <div>
-            <p className="text-[13px] font-semibold text-foreground">Delete your account</p>
-            <p className="text-[11px] text-muted-foreground/50 mt-0.5">This will permanently remove your account and all associated data</p>
+            <p className="text-[13px] font-semibold text-foreground">{t("settings.deleteYourAccount")}</p>
+            <p className="text-[11px] text-muted-foreground/50 mt-0.5">{t("settings.deleteYourAccountDesc")}</p>
           </div>
           <button className="px-5 py-2.5 rounded-xl text-[13px] font-semibold border border-destructive/25 text-destructive hover:bg-destructive/8 transition-all min-h-[40px] shrink-0">
-            Delete Account
+            {t("settings.deleteAccount")}
           </button>
         </div>
       </SectionBlock>

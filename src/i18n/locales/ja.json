@@ -508,7 +508,15 @@
     "cancel": "キャンセル",
     "delete": "削除",
     "deleting": "削除中…",
-    "adjustFilters": "検索条件またはフィルターを変更してお試しください。"
+    "adjustFilters": "検索条件またはフィルターを変更してお試しください。",
+    "tracksEngaged_one": "{{count}} 曲",
+    "tracksEngaged_other": "{{count}} 曲",
+    "plays_one": "{{count}} 再生",
+    "plays_other": "{{count}} 再生",
+    "downloads_one": "{{count}} ダウンロード",
+    "downloads_other": "{{count}} ダウンロード",
+    "collabTracks_one": "{{count}} 曲",
+    "collabTracks_other": "{{count}} 曲"
   },
   "notifications": {
     "title": "通知センター",
@@ -541,7 +549,13 @@
     "timeFilter24h": "24時間",
     "timeFilter7d": "7日間",
     "timeFilter30d": "30日間",
-    "timeFilter1y": "1年"
+    "timeFilter1y": "1年",
+    "timeFilterAll": "すべて",
+    "today": "今日",
+    "thisWeek": "今週",
+    "noActivityYet": "アクティビティはまだありません",
+    "noActivityDesc": "チームが操作を行うと、ここに表示されます。フィルターを調整するか、後でご確認ください。",
+    "savedType": "Trakalog に保存しました"
   },
   "sharedLinks": {
     "title": "共有リンク",
@@ -793,7 +807,53 @@
     "passwordUpdated": "パスワードが正常に更新されました",
     "fileTooLarge": "ファイルが大きすぎます — 最大5 MB",
     "photoUpdated": "プロフィール写真が更新されました",
-    "photoRemoved": "プロフィール写真が削除されました"
+    "photoRemoved": "プロフィール写真が削除されました",
+    "accentPalette": "アクセントパレット",
+    "activeNow": "現在アクティブ",
+    "appearancePreferencesSaved": "外観設定を保存しました",
+    "authenticatorApp": "認証アプリ",
+    "authenticatorAppDesc": "Google Authenticator または Authy などのアプリをご使用ください",
+    "change": "変更",
+    "chooseVisualMode": "表示モードを選択してください",
+    "collapsedSidebar": "サイドバーを折りたたむ",
+    "collapsedSidebarDesc": "デフォルトでサイドバーを折りたたんだ状態で起動する",
+    "compactModeDescDense": "情報量の多いビューのためにパディングとスペースを縮小する",
+    "dataPrivacy": "データとプライバシー",
+    "dataPrivacyDesc": "データのエクスポートまたは削除",
+    "deleteYourAccount": "アカウントを削除する",
+    "deleteYourAccountDesc": "アカウントおよび関連するすべてのデータが完全に削除されます",
+    "deliveredTo": "{{email}} に送信しました",
+    "disable2FA": "2FA を無効にする",
+    "enterSixDigitCode": "アプリに表示された6桁のコードを入力してください",
+    "exportAllData": "すべてのデータをエクスポート",
+    "exportAllDataDesc": "トラック、プレイリスト、コンタクト、メタデータを ZIP アーカイブとしてダウンロードする",
+    "exportZip": "ZIP をエクスポート",
+    "fineTuneLayout": "ワークスペースのレイアウトを細かく調整する",
+    "googlePasswordManaged": "パスワード管理は Google アカウントによって行われています",
+    "layoutDisplay": "レイアウトと表示",
+    "manageSignedIn": "サインイン中のデバイスを管理する",
+    "motionAnimations": "モーションとアニメーション",
+    "motionAnimationsDesc": "エントランスアニメーションとマイクロインタラクションを有効にする",
+    "passwordTooShort": "パスワードは6文字以上である必要があります",
+    "pwStrengthFair": "普通",
+    "pwStrengthGood": "良好",
+    "pwStrengthStrong": "強力",
+    "pwStrengthTooShort": "短すぎます",
+    "saveAppearance": "外観を保存",
+    "saveLayout": "レイアウトを保存",
+    "scanQrCode": "認証アプリでこの QR コードをスキャンしてください",
+    "signedInWithGoogle": "Google でサインイン済み",
+    "signedOutAllDevices": "すべてのデバイスからサインアウトしました",
+    "signingOut": "サインアウト中…",
+    "signOutAll": "すべてサインアウト",
+    "signOutEverywhere": "すべての場所からサインアウト",
+    "signOutEverywhereDesc": "すべてのデバイスとセッションからサインアウトされます",
+    "twoFaDisabled": "2FA が無効になりました",
+    "twoFaEnabled": "2FA が有効になりました！",
+    "twoFaIsActive": "2FA は有効です",
+    "twoFaProtectionDesc": "アカウントに追加の保護レイヤーが設定されています",
+    "unknownBrowser": "ブラウザ",
+    "unknownDevice": "不明なデバイス"
   },
   "uploadTrack": {
     "title": "トラックをアップロード",
@@ -1730,5 +1790,289 @@
     "deleteContact": "連絡先を削除",
     "edit": "編集",
     "sendPitch": "ピッチを送る"
+  },
+  "workspaceSettings": {
+    "pageTitle": "ワークスペース設定",
+    "general": "一般",
+    "generalSubtitle": "基本的なワークスペース情報",
+    "workspaceName": "ワークスペース名",
+    "workspaceUrl": "ワークスペース URL",
+    "backgroundImage": "背景画像",
+    "backgroundImageSubtitle": "共有リンク用のフルスクリーン背景",
+    "logo": "ロゴ",
+    "logoSubtitle": "共有リンク用のブランドロゴ",
+    "brandColor": "ブランドカラー",
+    "brandColorSubtitle": "ボタンとリンクのアクセントカラー",
+    "about": "概要",
+    "aboutSubtitle": "共有リンクの受信者に表示される短い自己紹介",
+    "socialLinks": "ソーシャルリンク",
+    "socialLinksSubtitle": "ソーシャルメディアのプロフィールを追加してください — 共有リンクに表示されます",
+    "reposition": "位置を変更",
+    "setFocalPoint": "焦点を設定",
+    "change": "変更",
+    "remove": "削除",
+    "uploading": "アップロード中...",
+    "dragToReposition": "ドラッグして位置を変更",
+    "clickToSetFocalPoint": "クリックして焦点を設定",
+    "savePosition": "位置を保存",
+    "saveFocalPoint": "焦点を保存",
+    "cancel": "キャンセル",
+    "member": "メンバー",
+    "title": "肩書き",
+    "access": "アクセス",
+    "manageMembersSubtitle": "ワークスペースのメンバーとアクセスレベルを管理する",
+    "editMember": "編集",
+    "editMyTitle": "肩書きを編集",
+    "removeMember": "削除",
+    "shareFullCatalog": "カタログ全体を共有",
+    "shareFullCatalogWith": "カタログ全体を共有する相手...",
+    "selectWorkspaceToShare": "カタログ全体を共有するワークスペースを選択してください",
+    "noOtherWorkspacesAvailable": "共有できる他のワークスペースがありません",
+    "share": "共有",
+    "sharing": "共有中...",
+    "catalogsYouShare": "他のワークスペースと共有しているカタログ",
+    "noOutgoingShares": "送信中のカタログ共有はまだありません。",
+    "catalogsSharedWithYou": "あなたと共有されているカタログ",
+    "noIncomingShares": "受信中のカタログ共有はありません。",
+    "revokeCatalogShare": "カタログ共有を取り消しますか？",
+    "revokeTrackShareConfirm": "{{name}} とのトラック共有を取り消してもよろしいですか？取り消すと、このトラックへのアクセスができなくなります。",
+    "revokeCatalogShareConfirm": "{{name}} とのカタログ共有を取り消してもよろしいですか？取り消すと、あなたのトラックへのアクセスができなくなります。",
+    "revoke": "取り消す",
+    "revoking": "取り消し中...",
+    "leakTracing": "Leak Tracing",
+    "leakTracingSubtitle": "流出した音声ファイルのウォーターマークを検出する",
+    "analyzingAudioWatermark": "音声ウォーターマークを解析中...",
+    "thisMayTakeSeconds": "数秒かかる場合があります",
+    "dropAudioFileHere": "音声ファイルをここにドロップするか、クリックしてアップロード",
+    "supportsFormats": "WAV、MP3、FLAC、OGG、M4A、AAC に対応",
+    "watermarkDetected": "ウォーターマークを検出 — 流出元が特定されました",
+    "noWatermarkDetected": "このファイルにウォーターマークは検出されませんでした",
+    "audioAppearsClean": "音声はクリーンであるか、ウォーターマークを読み取ることができませんでした",
+    "leakName": "名前:",
+    "leakEmail": "メール:",
+    "leakSharedLink": "共有リンク:",
+    "leakConfidence": "信頼度:",
+    "recentTraces": "最近のトレース",
+    "traceLeak": "流出",
+    "traceClean": "クリーン",
+    "nav": {
+      "info": "情報",
+      "infoDesc": "ワークスペース名と詳細",
+      "branding": "ブランディング",
+      "brandingDesc": "ロゴ、ヒーロー画像、カラー",
+      "members": "メンバー",
+      "membersDesc": "チームのアクセスと役割",
+      "catalogSharing": "カタログ共有",
+      "catalogSharingDesc": "ワークスペース間でカタログを共有する",
+      "leakTracing": "Leak Tracing",
+      "leakTracingDesc": "流出した音声のウォーターマークを検出する"
+    },
+    "toasts": {
+      "workspaceNameSaved": "ワークスペース名を保存しました",
+      "heroPositionSaved": "ヒーロー画像の位置を保存しました",
+      "focalPointSaved": "焦点を保存しました",
+      "brandColorSaved": "ブランドカラーを保存しました",
+      "socialLinksSaved": "ソーシャルリンクを保存しました",
+      "bioSaved": "自己紹介を保存しました",
+      "fullCatalogSharedWith": "カタログ全体を共有しました：",
+      "shareRevoked": "共有を取り消しました"
+    }
+  },
+  "guide": {
+    "header": {
+      "title": "ヘルプとガイド",
+      "subtitle": "Trakalog について知っておくべきすべてのこと",
+      "replayTour": "ツアーを再生",
+      "showChecklist": "チェックリストを表示"
+    },
+    "gettingStarted": {
+      "title": "はじめに",
+      "whatIsTrakalog": {
+        "title": "Trakalog とは何ですか？",
+        "body": "Trakalog は、あなたの音楽カタログのためのインテリジェントな神経系です。トラックをアップロードすると、Trakalog は不可視の音声ウォーターマークで保護し、Sonic DNA で分析し、Smart A&R を通じてビジネスチャンスにつなげ、共有リンク上のすべてのインタラクションをトラッキングします。"
+      },
+      "settingUpWorkspace": {
+        "title": "ワークスペースの設定",
+        "body": "ワークスペースはあなたのクリエイティブな空間 — アーティストプロジェクト、レーベル、スタジオです。Settings → Branding でヒーロー画像、ロゴ、カラーなどのブランディングをカスタマイズしてください。"
+      },
+      "uploadingFirstTrack": {
+        "title": "最初のトラックをアップロードする",
+        "body": "「トラック」に移動し、「トラックをアップロード」をクリックしてください。Quick Upload で即時一括インポート、またはステップバイステップで詳細情報（歌詞、Stems、スプリット、メタデータ）を追加することもできます。"
+      }
+    },
+    "sonicDna": {
+      "title": "Sonic DNA と Smart A&R",
+      "whatIsSonicDna": {
+        "title": "Sonic DNA とは何ですか？",
+        "body": "トラックをアップロードすると、Trakalog が音声を分析してユニークなフィンガープリントを作成します：BPM、キー、エネルギーカーブ、スペクトル特性（明度、温かみ）、構造。これが Smart A&R マッチングを支えています。"
+      },
+      "maximizeSonicDna": {
+        "title": "Sonic DNA を最大限に活用する方法",
+        "body": "メタデータ（ジャンル、ムードタグ、歌詞、言語、タイプ、性別）を多く追加するほど、AI があなたの音楽をより深く理解し、より多くのビジネスチャンスを見つけられます。"
+      },
+      "usingSmartAr": {
+        "title": "Smart A&R の使い方",
+        "body": "ヘッダーの Smart A&R アイコンをクリックしてください。任意のブリーフを貼り付けるか、探しているものを説明してください。Trakalog は Sonic DNA データを使ってカタログ全体をスキャンし、最適なマッチを見つけます。"
+      }
+    },
+    "catalogManagement": {
+      "title": "カタログ管理",
+      "uploadingTracks": {
+        "title": "トラックのアップロード",
+        "body": "シングルまたは一括アップロード。Quick Upload はすべての詳細入力をスキップします。Sonic DNA がアップロード後に BPM とキーを自動検出します。"
+      },
+      "editingTrackDetails": {
+        "title": "トラック詳細の編集",
+        "body": "任意のトラックをクリックして、タイトル、アーティスト、ジャンル、ムードタグ、BPM、キー、言語、タイプ、ISRC、UPC など17以上のメタデータフィールドを編集できます。"
+      },
+      "managingStems": {
+        "title": "Stems の管理",
+        "body": "各トラックの「Stems」タブで、ボーカル、ドラム、ベースなどのステムをアップロードできます。タイプ別に整理してください。"
+      },
+      "trackSections": {
+        "title": "トラックセクション",
+        "body": "波形上をダブルクリックしてセクションマーカー（イントロ、バース、コーラス、ドロップ）を追加します。ラベルをダブルクリックしてリネームできます。"
+      },
+      "lyrics": {
+        "title": "歌詞",
+        "body": "歌詞を手動で入力、PDF/TXT からインポート、または AI で自動文字起こしできます。歌詞はテキストベースのマッチングのために Sonic DNA と同期されます。"
+      }
+    },
+    "playlists": {
+      "title": "プレイリスト",
+      "creatingPlaylists": {
+        "title": "プレイリストの作成",
+        "body": "カスタムグラデーションカラーとムード・ジャンルタグを使って、テーマ別プレイリストを作成できます。"
+      },
+      "sharingPlaylists": {
+        "title": "プレイリストの共有",
+        "body": "ブランド付きリンク1つでプレイリスト全体を共有できます。受信者にはあなたのブランディングが表示されます。"
+      }
+    },
+    "pitching": {
+      "title": "ピッチング",
+      "creatingPitch": {
+        "title": "ピッチの作成",
+        "body": "トラックまたはプレイリストを選択し、コンタクトを追加して、メッセージを入力します。Trakalog がセキュアなリスニングリンク付きのブランドメールを送信します。"
+      },
+      "trackingEngagement": {
+        "title": "エンゲージメントのトラッキング",
+        "body": "誰があなたのピッチを開封したか、どのくらいの時間聴いたか、どのセクションをリプレイしたかを確認できます。パイプラインビュー：下書き → 送信済み → 開封済み → 返信済み。"
+      }
+    },
+    "sharingSecurity": {
+      "title": "共有とセキュリティ",
+      "sharedLinks": {
+        "title": "共有リンク",
+        "body": "トラック、プレイリスト、Stems、または完全な Trakalog Pack（トラック、カバー、歌詞 PDF、スプリット PDF を含む ZIP）のセキュアなリンクを作成できます。"
+      },
+      "gateScreen": {
+        "title": "ゲートスクリーン",
+        "body": "すべての共有リンクには、訪問者が視聴する前に名前、メールアドレス、役職、会社名を収集するゲートスクリーンがあります。"
+      },
+      "passwordProtection": {
+        "title": "パスワード保護",
+        "body": "任意でリンクをパスワードで保護できます。有効期限を設定することもできます。"
+      },
+      "audioWatermarking": {
+        "title": "音声ウォーターマーキング",
+        "body": "すべてのリスナーは、不可視のウォーターマークが埋め込まれた音声を受信します。各ウォーターマークは訪問者ごとに固有です。"
+      },
+      "leakTracing": {
+        "title": "Leak Tracing",
+        "body": "音楽が流出した場合は、Settings → Security → Leak Tracing に移動してください。流出したファイルをアップロードすると、Trakalog がそのバージョンを受け取った人物を正確に特定します。"
+      }
+    },
+    "contacts": {
+      "title": "コンタクト",
+      "howCollected": {
+        "title": "コンタクトの収集方法",
+        "body": "コンタクトは、共有リンクを聴いた方（ゲートスクリーン経由）、スタジオの QR コードをスキャンしたコラボレーター、または手動で追加した場合に自動的に登録されます。"
+      },
+      "exportingContacts": {
+        "title": "コンタクトのエクスポート",
+        "body": "コンタクトリストをいつでも PDF、CSV、または Excel にエクスポートできます。"
+      }
+    },
+    "splitsSignatures": {
+      "title": "スプリットと署名",
+      "addingSplits": {
+        "title": "スプリットの追加",
+        "body": "各トラックの詳細画面で、コラボレーターの役割（ソングライター、プロデューサー、アーティスト、ミュージシャン）、PRO、IPI 番号を追加できます。オートコンプリートがワークスペースのコンタクトから候補を提案します。"
+      },
+      "digitalSignatures": {
+        "title": "デジタル署名",
+        "body": "スプリットに署名を依頼できます。各コラボレーターは専用ページでキャンバス署名を行います。署名済みの PDF をダウンロードできます。"
+      },
+      "studioQrCode": {
+        "title": "スタジオ QR コード",
+        "body": "スタジオセッション用の QR コードを生成できます。コラボレーターがスキャンすることで、情報と貢献内容をリモートで入力できます。"
+      }
+    },
+    "workspaceTeam": {
+      "title": "ワークスペースとチーム",
+      "multiWorkspace": {
+        "title": "マルチワークスペース",
+        "body": "アーティスト名、レーベル、クライアントなど、プロジェクトごとに個別のワークスペースを作成できます。ワークスペーススイッチャーで切り替えることができます。"
+      },
+      "teamPermissions": {
+        "title": "チームの権限",
+        "body": "4つの権限レベルでチームメンバーを招待できます：Viewer（視聴のみ）、Pitcher（プレイリスト作成・ピッチ）、Editor（メタデータとステムの編集）、Admin（フルコントロール）。各メンバーにはクレジットに表示される専門肩書きが付与されます。"
+      },
+      "catalogSharing": {
+        "title": "カタログ共有",
+        "body": "カタログ全体を別のワークスペース（レーベル、マネージャー）と共有できます。相手は自分のブランディングであなたのトラックをピッチしながら、あなたはフルコントロールを維持できます。アクセスはいつでも取り消せます。"
+      }
+    },
+    "tipsBestPractices": {
+      "title": "ヒントとベストプラクティス",
+      "tips": [
+        "メタデータを多く追加するほど、Smart A&R がトラックをブリーフにより的確にマッチさせます。",
+        "ムードタグを追加しましょう — A&R プロフェッショナルが求めているものを正確に見つけやすくなります。",
+        "歌詞を追加してテキストベースの検索とマッチングを有効にしましょう。",
+        "リンクを共有する前にブランディングを設定しましょう — 第一印象が重要です。",
+        "一括インポートには Quick Upload を使用し、詳細は後から自分のペースで追加できます。",
+        "波形にセクションを作成して、プロフェッショナルなトラックプレゼンテーションを実現しましょう。",
+        "共有リンクのダッシュボードを定期的に確認しましょう — 誰が聴いているかを把握できます。",
+        "レコーディングセッション中にスタジオ QR コードを使用して、リアルタイムでスプリットを記録しましょう。"
+      ]
+    }
+  },
+  "welcomeOnboarding": {
+    "catalogManager": "カタログマネージャー",
+    "welcomeTitle": "Trakalog へようこそ",
+    "welcomeSubtitle": "インテリジェントなカタログマネージャー — 音楽を管理、保護、ピッチ、コネクトしましょう。",
+    "getStarted": "はじめる",
+    "skipForNow": "今はスキップ",
+    "setUpProfile": "プロフィールを設定する",
+    "setUpProfileSubtitle": "コラボレーターやコンタクトに表示される情報です。",
+    "fullName": "フルネーム",
+    "fullNamePlaceholder": "お名前",
+    "saving": "保存中...",
+    "next": "次へ →",
+    "skip": "スキップ",
+    "nameWorkspace": "ワークスペースに名前をつける",
+    "nameWorkspaceSubtitle": "ワークスペースはあなたのクリエイティブな空間 — アーティスト名、レーベル、スタジオ、またはプロジェクトです。",
+    "workspaceName": "ワークスペース名",
+    "workspaceNamePlaceholder": "例：マイスタジオ、アーティスト名",
+    "workspaceNameHint": "後から別のプロジェクトやクライアント用に複数のワークスペースを作成できます。",
+    "letsGo": "始めましょう！ →",
+    "fileTooLarge": "ファイルサイズが大きすぎます（最大 5MB）"
+  },
+  "onboardingFlow": {
+    "title": "Trakalog へようこそ ✦",
+    "subtitle": "数秒でパーソナルワークスペースを設定しましょう",
+    "labelName": "お名前",
+    "placeholderName": "お名前",
+    "labelWorkspace": "ワークスペース名",
+    "placeholderWorkspace": "マイワークスペース",
+    "labelRole": "役割",
+    "optional": "任意",
+    "selectRole": "役割を選択",
+    "creating": "作成中...",
+    "submit": "Trakalog を作成する",
+    "successTitle": "Trakalog の準備ができました！ 🎉",
+    "successSubtitle": "音楽カタログの管理を始める準備が整いました",
+    "goToDashboard": "ダッシュボードへ"
   }
 }

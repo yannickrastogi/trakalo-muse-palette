@@ -55,13 +55,16 @@ const activityMeta: Record<ActivityType, { icon: LucideIcon; color: string; bg: 
   recipient_saved: { icon: Bookmark, color: "text-brand-purple", bg: "bg-brand-purple/10", badgeCls: "bg-brand-purple/10 text-brand-purple border-brand-purple/20" },
 };
 
-const timeFilters: { key: TimeFilter; label: string }[] = [
-  { key: "24h", label: "24h" },
-  { key: "7d", label: "7 Days" },
-  { key: "30d", label: "30 Days" },
-  { key: "1y", label: "1 Year" },
-  { key: "all", label: "All" },
-];
+function useTimeFilters() {
+  const { t } = useTranslation();
+  return [
+    { key: "24h" as TimeFilter, label: t("notifications.timeFilter24h") },
+    { key: "7d" as TimeFilter, label: t("notifications.timeFilter7d") },
+    { key: "30d" as TimeFilter, label: t("notifications.timeFilter30d") },
+    { key: "1y" as TimeFilter, label: t("notifications.timeFilter1y") },
+    { key: "all" as TimeFilter, label: t("notifications.timeFilterAll") },
+  ];
+}
 
 function getTimeThreshold(filter: TimeFilter): Date {
   const now = new Date();
@@ -106,6 +109,7 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
 export default function NotificationCenter() {
   const { t } = useTranslation();
+  const timeFilters = useTimeFilters();
   const { teams } = useTeams();
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
@@ -330,22 +334,22 @@ export default function NotificationCenter() {
   }, [filteredActivities]);
 
   const typeLabels: Record<string, string> = {
-    upload: "Uploads",
-    pitch: "Pitches",
-    link: "Links",
-    member: "Members",
-    status: "Status",
-    metadata: "Metadata",
-    splits: "Splits",
-    stems: "Stems",
-    lyrics: "Lyrics",
-    paperwork: "Paperwork",
-    recipient_opened: "Opened",
-    recipient_played: "Played",
-    recipient_downloaded: "Downloaded",
-    recipient_pack: "Pack Downloaded",
-    recipient_stems: "Stems Downloaded",
-    recipient_saved: "Saved to Trakalog",
+    upload: t("notifications.uploads"),
+    pitch: t("notifications.pitches"),
+    link: t("notifications.links"),
+    member: t("notifications.members"),
+    status: t("notifications.statusType"),
+    metadata: t("notifications.metadataType"),
+    splits: t("notifications.splitsType"),
+    stems: t("notifications.stemsType"),
+    lyrics: t("notifications.lyricsType"),
+    paperwork: t("notifications.paperworkType"),
+    recipient_opened: t("notifications.openedType"),
+    recipient_played: t("notifications.playedType"),
+    recipient_downloaded: t("notifications.downloadedType"),
+    recipient_pack: t("notifications.packType"),
+    recipient_stems: t("notifications.stemsDownloadedType"),
+    recipient_saved: t("notifications.savedType"),
   };
 
   return (
@@ -358,19 +362,19 @@ export default function NotificationCenter() {
               <Bell className="w-5 h-5 text-brand-orange" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Notification Center</h1>
-              <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">All activity across your teams in real time</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("notifications.title")}</h1>
+              <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">{t("notifications.subtitle")}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <Badge className="bg-brand-orange/10 text-brand-orange border border-brand-orange/20 text-xs font-semibold px-3 py-1.5">
-              {filteredActivities.length} {filteredActivities.length === 1 ? "event" : "events"}
+              {t(filteredActivities.length === 1 ? "notifications.event" : "notifications.events", { count: filteredActivities.length })}
             </Badge>
             <span className="text-2xs text-muted-foreground font-medium px-2 py-1 rounded-full bg-secondary/60 border border-border">
-              {todayCount} today
+              {todayCount} {t("notifications.today")}
             </span>
             <span className="text-2xs text-muted-foreground font-medium px-2 py-1 rounded-full bg-secondary/60 border border-border">
-              {thisWeekCount} this week
+              {thisWeekCount} {t("notifications.thisWeek")}
             </span>
           </div>
         </motion.div>
@@ -405,7 +409,7 @@ export default function NotificationCenter() {
               }`}
             >
               <Users className="w-3 h-3" />
-              All Teams
+              {t("notifications.allTeams")}
             </button>
             {teams.map((team) => (
               <button
@@ -434,7 +438,7 @@ export default function NotificationCenter() {
             }`}
           >
             <Filter className="w-3 h-3 inline mr-1" />
-            All Types
+            {t("notifications.allTypes")}
           </button>
           {uniqueTypes.map((type) => {
             const meta = activityMeta[type as ActivityType];
@@ -462,8 +466,8 @@ export default function NotificationCenter() {
             <div className="w-14 h-14 rounded-2xl bg-brand-orange/10 flex items-center justify-center mx-auto mb-4">
               <Bell className="w-7 h-7 text-brand-orange" />
             </div>
-            <p className="text-sm text-foreground font-semibold">No activity yet</p>
-            <p className="text-xs text-muted-foreground mt-1">When your team takes action, it will show up here. Try adjusting your filters or check back later.</p>
+            <p className="text-sm text-foreground font-semibold">{t("notifications.noActivityYet")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("notifications.noActivityDesc")}</p>
           </motion.div>
         ) : (
           Object.entries(groupedActivities).map(([group, activities]) => (

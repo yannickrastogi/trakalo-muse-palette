@@ -822,9 +822,9 @@ export default function Contacts() {
                         ) : (
                           <span
                             className="text-xs text-muted-foreground"
-                            title={`Sur ${c.tracksEngaged} ${c.tracksEngaged === 1 ? "track distinct" : "tracks distincts"}`}
+                            title={t("contacts.tracksEngaged", { count: c.tracksEngaged })}
                           >
-                            <span className="text-foreground">{c.totalPlays} {c.totalPlays === 1 ? "play" : "plays"}</span> · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
+                            <span className="text-foreground">{t("contacts.plays", { count: c.totalPlays })}</span> · {t("contacts.downloads", { count: c.totalDownloads })}
                           </span>
                         )}
                       </td>
@@ -955,7 +955,7 @@ export default function Contacts() {
                   return (
                     <div className="text-[11px] text-muted-foreground/80 flex flex-wrap gap-x-2 gap-y-0.5">
                       {c.phone?.trim() && <span><span className="font-medium text-muted-foreground">📞</span> <span className="font-mono">{c.phone}</span></span>}
-                      {collabs > 0 && <span><span className="font-medium text-muted-foreground">🎵</span> {collabs} {collabs === 1 ? "track" : "tracks"}</span>}
+                      {collabs > 0 && <span><span className="font-medium text-muted-foreground">🎵</span> {t("contacts.collabTracks", { count: collabs })}</span>}
                       {(c.city?.trim() || c.country?.trim()) && (
                         <span><span className="font-medium text-muted-foreground">📍</span> {[c.city?.trim(), c.country?.trim()].filter(Boolean).join(", ")}</span>
                       )}
@@ -967,8 +967,8 @@ export default function Contacts() {
                   {c.totalPlays === 0 && c.totalDownloads === 0 && c.tracksEngaged === 0 ? (
                     <span className="text-muted-foreground/60">{t("contacts.noActivityYet")}</span>
                   ) : (
-                    <span title={`Sur ${c.tracksEngaged} ${c.tracksEngaged === 1 ? "track distinct" : "tracks distincts"}`}>
-                      <span className="text-foreground">{c.totalPlays} {c.totalPlays === 1 ? "play" : "plays"}</span> · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
+                    <span title={t("contacts.tracksEngaged", { count: c.tracksEngaged })}>
+                      <span className="text-foreground">{t("contacts.plays", { count: c.totalPlays })}</span> · {t("contacts.downloads", { count: c.totalDownloads })}
                     </span>
                   )}
                   <span>{formatRelativeDate(c.lastInteraction)}</span>
