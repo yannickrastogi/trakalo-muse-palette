@@ -1059,7 +1059,7 @@ function LeakTracingSection() {
       formData.append("file_name", file.name);
       const res = await fetch(SUPABASE_URL + "/functions/v1/trace-leak", {
         method: "POST",
-        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + SUPABASE_ANON_KEY },
+        headers: { "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY },
         body: formData,
       });
       const result = await res.json();
