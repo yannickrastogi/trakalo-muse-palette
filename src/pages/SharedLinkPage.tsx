@@ -1091,7 +1091,7 @@ export default function SharedLinkPage() {
         shared_link_id: linkData.id,
         author_name: visitorName || "Anonymous",
         author_email: visitorEmailRef.current || null,
-        author_type: "guest_recipient",
+        author_type: "recipient",
         timestamp_sec: Math.round(commentTimestamp * 100) / 100,
         content: commentText.trim(),
       })

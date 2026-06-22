@@ -205,19 +205,13 @@ export function StemsTab({ trackId, autoOpenUpload = false, readOnly = false }: 
           continue;
         }
 
-        let fileUrl = "";
-        try {
-          fileUrl = await getStorageSignedUrl("stems", filePath, { expiresInSec: 3600 });
-        } catch (e) {
-          console.error("Failed to sign stem URL:", e);
-        }
-
-        // Insert record in stems table
+        // Store the storage PATH (not a signed URL): signed URLs expire after 1h
+        // and would rot in the DB. Reads re-sign on demand via getStorageSignedUrl.
         const { error: insertError } = await supabase.rpc("insert_stem", {
           _user_id: user.id,
           _track_id: trackUuid,
           _name: pf.customName.trim() ? pf.customName.trim() + "." + fileExt : pf.file.name,
-          _file_url: fileUrl,
+          _file_url: filePath,
           _file_size: pf.file.size,
           _stem_type: stemTypeToDb(pf.type),
         });
@@ -259,8 +253,20 @@ export function StemsTab({ trackId, autoOpenUpload = false, readOnly = false }: 
   }, [deleteConfirmId, stems]);
 
   // Play stem via global player
-  const handlePlayStem = useCallback((stem: StemRecord) => {
+  const handlePlayStem = useCallback(async (stem: StemRecord) => {
     if (!stem.fileUrl) return;
+
+    // file_url now stores the storage PATH — re-sign on demand for playback.
+    // Legacy rows may still hold a full signed URL (http…) → use it as-is.
+    let playbackUrl = stem.fileUrl;
+    if (!/^https?:\/\//i.test(stem.fileUrl)) {
+      try {
+        playbackUrl = await getStorageSignedUrl("stems", stem.fileUrl, { expiresInSec: 3600 });
+      } catch (e) {
+        console.error("Failed to sign stem URL:", e);
+        return;
+      }
+    }
 
     // Create a fake TrackData to play via global player
     const stemAsTrack = {
@@ -292,7 +298,7 @@ export function StemsTab({ trackId, autoOpenUpload = false, readOnly = false }: 
       explicit: false,
       type: "Stem",
       coverIdx: 0,
-      previewUrl: stem.fileUrl,
+      previewUrl: playbackUrl,
       notes: "",
       credits: {},
       stems: [],

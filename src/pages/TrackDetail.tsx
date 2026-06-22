@@ -10,7 +10,7 @@ import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrackReview, formatTimestamp } from "@/contexts/TrackReviewContext";
 import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf, generateCreditsPdf, type CreditEntry } from "@/lib/pdf-generators";
 import { safeLocalStorage } from "@/lib/safeStorage";
-import { getStorageSignedUrl } from "@/lib/audio";
+import { getStorageSignedUrl, getStorageUploadUrl } from "@/lib/audio";
 import { DownloadTrackModal } from "@/components/DownloadTrackModal";
 import { SharePackModal } from "@/components/SharePackModal";
 import { EditTrackModal } from "@/components/EditTrackModal";
@@ -3425,11 +3425,20 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
       const ext = file.name.split(".").pop() || "pdf";
       const storagePath = workspaceId + "/" + trackUuid + "/" + crypto.randomUUID() + "." + ext;
 
-      const { error: storageError } = await supabase.storage
-        .from("documents")
-        .upload(storagePath, file, { upsert: true });
-      if (storageError) {
-        toast.error("Upload failed: " + storageError.message);
+      // PUT directly to R2 via get-upload-url EF (provider-agnostic), matching the
+      // stems/video pipeline so reads through get-storage-url resolve the object.
+      const contentType = file.type || "application/octet-stream";
+      try {
+        const desc = await getStorageUploadUrl("documents", storagePath, contentType);
+        const res = await fetch(desc.uploadUrl, {
+          method: desc.method,
+          headers: desc.headers,
+          body: file,
+        });
+        if (!res.ok) throw new Error("Document PUT failed (HTTP " + res.status + ")");
+      } catch (e) {
+        console.error("Document upload failed:", e instanceof Error ? e.message : e);
+        toast.error("Upload failed. Please try again.");
         return;
       }
 
@@ -3461,7 +3470,9 @@ function PaperworkTab({ trackUuid, workspaceId }: { trackUuid: string; workspace
   const handleDelete = async (doc: TrackDocument) => {
     if (!confirm("Delete \"" + doc.name + "\"?")) return;
     try {
-      await supabase.storage.from("documents").remove([doc.file_path]);
+      // Best-effort cleanup of any legacy Supabase Storage object — R2 objects are
+      // managed separately and must not block the DB row deletion.
+      try { await supabase.storage.from("documents").remove([doc.file_path]); } catch { /* ignore */ }
       const { error } = await supabase.rpc("delete_track_document", {
         _user_id: user!.id,
         _doc_id: doc.id,
