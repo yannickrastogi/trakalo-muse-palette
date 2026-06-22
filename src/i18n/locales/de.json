@@ -395,7 +395,10 @@
     "emailCopied": "E-Mail kopiert!",
     "sendPitch": "Pitch senden",
     "daysAgo": "vor {{count}}T",
-    "justNow": "Gerade eben"
+    "justNow": "Gerade eben",
+    "aliasNameRequired": "Alias-Name ist erforderlich",
+    "failedSaveAlias": "Alias konnte nicht gespeichert werden",
+    "failedDeleteAlias": "Alias konnte nicht gelöscht werden"
   },
   "notifications": {
     "title": "Benachrichtigungszentrum",
@@ -1454,5 +1457,94 @@
       "deleteTitle": "Kommentar löschen",
       "deleteDescription": "Bist du sicher? Diese Aktion ist nicht rückgängig."
     }
+  },
+  "videoSection": {
+    "title": "Video",
+    "subtitle": "Clip, Visualizer oder Teaser",
+    "remove": "Entfernen",
+    "noVideo": "Kein Video angehängt.",
+    "uploading": "Wird hochgeladen…",
+    "dropHere": "Video hier ablegen",
+    "formats": "MP4, MOV, WebM — Max 500 MB",
+    "uploadButton": "Video hochladen",
+    "loadError": "Video konnte nicht geladen werden — Seite aktualisieren",
+    "visibleOnShare": "Auf geteilten Links sichtbar",
+    "removeTitle": "Video entfernen?",
+    "removeDescription": "Die Videodatei wird gelöscht und sofort aus allen geteilten Links ausgeblendet. Dies kann nicht rückgängig gemacht werden.",
+    "cancel": "Abbrechen",
+    "removing": "Wird entfernt…",
+    "unsupportedFormat": "Nicht unterstütztes Format — verwende MP4, MOV oder WebM",
+    "tooLarge": "Das Video ist zu groß (max. 500 MB)",
+    "uploadFailed": "Upload fehlgeschlagen — bitte erneut versuchen",
+    "failedSave": "Videoreferenz konnte nicht gespeichert werden",
+    "uploaded": "Video hochgeladen",
+    "failedVisibility": "Sichtbarkeit konnte nicht aktualisiert werden",
+    "failedRemove": "Video konnte nicht entfernt werden",
+    "removed": "Video entfernt"
+  },
+  "versionSelector": {
+    "mainVersion": "Hauptversion",
+    "uploading": "Wird hochgeladen…",
+    "addVersion": "Version hinzufügen",
+    "setAsActive": "Als aktiv festlegen",
+    "rename": "Umbenennen",
+    "addNotes": "Notizen hinzufügen",
+    "deleteVersion": "Version löschen",
+    "deleteTitle": "{{name}} löschen?",
+    "deleteDescription": "Die Audiodatei und das Sonic DNA dieser Version werden entfernt. Dies kann nicht rückgängig gemacht werden.",
+    "cancel": "Abbrechen",
+    "deleting": "Wird gelöscht…",
+    "delete": "Löschen",
+    "notes": "Notizen",
+    "notesPlaceholder": "z. B. Mix von Jean, Bridge-Gitarre hinzugefügt…",
+    "savesOnBlur": "Speichert beim Verlassen · {{count}}/500",
+    "saving": "Wird gespeichert…",
+    "couldNotRename": "Version konnte nicht umbenannt werden",
+    "unsupportedFormat": "Nicht unterstütztes Format — verwende WAV, MP3, FLAC, AIFF, M4A",
+    "tooLarge": "Die Datei ist zu groß (max. 500 MB)",
+    "uploadFailed": "Upload fehlgeschlagen — bitte erneut versuchen",
+    "failedRegister": "Version konnte nicht registriert werden",
+    "uploadedAnalyzing": "Version V{{n}} hochgeladen — wird analysiert...",
+    "failedSetActive": "Aktive Version konnte nicht festgelegt werden",
+    "nowActive": "{{name}} ist jetzt die aktive Version",
+    "cantDeleteOnly": "Die einzige Version eines Tracks kann nicht gelöscht werden",
+    "setActiveFirst": "Lege eine andere Version als aktiv fest, bevor du diese löschst",
+    "failedDelete": "Version konnte nicht gelöscht werden",
+    "deleted": "{{name}} gelöscht",
+    "failedNotes": "Notizen konnten nicht gespeichert werden"
+  },
+  "starRating": {
+    "noRatings": "Noch keine Bewertungen"
+  },
+  "artistAliases": {
+    "newAlias": "Neuer Alias",
+    "editAlias": "Alias bearbeiten",
+    "noAliases": "Noch keine Aliase",
+    "noAliasesDesc": "Erstelle deinen ersten Alias, damit Trakalog weiß, dass \"Banx & Ranx\" Yannick + Zacharie bedeutet und nicht zwei unbekannte Mitwirkende.",
+    "noContacts": "Keine Kontakte verknüpft",
+    "aliasName": "Alias-Name",
+    "aliasNamePlaceholder": "z. B. \"Banx & Ranx\"",
+    "linkedContacts": "Verknüpfte Kontakte ({{count}})",
+    "searchPlaceholder": "Kontakte suchen…",
+    "noMatch": "Keine Kontakte stimmen mit \"{{query}}\" überein",
+    "cancel": "Abbrechen",
+    "saving": "Wird gespeichert…",
+    "save": "Speichern",
+    "createAlias": "Alias erstellen",
+    "deleteTitle": "Alias löschen?",
+    "deleteDescription": "\"{{name}}\" wird entfernt. Die zugrunde liegenden Kontakte bleiben unberührt.",
+    "deleting": "Wird gelöscht…",
+    "delete": "Löschen"
+  },
+  "audioPlayer": {
+    "playbackFailed": "Audiowiedergabe fehlgeschlagen.",
+    "noAudioFile": "Für diesen Track ist keine Audiodatei verfügbar.",
+    "couldNotLoad": "Audio konnte nicht geladen werden. Bitte erneut versuchen.",
+    "couldNotLoadVersion": "Diese Version konnte nicht geladen werden."
+  },
+  "trackContext": {
+    "analyzingAudio": "Audio wird analysiert — BPM, Tonart & Stimmung erscheinen in Kürze...",
+    "failedSaveUpdate": "Track-Aktualisierung konnte nicht gespeichert werden",
+    "failedSaveRating": "Bewertung konnte nicht gespeichert werden"
   }
 }

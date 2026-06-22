@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 import type { TrackData } from "@/contexts/TrackContext";
 import { getAudioPlaybackUrl, getStorageSignedUrl } from "@/lib/audio";
 
@@ -112,7 +113,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
           audio.dataset.audioVariant = "full";
           audio.src = fullUrl;
           audio.play().catch(() => {
-            toast.error("Audio playback failed.");
+            toast.error(i18n.t("audioPlayer.playbackFailed"));
             setState((prev) => ({ ...prev, isPlaying: false }));
           });
           return;
@@ -120,7 +121,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
           console.error("Audio fallback to original failed:", e instanceof Error ? e.message : e);
         }
       }
-      toast.error("Audio playback failed.");
+      toast.error(i18n.t("audioPlayer.playbackFailed"));
       setState((prev) => ({ ...prev, isPlaying: false }));
     };
 
@@ -190,7 +191,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     // Get audio URL — prefer previewUrl, fallback to originalFileUrl
     const rawUrl = track.previewUrl || track.originalFileUrl;
     if (!rawUrl) {
-      toast.error("No audio file available for this track.");
+      toast.error(i18n.t("audioPlayer.noAudioFile"));
       return;
     }
 
@@ -206,7 +207,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
     const signedUrl = await resolveAudioUrl(rawUrl, track.uuid);
     if (!signedUrl) {
-      toast.error("Could not load audio. Please try again.");
+      toast.error(i18n.t("audioPlayer.couldNotLoad"));
       setState((prev) => ({ ...prev, isPlaying: false }));
       return;
     }
@@ -218,7 +219,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     delete audio.dataset.fallbackAttempted;
     audio.play().catch(function(err) {
       console.error("Play failed:", err);
-      toast.error("Audio playback failed.");
+      toast.error(i18n.t("audioPlayer.playbackFailed"));
       setState((prev) => ({ ...prev, isPlaying: false }));
     });
   }, [resolveAudioUrl]);
@@ -315,7 +316,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       signedUrl = await getStorageSignedUrl("tracks", rawStoragePath, { expiresInSec: 3600 });
     } catch (e) {
       console.error("swapAudioSource: failed to sign URL:", e instanceof Error ? e.message : e);
-      toast.error("Could not load this version.");
+      toast.error(i18n.t("audioPlayer.couldNotLoadVersion"));
       return;
     }
 

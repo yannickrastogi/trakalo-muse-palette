@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   Popover,
   PopoverContent,
@@ -38,6 +39,7 @@ export function StarRating({
   readOnly = false,
   className,
 }: StarRatingProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [hover, setHover] = useState<number | null>(null);
 
@@ -146,7 +148,7 @@ export function StarRating({
             </span>
           </>
         ) : (
-          <span>No ratings yet</span>
+          <span>{t("starRating.noRatings")}</span>
         )}
         {myRating != null && (
           <span className="ml-auto text-amber-400 font-medium">

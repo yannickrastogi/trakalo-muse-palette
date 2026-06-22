@@ -395,7 +395,10 @@
     "emailCopied": "이메일이 복사되었습니다!",
     "sendPitch": "피칭 보내기",
     "daysAgo": "{{count}}일 전",
-    "justNow": "방금"
+    "justNow": "방금",
+    "aliasNameRequired": "별칭 이름이 필요합니다",
+    "failedSaveAlias": "별칭 저장 실패",
+    "failedDeleteAlias": "별칭 삭제 실패"
   },
   "notifications": {
     "title": "알림 센터",
@@ -1454,5 +1457,94 @@
       "deleteTitle": "댓글 삭제",
       "deleteDescription": "확실합니까? 이 작업은 되돌릴 수 없습니다."
     }
+  },
+  "videoSection": {
+    "title": "비디오",
+    "subtitle": "클립, 비주얼라이저 또는 티저",
+    "remove": "제거",
+    "noVideo": "첨부된 비디오 없음.",
+    "uploading": "업로드 중…",
+    "dropHere": "여기에 비디오를 놓으세요",
+    "formats": "MP4, MOV, WebM — 최대 500MB",
+    "uploadButton": "비디오 업로드",
+    "loadError": "비디오 로드 실패 — 페이지를 새로고침하세요",
+    "visibleOnShare": "공유 링크에 표시",
+    "removeTitle": "비디오를 제거할까요?",
+    "removeDescription": "비디오 파일이 삭제되고 모든 공유 링크에서 즉시 숨겨집니다. 이 작업은 취소할 수 없습니다.",
+    "cancel": "취소",
+    "removing": "제거 중…",
+    "unsupportedFormat": "지원되지 않는 형식 — MP4, MOV 또는 WebM을 사용하세요",
+    "tooLarge": "비디오가 너무 큽니다 (최대 500MB)",
+    "uploadFailed": "업로드 실패 — 다시 시도하세요",
+    "failedSave": "비디오 참조 저장 실패",
+    "uploaded": "비디오 업로드됨",
+    "failedVisibility": "표시 설정 업데이트 실패",
+    "failedRemove": "비디오 제거 실패",
+    "removed": "비디오 제거됨"
+  },
+  "versionSelector": {
+    "mainVersion": "기본 버전",
+    "uploading": "업로드 중…",
+    "addVersion": "버전 추가",
+    "setAsActive": "활성으로 설정",
+    "rename": "이름 변경",
+    "addNotes": "메모 추가",
+    "deleteVersion": "버전 삭제",
+    "deleteTitle": "{{name}}을(를) 삭제할까요?",
+    "deleteDescription": "이 버전의 오디오 파일과 소닉 DNA가 제거됩니다. 이 작업은 취소할 수 없습니다.",
+    "cancel": "취소",
+    "deleting": "삭제 중…",
+    "delete": "삭제",
+    "notes": "메모",
+    "notesPlaceholder": "예: Jean의 믹스, 브리지 기타 추가…",
+    "savesOnBlur": "포커스를 벗어나면 저장됨 · {{count}}/500",
+    "saving": "저장 중…",
+    "couldNotRename": "버전 이름을 변경할 수 없습니다",
+    "unsupportedFormat": "지원되지 않는 형식 — WAV, MP3, FLAC, AIFF, M4A를 사용하세요",
+    "tooLarge": "파일이 너무 큽니다 (최대 500MB)",
+    "uploadFailed": "업로드 실패 — 다시 시도하세요",
+    "failedRegister": "버전 등록 실패",
+    "uploadedAnalyzing": "버전 V{{n}} 업로드됨 — 분석 중...",
+    "failedSetActive": "활성 버전 설정 실패",
+    "nowActive": "{{name}}이(가) 이제 활성 버전입니다",
+    "cantDeleteOnly": "트랙의 유일한 버전은 삭제할 수 없습니다",
+    "setActiveFirst": "이 버전을 삭제하기 전에 다른 버전을 활성으로 설정하세요",
+    "failedDelete": "버전 삭제 실패",
+    "deleted": "{{name}} 삭제됨",
+    "failedNotes": "메모 저장 실패"
+  },
+  "starRating": {
+    "noRatings": "아직 평가 없음"
+  },
+  "artistAliases": {
+    "newAlias": "새 별칭",
+    "editAlias": "별칭 편집",
+    "noAliases": "아직 별칭 없음",
+    "noAliasesDesc": "첫 별칭을 만들어 Trakalog가 \"Banx & Ranx\"가 알 수 없는 두 협업자가 아니라 Yannick + Zacharie를 의미한다는 것을 알 수 있도록 하세요.",
+    "noContacts": "연결된 연락처 없음",
+    "aliasName": "별칭 이름",
+    "aliasNamePlaceholder": "예: \"Banx & Ranx\"",
+    "linkedContacts": "연결된 연락처 ({{count}})",
+    "searchPlaceholder": "연락처 검색…",
+    "noMatch": "\"{{query}}\"와 일치하는 연락처 없음",
+    "cancel": "취소",
+    "saving": "저장 중…",
+    "save": "저장",
+    "createAlias": "별칭 만들기",
+    "deleteTitle": "별칭을 삭제할까요?",
+    "deleteDescription": "\"{{name}}\"이(가) 제거됩니다. 기본 연락처는 그대로 유지됩니다.",
+    "deleting": "삭제 중…",
+    "delete": "삭제"
+  },
+  "audioPlayer": {
+    "playbackFailed": "오디오 재생 실패.",
+    "noAudioFile": "이 트랙에 사용할 수 있는 오디오 파일이 없습니다.",
+    "couldNotLoad": "오디오를 로드할 수 없습니다. 다시 시도하세요.",
+    "couldNotLoadVersion": "이 버전을 로드할 수 없습니다."
+  },
+  "trackContext": {
+    "analyzingAudio": "오디오 분석 중 — BPM, 키, 무드가 곧 표시됩니다...",
+    "failedSaveUpdate": "트랙 업데이트 저장 실패",
+    "failedSaveRating": "평가 저장 실패"
   }
 }

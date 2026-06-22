@@ -5,6 +5,7 @@ import { getStorageSignedUrl, getStorageUploadUrl } from "@/lib/audio";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack } from "@/contexts/TrackContext";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -52,6 +53,7 @@ export function VideoSection({
   videoVisibleOnShare,
   readOnly,
 }: VideoSectionProps) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const { refreshTracks } = useTrack();
@@ -91,11 +93,11 @@ export function VideoSection({
     if (!user || !activeWorkspace || !trackUuid) return;
     if (uploadingRef.current) return; // race guard — drop overlapping clicks
     if (!fileLooksLikeVideo(file)) {
-      toast.error("Unsupported format — use MP4, MOV, or WebM");
+      toast.error(t("videoSection.unsupportedFormat"));
       return;
     }
     if (file.size > MAX_SIZE_BYTES) {
-      toast.error("Video is too large (max 500MB)");
+      toast.error(t("videoSection.tooLarge"));
       return;
     }
 
@@ -120,7 +122,7 @@ export function VideoSection({
         if (!res.ok) throw new Error("Video PUT failed (HTTP " + res.status + ")");
       } catch (e) {
         console.error("Video upload failed:", e instanceof Error ? e.message : e);
-        toast.error("Upload failed — please try again");
+        toast.error(t("videoSection.uploadFailed"));
         return;
       }
       setProgress(100);
@@ -136,11 +138,11 @@ export function VideoSection({
 
       if (rpcError) {
         console.error("update_track_video failed:", rpcError);
-        toast.error("Failed to save video reference");
+        toast.error(t("videoSection.failedSave"));
         return;
       }
 
-      toast.success("Video uploaded");
+      toast.success(t("videoSection.uploaded"));
       await refreshTracks();
     } finally {
       uploadingRef.current = false;
@@ -176,7 +178,7 @@ export function VideoSection({
     setSavingVisibility(false);
     if (error) {
       console.error("toggle_track_video_visibility failed:", error);
-      toast.error("Failed to update visibility");
+      toast.error(t("videoSection.failedVisibility"));
       return;
     }
     await refreshTracks();
@@ -194,7 +196,7 @@ export function VideoSection({
       });
       if (rpcError) {
         console.error("delete_track_video failed:", rpcError);
-        toast.error("Failed to remove video");
+        toast.error(t("videoSection.failedRemove"));
         return;
       }
 
@@ -206,7 +208,7 @@ export function VideoSection({
         }
       }
 
-      toast.success("Video removed");
+      toast.success(t("videoSection.removed"));
       setConfirmDelete(false);
       await refreshTracks();
     } finally {
@@ -227,8 +229,8 @@ export function VideoSection({
             <Film className="w-4 h-4 text-brand-pink" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Video</h3>
-            <p className="text-2xs text-muted-foreground">Clip, visualizer, or teaser</p>
+            <h3 className="text-sm font-semibold text-foreground">{t("videoSection.title")}</h3>
+            <p className="text-2xs text-muted-foreground">{t("videoSection.subtitle")}</p>
           </div>
         </div>
         {hasVideo && !readOnly && (
@@ -240,14 +242,14 @@ export function VideoSection({
             aria-label="Remove video"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            Remove
+            {t("videoSection.remove")}
           </button>
         )}
       </div>
 
       {!hasVideo ? (
         readOnly ? (
-          <p className="text-xs text-muted-foreground italic">No video attached.</p>
+          <p className="text-xs text-muted-foreground italic">{t("videoSection.noVideo")}</p>
         ) : (
           <div
             onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); }}
@@ -271,7 +273,7 @@ export function VideoSection({
             {uploading ? (
               <div className="space-y-2">
                 <Loader2 className="w-6 h-6 text-brand-pink animate-spin mx-auto" />
-                <p className="text-xs font-semibold text-foreground">Uploading…</p>
+                <p className="text-xs font-semibold text-foreground">{t("videoSection.uploading")}</p>
                 <div className="h-1.5 bg-secondary rounded-full overflow-hidden max-w-xs mx-auto">
                   <div className="h-full bg-brand-pink transition-all" style={{ width: progress + "%" }} />
                 </div>
@@ -279,15 +281,15 @@ export function VideoSection({
             ) : (
               <div className="space-y-1.5">
                 <Upload className="w-6 h-6 text-muted-foreground mx-auto" />
-                <p className="text-sm font-semibold text-foreground">Drop your video here</p>
-                <p className="text-2xs text-muted-foreground">MP4, MOV, WebM — Max 500MB</p>
+                <p className="text-sm font-semibold text-foreground">{t("videoSection.dropHere")}</p>
+                <p className="text-2xs text-muted-foreground">{t("videoSection.formats")}</p>
                 <button
                   type="button"
                   className="mt-2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-brand-orange to-brand-pink text-white"
                   onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  Upload Video
+                  {t("videoSection.uploadButton")}
                 </button>
               </div>
             )}
@@ -309,7 +311,7 @@ export function VideoSection({
             />
           ) : (
             <div className="aspect-video w-full rounded-lg bg-secondary flex items-center justify-center text-xs text-muted-foreground">
-              Failed to load video — try refreshing the page
+              {t("videoSection.loadError")}
             </div>
           )}
           <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -318,7 +320,7 @@ export function VideoSection({
             </p>
             {!readOnly && (
               <div className="inline-flex items-center gap-2 text-xs select-none">
-                <span id="video-visibility-label" className="font-medium text-foreground">Visible on shared links</span>
+                <span id="video-visibility-label" className="font-medium text-foreground">{t("videoSection.visibleOnShare")}</span>
                 <button
                   type="button"
                   role="switch"
@@ -349,15 +351,15 @@ export function VideoSection({
       <AlertDialog open={confirmDelete} onOpenChange={(o) => { if (!o) setConfirmDelete(false); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove video?</AlertDialogTitle>
+            <AlertDialogTitle>{t("videoSection.removeTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              The video file will be deleted and immediately hidden from any shared link. This cannot be undone.
+              {t("videoSection.removeDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={removing}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={removing}>{t("videoSection.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleRemove} disabled={removing}>
-              {removing ? "Removing…" : "Remove"}
+              {removing ? t("videoSection.removing") : t("videoSection.remove")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

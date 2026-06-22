@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { WorkspaceScoped } from "@/types/workspace";
 import type { ProductionStage } from "@/lib/constants";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 
 export interface TrackStem {
   id: string;
@@ -766,7 +767,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       // Queue Sonic DNA analysis — processed sequentially to prevent Railway OOM
       if (trackUuid && trackInput.originalFileUrl) {
         sonicDnaQueueRef.current.push({ track_id: trackUuid, storage_path: trackInput.originalFileUrl });
-        toast.info("Analyzing audio — BPM, key & mood will appear shortly...", { duration: 5000 });
+        toast.info(i18n.t("trackContext.analyzingAudio"), { duration: 5000 });
         processSonicDnaQueue();
       }
 
@@ -849,7 +850,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
         if (error) {
           console.error("Error updating track:", error);
-          toast.error("Failed to save track update");
+          toast.error(i18n.t("trackContext.failedSaveUpdate"));
         }
       }
     },
@@ -1066,7 +1067,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         // Don't revert: rapid successive clicks would race the optimistic state.
         // Toast and let the user retry; the next fetchTracks resync will reconcile.
         console.error("Error saving rating:", error);
-        toast.error("Failed to save rating");
+        toast.error(i18n.t("trackContext.failedSaveRating"));
       }
     },
     [tracks, user, activeWorkspace]

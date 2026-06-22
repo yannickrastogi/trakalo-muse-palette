@@ -454,7 +454,10 @@
     "emailCopied": "E-mail copié !",
     "sendPitch": "Envoyer un Pitch",
     "daysAgo": "il y a {{count}}j",
-    "justNow": "À l'instant"
+    "justNow": "À l'instant",
+    "aliasNameRequired": "Le nom de l'alias est requis",
+    "failedSaveAlias": "Échec de l'enregistrement de l'alias",
+    "failedDeleteAlias": "Échec de la suppression de l'alias"
   },
   "notifications": {
     "title": "Centre de notifications",
@@ -1535,5 +1538,94 @@
       "deleteTitle": "Supprimer le commentaire",
       "deleteDescription": "Êtes-vous sûr ? Cette action est irréversible."
     }
+  },
+  "videoSection": {
+    "title": "Vidéo",
+    "subtitle": "Clip, visualizer ou teaser",
+    "remove": "Supprimer",
+    "noVideo": "Aucune vidéo attachée.",
+    "uploading": "Téléversement…",
+    "dropHere": "Déposez votre vidéo ici",
+    "formats": "MP4, MOV, WebM — Max 500 Mo",
+    "uploadButton": "Téléverser une vidéo",
+    "loadError": "Échec du chargement de la vidéo — actualisez la page",
+    "visibleOnShare": "Visible sur les liens partagés",
+    "removeTitle": "Supprimer la vidéo ?",
+    "removeDescription": "Le fichier vidéo sera supprimé et immédiatement masqué de tout lien partagé. Cette action est irréversible.",
+    "cancel": "Annuler",
+    "removing": "Suppression…",
+    "unsupportedFormat": "Format non pris en charge — utilisez MP4, MOV ou WebM",
+    "tooLarge": "La vidéo est trop volumineuse (max 500 Mo)",
+    "uploadFailed": "Échec du téléversement — réessayez",
+    "failedSave": "Échec de l'enregistrement de la référence vidéo",
+    "uploaded": "Vidéo téléversée",
+    "failedVisibility": "Échec de la mise à jour de la visibilité",
+    "failedRemove": "Échec de la suppression de la vidéo",
+    "removed": "Vidéo supprimée"
+  },
+  "versionSelector": {
+    "mainVersion": "Version principale",
+    "uploading": "Téléversement…",
+    "addVersion": "Ajouter une version",
+    "setAsActive": "Définir comme active",
+    "rename": "Renommer",
+    "addNotes": "Ajouter des notes",
+    "deleteVersion": "Supprimer la version",
+    "deleteTitle": "Supprimer {{name}} ?",
+    "deleteDescription": "Le fichier audio et l'ADN sonore de cette version seront supprimés. Cette action est irréversible.",
+    "cancel": "Annuler",
+    "deleting": "Suppression…",
+    "delete": "Supprimer",
+    "notes": "Notes",
+    "notesPlaceholder": "ex. Mix par Jean, ajout guitare pont…",
+    "savesOnBlur": "Enregistré à la perte du focus · {{count}}/500",
+    "saving": "Enregistrement…",
+    "couldNotRename": "Impossible de renommer la version",
+    "unsupportedFormat": "Format non pris en charge — utilisez WAV, MP3, FLAC, AIFF, M4A",
+    "tooLarge": "Le fichier est trop volumineux (max 500 Mo)",
+    "uploadFailed": "Échec du téléversement — réessayez",
+    "failedRegister": "Échec de l'enregistrement de la version",
+    "uploadedAnalyzing": "Version V{{n}} téléversée — analyse...",
+    "failedSetActive": "Échec de la définition de la version active",
+    "nowActive": "{{name}} est désormais la version active",
+    "cantDeleteOnly": "Impossible de supprimer la seule version d'un morceau",
+    "setActiveFirst": "Définissez une autre version comme active avant de supprimer celle-ci",
+    "failedDelete": "Échec de la suppression de la version",
+    "deleted": "{{name}} supprimée",
+    "failedNotes": "Échec de l'enregistrement des notes"
+  },
+  "starRating": {
+    "noRatings": "Aucune note pour l'instant"
+  },
+  "artistAliases": {
+    "newAlias": "Nouvel alias",
+    "editAlias": "Modifier l'alias",
+    "noAliases": "Aucun alias pour l'instant",
+    "noAliasesDesc": "Créez votre premier alias pour que Trakalog sache que « Banx & Ranx » signifie Yannick + Zacharie, et non deux collaborateurs inconnus.",
+    "noContacts": "Aucun contact lié",
+    "aliasName": "Nom de l'alias",
+    "aliasNamePlaceholder": "ex. « Banx & Ranx »",
+    "linkedContacts": "Contacts liés ({{count}})",
+    "searchPlaceholder": "Rechercher des contacts…",
+    "noMatch": "Aucun contact ne correspond à « {{query}} »",
+    "cancel": "Annuler",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer",
+    "createAlias": "Créer l'alias",
+    "deleteTitle": "Supprimer l'alias ?",
+    "deleteDescription": "« {{name}} » sera supprimé. Les contacts sous-jacents restent intacts.",
+    "deleting": "Suppression…",
+    "delete": "Supprimer"
+  },
+  "audioPlayer": {
+    "playbackFailed": "Échec de la lecture audio.",
+    "noAudioFile": "Aucun fichier audio disponible pour ce morceau.",
+    "couldNotLoad": "Impossible de charger l'audio. Veuillez réessayer.",
+    "couldNotLoadVersion": "Impossible de charger cette version."
+  },
+  "trackContext": {
+    "analyzingAudio": "Analyse audio — BPM, tonalité et ambiance apparaîtront bientôt...",
+    "failedSaveUpdate": "Échec de l'enregistrement de la mise à jour du morceau",
+    "failedSaveRating": "Échec de l'enregistrement de la note"
   }
 }

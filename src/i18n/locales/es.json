@@ -382,7 +382,10 @@
     "emailCopied": "¡E-mail copiado!",
     "sendPitch": "Enviar Pitch",
     "daysAgo": "hace {{count}}d",
-    "justNow": "Ahora mismo"
+    "justNow": "Ahora mismo",
+    "aliasNameRequired": "El nombre del alias es obligatorio",
+    "failedSaveAlias": "Error al guardar el alias",
+    "failedDeleteAlias": "Error al eliminar el alias"
   },
   "notifications": {
     "title": "Centro de notificaciones",
@@ -1454,5 +1457,94 @@
       "deleteTitle": "Eliminar comentario",
       "deleteDescription": "¿Estás seguro? Esta acción no se puede deshacer."
     }
+  },
+  "videoSection": {
+    "title": "Vídeo",
+    "subtitle": "Clip, visualizador o teaser",
+    "remove": "Eliminar",
+    "noVideo": "Sin vídeo adjunto.",
+    "uploading": "Subiendo…",
+    "dropHere": "Suelta tu vídeo aquí",
+    "formats": "MP4, MOV, WebM — Máx 500MB",
+    "uploadButton": "Subir vídeo",
+    "loadError": "Error al cargar el vídeo — actualiza la página",
+    "visibleOnShare": "Visible en los enlaces compartidos",
+    "removeTitle": "¿Eliminar vídeo?",
+    "removeDescription": "El archivo de vídeo se eliminará y se ocultará de inmediato de cualquier enlace compartido. Esta acción no se puede deshacer.",
+    "cancel": "Cancelar",
+    "removing": "Eliminando…",
+    "unsupportedFormat": "Formato no admitido — usa MP4, MOV o WebM",
+    "tooLarge": "El vídeo es demasiado grande (máx 500MB)",
+    "uploadFailed": "Error al subir — inténtalo de nuevo",
+    "failedSave": "Error al guardar la referencia del vídeo",
+    "uploaded": "Vídeo subido",
+    "failedVisibility": "Error al actualizar la visibilidad",
+    "failedRemove": "Error al eliminar el vídeo",
+    "removed": "Vídeo eliminado"
+  },
+  "versionSelector": {
+    "mainVersion": "Versión principal",
+    "uploading": "Subiendo…",
+    "addVersion": "Añadir versión",
+    "setAsActive": "Definir como activa",
+    "rename": "Renombrar",
+    "addNotes": "Añadir notas",
+    "deleteVersion": "Eliminar versión",
+    "deleteTitle": "¿Eliminar {{name}}?",
+    "deleteDescription": "El archivo de audio y el ADN sónico de esta versión se eliminarán. Esta acción no se puede deshacer.",
+    "cancel": "Cancelar",
+    "deleting": "Eliminando…",
+    "delete": "Eliminar",
+    "notes": "Notas",
+    "notesPlaceholder": "p. ej. Mezcla de Jean, añadida guitarra del puente…",
+    "savesOnBlur": "Se guarda al perder el foco · {{count}}/500",
+    "saving": "Guardando…",
+    "couldNotRename": "No se pudo renombrar la versión",
+    "unsupportedFormat": "Formato no admitido — usa WAV, MP3, FLAC, AIFF, M4A",
+    "tooLarge": "El archivo es demasiado grande (máx 500MB)",
+    "uploadFailed": "Error al subir — inténtalo de nuevo",
+    "failedRegister": "Error al registrar la versión",
+    "uploadedAnalyzing": "Versión V{{n}} subida — analizando...",
+    "failedSetActive": "Error al definir la versión activa",
+    "nowActive": "{{name}} es ahora la versión activa",
+    "cantDeleteOnly": "No se puede eliminar la única versión de una pista",
+    "setActiveFirst": "Define otra versión como activa antes de eliminar esta",
+    "failedDelete": "Error al eliminar la versión",
+    "deleted": "{{name}} eliminada",
+    "failedNotes": "Error al guardar las notas"
+  },
+  "starRating": {
+    "noRatings": "Aún no hay valoraciones"
+  },
+  "artistAliases": {
+    "newAlias": "Nuevo alias",
+    "editAlias": "Editar alias",
+    "noAliases": "Aún no hay alias",
+    "noAliasesDesc": "Crea tu primer alias para que Trakalog sepa que «Banx & Ranx» significa Yannick + Zacharie, y no dos colaboradores desconocidos.",
+    "noContacts": "Sin contactos vinculados",
+    "aliasName": "Nombre del alias",
+    "aliasNamePlaceholder": "p. ej. «Banx & Ranx»",
+    "linkedContacts": "Contactos vinculados ({{count}})",
+    "searchPlaceholder": "Buscar contactos…",
+    "noMatch": "Ningún contacto coincide con «{{query}}»",
+    "cancel": "Cancelar",
+    "saving": "Guardando…",
+    "save": "Guardar",
+    "createAlias": "Crear alias",
+    "deleteTitle": "¿Eliminar alias?",
+    "deleteDescription": "«{{name}}» será eliminado. Los contactos subyacentes permanecen intactos.",
+    "deleting": "Eliminando…",
+    "delete": "Eliminar"
+  },
+  "audioPlayer": {
+    "playbackFailed": "Error en la reproducción de audio.",
+    "noAudioFile": "No hay archivo de audio disponible para esta pista.",
+    "couldNotLoad": "No se pudo cargar el audio. Inténtalo de nuevo.",
+    "couldNotLoadVersion": "No se pudo cargar esta versión."
+  },
+  "trackContext": {
+    "analyzingAudio": "Analizando audio — BPM, tonalidad y ambiente aparecerán en breve...",
+    "failedSaveUpdate": "Error al guardar la actualización de la pista",
+    "failedSaveRating": "Error al guardar la valoración"
   }
 }

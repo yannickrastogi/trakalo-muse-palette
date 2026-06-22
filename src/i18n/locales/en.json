@@ -454,7 +454,10 @@
     "emailCopied": "Email copied!",
     "sendPitch": "Send Pitch",
     "daysAgo": "{{count}}d ago",
-    "justNow": "Just now"
+    "justNow": "Just now",
+    "aliasNameRequired": "Alias name is required",
+    "failedSaveAlias": "Failed to save alias",
+    "failedDeleteAlias": "Failed to delete alias"
   },
   "notifications": {
     "title": "Notification Center",
@@ -1535,5 +1538,94 @@
       "deleteTitle": "Delete Comment",
       "deleteDescription": "Are you sure? This action cannot be undone."
     }
+  },
+  "videoSection": {
+    "title": "Video",
+    "subtitle": "Clip, visualizer, or teaser",
+    "remove": "Remove",
+    "noVideo": "No video attached.",
+    "uploading": "Uploading…",
+    "dropHere": "Drop your video here",
+    "formats": "MP4, MOV, WebM — Max 500MB",
+    "uploadButton": "Upload Video",
+    "loadError": "Failed to load video — try refreshing the page",
+    "visibleOnShare": "Visible on shared links",
+    "removeTitle": "Remove video?",
+    "removeDescription": "The video file will be deleted and immediately hidden from any shared link. This cannot be undone.",
+    "cancel": "Cancel",
+    "removing": "Removing…",
+    "unsupportedFormat": "Unsupported format — use MP4, MOV, or WebM",
+    "tooLarge": "Video is too large (max 500MB)",
+    "uploadFailed": "Upload failed — please try again",
+    "failedSave": "Failed to save video reference",
+    "uploaded": "Video uploaded",
+    "failedVisibility": "Failed to update visibility",
+    "failedRemove": "Failed to remove video",
+    "removed": "Video removed"
+  },
+  "versionSelector": {
+    "mainVersion": "Main Version",
+    "uploading": "Uploading…",
+    "addVersion": "Add Version",
+    "setAsActive": "Set as Active",
+    "rename": "Rename",
+    "addNotes": "Add notes",
+    "deleteVersion": "Delete Version",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteDescription": "The audio file and Sonic DNA for this version will be removed. This cannot be undone.",
+    "cancel": "Cancel",
+    "deleting": "Deleting…",
+    "delete": "Delete",
+    "notes": "Notes",
+    "notesPlaceholder": "e.g. Mix by Jean, added bridge guitar…",
+    "savesOnBlur": "Saves on blur · {{count}}/500",
+    "saving": "Saving…",
+    "couldNotRename": "Could not rename version",
+    "unsupportedFormat": "Unsupported format — use WAV, MP3, FLAC, AIFF, M4A",
+    "tooLarge": "File is too large (max 500MB)",
+    "uploadFailed": "Upload failed — please try again",
+    "failedRegister": "Failed to register version",
+    "uploadedAnalyzing": "Version V{{n}} uploaded — analyzing...",
+    "failedSetActive": "Failed to set active version",
+    "nowActive": "{{name}} is now the active version",
+    "cantDeleteOnly": "Can't delete the only version of a track",
+    "setActiveFirst": "Set another version as active before deleting this one",
+    "failedDelete": "Failed to delete version",
+    "deleted": "{{name}} deleted",
+    "failedNotes": "Failed to save notes"
+  },
+  "starRating": {
+    "noRatings": "No ratings yet"
+  },
+  "artistAliases": {
+    "newAlias": "New Alias",
+    "editAlias": "Edit Alias",
+    "noAliases": "No aliases yet",
+    "noAliasesDesc": "Create your first alias so Trakalog knows that \"Banx & Ranx\" means Yannick + Zacharie, not two unknown collaborators.",
+    "noContacts": "No contacts linked",
+    "aliasName": "Alias name",
+    "aliasNamePlaceholder": "e.g. \"Banx & Ranx\"",
+    "linkedContacts": "Linked contacts ({{count}})",
+    "searchPlaceholder": "Search contacts…",
+    "noMatch": "No contacts match \"{{query}}\"",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "save": "Save",
+    "createAlias": "Create alias",
+    "deleteTitle": "Delete alias?",
+    "deleteDescription": "\"{{name}}\" will be removed. The underlying contacts stay untouched.",
+    "deleting": "Deleting…",
+    "delete": "Delete"
+  },
+  "audioPlayer": {
+    "playbackFailed": "Audio playback failed.",
+    "noAudioFile": "No audio file available for this track.",
+    "couldNotLoad": "Could not load audio. Please try again.",
+    "couldNotLoadVersion": "Could not load this version."
+  },
+  "trackContext": {
+    "analyzingAudio": "Analyzing audio — BPM, key & mood will appear shortly...",
+    "failedSaveUpdate": "Failed to save track update",
+    "failedSaveRating": "Failed to save rating"
   }
 }

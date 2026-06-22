@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Plus, Pencil, Trash2, X, Search, Check, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useContacts, type ArtistAlias, type Contact } from "@/contexts/ContactsContext";
 import { EmptyState } from "@/components/EmptyState";
 import {
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function ArtistAliasesTab() {
+  const { t } = useTranslation();
   const { aliases, contacts, upsertAlias, deleteAlias } = useContacts();
   const [editing, setEditing] = useState<ArtistAlias | "new" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ArtistAlias | null>(null);
@@ -54,16 +56,16 @@ export function ArtistAliasesTab() {
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 hover:from-orange-600 hover:via-pink-600 hover:to-purple-600 text-white shrink-0"
         >
           <Plus className="w-4 h-4" />
-          New Alias
+          {t("artistAliases.newAlias")}
         </button>
       </div>
 
       {aliases.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="No aliases yet"
-          description='Create your first alias so Trakalog knows that "Banx & Ranx" means Yannick + Zacharie, not two unknown collaborators.'
-          actionLabel="New Alias"
+          title={t("artistAliases.noAliases")}
+          description={t("artistAliases.noAliasesDesc")}
+          actionLabel={t("artistAliases.newAlias")}
           onAction={() => setEditing("new")}
         />
       ) : (
@@ -80,7 +82,7 @@ export function ArtistAliasesTab() {
                     →{" "}
                     {mapped.length > 0
                       ? mapped.map(formatContact).join(", ")
-                      : <span className="italic">No contacts linked</span>}
+                      : <span className="italic">{t("artistAliases.noContacts")}</span>}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -122,15 +124,15 @@ export function ArtistAliasesTab() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete alias?</AlertDialogTitle>
+            <AlertDialogTitle>{t("artistAliases.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              "{deleteTarget?.alias_name}" will be removed. The underlying contacts stay untouched.
+              {t("artistAliases.deleteDescription", { name: deleteTarget?.alias_name })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{t("artistAliases.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleting}>
-              {deleting ? "Deleting…" : "Delete"}
+              {deleting ? t("artistAliases.deleting") : t("artistAliases.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -147,6 +149,7 @@ interface AliasModalProps {
 }
 
 function AliasModal({ alias, contacts, onClose, onSave }: AliasModalProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(alias?.alias_name || "");
   const [ids, setIds] = useState<string[]>(alias?.contact_ids ? [...alias.contact_ids] : []);
   const [search, setSearch] = useState("");
@@ -195,7 +198,7 @@ function AliasModal({ alias, contacts, onClose, onSave }: AliasModalProps) {
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <h2 className="text-base font-semibold text-foreground">
-            {alias ? "Edit Alias" : "New Alias"}
+            {alias ? t("artistAliases.editAlias") : t("artistAliases.newAlias")}
           </h2>
           <button
             type="button"
@@ -209,20 +212,20 @@ function AliasModal({ alias, contacts, onClose, onSave }: AliasModalProps) {
         <div className="p-5 space-y-4">
           <div className="space-y-1.5">
             <label className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">
-              Alias name
+              {t("artistAliases.aliasName")}
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder='e.g. "Banx & Ranx"'
+              placeholder={t("artistAliases.aliasNamePlaceholder")}
               className="h-10 w-full px-3 rounded-lg bg-secondary border border-border text-sm text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
             />
           </div>
 
           <div className="space-y-1.5">
             <label className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">
-              Linked contacts ({ids.length})
+              {t("artistAliases.linkedContacts", { count: ids.length })}
             </label>
             <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2 border border-border focus-within:border-brand-orange/30 transition-all">
               <Search className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -231,14 +234,14 @@ function AliasModal({ alias, contacts, onClose, onSave }: AliasModalProps) {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search contacts…"
+                placeholder={t("artistAliases.searchPlaceholder")}
                 className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none w-full font-medium"
               />
             </div>
             <div className="max-h-64 overflow-y-auto rounded-lg border border-border bg-secondary/40 divide-y divide-border/30">
               {filteredContacts.length === 0 ? (
                 <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-                  No contacts match "{search}"
+                  {t("artistAliases.noMatch", { query: search })}
                 </p>
               ) : (
                 filteredContacts.map((c) => {
@@ -286,7 +289,7 @@ function AliasModal({ alias, contacts, onClose, onSave }: AliasModalProps) {
             disabled={saving}
             className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
-            Cancel
+            {t("artistAliases.cancel")}
           </button>
           <button
             type="button"
@@ -294,7 +297,7 @@ function AliasModal({ alias, contacts, onClose, onSave }: AliasModalProps) {
             disabled={!name.trim() || saving}
             className="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 hover:from-orange-600 hover:via-pink-600 hover:to-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            {saving ? "Saving…" : alias ? "Save" : "Create alias"}
+            {saving ? t("artistAliases.saving") : alias ? t("artistAliases.save") : t("artistAliases.createAlias")}
           </button>
         </div>
       </div>

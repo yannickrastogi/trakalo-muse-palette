@@ -382,7 +382,10 @@
     "emailCopied": "E-mail copiata!",
     "sendPitch": "Invia Pitch",
     "daysAgo": "{{count}}g fa",
-    "justNow": "Proprio ora"
+    "justNow": "Proprio ora",
+    "aliasNameRequired": "Il nome dell'alias è obbligatorio",
+    "failedSaveAlias": "Impossibile salvare l'alias",
+    "failedDeleteAlias": "Impossibile eliminare l'alias"
   },
   "notifications": {
     "title": "Centro notifiche",
@@ -1454,5 +1457,94 @@
       "deleteTitle": "Elimina commento",
       "deleteDescription": "Sei sicuro? Questa azione non può essere annullata."
     }
+  },
+  "videoSection": {
+    "title": "Video",
+    "subtitle": "Clip, visualizer o teaser",
+    "remove": "Rimuovi",
+    "noVideo": "Nessun video allegato.",
+    "uploading": "Caricamento…",
+    "dropHere": "Trascina qui il tuo video",
+    "formats": "MP4, MOV, WebM — Max 500MB",
+    "uploadButton": "Carica video",
+    "loadError": "Impossibile caricare il video — aggiorna la pagina",
+    "visibleOnShare": "Visibile nei link condivisi",
+    "removeTitle": "Rimuovere il video?",
+    "removeDescription": "Il file video verrà eliminato e immediatamente nascosto da qualsiasi link condiviso. Questa azione non può essere annullata.",
+    "cancel": "Annulla",
+    "removing": "Rimozione…",
+    "unsupportedFormat": "Formato non supportato — usa MP4, MOV o WebM",
+    "tooLarge": "Il video è troppo grande (max 500MB)",
+    "uploadFailed": "Caricamento non riuscito — riprova",
+    "failedSave": "Impossibile salvare il riferimento del video",
+    "uploaded": "Video caricato",
+    "failedVisibility": "Impossibile aggiornare la visibilità",
+    "failedRemove": "Impossibile rimuovere il video",
+    "removed": "Video rimosso"
+  },
+  "versionSelector": {
+    "mainVersion": "Versione principale",
+    "uploading": "Caricamento…",
+    "addVersion": "Aggiungi versione",
+    "setAsActive": "Imposta come attiva",
+    "rename": "Rinomina",
+    "addNotes": "Aggiungi note",
+    "deleteVersion": "Elimina versione",
+    "deleteTitle": "Eliminare {{name}}?",
+    "deleteDescription": "Il file audio e il Sonic DNA di questa versione verranno rimossi. Questa azione non può essere annullata.",
+    "cancel": "Annulla",
+    "deleting": "Eliminazione…",
+    "delete": "Elimina",
+    "notes": "Note",
+    "notesPlaceholder": "es. Mix di Jean, aggiunta chitarra del bridge…",
+    "savesOnBlur": "Salva alla perdita del focus · {{count}}/500",
+    "saving": "Salvataggio…",
+    "couldNotRename": "Impossibile rinominare la versione",
+    "unsupportedFormat": "Formato non supportato — usa WAV, MP3, FLAC, AIFF, M4A",
+    "tooLarge": "Il file è troppo grande (max 500MB)",
+    "uploadFailed": "Caricamento non riuscito — riprova",
+    "failedRegister": "Impossibile registrare la versione",
+    "uploadedAnalyzing": "Versione V{{n}} caricata — analisi...",
+    "failedSetActive": "Impossibile impostare la versione attiva",
+    "nowActive": "{{name}} è ora la versione attiva",
+    "cantDeleteOnly": "Impossibile eliminare l'unica versione di un brano",
+    "setActiveFirst": "Imposta un'altra versione come attiva prima di eliminare questa",
+    "failedDelete": "Impossibile eliminare la versione",
+    "deleted": "{{name}} eliminata",
+    "failedNotes": "Impossibile salvare le note"
+  },
+  "starRating": {
+    "noRatings": "Ancora nessuna valutazione"
+  },
+  "artistAliases": {
+    "newAlias": "Nuovo alias",
+    "editAlias": "Modifica alias",
+    "noAliases": "Ancora nessun alias",
+    "noAliasesDesc": "Crea il tuo primo alias così Trakalog sa che \"Banx & Ranx\" significa Yannick + Zacharie, non due collaboratori sconosciuti.",
+    "noContacts": "Nessun contatto collegato",
+    "aliasName": "Nome alias",
+    "aliasNamePlaceholder": "es. \"Banx & Ranx\"",
+    "linkedContacts": "Contatti collegati ({{count}})",
+    "searchPlaceholder": "Cerca contatti…",
+    "noMatch": "Nessun contatto corrisponde a \"{{query}}\"",
+    "cancel": "Annulla",
+    "saving": "Salvataggio…",
+    "save": "Salva",
+    "createAlias": "Crea alias",
+    "deleteTitle": "Eliminare l'alias?",
+    "deleteDescription": "\"{{name}}\" verrà rimosso. I contatti sottostanti restano invariati.",
+    "deleting": "Eliminazione…",
+    "delete": "Elimina"
+  },
+  "audioPlayer": {
+    "playbackFailed": "Riproduzione audio non riuscita.",
+    "noAudioFile": "Nessun file audio disponibile per questo brano.",
+    "couldNotLoad": "Impossibile caricare l'audio. Riprova.",
+    "couldNotLoadVersion": "Impossibile caricare questa versione."
+  },
+  "trackContext": {
+    "analyzingAudio": "Analisi audio — BPM, tonalità e mood appariranno a breve...",
+    "failedSaveUpdate": "Impossibile salvare l'aggiornamento del brano",
+    "failedSaveRating": "Impossibile salvare la valutazione"
   }
 }

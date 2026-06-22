@@ -7,6 +7,7 @@ import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack, type TrackVersion } from "@/contexts/TrackContext";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -54,6 +55,7 @@ export function VersionSelector({
   onSelectVersion,
   onVersionsChanged,
 }: VersionSelectorProps) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const { queueSonicDnaAnalysis } = useTrack();
@@ -103,7 +105,7 @@ export function VersionSelector({
       .eq("id", versionId);
     if (error) {
       console.error("Rename version failed:", error);
-      toast.error("Could not rename version");
+      toast.error(t("versionSelector.couldNotRename"));
       return;
     }
     await onVersionsChanged();
@@ -113,11 +115,11 @@ export function VersionSelector({
     if (!user || !activeWorkspace || !trackUuid) return;
     if (uploadingRef.current) return;
     if (!fileLooksLikeAudio(file)) {
-      toast.error("Unsupported format — use WAV, MP3, FLAC, AIFF, M4A");
+      toast.error(t("versionSelector.unsupportedFormat"));
       return;
     }
     if (file.size > MAX_SIZE_BYTES) {
-      toast.error("File is too large (max 500MB)");
+      toast.error(t("versionSelector.tooLarge"));
       return;
     }
 
@@ -144,7 +146,7 @@ export function VersionSelector({
         descriptor = await getStorageUploadUrl("tracks", filePath, contentType);
       } catch (e) {
         console.error("getStorageUploadUrl failed:", e);
-        toast.error("Upload failed — please try again");
+        toast.error(t("versionSelector.uploadFailed"));
         return;
       }
 
@@ -168,7 +170,7 @@ export function VersionSelector({
       });
       if (putError) {
         console.error("Version upload failed:", putError);
-        toast.error("Upload failed — please try again");
+        toast.error(t("versionSelector.uploadFailed"));
         return;
       }
 
@@ -181,7 +183,7 @@ export function VersionSelector({
       });
       if (rpcError) {
         console.error("add_track_version failed:", rpcError);
-        toast.error("Failed to register version");
+        toast.error(t("versionSelector.failedRegister"));
         return;
       }
 
@@ -201,7 +203,7 @@ export function VersionSelector({
         console.error("Lookup new version row failed:", e);
       }
 
-      toast.success("Version V" + nextVersionNumber + " uploaded — analyzing...");
+      toast.success(t("versionSelector.uploadedAnalyzing", { n: nextVersionNumber }));
       await onVersionsChanged();
 
       // Generate waveform client-side from the in-memory File (no extra fetch),
@@ -284,10 +286,10 @@ export function VersionSelector({
     });
     if (error) {
       console.error("set_track_version_active failed:", error);
-      toast.error("Failed to set active version");
+      toast.error(t("versionSelector.failedSetActive"));
       return;
     }
-    toast.success(v.version_name + " is now the active version");
+    toast.success(t("versionSelector.nowActive", { name: v.version_name }));
     await onVersionsChanged();
   }, [user, activeWorkspace, trackUuid, onVersionsChanged]);
 
@@ -306,16 +308,16 @@ export function VersionSelector({
         // the exception name inside error.message.
         const msg = error.message || "";
         if (msg.includes("cannot_delete_last_version")) {
-          toast.error("Can't delete the only version of a track");
+          toast.error(t("versionSelector.cantDeleteOnly"));
         } else if (msg.includes("cannot_delete_active_version")) {
-          toast.error("Set another version as active before deleting this one");
+          toast.error(t("versionSelector.setActiveFirst"));
         } else {
           console.error("delete_track_version failed:", error);
-          toast.error("Failed to delete version");
+          toast.error(t("versionSelector.failedDelete"));
         }
         return;
       }
-      toast.success(deleteTarget.version_name + " deleted");
+      toast.success(t("versionSelector.deleted", { name: deleteTarget.version_name }));
       setDeleteTarget(null);
       await onVersionsChanged();
     } finally {
@@ -334,7 +336,7 @@ export function VersionSelector({
     });
     if (error) {
       console.error("update_track_version_notes failed:", error);
-      toast.error("Failed to save notes");
+      toast.error(t("versionSelector.failedNotes"));
       return;
     }
     await onVersionsChanged();
@@ -346,7 +348,7 @@ export function VersionSelector({
     return (
       <div className="flex items-center gap-1.5 pb-1">
         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-lg border border-border bg-card/60 text-xs font-medium text-muted-foreground">
-          Main Version
+          {t("versionSelector.mainVersion")}
         </span>
         {canEdit && (
           <>
@@ -365,11 +367,11 @@ export function VersionSelector({
             >
               {uploading ? (
                 <>
-                  <Loader2 className="w-3 h-3 animate-spin" /> Uploading…
+                  <Loader2 className="w-3 h-3 animate-spin" /> {t("versionSelector.uploading")}
                 </>
               ) : (
                 <>
-                  <Plus className="w-3 h-3" /> Add Version
+                  <Plus className="w-3 h-3" /> {t("versionSelector.addVersion")}
                 </>
               )}
             </button>
@@ -455,17 +457,17 @@ export function VersionSelector({
                 <DropdownMenuContent align="end" className="w-44">
                   {!v.is_active && (
                     <DropdownMenuItem onClick={() => handleSetActive(v)}>
-                      <Star className="w-3.5 h-3.5 mr-2" /> Set as Active
+                      <Star className="w-3.5 h-3.5 mr-2" /> {t("versionSelector.setAsActive")}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={() => handleStartRename(v)}>
-                    <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
+                    <Pencil className="w-3.5 h-3.5 mr-2" /> {t("versionSelector.rename")}
                   </DropdownMenuItem>
                   {!v.notes && (
                     <Popover>
                       <PopoverTrigger asChild>
                         <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                          <StickyNote className="w-3.5 h-3.5 mr-2" /> Add notes
+                          <StickyNote className="w-3.5 h-3.5 mr-2" /> {t("versionSelector.addNotes")}
                         </DropdownMenuItem>
                       </PopoverTrigger>
                       <PopoverContent align="start" className="w-64 p-3">
@@ -482,7 +484,7 @@ export function VersionSelector({
                     className="text-destructive focus:text-destructive"
                     onClick={() => setDeleteTarget(v)}
                   >
-                    <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Version
+                    <Trash2 className="w-3.5 h-3.5 mr-2" /> {t("versionSelector.deleteVersion")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -508,11 +510,11 @@ export function VersionSelector({
           >
             {uploading ? (
               <>
-                <Loader2 className="w-3 h-3 animate-spin" /> Uploading…
+                <Loader2 className="w-3 h-3 animate-spin" /> {t("versionSelector.uploading")}
               </>
             ) : (
               <>
-                <Plus className="w-3 h-3" /> Add Version
+                <Plus className="w-3 h-3" /> {t("versionSelector.addVersion")}
               </>
             )}
           </button>
@@ -522,15 +524,15 @@ export function VersionSelector({
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {deleteTarget?.version_name}?</AlertDialogTitle>
+            <AlertDialogTitle>{t("versionSelector.deleteTitle", { name: deleteTarget?.version_name })}</AlertDialogTitle>
             <AlertDialogDescription>
-              The audio file and Sonic DNA for this version will be removed. This cannot be undone.
+              {t("versionSelector.deleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{t("versionSelector.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete} disabled={deleting}>
-              {deleting ? "Deleting…" : "Delete"}
+              {deleting ? t("versionSelector.deleting") : t("versionSelector.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -546,6 +548,7 @@ interface VersionNotesEditorProps {
 }
 
 function VersionNotesEditor({ initialValue, onSave, readOnly }: VersionNotesEditorProps) {
+  const { t } = useTranslation();
   const [value, setValue] = useState(initialValue);
   const [saving, setSaving] = useState(false);
 
@@ -563,21 +566,21 @@ function VersionNotesEditor({ initialValue, onSave, readOnly }: VersionNotesEdit
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold text-foreground">Notes</p>
+      <p className="text-xs font-semibold text-foreground">{t("versionSelector.notes")}</p>
       <textarea
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={handleSave}
         readOnly={readOnly}
-        placeholder="e.g. Mix by Jean, added bridge guitar…"
+        placeholder={t("versionSelector.notesPlaceholder")}
         rows={3}
         maxLength={500}
         className="w-full px-2 py-1.5 text-xs rounded-md border border-border bg-secondary/50 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/40 resize-none"
       />
       {!readOnly && (
-        <p className="text-[10px] text-muted-foreground">Saves on blur · {value.length}/500</p>
+        <p className="text-[10px] text-muted-foreground">{t("versionSelector.savesOnBlur", { count: value.length })}</p>
       )}
-      {saving && <p className="text-[10px] text-muted-foreground">Saving…</p>}
+      {saving && <p className="text-[10px] text-muted-foreground">{t("versionSelector.saving")}</p>}
     </div>
   );
 }

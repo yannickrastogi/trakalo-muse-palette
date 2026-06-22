@@ -382,7 +382,10 @@
     "emailCopied": "E-mail copiado!",
     "sendPitch": "Enviar Pitch",
     "daysAgo": "há {{count}}d",
-    "justNow": "Agora mesmo"
+    "justNow": "Agora mesmo",
+    "aliasNameRequired": "O nome do alias é obrigatório",
+    "failedSaveAlias": "Falha ao salvar o alias",
+    "failedDeleteAlias": "Falha ao excluir o alias"
   },
   "notifications": {
     "title": "Centro de notificações",
@@ -1454,5 +1457,94 @@
       "deleteTitle": "Excluir comentário",
       "deleteDescription": "Tem certeza? Esta ação não pode ser desfeita."
     }
+  },
+  "videoSection": {
+    "title": "Vídeo",
+    "subtitle": "Clipe, visualizador ou teaser",
+    "remove": "Remover",
+    "noVideo": "Nenhum vídeo anexado.",
+    "uploading": "Enviando…",
+    "dropHere": "Solte seu vídeo aqui",
+    "formats": "MP4, MOV, WebM — Máx 500MB",
+    "uploadButton": "Enviar vídeo",
+    "loadError": "Falha ao carregar o vídeo — atualize a página",
+    "visibleOnShare": "Visível nos links compartilhados",
+    "removeTitle": "Remover vídeo?",
+    "removeDescription": "O arquivo de vídeo será excluído e imediatamente ocultado de qualquer link compartilhado. Esta ação não pode ser desfeita.",
+    "cancel": "Cancelar",
+    "removing": "Removendo…",
+    "unsupportedFormat": "Formato não suportado — use MP4, MOV ou WebM",
+    "tooLarge": "O vídeo é muito grande (máx 500MB)",
+    "uploadFailed": "Falha no envio — tente novamente",
+    "failedSave": "Falha ao salvar a referência do vídeo",
+    "uploaded": "Vídeo enviado",
+    "failedVisibility": "Falha ao atualizar a visibilidade",
+    "failedRemove": "Falha ao remover o vídeo",
+    "removed": "Vídeo removido"
+  },
+  "versionSelector": {
+    "mainVersion": "Versão principal",
+    "uploading": "Enviando…",
+    "addVersion": "Adicionar versão",
+    "setAsActive": "Definir como ativa",
+    "rename": "Renomear",
+    "addNotes": "Adicionar notas",
+    "deleteVersion": "Excluir versão",
+    "deleteTitle": "Excluir {{name}}?",
+    "deleteDescription": "O arquivo de áudio e o DNA sônico desta versão serão removidos. Esta ação não pode ser desfeita.",
+    "cancel": "Cancelar",
+    "deleting": "Excluindo…",
+    "delete": "Excluir",
+    "notes": "Notas",
+    "notesPlaceholder": "ex. Mix por Jean, adicionada guitarra da ponte…",
+    "savesOnBlur": "Salva ao perder o foco · {{count}}/500",
+    "saving": "Salvando…",
+    "couldNotRename": "Não foi possível renomear a versão",
+    "unsupportedFormat": "Formato não suportado — use WAV, MP3, FLAC, AIFF, M4A",
+    "tooLarge": "O arquivo é muito grande (máx 500MB)",
+    "uploadFailed": "Falha no envio — tente novamente",
+    "failedRegister": "Falha ao registrar a versão",
+    "uploadedAnalyzing": "Versão V{{n}} enviada — analisando...",
+    "failedSetActive": "Falha ao definir a versão ativa",
+    "nowActive": "{{name}} agora é a versão ativa",
+    "cantDeleteOnly": "Não é possível excluir a única versão de uma faixa",
+    "setActiveFirst": "Defina outra versão como ativa antes de excluir esta",
+    "failedDelete": "Falha ao excluir a versão",
+    "deleted": "{{name}} excluída",
+    "failedNotes": "Falha ao salvar as notas"
+  },
+  "starRating": {
+    "noRatings": "Ainda sem avaliações"
+  },
+  "artistAliases": {
+    "newAlias": "Novo alias",
+    "editAlias": "Editar alias",
+    "noAliases": "Ainda sem aliases",
+    "noAliasesDesc": "Crie seu primeiro alias para que o Trakalog saiba que \"Banx & Ranx\" significa Yannick + Zacharie, e não dois colaboradores desconhecidos.",
+    "noContacts": "Nenhum contato vinculado",
+    "aliasName": "Nome do alias",
+    "aliasNamePlaceholder": "ex. \"Banx & Ranx\"",
+    "linkedContacts": "Contatos vinculados ({{count}})",
+    "searchPlaceholder": "Pesquisar contatos…",
+    "noMatch": "Nenhum contato corresponde a \"{{query}}\"",
+    "cancel": "Cancelar",
+    "saving": "Salvando…",
+    "save": "Salvar",
+    "createAlias": "Criar alias",
+    "deleteTitle": "Excluir alias?",
+    "deleteDescription": "\"{{name}}\" será removido. Os contatos subjacentes permanecem intactos.",
+    "deleting": "Excluindo…",
+    "delete": "Excluir"
+  },
+  "audioPlayer": {
+    "playbackFailed": "Falha na reprodução de áudio.",
+    "noAudioFile": "Nenhum arquivo de áudio disponível para esta faixa.",
+    "couldNotLoad": "Não foi possível carregar o áudio. Tente novamente.",
+    "couldNotLoadVersion": "Não foi possível carregar esta versão."
+  },
+  "trackContext": {
+    "analyzingAudio": "Analisando áudio — BPM, tom e clima aparecerão em breve...",
+    "failedSaveUpdate": "Falha ao salvar a atualização da faixa",
+    "failedSaveRating": "Falha ao salvar a avaliação"
   }
 }

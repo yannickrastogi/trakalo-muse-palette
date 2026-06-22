@@ -4,6 +4,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import type { WorkspaceScoped } from "@/types/workspace";
 import { toast } from "sonner";
+import i18n from "@/i18n";
 
 export interface Contact extends WorkspaceScoped {
   id: string;
@@ -179,7 +180,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
       if (!activeWorkspace || !user) return false;
       const trimmed = aliasName.trim();
       if (!trimmed) {
-        toast.error("Alias name is required");
+        toast.error(i18n.t("contacts.aliasNameRequired"));
         return false;
       }
       const { error } = await supabase.rpc("upsert_artist_alias", {
@@ -191,7 +192,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
       });
       if (error) {
         console.error("Error upserting alias:", error);
-        toast.error("Failed to save alias");
+        toast.error(i18n.t("contacts.failedSaveAlias"));
         return false;
       }
       await fetchAliases();
@@ -210,7 +211,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
       });
       if (error) {
         console.error("Error deleting alias:", error);
-        toast.error("Failed to delete alias");
+        toast.error(i18n.t("contacts.failedDeleteAlias"));
         return false;
       }
       await fetchAliases();

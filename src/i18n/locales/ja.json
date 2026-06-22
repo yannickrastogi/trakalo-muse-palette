@@ -382,7 +382,10 @@
     "emailCopied": "メールをコピーしました！",
     "sendPitch": "ピッチを送信",
     "daysAgo": "{{count}}日前",
-    "justNow": "たった今"
+    "justNow": "たった今",
+    "aliasNameRequired": "エイリアス名は必須です",
+    "failedSaveAlias": "エイリアスの保存に失敗しました",
+    "failedDeleteAlias": "エイリアスの削除に失敗しました"
   },
   "notifications": {
     "title": "通知センター",
@@ -1454,5 +1457,94 @@
       "deleteTitle": "コメントを削除",
       "deleteDescription": "本当によろしいですか？この操作は取り消せません。"
     }
+  },
+  "videoSection": {
+    "title": "動画",
+    "subtitle": "クリップ、ビジュアライザー、ティーザー",
+    "remove": "削除",
+    "noVideo": "添付された動画はありません。",
+    "uploading": "アップロード中…",
+    "dropHere": "ここに動画をドロップ",
+    "formats": "MP4、MOV、WebM — 最大500MB",
+    "uploadButton": "動画をアップロード",
+    "loadError": "動画の読み込みに失敗しました — ページを再読み込みしてください",
+    "visibleOnShare": "共有リンクに表示",
+    "removeTitle": "動画を削除しますか？",
+    "removeDescription": "動画ファイルは削除され、すべての共有リンクから即座に非表示になります。この操作は元に戻せません。",
+    "cancel": "キャンセル",
+    "removing": "削除中…",
+    "unsupportedFormat": "サポートされていない形式 — MP4、MOV、またはWebMを使用してください",
+    "tooLarge": "動画が大きすぎます（最大500MB）",
+    "uploadFailed": "アップロードに失敗しました — もう一度お試しください",
+    "failedSave": "動画参照の保存に失敗しました",
+    "uploaded": "動画をアップロードしました",
+    "failedVisibility": "表示設定の更新に失敗しました",
+    "failedRemove": "動画の削除に失敗しました",
+    "removed": "動画を削除しました"
+  },
+  "versionSelector": {
+    "mainVersion": "メインバージョン",
+    "uploading": "アップロード中…",
+    "addVersion": "バージョンを追加",
+    "setAsActive": "アクティブに設定",
+    "rename": "名前を変更",
+    "addNotes": "メモを追加",
+    "deleteVersion": "バージョンを削除",
+    "deleteTitle": "{{name}}を削除しますか？",
+    "deleteDescription": "このバージョンのオーディオファイルとSonic DNAが削除されます。この操作は元に戻せません。",
+    "cancel": "キャンセル",
+    "deleting": "削除中…",
+    "delete": "削除",
+    "notes": "メモ",
+    "notesPlaceholder": "例：Jeanによるミックス、ブリッジギターを追加…",
+    "savesOnBlur": "フォーカスを外すと保存 · {{count}}/500",
+    "saving": "保存中…",
+    "couldNotRename": "バージョンの名前を変更できませんでした",
+    "unsupportedFormat": "サポートされていない形式 — WAV、MP3、FLAC、AIFF、M4Aを使用してください",
+    "tooLarge": "ファイルが大きすぎます（最大500MB）",
+    "uploadFailed": "アップロードに失敗しました — もう一度お試しください",
+    "failedRegister": "バージョンの登録に失敗しました",
+    "uploadedAnalyzing": "バージョンV{{n}}をアップロードしました — 分析中...",
+    "failedSetActive": "アクティブバージョンの設定に失敗しました",
+    "nowActive": "{{name}}が現在のアクティブバージョンになりました",
+    "cantDeleteOnly": "トラックの唯一のバージョンは削除できません",
+    "setActiveFirst": "これを削除する前に別のバージョンをアクティブに設定してください",
+    "failedDelete": "バージョンの削除に失敗しました",
+    "deleted": "{{name}}を削除しました",
+    "failedNotes": "メモの保存に失敗しました"
+  },
+  "starRating": {
+    "noRatings": "まだ評価がありません"
+  },
+  "artistAliases": {
+    "newAlias": "新規エイリアス",
+    "editAlias": "エイリアスを編集",
+    "noAliases": "まだエイリアスがありません",
+    "noAliasesDesc": "最初のエイリアスを作成して、「Banx & Ranx」が見知らぬ2人の協力者ではなくYannick + Zacharieを意味することをTrakalogに伝えましょう。",
+    "noContacts": "リンクされた連絡先なし",
+    "aliasName": "エイリアス名",
+    "aliasNamePlaceholder": "例：「Banx & Ranx」",
+    "linkedContacts": "リンクされた連絡先（{{count}}）",
+    "searchPlaceholder": "連絡先を検索…",
+    "noMatch": "「{{query}}」に一致する連絡先はありません",
+    "cancel": "キャンセル",
+    "saving": "保存中…",
+    "save": "保存",
+    "createAlias": "エイリアスを作成",
+    "deleteTitle": "エイリアスを削除しますか？",
+    "deleteDescription": "「{{name}}」が削除されます。元の連絡先はそのまま残ります。",
+    "deleting": "削除中…",
+    "delete": "削除"
+  },
+  "audioPlayer": {
+    "playbackFailed": "オーディオの再生に失敗しました。",
+    "noAudioFile": "このトラックに利用可能なオーディオファイルがありません。",
+    "couldNotLoad": "オーディオを読み込めませんでした。もう一度お試しください。",
+    "couldNotLoadVersion": "このバージョンを読み込めませんでした。"
+  },
+  "trackContext": {
+    "analyzingAudio": "オーディオを分析中 — BPM、キー、ムードがまもなく表示されます...",
+    "failedSaveUpdate": "トラックの更新の保存に失敗しました",
+    "failedSaveRating": "評価の保存に失敗しました"
   }
 }
