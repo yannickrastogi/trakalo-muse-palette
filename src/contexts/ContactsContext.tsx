@@ -23,6 +23,21 @@ export interface Contact extends WorkspaceScoped {
   lastDownload: string;
   tracksDownloaded: string[];
   totalDownloads: number;
+  tracksEngaged: number;
+  totalPlays: number;
+  lastInteraction: string;
+}
+
+// Retour de la RPC get_contacts_engagement. Les agrégats sont des bigint (int8) côté
+// Postgres : le client Supabase peut les sérialiser en string → on accepte les deux et
+// on coerce via Number() au merge.
+interface EngagementRow {
+  contact_id: string | null;
+  email: string | null;
+  tracks_engaged: number | string | null;
+  total_plays: number | string | null;
+  total_downloads: number | string | null;
+  last_interaction: string | null;
 }
 
 export interface ArtistAlias {
@@ -37,7 +52,7 @@ export interface ArtistAlias {
 interface ContactsContextValue {
   contacts: Contact[];
   aliases: ArtistAlias[];
-  addOrUpdateContact: (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => void;
+  addOrUpdateContact: (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads" | "tracksEngaged" | "totalPlays" | "lastInteraction"> & { trackName: string }) => void;
   getContact: (email: string) => Contact | undefined;
   upsertCollaborator: (data: { firstName: string; lastName: string; email?: string; role?: string; stageName?: string; pro?: string; ipi?: string; publisher?: string }) => void;
   refreshContacts: () => Promise<void>;
@@ -68,6 +83,9 @@ function mapRowToContact(row: Record<string, unknown>): Contact {
     lastDownload: (row.updated_at as string) || "",
     tracksDownloaded: [],
     totalDownloads: 0,
+    tracksEngaged: 0,
+    totalPlays: 0,
+    lastInteraction: (row.created_at as string) || "",
   };
 }
 
@@ -92,9 +110,44 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
     if (error) {
       console.error("Error fetching contacts:", error);
       setContacts([]);
-    } else {
-      setContacts((data || []).map((row) => mapRowToContact(row as unknown as Record<string, unknown>)));
+      return;
     }
+
+    const mapped = (data || []).map((row) => mapRowToContact(row as unknown as Record<string, unknown>));
+
+    // Enrich avec l'engagement réel (plays + downloads + tracks engagés) via RPC.
+    // Dégradation silencieuse : si la RPC échoue, on garde les valeurs par défaut (0).
+    const { data: engagementData, error: engagementError } = await supabase.rpc(
+      "get_contacts_engagement",
+      { _workspace_id: activeWorkspace.id }
+    );
+
+    if (engagementError) {
+      console.warn("Error fetching contacts engagement:", engagementError.message);
+      setContacts(mapped);
+      return;
+    }
+
+    const engagementByEmail = new Map(
+      ((engagementData as EngagementRow[] | null) ?? []).map((r) => [
+        String(r.email ?? "").toLowerCase(),
+        r,
+      ])
+    );
+
+    setContacts(
+      mapped.map((contact) => {
+        const eng = engagementByEmail.get((contact.email ?? "").toLowerCase());
+        if (!eng) return contact;
+        return {
+          ...contact,
+          tracksEngaged: Number(eng.tracks_engaged ?? 0),
+          totalPlays: Number(eng.total_plays ?? 0),
+          totalDownloads: Number(eng.total_downloads ?? 0),
+          lastInteraction: (eng.last_interaction as string) || contact.firstInteraction,
+        };
+      })
+    );
   }, [activeWorkspace, user]);
 
   const fetchAliases = useCallback(async () => {
@@ -167,7 +220,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
   );
 
   const addOrUpdateContact = useCallback(
-    async (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads"> & { trackName: string }) => {
+    async (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads" | "tracksEngaged" | "totalPlays" | "lastInteraction"> & { trackName: string }) => {
       if (!activeWorkspace || !user) return;
 
       var proArr = data.pro ? data.pro.split(", ").filter(Boolean) : null;

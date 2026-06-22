@@ -186,10 +186,10 @@ export function ContactDetailSheet({
         <div className="p-5 border-b border-border/40 space-y-2">
           <SectionHeader icon={Activity} label="Engagement" />
           <p className="text-sm text-foreground">
-            {c.tracksDownloaded.length} {c.tracksDownloaded.length === 1 ? "track" : "tracks"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
+            {c.tracksEngaged} {c.tracksEngaged === 1 ? "track" : "tracks"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
           </p>
-          {c.lastDownload && (
-            <p className="text-xs text-muted-foreground">Last interaction: {formatLastInteraction(c.lastDownload)}</p>
+          {c.lastInteraction && (
+            <p className="text-xs text-muted-foreground">Last interaction: {formatLastInteraction(c.lastInteraction)}</p>
           )}
         </div>
 

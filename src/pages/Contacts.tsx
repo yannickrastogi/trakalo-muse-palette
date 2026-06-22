@@ -818,12 +818,12 @@ export default function Contacts() {
                       {/* Engagement: tracks + downloads merged */}
                       <td className="px-4 py-3.5">
                         <span className="text-xs text-muted-foreground">
-                          {c.tracksDownloaded.length} {c.tracksDownloaded.length === 1 ? "track" : "tracks"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
+                          {c.tracksEngaged} {c.tracksEngaged === 1 ? "track" : "tracks"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}
                         </span>
                       </td>
                       {/* Last Interaction — relative */}
                       <td className="px-4 py-3.5">
-                        <span className="text-xs text-muted-foreground">{formatRelativeDate(c.lastDownload)}</span>
+                        <span className="text-xs text-muted-foreground">{formatRelativeDate(c.lastInteraction)}</span>
                       </td>
                       {/* Actions */}
                       <td className="px-5 py-3.5 text-right">
@@ -957,8 +957,8 @@ export default function Contacts() {
                 })()}
                 {/* Stats + last interaction */}
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{c.tracksDownloaded.length} {c.tracksDownloaded.length === 1 ? "track" : "tracks"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}</span>
-                  <span>{formatRelativeDate(c.lastDownload)}</span>
+                  <span>{c.tracksEngaged} {c.tracksEngaged === 1 ? "track" : "tracks"} · {c.totalDownloads} {c.totalDownloads === 1 ? "download" : "downloads"}</span>
+                  <span>{formatRelativeDate(c.lastInteraction)}</span>
                 </div>
                 {/* Actions */}
                 <div className="flex items-center justify-between gap-1 pt-2 border-t border-border/30">
