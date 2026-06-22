@@ -111,6 +111,12 @@ verify_jwt = true
 import_map = "./functions/get-audio-url/deno.json"
 entrypoint = "./functions/get-audio-url/index.ts"
 
+[functions.get-shared-link-asset]
+enabled = true
+verify_jwt = true
+import_map = "./functions/get-shared-link-asset/deno.json"
+entrypoint = "./functions/get-shared-link-asset/index.ts"
+
 [functions.log-link-event]
 enabled = true
 verify_jwt = false

@@ -292,7 +292,6 @@ function getVisitorCookie(): { name: string; email: string; role: string; compan
 export default function SharedLinkPage() {
   const { t, i18n } = useTranslation();
   var REST_URL = SUPABASE_URL + "/rest/v1";
-  var STORAGE_URL = SUPABASE_URL + "/storage/v1";
   var SB_HEADERS: Record<string, string> = { "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY };
   var { slug } = useParams<{ slug: string }>();
 
@@ -1114,6 +1113,24 @@ export default function SharedLinkPage() {
     setPackDownloading(true);
     logEvent(trackData.id, "download");
 
+    // List + sign the pack's stem/document assets via the slug-validated EF.
+    // Anonymous visitors can't SELECT stems/track_documents directly (RLS is
+    // authenticated-only), so the EF (service role, scoped to this link) returns
+    // only the link's assets with short-lived signed R2 URLs.
+    type PackAsset = { file_name: string; mime_type: string | null; signed_url: string };
+    var fetchPackAssets = async function(bucket: string): Promise<PackAsset[]> {
+      try {
+        var r = await fetch(SUPABASE_URL + "/functions/v1/get-shared-link-asset", {
+          method: "POST",
+          headers: { ...SB_HEADERS, "Content-Type": "application/json" },
+          body: JSON.stringify({ slug: slug, bucket: bucket }),
+        });
+        if (!r.ok) return [];
+        var j = await r.json();
+        return Array.isArray(j.assets) ? (j.assets as PackAsset[]) : [];
+      } catch (e) { console.error("Failed to list pack assets:", e); return []; }
+    };
+
     try {
       var zip = new JSZip();
       var folderName = trackData.title + " - " + trackData.artist + " - Trakalog Pack";
@@ -1143,23 +1160,15 @@ export default function SharedLinkPage() {
         root.folder("Lyrics")!.file(trackData.title + " - Lyrics.pdf", lyricsBlob);
       }
 
-      // Stems — real files from storage
+      // Stems — real files from R2 (listed + signed by the slug-validated EF)
       if (items.indexOf("stems") >= 0) {
-        var stemsRes = await fetch(REST_URL + "/stems?select=*&track_id=eq." + encodeURIComponent(trackData.id), { headers: SB_HEADERS });
-        var stems = stemsRes.ok ? await stemsRes.json() : null;
-        if (stems && stems.length > 0) {
+        var stemAssets = await fetchPackAssets("stems");
+        if (stemAssets.length > 0) {
           var stemsFolder = root.folder("Stems")!;
-          for (var si = 0; si < stems.length; si++) {
-            var stem = stems[si] as Record<string, unknown>;
-            var stemPath = stem.file_path as string;
-            if (!stemPath) continue;
-            var stemSignRes = await fetch(STORAGE_URL + "/object/sign/stems/" + stemPath, { method: "POST", headers: { ...SB_HEADERS, "Content-Type": "application/json" }, body: JSON.stringify({ expiresIn: 3600 }) });
-            var stemSignJson = stemSignRes.ok ? await stemSignRes.json() : null;
-            var stemSigned = stemSignJson ? { signedUrl: SUPABASE_URL + "/storage/v1" + stemSignJson.signedURL } : null;
-            if (stemSigned?.signedUrl) {
-              var stemBytes = await fetch(stemSigned.signedUrl).then(function(r) { if (!r.ok) throw new Error("Failed to fetch stem"); return r.arrayBuffer(); });
-              stemsFolder.file((stem.file_name as string) || ("stem-" + si), stemBytes);
-            }
+          for (var si = 0; si < stemAssets.length; si++) {
+            var sa = stemAssets[si];
+            var stemBytes = await fetch(sa.signed_url).then(function(r) { if (!r.ok) throw new Error("Failed to fetch stem"); return r.arrayBuffer(); });
+            stemsFolder.file(sa.file_name || ("stem-" + si), stemBytes);
           }
         }
       }
@@ -1231,20 +1240,13 @@ export default function SharedLinkPage() {
 
       // Paperwork — real documents with TRAKALOG watermark on PDFs
       if (items.indexOf("paperwork") >= 0) {
-        var docsRes = await fetch(REST_URL + "/track_documents?select=*&track_id=eq." + encodeURIComponent(trackData.id), { headers: SB_HEADERS });
-        var docs = docsRes.ok ? await docsRes.json() : null;
-        if (docs && docs.length > 0) {
+        var docAssets = await fetchPackAssets("documents");
+        if (docAssets.length > 0) {
           var paperworkFolder = root.folder("Paperwork")!;
-          for (var di = 0; di < docs.length; di++) {
-            var doc = docs[di] as Record<string, unknown>;
-            var docPath = doc.file_path as string;
-            if (!docPath) continue;
-            var docSignRes = await fetch(STORAGE_URL + "/object/sign/documents/" + docPath, { method: "POST", headers: { ...SB_HEADERS, "Content-Type": "application/json" }, body: JSON.stringify({ expiresIn: 3600 }) });
-            var docSignJson = docSignRes.ok ? await docSignRes.json() : null;
-            var docSigned = docSignJson ? { signedUrl: SUPABASE_URL + "/storage/v1" + docSignJson.signedURL } : null;
-            if (!docSigned?.signedUrl) continue;
-            var docBytes = await fetch(docSigned.signedUrl).then(function(r) { return r.arrayBuffer(); });
-            var mimeType = (doc.mime_type as string) || "";
+          for (var di = 0; di < docAssets.length; di++) {
+            var da = docAssets[di];
+            var docBytes = await fetch(da.signed_url).then(function(r) { if (!r.ok) throw new Error("Failed to fetch document"); return r.arrayBuffer(); });
+            var mimeType = da.mime_type || "";
             if (mimeType.indexOf("pdf") >= 0) {
               var pdfDoc = await PDFDocument.load(docBytes);
               var font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -1261,9 +1263,9 @@ export default function SharedLinkPage() {
                 }
               }
               var watermarkedBytes = await pdfDoc.save();
-              paperworkFolder.file((doc.file_name as string) || ("document-" + di + ".pdf"), watermarkedBytes);
+              paperworkFolder.file(da.file_name || ("document-" + di + ".pdf"), watermarkedBytes);
             } else {
-              paperworkFolder.file((doc.file_name as string) || ("document-" + di), docBytes);
+              paperworkFolder.file(da.file_name || ("document-" + di), docBytes);
             }
           }
         }
