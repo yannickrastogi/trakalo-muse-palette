@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import i18n from "@/i18n";
 import type { TrackData } from "@/contexts/TrackContext";
 import { getAudioPlaybackUrl, getStorageSignedUrl } from "@/lib/audio";
+import { getExistingCrossfadePlayer } from "@/lib/crossfadePlayer";
 
 interface AudioPlayerState {
   currentTrack: TrackData | null;
@@ -187,6 +188,11 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const playTrackInternal = useCallback(async (track: TrackData) => {
     const audio = audioRef.current;
     if (!audio) return;
+
+    // Playing a catalog track takes over from the radio — stop it so both
+    // engines don't play at once (no-op if the radio was never started).
+    const radio = getExistingCrossfadePlayer();
+    if (radio && radio.state.currentTrack) radio.stop();
 
     // Get audio URL — prefer previewUrl, fallback to originalFileUrl
     const rawUrl = track.previewUrl || track.originalFileUrl;

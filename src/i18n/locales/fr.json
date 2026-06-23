@@ -1489,6 +1489,11 @@
     "allAlreadySigned": "Tous les collaborateurs ont déjà signé"
   },
   "radio": {
+    "startingRadio": "Démarrage de la radio…",
+    "noMoodsAvailable": "Aucun tag d'ambiance trouvé. Ajoutez des tags d'ambiance à vos morceaux.",
+    "stopRadio": "Arrêter la radio",
+    "radioPlaying": "Radio",
+    "noTracksForFilter": "Aucun morceau ne correspond à ce filtre",
     "title": "Trakalog Radio",
     "subtitle": "Votre catalogue personnel, à la demande",
     "shuffleAll": "Lecture aléatoire",

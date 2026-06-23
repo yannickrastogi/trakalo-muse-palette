@@ -12,6 +12,7 @@ import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { TeamProvider } from "@/contexts/TeamContext";
 import { TrackProvider } from "@/contexts/TrackContext";
 import { AudioPlayerProvider } from "@/contexts/AudioPlayerContext";
+import { RadioPlayerProvider } from "@/contexts/RadioPlayerContext";
 import { PitchProvider } from "@/contexts/PitchContext";
 import { SharedLinksProvider } from "@/contexts/SharedLinksContext";
 import { ContactsProvider } from "@/contexts/ContactsContext";
@@ -92,6 +93,7 @@ function ProtectedApp({ children }: { children: React.ReactNode }) {
       <TeamProvider>
       <TrackProvider>
       <AudioPlayerProvider>
+      <RadioPlayerProvider>
       <EngagementProvider>
       <TrackReviewProvider>
       <ApprovalProvider>
@@ -107,6 +109,7 @@ function ProtectedApp({ children }: { children: React.ReactNode }) {
       </ApprovalProvider>
       </TrackReviewProvider>
       </EngagementProvider>
+      </RadioPlayerProvider>
       </AudioPlayerProvider>
       </TrackProvider>
       </TeamProvider>

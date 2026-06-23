@@ -7,11 +7,9 @@ import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getCrossfadePlayer,
-  destroyCrossfadePlayer,
   type CrossfadeTrack,
   type RadioState,
 } from "@/lib/crossfadePlayer";
@@ -104,7 +102,6 @@ export default function RadioPage() {
   var { tracks } = useTrack();
   var { pause } = useAudioPlayer();
   var { playlists } = usePlaylists();
-  var { currentWorkspace } = useWorkspace();
 
   // State
   var [radioState, setRadioState] = useState<RadioState>({
@@ -126,9 +123,17 @@ export default function RadioPage() {
   var [crossfadeValue, setCrossfadeValue] = useState(3);
   var [genreDropdownOpen, setGenreDropdownOpen] = useState(false);
   var [moodDropdownOpen, setMoodDropdownOpen] = useState(false);
+  var [isLoading, setIsLoading] = useState(false);
+  var [emptyFilter, setEmptyFilter] = useState(false);
   var playerRef = useRef<ReturnType<typeof getCrossfadePlayer> | null>(null);
   var genreDropdownRef = useRef<HTMLDivElement>(null);
   var moodDropdownRef = useRef<HTMLDivElement>(null);
+  var isMountedRef = useRef(true);
+
+  useEffect(function () {
+    isMountedRef.current = true;
+    return function () { isMountedRef.current = false; };
+  }, []);
 
   // Click-outside handlers for custom dropdowns
   useEffect(function () {
@@ -162,7 +167,9 @@ export default function RadioPage() {
     pause();
     return function () {
       unsub();
-      destroyCrossfadePlayer();
+      // Do NOT destroy the singleton on unmount → radio keeps playing in the
+      // background while the user navigates. Stop is driven explicitly by the
+      // mini-player [✕], by playing a catalog track, or by a workspace switch.
       playerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -181,9 +188,10 @@ export default function RadioPage() {
         filtered = shuffleArray(tracks);
       } else if (mode === "genre") {
         if (!genreFilter) return;
+        var genreLower = genreFilter.toLowerCase();
         filtered = shuffleArray(tracks.filter(function (tr) {
           var g = Array.isArray(tr.genre) ? tr.genre : (tr.genre ? [tr.genre as unknown as string] : []);
-          return g.indexOf(genreFilter) !== -1;
+          return g.some(function (val) { return val.toLowerCase() === genreLower; });
         }));
       } else if (mode === "mood") {
         if (!moodFilter) return;
@@ -234,15 +242,28 @@ export default function RadioPage() {
       }
 
       if (filtered.length === 0) {
-        toast(t("radio.noTracks", "No tracks match this filter"));
+        setEmptyFilter(true);
+        setIsLoading(false);
+        toast(t("radio.noTracksForFilter", "No tracks match this filter"));
         return;
       }
 
+      setEmptyFilter(false);
       var mapped = filtered.map(mapTrackToCrossfade);
       var player = playerRef.current;
       if (player) {
+        setIsLoading(true);
         player.setQueue(mapped);
-        player.play(mapped[0], mapped);
+        // play() resolves once the source is set (or fails to resolve a URL).
+        // Clearing here covers both outcomes; the spinner is also hidden as
+        // soon as a currentTrack appears (see render guard).
+        Promise.resolve(player.play(mapped[0], mapped)).finally(function () {
+          if (!isMountedRef.current) return;
+          setIsLoading(false);
+          // If the first track had no resolvable URL, play() bails without
+          // setting a currentTrack — surface the empty state instead of nothing.
+          if (player && !player.state.currentTrack) setEmptyFilter(true);
+        });
       }
     },
     [mode, genreFilter, moodFilter, tracks, t]
@@ -340,6 +361,8 @@ export default function RadioPage() {
     if (newMode === mode) {
       // Deselect
       setMode(null);
+      setEmptyFilter(false);
+      setIsLoading(false);
       var player = playerRef.current;
       if (player) player.stop();
       return;
@@ -496,7 +519,10 @@ export default function RadioPage() {
         {/* Mode cards */}
         {tracks.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {modeCards.map(function (card) {
+            {modeCards.filter(function (card) {
+              // Hide the "By Mood" card when no track carries a mood tag.
+              return card.key !== "mood" || availableMoods.length > 0;
+            }).map(function (card) {
               var isActive = mode === card.key;
               return (
                 <motion.button
@@ -624,6 +650,28 @@ export default function RadioPage() {
               </div>
             </div>
           </motion.div>
+        )}
+
+        {/* Loading indicator — first track of a freshly-started mode */}
+        {isLoading && !radioState.currentTrack && (
+          <div className="card-premium p-6 flex items-center justify-center gap-3">
+            <span className="w-5 h-5 rounded-full border-2 border-brand-orange border-t-transparent animate-spin" />
+            <span className="text-sm text-muted-foreground">{t("radio.startingRadio", "Starting radio…")}</span>
+          </div>
+        )}
+
+        {/* Empty filter message */}
+        {emptyFilter && !radioState.currentTrack && (
+          <div className="card-premium p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              {t("radio.noTracksForFilter", "No tracks match this filter")}
+            </p>
+            {mode === "mood" && (
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                {t("radio.noMoodsAvailable", "No mood tags found. Add mood tags to your tracks.")}
+              </p>
+            )}
+          </div>
         )}
 
         {/* Now Playing */}

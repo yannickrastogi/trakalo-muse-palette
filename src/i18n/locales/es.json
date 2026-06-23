@@ -1408,6 +1408,11 @@
     "allAlreadySigned": "Todos los colaboradores ya han firmado"
   },
   "radio": {
+    "startingRadio": "Iniciando radio…",
+    "noMoodsAvailable": "No se encontraron etiquetas de ánimo. Añade etiquetas de ánimo a tus pistas.",
+    "stopRadio": "Detener radio",
+    "radioPlaying": "Radio",
+    "noTracksForFilter": "Ninguna pista coincide con este filtro",
     "title": "Trakalog Radio",
     "subtitle": "Tu catálogo personal, a la carta",
     "shuffleAll": "Reproducción aleatoria",

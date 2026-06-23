@@ -1489,6 +1489,11 @@
     "allAlreadySigned": "All collaborators have already signed"
   },
   "radio": {
+    "startingRadio": "Starting radio…",
+    "noMoodsAvailable": "No mood tags found. Add mood tags to your tracks.",
+    "stopRadio": "Stop radio",
+    "radioPlaying": "Radio",
+    "noTracksForFilter": "No tracks match this filter",
     "title": "Trakalog Radio",
     "subtitle": "Your personal catalog, on demand",
     "shuffleAll": "Shuffle All",

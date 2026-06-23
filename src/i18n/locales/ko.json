@@ -1421,6 +1421,11 @@
     "allAlreadySigned": "모든 협업자가 이미 서명했습니다"
   },
   "radio": {
+    "startingRadio": "라디오 시작 중…",
+    "noMoodsAvailable": "무드 태그가 없습니다. 트랙에 무드 태그를 추가하세요.",
+    "stopRadio": "라디오 정지",
+    "radioPlaying": "라디오",
+    "noTracksForFilter": "이 필터와 일치하는 트랙이 없습니다",
     "title": "Trakalog Radio",
     "subtitle": "내 카탈로그를 자유롭게 감상하세요",
     "shuffleAll": "전체 셔플",

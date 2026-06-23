@@ -1,11 +1,13 @@
 import { useState, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
+import { useRadioPlayer } from "@/contexts/RadioPlayerContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ChevronUp, ChevronDown, X } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ChevronUp, ChevronDown, X, Radio } from "lucide-react";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import type { RadioState } from "@/lib/crossfadePlayer";
 
 import { DEFAULT_COVER } from "@/lib/constants";
 import { MiniEqualizer } from "@/components/visual/MiniEqualizer";
@@ -31,6 +33,8 @@ export function PersistentPlayer() {
     nextTrack,
     prevTrack,
   } = useAudioPlayer();
+
+  const { radioState, isRadioActive, radioToggle, radioNext, radioPrev, radioStop } = useRadioPlayer();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,8 +62,25 @@ export function PersistentPlayer() {
     [setVolume]
   );
 
-  // Hide persistent player when Radio page is active
+  // Hide persistent player when Radio page is active (it has its own UI)
   if (location.pathname === "/radio") return null;
+
+  // Radio takes over the bar when active on any other page. Playing a catalog
+  // track stops the radio (see AudioPlayerContext), so the two never collide.
+  if (isRadioActive) {
+    return (
+      <RadioMiniBar
+        isMobile={isMobile}
+        radioState={radioState}
+        onToggle={radioToggle}
+        onNext={radioNext}
+        onPrev={radioPrev}
+        onStop={radioStop}
+        stopLabel={t("radio.stopRadio", "Stop radio")}
+        radioLabel={t("radio.radioPlaying", "Radio")}
+      />
+    );
+  }
 
   if (!currentTrack) return null;
 
@@ -311,6 +332,107 @@ export function PersistentPlayer() {
             title={t("player.minimize")}
           >
             <ChevronDown className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+interface RadioMiniBarProps {
+  isMobile: boolean;
+  radioState: RadioState;
+  onToggle: () => void;
+  onNext: () => void;
+  onPrev: () => void;
+  onStop: () => void;
+  stopLabel: string;
+  radioLabel: string;
+}
+
+/** Compact bar shown at the bottom while the radio plays on a non-/radio page. */
+function RadioMiniBar({ isMobile, radioState, onToggle, onNext, onPrev, onStop, stopLabel, radioLabel }: RadioMiniBarProps) {
+  const navigate = useNavigate();
+  const track = radioState.currentTrack;
+  if (!track) return null;
+  const coverSrc = track.coverImage || DEFAULT_COVER;
+
+  const wrapperClass = isMobile
+    ? "fixed left-0 right-0 z-40"
+    : "fixed bottom-0 left-0 right-0 z-50";
+  const wrapperStyle = isMobile
+    ? { bottom: "calc(52px + env(safe-area-inset-bottom, 0px))" }
+    : undefined;
+
+  return (
+    <motion.div
+      initial={{ y: 80 }}
+      animate={{ y: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className={wrapperClass}
+      style={wrapperStyle}
+    >
+      {/* Thin progress bar */}
+      <div className="h-0.5 bg-secondary/80">
+        <div
+          className="h-full transition-[width] duration-100 ease-linear"
+          style={{ width: radioState.progress + "%", background: "var(--gradient-brand-horizontal)" }}
+        />
+      </div>
+
+      <div
+        className="glass border-t border-border/60 px-3 sm:px-5 py-2.5 flex items-center gap-3"
+        style={{ boxShadow: "0 -4px 24px hsl(0 0% 0% / 0.3)" }}
+      >
+        {/* Radio badge + track info */}
+        <button
+          onClick={() => navigate("/radio")}
+          className="flex items-center gap-3 min-w-0 flex-1 group/info text-left"
+        >
+          <img
+            src={coverSrc}
+            alt={track.title}
+            className="w-10 h-10 rounded-lg object-cover ring-1 ring-border/50 shrink-0"
+          />
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-brand-orange flex items-center gap-1">
+              <Radio className="w-3 h-3" />
+              {radioLabel}
+            </p>
+            <p className="text-[13px] font-semibold text-foreground truncate leading-tight group-hover/info:text-primary transition-colors">
+              {track.title}
+            </p>
+            <p className="text-[11px] text-muted-foreground truncate">{track.artist}</p>
+          </div>
+        </button>
+
+        {/* Controls */}
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          <button
+            onClick={onPrev}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
+          >
+            <SkipBack className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onToggle}
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full btn-brand flex items-center justify-center"
+          >
+            {radioState.isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+          </button>
+          <button
+            onClick={onNext}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
+          >
+            <SkipForward className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onStop}
+            className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+            title={stopLabel}
+            aria-label={stopLabel}
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>

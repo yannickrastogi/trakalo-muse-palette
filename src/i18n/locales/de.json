@@ -1421,6 +1421,11 @@
     "allAlreadySigned": "Alle Mitwirkenden haben bereits unterschrieben"
   },
   "radio": {
+    "startingRadio": "Radio wird gestartet…",
+    "noMoodsAvailable": "Keine Stimmungs-Tags gefunden. Füge deinen Titeln Stimmungs-Tags hinzu.",
+    "stopRadio": "Radio stoppen",
+    "radioPlaying": "Radio",
+    "noTracksForFilter": "Keine Titel entsprechen diesem Filter",
     "title": "Trakalog Radio",
     "subtitle": "Dein persönlicher Katalog, auf Abruf",
     "shuffleAll": "Alle mischen",

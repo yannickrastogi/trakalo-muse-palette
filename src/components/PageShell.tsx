@@ -3,6 +3,7 @@ import { AppSidebar, MobileSidebar, MobileBottomNav } from "@/components/AppSide
 import { TopBar } from "@/components/TopBar";
 import { PersistentPlayer } from "@/components/PersistentPlayer";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
+import { useRadioPlayer } from "@/contexts/RadioPlayerContext";
 import { useGlobalShortcuts } from "@/hooks/use-global-shortcuts";
 import { WelcomeModal } from "@/components/WelcomeModal";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -10,14 +11,17 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export function PageShell({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { currentTrack } = useAudioPlayer();
+  const { isRadioActive } = useRadioPlayer();
   const isMobile = useIsMobile();
   useGlobalShortcuts();
 
-  // On mobile: bottom nav (52px) + player bar (~56px if playing) + safe area
-  // On desktop: player bar (~56px if playing)
+  // A bottom bar is shown for either the catalog player or the radio mini-bar.
+  // On mobile: bottom nav (52px) + bar (~56px if shown) + safe area
+  // On desktop: bar (~56px if shown)
+  const hasBottomBar = !!currentTrack || isRadioActive;
   const bottomPadding = isMobile
-    ? currentTrack ? "pb-[120px]" : "pb-[60px]"
-    : currentTrack ? "pb-16" : "";
+    ? hasBottomBar ? "pb-[120px]" : "pb-[60px]"
+    : hasBottomBar ? "pb-16" : "";
 
   return (
     <div className="flex min-h-screen w-full bg-background">

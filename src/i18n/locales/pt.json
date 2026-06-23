@@ -1408,6 +1408,11 @@
     "allAlreadySigned": "Todos os colaboradores já assinaram"
   },
   "radio": {
+    "startingRadio": "Iniciando rádio…",
+    "noMoodsAvailable": "Nenhuma tag de clima encontrada. Adicione tags de clima às suas faixas.",
+    "stopRadio": "Parar rádio",
+    "radioPlaying": "Rádio",
+    "noTracksForFilter": "Nenhuma faixa corresponde a este filtro",
     "title": "Trakalog Radio",
     "subtitle": "O seu catálogo pessoal, a pedido",
     "shuffleAll": "Reprodução aleatória",

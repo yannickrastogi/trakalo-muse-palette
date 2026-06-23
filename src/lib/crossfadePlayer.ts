@@ -484,12 +484,34 @@ class CrossfadePlayer {
 
 // Singleton
 let instance: CrossfadePlayer | null = null;
+const creationListeners = new Set<(player: CrossfadePlayer) => void>();
 
 export function getCrossfadePlayer(): CrossfadePlayer {
   if (!instance) {
     instance = new CrossfadePlayer();
+    creationListeners.forEach((fn) => fn(instance!));
   }
   return instance;
+}
+
+/**
+ * Returns the existing singleton WITHOUT creating one. Lets callers (e.g. the
+ * global AudioPlayer) stop the radio if — and only if — it has already been
+ * instantiated, avoiding a needless Audio element + rAF loop on cold start.
+ */
+export function getExistingCrossfadePlayer(): CrossfadePlayer | null {
+  return instance;
+}
+
+/**
+ * Subscribe to singleton creation. Fires immediately if it already exists.
+ * Lets the RadioPlayerProvider stay dormant (no Audio element / rAF loop) until
+ * the radio is actually started — then attach without eagerly instantiating.
+ */
+export function onCrossfadePlayerCreated(fn: (player: CrossfadePlayer) => void): () => void {
+  creationListeners.add(fn);
+  if (instance) fn(instance);
+  return () => { creationListeners.delete(fn); };
 }
 
 export function destroyCrossfadePlayer() {

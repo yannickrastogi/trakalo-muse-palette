@@ -1408,6 +1408,11 @@
     "allAlreadySigned": "全コラボレーターが署名済みです"
   },
   "radio": {
+    "startingRadio": "ラジオを開始しています…",
+    "noMoodsAvailable": "ムードタグが見つかりません。トラックにムードタグを追加してください。",
+    "stopRadio": "ラジオを停止",
+    "radioPlaying": "ラジオ",
+    "noTracksForFilter": "このフィルターに一致するトラックがありません",
     "title": "Trakalog Radio",
     "subtitle": "あなたのカタログを、オンデマンドで",
     "shuffleAll": "シャッフル再生",
