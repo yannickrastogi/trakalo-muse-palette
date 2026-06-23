@@ -195,20 +195,27 @@ export function PitchProvider({ children }: { children: ReactNode }) {
         var nameParts = pitch.recipientName.trim().split(/\s+/);
         var firstName = nameParts[0] || pitch.recipientName.trim();
         var lastName = nameParts.slice(1).join(" ") || "";
-        const { data: cId } = await supabase.rpc("upsert_contact", {
+        const { data: cId, error: contactError } = await supabase.rpc("upsert_contact", {
           _user_id: user.id,
           _workspace_id: activeWorkspace.id,
           _first_name: firstName,
           _last_name: lastName,
           _email: pitch.recipientEmail || null,
+          _stage_name: null,
           _role: pitch.recipientRole || null,
           _company: pitch.recipientCompany || null,
           _phone: pitch.recipientPhone || null,
+          _city: null,
+          _country: null,
           _pro: null,
           _ipi: null,
           _publisher: null,
         });
-        contactId = (cId as unknown as string) || null;
+        if (contactError) {
+          console.error("upsert_contact failed:", contactError);
+        } else if (cId) {
+          contactId = (cId as unknown as string) || null;
+        }
       }
 
       // Link the pitch to its shared link + contact so engagement can be isolated per recipient.

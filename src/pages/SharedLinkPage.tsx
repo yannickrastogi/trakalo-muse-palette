@@ -1037,20 +1037,27 @@ export default function SharedLinkPage() {
     setSavingToTrakalog(false);
   };
 
-  // Fetch comments for the current track
-  var fetchComments = useCallback(function(trackId: string, linkId: string) {
-    fetch(REST_URL + "/track_comments?select=*&track_id=eq." + encodeURIComponent(trackId) + "&shared_link_id=eq." + encodeURIComponent(linkId) + "&order=timestamp_sec.asc", { headers: SB_HEADERS })
+  // Fetch comments for the current track. Anon can't SELECT track_comments
+  // directly (RLS validates via a shared_links subquery anon can't read), so we
+  // go through the slug-validated Edge Function (service role).
+  var fetchComments = useCallback(function(trackId: string) {
+    if (!slug) return;
+    fetch(SUPABASE_URL + "/functions/v1/get-track-comments", {
+      method: "POST",
+      headers: { ...SB_HEADERS, "Content-Type": "application/json" },
+      body: JSON.stringify({ slug: slug, track_id: trackId }),
+    })
       .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
       .then(function(data) {
-        if (data) setComments(data as TrackComment[]);
+        if (data && data.comments) setComments(data.comments as TrackComment[]);
       }).catch(function (err) { console.error("Error:", err); });
-  }, []);
+  }, [slug]);
 
   // Fetch comments when gate is completed and track data is available
   useEffect(function() {
     if (!gateCompleted || !linkData) return;
     var tId = trackData?.id || (playingTrackId || null);
-    if (tId) fetchComments(tId, linkData.id);
+    if (tId) fetchComments(tId);
   }, [gateCompleted, linkData, trackData, playingTrackId, fetchComments]);
 
   var handleWaveformDoubleClick = useCallback(function(e: React.MouseEvent<HTMLDivElement>) {
@@ -1080,31 +1087,33 @@ export default function SharedLinkPage() {
 
   var handleSubmitComment = useCallback(function() {
     var tId = trackData?.id || playingTrackId;
-    if (!tId || !linkData || !commentText.trim() || submittingComment) return;
+    if (!tId || !linkData || !commentText.trim() || submittingComment || !slug) return;
     setSubmittingComment(true);
-    fetch(REST_URL + "/track_comments", {
+    // Anon recipients can't INSERT into track_comments directly (the anon RLS
+    // policy validates via a shared_links subquery anon can't read). Route
+    // through the slug-validated Edge Function (service role) instead.
+    fetch(SUPABASE_URL + "/functions/v1/add-track-comment", {
       method: "POST",
-      headers: { ...SB_HEADERS, "Content-Type": "application/json", "Prefer": "return=representation", "Accept": "application/vnd.pgrst.object+json" },
+      headers: { ...SB_HEADERS, "Content-Type": "application/json" },
       body: JSON.stringify({
+        slug: slug,
         track_id: tId,
-        shared_link_id: linkData.id,
         author_name: visitorName || "Anonymous",
         author_email: visitorEmailRef.current || null,
-        author_type: "recipient",
         timestamp_sec: Math.round(commentTimestamp * 100) / 100,
         content: commentText.trim(),
       })
     })
       .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
       .then(function(data) {
-        if (data) {
-          setComments(function(prev) { return prev.concat([data as TrackComment]); });
+        if (data && data.comment) {
+          setComments(function(prev) { return prev.concat([data.comment as TrackComment]); });
           setCommentComposerOpen(false);
           setCommentText("");
         }
       }).catch(function (err) { console.error("Error:", err); })
       .finally(function () { setSubmittingComment(false); });
-  }, [trackData, playingTrackId, linkData, commentText, commentTimestamp, submittingComment, visitorName]);
+  }, [trackData, playingTrackId, linkData, commentText, commentTimestamp, submittingComment, visitorName, slug]);
 
   var handleDownloadPack = useCallback(async function() {
     if (!linkData || !trackData || packDownloading) return;

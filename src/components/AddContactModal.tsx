@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useContacts, type Contact } from "@/contexts/ContactsContext";
+import { autoPopulateAliasesFromSplits } from "@/lib/aliasAutoPopulate";
 import { INDUSTRY_ROLES, COUNTRIES, PROS } from "@/lib/constants";
 
 /** Simple freeform multi-chip input — type a value + Enter (or blur) to add as a chip. */
@@ -59,7 +60,7 @@ interface AddContactModalProps {
 export function AddContactModal({ open, onOpenChange, editingContact }: AddContactModalProps) {
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
-  const { contacts, refreshContacts } = useContacts();
+  const { contacts, refreshContacts, refreshAliases } = useContacts();
   const isEditMode = !!editingContact;
 
   const [fullName, setFullName] = useState("");
@@ -209,6 +210,19 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
         console.error(isEditMode ? "Error updating contact:" : "Error adding contact:", error);
       }
       return;
+    }
+
+    // Sync to Artist Aliases: a distinct stage_name implies a real-name → alias
+    // mapping. Fire-and-forget, silent (uses local consts — resetForm clears state).
+    const fullNameForAlias = (cleanFirstName + " " + (cleanLastName || "")).trim();
+    if (cleanStageName && cleanStageName.toLowerCase() !== fullNameForAlias.toLowerCase()) {
+      autoPopulateAliasesFromSplits({
+        splits: [{ name: fullNameForAlias, email: trimmedEmail || undefined, stage_name: cleanStageName }],
+        workspaceId: activeWorkspace.id,
+        userId: user.id,
+      })
+        .then(function () { refreshAliases(); })
+        .catch(function () {});
     }
 
     toast.success(isEditMode ? "Contact updated successfully" : "Contact added successfully");
