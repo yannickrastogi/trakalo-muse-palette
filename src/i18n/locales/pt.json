@@ -1760,6 +1760,10 @@
     "ratings": "avaliações"
   },
   "artistAliases": {
+    "detailTitle": "Detalhe do alias",
+    "noLinkedContacts": "Nenhum contato vinculado a este alias",
+    "aliasesSection": "Aliases de artista",
+    "aliasCreated": "Alias «{{name}}» criado",
     "newAlias": "Novo alias",
     "editAlias": "Editar alias",
     "noAliases": "Ainda sem aliases",

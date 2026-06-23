@@ -1,8 +1,8 @@
 import { useState, useEffect, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Pencil, Send, Trash2, Mail, MapPin, Briefcase, Music2, Activity, ChevronRight, ChevronDown, ChevronUp, Download } from "lucide-react";
-import type { Contact } from "@/contexts/ContactsContext";
+import { Pencil, Send, Trash2, Mail, MapPin, Briefcase, Music2, Activity, ChevronRight, ChevronDown, ChevronUp, Download, Tag } from "lucide-react";
+import type { Contact, ArtistAlias } from "@/contexts/ContactsContext";
 
 const COLLAB_PREVIEW_LIMIT = 5;
 
@@ -22,6 +22,7 @@ interface ContactDetailSheetProps {
   onDownload: (contact: Contact, displayRoles: string[]) => void;
   isAdmin: boolean;
   contactTracks: ContactTrackPreview[];
+  contactAliases?: ArtistAlias[];
   displayRoles: string[];
   onTrackClick: (trackId: string) => void;
   formatLastInteraction: (iso: string) => string;
@@ -70,7 +71,7 @@ function Chips({ items }: { items: string[] }) {
 
 export function ContactDetailSheet({
   contact, onClose, onEdit, onPitch, onDelete, onDownload, isAdmin,
-  contactTracks, displayRoles, onTrackClick, formatLastInteraction,
+  contactTracks, contactAliases = [], displayRoles, onTrackClick, formatLastInteraction,
 }: ContactDetailSheetProps) {
   const { t } = useTranslation();
   const [showAllTracks, setShowAllTracks] = useState(false);
@@ -123,6 +124,23 @@ export function ContactDetailSheet({
             {publisherChips.length > 0 && <Row label={t("contactDetail.publisher")}><Chips items={publisherChips} /></Row>}
             {c.ipi?.trim() && <Row label={t("contactDetail.ipi")}><span className="font-mono">{c.ipi}</span></Row>}
             {proChips.length > 0 && <Row label={t("contactDetail.pros")}><Chips items={proChips} /></Row>}
+          </div>
+        )}
+
+        {/* Artist Aliases section — only if the contact belongs to at least one alias */}
+        {contactAliases.length > 0 && (
+          <div className="p-5 border-b border-border/40 space-y-3">
+            <SectionHeader icon={Tag} label={t("artistAliases.aliasesSection")} />
+            <div className="flex flex-wrap gap-1.5">
+              {contactAliases.map((alias) => (
+                <span
+                  key={alias.id}
+                  className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-secondary text-foreground"
+                >
+                  {alias.alias_name}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 

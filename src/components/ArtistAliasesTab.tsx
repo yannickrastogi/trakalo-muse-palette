@@ -1,8 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { Plus, Pencil, Trash2, X, Search, Check, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Search, Check, Users, ChevronRight, Mail } from "lucide-react";
 import { useTranslation, Trans } from "react-i18next";
 import { useContacts, type ArtistAlias, type Contact } from "@/contexts/ContactsContext";
 import { EmptyState } from "@/components/EmptyState";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,12 +15,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export function ArtistAliasesTab() {
+interface ArtistAliasesTabProps {
+  /** Open the full contact detail sheet for a linked contact (wired from Contacts page). */
+  onOpenContact?: (contact: Contact) => void;
+}
+
+export function ArtistAliasesTab({ onOpenContact }: ArtistAliasesTabProps) {
   const { t } = useTranslation();
   const { aliases, contacts, upsertAlias, deleteAlias } = useContacts();
   const [editing, setEditing] = useState<ArtistAlias | "new" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ArtistAlias | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [detailAliasId, setDetailAliasId] = useState<string | null>(null);
 
   const contactById = useMemo(() => {
     const map = new Map<string, Contact>();
@@ -31,6 +38,19 @@ export function ArtistAliasesTab() {
     const fullName = ((c.firstName || "") + " " + (c.lastName || "")).trim();
     return c.stageName || fullName || c.email || "—";
   };
+
+  // Derive the live alias from the array by id so the panel reflects edits.
+  const detailAlias = useMemo(
+    () => (detailAliasId ? aliases.find((a) => a.id === detailAliasId) ?? null : null),
+    [detailAliasId, aliases]
+  );
+  const detailContacts = useMemo(
+    () =>
+      detailAlias
+        ? detailAlias.contact_ids.map((id) => contactById.get(id)).filter((c): c is Contact => Boolean(c))
+        : [],
+    [detailAlias, contactById]
+  );
 
   const handleDelete = async () => {
     if (!deleteTarget || deleting) return;
@@ -76,7 +96,11 @@ export function ArtistAliasesTab() {
               .map((id) => contactById.get(id))
               .filter((c): c is Contact => Boolean(c));
             return (
-              <div key={alias.id} className="flex items-start gap-4 px-5 py-3.5 hover:bg-secondary/30 transition-colors">
+              <div
+                key={alias.id}
+                onClick={() => setDetailAliasId(alias.id)}
+                className="flex items-start gap-4 px-5 py-3.5 hover:bg-secondary/30 transition-colors cursor-pointer"
+              >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-foreground">{alias.alias_name}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
@@ -89,7 +113,7 @@ export function ArtistAliasesTab() {
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setEditing(alias)}
+                    onClick={(e) => { e.stopPropagation(); setEditing(alias); }}
                     className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                     aria-label="Edit alias"
                   >
@@ -97,7 +121,7 @@ export function ArtistAliasesTab() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setDeleteTarget(alias)}
+                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(alias); }}
                     className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                     aria-label="Delete alias"
                   >
@@ -109,6 +133,89 @@ export function ArtistAliasesTab() {
           })}
         </div>
       )}
+
+      {/* Alias detail panel */}
+      <Sheet open={!!detailAlias} onOpenChange={(open) => { if (!open) setDetailAliasId(null); }}>
+        <SheetContent side="right" className="!max-w-md w-full p-0 overflow-y-auto">
+          {detailAlias && (
+            <>
+              {/* Header */}
+              <div className="p-5 border-b border-border/40 pr-12">
+                <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-1">
+                  {t("artistAliases.detailTitle")}
+                </p>
+                <h2 className="text-lg font-bold text-foreground break-words">{detailAlias.alias_name}</h2>
+              </div>
+
+              {/* Linked contacts */}
+              <div className="p-5 border-b border-border/40 space-y-3">
+                <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  <Users className="w-3.5 h-3.5" />
+                  {t("artistAliases.linkedContacts", { count: detailContacts.length })}
+                </div>
+                {detailContacts.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">{t("artistAliases.noLinkedContacts")}</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {detailContacts.map((c) => {
+                      const fullName = ((c.firstName || "") + " " + (c.lastName || "")).trim();
+                      const a = (c.firstName?.[0] || "?").toUpperCase();
+                      const b = (c.lastName?.[0] || "").toUpperCase();
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => { if (onOpenContact) { setDetailAliasId(null); onOpenContact(c); } }}
+                          disabled={!onOpenContact}
+                          className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-left group disabled:hover:bg-transparent disabled:cursor-default"
+                        >
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center text-xs font-bold text-white shrink-0">
+                            {a}{b}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{fullName || c.email || "—"}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {[c.stageName, c.role].filter(Boolean).join(" · ") || (c.email ? "" : "—")}
+                            </p>
+                            {c.email && (
+                              <p className="text-2xs text-muted-foreground/70 truncate inline-flex items-center gap-1">
+                                <Mail className="w-3 h-3" />{c.email}
+                              </p>
+                            )}
+                          </div>
+                          {onOpenContact && (
+                            <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="p-5 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setEditing(detailAlias); setDetailAliasId(null); }}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-secondary transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  {t("contactDetail.edit")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setDeleteTarget(detailAlias); setDetailAliasId(null); }}
+                  className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-lg text-sm font-medium text-destructive border border-destructive/30 hover:bg-destructive/10 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {t("artistAliases.delete")}
+                </button>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {editing && (
         <AliasModal

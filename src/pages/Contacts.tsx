@@ -176,7 +176,7 @@ function FilterSelect({ label, value, options, onChange }: {
 
 export default function Contacts() {
   const { t } = useTranslation();
-  const { contacts: rawContacts, refreshContacts } = useContacts();
+  const { contacts: rawContacts, refreshContacts, aliasesByContactId } = useContacts();
   const { addPitch } = usePitches();
   const { user } = useAuth();
   const { accessLevel } = useRole();
@@ -595,7 +595,7 @@ export default function Contacts() {
             </div>
           </motion.div>
           <motion.div variants={item}>
-            <ArtistAliasesTab />
+            <ArtistAliasesTab onOpenContact={(c) => setDetailContact(c)} />
           </motion.div>
         </motion.div>
       ) : (
@@ -1241,6 +1241,7 @@ export default function Contacts() {
         onDownload={handleDownloadContactCard}
         isAdmin={isAdmin}
         contactTracks={detailContact ? getContactTracks(detailContact) : []}
+        contactAliases={detailContact ? aliasesByContactId.get(detailContact.id) ?? [] : []}
         displayRoles={detailContact ? getDisplayRoles(detailContact) : []}
         onTrackClick={(trackId) => { navigate("/track/" + trackId); setDetailContact(null); }}
         formatLastInteraction={formatRelativeDate}

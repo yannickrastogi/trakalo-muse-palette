@@ -1760,6 +1760,10 @@
     "ratings": "件の評価"
   },
   "artistAliases": {
+    "detailTitle": "エイリアスの詳細",
+    "noLinkedContacts": "このエイリアスに紐付けられた連絡先はありません",
+    "aliasesSection": "アーティストエイリアス",
+    "aliasCreated": "エイリアス「{{name}}」を作成しました",
     "newAlias": "新規エイリアス",
     "editAlias": "エイリアスを編集",
     "noAliases": "まだエイリアスがありません",

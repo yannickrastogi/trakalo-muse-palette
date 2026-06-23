@@ -1760,6 +1760,10 @@
     "ratings": "평가"
   },
   "artistAliases": {
+    "detailTitle": "별칭 상세",
+    "noLinkedContacts": "이 별칭에 연결된 연락처가 없습니다",
+    "aliasesSection": "아티스트 별칭",
+    "aliasCreated": "별칭 \"{{name}}\"이(가) 생성됨",
     "newAlias": "새 별칭",
     "editAlias": "별칭 편집",
     "noAliases": "아직 별칭 없음",

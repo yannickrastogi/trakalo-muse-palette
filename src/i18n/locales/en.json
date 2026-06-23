@@ -1841,6 +1841,10 @@
     "ratings": "ratings"
   },
   "artistAliases": {
+    "detailTitle": "Alias Detail",
+    "noLinkedContacts": "No contacts linked to this alias",
+    "aliasesSection": "Artist Aliases",
+    "aliasCreated": "Alias \"{{name}}\" created",
     "newAlias": "New Alias",
     "editAlias": "Edit Alias",
     "noAliases": "No aliases yet",

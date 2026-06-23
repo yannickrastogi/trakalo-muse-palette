@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { WorkspaceScoped } from "@/types/workspace";
 import { toast } from "sonner";
 import i18n from "@/i18n";
+import { autoPopulateAliasesFromSplits } from "@/lib/aliasAutoPopulate";
 
 export interface Contact extends WorkspaceScoped {
   id: string;
@@ -53,6 +54,7 @@ export interface ArtistAlias {
 interface ContactsContextValue {
   contacts: Contact[];
   aliases: ArtistAlias[];
+  aliasesByContactId: Map<string, ArtistAlias[]>;
   addOrUpdateContact: (data: Omit<Contact, "id" | "workspace_id" | "firstInteraction" | "lastDownload" | "tracksDownloaded" | "totalDownloads" | "tracksEngaged" | "totalPlays" | "lastInteraction"> & { trackName: string }) => void;
   getContact: (email: string) => Contact | undefined;
   upsertCollaborator: (data: { firstName: string; lastName: string; email?: string; role?: string; stageName?: string; pro?: string; ipi?: string; publisher?: string }) => void;
@@ -232,6 +234,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
         _last_name: data.lastName,
         _email: data.email,
         _role: data.role || null,
+        _stage_name: data.stageName || null,
         _company: data.organization || null,
         _phone: null,
         _pro: proArr,
@@ -245,8 +248,22 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
       }
 
       await fetchContacts();
+
+      // Sync direction A: a contact with a distinct stage_name implies an alias.
+      // Fire-and-forget, silent — refresh aliases once it settles.
+      const fullName = ((data.firstName || "") + " " + (data.lastName || "")).trim();
+      const stage = (data.stageName || "").trim();
+      if (stage && stage.toLowerCase() !== fullName.toLowerCase()) {
+        autoPopulateAliasesFromSplits({
+          splits: [{ name: fullName, email: data.email, stage_name: stage }],
+          workspaceId: activeWorkspace.id,
+          userId: user.id,
+        })
+          .then(() => fetchAliases())
+          .catch(() => {});
+      }
     },
-    [activeWorkspace, user, fetchContacts]
+    [activeWorkspace, user, fetchContacts, fetchAliases]
   );
 
   const upsertCollaborator = useCallback(
@@ -272,8 +289,20 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
         _publisher: data.publisher || null,
       });
       await fetchContacts();
+
+      // Sync direction A: collaborator with a distinct stage_name → alias.
+      const stage = (data.stageName || "").trim();
+      if (stage && stage.toLowerCase() !== fullName.toLowerCase()) {
+        autoPopulateAliasesFromSplits({
+          splits: [{ name: fullName, email: data.email, stage_name: stage }],
+          workspaceId: activeWorkspace.id,
+          userId: user.id,
+        })
+          .then(() => fetchAliases())
+          .catch(() => {});
+      }
     },
-    [activeWorkspace, user, fetchContacts]
+    [activeWorkspace, user, fetchContacts, fetchAliases]
   );
 
   const getContact = useCallback(
@@ -283,10 +312,24 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
     [contacts]
   );
 
+  // Sync direction B: reverse index alias → contacts, so the contact detail
+  // sheet can show every alias a contact belongs to.
+  const aliasesByContactId = useMemo(() => {
+    const map = new Map<string, ArtistAlias[]>();
+    aliases.forEach((alias) => {
+      (alias.contact_ids || []).forEach((contactId) => {
+        const existing = map.get(contactId) || [];
+        map.set(contactId, [...existing, alias]);
+      });
+    });
+    return map;
+  }, [aliases]);
+
   return (
     <ContactsContext.Provider value={useMemo(() => ({
       contacts,
       aliases,
+      aliasesByContactId,
       addOrUpdateContact,
       getContact,
       upsertCollaborator,
@@ -294,7 +337,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
       refreshAliases: fetchAliases,
       upsertAlias,
       deleteAlias,
-    }), [contacts, aliases, addOrUpdateContact, getContact, upsertCollaborator, fetchContacts, fetchAliases, upsertAlias, deleteAlias])}>
+    }), [contacts, aliases, aliasesByContactId, addOrUpdateContact, getContact, upsertCollaborator, fetchContacts, fetchAliases, upsertAlias, deleteAlias])}>
       {children}
     </ContactsContext.Provider>
   );
