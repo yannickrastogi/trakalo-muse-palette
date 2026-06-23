@@ -961,7 +961,17 @@
     "addFromCatalog": "カタログから追加",
     "noTracksFound": "一致するトラックがありません",
     "cancel": "キャンセル",
-    "create": "プレイリストを作成"
+    "create": "プレイリストを作成",
+    "filterGenre": "ジャンル",
+    "filterMood": "ムード",
+    "filterBpm": "BPM",
+    "filterKey": "キー",
+    "filterType": "タイプ",
+    "clearFilters": "フィルターをクリア",
+    "previewTrack": "プレビュー再生",
+    "noTracksMatch": "フィルターに一致するトラックがありません",
+    "bpmMin": "最小",
+    "bpmMax": "最大"
   },
   "language": {
     "en": "English",

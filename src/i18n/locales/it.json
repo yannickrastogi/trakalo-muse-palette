@@ -961,7 +961,17 @@
     "addFromCatalog": "Aggiungi dal catalogo",
     "noTracksFound": "Nessun brano corrispondente",
     "cancel": "Annulla",
-    "create": "Crea playlist"
+    "create": "Crea playlist",
+    "filterGenre": "Genere",
+    "filterMood": "Mood",
+    "filterBpm": "BPM",
+    "filterKey": "Tonalità",
+    "filterType": "Tipo",
+    "clearFilters": "Cancella filtri",
+    "previewTrack": "Ascolta anteprima",
+    "noTracksMatch": "Nessuna traccia corrisponde ai tuoi filtri",
+    "bpmMin": "Min",
+    "bpmMax": "Max"
   },
   "language": {
     "en": "English",

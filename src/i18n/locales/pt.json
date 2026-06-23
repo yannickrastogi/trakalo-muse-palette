@@ -961,7 +961,17 @@
     "addFromCatalog": "Adicionar do catálogo",
     "noTracksFound": "Nenhuma faixa correspondente",
     "cancel": "Cancelar",
-    "create": "Criar playlist"
+    "create": "Criar playlist",
+    "filterGenre": "Gênero",
+    "filterMood": "Clima",
+    "filterBpm": "BPM",
+    "filterKey": "Tom",
+    "filterType": "Tipo",
+    "clearFilters": "Limpar filtros",
+    "previewTrack": "Pré-visualizar faixa",
+    "noTracksMatch": "Nenhuma faixa corresponde aos seus filtros",
+    "bpmMin": "Mín",
+    "bpmMax": "Máx"
   },
   "language": {
     "en": "English",

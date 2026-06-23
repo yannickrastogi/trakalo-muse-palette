@@ -961,7 +961,17 @@
     "addFromCatalog": "Añadir del catálogo",
     "noTracksFound": "No se encontraron pistas",
     "cancel": "Cancelar",
-    "create": "Crear playlist"
+    "create": "Crear playlist",
+    "filterGenre": "Género",
+    "filterMood": "Ánimo",
+    "filterBpm": "BPM",
+    "filterKey": "Tono",
+    "filterType": "Tipo",
+    "clearFilters": "Borrar filtros",
+    "previewTrack": "Escuchar pista",
+    "noTracksMatch": "Ninguna pista coincide con tus filtros",
+    "bpmMin": "Mín",
+    "bpmMax": "Máx"
   },
   "language": {
     "en": "English",

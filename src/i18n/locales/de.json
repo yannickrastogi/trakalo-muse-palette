@@ -974,7 +974,17 @@
     "addFromCatalog": "Aus Katalog hinzufügen",
     "noTracksFound": "Keine passenden Titel",
     "cancel": "Abbrechen",
-    "create": "Playlist erstellen"
+    "create": "Playlist erstellen",
+    "filterGenre": "Genre",
+    "filterMood": "Stimmung",
+    "filterBpm": "BPM",
+    "filterKey": "Tonart",
+    "filterType": "Typ",
+    "clearFilters": "Filter zurücksetzen",
+    "previewTrack": "Vorschau abspielen",
+    "noTracksMatch": "Keine Titel entsprechen deinen Filtern",
+    "bpmMin": "Min",
+    "bpmMax": "Max"
   },
   "language": {
     "en": "English",

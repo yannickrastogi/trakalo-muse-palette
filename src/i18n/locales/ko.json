@@ -974,7 +974,17 @@
     "addFromCatalog": "카탈로그에서 추가",
     "noTracksFound": "일치하는 트랙 없음",
     "cancel": "취소",
-    "create": "플레이리스트 만들기"
+    "create": "플레이리스트 만들기",
+    "filterGenre": "장르",
+    "filterMood": "무드",
+    "filterBpm": "BPM",
+    "filterKey": "키",
+    "filterType": "유형",
+    "clearFilters": "필터 지우기",
+    "previewTrack": "미리듣기",
+    "noTracksMatch": "필터와 일치하는 트랙이 없습니다",
+    "bpmMin": "최소",
+    "bpmMax": "최대"
   },
   "language": {
     "en": "English",

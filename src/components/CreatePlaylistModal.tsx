@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -10,8 +10,13 @@ import {
   ListMusic,
   ImagePlus,
   Hash,
+  Play,
+  Pause,
+  ChevronDown,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
+import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +25,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-import { DEFAULT_COVER } from "@/lib/constants";
+import { DEFAULT_COVER, KEYS, TRACK_TYPES } from "@/lib/constants";
 import { GenreMultiSelect } from "@/components/GenreMultiSelect";
 
 type Track = TrackData;
@@ -63,6 +68,13 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
   const [description, setDescription] = useState("");
   const [selectedTracks, setSelectedTracks] = useState<Track[]>([]);
   const [trackSearch, setTrackSearch] = useState("");
+  // Track-list filters (step "tracks")
+  const [genreFilter, setGenreFilter] = useState<string[]>([]);
+  const [moodFilter, setMoodFilter] = useState<string[]>([]);
+  const [bpmMin, setBpmMin] = useState<number | null>(null);
+  const [bpmMax, setBpmMax] = useState<number | null>(null);
+  const [keyFilter, setKeyFilter] = useState<string>("");
+  const [typeFilter, setTypeFilter] = useState<string>("");
   const [genres, setGenres] = useState<string[]>([]);
   const [moodInput, setMoodInput] = useState("");
   const [moods, setMoods] = useState<string[]>([]);
@@ -75,6 +87,12 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
     setDescription("");
     setSelectedTracks([]);
     setTrackSearch("");
+    setGenreFilter([]);
+    setMoodFilter([]);
+    setBpmMin(null);
+    setBpmMax(null);
+    setKeyFilter("");
+    setTypeFilter("");
     setGenres([]);
     setMoodInput("");
     setMoods([]);
@@ -119,6 +137,30 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
   };
 
   const { tracks: allTracks } = useTrack();
+  const { playTrack, currentTrack, isPlaying, togglePlay } = useAudioPlayer();
+
+  // Filter options derived from the catalog (only values actually present)
+  const availableGenres = useMemo(() => {
+    const set = new Set<string>();
+    allTracks.forEach((t) => (t.genre || []).forEach((g) => g && set.add(g)));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [allTracks]);
+
+  const availableMoods = useMemo(() => {
+    const set = new Set<string>();
+    allTracks.forEach((t) => (t.mood || []).forEach((m) => m && set.add(m)));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [allTracks]);
+
+  const availableKeys = useMemo(() => {
+    const present = new Set(allTracks.map((t) => t.key).filter(Boolean));
+    return KEYS.filter((k) => present.has(k));
+  }, [allTracks]);
+
+  const availableTypes = useMemo(() => {
+    const present = new Set(allTracks.map((t) => t.type).filter(Boolean));
+    return TRACK_TYPES.filter((ty) => present.has(ty));
+  }, [allTracks]);
 
   const availableTracks = useMemo(() => {
     const selectedIds = new Set(selectedTracks.map((t) => t.id));
@@ -136,8 +178,35 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
         }
       );
     }
+    if (genreFilter.length) {
+      filtered = filtered.filter((t) => (t.genre || []).some((g) => genreFilter.includes(g)));
+    }
+    if (moodFilter.length) {
+      filtered = filtered.filter((t) => (t.mood || []).some((m) => moodFilter.includes(m)));
+    }
+    if (bpmMin !== null) filtered = filtered.filter((t) => t.bpm != null && t.bpm >= bpmMin);
+    if (bpmMax !== null) filtered = filtered.filter((t) => t.bpm != null && t.bpm <= bpmMax);
+    if (keyFilter) filtered = filtered.filter((t) => t.key === keyFilter);
+    if (typeFilter) filtered = filtered.filter((t) => t.type === typeFilter);
     return filtered;
-  }, [trackSearch, selectedTracks]);
+  }, [trackSearch, selectedTracks, allTracks, genreFilter, moodFilter, bpmMin, bpmMax, keyFilter, typeFilter]);
+
+  const hasActiveFilters =
+    genreFilter.length > 0 ||
+    moodFilter.length > 0 ||
+    bpmMin !== null ||
+    bpmMax !== null ||
+    !!keyFilter ||
+    !!typeFilter;
+
+  const clearFilters = () => {
+    setGenreFilter([]);
+    setMoodFilter([]);
+    setBpmMin(null);
+    setBpmMax(null);
+    setKeyFilter("");
+    setTypeFilter("");
+  };
 
   const addTrack = (track: Track) => setSelectedTracks((prev) => [...prev, track]);
   const removeTrack = (trackId: number) => setSelectedTracks((prev) => prev.filter((t) => t.id !== trackId));
@@ -417,37 +486,157 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                   </div>
                 </div>
 
+                {/* Filters row */}
+                <div className="px-6 pb-2">
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mb-1 scrollbar-thin">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
+                    <FilterMultiSelect
+                      label={t("createPlaylist.filterGenre")}
+                      options={availableGenres}
+                      values={genreFilter}
+                      onChange={setGenreFilter}
+                    />
+                    <FilterMultiSelect
+                      label={t("createPlaylist.filterMood")}
+                      options={availableMoods}
+                      values={moodFilter}
+                      onChange={setMoodFilter}
+                      capitalize
+                    />
+                    {/* BPM range */}
+                    <div className="flex items-center gap-1 shrink-0 h-8 px-2 rounded-lg border border-border bg-card">
+                      <span className="text-2xs font-semibold text-muted-foreground uppercase tracking-wide mr-0.5">{t("createPlaylist.filterBpm")}</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        placeholder={t("createPlaylist.bpmMin")}
+                        value={bpmMin ?? ""}
+                        onChange={(e) => setBpmMin(e.target.value === "" ? null : Number(e.target.value))}
+                        className="w-12 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground/40 outline-none text-center font-mono tabular-nums"
+                      />
+                      <span className="text-muted-foreground/40 text-xs">—</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        placeholder={t("createPlaylist.bpmMax")}
+                        value={bpmMax ?? ""}
+                        onChange={(e) => setBpmMax(e.target.value === "" ? null : Number(e.target.value))}
+                        className="w-12 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground/40 outline-none text-center font-mono tabular-nums"
+                      />
+                    </div>
+                    <FilterSingleSelect
+                      label={t("createPlaylist.filterKey")}
+                      options={availableKeys}
+                      value={keyFilter}
+                      onChange={setKeyFilter}
+                    />
+                    <FilterSingleSelect
+                      label={t("createPlaylist.filterType")}
+                      options={availableTypes}
+                      value={typeFilter}
+                      onChange={setTypeFilter}
+                    />
+                    {hasActiveFilters && (
+                      <button
+                        onClick={clearFilters}
+                        className="shrink-0 flex items-center gap-1 h-8 px-2.5 rounded-lg text-2xs font-semibold text-destructive hover:bg-destructive/10 transition-colors whitespace-nowrap"
+                      >
+                        <X className="w-3 h-3" />
+                        {t("createPlaylist.clearFilters")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Track list */}
                 <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-0.5">
                   {availableTracks.length === 0 ? (
                     <div className="py-12 text-center">
                       <Music className="w-8 h-8 mx-auto mb-3 text-muted-foreground/15" />
                       <p className="text-sm font-medium text-muted-foreground">
-                        {t("createPlaylist.noTracksFound")}
+                        {hasActiveFilters || trackSearch
+                          ? t("createPlaylist.noTracksMatch")
+                          : t("createPlaylist.noTracksFound")}
                       </p>
                     </div>
                   ) : (
-                    availableTracks.map((track) => (
+                    availableTracks.map((track) => {
+                      const isCurrentTrack = currentTrack?.uuid === track.uuid;
+                      const isCurrentlyPlaying = isCurrentTrack && isPlaying;
+                      const trackGenres = Array.isArray(track.genre) ? track.genre.filter(Boolean) : [];
+                      const trackMoods = Array.isArray(track.mood) ? track.mood.filter(Boolean) : [];
+                      return (
                       <motion.div
                         key={track.id}
                         layout
                         className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/50 transition-all cursor-pointer group/track"
                         onClick={() => addTrack(track)}
                       >
-                        <img src={track.coverImage || DEFAULT_COVER} alt={track.title} className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-semibold text-foreground truncate tracking-tight">{track.title}</p>
-                          <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>
+                        {/* Cover + play overlay */}
+                        <div className="relative w-10 h-10 shrink-0">
+                          <img src={track.coverImage || DEFAULT_COVER} alt={track.title} className="w-10 h-10 rounded-lg object-cover ring-1 ring-border/50" />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              isCurrentTrack ? togglePlay() : playTrack(track);
+                            }}
+                            title={t("createPlaylist.previewTrack")}
+                            className={
+                              "absolute inset-0 flex items-center justify-center rounded-lg bg-background/55 backdrop-blur-[1px] transition-opacity " +
+                              (isCurrentlyPlaying
+                                ? "opacity-100"
+                                : "opacity-100 sm:opacity-0 sm:group-hover/track:opacity-100")
+                            }
+                          >
+                            {isCurrentlyPlaying ? (
+                              <Pause className="w-4 h-4 text-foreground" />
+                            ) : (
+                              <Play className="w-4 h-4 text-foreground" />
+                            )}
+                          </button>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-2xs text-muted-foreground/50 hidden sm:inline">{Array.isArray(track.genre) ? track.genre.join(", ") : track.genre}</span>
-                          <span className="text-2xs text-muted-foreground/40 font-mono tabular-nums hidden sm:inline">{track.bpm} BPM</span>
+
+                        {/* Title + meta */}
+                        <div className="min-w-0 flex-1">
+                          <p className={"text-[13px] font-semibold truncate tracking-tight " + (isCurrentTrack ? "text-primary" : "text-foreground")}>{track.title}</p>
+                          <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                            {[
+                              track.artist,
+                              track.bpm ? `${track.bpm} BPM` : null,
+                              track.key || null,
+                              track.duration && track.duration !== "0:00" ? track.duration : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                          {(trackGenres.length > 0 || trackMoods.length > 0) && (
+                            <div className="flex items-center flex-wrap gap-1 mt-1">
+                              {trackGenres.slice(0, 3).map((g) => (
+                                <span key={"g-" + g} className="text-[9px] leading-none px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium">
+                                  {g}
+                                </span>
+                              ))}
+                              {trackMoods.slice(0, 2).map((m) => (
+                                <span key={"m-" + m} className="text-[9px] leading-none px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium capitalize">
+                                  {m}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Add */}
+                        <div className="flex items-center shrink-0">
                           <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center group-hover/track:bg-primary/15 transition-colors">
                             <Plus className="w-3.5 h-3.5 text-muted-foreground/50 group-hover/track:text-primary transition-colors" />
                           </div>
                         </div>
                       </motion.div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </motion.div>
@@ -513,5 +702,166 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Compact single-select dropdown for the playlist track filters. */
+function FilterSingleSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: readonly string[];
+  onChange: (v: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  if (options.length === 0) return null;
+
+  return (
+    <div className="relative shrink-0" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={
+          "flex items-center gap-1 h-8 px-2.5 rounded-lg text-2xs font-semibold transition-all whitespace-nowrap " +
+          (value
+            ? "border-2 border-brand-orange/40 text-brand-orange"
+            : "border border-border text-muted-foreground hover:text-foreground")
+        }
+      >
+        <span>{value || label}</span>
+        <ChevronDown className={"w-3 h-3 transition-transform " + (open ? "rotate-180" : "")} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.12 }}
+            className="absolute z-50 mt-1 left-0 min-w-[140px] max-h-52 overflow-y-auto bg-popover border border-border rounded-xl shadow-xl p-1"
+          >
+            <button
+              type="button"
+              onClick={() => { onChange(""); setOpen(false); }}
+              className={"w-full text-left px-3 py-2 rounded-lg text-xs transition-colors " + (!value ? "bg-brand-orange/10 text-brand-orange font-medium" : "text-foreground hover:bg-secondary/60")}
+            >
+              {t("common.all")}
+            </button>
+            {options.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => { onChange(opt); setOpen(false); }}
+                className={"w-full text-left px-3 py-2 rounded-lg text-xs transition-colors " + (value === opt ? "bg-brand-orange/10 text-brand-orange font-medium" : "text-foreground hover:bg-secondary/60")}
+              >
+                {opt}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/** Compact multi-select dropdown for the playlist track filters. */
+function FilterMultiSelect({
+  label,
+  values,
+  options,
+  onChange,
+  capitalize = false,
+}: {
+  label: string;
+  values: string[];
+  options: string[];
+  onChange: (v: string[]) => void;
+  capitalize?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  if (options.length === 0) return null;
+
+  const toggle = (opt: string) => {
+    onChange(values.includes(opt) ? values.filter((v) => v !== opt) : [...values, opt]);
+  };
+
+  const active = values.length > 0;
+
+  return (
+    <div className="relative shrink-0" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={
+          "flex items-center gap-1 h-8 px-2.5 rounded-lg text-2xs font-semibold transition-all whitespace-nowrap " +
+          (active
+            ? "border-2 border-brand-orange/40 text-brand-orange"
+            : "border border-border text-muted-foreground hover:text-foreground")
+        }
+      >
+        <span>{label}</span>
+        {active && (
+          <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-brand-orange/20 text-brand-orange text-[9px] font-bold">
+            {values.length}
+          </span>
+        )}
+        <ChevronDown className={"w-3 h-3 transition-transform " + (open ? "rotate-180" : "")} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.12 }}
+            className="absolute z-50 mt-1 left-0 min-w-[160px] max-h-52 overflow-y-auto bg-popover border border-border rounded-xl shadow-xl p-1"
+          >
+            {options.map((opt) => {
+              const checked = values.includes(opt);
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => toggle(opt)}
+                  className={"w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-xs transition-colors " + (checked ? "bg-brand-orange/10 text-brand-orange font-medium" : "text-foreground hover:bg-secondary/60") + (capitalize ? " capitalize" : "")}
+                >
+                  <span className={"w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 border " + (checked ? "bg-brand-orange border-brand-orange" : "border-border")}>
+                    {checked && <Check className="w-2.5 h-2.5 text-white" />}
+                  </span>
+                  {opt}
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
