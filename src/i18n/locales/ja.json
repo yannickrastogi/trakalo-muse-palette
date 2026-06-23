@@ -205,6 +205,14 @@
     }
   },
   "pitch": {
+    "watermark": "オーディオ電子透かし",
+    "watermarkDesc": "再生ごとに固有の電子透かしを埋め込み、リーク追跡を可能にします",
+    "namePlaylist": "ピッチ用プレイリストに名前を付ける",
+    "playlistCreated": "選択した楽曲からプレイリストを作成しました",
+    "tracksSelected": "{{count}} 曲を選択中",
+    "selectAtLeastOne": "少なくとも1曲を選択してください",
+    "recipientRole": "役割",
+    "recipientPhone": "電話番号",
     "title": "ピッチ",
     "subtitle": "レーベル、アーティスト、業界の連絡先への提出を管理",
     "createPitch": "ピッチを作成",

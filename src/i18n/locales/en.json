@@ -208,6 +208,14 @@
     }
   },
   "pitch": {
+    "watermark": "Audio watermarking",
+    "watermarkDesc": "Each playback is uniquely watermarked for leak tracing",
+    "namePlaylist": "Name your pitch playlist",
+    "playlistCreated": "Playlist created from your selection",
+    "tracksSelected": "{{count}} tracks selected",
+    "selectAtLeastOne": "Please select at least one track",
+    "recipientRole": "Role",
+    "recipientPhone": "Phone",
     "title": "Pitch",
     "subtitle": "Manage submissions to labels, artists & industry contacts",
     "createPitch": "Create Pitch",

@@ -97,7 +97,39 @@ export function PitchProvider({ children }: { children: ReactNode }) {
       const now = new Date().toISOString();
       const dbStatus = mapStatusToDb(pitch.status);
 
-      const { error } = await supabase.rpc("create_pitch", {
+      // Multi-track selection → auto-create a playlist, then pitch the playlist.
+      var shareType = pitch.type === "playlist" ? "playlist" : "track";
+      var trackUuid = pitch.trackUuid || null;
+      var playlistUuid = pitch.playlistUuid || null;
+      var pitchTrackIds: string[] = pitch.trackUuid ? [pitch.trackUuid] : [];
+
+      if (pitch.newPlaylistTrackUuids && pitch.newPlaylistTrackUuids.length > 0) {
+        const { data: newPlaylistId, error: plError } = await supabase.rpc("create_playlist", {
+          _user_id: user.id,
+          _workspace_id: activeWorkspace.id,
+          _name: pitch.newPlaylistName || pitch.itemName,
+          _description: "",
+          _cover_url: null,
+        });
+
+        if (plError || !newPlaylistId) {
+          console.error("Error creating pitch playlist:", plError);
+          return;
+        }
+
+        playlistUuid = newPlaylistId as unknown as string;
+        await supabase.rpc("add_playlist_tracks", {
+          _user_id: user.id,
+          _playlist_id: playlistUuid,
+          _track_ids: pitch.newPlaylistTrackUuids,
+        });
+
+        shareType = "playlist";
+        trackUuid = null;
+        pitchTrackIds = pitch.newPlaylistTrackUuids;
+      }
+
+      const { data: pitchId, error } = await supabase.rpc("create_pitch", {
         _user_id: user.id,
         _workspace_id: activeWorkspace.id,
         _recipient_name: pitch.recipientName,
@@ -105,7 +137,7 @@ export function PitchProvider({ children }: { children: ReactNode }) {
         _recipient_company: pitch.recipientCompany || "",
         _subject: pitch.itemName,
         _message: pitch.notes || null,
-        _track_ids: pitch.trackUuid ? [pitch.trackUuid] : [],
+        _track_ids: pitchTrackIds,
         _status: dbStatus,
         _sent_at: dbStatus === "sent" ? now : null,
       });
@@ -122,11 +154,6 @@ export function PitchProvider({ children }: { children: ReactNode }) {
         slug += chars.charAt(Math.floor(Math.random() * chars.length));
       }
 
-      var shareType = pitch.type === "playlist" ? "playlist" : "track";
-
-      var trackUuid = pitch.trackUuid || null;
-      var playlistUuid = pitch.playlistUuid || null;
-
       var hashedPassword = null;
       if (pitch.linkType === "secured" && pitch.password) {
         var hashRes = await fetch(SUPABASE_URL + "/functions/v1/hash-link-password", {
@@ -137,7 +164,7 @@ export function PitchProvider({ children }: { children: ReactNode }) {
         if (hashRes.ok) { var hj = await hashRes.json(); hashedPassword = hj.hash || null; }
       }
 
-      var { error: linkError } = await supabase.rpc("create_shared_link", {
+      var { data: linkData, error: linkError } = await supabase.rpc("create_shared_link", {
         _user_id: user.id,
         _workspace_id: activeWorkspace.id,
         _share_type: shareType,
@@ -153,10 +180,49 @@ export function PitchProvider({ children }: { children: ReactNode }) {
         _download_quality: pitch.downloadQuality || null,
         _expires_at: null,
         _pack_items: null,
+        _watermarking_enabled: pitch.watermarkEnabled !== false,
       });
 
       if (linkError) {
         console.error("Error creating shared link for pitch:", linkError);
+      }
+
+      var linkId = (linkData && typeof linkData === "object") ? (linkData as { id?: string }).id || null : null;
+
+      // Upsert the recipient into the workspace contact book (DB carnet).
+      var contactId: string | null = null;
+      if (pitch.recipientName && pitch.recipientName.trim()) {
+        var nameParts = pitch.recipientName.trim().split(/\s+/);
+        var firstName = nameParts[0] || pitch.recipientName.trim();
+        var lastName = nameParts.slice(1).join(" ") || "";
+        const { data: cId } = await supabase.rpc("upsert_contact", {
+          _user_id: user.id,
+          _workspace_id: activeWorkspace.id,
+          _first_name: firstName,
+          _last_name: lastName,
+          _email: pitch.recipientEmail || null,
+          _role: pitch.recipientRole || null,
+          _company: pitch.recipientCompany || null,
+          _phone: pitch.recipientPhone || null,
+          _pro: null,
+          _ipi: null,
+          _publisher: null,
+        });
+        contactId = (cId as unknown as string) || null;
+      }
+
+      // Link the pitch to its shared link + contact so engagement can be isolated per recipient.
+      if (pitchId && (linkId || contactId)) {
+        var { error: linkPitchError } = await supabase.rpc("update_pitch_share_link", {
+          _user_id: user.id,
+          _pitch_id: pitchId,
+          _workspace_id: activeWorkspace.id,
+          _share_link_id: linkId,
+          _contact_id: contactId,
+        });
+        if (linkPitchError) {
+          console.error("Error linking pitch to shared link:", linkPitchError);
+        }
       }
 
       var shareLink = window.location.origin + "/share/" + slug;

@@ -205,6 +205,14 @@
     }
   },
   "pitch": {
+    "watermark": "Marca de agua de audio",
+    "watermarkDesc": "Cada reproducción lleva una marca de agua única para rastrear filtraciones",
+    "namePlaylist": "Nombra tu playlist de pitch",
+    "playlistCreated": "Playlist creada a partir de tu selección",
+    "tracksSelected": "{{count}} pistas seleccionadas",
+    "selectAtLeastOne": "Selecciona al menos una pista",
+    "recipientRole": "Rol",
+    "recipientPhone": "Teléfono",
     "title": "Pitch",
     "subtitle": "Gestiona envíos a sellos, artistas y contactos de la industria",
     "createPitch": "Crear pitch",

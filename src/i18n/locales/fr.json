@@ -208,6 +208,14 @@
     }
   },
   "pitch": {
+    "watermark": "Filigrane audio",
+    "watermarkDesc": "Chaque écoute est filigranée de façon unique pour tracer les fuites",
+    "namePlaylist": "Nommez votre playlist de pitch",
+    "playlistCreated": "Playlist créée à partir de votre sélection",
+    "tracksSelected": "{{count}} morceaux sélectionnés",
+    "selectAtLeastOne": "Veuillez sélectionner au moins un morceau",
+    "recipientRole": "Rôle",
+    "recipientPhone": "Téléphone",
     "title": "Pitch",
     "subtitle": "Gérez les soumissions aux labels, artistes et contacts de l'industrie",
     "createPitch": "Créer un pitch",

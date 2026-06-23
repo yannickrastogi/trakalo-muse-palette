@@ -205,6 +205,14 @@
     }
   },
   "pitch": {
+    "watermark": "Audio-Wasserzeichen",
+    "watermarkDesc": "Jede Wiedergabe erhält ein eindeutiges Wasserzeichen zur Leak-Verfolgung",
+    "namePlaylist": "Benenne deine Pitch-Playlist",
+    "playlistCreated": "Playlist aus deiner Auswahl erstellt",
+    "tracksSelected": "{{count}} Titel ausgewählt",
+    "selectAtLeastOne": "Bitte wähle mindestens einen Titel",
+    "recipientRole": "Rolle",
+    "recipientPhone": "Telefon",
     "title": "Pitch",
     "subtitle": "Einreichungen an Labels, Künstler und Branchenkontakte verwalten",
     "createPitch": "Pitch erstellen",

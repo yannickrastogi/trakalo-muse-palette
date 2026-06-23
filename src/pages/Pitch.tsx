@@ -200,48 +200,67 @@ export default function Pitch() {
     if (!activeWorkspace) return;
 
     async function fetchStats() {
-      var { data: links } = await supabase
-        .from("shared_links")
-        .select("id, link_name, track_id, playlist_id")
+      // Each pitch now owns a dedicated shared link (pitches.share_link_id), so engagement
+      // is isolated per-recipient: aggregate by pitch.id, scoped to that link, and filtered
+      // by the recipient's email (anonymous/pre-gate events with no email still count).
+      var { data: pitchRows } = await supabase
+        .from("pitches")
+        .select("id, share_link_id, recipient_email")
         .eq("workspace_id", activeWorkspace!.id);
 
-      if (!links || links.length === 0) return;
+      if (!pitchRows || pitchRows.length === 0) return;
 
-      // Build link_name → track_id/playlist_id map
-      var metaByName: Record<string, { trackId: string | null; playlistId: string | null }> = {};
-      links.forEach(function(l) {
-        if (!metaByName[l.link_name]) {
-          metaByName[l.link_name] = { trackId: l.track_id, playlistId: l.playlist_id };
-        }
+      var linkIds = pitchRows
+        .filter(function(p) { return p.share_link_id; })
+        .map(function(p) { return p.share_link_id as string; });
+
+      if (linkIds.length === 0) {
+        setPitchStats({});
+        setLinkMeta({});
+        return;
+      }
+
+      var { data: links } = await supabase
+        .from("shared_links")
+        .select("id, track_id, playlist_id")
+        .in("id", linkIds);
+
+      var metaByLink: Record<string, { trackId: string | null; playlistId: string | null }> = {};
+      (links || []).forEach(function(l) {
+        metaByLink[l.id] = { trackId: l.track_id, playlistId: l.playlist_id };
       });
-      setLinkMeta(metaByName);
 
-      var linkIds = links.map(function(l) { return l.id; });
       var { data: events } = await supabase
         .from("link_events")
-        .select("link_id, event_type")
+        .select("link_id, event_type, visitor_email")
         .in("link_id", linkIds);
 
-      var linkStatsMap: Record<string, { views: number; plays: number; downloads: number }> = {};
-      (events || []).forEach(function(e: { link_id: string; event_type: string }) {
-        if (!linkStatsMap[e.link_id]) linkStatsMap[e.link_id] = { views: 0, plays: 0, downloads: 0 };
-        if (e.event_type === "view") linkStatsMap[e.link_id].views++;
-        if (e.event_type === "play") linkStatsMap[e.link_id].plays++;
-        if (e.event_type === "download") linkStatsMap[e.link_id].downloads++;
+      var eventsByLink: Record<string, { event_type: string; visitor_email: string | null }[]> = {};
+      (events || []).forEach(function(e: { link_id: string; event_type: string; visitor_email: string | null }) {
+        if (!eventsByLink[e.link_id]) eventsByLink[e.link_id] = [];
+        eventsByLink[e.link_id].push({ event_type: e.event_type, visitor_email: e.visitor_email });
       });
 
-      // Aggregate by link_name (matches pitch itemName)
-      var byName: Record<string, { views: number; plays: number; downloads: number }> = {};
-      links.forEach(function(l) {
-        var s = linkStatsMap[l.id];
-        if (!s) return;
-        if (!byName[l.link_name]) byName[l.link_name] = { views: 0, plays: 0, downloads: 0 };
-        byName[l.link_name].views += s.views;
-        byName[l.link_name].plays += s.plays;
-        byName[l.link_name].downloads += s.downloads;
+      // Aggregate per-pitch (keyed by pitch.id)
+      var byPitch: Record<string, { views: number; plays: number; downloads: number }> = {};
+      var metaByPitch: Record<string, { trackId: string | null; playlistId: string | null }> = {};
+      pitchRows.forEach(function(p) {
+        if (!p.share_link_id) return;
+        metaByPitch[p.id] = metaByLink[p.share_link_id] || { trackId: null, playlistId: null };
+        var stats = { views: 0, plays: 0, downloads: 0 };
+        var recipient = (p.recipient_email || "").toLowerCase();
+        (eventsByLink[p.share_link_id] || []).forEach(function(e) {
+          // Isolate to this recipient; keep anonymous (pre-gate) events that have no email.
+          if (e.visitor_email && recipient && e.visitor_email.toLowerCase() !== recipient) return;
+          if (e.event_type === "view") stats.views++;
+          else if (e.event_type === "play") stats.plays++;
+          else if (e.event_type === "download") stats.downloads++;
+        });
+        byPitch[p.id] = stats;
       });
 
-      setPitchStats(byName);
+      setPitchStats(byPitch);
+      setLinkMeta(metaByPitch);
     }
 
     fetchStats();
@@ -525,7 +544,7 @@ function DesktopPitchTable({
               const cfg = statusConfig[p.status as keyof typeof statusConfig];
               const StatusIcon = cfg.icon;
               const isExpanded = expandedId === p.id;
-              const meta = linkMeta[p.itemName];
+              const meta = linkMeta[p.id];
               const trackId = p.trackUuid || (meta && meta.trackId) || null;
               const playlistId = p.playlistUuid || (meta && meta.playlistId) || null;
               const isPlaying = trackId ? playingTrackId === trackId : false;
@@ -614,7 +633,7 @@ function DesktopPitchTable({
                   </td>
                   <td className="px-5 py-3.5 hidden md:table-cell">
                     {(() => {
-                      const s = pitchStats[p.itemName];
+                      const s = pitchStats[p.id];
                       if (!s || (s.views === 0 && s.plays === 0 && s.downloads === 0)) {
                         return <span className="text-2xs text-muted-foreground/40">—</span>;
                       }
@@ -741,7 +760,7 @@ function MobilePitchList({
         const cfg = statusConfig[p.status as keyof typeof statusConfig];
         const StatusIcon = cfg.icon;
         const isExpanded = expandedId === p.id;
-        const meta = linkMeta[p.itemName];
+        const meta = linkMeta[p.id];
         const trackId = p.trackUuid || (meta && meta.trackId) || null;
         const playlistId = p.playlistUuid || (meta && meta.playlistId) || null;
         const isPlaying = trackId ? playingTrackId === trackId : false;
@@ -826,7 +845,7 @@ function MobilePitchList({
                     {p.status}
                   </span>
                   {(() => {
-                    const s = pitchStats[p.itemName];
+                    const s = pitchStats[p.id];
                     if (!s || (s.views === 0 && s.plays === 0 && s.downloads === 0)) return null;
                     return (
                       <>

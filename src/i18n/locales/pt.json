@@ -205,6 +205,14 @@
     }
   },
   "pitch": {
+    "watermark": "Marca d'água de áudio",
+    "watermarkDesc": "Cada reprodução recebe uma marca d'água única para rastrear vazamentos",
+    "namePlaylist": "Dê um nome à sua playlist de pitch",
+    "playlistCreated": "Playlist criada a partir da sua seleção",
+    "tracksSelected": "{{count}} faixas selecionadas",
+    "selectAtLeastOne": "Selecione pelo menos uma faixa",
+    "recipientRole": "Função",
+    "recipientPhone": "Telefone",
     "title": "Pitch",
     "subtitle": "Gerir submissões a editoras, artistas e contactos da indústria",
     "createPitch": "Criar pitch",

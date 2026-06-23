@@ -205,6 +205,14 @@
     }
   },
   "pitch": {
+    "watermark": "오디오 워터마크",
+    "watermarkDesc": "재생할 때마다 고유한 워터마크가 삽입되어 유출을 추적합니다",
+    "namePlaylist": "피치 플레이리스트 이름 지정",
+    "playlistCreated": "선택한 트랙으로 플레이리스트가 생성되었습니다",
+    "tracksSelected": "{{count}}개 트랙 선택됨",
+    "selectAtLeastOne": "트랙을 하나 이상 선택하세요",
+    "recipientRole": "역할",
+    "recipientPhone": "전화번호",
     "title": "피칭",
     "subtitle": "레이블, 아티스트 및 업계 연락처에 대한 제출 관리",
     "createPitch": "피칭 만들기",
