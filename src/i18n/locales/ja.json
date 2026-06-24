@@ -874,6 +874,7 @@
     "unknownDevice": "不明なデバイス"
   },
   "uploadTrack": {
+    "status": "ステータス",
     "title": "トラックをアップロード",
     "uploadTracks": "トラックをアップロード",
     "trackOf": "トラック {{current}} / {{total}}",

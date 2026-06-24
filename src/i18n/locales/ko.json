@@ -887,6 +887,7 @@
     "unknownDevice": "알 수 없는 기기"
   },
   "uploadTrack": {
+    "status": "상태",
     "title": "트랙 업로드",
     "uploadTracks": "트랙 업로드",
     "trackOf": "트랙 {{current}} / {{total}}",

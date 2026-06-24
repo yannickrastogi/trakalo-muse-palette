@@ -62,7 +62,7 @@ const MAX_TRACKS = 50;
 
 const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
-import { KEYS, LANGUAGES, PROS, SPLIT_ROLES, PRODUCTION_STAGES, type ProductionStage } from "@/lib/constants";
+import { KEYS, LANGUAGES, PROS, SPLIT_ROLES, PRODUCTION_STAGES, STATUSES, type ProductionStage } from "@/lib/constants";
 import { equalSplit, parseArtistsToCollaborators, type ParsedCollaborator } from "@/lib/split-utils";
 import { extractTextFromPdf } from "@/lib/pdf-text-extract";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
@@ -111,6 +111,7 @@ interface TrackEntry {
   genre: string[];
   trackType: string;
   productionStage: ProductionStage;
+  status: string;
   voice: string;
   language: string;
   notes: string;
@@ -247,6 +248,7 @@ function createTrackEntry(file: File): TrackEntry {
     genre: [],
     trackType: "Song",
     productionStage: "work_in_progress",
+    status: "Available",
     voice: "",
     language: "",
     notes: "",
@@ -774,7 +776,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         bpm: parseInt(currentTrack.bpm) || 0,
         key: currentTrack.trackKey || "",
         duration: currentTrack.analysisResult?.duration || "0:00",
-        status: "Available",
+        status: currentTrack.status || "Available",
         language: currentTrack.language || "",
         voice: currentTrack.voice || "N/A",
         type: currentTrack.trackType || "Song",
@@ -1437,7 +1439,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           bpm: 0,
           key: "",
           duration: entry.analysisResult?.duration || "0:00",
-          status: "Available",
+          status: entry.status || "Available",
           language: "",
           voice: "N/A",
           type: "Song",
@@ -1619,7 +1621,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             bpm: parseInt(entry.bpm) || 0,
             key: entry.trackKey || "",
             duration: entry.analysisResult?.duration || "0:00",
-            status: "Available",
+            status: entry.status || "Available",
             language: entry.language || "",
             voice: entry.voice || "N/A",
             type: entry.trackType || "Song",
@@ -2024,6 +2026,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   genre={currentTrack.genre} setGenre={(v) => updateCurrent({ genre: v })}
                   trackType={currentTrack.trackType} setTrackType={(v) => updateCurrent({ trackType: v })}
                   productionStage={currentTrack.productionStage || "work_in_progress"} setProductionStage={(v) => updateCurrent({ productionStage: v })}
+                  status={currentTrack.status || "Available"} setStatus={(v) => updateCurrent({ status: v })}
                   voice={currentTrack.voice} setVoice={(v) => updateCurrent({ voice: v })}
                   language={currentTrack.language} setLanguage={(v) => updateCurrent({ language: v })}
                   notes={currentTrack.notes} setNotes={(v) => updateCurrent({ notes: v })}
@@ -3167,6 +3170,7 @@ function StepInfo({
   trackKey, setTrackKey, genre, setGenre,
   trackType, setTrackType,
   productionStage, setProductionStage,
+  status, setStatus,
   voice, setVoice,
   language, setLanguage, notes, setNotes,
   analysisResult, analyzing,
@@ -3180,6 +3184,7 @@ function StepInfo({
   genre: string[]; setGenre: (v: string[]) => void;
   trackType: string; setTrackType: (v: string) => void;
   productionStage: ProductionStage; setProductionStage: (v: ProductionStage) => void;
+  status: string; setStatus: (v: string) => void;
   voice: string; setVoice: (v: string) => void;
   language: string; setLanguage: (v: string) => void;
   notes: string; setNotes: (v: string) => void;
@@ -3365,6 +3370,18 @@ function StepInfo({
             ))}
           </select>
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <FieldLabel>{t("uploadTrack.status", "Status")}</FieldLabel>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none font-medium"
+        >
+          {STATUSES.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
       </div>
       <div className="space-y-1.5">
         <FieldLabel>{t("uploadTrack.notes")}</FieldLabel>

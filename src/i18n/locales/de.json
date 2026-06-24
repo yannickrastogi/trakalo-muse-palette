@@ -887,6 +887,7 @@
     "unknownDevice": "Unbekanntes Gerät"
   },
   "uploadTrack": {
+    "status": "Status",
     "title": "Titel hochladen",
     "uploadTracks": "Titel hochladen",
     "trackOf": "Titel {{current}} von {{total}}",

@@ -874,6 +874,7 @@
     "unknownDevice": "Dispositivo desconocido"
   },
   "uploadTrack": {
+    "status": "Estado",
     "title": "Subir pista",
     "uploadTracks": "Subir pistas",
     "trackOf": "Pista {{current}} de {{total}}",

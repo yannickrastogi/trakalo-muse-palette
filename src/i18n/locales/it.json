@@ -874,6 +874,7 @@
     "unknownDevice": "Dispositivo sconosciuto"
   },
   "uploadTrack": {
+    "status": "Stato",
     "title": "Carica brano",
     "uploadTracks": "Carica brani",
     "trackOf": "Brano {{current}} di {{total}}",

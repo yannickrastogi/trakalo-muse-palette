@@ -955,6 +955,7 @@
     "unknownDevice": "Unknown Device"
   },
   "uploadTrack": {
+    "status": "Status",
     "title": "Upload Track",
     "uploadTracks": "Upload Tracks",
     "trackOf": "Track {{current}} of {{total}}",

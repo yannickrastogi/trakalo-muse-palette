@@ -1585,7 +1585,7 @@ export default function SharedLinkPage() {
                       <video
                         src={videoUrls[activeTrack.id]}
                         controls
-                        className="w-full"
+                        className="w-full aspect-video object-contain max-h-[360px]"
                         preload="metadata"
                         playsInline
                       />
@@ -2036,7 +2036,7 @@ export default function SharedLinkPage() {
                     <video
                       src={videoUrls[trackData.id]}
                       controls
-                      className="w-full"
+                      className="w-full aspect-video object-contain max-h-[360px]"
                       preload="metadata"
                       playsInline
                     />

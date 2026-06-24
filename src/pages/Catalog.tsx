@@ -514,7 +514,7 @@ export default function Catalog() {
                     <th className="text-left pl-5 pr-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-8">#</th>
                     <th className="text-left px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Track</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Details</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden md:table-cell">Mood</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Mood</th>
                     <th className="text-center px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Plays</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
                     <th className="px-4 py-3 w-10"></th>
@@ -585,8 +585,10 @@ export default function Catalog() {
                                 </div>
                                 <p className="text-[11px] text-muted-foreground truncate mt-0.5">{track.artist}</p>
                               </div>
-                              <div className={`hidden md:flex items-center gap-2 transition-opacity duration-300 ${isPlaying ? "opacity-100" : "opacity-20 group-hover/row:opacity-50"}`}>
-                                <MiniWaveform seed={track.id * 13 + 7} bars={40} peaks={track.waveformData} progress={isTrackPlaying(track.id) ? progress : undefined} />
+                              <div className="hidden md:flex items-center gap-2">
+                                <div className={`transition-opacity duration-300 ${isPlaying ? "opacity-100" : "opacity-20 group-hover/row:opacity-50"}`}>
+                                  <MiniWaveform seed={track.id * 13 + 7} bars={40} peaks={track.waveformData} progress={isTrackPlaying(track.id) ? progress : undefined} />
+                                </div>
                                 <span className="text-2xs text-muted-foreground font-mono tabular-nums w-8 text-right">{track.duration}</span>
                               </div>
                             </div>
@@ -603,7 +605,7 @@ export default function Catalog() {
                               })()}
                             </span>
                           </td>
-                          <td className="px-4 py-3 hidden md:table-cell">
+                          <td className="px-4 py-3 hidden sm:table-cell">
                             {track.mood.length > 0 ? (
                               <div className="flex flex-wrap gap-1 max-w-[140px]">
                                 {track.mood.slice(0, 2).map((tag) => (
@@ -788,6 +790,12 @@ export default function Catalog() {
                                <span className="text-2xs font-semibold text-foreground/50 shrink-0">{track.key || "—"}</span>
                              </>;
                            })()}
+                           {track.duration && track.duration !== "0:00" && (
+                             <>
+                               <span className="w-px h-3 bg-border shrink-0" />
+                               <span className="text-2xs font-mono text-foreground/50 tabular-nums shrink-0">{track.duration}</span>
+                             </>
+                           )}
                            {track.voice && (
                              <>
                                <span className="w-px h-3 bg-border shrink-0" />
@@ -803,6 +811,16 @@ export default function Catalog() {
                              </>
                            )}
                          </div>
+                         {track.mood && track.mood.length > 0 && (
+                           <div className="flex gap-1 flex-wrap">
+                             {track.mood.slice(0, 2).map((m) => (
+                               <span key={m} className="inline-flex px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70">#{m}</span>
+                             ))}
+                             {track.mood.length > 2 && (
+                               <span className="inline-flex px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-secondary text-muted-foreground">+{track.mood.length - 2}</span>
+                             )}
+                           </div>
+                         )}
                       </div>
                     </motion.div>
                   );

@@ -955,6 +955,7 @@
     "unknownDevice": "Appareil inconnu"
   },
   "uploadTrack": {
+    "status": "Statut",
     "title": "Téléverser un morceau",
     "uploadTracks": "Téléverser des morceaux",
     "trackOf": "Morceau {{current}} sur {{total}}",

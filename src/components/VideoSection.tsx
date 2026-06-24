@@ -307,7 +307,7 @@ export function VideoSection({
               controls
               preload="metadata"
               playsInline
-              className="w-full rounded-lg bg-black"
+              className="w-full max-w-2xl mx-auto rounded-lg bg-black aspect-video object-contain max-h-[420px]"
             />
           ) : (
             <div className="aspect-video w-full rounded-lg bg-secondary flex items-center justify-center text-xs text-muted-foreground">

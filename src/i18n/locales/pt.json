@@ -874,6 +874,7 @@
     "unknownDevice": "Dispositivo Desconhecido"
   },
   "uploadTrack": {
+    "status": "Estado",
     "title": "Carregar faixa",
     "uploadTracks": "Carregar faixas",
     "trackOf": "Faixa {{current}} de {{total}}",
