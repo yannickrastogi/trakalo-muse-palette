@@ -52,6 +52,21 @@
     "acrossContacts": "연락처 {{count}}명 대상",
     "recent": "+{{count}} 최근"
   },
+  "completeness": {
+    "title": "트랙 완성도",
+    "missing": "누락",
+    "complete": "트랙 100% 완성 ✓",
+    "cover": "커버 아트",
+    "bpmKey": "BPM 및 키",
+    "genreMood": "장르 및 무드",
+    "lyrics": "가사",
+    "splits": "스플릿",
+    "splitsSigned": "서명된 스플릿",
+    "credits": "크레딧",
+    "isrc": "ISRC",
+    "stems": "스템",
+    "metadata": "메타데이터(앨범, 레이블, 저작권)"
+  },
   "catalog": {
     "uploadedOn": "업로드 날짜",
     "filterUploadDate": "업로드 날짜",

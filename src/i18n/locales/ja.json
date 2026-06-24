@@ -52,6 +52,21 @@
     "acrossContacts": "{{count}}件の連絡先全体",
     "recent": "+{{count}} 最近"
   },
+  "completeness": {
+    "title": "トラックの完成度",
+    "missing": "不足",
+    "complete": "トラックは100%完成 ✓",
+    "cover": "カバーアート",
+    "bpmKey": "BPMとキー",
+    "genreMood": "ジャンルとムード",
+    "lyrics": "歌詞",
+    "splits": "スプリット",
+    "splitsSigned": "署名済みスプリット",
+    "credits": "クレジット",
+    "isrc": "ISRC",
+    "stems": "ステム",
+    "metadata": "メタデータ（アルバム、レーベル、著作権）"
+  },
   "catalog": {
     "uploadedOn": "アップロード日",
     "filterUploadDate": "アップロード日",

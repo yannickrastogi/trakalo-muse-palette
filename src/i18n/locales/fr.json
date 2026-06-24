@@ -55,6 +55,21 @@
     "acrossContacts": "parmi {{count}} contacts",
     "recent": "+{{count}} récents"
   },
+  "completeness": {
+    "title": "Complétude du track",
+    "missing": "Manquant",
+    "complete": "Track complet à 100% ✓",
+    "cover": "Pochette",
+    "bpmKey": "BPM et tonalité",
+    "genreMood": "Genre et ambiance",
+    "lyrics": "Paroles",
+    "splits": "Splits",
+    "splitsSigned": "Splits signés",
+    "credits": "Crédits",
+    "isrc": "ISRC",
+    "stems": "Stems",
+    "metadata": "Métadonnées (album, label, copyright)"
+  },
   "catalog": {
     "uploadedOn": "Ajouté le",
     "filterUploadDate": "Date d'ajout",

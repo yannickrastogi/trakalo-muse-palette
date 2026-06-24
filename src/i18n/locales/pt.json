@@ -52,6 +52,21 @@
     "acrossContacts": "em {{count}} contactos",
     "recent": "+{{count}} recentes"
   },
+  "completeness": {
+    "title": "Completude da faixa",
+    "missing": "Faltando",
+    "complete": "Faixa 100% completa ✓",
+    "cover": "Capa",
+    "bpmKey": "BPM e tom",
+    "genreMood": "Gênero e clima",
+    "lyrics": "Letra",
+    "splits": "Splits",
+    "splitsSigned": "Splits assinados",
+    "credits": "Créditos",
+    "isrc": "ISRC",
+    "stems": "Stems",
+    "metadata": "Metadados (álbum, gravadora, copyright)"
+  },
   "catalog": {
     "uploadedOn": "Enviado em",
     "filterUploadDate": "Data de envio",

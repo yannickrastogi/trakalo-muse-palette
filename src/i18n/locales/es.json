@@ -52,6 +52,21 @@
     "acrossContacts": "en {{count}} contactos",
     "recent": "+{{count}} recientes"
   },
+  "completeness": {
+    "title": "Completitud del track",
+    "missing": "Falta",
+    "complete": "Track 100% completo ✓",
+    "cover": "Portada",
+    "bpmKey": "BPM y tonalidad",
+    "genreMood": "Género y ánimo",
+    "lyrics": "Letras",
+    "splits": "Splits",
+    "splitsSigned": "Splits firmados",
+    "credits": "Créditos",
+    "isrc": "ISRC",
+    "stems": "Stems",
+    "metadata": "Metadatos (álbum, sello, copyright)"
+  },
   "catalog": {
     "uploadedOn": "Subido el",
     "filterUploadDate": "Fecha de subida",

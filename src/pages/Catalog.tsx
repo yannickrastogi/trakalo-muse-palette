@@ -7,6 +7,8 @@ import { useRole } from "@/contexts/RoleContext";
 import { FirstUseTooltip } from "@/components/FirstUseTooltip";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { StarRating } from "@/components/StarRating";
+import { TrackCompletenessBar } from "@/components/TrackCompletenessBar";
+import { useTrackCompleteness } from "@/hooks/useTrackCompleteness";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { GENRES, KEYS, LANGUAGES, GENDERS, DEFAULT_COVER, PRODUCTION_STAGES } from "@/lib/constants";
@@ -84,6 +86,17 @@ function formatMonthLabel(value: string): string {
     month: "long",
     year: "numeric",
   });
+}
+
+/**
+ * Per-track compact completeness circle for the catalog. Wraps the hook so it
+ * can be used inside a list/grid map (hooks can't run inside .map directly).
+ * Note: the catalog can't know signed-split status (PII-restricted), so the
+ * "signed splits" criterion stays unmet here — the exact score lives in TrackDetail.
+ */
+function CatalogCompleteness({ track, className }: { track: TrackData; className?: string }) {
+  const result = useTrackCompleteness(track);
+  return <TrackCompletenessBar result={result} compact className={className} />;
 }
 
 // Production-stage chip: short label + colored pill. Returns null when stage is undefined.
@@ -558,13 +571,14 @@ export default function Catalog() {
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Mood</th>
                     <th className="text-center px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden lg:table-cell">Plays</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Status</th>
+                    <th className="text-center px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-12 hidden lg:table-cell" title={t("completeness.title")}>✓</th>
                     <th className="px-4 py-3 w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredTracks.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-5 py-20 text-center text-muted-foreground">
+                      <td colSpan={8} className="px-5 py-20 text-center text-muted-foreground">
                         <Music className="w-10 h-10 mx-auto mb-4 opacity-15" />
                         <p className="text-sm font-semibold">{t("catalog.noTracks")}</p>
                         <p className="text-xs mt-1.5 text-muted-foreground/70">{t("catalog.adjustFilters")}</p>
@@ -689,6 +703,11 @@ export default function Catalog() {
                                />
                              </div>
                           </td>
+                          <td className="px-2 py-3 hidden lg:table-cell">
+                            <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+                              <CatalogCompleteness track={track} />
+                            </div>
+                          </td>
                           <td className="px-4 py-3">
                             {!permissions.isReadOnly && (
                             <DropdownMenu>
@@ -776,6 +795,10 @@ export default function Catalog() {
                               <Play className="w-4 h-4 text-background ml-0.5" />
                             )}
                           </button>
+                        </div>
+                        {/* Completeness — discreet circle, bottom-left */}
+                        <div className="absolute bottom-2 left-2 rounded-full bg-background/70 backdrop-blur-sm p-0.5" onClick={(e) => e.stopPropagation()}>
+                          <CatalogCompleteness track={track} />
                         </div>
                         {/* Status + Production-stage badges */}
                         <div className="absolute top-2 right-2 flex items-center gap-1.5">

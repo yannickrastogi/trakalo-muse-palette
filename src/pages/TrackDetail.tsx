@@ -102,6 +102,8 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbP
 import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
 import { StemsTab } from "@/components/StemsTab";
+import { TrackCompletenessBar } from "@/components/TrackCompletenessBar";
+import { useTrackCompleteness } from "@/hooks/useTrackCompleteness";
 import { VideoSection } from "@/components/VideoSection";
 import { VersionSelector } from "@/components/VersionSelector";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
@@ -336,6 +338,29 @@ export default function TrackDetail() {
   useEffect(() => {
     refreshVersions();
   }, [refreshVersions]);
+
+  // Signed-splits state for the completeness score. signature_requests is
+  // PII-restricted, so we only read it here (owner viewing their own track),
+  // never in the catalog list. null = not yet known.
+  const [splitsAllSigned, setSplitsAllSigned] = useState<boolean | undefined>(undefined);
+  useEffect(() => {
+    // Skip for shared viewers: completeness is only actionable for the owner,
+    // and we avoid querying signature_requests for a track they don't manage.
+    if (!track?.uuid || (track.isShared && track.shareAccessLevel === "viewer")) return;
+    let cancelled = false;
+    supabase
+      .from("signature_requests")
+      .select("status")
+      .eq("track_id", track.uuid)
+      .then((res) => {
+        if (cancelled) return;
+        const rows = (res.data as { status: string }[] | null) || [];
+        setSplitsAllSigned(rows.length > 0 && rows.every((r) => r.status === "signed"));
+      });
+    return () => { cancelled = true; };
+  }, [track?.uuid]);
+
+  const completeness = useTrackCompleteness(track ?? ({} as TrackData), { splitsAllSigned });
 
   const activeVersion = useMemo(() => versions.find((v) => v.is_active) || null, [versions]);
   const currentVersion = useMemo(
@@ -1115,6 +1140,13 @@ export default function TrackDetail() {
                   {t("trackDetail.uploadedOn")} {formatUploadDate(track.createdAt)}
                 </p>
               ) : null}
+
+              {/* Track completeness score — owner only (not for shared viewers) */}
+              {!isViewerShared && (
+                <div className="mt-4 p-4 rounded-xl border border-border/50 bg-secondary/20">
+                  <TrackCompletenessBar result={completeness} />
+                </div>
+              )}
 
               {/* Inline waveform comment composer */}
               <AnimatePresence>

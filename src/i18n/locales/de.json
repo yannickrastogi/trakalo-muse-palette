@@ -52,6 +52,21 @@
     "acrossContacts": "über {{count}} Kontakte",
     "recent": "+{{count}} kürzlich"
   },
+  "completeness": {
+    "title": "Track-Vollständigkeit",
+    "missing": "Fehlt",
+    "complete": "Track ist zu 100% vollständig ✓",
+    "cover": "Cover",
+    "bpmKey": "BPM & Tonart",
+    "genreMood": "Genre & Stimmung",
+    "lyrics": "Songtext",
+    "splits": "Splits",
+    "splitsSigned": "Signierte Splits",
+    "credits": "Credits",
+    "isrc": "ISRC",
+    "stems": "Stems",
+    "metadata": "Metadaten (Album, Label, Copyright)"
+  },
   "catalog": {
     "uploadedOn": "Hochgeladen am",
     "filterUploadDate": "Upload-Datum",
