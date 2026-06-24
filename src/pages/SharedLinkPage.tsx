@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
-import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark, ShieldCheck, Award } from "lucide-react";
+import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark, ShieldCheck, Award, Pencil, Trash2 } from "lucide-react";
 import { DEFAULT_COVER, INDUSTRY_ROLES, COUNTRIES } from "@/lib/constants";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import JSZip from "jszip";
@@ -102,6 +102,7 @@ interface TrackComment {
   timestamp_sec: number;
   content: string;
   created_at: string;
+  is_edited?: boolean;
 }
 
 function formatDuration(seconds: number): string {
@@ -357,6 +358,8 @@ export default function SharedLinkPage() {
   var [commentTimestamp, setCommentTimestamp] = useState(0);
   var [commentText, setCommentText] = useState("");
   var [submittingComment, setSubmittingComment] = useState(false);
+  var [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  var [editContent, setEditContent] = useState("");
   var commentInputRef = useRef<HTMLInputElement>(null);
 
   // Credits
@@ -1047,6 +1050,103 @@ export default function SharedLinkPage() {
     );
   };
 
+  // FIX 4: recipients can edit/delete their OWN comments (matched by email) via
+  // the slug-validated token RPCs. Optimistic local update after each action.
+  var handleSaveEdit = function(comment: TrackComment) {
+    if (!editContent.trim() || !slug) return;
+    var newContent = editContent.trim();
+    fetch(SUPABASE_URL + "/rest/v1/rpc/update_track_comment_via_token", {
+      method: "POST",
+      headers: { ...SB_HEADERS, "Content-Type": "application/json" },
+      body: JSON.stringify({ _comment_id: comment.id, _shared_link_token: slug, _new_content: newContent }),
+    })
+      .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then(function(data) {
+        if (data && data.success === false) throw new Error("update failed");
+        setComments(function(prev) { return prev.map(function(c) { return c.id === comment.id ? { ...c, content: newContent, is_edited: true } : c; }); });
+        setEditingCommentId(null);
+        setEditContent("");
+      })
+      .catch(function() { toast.error(t("sharedLink.editFailed")); });
+  };
+
+  var handleDeleteComment = function(commentId: string) {
+    if (!slug) return;
+    if (!window.confirm(t("sharedLink.deleteComment"))) return;
+    fetch(SUPABASE_URL + "/rest/v1/rpc/delete_track_comment_via_token", {
+      method: "POST",
+      headers: { ...SB_HEADERS, "Content-Type": "application/json" },
+      body: JSON.stringify({ _comment_id: commentId, _shared_link_token: slug }),
+    })
+      .then(function(r) { if (!r.ok) throw new Error(r.statusText); })
+      .then(function() { setComments(function(prev) { return prev.filter(function(c) { return c.id !== commentId; }); }); })
+      .catch(function() { toast.error(t("sharedLink.deleteFailed")); });
+  };
+
+  var renderCommentsList = function(dark: boolean) {
+    if (comments.length === 0) return null;
+    return (
+      <div className="mt-4 space-y-2">
+        <p className={"text-xs font-medium uppercase tracking-wide " + (dark ? "text-white/50" : "text-muted-foreground")}>
+          {t("sharedLink.comments")} ({comments.length})
+        </p>
+        {comments.map(function(c) {
+          var isOwn = !!c.author_email && !!visitorEmailRef.current && c.author_email.toLowerCase() === visitorEmailRef.current.toLowerCase();
+          var isEditing = editingCommentId === c.id;
+          return (
+            <div key={c.id} className={"flex gap-2 p-2 rounded-lg " + (dark ? "bg-white/8" : "bg-secondary/20")}>
+              <button
+                onClick={function() { if (effectiveDuration) handleSeekPercent((c.timestamp_sec / effectiveDuration) * 100); }}
+                className="text-xs text-brand-orange font-mono shrink-0 hover:underline mt-0.5"
+              >
+                {formatDuration(c.timestamp_sec)}
+              </button>
+              <div className="flex-1 min-w-0">
+                <p className={"text-xs font-medium " + (dark ? "text-white/80" : "text-foreground/80")}>
+                  {c.author_name}
+                  {c.is_edited && <span className={"ml-1 font-normal " + (dark ? "text-white/40" : "text-muted-foreground")}>({t("trackDetail.edited")})</span>}
+                </p>
+                {isEditing ? (
+                  <div className="flex gap-1 mt-1">
+                    <input
+                      value={editContent}
+                      onChange={function(e) { setEditContent(e.target.value); }}
+                      onKeyDown={function(e) { if (e.key === "Enter") handleSaveEdit(c); if (e.key === "Escape") { setEditingCommentId(null); setEditContent(""); } }}
+                      className={"flex-1 text-xs rounded px-2 py-1 outline-none " + (dark ? "bg-white/10 text-white placeholder:text-white/40" : "bg-secondary text-foreground")}
+                      autoFocus
+                    />
+                    <button onClick={function() { handleSaveEdit(c); }} className="text-emerald-400 px-1" title={t("trackReview.save")}><Send className="w-3.5 h-3.5" /></button>
+                    <button onClick={function() { setEditingCommentId(null); setEditContent(""); }} className={"px-1 " + (dark ? "text-white/50" : "text-muted-foreground")}><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                ) : (
+                  <p className={"text-xs mt-0.5 break-words " + (dark ? "text-white/70" : "text-foreground/70")}>{c.content}</p>
+                )}
+              </div>
+              {isOwn && !isEditing && (
+                <div className="flex gap-1 shrink-0">
+                  <button
+                    onClick={function() { setEditingCommentId(c.id); setEditContent(c.content); }}
+                    className={"p-1 rounded " + (dark ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-foreground")}
+                    title={t("sharedLink.editComment")} aria-label={t("sharedLink.editComment")}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={function() { handleDeleteComment(c.id); }}
+                    className={"p-1 rounded " + (dark ? "text-white/50 hover:text-red-400" : "text-muted-foreground hover:text-destructive")}
+                    title={t("sharedLink.deleteComment")} aria-label={t("sharedLink.deleteComment")}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   var logEvent = function(trackId: string | null, eventType: string) {
     fetch(SUPABASE_URL + "/functions/v1/log-link-event", {
       method: "POST",
@@ -1651,6 +1751,7 @@ export default function SharedLinkPage() {
                     dark={plImmersive}
                   />
                   <p className={"text-[10px] text-center " + (plImmersive ? "text-white/40" : "text-muted-foreground/40")}>{t("sharedLink.doubleClickHint")}</p>
+                  {renderCommentsList(plImmersive)}
 
                   {commentComposerOpen && !visitorIdentified && (
                     <div className="px-1">{renderIdentifyForm()}</div>
@@ -2102,7 +2203,8 @@ export default function SharedLinkPage() {
                   onSeek={handleSeekPercent}
                   dark={immersive}
                 />
-                <p className={"text-[10px] text-center " + (immersive ? "text-white/40" : "text-muted-foreground/40")}>Double-click waveform to leave a comment</p>
+                <p className={"text-[10px] text-center " + (immersive ? "text-white/40" : "text-muted-foreground/40")}>{t("sharedLink.doubleClickHint")}</p>
+                {renderCommentsList(immersive)}
 
                 {commentComposerOpen && !visitorIdentified && (
                   <div className="px-1">{renderIdentifyForm()}</div>
@@ -2119,7 +2221,7 @@ export default function SharedLinkPage() {
                         if (e.key === "Enter" && commentText.trim()) handleSubmitComment();
                         if (e.key === "Escape") { setCommentComposerOpen(false); setCommentText(""); }
                       }}
-                      placeholder="Leave a comment..."
+                      placeholder={t("sharedLink.commentPlaceholder")}
                       className={"flex-1 bg-transparent text-sm outline-none " + (immersive ? "text-white placeholder:text-white/40" : "text-foreground placeholder:text-muted-foreground")}
                     />
                     <button
