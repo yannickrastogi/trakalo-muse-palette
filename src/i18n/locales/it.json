@@ -53,6 +53,8 @@
     "recent": "+{{count}} recenti"
   },
   "catalog": {
+    "uploadedOn": "Caricato il",
+    "filterUploadDate": "Data di caricamento",
     "title": "Brani",
     "tracksInCatalog": "{{total}} brani nel tuo catalogo · {{shown}} mostrati",
     "uploadTrack": "Carica brano",
@@ -333,6 +335,8 @@
     "role_viewer": "Visualizzatore"
   },
   "trackDetail": {
+    "uploadedOn": "Caricato il",
+    "uploaded": "caricato il",
     "editTrack": "Modifica brano",
     "download": "Scarica",
     "share": "Condividi",

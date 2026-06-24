@@ -53,6 +53,8 @@
     "recent": "+{{count}} recientes"
   },
   "catalog": {
+    "uploadedOn": "Subido el",
+    "filterUploadDate": "Fecha de subida",
     "title": "Pistas",
     "tracksInCatalog": "{{total}} pistas en tu catálogo · {{shown}} mostradas",
     "uploadTrack": "Subir pista",
@@ -333,6 +335,8 @@
     "role_viewer": "Lector"
   },
   "trackDetail": {
+    "uploadedOn": "Subido el",
+    "uploaded": "subido el",
     "editTrack": "Editar pista",
     "download": "Descargar",
     "share": "Compartir",

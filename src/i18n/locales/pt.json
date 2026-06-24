@@ -53,6 +53,8 @@
     "recent": "+{{count}} recentes"
   },
   "catalog": {
+    "uploadedOn": "Enviado em",
+    "filterUploadDate": "Data de envio",
     "title": "Faixas",
     "tracksInCatalog": "{{total}} faixas no seu catálogo · {{shown}} exibidas",
     "uploadTrack": "Carregar faixa",
@@ -333,6 +335,8 @@
     "role_viewer": "Visualizador"
   },
   "trackDetail": {
+    "uploadedOn": "Enviado em",
+    "uploaded": "enviado em",
     "editTrack": "Editar faixa",
     "download": "Descarregar",
     "share": "Partilhar",

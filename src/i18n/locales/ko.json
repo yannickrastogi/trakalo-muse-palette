@@ -53,6 +53,8 @@
     "recent": "+{{count}} 최근"
   },
   "catalog": {
+    "uploadedOn": "업로드 날짜",
+    "filterUploadDate": "업로드 날짜",
     "title": "트랙",
     "tracksInCatalog": "카탈로그에 {{total}}개 트랙 · {{shown}}개 표시",
     "uploadTrack": "트랙 업로드",
@@ -333,6 +335,8 @@
     "role_viewer": "뷰어"
   },
   "trackDetail": {
+    "uploadedOn": "업로드 날짜",
+    "uploaded": "업로드",
     "editTrack": "트랙 편집",
     "download": "다운로드",
     "share": "공유",

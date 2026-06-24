@@ -69,6 +69,23 @@ export const statusColors: Record<string, string> = {
   Released: "bg-brand-purple/12 text-brand-purple",
 };
 
+/** Short upload-date label, e.g. "Jun 24, 2026". Returns "" for empty/invalid input. */
+function formatUploadDate(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+/** Maps a "YYYY-MM" key to a long month label, e.g. "June 2026". */
+function formatMonthLabel(value: string): string {
+  const [year, month] = value.split("-");
+  return new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
 // Production-stage chip: short label + colored pill. Returns null when stage is undefined.
 function productionStageBadgeProps(stage: string | undefined | null) {
   if (stage === "work_in_progress") {
@@ -105,6 +122,7 @@ export default function Catalog() {
   const [moodFeelFilter, setMoodFeelFilter] = useState<string[]>([]);
   const [tempoFilter, setTempoFilter] = useState<string | null>(null);
   const [syncTagsFilter, setSyncTagsFilter] = useState<string[]>([]);
+  const [uploadMonthFilter, setUploadMonthFilter] = useState<string | null>(null);
   const initialPerson = searchParams.get("person") || "";
   const [personFilter, setPersonFilter] = useState<string | null>(initialPerson || null);
   const [showFilters, setShowFilters] = useState(!!initialPerson);
@@ -138,11 +156,24 @@ export default function Catalog() {
   const types = useMemo(() => [...new Set(allTracks.map((t) => t.type))].sort(), [allTracks]);
   const genres = [...GENRES];
   const keys = [...KEYS];
+
+  // Upload-month options, newest first. We expose the formatted label ("June 2026")
+  // as both option and filter value so the existing string-based FilterSelect works.
+  const uploadMonthLabels = useMemo(() => {
+    const months = new Set<string>();
+    allTracks.forEach((tr) => {
+      if (!tr.createdAt) return;
+      const d = new Date(tr.createdAt);
+      if (isNaN(d.getTime())) return;
+      months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    });
+    return Array.from(months).sort().reverse().map(formatMonthLabel);
+  }, [allTracks]);
   const languages = [...LANGUAGES];
   const voices = [...GENDERS];
 
   const activeFilterCount =
-    [typeFilter, genreFilter, keyFilter, statusFilter, productionStageFilter, bpmFilter, languageFilter, voiceFilter, tempoFilter].filter(Boolean).length +
+    [typeFilter, genreFilter, keyFilter, statusFilter, productionStageFilter, bpmFilter, languageFilter, voiceFilter, tempoFilter, uploadMonthFilter].filter(Boolean).length +
     (instrumentsFilter.length > 0 ? 1 : 0) +
     (lyricThemesFilter.length > 0 ? 1 : 0) +
     (moodFeelFilter.length > 0 ? 1 : 0) +
@@ -163,6 +194,13 @@ export default function Catalog() {
       if (productionStageFilter && track.productionStage !== productionStageFilter) return false;
       if (bpmFilter && (track.bpm < bpmFilter.min || track.bpm > bpmFilter.max)) return false;
       if (languageFilter && track.language !== languageFilter) return false;
+      if (uploadMonthFilter) {
+        if (!track.createdAt) return false;
+        const d = new Date(track.createdAt);
+        if (isNaN(d.getTime())) return false;
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        if (formatMonthLabel(key) !== uploadMonthFilter) return false;
+      }
       if (voiceFilter) {
         // DB enum track_gender stores "male"|"female"|"duet"|"n_a"; UI shows "Male"|"Female"|"Duet"|"N/A".
         // Normalize the filter to match the DB shape that track.voice carries.
@@ -225,7 +263,7 @@ export default function Catalog() {
       }
       return true;
     });
-  }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, productionStageFilter, bpmFilter, languageFilter, voiceFilter, instrumentsFilter, lyricThemesFilter, moodFeelFilter, syncTagsFilter, tempoFilter, personFilter]);
+  }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, productionStageFilter, bpmFilter, languageFilter, voiceFilter, instrumentsFilter, lyricThemesFilter, moodFeelFilter, syncTagsFilter, tempoFilter, personFilter, uploadMonthFilter]);
 
   const clearFilters = () => {
     setTypeFilter(null);
@@ -242,6 +280,7 @@ export default function Catalog() {
     setTempoFilter(null);
     setSyncTagsFilter([]);
     setPersonFilter(null);
+    setUploadMonthFilter(null);
   };
 
   return (
@@ -391,6 +430,7 @@ export default function Catalog() {
                     }}
                   />
                   <FilterSelect label={t("catalog.language")} value={languageFilter} options={languages} onChange={setLanguageFilter} />
+                  <FilterSelect label={t("catalog.filterUploadDate")} value={uploadMonthFilter} options={uploadMonthLabels} onChange={setUploadMonthFilter} />
                   <FilterSelect label={t("catalog.filters.genderLabel")} value={voiceFilter} options={voices} onChange={setVoiceFilter} />
                   <FilterSelect label={t("catalog.status")} value={statusFilter} options={statuses} onChange={setStatusFilter} />
                   <FilterSelect
@@ -485,6 +525,7 @@ export default function Catalog() {
               {tempoFilter && <FilterTag key="tempo" label={t("catalog.filters.tempoChip", { value: tempoFilter })} onRemove={() => setTempoFilter(null)} />}
               {syncTagsFilter.length > 0 && <FilterTag key="sync_tags" label={t("catalog.filters.syncTagsChip", { value: syncTagsFilter.length })} onRemove={() => setSyncTagsFilter([])} />}
               {personFilter && <FilterTag key="person" label={"Person: " + personFilter} onRemove={() => setPersonFilter(null)} />}
+              {uploadMonthFilter && <FilterTag key="upload_month" label={t("catalog.filterUploadDate") + ": " + uploadMonthFilter} onRemove={() => setUploadMonthFilter(null)} />}
             </AnimatePresence>
             <button onClick={clearFilters} className="text-xs text-brand-orange hover:text-brand-pink ml-1.5 font-semibold transition-colors flex items-center gap-1">
               <X className="w-3 h-3" />
@@ -568,7 +609,7 @@ export default function Catalog() {
                               <img src={track.coverImage || DEFAULT_COVER} alt={track.title} loading="lazy" className="w-10 h-10 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5">
-                                  <p className="font-semibold text-foreground truncate text-[13px] tracking-tight leading-tight">{track.title}</p>
+                                  <p className="font-semibold text-foreground truncate text-[13px] tracking-tight leading-tight" title={track.createdAt ? `${t("catalog.uploadedOn")} ${formatUploadDate(track.createdAt)}` : undefined}>{track.title}</p>
                                   {(track.versionCount ?? 1) > 1 && (
                                     <span
                                       className="shrink-0 text-[10px] text-muted-foreground/60 font-medium"
@@ -752,7 +793,7 @@ export default function Catalog() {
                       {/* Info */}
                       <div className="p-3 space-y-1.5">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="font-semibold text-foreground text-[13px] tracking-tight truncate leading-tight flex-1 min-w-0">{track.title}</p>
+                          <p className="font-semibold text-foreground text-[13px] tracking-tight truncate leading-tight flex-1 min-w-0" title={track.createdAt ? `${t("catalog.uploadedOn")} ${formatUploadDate(track.createdAt)}` : undefined}>{track.title}</p>
                           <StarRating
                             compact
                             stats={track.ratingStats}

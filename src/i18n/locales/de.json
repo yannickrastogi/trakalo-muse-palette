@@ -53,6 +53,8 @@
     "recent": "+{{count}} kürzlich"
   },
   "catalog": {
+    "uploadedOn": "Hochgeladen am",
+    "filterUploadDate": "Upload-Datum",
     "title": "Titel",
     "tracksInCatalog": "{{total}} Titel in deinem Katalog · {{shown}} angezeigt",
     "uploadTrack": "Titel hochladen",
@@ -333,6 +335,8 @@
     "role_viewer": "Betrachter"
   },
   "trackDetail": {
+    "uploadedOn": "Hochgeladen am",
+    "uploaded": "hochgeladen am",
     "editTrack": "Titel bearbeiten",
     "download": "Herunterladen",
     "share": "Teilen",

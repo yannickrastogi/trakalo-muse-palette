@@ -53,6 +53,8 @@
     "recent": "+{{count}} 最近"
   },
   "catalog": {
+    "uploadedOn": "アップロード日",
+    "filterUploadDate": "アップロード日",
     "title": "トラック",
     "tracksInCatalog": "カタログに{{total}}トラック · {{shown}}件表示",
     "uploadTrack": "トラックをアップロード",
@@ -333,6 +335,8 @@
     "role_viewer": "ビューア"
   },
   "trackDetail": {
+    "uploadedOn": "アップロード日",
+    "uploaded": "アップロード",
     "editTrack": "トラックを編集",
     "download": "ダウンロード",
     "share": "共有",

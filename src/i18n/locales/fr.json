@@ -56,6 +56,8 @@
     "recent": "+{{count}} récents"
   },
   "catalog": {
+    "uploadedOn": "Ajouté le",
+    "filterUploadDate": "Date d'ajout",
     "title": "Morceaux",
     "tracksInCatalog": "{{total}} morceaux dans votre catalogue · {{shown}} affichés",
     "uploadTrack": "Téléverser un morceau",
@@ -405,6 +407,8 @@
     "revokeConfirmDesc": "{{name}} perdra l'accès à tous vos morceaux partagés."
   },
   "trackDetail": {
+    "uploadedOn": "Ajouté le",
+    "uploaded": "ajouté le",
     "editTrack": "Modifier le morceau",
     "download": "Télécharger",
     "share": "Partager",

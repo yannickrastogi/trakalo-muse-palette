@@ -56,6 +56,8 @@
     "recent": "+{{count}} recent"
   },
   "catalog": {
+    "uploadedOn": "Uploaded on",
+    "filterUploadDate": "Upload date",
     "title": "Tracks",
     "tracksInCatalog": "{{total}} tracks in your catalog · {{shown}} shown",
     "uploadTrack": "Upload Track",
@@ -405,6 +407,8 @@
     "revokeConfirmDesc": "{{name}} will lose access to all your shared tracks."
   },
   "trackDetail": {
+    "uploadedOn": "Uploaded on",
+    "uploaded": "uploaded",
     "editTrack": "Edit Track",
     "download": "Download",
     "share": "Share",

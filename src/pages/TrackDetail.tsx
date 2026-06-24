@@ -212,6 +212,14 @@ function buildProductionCredits(trackData: TrackData, t: (key: string) => string
   return [...standard, ...custom];
 }
 
+/** Short upload-date label, e.g. "Jun 24, 2026". Returns "" for empty/invalid input. */
+function formatUploadDate(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export default function TrackDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
@@ -1090,6 +1098,23 @@ export default function TrackDetail() {
                 />
               </div>
               <p className="text-[10px] text-muted-foreground/40 mt-2 text-center">Double-click waveform to leave a timecoded comment</p>
+
+              {/* Upload date — per-version when the track has multiple versions */}
+              {versions.length > 1 ? (
+                <p className="text-xs text-muted-foreground mt-1 text-center">
+                  {versions.map((v, i) => (
+                    <span key={v.id}>
+                      {i > 0 && " · "}
+                      <span className={v.is_active ? "text-foreground font-medium" : ""}>{v.version_name}</span>
+                      {" "}{t("trackDetail.uploaded")} {formatUploadDate(v.created_at)}
+                    </span>
+                  ))}
+                </p>
+              ) : track.createdAt ? (
+                <p className="text-xs text-muted-foreground mt-1 text-center">
+                  {t("trackDetail.uploadedOn")} {formatUploadDate(track.createdAt)}
+                </p>
+              ) : null}
 
               {/* Inline waveform comment composer */}
               <AnimatePresence>
