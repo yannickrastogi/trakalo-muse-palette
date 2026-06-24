@@ -1,5 +1,6 @@
 {
   "nav": {
+    "access": "Access",
     "dashboard": "대시보드",
     "tracks": "트랙",
     "stems": "스템",
@@ -51,6 +52,31 @@
     "recipients": "수신자 {{count}}명",
     "acrossContacts": "연락처 {{count}}명 대상",
     "recent": "+{{count}} 최근"
+  },
+  "access": {
+    "title": "Access",
+    "subtitle": "Trakalog 아티스트의 트랙을 발견하세요",
+    "tabBrowse": "둘러보기",
+    "tabBrief": "브리프 AI",
+    "tabRequests": "요청",
+    "searchPlaceholder": "제목, 아티스트로 검색...",
+    "findTracks": "트랙 찾기",
+    "briefPlaceholder": "찾고 있는 트랙을 설명하세요... 예: '아프로비트 여성 보컬, 95-105 BPM, 어둡지만 에너지 넘치는, 처음 10초간 보컬 없음'",
+    "requestButton": "요청",
+    "alreadyRequested": "요청됨",
+    "requestSent": "요청을 보냈습니다! 아티스트에게 알림이 전송됩니다.",
+    "searchesRemaining": "오늘 남은 검색 {{count}}회",
+    "unlimitedSearches": "무제한 검색",
+    "upgradeForMore": "Pro로 업그레이드하여 무제한 검색",
+    "noTracksFound": "트랙을 찾을 수 없습니다. 필터를 조정하세요.",
+    "matchScore": "{{score}}% 일치",
+    "loadMore": "더 보기",
+    "requestTitle": "액세스 요청",
+    "requestMessage": "프로젝트나 관심 이유를 설명하세요 (선택)",
+    "incomingRequests": "받은 요청",
+    "replyByEmail": "이메일로 답장",
+    "ignore": "무시",
+    "noRequests": "아직 요청이 없습니다"
   },
   "completeness": {
     "title": "트랙 완성도",
@@ -352,6 +378,8 @@
   "trackDetail": {
     "uploadedOn": "업로드 날짜",
     "uploaded": "업로드",
+    "accessPublic": "Access에 공개",
+    "accessPublicDesc": "다른 Trakalog 사용자가 이 트랙을 발견하고 요청할 수 있도록 허용",
     "editTrack": "트랙 편집",
     "download": "다운로드",
     "share": "공유",

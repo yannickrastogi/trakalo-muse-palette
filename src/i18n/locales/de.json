@@ -1,5 +1,6 @@
 {
   "nav": {
+    "access": "Access",
     "dashboard": "Dashboard",
     "tracks": "Titel",
     "stems": "Stems",
@@ -51,6 +52,31 @@
     "recipients": "{{count}} Empfänger",
     "acrossContacts": "über {{count}} Kontakte",
     "recent": "+{{count}} kürzlich"
+  },
+  "access": {
+    "title": "Access",
+    "subtitle": "Entdecke Tracks von Trakalog-Künstlern",
+    "tabBrowse": "Durchsuchen",
+    "tabBrief": "Brief-KI",
+    "tabRequests": "Anfragen",
+    "searchPlaceholder": "Nach Titel, Künstler suchen...",
+    "findTracks": "Tracks finden",
+    "briefPlaceholder": "Beschreibe die gesuchten Tracks... z. B. 'Afrobeats weibliche Stimme, 95-105 BPM, dunkel aber energiegeladen, kein Gesang in den ersten 10 Sekunden'",
+    "requestButton": "Anfragen",
+    "alreadyRequested": "Angefragt",
+    "requestSent": "Anfrage gesendet! Der Künstler wird benachrichtigt.",
+    "searchesRemaining": "{{count}} Suchen heute übrig",
+    "unlimitedSearches": "Unbegrenzte Suchen",
+    "upgradeForMore": "Upgrade auf Pro für unbegrenzte Suchen",
+    "noTracksFound": "Keine Tracks gefunden. Passe deine Filter an.",
+    "matchScore": "{{score}}% Übereinstimmung",
+    "loadMore": "Mehr laden",
+    "requestTitle": "Zugang anfragen",
+    "requestMessage": "Beschreibe dein Projekt oder dein Interesse (optional)",
+    "incomingRequests": "Eingehende Anfragen",
+    "replyByEmail": "Per E-Mail antworten",
+    "ignore": "Ignorieren",
+    "noRequests": "Noch keine Anfragen"
   },
   "completeness": {
     "title": "Track-Vollständigkeit",
@@ -352,6 +378,8 @@
   "trackDetail": {
     "uploadedOn": "Hochgeladen am",
     "uploaded": "hochgeladen am",
+    "accessPublic": "Öffentlich in Access",
+    "accessPublicDesc": "Anderen Trakalog-Nutzern erlauben, diesen Track zu entdecken und anzufragen",
     "editTrack": "Titel bearbeiten",
     "download": "Herunterladen",
     "share": "Teilen",

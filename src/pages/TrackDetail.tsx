@@ -104,6 +104,7 @@ import { type PitchEntry } from "@/components/CreatePitchModal";
 import { StemsTab } from "@/components/StemsTab";
 import { TrackCompletenessBar } from "@/components/TrackCompletenessBar";
 import { useTrackCompleteness } from "@/hooks/useTrackCompleteness";
+import { Switch } from "@/components/ui/switch";
 import { VideoSection } from "@/components/VideoSection";
 import { VersionSelector } from "@/components/VersionSelector";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
@@ -1145,6 +1146,30 @@ export default function TrackDetail() {
               {!isViewerShared && (
                 <div className="mt-4 p-4 rounded-xl border border-border/50 bg-secondary/20">
                   <TrackCompletenessBar result={completeness} />
+                </div>
+              )}
+
+              {/* Trakalog Access — opt this track into the public marketplace */}
+              {!isViewerShared && permissions.canEditTracks && (
+                <div className="mt-3 flex items-center justify-between gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">{t("trackDetail.accessPublic")}</p>
+                    <p className="text-xs text-muted-foreground">{t("trackDetail.accessPublicDesc")}</p>
+                  </div>
+                  <Switch
+                    checked={track.isMarketplacePublic ?? false}
+                    onCheckedChange={async (checked) => {
+                      if (!user || !activeWorkspace) return;
+                      updateTrack(track.id, { isMarketplacePublic: checked });
+                      const { error } = await supabase.rpc("set_track_marketplace_public", {
+                        _user_id: user.id, _track_id: track.uuid, _workspace_id: activeWorkspace.id, _public: checked,
+                      });
+                      if (error) {
+                        updateTrack(track.id, { isMarketplacePublic: !checked });
+                        toast.error(t("trackContext.failedSaveUpdate"));
+                      }
+                    }}
+                  />
                 </div>
               )}
 

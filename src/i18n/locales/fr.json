@@ -1,5 +1,6 @@
 {
   "nav": {
+    "access": "Access",
     "dashboard": "Tableau de bord",
     "tracks": "Morceaux",
     "stems": "Stems",
@@ -54,6 +55,31 @@
     "recipients": "{{count}} destinataires",
     "acrossContacts": "parmi {{count}} contacts",
     "recent": "+{{count}} récents"
+  },
+  "access": {
+    "title": "Access",
+    "subtitle": "Découvrez des tracks de tous les artistes Trakalog",
+    "tabBrowse": "Parcourir",
+    "tabBrief": "Brief IA",
+    "tabRequests": "Demandes",
+    "searchPlaceholder": "Rechercher par titre, artiste...",
+    "findTracks": "Trouver des tracks",
+    "briefPlaceholder": "Décrivez les tracks que vous cherchez... ex : « Afrobeats voix féminine, 95-105 BPM, sombre mais énergique, pas de paroles dans les 10 premières secondes »",
+    "requestButton": "Demander",
+    "alreadyRequested": "Demandé",
+    "requestSent": "Demande envoyée ! L'artiste sera notifié.",
+    "searchesRemaining": "{{count}} recherches restantes aujourd'hui",
+    "unlimitedSearches": "Recherches illimitées",
+    "upgradeForMore": "Passez à Pro pour des recherches illimitées",
+    "noTracksFound": "Aucun track trouvé. Ajustez vos filtres.",
+    "matchScore": "{{score}} % de correspondance",
+    "loadMore": "Charger plus",
+    "requestTitle": "Demander l'accès",
+    "requestMessage": "Décrivez votre projet ou pourquoi ça vous intéresse (optionnel)",
+    "incomingRequests": "Demandes reçues",
+    "replyByEmail": "Répondre par email",
+    "ignore": "Ignorer",
+    "noRequests": "Aucune demande pour l'instant"
   },
   "completeness": {
     "title": "Complétude du track",
@@ -424,6 +450,8 @@
   "trackDetail": {
     "uploadedOn": "Ajouté le",
     "uploaded": "ajouté le",
+    "accessPublic": "Public dans Access",
+    "accessPublicDesc": "Permettre aux autres utilisateurs Trakalog de découvrir et demander ce track",
     "editTrack": "Modifier le morceau",
     "download": "Télécharger",
     "share": "Partager",

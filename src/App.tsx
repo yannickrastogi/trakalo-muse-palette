@@ -37,6 +37,7 @@ const SharedLinkPage = lazy(() => import("./pages/SharedLinkPage"));
 const Guide = lazy(() => import("./pages/Guide"));
 const WorkspaceSettings = lazy(() => import("./pages/WorkspaceSettings"));
 const Contacts = lazy(() => import("./pages/Contacts"));
+const Access = lazy(() => import("./pages/Access"));
 import SettingsPage from "./pages/SettingsPage";
 import SharedLinks from "./pages/SharedLinks";
 import SharedStemAccess from "./pages/SharedStemAccess";
@@ -178,6 +179,7 @@ const MainApp = () => (
             <Route path="/pitch" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Pitch /></Suspense></ProtectedApp>} />
             <Route path="/smart-ar" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><SmartAR /></Suspense></ProtectedApp>} />
             <Route path="/radio" element={<ProtectedApp><RadioPage /></ProtectedApp>} />
+            <Route path="/access" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Access /></Suspense></ProtectedApp>} />
             <Route path="/team" element={<ProtectedApp><Team /></ProtectedApp>} />
             <Route path="/workspaces" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Workspaces /></Suspense></ProtectedApp>} />
             <Route path="/contacts" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Contacts /></Suspense></ProtectedApp>} />

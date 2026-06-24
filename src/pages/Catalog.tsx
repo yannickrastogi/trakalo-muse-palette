@@ -689,6 +689,9 @@ export default function Catalog() {
                            <td className="px-4 py-3">
                              <div className="flex flex-wrap items-center gap-1.5">
                                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
+                               {track.isMarketplacePublic && (
+                                 <span className="inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-purple/15 text-brand-purple" title={t("trackDetail.accessPublic")}>Public</span>
+                               )}
                                {(() => {
                                  const pb = productionStageBadgeProps(track.productionStage);
                                  return pb ? (
@@ -802,6 +805,9 @@ export default function Catalog() {
                         </div>
                         {/* Status + Production-stage badges */}
                         <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                          {track.isMarketplacePublic && (
+                            <span className="px-2 py-0.5 rounded-full text-2xs font-semibold backdrop-blur-md bg-brand-purple/20 text-brand-purple" title={t("trackDetail.accessPublic")}>Public</span>
+                          )}
                           {(() => {
                             const pb = productionStageBadgeProps(track.productionStage);
                             return pb ? (

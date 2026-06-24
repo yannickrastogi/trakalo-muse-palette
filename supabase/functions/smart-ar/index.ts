@@ -24,6 +24,9 @@ Deno.serve(async (req) => {
     const brief = typeof body.brief === 'string' ? body.brief.substring(0, 2000) : '';
     const track_count = body.track_count;
     const workspace_id = body.workspace_id;
+    // "personal" (default) = the caller's catalog + shares. "marketplace" = all
+    // tracks opted into Trakalog Access (is_marketplace_public = true).
+    const mode = body.mode === "marketplace" ? "marketplace" : "personal";
 
     if (!brief || !workspace_id) {
       return new Response(
@@ -39,60 +42,80 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { data: tracks, error: tracksError } = await supabase
-      .from("tracks")
-      .select("id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language, sonic_dna, tags")
-      .eq("workspace_id", workspace_id);
+    // Display columns are only fetched in marketplace mode, where we enrich the
+    // AI result with safe public fields (never splits / credits / audio_url).
+    const MARKETPLACE_COLS = "id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language, sonic_dna, tags, cover_url, audio_preview_url, track_type, workspace_id, workspaces(name)";
+    const PERSONAL_COLS = "id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language, sonic_dna, tags";
 
-    if (tracksError) {
-      return new Response(
-        JSON.stringify({ error: tracksError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    let dedupedTracks: any[] = [];
 
-    // Fetch shared tracks via catalog_shares
-    const allTracks = [...(tracks || [])];
+    if (mode === "marketplace") {
+      const { data: pub, error: pubError } = await supabase
+        .from("tracks")
+        .select(MARKETPLACE_COLS)
+        .eq("is_marketplace_public", true)
+        .eq("status", "available")
+        .limit(500);
+      if (pubError) {
+        return new Response(JSON.stringify({ error: pubError.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      dedupedTracks = pub || [];
+    } else {
+      const { data: tracks, error: tracksError } = await supabase
+        .from("tracks")
+        .select(PERSONAL_COLS)
+        .eq("workspace_id", workspace_id);
 
-    const { data: shares } = await supabase
-      .from("catalog_shares")
-      .select("source_workspace_id, track_id")
-      .eq("target_workspace_id", workspace_id)
-      .eq("status", "active");
+      if (tracksError) {
+        return new Response(
+          JSON.stringify({ error: tracksError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-    if (shares && shares.length > 0) {
-      // Individual track shares (track_id is set)
-      const individualTrackIds = shares.filter(s => s.track_id).map(s => s.track_id);
-      if (individualTrackIds.length > 0) {
-        const { data: individualTracks } = await supabase
-          .from("tracks")
-          .select("id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language, sonic_dna, tags")
-          .in("id", individualTrackIds);
-        if (individualTracks) {
-          allTracks.push(...individualTracks);
+      // Fetch shared tracks via catalog_shares
+      const allTracks = [...(tracks || [])];
+
+      const { data: shares } = await supabase
+        .from("catalog_shares")
+        .select("source_workspace_id, track_id")
+        .eq("target_workspace_id", workspace_id)
+        .eq("status", "active");
+
+      if (shares && shares.length > 0) {
+        // Individual track shares (track_id is set)
+        const individualTrackIds = shares.filter(s => s.track_id).map(s => s.track_id);
+        if (individualTrackIds.length > 0) {
+          const { data: individualTracks } = await supabase
+            .from("tracks")
+            .select(PERSONAL_COLS)
+            .in("id", individualTrackIds);
+          if (individualTracks) {
+            allTracks.push(...individualTracks);
+          }
+        }
+
+        // Full catalog shares (track_id is null)
+        const fullCatalogWsIds = [...new Set(shares.filter(s => !s.track_id).map(s => s.source_workspace_id))];
+        for (const wsId of fullCatalogWsIds) {
+          const { data: wsTracks } = await supabase
+            .from("tracks")
+            .select(PERSONAL_COLS)
+            .eq("workspace_id", wsId);
+          if (wsTracks) {
+            allTracks.push(...wsTracks);
+          }
         }
       }
 
-      // Full catalog shares (track_id is null)
-      const fullCatalogWsIds = [...new Set(shares.filter(s => !s.track_id).map(s => s.source_workspace_id))];
-      for (const wsId of fullCatalogWsIds) {
-        const { data: wsTracks } = await supabase
-          .from("tracks")
-          .select("id, title, artist, genre, bpm, key, mood, gender, duration_sec, status, featuring, language, sonic_dna, tags")
-          .eq("workspace_id", wsId);
-        if (wsTracks) {
-          allTracks.push(...wsTracks);
-        }
-      }
+      // Deduplicate by track id
+      const seenIds = new Set<string>();
+      dedupedTracks = allTracks.filter(t => {
+        if (seenIds.has(t.id)) return false;
+        seenIds.add(t.id);
+        return true;
+      });
     }
-
-    // Deduplicate by track id
-    const seenIds = new Set<string>();
-    const dedupedTracks = allTracks.filter(t => {
-      if (seenIds.has(t.id)) return false;
-      seenIds.add(t.id);
-      return true;
-    });
 
     if (dedupedTracks.length === 0) {
       return new Response(
@@ -312,6 +335,36 @@ Deno.serve(async (req) => {
     }
 
     const result = JSON.parse(content);
+
+    // In marketplace mode the caller has no local copy of these tracks, so we
+    // merge the AI ranking with SAFE public display fields (no splits/credits/
+    // original audio). The preview path is already exposed by search_marketplace_tracks.
+    if (mode === "marketplace" && Array.isArray(result.tracks)) {
+      const byId = new Map(dedupedTracks.map((t: any) => [t.id, t]));
+      result.tracks = result.tracks
+        .map((rt: any) => {
+          const t = byId.get(rt.id);
+          if (!t) return null;
+          return {
+            id: t.id,
+            score: rt.score,
+            reason: rt.reason,
+            title: t.title,
+            artist: t.artist,
+            cover_url: t.cover_url,
+            genre: t.genre,
+            mood: t.mood,
+            bpm: t.bpm,
+            key: t.key,
+            duration_sec: t.duration_sec,
+            track_type: t.track_type,
+            audio_preview_url: t.audio_preview_url,
+            workspace_id: t.workspace_id,
+            workspace_name: t.workspaces?.name ?? null,
+          };
+        })
+        .filter(Boolean);
+    }
 
     return new Response(JSON.stringify(result), {
       status: 200,

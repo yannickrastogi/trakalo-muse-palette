@@ -124,6 +124,7 @@ export interface TrackData extends WorkspaceScoped {
   videoVisibleOnShare?: boolean;
   hasVersions?: boolean;
   versionCount?: number;
+  isMarketplacePublic?: boolean;
 }
 
 export interface RatingStats {
@@ -242,6 +243,7 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
     videoVisibleOnShare: (row.video_visible_on_share as boolean) || false,
     hasVersions: (row.has_versions as boolean) || false,
     versionCount: typeof row.version_count === "number" ? (row.version_count as number) : 1,
+    isMarketplacePublic: (row.is_marketplace_public as boolean) || false,
   };
 }
 

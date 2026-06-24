@@ -1,5 +1,6 @@
 {
   "nav": {
+    "access": "Access",
     "dashboard": "Panel",
     "tracks": "Pistas",
     "stems": "Stems",
@@ -51,6 +52,31 @@
     "recipients": "{{count}} destinatarios",
     "acrossContacts": "en {{count}} contactos",
     "recent": "+{{count}} recientes"
+  },
+  "access": {
+    "title": "Access",
+    "subtitle": "Descubre tracks de artistas de Trakalog",
+    "tabBrowse": "Explorar",
+    "tabBrief": "Brief IA",
+    "tabRequests": "Solicitudes",
+    "searchPlaceholder": "Buscar por título, artista...",
+    "findTracks": "Buscar tracks",
+    "briefPlaceholder": "Describe los tracks que buscas... p. ej. 'Afrobeats voz femenina, 95-105 BPM, oscuro pero enérgico, sin voces en los primeros 10 segundos'",
+    "requestButton": "Solicitar",
+    "alreadyRequested": "Solicitado",
+    "requestSent": "¡Solicitud enviada! El artista será notificado.",
+    "searchesRemaining": "{{count}} búsquedas restantes hoy",
+    "unlimitedSearches": "Búsquedas ilimitadas",
+    "upgradeForMore": "Pasa a Pro para búsquedas ilimitadas",
+    "noTracksFound": "No se encontraron tracks. Ajusta tus filtros.",
+    "matchScore": "{{score}}% de coincidencia",
+    "loadMore": "Cargar más",
+    "requestTitle": "Solicitar acceso",
+    "requestMessage": "Describe tu proyecto o por qué te interesa (opcional)",
+    "incomingRequests": "Solicitudes recibidas",
+    "replyByEmail": "Responder por email",
+    "ignore": "Ignorar",
+    "noRequests": "Aún no hay solicitudes"
   },
   "completeness": {
     "title": "Completitud del track",
@@ -352,6 +378,8 @@
   "trackDetail": {
     "uploadedOn": "Subido el",
     "uploaded": "subido el",
+    "accessPublic": "Público en Access",
+    "accessPublicDesc": "Permite que otros usuarios de Trakalog descubran y soliciten este track",
     "editTrack": "Editar pista",
     "download": "Descargar",
     "share": "Compartir",

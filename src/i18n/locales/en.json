@@ -1,5 +1,6 @@
 {
   "nav": {
+    "access": "Access",
     "dashboard": "Dashboard",
     "tracks": "Tracks",
     "stems": "Stems",
@@ -54,6 +55,31 @@
     "recipients": "{{count}} recipients",
     "acrossContacts": "across {{count}} contacts",
     "recent": "+{{count}} recent"
+  },
+  "access": {
+    "title": "Access",
+    "subtitle": "Discover tracks from Trakalog artists",
+    "tabBrowse": "Browse",
+    "tabBrief": "Brief",
+    "tabRequests": "Requests",
+    "searchPlaceholder": "Search by title, artist...",
+    "findTracks": "Find Tracks",
+    "briefPlaceholder": "Describe the tracks you're looking for... e.g. 'Afrobeats female vocal, 95-105 BPM, dark but energetic, no lyrics in first 10 seconds'",
+    "requestButton": "Request",
+    "alreadyRequested": "Requested",
+    "requestSent": "Request sent! The artist will be notified.",
+    "searchesRemaining": "{{count}} searches remaining today",
+    "unlimitedSearches": "Unlimited searches",
+    "upgradeForMore": "Upgrade to Pro for unlimited searches",
+    "noTracksFound": "No tracks found. Try adjusting your filters.",
+    "matchScore": "{{score}}% match",
+    "loadMore": "Load more",
+    "requestTitle": "Request Access",
+    "requestMessage": "Describe your project or why you're interested (optional)",
+    "incomingRequests": "Incoming Requests",
+    "replyByEmail": "Reply by email",
+    "ignore": "Ignore",
+    "noRequests": "No requests yet"
   },
   "completeness": {
     "title": "Track Completeness",
@@ -424,6 +450,8 @@
   "trackDetail": {
     "uploadedOn": "Uploaded on",
     "uploaded": "uploaded",
+    "accessPublic": "Public in Access",
+    "accessPublicDesc": "Allow other Trakalog users to discover and request this track",
     "editTrack": "Edit Track",
     "download": "Download",
     "share": "Share",

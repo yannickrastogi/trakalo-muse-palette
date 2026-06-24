@@ -1,5 +1,6 @@
 {
   "nav": {
+    "access": "Access",
     "dashboard": "ダッシュボード",
     "tracks": "トラック",
     "stems": "ステム",
@@ -51,6 +52,31 @@
     "recipients": "{{count}}人の受信者",
     "acrossContacts": "{{count}}件の連絡先全体",
     "recent": "+{{count}} 最近"
+  },
+  "access": {
+    "title": "Access",
+    "subtitle": "Trakalogアーティストのトラックを発見",
+    "tabBrowse": "ブラウズ",
+    "tabBrief": "ブリーフAI",
+    "tabRequests": "リクエスト",
+    "searchPlaceholder": "タイトル、アーティストで検索...",
+    "findTracks": "トラックを探す",
+    "briefPlaceholder": "探しているトラックを説明してください... 例：「アフロビーツ、女性ボーカル、95〜105 BPM、ダークだがエネルギッシュ、最初の10秒は歌なし」",
+    "requestButton": "リクエスト",
+    "alreadyRequested": "リクエスト済み",
+    "requestSent": "リクエストを送信しました！アーティストに通知されます。",
+    "searchesRemaining": "本日の残り検索数：{{count}}",
+    "unlimitedSearches": "無制限の検索",
+    "upgradeForMore": "Proにアップグレードして無制限に検索",
+    "noTracksFound": "トラックが見つかりません。フィルターを調整してください。",
+    "matchScore": "{{score}}% 一致",
+    "loadMore": "もっと読み込む",
+    "requestTitle": "アクセスをリクエスト",
+    "requestMessage": "プロジェクトや興味のある理由を説明（任意）",
+    "incomingRequests": "受信したリクエスト",
+    "replyByEmail": "メールで返信",
+    "ignore": "無視",
+    "noRequests": "まだリクエストはありません"
   },
   "completeness": {
     "title": "トラックの完成度",
@@ -352,6 +378,8 @@
   "trackDetail": {
     "uploadedOn": "アップロード日",
     "uploaded": "アップロード",
+    "accessPublic": "Accessで公開",
+    "accessPublicDesc": "他のTrakalogユーザーがこのトラックを発見してリクエストできるようにする",
     "editTrack": "トラックを編集",
     "download": "ダウンロード",
     "share": "共有",

@@ -18,6 +18,7 @@ import {
   Sparkles,
   Radio,
   Building2,
+  Compass,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -34,6 +35,7 @@ const navItems = [
   { titleKey: "nav.playlists", icon: ListMusic, url: "/playlists", permKey: null, tourKey: "sidebar-playlists" },
   { titleKey: "nav.pitch", icon: Send, url: "/pitch", permKey: "canSendPitches" as const, tourKey: "sidebar-pitch" },
   { titleKey: "nav.contacts", icon: Users, url: "/contacts", permKey: null, tourKey: "sidebar-contacts" },
+  { titleKey: "nav.access", icon: Compass, url: "/access", permKey: null, tourKey: "sidebar-access" },
   { titleKey: "nav.sharedLinks", icon: Link2, url: "/shared-links", permKey: null, tourKey: "sidebar-shared-links" },
   { titleKey: "nav.workspace", icon: Building2, url: "/workspace-settings", permKey: "canAccessSettings" as const, tourKey: "sidebar-workspace-settings" },
   { titleKey: "nav.approvals", icon: CheckCircle, url: "/approvals", permKey: "canManageTeam" as const, tourKey: "sidebar-approvals" },
