@@ -137,8 +137,8 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
               timestampSeconds: Number(c.timestamp_sec),
               timestampLabel: formatTimestamp(Number(c.timestamp_sec)),
               createdAt: c.created_at,
-              updatedAt: c.created_at,
-              isEdited: false,
+              updatedAt: c.updated_at || c.created_at,
+              isEdited: !!c.is_edited,
               sourceContext: "shared_link_review" as SourceContext,
               sharedLinkId: c.shared_link_id || undefined,
               sharedLinkName: undefined,
@@ -181,8 +181,8 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
                   timestampSeconds: Number(c.timestamp_sec),
                   timestampLabel: formatTimestamp(Number(c.timestamp_sec)),
                   createdAt: c.created_at,
-                  updatedAt: c.created_at,
-                  isEdited: false,
+                  updatedAt: c.updated_at || c.created_at,
+                  isEdited: !!c.is_edited,
                   sourceContext: "shared_link_review" as SourceContext,
                   sharedLinkId: c.shared_link_id || undefined,
                   sharedLinkName: undefined,
@@ -316,7 +316,15 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       persistCommentsForTrack(target.trackId, updated.filter((c) => c.trackId === target.trackId))
         .catch(function (err) { console.error("Error:", err); });
     }
-  }, [persistCommentsForTrack]);
+
+    // Also edit in the track_comments table via RPC (editor-gated, sets is_edited).
+    // No-op for legacy "rc-" waveform_data comments (their id isn't a table row).
+    if (user) {
+      supabase.rpc("edit_track_comment", { _comment_id: commentId, _user_id: user.id, _new_content: newText })
+        .then(({ error: editErr }) => { if (editErr) console.error("Error editing track_comment:", editErr); })
+        .catch(function (err) { console.error("Error:", err); });
+    }
+  }, [persistCommentsForTrack, user]);
 
   const deleteComment = useCallback((commentId: string) => {
     setComments((prev) =>
@@ -335,12 +343,15 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
         .catch(function (err) { console.error("Error:", err); });
     }
 
-    // Also delete from track_comments table via RPC (SECURITY DEFINER) to bypass RLS
-    supabase.rpc("delete_track_comment", { _comment_id: commentId })
-      .then(({ error: delErr }) => {
-        if (delErr) console.error("Error deleting from track_comments:", delErr);
-      }).catch(function (err) { console.error("Error:", err); });
-  }, [persistCommentsForTrack]);
+    // Also delete from track_comments table via RPC (editor-gated). No-op for
+    // legacy "rc-" waveform_data comments.
+    if (user) {
+      supabase.rpc("delete_track_comment", { _comment_id: commentId, _user_id: user.id })
+        .then(({ error: delErr }) => {
+          if (delErr) console.error("Error deleting from track_comments:", delErr);
+        }).catch(function (err) { console.error("Error:", err); });
+    }
+  }, [persistCommentsForTrack, user]);
 
   const getFilteredComments = useCallback(
     (trackId: string, filter: CommentFilter, currentUserId: string, searchQuery?: string) => {

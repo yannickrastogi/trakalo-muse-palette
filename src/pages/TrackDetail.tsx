@@ -539,7 +539,7 @@ export default function TrackDetail() {
     { id: "stems", label: "Stems" },
     { id: "details", label: "Details" },
     { id: "activity", label: engagement ? "Activity (" + engagement.totalPlays + ")" : "Activity" },
-    { id: "review", label: commentCount ? "Notes (" + commentCount + ")" : "Notes" },
+    { id: "review", label: commentCount ? t("trackDetail.tabComments") + " (" + commentCount + ")" : t("trackDetail.tabComments") },
   ];
   const tabs = isViewerShared
     ? allTabs.filter(function (tab) { return tab.id !== "stems" && tab.id !== "activity"; })
@@ -1372,6 +1372,7 @@ export default function TrackDetail() {
                    isPlaying={isThisTrackPlaying}
                    filterAuthor={commentFilterAuthor}
                    filterSharedLink={commentFilterLink}
+                   canModerate={!isViewerShared && permissions.canEditTracks}
                  />
                  </div>
                )}

@@ -38,6 +38,13 @@ interface TrackReviewPanelProps {
   isPlaying?: boolean;
   filterAuthor?: string | null;
   filterSharedLink?: string | null;
+  /** Editor/Admin of the workspace — can edit team comments and delete any comment. */
+  canModerate?: boolean;
+}
+
+const TEAM_TYPES: AuthorType[] = ["owner", "team_member"];
+function isTeam(c: TimecodedComment): boolean {
+  return TEAM_TYPES.includes(c.authorType);
 }
 
 interface CommentGroup {
@@ -57,6 +64,7 @@ export function TrackReviewPanel({
   totalDurationSeconds,
   filterAuthor,
   filterSharedLink,
+  canModerate = false,
 }: TrackReviewPanelProps) {
   const { t } = useTranslation();
   const { getCommentsForTrack, getSortedComments, editComment, deleteComment, addComment } = useTrackReview();
@@ -93,37 +101,16 @@ export function TrackReviewPanel({
 
   const sorted = useMemo(() => getSortedComments(filtered, sort), [filtered, sort, getSortedComments]);
 
-  // Group by shared link (for owner view), with "Direct comments" for non-link comments
-  const commentGroups = useMemo(() => {
-    const map = new Map<string, CommentGroup>();
-    sorted.forEach((c) => {
-      const key = c.sharedLinkId || "__direct__";
-      const existing = map.get(key);
-      if (existing) {
-        existing.comments.push(c);
-        if (c.createdAt > existing.latestDate) existing.latestDate = c.createdAt;
-      } else {
-        const isDirectComment = !c.sharedLinkId;
-        map.set(key, {
-          key,
-          label: isDirectComment ? t("trackReview.directComments") : ("Shared Link: " + (c.sharedLinkName || c.sharedLinkId || "Unknown")),
-          sublabel: isDirectComment ? undefined : c.sharedLinkName,
-          badgeType: isDirectComment ? (c.authorType) : "guest_recipient",
-          comments: [c],
-          latestDate: c.createdAt,
-        });
-      }
-    });
-
-    // Direct/owner first, then shared links by most recent
-    const groups = Array.from(map.values());
-    groups.sort((a, b) => {
-      if (a.key === "__direct__") return -1;
-      if (b.key === "__direct__") return 1;
-      return new Date(b.latestDate).getTime() - new Date(a.latestDate).getTime();
-    });
+  // Two fixed sections: Team (owner/team_member) and Recipients (recipient/guest).
+  const commentGroups = useMemo<CommentGroup[]>(() => {
+    const team = sorted.filter(isTeam);
+    const recipients = sorted.filter((c) => !isTeam(c));
+    const groups: CommentGroup[] = [];
+    const latest = (arr: TimecodedComment[]) => arr.reduce((m, c) => (c.createdAt > m ? c.createdAt : m), arr[0]?.createdAt || "");
+    groups.push({ key: "team", label: t("trackDetail.teamComments"), badgeType: "team_member", comments: team, latestDate: latest(team) });
+    groups.push({ key: "recipient", label: t("trackDetail.recipientComments"), badgeType: "recipient", comments: recipients, latestDate: latest(recipients) });
     return groups;
-  }, [sorted]);
+  }, [sorted, t]);
 
   const handleSeek = useCallback(
     (seconds: number) => onSeek(seconds, totalDurationSeconds),
@@ -182,7 +169,7 @@ export function TrackReviewPanel({
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2.5">
             <MessageSquare className="w-4.5 h-4.5 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground">{t("trackReview.title")}</h3>
+            <h3 className="text-sm font-semibold text-foreground">{t("trackDetail.tabComments")}</h3>
             <span className="text-2xs text-muted-foreground font-medium">({sorted.length})</span>
           </div>
           <button
@@ -238,11 +225,11 @@ export function TrackReviewPanel({
 
         {/* Grouped comments */}
         <div className="max-h-[600px] overflow-y-auto">
-          {commentGroups.length === 0 ? (
+          {commentGroups.every((g) => g.comments.length === 0) ? (
             <EmptyState
               icon={StickyNote}
-              title="No notes yet"
-              description="Notes you add during upload or editing appear here. Feedback from shared link recipients will also show up."
+              title={t("trackDetail.tabComments")}
+              description={t("trackReview.noComments")}
             />
           ) : (
             <div className="divide-y divide-border">
@@ -250,7 +237,7 @@ export function TrackReviewPanel({
                 const badgeClass = authorTypeBadgeClass[group.badgeType];
                 const badgeKey = authorTypeBadgeKey[group.badgeType];
                 const isCollapsed = collapsedGroups.has(group.key);
-                const dateStr = new Date(group.latestDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+                const dateStr = group.latestDate ? new Date(group.latestDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
 
                 return (
                   <div key={group.key}>
@@ -279,9 +266,16 @@ export function TrackReviewPanel({
                           className="overflow-hidden"
                         >
                           <div className="divide-y divide-border/30">
+                            {group.comments.length === 0 && (
+                              <p className="px-5 pl-12 py-4 text-xs text-muted-foreground italic">
+                                {group.key === "team" ? t("trackDetail.noTeamComments") : t("trackDetail.noRecipientComments")}
+                              </p>
+                            )}
                             {group.comments.map((comment) => {
-                              const isOwn = comment.authorName === currentUserName;
                               const isEditing = editingId === comment.id;
+                              // Team comments: editor can edit + delete. Recipient comments: editor can delete only.
+                              const canEditThis = canModerate && isTeam(comment);
+                              const canDeleteThis = canModerate;
 
                               return (
                                 <div
@@ -334,28 +328,33 @@ export function TrackReviewPanel({
                                     </div>
 
                                     {/* Actions */}
-                                    {isOwn && !isEditing && (
+                                    {(canEditThis || canDeleteThis) && !isEditing && (
                                       <div className="relative shrink-0">
                                         <button
                                           onClick={() => setOpenMenuId(openMenuId === comment.id ? null : comment.id)}
                                           className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-secondary transition-colors opacity-0 group-hover:opacity-100"
+                                          title={t("trackReview.edit")}
                                         >
                                           <MoreHorizontal className="w-4 h-4" />
                                         </button>
                                         {openMenuId === comment.id && (
                                           <div className="absolute right-0 top-8 z-20 w-32 bg-popover border border-border rounded-lg shadow-lg py-1" style={{ boxShadow: "var(--shadow-elevated)" }}>
-                                            <button
-                                              onClick={() => handleEdit(comment)}
-                                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-secondary transition-colors"
-                                            >
-                                              <Edit3 className="w-3 h-3" /> {t("trackReview.edit")}
-                                            </button>
-                                            <button
-                                              onClick={() => { setDeleteConfirmId(comment.id); setOpenMenuId(null); }}
-                                              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 transition-colors"
-                                            >
-                                              <Trash2 className="w-3 h-3" /> {t("trackReview.deleteBtn")}
-                                            </button>
+                                            {canEditThis && (
+                                              <button
+                                                onClick={() => handleEdit(comment)}
+                                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-secondary transition-colors"
+                                              >
+                                                <Edit3 className="w-3 h-3" /> {t("trackDetail.editComment")}
+                                              </button>
+                                            )}
+                                            {canDeleteThis && (
+                                              <button
+                                                onClick={() => { setDeleteConfirmId(comment.id); setOpenMenuId(null); }}
+                                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-destructive/10 transition-colors"
+                                              >
+                                                <Trash2 className="w-3 h-3" /> {t("trackDetail.deleteComment")}
+                                              </button>
+                                            )}
                                           </div>
                                         )}
                                       </div>
@@ -380,7 +379,7 @@ export function TrackReviewPanel({
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("trackReview.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogTitle>{t("trackDetail.confirmDeleteComment")}</AlertDialogTitle>
             <AlertDialogDescription>
               {t("trackReview.deleteConfirm")}
             </AlertDialogDescription>

@@ -376,6 +376,15 @@
     "role_viewer": "Lector"
   },
   "trackDetail": {
+    "tabComments": "Comentarios",
+    "teamComments": "Equipo",
+    "recipientComments": "Destinatarios",
+    "editComment": "Editar comentario",
+    "deleteComment": "Eliminar comentario",
+    "confirmDeleteComment": "¿Eliminar este comentario?",
+    "edited": "editado",
+    "noTeamComments": "Aún no hay comentarios del equipo",
+    "noRecipientComments": "Aún no hay comentarios de destinatarios",
     "uploadedOn": "Subido el",
     "uploaded": "subido el",
     "accessPublic": "Público en Access",
@@ -1586,6 +1595,12 @@
     "goBack": "Volver"
   },
   "sharedLink": {
+    "identifyToComment": "Deja tus datos para comentar",
+    "firstName": "Nombre",
+    "email": "Email",
+    "role": "Rol",
+    "company": "Empresa",
+    "continueToComment": "Continuar",
     "expiresOn": "Este enlace expira el {{date}}",
     "linkDisabled": "Este enlace ha sido desactivado.",
     "linkRevoked": "Este enlace ha sido revocado.",

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { Lock, Play, Pause, Volume2, VolumeX, Music, AlertCircle, Clock, Disc3, Download, ListMusic, SkipBack, SkipForward, User, Send, X, ChevronDown, ChevronUp, FileText, Package, Loader2, MessageSquare, Bookmark, ShieldCheck, Award } from "lucide-react";
 import { DEFAULT_COVER, INDUSTRY_ROLES, COUNTRIES } from "@/lib/constants";
@@ -1008,6 +1009,44 @@ export default function SharedLinkPage() {
     logEvent(null, "view");
   };
 
+  // FIX 3: when a link has the gate disabled (gate_screen_enabled === false) the
+  // visitor reaches the page without identifying. Require name + email inline
+  // before they can comment, mirroring the gate (cookie + contact via log-link-access).
+  var visitorIdentified = !!(visitorName.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(visitorEmail.trim()));
+
+  var handleIdentify = function() {
+    if (!visitorName.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(visitorEmail.trim())) {
+      toast.error(t("sharedLink.gate.errorEmail"));
+      return;
+    }
+    visitorEmailRef.current = visitorEmail.trim();
+    setVisitorCookie({ name: visitorName.trim(), email: visitorEmail.trim(), role: visitorRole.trim(), company: visitorCompany.trim() });
+    fetch(SUPABASE_URL + "/functions/v1/log-link-access", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY },
+      body: JSON.stringify({
+        slug: slug, name: visitorName.trim(), email: visitorEmail.trim(),
+        role: visitorRole.trim(), company: visitorCompany.trim(),
+        city: visitorCity.trim(), country: visitorCountry,
+      }),
+    }).catch(function(err) { console.error("Failed to log access:", err); });
+  };
+
+  var renderIdentifyForm = function() {
+    return (
+      <div className="space-y-3 p-4 rounded-lg bg-secondary/30 border border-border">
+        <p className="text-sm font-medium text-foreground">{t("sharedLink.identifyToComment")}</p>
+        <div className="grid grid-cols-2 gap-2">
+          <input value={visitorName} onChange={function(e) { setVisitorName(e.target.value); }} placeholder={t("sharedLink.firstName")} className="h-9 px-3 rounded-lg bg-card border border-border text-sm text-foreground outline-none focus:border-brand-pink/40" />
+          <input value={visitorEmail} onChange={function(e) { setVisitorEmail(e.target.value); }} type="email" placeholder={t("sharedLink.email")} className="h-9 px-3 rounded-lg bg-card border border-border text-sm text-foreground outline-none focus:border-brand-pink/40" />
+          <input value={visitorRole} onChange={function(e) { setVisitorRole(e.target.value); }} placeholder={t("sharedLink.role")} className="h-9 px-3 rounded-lg bg-card border border-border text-sm text-foreground outline-none focus:border-brand-pink/40" />
+          <input value={visitorCompany} onChange={function(e) { setVisitorCompany(e.target.value); }} placeholder={t("sharedLink.company")} className="h-9 px-3 rounded-lg bg-card border border-border text-sm text-foreground outline-none focus:border-brand-pink/40" />
+        </div>
+        <button onClick={handleIdentify} className="px-4 py-2 rounded-lg text-sm font-semibold btn-brand">{t("sharedLink.continueToComment")}</button>
+      </div>
+    );
+  };
+
   var logEvent = function(trackId: string | null, eventType: string) {
     fetch(SUPABASE_URL + "/functions/v1/log-link-event", {
       method: "POST",
@@ -1613,7 +1652,10 @@ export default function SharedLinkPage() {
                   />
                   <p className={"text-[10px] text-center " + (plImmersive ? "text-white/40" : "text-muted-foreground/40")}>{t("sharedLink.doubleClickHint")}</p>
 
-                  {commentComposerOpen && (
+                  {commentComposerOpen && !visitorIdentified && (
+                    <div className="px-1">{renderIdentifyForm()}</div>
+                  )}
+                  {commentComposerOpen && visitorIdentified && (
                     <div className={"flex items-center gap-2 px-3 py-2.5 rounded-xl " + (plImmersive ? "bg-white/10 backdrop-blur border border-white/10" : "bg-secondary/80 border border-border")}>
                       <span className="text-[11px] font-mono text-brand-pink whitespace-nowrap">{formatDuration(commentTimestamp)}</span>
                       <input
@@ -2062,7 +2104,10 @@ export default function SharedLinkPage() {
                 />
                 <p className={"text-[10px] text-center " + (immersive ? "text-white/40" : "text-muted-foreground/40")}>Double-click waveform to leave a comment</p>
 
-                {commentComposerOpen && (
+                {commentComposerOpen && !visitorIdentified && (
+                  <div className="px-1">{renderIdentifyForm()}</div>
+                )}
+                {commentComposerOpen && visitorIdentified && (
                   <div className={"flex items-center gap-2 px-3 py-2.5 rounded-xl " + (immersive ? "bg-white/10 backdrop-blur border border-white/10" : "bg-secondary/80 border border-border")}>
                     <span className="text-[11px] font-mono text-brand-pink whitespace-nowrap">{formatDuration(commentTimestamp)}</span>
                     <input

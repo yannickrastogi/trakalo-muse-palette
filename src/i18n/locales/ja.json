@@ -376,6 +376,15 @@
     "role_viewer": "ビューア"
   },
   "trackDetail": {
+    "tabComments": "コメント",
+    "teamComments": "チーム",
+    "recipientComments": "受信者",
+    "editComment": "コメントを編集",
+    "deleteComment": "コメントを削除",
+    "confirmDeleteComment": "このコメントを削除しますか？",
+    "edited": "編集済み",
+    "noTeamComments": "チームのコメントはまだありません",
+    "noRecipientComments": "受信者のコメントはまだありません",
     "uploadedOn": "アップロード日",
     "uploaded": "アップロード",
     "accessPublic": "Accessで公開",
@@ -1586,6 +1595,12 @@
     "goBack": "戻る"
   },
   "sharedLink": {
+    "identifyToComment": "コメントするには情報を入力してください",
+    "firstName": "名前",
+    "email": "メール",
+    "role": "役割",
+    "company": "会社",
+    "continueToComment": "続ける",
     "expiresOn": "このリンクの有効期限は{{date}}です",
     "linkDisabled": "このリンクは無効化されています。",
     "linkRevoked": "このリンクは取り消されました。",

@@ -376,6 +376,15 @@
     "role_viewer": "Betrachter"
   },
   "trackDetail": {
+    "tabComments": "Kommentare",
+    "teamComments": "Team",
+    "recipientComments": "Empfänger",
+    "editComment": "Kommentar bearbeiten",
+    "deleteComment": "Kommentar löschen",
+    "confirmDeleteComment": "Diesen Kommentar löschen?",
+    "edited": "bearbeitet",
+    "noTeamComments": "Noch keine Team-Kommentare",
+    "noRecipientComments": "Noch keine Empfänger-Kommentare",
     "uploadedOn": "Hochgeladen am",
     "uploaded": "hochgeladen am",
     "accessPublic": "Öffentlich in Access",
@@ -1586,6 +1595,12 @@
     "goBack": "Zurück"
   },
   "sharedLink": {
+    "identifyToComment": "Hinterlasse deine Infos zum Kommentieren",
+    "firstName": "Vorname",
+    "email": "E-Mail",
+    "role": "Rolle",
+    "company": "Firma",
+    "continueToComment": "Weiter",
     "expiresOn": "Dieser Link läuft am {{date}} ab",
     "linkDisabled": "Dieser Link wurde deaktiviert.",
     "linkRevoked": "Dieser Link wurde widerrufen.",

@@ -448,6 +448,15 @@
     "revokeConfirmDesc": "{{name}} will lose access to all your shared tracks."
   },
   "trackDetail": {
+    "tabComments": "Comments",
+    "teamComments": "Team",
+    "recipientComments": "Recipients",
+    "editComment": "Edit comment",
+    "deleteComment": "Delete comment",
+    "confirmDeleteComment": "Delete this comment?",
+    "edited": "edited",
+    "noTeamComments": "No team comments yet",
+    "noRecipientComments": "No recipient comments yet",
     "uploadedOn": "Uploaded on",
     "uploaded": "uploaded",
     "accessPublic": "Public in Access",
@@ -1667,6 +1676,12 @@
     "goBack": "Go Back"
   },
   "sharedLink": {
+    "identifyToComment": "Leave your info to comment",
+    "firstName": "First name",
+    "email": "Email",
+    "role": "Role",
+    "company": "Company",
+    "continueToComment": "Continue",
     "expiresOn": "This link expires on {{date}}",
     "linkDisabled": "This link has been disabled.",
     "linkRevoked": "This link has been revoked.",

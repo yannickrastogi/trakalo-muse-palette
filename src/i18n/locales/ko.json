@@ -376,6 +376,15 @@
     "role_viewer": "뷰어"
   },
   "trackDetail": {
+    "tabComments": "댓글",
+    "teamComments": "팀",
+    "recipientComments": "수신자",
+    "editComment": "댓글 편집",
+    "deleteComment": "댓글 삭제",
+    "confirmDeleteComment": "이 댓글을 삭제할까요?",
+    "edited": "편집됨",
+    "noTeamComments": "아직 팀 댓글이 없습니다",
+    "noRecipientComments": "아직 수신자 댓글이 없습니다",
     "uploadedOn": "업로드 날짜",
     "uploaded": "업로드",
     "accessPublic": "Access에 공개",
@@ -1586,6 +1595,12 @@
     "goBack": "뒤로 가기"
   },
   "sharedLink": {
+    "identifyToComment": "댓글을 남기려면 정보를 입력하세요",
+    "firstName": "이름",
+    "email": "이메일",
+    "role": "역할",
+    "company": "회사",
+    "continueToComment": "계속",
     "expiresOn": "이 링크는 {{date}}에 만료됩니다",
     "linkDisabled": "이 링크가 비활성화되었습니다.",
     "linkRevoked": "이 링크가 취소되었습니다.",

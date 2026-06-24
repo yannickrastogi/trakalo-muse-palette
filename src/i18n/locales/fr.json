@@ -448,6 +448,15 @@
     "revokeConfirmDesc": "{{name}} perdra l'accès à tous vos morceaux partagés."
   },
   "trackDetail": {
+    "tabComments": "Commentaires",
+    "teamComments": "Équipe",
+    "recipientComments": "Destinataires",
+    "editComment": "Modifier le commentaire",
+    "deleteComment": "Supprimer le commentaire",
+    "confirmDeleteComment": "Supprimer ce commentaire ?",
+    "edited": "modifié",
+    "noTeamComments": "Aucun commentaire d'équipe",
+    "noRecipientComments": "Aucun commentaire de destinataire",
     "uploadedOn": "Ajouté le",
     "uploaded": "ajouté le",
     "accessPublic": "Public dans Access",
@@ -1667,6 +1676,12 @@
     "goBack": "Retour"
   },
   "sharedLink": {
+    "identifyToComment": "Laissez vos infos pour commenter",
+    "firstName": "Prénom",
+    "email": "E-mail",
+    "role": "Rôle",
+    "company": "Société",
+    "continueToComment": "Continuer",
     "expiresOn": "Ce lien expire le {{date}}",
     "linkDisabled": "Ce lien a été désactivé.",
     "linkRevoked": "Ce lien a été révoqué.",
