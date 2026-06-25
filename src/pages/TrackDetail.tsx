@@ -1155,6 +1155,9 @@ export default function TrackDetail() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground">{t("trackDetail.accessPublic")}</p>
                     <p className="text-xs text-muted-foreground">{t("trackDetail.accessPublicDesc")}</p>
+                    <a href="/access" target="_blank" rel="noopener noreferrer" className="text-xs text-brand-orange hover:underline mt-1 inline-block">
+                      {t("trackDetail.accessPublicLink")} →
+                    </a>
                   </div>
                   <Switch
                     checked={track.isMarketplacePublic ?? false}

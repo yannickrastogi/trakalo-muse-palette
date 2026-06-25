@@ -57,6 +57,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 
 const MAX_TRACKS = 50;
 
@@ -112,6 +113,7 @@ interface TrackEntry {
   trackType: string;
   productionStage: ProductionStage;
   status: string;
+  isMarketplacePublic: boolean;
   voice: string;
   language: string;
   notes: string;
@@ -249,6 +251,7 @@ function createTrackEntry(file: File): TrackEntry {
     trackType: "Song",
     productionStage: "work_in_progress",
     status: "Available",
+    isMarketplacePublic: false,
     voice: "",
     language: "",
     notes: "",
@@ -296,6 +299,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   // Phase: "upload" (drag & drop) → "common" (multi-track shared info) → "edit" (per-track) → done
   const [phase, setPhase] = useState<"upload" | "common" | "edit">("upload");
   const [queue, setQueue] = useState<TrackEntry[]>([]);
+  // Bulk Trakalog Access opt-in, applied to every track of a Quick/Skip-review upload.
+  const [bulkMarketplacePublic, setBulkMarketplacePublic] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [editStep, setEditStep] = useState(0); // 0=Info, 1=Stems, 2=Lyrics, 3=Splits, 4=Review
   const [isDragOver, setIsDragOver] = useState(false);
@@ -777,6 +782,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         key: currentTrack.trackKey || "",
         duration: currentTrack.analysisResult?.duration || "0:00",
         status: currentTrack.status || "Available",
+        isMarketplacePublic: currentTrack.isMarketplacePublic ?? false,
         language: currentTrack.language || "",
         voice: currentTrack.voice || "N/A",
         type: currentTrack.trackType || "Song",
@@ -1085,6 +1091,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     setPhase("upload");
     queue.forEach((e) => { if (e.compressed?.url) URL.revokeObjectURL(e.compressed.url); });
     setQueue([]);
+    setBulkMarketplacePublic(false);
     setCurrentIdx(0);
     setEditStep(0);
     setIsDragOver(false);
@@ -1440,6 +1447,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           key: "",
           duration: entry.analysisResult?.duration || "0:00",
           status: entry.status || "Available",
+          isMarketplacePublic: bulkMarketplacePublic,
           language: "",
           voice: "N/A",
           type: "Song",
@@ -1558,7 +1566,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       setQuickUploadIdx(-1);
       setQuickUploadDone(false);
     }
-  }, [queue, isSaving, addTrack, activeWorkspace, uploadFileWithProgress, onOpenChange]);
+  }, [queue, isSaving, addTrack, activeWorkspace, uploadFileWithProgress, onOpenChange, bulkMarketplacePublic]);
 
   // ─── Skip Review — bulk upload all queue entries with FULL per-entry metadata ──
   // Mirrors saveCurrentTrack's logic per track (audio upload + waveform + addTrack +
@@ -1622,6 +1630,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             key: entry.trackKey || "",
             duration: entry.analysisResult?.duration || "0:00",
             status: entry.status || "Available",
+            isMarketplacePublic: bulkMarketplacePublic || entry.isMarketplacePublic,
             language: entry.language || "",
             voice: entry.voice || "N/A",
             type: entry.trackType || "Song",
@@ -1876,7 +1885,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       setUploadStage("");
       // Note: don't reset skipReviewIdx / skipReviewDone here — the success UI reads them.
     }
-  }, [queue, isSaving, addTrack, activeWorkspace, uploadFileWithProgress, user, refreshTracks, refreshContacts]);
+  }, [queue, isSaving, addTrack, activeWorkspace, uploadFileWithProgress, user, refreshTracks, refreshContacts, bulkMarketplacePublic]);
 
   // ─── Render ────────────────────────────────────────────────
 
@@ -2027,6 +2036,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   trackType={currentTrack.trackType} setTrackType={(v) => updateCurrent({ trackType: v })}
                   productionStage={currentTrack.productionStage || "work_in_progress"} setProductionStage={(v) => updateCurrent({ productionStage: v })}
                   status={currentTrack.status || "Available"} setStatus={(v) => updateCurrent({ status: v })}
+                  isMarketplacePublic={currentTrack.isMarketplacePublic ?? false} setIsMarketplacePublic={(v) => updateCurrent({ isMarketplacePublic: v })}
                   voice={currentTrack.voice} setVoice={(v) => updateCurrent({ voice: v })}
                   language={currentTrack.language} setLanguage={(v) => updateCurrent({ language: v })}
                   notes={currentTrack.notes} setNotes={(v) => updateCurrent({ notes: v })}
@@ -2408,6 +2418,15 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                       {queue.length} / {MAX_TRACKS} {t("common.tracks")}
                     </span>
                   </div>
+                  {queue.length > 0 && !allProcessing && (
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-secondary/30 mb-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">{t("uploadTrack.accessPublic")}</p>
+                        <p className="text-xs text-muted-foreground">{t("uploadTrack.accessPublicDescShort")}</p>
+                      </div>
+                      <Switch checked={bulkMarketplacePublic} onCheckedChange={setBulkMarketplacePublic} />
+                    </div>
+                  )}
                   {queue.length > 0 && !allProcessing && (
                     <div className="flex gap-3">
                       {/* Quick Upload */}
@@ -3171,6 +3190,7 @@ function StepInfo({
   trackType, setTrackType,
   productionStage, setProductionStage,
   status, setStatus,
+  isMarketplacePublic, setIsMarketplacePublic,
   voice, setVoice,
   language, setLanguage, notes, setNotes,
   analysisResult, analyzing,
@@ -3185,6 +3205,7 @@ function StepInfo({
   trackType: string; setTrackType: (v: string) => void;
   productionStage: ProductionStage; setProductionStage: (v: ProductionStage) => void;
   status: string; setStatus: (v: string) => void;
+  isMarketplacePublic: boolean; setIsMarketplacePublic: (v: boolean) => void;
   voice: string; setVoice: (v: string) => void;
   language: string; setLanguage: (v: string) => void;
   notes: string; setNotes: (v: string) => void;
@@ -3382,6 +3403,17 @@ function StepInfo({
             <option key={opt} value={opt}>{opt}</option>
           ))}
         </select>
+      </div>
+      {/* Trakalog Access */}
+      <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-secondary/30 border border-border">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground">{t("uploadTrack.accessPublic")}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("uploadTrack.accessPublicDesc")}</p>
+          <a href="/access" target="_blank" rel="noopener noreferrer" className="text-xs text-brand-orange hover:underline mt-1 inline-block">
+            {t("uploadTrack.accessPublicLink")} →
+          </a>
+        </div>
+        <Switch checked={isMarketplacePublic} onCheckedChange={setIsMarketplacePublic} />
       </div>
       <div className="space-y-1.5">
         <FieldLabel>{t("uploadTrack.notes")}</FieldLabel>

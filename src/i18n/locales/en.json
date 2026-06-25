@@ -461,6 +461,7 @@
     "uploaded": "uploaded",
     "accessPublic": "Public in Access",
     "accessPublicDesc": "Allow other Trakalog users to discover and request this track",
+    "accessPublicLink": "See Trakalog Access",
     "editTrack": "Edit Track",
     "download": "Download",
     "share": "Share",
@@ -1011,6 +1012,10 @@
     "unknownDevice": "Unknown Device"
   },
   "uploadTrack": {
+    "accessPublic": "Public in Trakalog Access",
+    "accessPublicDesc": "Allow music supervisors, labels and A&R to discover this track in the global Trakalog catalog.",
+    "accessPublicDescShort": "Make all tracks discoverable in Trakalog Access",
+    "accessPublicLink": "See what Access looks like",
     "status": "Status",
     "title": "Upload Track",
     "uploadTracks": "Upload Tracks",

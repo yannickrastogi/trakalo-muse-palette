@@ -744,6 +744,19 @@ export function TrackProvider({ children }: { children: ReactNode }) {
             _updates: metaPayload,
           });
         }
+
+        // Trakalog Access opt-in. Uses the dedicated RPC (not update_track, which
+        // rolls back on non-whitelisted columns). Only when explicitly enabled —
+        // the column defaults to false.
+        if (trackInput.isMarketplacePublic) {
+          const { error: mpError } = await supabase.rpc("set_track_marketplace_public", {
+            _user_id: user.id,
+            _track_id: trackUuid,
+            _workspace_id: activeWorkspace.id,
+            _public: true,
+          });
+          if (mpError) console.error("set_track_marketplace_public failed:", mpError);
+        }
       }
 
       // Send notification to workspace owner if uploader is not the owner

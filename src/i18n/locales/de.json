@@ -389,6 +389,7 @@
     "uploaded": "hochgeladen am",
     "accessPublic": "Öffentlich in Access",
     "accessPublicDesc": "Anderen Trakalog-Nutzern erlauben, diesen Track zu entdecken und anzufragen",
+    "accessPublicLink": "Trakalog Access ansehen",
     "editTrack": "Titel bearbeiten",
     "download": "Herunterladen",
     "share": "Teilen",
@@ -943,6 +944,10 @@
     "unknownDevice": "Unbekanntes Gerät"
   },
   "uploadTrack": {
+    "accessPublic": "Öffentlich in Trakalog Access",
+    "accessPublicDesc": "Erlaube Musiksupervisoren, Labels und A&R, diesen Track im globalen Trakalog-Katalog zu entdecken.",
+    "accessPublicDescShort": "Alle Tracks in Trakalog Access auffindbar machen",
+    "accessPublicLink": "Schau dir Access an",
     "status": "Status",
     "title": "Titel hochladen",
     "uploadTracks": "Titel hochladen",

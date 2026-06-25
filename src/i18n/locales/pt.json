@@ -389,6 +389,7 @@
     "uploaded": "enviado em",
     "accessPublic": "Público no Access",
     "accessPublicDesc": "Permitir que outros utilizadores Trakalog descubram e peçam esta faixa",
+    "accessPublicLink": "Ver Trakalog Access",
     "editTrack": "Editar faixa",
     "download": "Descarregar",
     "share": "Partilhar",
@@ -930,6 +931,10 @@
     "unknownDevice": "Dispositivo Desconhecido"
   },
   "uploadTrack": {
+    "accessPublic": "Público no Trakalog Access",
+    "accessPublicDesc": "Permita que supervisores musicais, editoras e A&R descubram esta faixa no catálogo global Trakalog.",
+    "accessPublicDescShort": "Tornar todas as faixas visíveis no Trakalog Access",
+    "accessPublicLink": "Veja como é o Access",
     "status": "Estado",
     "title": "Carregar faixa",
     "uploadTracks": "Carregar faixas",

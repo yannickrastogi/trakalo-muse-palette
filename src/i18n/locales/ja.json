@@ -389,6 +389,7 @@
     "uploaded": "アップロード",
     "accessPublic": "Accessで公開",
     "accessPublicDesc": "他のTrakalogユーザーがこのトラックを発見してリクエストできるようにする",
+    "accessPublicLink": "Trakalog Accessを見る",
     "editTrack": "トラックを編集",
     "download": "ダウンロード",
     "share": "共有",
@@ -930,6 +931,10 @@
     "unknownDevice": "不明なデバイス"
   },
   "uploadTrack": {
+    "accessPublic": "Trakalog Accessで公開",
+    "accessPublicDesc": "音楽スーパーバイザー、レーベル、A&RがこのトラックをグローバルなTrakalogカタログで見つけられるようにします。",
+    "accessPublicDescShort": "すべてのトラックをTrakalog Accessで見つけられるようにする",
+    "accessPublicLink": "Accessの見た目を確認",
     "status": "ステータス",
     "title": "トラックをアップロード",
     "uploadTracks": "トラックをアップロード",
