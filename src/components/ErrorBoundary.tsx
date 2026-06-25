@@ -6,13 +6,16 @@ interface State { hasError: boolean; isChunkError: boolean; }
 // A stale lazy chunk (after a new deploy) fails to import. We detect those by
 // message and auto-reload once per session, instead of crashing to a black screen.
 function isChunkLoadError(error: Error | null | undefined): boolean {
-  const m = (error && error.message) || "";
+  const m = ((error && error.message) || "").toLowerCase();
   return (
     m.includes("dynamically imported module") ||
-    m.includes("ChunkLoadError") ||
-    m.includes("Failed to fetch") ||
+    m.includes("chunkloaderror") ||
+    m.includes("failed to fetch") ||
     m.includes("error loading dynamically imported module") ||
-    m.includes("Importing a module script failed")
+    m.includes("importing a module script failed") ||
+    m.includes("networkerror when attempting to fetch resource") || // Firefox
+    m.includes("load failed") ||                                    // Safari
+    m.includes("loading chunk")                                     // Webpack compat
   );
 }
 
@@ -26,11 +29,12 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("ErrorBoundary caught:", error, info);
     if (isChunkLoadError(error)) {
-      // One reload per session — the guard breaks an infinite loop if the chunk
-      // is still unavailable after reloading.
+      // Reload up to 3 times per session (one per genuinely stale chunk). The
+      // cap breaks an infinite loop if a chunk stays unavailable after reload.
       try {
-        if (!sessionStorage.getItem("trakalog-chunk-reloaded")) {
-          sessionStorage.setItem("trakalog-chunk-reloaded", "1");
+        const reloads = parseInt(sessionStorage.getItem("trakalog-chunk-reloads") || "0", 10);
+        if (reloads < 3) {
+          sessionStorage.setItem("trakalog-chunk-reloads", String(reloads + 1));
           window.location.reload();
         }
       } catch { /* sessionStorage can throw (private mode) — fall through to UI */ }

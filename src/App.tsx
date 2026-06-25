@@ -211,7 +211,7 @@ const App = () => {
   // after reloading (the ErrorBoundary would otherwise reload again immediately).
   useEffect(() => {
     const t = setTimeout(() => {
-      try { sessionStorage.removeItem("trakalog-chunk-reloaded"); } catch { /* ignore */ }
+      try { sessionStorage.removeItem("trakalog-chunk-reloads"); } catch { /* ignore */ }
     }, 5000);
     return () => clearTimeout(t);
   }, []);
