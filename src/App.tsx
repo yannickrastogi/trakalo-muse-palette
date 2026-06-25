@@ -26,7 +26,7 @@ import Playlists from "./pages/Playlists";
 import PlaylistDetail from "./pages/PlaylistDetail";
 import Stems from "./pages/Stems";
 import Team from "./pages/Team";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 const Workspaces = lazy(() => import("./pages/Workspaces"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Catalog = lazy(() => import("./pages/Catalog"));
@@ -85,7 +85,10 @@ function HomeRoute() {
   return <LandingPage />;
 }
 
-function ProtectedApp({ children }: { children: React.ReactNode }) {
+// Single layout route for ALL protected pages: the provider stack mounts ONCE
+// and stays mounted across navigation between protected routes (the <Outlet/>
+// child swaps, the layout — and its providers — does not remount).
+function ProtectedAppLayout() {
   return (
     <ProtectedRoute>
       <OnboardingProvider>
@@ -102,7 +105,7 @@ function ProtectedApp({ children }: { children: React.ReactNode }) {
       <PlaylistProvider>
       <SharedLinksProvider>
       <ContactsProvider>
-        {children}
+        <Outlet />
       </ContactsProvider>
       </SharedLinksProvider>
       </PlaylistProvider>
@@ -168,27 +171,31 @@ const MainApp = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<HomeRoute />} />
             <Route path="/onboarding" element={<Suspense fallback={<LazyFallback />}><Onboarding /></Suspense>} />
-            <Route path="/dashboard" element={<ProtectedApp><Index /></ProtectedApp>} />
-            <Route path="/tracks" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Catalog /></Suspense></ProtectedApp>} />
-            <Route path="/track/:id" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><TrackDetail /></Suspense></ProtectedApp>} />
-            {/* Alias: /tracks/:id kept for backwards compatibility with older shared URLs */}
-            <Route path="/tracks/:id" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><TrackDetail /></Suspense></ProtectedApp>} />
-            <Route path="/playlists" element={<ProtectedApp><Playlists /></ProtectedApp>} />
-            <Route path="/playlist/:id" element={<ProtectedApp><PlaylistDetail /></ProtectedApp>} />
-            <Route path="/stems" element={<ProtectedApp><Stems /></ProtectedApp>} />
-            <Route path="/pitch" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Pitch /></Suspense></ProtectedApp>} />
-            <Route path="/smart-ar" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><SmartAR /></Suspense></ProtectedApp>} />
-            <Route path="/radio" element={<ProtectedApp><RadioPage /></ProtectedApp>} />
-            <Route path="/access" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Access /></Suspense></ProtectedApp>} />
-            <Route path="/team" element={<ProtectedApp><Team /></ProtectedApp>} />
-            <Route path="/workspaces" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Workspaces /></Suspense></ProtectedApp>} />
-            <Route path="/contacts" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Contacts /></Suspense></ProtectedApp>} />
-            <Route path="/shared-links" element={<ProtectedApp><SharedLinks /></ProtectedApp>} />
-            <Route path="/settings" element={<ProtectedApp><SettingsPage /></ProtectedApp>} />
-            <Route path="/workspace-settings" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><WorkspaceSettings /></Suspense></ProtectedApp>} />
-            <Route path="/notifications" element={<ProtectedApp><NotificationCenter /></ProtectedApp>} />
-            <Route path="/approvals" element={<ProtectedApp><ApprovalQueue /></ProtectedApp>} />
-            <Route path="/guide" element={<ProtectedApp><Suspense fallback={<LazyFallback />}><Guide /></Suspense></ProtectedApp>} />
+
+            {/* Protected pages — single layout route, one provider stack mount */}
+            <Route element={<ProtectedAppLayout />}>
+              <Route path="/dashboard" element={<Index />} />
+              <Route path="/tracks" element={<Suspense fallback={<LazyFallback />}><Catalog /></Suspense>} />
+              <Route path="/track/:id" element={<Suspense fallback={<LazyFallback />}><TrackDetail /></Suspense>} />
+              {/* Alias: /tracks/:id kept for backwards compatibility with older shared URLs */}
+              <Route path="/tracks/:id" element={<Suspense fallback={<LazyFallback />}><TrackDetail /></Suspense>} />
+              <Route path="/playlists" element={<Playlists />} />
+              <Route path="/playlist/:id" element={<PlaylistDetail />} />
+              <Route path="/stems" element={<Stems />} />
+              <Route path="/pitch" element={<Suspense fallback={<LazyFallback />}><Pitch /></Suspense>} />
+              <Route path="/smart-ar" element={<Suspense fallback={<LazyFallback />}><SmartAR /></Suspense>} />
+              <Route path="/radio" element={<RadioPage />} />
+              <Route path="/access" element={<Suspense fallback={<LazyFallback />}><Access /></Suspense>} />
+              <Route path="/team" element={<Team />} />
+              <Route path="/workspaces" element={<Suspense fallback={<LazyFallback />}><Workspaces /></Suspense>} />
+              <Route path="/contacts" element={<Suspense fallback={<LazyFallback />}><Contacts /></Suspense>} />
+              <Route path="/shared-links" element={<SharedLinks />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/workspace-settings" element={<Suspense fallback={<LazyFallback />}><WorkspaceSettings /></Suspense>} />
+              <Route path="/notifications" element={<NotificationCenter />} />
+              <Route path="/approvals" element={<ApprovalQueue />} />
+              <Route path="/guide" element={<Suspense fallback={<LazyFallback />}><Guide /></Suspense>} />
+            </Route>
           </Route>
 
           <Route path="*" element={<NotFound />} />
@@ -198,6 +205,17 @@ const MainApp = () => (
   </QueryClientProvider>
 );
 
-const App = () => (isAdminMode() ? <AdminApp /> : <MainApp />);
+const App = () => {
+  // Clear the chunk-reload guard once the app has mounted and stayed stable for
+  // a moment. Delaying avoids a reload loop if a chunk is STILL stale right
+  // after reloading (the ErrorBoundary would otherwise reload again immediately).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try { sessionStorage.removeItem("trakalog-chunk-reloaded"); } catch { /* ignore */ }
+    }, 5000);
+    return () => clearTimeout(t);
+  }, []);
+  return isAdminMode() ? <AdminApp /> : <MainApp />;
+};
 
 export default App;
