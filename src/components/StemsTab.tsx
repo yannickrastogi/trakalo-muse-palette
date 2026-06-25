@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { getStorageSignedUrl, getStorageUploadUrl } from "@/lib/audio";
+import { toast } from "sonner";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack } from "@/contexts/TrackContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -218,6 +219,17 @@ export function StemsTab({ trackId, autoOpenUpload = false, readOnly = false }: 
 
         if (insertError) {
           console.error("Error inserting stem record:", insertError);
+          toast.error(t("stemsTab.uploadFailed"));
+          // Best-effort cleanup. NOTE: stems are PUT directly to R2, so this
+          // Supabase Storage remove is a no-op for the real R2 orphan — there is
+          // no frontend R2-delete path yet. Kept (harmless) to mirror the
+          // codebase's existing cleanup calls; replace with a delete EF for true
+          // R2 cleanup.
+          try {
+            await supabase.storage.from("stems").remove([filePath]);
+          } catch {
+            console.warn("Failed to cleanup orphan stem file:", filePath);
+          }
         }
       }
 

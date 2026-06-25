@@ -1234,6 +1234,7 @@
     "stemCount": "· {{count}}개 스템"
   },
   "stemsTab": {
+    "uploadFailed": "스템 업로드 실패 — 다시 시도해 주세요",
     "title": "{{count}}개 스템",
     "subtitle": "이 트랙의 오디오 스템을 관리합니다",
     "uploadStems": "스템 업로드",

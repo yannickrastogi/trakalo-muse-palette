@@ -1234,6 +1234,7 @@
     "stemCount": "· {{count}} Stems"
   },
   "stemsTab": {
+    "uploadFailed": "Stem-Upload fehlgeschlagen — bitte erneut versuchen",
     "title": "{{count}} Stems",
     "subtitle": "Audio-Stems für diesen Titel verwalten",
     "uploadStems": "Stems hochladen",

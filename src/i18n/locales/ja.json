@@ -1221,6 +1221,7 @@
     "stemCount": "· {{count}}ステム"
   },
   "stemsTab": {
+    "uploadFailed": "ステムのアップロードに失敗しました — もう一度お試しください",
     "title": "{{count}}ステム",
     "subtitle": "このトラックのオーディオステムを管理",
     "uploadStems": "ステムをアップロード",

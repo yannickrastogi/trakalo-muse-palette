@@ -1302,6 +1302,7 @@
     "stemCount": "· {{count}} stems"
   },
   "stemsTab": {
+    "uploadFailed": "Failed to upload stem — please try again",
     "title": "{{count}} Stems",
     "subtitle": "Manage audio stems for this track",
     "uploadStems": "Upload Stems",
