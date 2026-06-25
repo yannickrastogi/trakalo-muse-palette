@@ -98,29 +98,41 @@ export function parseArtistsToCollaborators(
     out.push(entry);
   };
 
+  const expandAlias = (a: AliasInput, fallbackName: string) => {
+    for (const cid of a.contact_ids) {
+      const c = contactById.get(cid);
+      if (c) push({ name: contactFullName(c) || c.email || fallbackName, contact: c, fromAlias: a.alias_name });
+    }
+  };
+
   const segments = artist.split(",").map((s) => s.trim()).filter(Boolean);
 
   for (const segment of segments) {
     const aliasHit = aliasMap.get(segment.toLowerCase());
     if (aliasHit) {
-      for (const cid of aliasHit.contact_ids) {
-        const c = contactById.get(cid);
-        if (c) {
-          push({ name: contactFullName(c) || c.email || segment, contact: c, fromAlias: aliasHit.alias_name });
-        }
-      }
+      expandAlias(aliasHit, segment);
       continue;
     }
 
-    // Split on common multi-artist separators (case-insensitive).
-    const subNames = segment
-      .split(/\s+(?:&|x|X|\+)\s+/)
-      .map((n) => n.trim())
-      .filter(Boolean);
+    // Split on collab separators x / X / + ONLY — NOT "&", which is often part
+    // of an alias ("Banx & Ranx"). Each fragment is re-tested as an alias before
+    // we fall back to splitting it on "&".
+    const fragments = segment.split(/\s+(?:x|X|\+)\s+/).map((n) => n.trim()).filter(Boolean);
 
-    for (const sub of subNames) {
-      const c = contactByName.get(sub.toLowerCase());
-      push(c ? { name: contactFullName(c) || sub, contact: c } : { name: sub });
+    for (const frag of fragments) {
+      const fragAlias = aliasMap.get(frag.toLowerCase());
+      if (fragAlias) {
+        expandAlias(fragAlias, frag);
+        continue;
+      }
+
+      // Not an alias → split plain "A & B" groups and map each name. Unknown
+      // names (no contact match) are still included as name-only collaborators.
+      const names = frag.split(/\s+&\s+/).map((n) => n.trim()).filter(Boolean);
+      for (const name of names) {
+        const c = contactByName.get(name.toLowerCase());
+        push(c ? { name: contactFullName(c) || name, contact: c } : { name });
+      }
     }
   }
 

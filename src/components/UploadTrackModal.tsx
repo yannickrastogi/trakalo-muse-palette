@@ -2114,7 +2114,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                     if (!src.value || !src.value.trim()) continue;
                     const parsed = parseArtistsToCollaborators(src.value, aliases, contactInputs);
                     for (const c of parsed) {
-                      if (!c.contact && !c.fromAlias) continue;
+                      // Include unknown names too (name-only splits), not just resolved contacts/aliases.
                       const key = c.contact?.id || c.name.toLowerCase();
                       const existing = detectionMap.get(key);
                       if (existing) {
@@ -2129,17 +2129,22 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
                 const applyAutoSplit = () => {
                   if (!currentTrack) return;
-                  const newSplits = suggested.map((c) => ({
-                    id: crypto.randomUUID(),
-                    name: c.name,
-                    email: c.contact?.email || "",
-                    stage_name: c.contact?.stageName || "",
-                    role: "",
-                    percentage: 0,
-                    pro: "",
-                    ipi: "",
-                    publisher: "",
-                  }));
+                  const newSplits = suggested.map((c) => {
+                    // ContactInput only carries id/name/email/stage; pull the rest
+                    // (role/pro/ipi/publisher) from the full Contact by id.
+                    const full = c.contact ? contacts.find((ct) => ct.id === c.contact!.id) : undefined;
+                    return {
+                      id: crypto.randomUUID(),
+                      name: c.name,
+                      email: c.contact?.email || "",
+                      stage_name: c.contact?.stageName || "",
+                      role: full?.role || "",
+                      percentage: 0,
+                      pro: full?.pro || "",
+                      ipi: full?.ipi || "",
+                      publisher: full?.publisher || "",
+                    };
+                  });
                   updateCurrent({ splits: equalSplit(newSplits, "percentage") });
                 };
                 const dismissBanner = () => {
