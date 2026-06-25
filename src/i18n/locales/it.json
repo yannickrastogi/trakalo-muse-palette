@@ -1663,6 +1663,7 @@
       "tooltip": "Ogni ascoltatore riceve un'impronta audio invisibile unica. Questo protegge l'artista in caso di leak.",
       "confirmation": "Audio con watermark unico per questa sessione"
     },
+    "downloadTrack": "Scarica la traccia",
     "downloadButton": "Scarica ({{quality}})",
     "save": {
       "saved": "Salvato nel tuo Trakalog",

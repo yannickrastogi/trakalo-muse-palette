@@ -1663,6 +1663,7 @@
       "tooltip": "Cada ouvinte recebe uma impressão digital de áudio invisível única. Isso protege o artista em caso de vazamento.",
       "confirmation": "Áudio com marca d'água única para esta sessão"
     },
+    "downloadTrack": "Baixar faixa",
     "downloadButton": "Baixar ({{quality}})",
     "save": {
       "saved": "Salvo no seu Trakalog",

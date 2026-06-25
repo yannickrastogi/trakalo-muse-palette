@@ -1954,6 +1954,36 @@ export default function SharedLinkPage() {
                       <span className={"text-[11px] font-mono tabular-nums shrink-0 " + (plImmersive ? "text-white/40" : "text-muted-foreground")}>
                         {track.duration_sec ? formatDuration(track.duration_sec) : "--:--"}
                       </span>
+
+                      {/* Inline download — only when the link allows it */}
+                      {linkData?.allow_download && (
+                        <button
+                          type="button"
+                          aria-label={t("sharedLink.downloadTrack")}
+                          title={t("sharedLink.downloadTrack")}
+                          onClick={function(e) {
+                            e.stopPropagation(); // do NOT trigger row playback
+                            logEvent(track.id, "download");
+                            var hiRes = linkData.download_quality === "hi-res";
+                            fetchAudioUrl(track.id, hiRes ? "original" : "preview").then(function(url) {
+                              if (!url) return;
+                              fetch(url).then(function(res) { if (!res.ok) throw new Error("Download failed: " + res.status); return res.blob(); }).then(function(blob) {
+                                var blobUrl = URL.createObjectURL(blob);
+                                var a = document.createElement("a");
+                                a.href = blobUrl;
+                                a.download = track.title + " - " + track.artist + (hiRes ? ".wav" : ".mp3");
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(blobUrl);
+                              }).catch(function (err) { console.error("Error:", err); });
+                            }).catch(function (err) { console.error("Error:", err); });
+                          }}
+                          className={"shrink-0 p-1.5 rounded-lg transition-colors " + (plImmersive ? "text-white/60 hover:text-white hover:bg-white/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   );
                 })}
@@ -1968,44 +1998,6 @@ export default function SharedLinkPage() {
                 </div>
               )}
             </div>
-            </div>
-          )}
-
-          {linkData?.allow_download && playlistTracks.length > 0 && (
-            <div className={"rounded-2xl overflow-hidden p-4 " + (plImmersive ? "bg-white/5 backdrop-blur-xl border border-white/10" : "bg-card border border-border")}>
-              <p className={"text-xs mb-3 " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>Download is enabled for this shared link</p>
-              <div className="space-y-2">
-                {playlistTracks.map(function(track) {
-                  return (
-                    <button
-                      key={track.id}
-                      onClick={function() {
-                        logEvent(track.id, "download");
-                        fetchAudioUrl(track.id, linkData.download_quality === "hi-res" ? "original" : "preview").then(function(url) {
-                          if (!url) return;
-                          fetch(url).then(function(res) { if (!res.ok) throw new Error("Download failed: " + res.status); return res.blob(); }).then(function(blob) {
-                            var blobUrl = URL.createObjectURL(blob);
-                            var a = document.createElement("a");
-                            a.href = blobUrl;
-                            a.download = track.title + " - " + track.artist + (linkData.download_quality === "hi-res" ? ".wav" : ".mp3");
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(blobUrl);
-                          }).catch(function (err) { console.error("Error:", err); });
-                        }).catch(function (err) { console.error("Error:", err); });
-                      }}
-                      className={"w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs transition-colors " + (plImmersive ? "border border-white/10 bg-white/5 hover:bg-white/10" : "border border-border bg-card hover:bg-secondary")}
-                    >
-                      <span className={"font-medium " + (plImmersive ? "text-white" : "text-foreground")}>{track.title} - {track.artist}</span>
-                      <span className={"flex items-center gap-1.5 " + (plImmersive ? "text-white/50" : "text-muted-foreground")}>
-                        <Download className="w-3.5 h-3.5" />
-                        {t(linkData.download_quality === "hi-res" ? "sharedLink.qualityHiRes" : "sharedLink.qualityLowRes")}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
             </div>
           )}
 

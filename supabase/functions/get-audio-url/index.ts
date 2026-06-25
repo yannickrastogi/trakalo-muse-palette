@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
       // 1. Verify the shared link exists and is active
       const { data: link, error: linkErr } = await supabaseAdmin
         .from("shared_links")
-        .select("id, share_type, track_id, playlist_id, status, expires_at")
+        .select("id, share_type, track_id, playlist_id, status, expires_at, allow_download")
         .eq("link_slug", slug)
         .single();
 
@@ -102,6 +102,15 @@ Deno.serve(async (req) => {
 
       if (!trackAllowed) {
         return new Response(JSON.stringify({ error: "Track not associated with this link" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Hi-res download (quality="original") requires the link to allow downloads.
+      // Playback uses quality="preview", so this never blocks listening.
+      if (quality === "original" && !link.allow_download) {
+        return new Response(JSON.stringify({ error: "Download not allowed for this link" }), {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

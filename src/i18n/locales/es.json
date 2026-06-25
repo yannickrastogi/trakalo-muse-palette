@@ -1663,6 +1663,7 @@
       "tooltip": "Cada oyente recibe una huella de audio invisible única. Esto protege al artista si la pista se filtra.",
       "confirmation": "Audio con marca de agua única para esta sesión"
     },
+    "downloadTrack": "Descargar pista",
     "downloadButton": "Descargar ({{quality}})",
     "save": {
       "saved": "Guardado en tu Trakalog",

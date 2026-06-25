@@ -1744,6 +1744,7 @@
       "tooltip": "Chaque auditeur reçoit une empreinte audio invisible unique. Cela protège l'artiste en cas de fuite du morceau.",
       "confirmation": "Audio watermarké uniquement pour cette session"
     },
+    "downloadTrack": "Télécharger le morceau",
     "downloadButton": "Télécharger ({{quality}})",
     "save": {
       "saved": "Enregistré dans votre Trakalog",

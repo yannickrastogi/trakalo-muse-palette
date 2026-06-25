@@ -1663,6 +1663,7 @@
       "tooltip": "각 청취자는 고유한 보이지 않는 오디오 지문을 받습니다. 트랙이 유출될 경우 아티스트를 보호합니다.",
       "confirmation": "이 세션을 위한 고유 워터마크가 적용된 오디오"
     },
+    "downloadTrack": "트랙 다운로드",
     "downloadButton": "다운로드 ({{quality}})",
     "save": {
       "saved": "Trakalog에 저장됨",
