@@ -1840,6 +1840,8 @@
     "ratings": "avaliações"
   },
   "artistAliases": {
+    "whichContactToEdit": "Qual contato editar?",
+    "editContact": "Editar contato",
     "detailTitle": "Detalhe do alias",
     "noLinkedContacts": "Nenhum contato vinculado a este alias",
     "aliasesSection": "Aliases de artista",

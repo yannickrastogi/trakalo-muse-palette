@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { Plus, Pencil, Trash2, X, Search, Check, Users, ChevronRight, Mail } from "lucide-react";
 import { useTranslation, Trans } from "react-i18next";
 import { useContacts, type ArtistAlias, type Contact } from "@/contexts/ContactsContext";
+import { AddContactModal } from "@/components/AddContactModal";
 import { EmptyState } from "@/components/EmptyState";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
@@ -27,6 +28,9 @@ export function ArtistAliasesTab({ onOpenContact }: ArtistAliasesTabProps) {
   const [deleteTarget, setDeleteTarget] = useState<ArtistAlias | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [detailAliasId, setDetailAliasId] = useState<string | null>(null);
+  // Edit-contact flow: clicking "Edit" on an alias opens the linked contact in AddContactModal.
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [pickingContactForAlias, setPickingContactForAlias] = useState<ArtistAlias | null>(null);
 
   const contactById = useMemo(() => {
     const map = new Map<string, Contact>();
@@ -51,6 +55,24 @@ export function ArtistAliasesTab({ onOpenContact }: ArtistAliasesTabProps) {
         : [],
     [detailAlias, contactById]
   );
+
+  // Edit an alias → open the linked contact in AddContactModal.
+  // 1 contact → open directly. Several → show a picker. None → fall back to renaming the alias.
+  const handleEditAlias = (alias: ArtistAlias) => {
+    const linked = (alias.contact_ids || [])
+      .map((id) => contactById.get(id))
+      .filter((c): c is Contact => Boolean(c));
+    if (linked.length === 0) {
+      setEditing(alias);
+      return;
+    }
+    setDetailAliasId(null);
+    if (linked.length === 1) {
+      setEditingContact(linked[0]);
+    } else {
+      setPickingContactForAlias(alias);
+    }
+  };
 
   const handleDelete = async () => {
     if (!deleteTarget || deleting) return;
@@ -113,7 +135,7 @@ export function ArtistAliasesTab({ onOpenContact }: ArtistAliasesTabProps) {
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setEditing(alias); }}
+                    onClick={(e) => { e.stopPropagation(); handleEditAlias(alias); }}
                     className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                     aria-label="Edit alias"
                   >
@@ -194,15 +216,27 @@ export function ArtistAliasesTab({ onOpenContact }: ArtistAliasesTabProps) {
               </div>
 
               {/* Actions */}
-              <div className="p-5 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => { setEditing(detailAlias); setDetailAliasId(null); }}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-secondary transition-colors"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  {t("contactDetail.edit")}
-                </button>
+              <div className="p-5 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  {detailContacts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleEditAlias(detailAlias)}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-secondary transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      {t("artistAliases.editContact")}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setEditing(detailAlias); setDetailAliasId(null); }}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-secondary transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    {t("artistAliases.editAlias")}
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={() => { setDeleteTarget(detailAlias); setDetailAliasId(null); }}
@@ -228,6 +262,66 @@ export function ArtistAliasesTab({ onOpenContact }: ArtistAliasesTabProps) {
           }}
         />
       )}
+
+      {/* Contact picker — when an alias maps to several contacts, choose which one to edit */}
+      {pickingContactForAlias && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setPickingContactForAlias(null)}
+        >
+          <div
+            className="w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <h2 className="text-base font-semibold text-foreground">{t("artistAliases.whichContactToEdit")}</h2>
+              <button
+                type="button"
+                onClick={() => setPickingContactForAlias(null)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                aria-label={t("artistAliases.cancel")}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-2 max-h-80 overflow-y-auto">
+              {(pickingContactForAlias.contact_ids || [])
+                .map((id) => contactById.get(id))
+                .filter((c): c is Contact => Boolean(c))
+                .map((contact) => {
+                  const fullName = ((contact.firstName || "") + " " + (contact.lastName || "")).trim();
+                  const a = (contact.firstName?.[0] || "?").toUpperCase();
+                  const b = (contact.lastName?.[0] || "").toUpperCase();
+                  return (
+                    <button
+                      key={contact.id}
+                      type="button"
+                      onClick={() => { setEditingContact(contact); setPickingContactForAlias(null); }}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-secondary/60 transition-colors text-left"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center text-xs font-bold text-white shrink-0">
+                        {a}{b}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{fullName || contact.email || "—"}</p>
+                        {contact.stageName && (
+                          <p className="text-xs text-muted-foreground truncate">{contact.stageName}</p>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit the linked contact directly (auto-alias trigger keeps the alias in sync) */}
+      <AddContactModal
+        open={!!editingContact}
+        onOpenChange={(open) => { if (!open) setEditingContact(null); }}
+        editingContact={editingContact}
+      />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
         <AlertDialogContent>

@@ -1840,6 +1840,8 @@
     "ratings": "件の評価"
   },
   "artistAliases": {
+    "whichContactToEdit": "編集する連絡先を選択",
+    "editContact": "連絡先を編集",
     "detailTitle": "エイリアスの詳細",
     "noLinkedContacts": "このエイリアスに紐付けられた連絡先はありません",
     "aliasesSection": "アーティストエイリアス",
