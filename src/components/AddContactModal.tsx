@@ -337,6 +337,7 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
                 onChange={(e) => setStageName(e.target.value)}
                 placeholder="e.g. KNY Factory"
               />
+              <p className="text-xs text-muted-foreground">Artist or stage name — auto-creates an alias</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ac-ipi">IPI</Label>
