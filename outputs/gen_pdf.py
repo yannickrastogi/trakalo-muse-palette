@@ -1,0 +1,377 @@
+# -*- coding: utf-8 -*-
+"""Generate the Trakalog Beta test guide HTML (rendered to PDF via headless Chrome)."""
+import html
+
+DATE = "24 juin 2026"
+
+INTRO = (
+    "Ce document liste tous les tests à effectuer sur l'app Trakalog "
+    "(<b>app.trakalog.com</b>). Pour chaque test, indique ✅ si ça marche ou "
+    "❌ + une description du problème si ça ne marche pas. Envoie tes "
+    "résultats à Yannick."
+)
+
+# Each section: (number, title, [tests])
+# Each test: (id, title, important_bool, [steps], expected)
+SECTIONS = [
+    ("1", "Stems, Documents, Pack & Commentaires", [
+        ("1.1", "Upload et lecture d'un Stem", False,
+         ["Ouvrir un track dans TrackDetail",
+          "Cliquer sur l'onglet « Stems »",
+          "Uploader un fichier WAV ou MP3",
+          "Cliquer Play sur le stem → vérifier que l'audio joue",
+          "Cliquer Download → vérifier que le fichier se télécharge",
+          "Fermer l'app, revenir 1h+ plus tard → rejouer le stem (ne doit pas donner d'erreur)"],
+         "Le stem se joue et se télécharge sans erreur."),
+        ("1.2", "Upload et ouverture d'un Document", False,
+         ["Ouvrir un track dans TrackDetail",
+          "Aller dans l'onglet Documents / Paperwork",
+          "Uploader un PDF (contrat, accord, etc.)",
+          "Cliquer « Open » → le PDF doit s'ouvrir dans le navigateur",
+          "Cliquer « Download » → le PDF doit se télécharger"],
+         "Le document s'ouvre et se télécharge sans erreur."),
+        ("1.3", "Téléchargement du Trakalog Pack", False,
+         ["Ouvrir un shared link (lien partagé par Yannick)",
+          "Chercher le bouton de téléchargement du « Trakalog Pack »",
+          "Télécharger le ZIP",
+          "Ouvrir le ZIP et vérifier qu'il contient : le fichier audio original, la cover art, "
+          "les lyrics (si dispo), les stems (si dispo), les documents/contrats (si dispo)"],
+         "Le ZIP se télécharge et contient tous les fichiers."),
+        ("1.4", "Laisser un commentaire timecodé", True,
+         ["Ouvrir un shared link en navigation privée (pour simuler un visiteur externe)",
+          "Remplir le gate screen (nom, email, rôle, compagnie) → cliquer Continue",
+          "Écouter le track",
+          "Double-cliquer sur la waveform à un moment précis → un champ commentaire apparaît",
+          "Écrire un commentaire → Envoyer",
+          "Demander à Yannick de vérifier dans TrackDetail → le commentaire doit apparaître "
+          "avec ton nom et le timecode"],
+         "Le commentaire apparaît côté Yannick avec ton nom, ton email et le timecode exact."),
+    ]),
+    ("2", "Contacts", [
+        ("2.1", "Suppression multiple de contacts", False,
+         ["Aller dans la rubrique « Contacts »",
+          "Cliquer le bouton « Select » (en haut à droite)",
+          "Cocher 2-3 contacts",
+          "Cliquer « Delete Selected » → confirmer",
+          "Vérifier que les contacts sont supprimés"],
+         "Les contacts sélectionnés disparaissent de la liste."),
+        ("2.2", "Création de contact avec stage name → alias automatique", False,
+         ["Aller dans Contacts → cliquer « Add Contact »",
+          "Remplir : First Name = « Test », Last Name = « Beta », Stage Name = « DJ TestBeta »",
+          "Sauvegarder",
+          "Aller dans l'onglet « Artist Aliases »",
+          "L'alias « DJ TestBeta » doit apparaître automatiquement"],
+         "L'alias est créé automatiquement sans action supplémentaire."),
+        ("2.3", "Vérification absence de doublons", False,
+         ["Aller dans Contacts",
+          "Parcourir la liste",
+          "Vérifier qu'aucun contact n'apparaît en double (même nom ou même email)"],
+         "Aucun doublon visible."),
+    ]),
+    ("3", "Pitch", [
+        ("3.1", "Pitch avec plusieurs tracks (nouvelle feature)", False,
+         ["Aller dans Pitch → « Create Pitch »",
+          "Dans la sélection de tracks, cliquer sur 2 tracks différents (cases à cocher)",
+          "Une étape « Name your pitch playlist » doit apparaître",
+          "Donner un nom à la playlist (ex : « Selection Eliot »)",
+          "Remplir les infos du destinataire (nom, email, rôle, compagnie, téléphone)",
+          "Envoyer le pitch",
+          "Vérifier que tu reçois l'email avec le lien",
+          "Vérifier que le contact apparaît dans la rubrique Contacts"],
+         "Email reçu + playlist créée + contact enregistré."),
+        ("3.2", "Watermark sur les pitches", False,
+         ["Create Pitch → observer la section « Protection »",
+          "Le toggle « Audio watermarking » doit être visible et activé par défaut (ON)",
+          "Envoyer le pitch",
+          "Ouvrir le lien du pitch → un badge « Protected » doit être visible"],
+         "Toggle visible + badge Protected sur le lien."),
+        ("3.3", "Engagement isolé par recipient", False,
+         ["Aller dans Pitch → ouvrir un pitch existant",
+          "Observer les stats d'engagement (plays, downloads)",
+          "Ces stats doivent correspondre uniquement à ce que TU as écouté (pas les stats globales du track)"],
+         "Les stats reflètent uniquement l'activité du recipient, pas de tous les listeners."),
+    ]),
+    ("4", "Playlist", [
+        ("4.1", "Preview audio avant d'ajouter un track", False,
+         ["Aller dans Playlists → « Create Playlist »",
+          "À l'étape de sélection des tracks, chercher le bouton play (▶) sur chaque ligne",
+          "Cliquer ▶ → le track doit jouer en preview SANS être ajouté à la playlist",
+          "Cliquer sur la ligne (pas sur ▶) → le track est ajouté"],
+         "Preview audio fonctionne séparément de l'ajout."),
+        ("4.2", "Filtres dans la sélection de tracks", False,
+         ["Create Playlist → étape sélection de tracks",
+          "Utiliser les filtres : Genre, Mood, BPM (min/max), Key, Type",
+          "Vérifier que la liste de tracks se filtre correctement",
+          "Cliquer « Clear filters » → tous les tracks réapparaissent"],
+         "Filtres fonctionnels + Clear filters remet tout à zéro."),
+        ("4.3", "Infos enrichies par track", False,
+         ["Create Playlist → étape sélection de tracks",
+          "Observer chaque ligne de track",
+          "Chaque ligne doit afficher : BPM · Key · Durée · Tags genre"],
+         "Infos visibles sur chaque ligne."),
+    ]),
+    ("5", "Artist Aliases", [
+        ("5.1", "Détail d'un alias au clic", False,
+         ["Aller dans Contacts → onglet « Artist Aliases »",
+          "Cliquer sur le nom d'un alias (pas sur le crayon ni la poubelle)",
+          "Un panel de détail doit s'ouvrir à droite avec : le nom de l'alias, la liste des "
+          "contacts liés (nom, email, rôle)",
+          "Cliquer sur un contact dans le panel → la fiche contact s'ouvre"],
+         "Panel détail s'ouvre + navigation vers la fiche contact fonctionne."),
+        ("5.2", "Aliases visibles depuis la fiche contact", False,
+         ["Aller dans Contacts → cliquer sur un contact qui fait partie d'un alias "
+          "(ex : Yannick dans « Banx & Ranx »)",
+          "Dans la fiche contact (panel de droite), chercher une section « Artist Aliases »",
+          "Les badges des aliases liés doivent apparaître"],
+         "Section « Artist Aliases » visible dans la fiche contact."),
+    ]),
+    ("6", "Radio", [
+        ("6.1", "Lecture en background", True,
+         ["Aller dans Radio (icône dans le header)",
+          "Lancer la lecture (cliquer sur un mode ou un genre)",
+          "Naviguer vers une autre page (ex : cliquer sur « Tracks » dans le menu)",
+          "La musique doit continuer à jouer",
+          "Un mini-lecteur radio doit apparaître en bas de l'écran avec : titre + artiste + "
+          "contrôles (prev / pause / next / stop)"],
+         "Musique continue + mini-lecteur visible."),
+        ("6.2", "Arrêter la radio", False,
+         ["Radio en cours de lecture (mini-lecteur visible)",
+          "Cliquer le bouton ✕ (Stop) dans le mini-lecteur",
+          "La musique doit s'arrêter + mini-lecteur disparaît"],
+         "Radio s'arrête proprement."),
+        ("6.3", "Radio s'arrête si tu lances un autre track", False,
+         ["Radio en lecture",
+          "Aller dans Tracks → cliquer Play sur n'importe quel track",
+          "La radio doit s'arrêter automatiquement",
+          "Le track sélectionné joue via le player normal"],
+         "Pas de double lecture, radio coupée automatiquement."),
+        ("6.4", "Filtres de la radio", False,
+         ["Dans la Radio, tester les différents modes : High Energy, Chill, Recently Added",
+          "Tester le filtre par Genre (choisir un genre)",
+          "Vérifier que les tracks joués correspondent au filtre"],
+         "Filtres fonctionnels, tracks correspondants joués."),
+    ]),
+    ("7", "Catalogue & Upload", [
+        ("7.1", "Infos dans la vue grille du catalogue", False,
+         ["Aller dans Tracks",
+          "Passer en vue grille (icône grille en haut)",
+          "Chaque carte doit afficher : Cover · Titre + artiste · Genre · BPM · Key · Durée · "
+          "Tags mood (si dispo) · Badge status (Available / On Hold / Released) · "
+          "Badge Production Stage (WIP / Finished)"],
+         "Toutes ces infos visibles sur les cartes."),
+        ("7.2", "Sélecteur de Status à l'upload", False,
+         ["Uploader un nouveau track (bouton Upload)",
+          "À l'étape « Details » (ou « Info »), chercher un sélecteur « Status »",
+          "Les options doivent être : Available / On Hold / Released",
+          "Choisir « On Hold »",
+          "Vérifier que le track créé a bien le badge « On Hold » dans le catalogue"],
+         "Sélecteur Status présent + valeur correctement appliquée."),
+    ]),
+    ("8", "Track Versioning", [
+        ("8.1", "Ajouter une nouvelle version audio", False,
+         ["Ouvrir un track dans TrackDetail",
+          "Au-dessus du player, chercher le sélecteur de versions (ex : « Main Version » + "
+          "bouton « + Add Version »)",
+          "Cliquer « + Add Version »",
+          "Uploader un fichier audio différent (V2)",
+          "Deux tabs doivent apparaître : « V1 ★ » et « V2 »",
+          "Cliquer sur V2 → le player doit charger la V2"],
+         "Deux versions visibles, switch fonctionne."),
+        ("8.2", "A/B switch au même timecode", False,
+         ["Track avec V1 et V2",
+          "Lancer la lecture → laisser jouer jusqu'à 0:30 par exemple",
+          "Cliquer sur l'autre version (V1 ou V2)",
+          "La lecture doit reprendre au même timecode (0:30) sur la nouvelle version"],
+         "Switch seamless au même timecode, pas de retour à 0:00."),
+        ("8.3", "Définir la version active", False,
+         ["Track avec V1★ et V2",
+          "Sur l'onglet V2 → cliquer le menu « ... » → « Set as Active »",
+          "V2 doit recevoir le badge ★",
+          "Ouvrir le shared link du track → la V2 doit jouer"],
+         "V2 devient active + shared link joue V2."),
+    ]),
+    ("9", "Shared Links", [
+        ("9.1", "Chapters cliquables", False,
+         ["Ouvrir un shared link d'un track qui a des sections définies",
+          "Sous la waveform, des pills (boutons) doivent apparaître (ex : « 0:00 Intro », « 0:32 Chorus »)",
+          "Cliquer sur une pill → le player doit sauter à ce moment exact"],
+         "Pills visibles + seek au bon timecode."),
+        ("9.2", "Vidéo sur shared link", False,
+         ["Sur un track avec vidéo attachée et « Visible on shared links » activé",
+          "Ouvrir le shared link",
+          "La vidéo doit apparaître AU-DESSUS du player audio",
+          "La vidéo doit être dans un format raisonnable (pas gigantesque)"],
+         "Vidéo visible + format compact."),
+    ]),
+    ("10", "Auto-split à l'upload", [
+        ("10.1", "Détection automatique des collaborateurs", False,
+         ["Uploader un nouveau track",
+          "Dans le champ « Artist », écrire : « Banx & Ranx, Hadar Adora »",
+          "À l'étape Details / Splits, un banner « Auto-detected collaborators » doit apparaître",
+          "Cliquer « Apply » → les splits doivent se remplir automatiquement avec parts égales"],
+         "Banner visible + splits pré-remplis avec les bons noms et pourcentages."),
+    ]),
+]
+
+
+def esc(s):
+    return html.escape(s, quote=False)
+
+
+def render_test(t):
+    tid, title, important, steps, expected = t
+    steps_html = "\n".join(
+        f'<li><span class="stepnum">{i+1}</span><span class="steptext">{esc(s)}</span></li>'
+        for i, s in enumerate(steps)
+    )
+    badge = '<span class="badge-important">IMPORTANT</span>' if important else ""
+    return f"""
+    <div class="test">
+      <div class="test-head">
+        <span class="checkbox">&#9744;</span>
+        <span class="test-id">Test {esc(tid)}</span>
+        <span class="test-title">{esc(title)}</span>
+        {badge}
+      </div>
+      <div class="test-body">
+        <div class="howto-label">Comment faire</div>
+        <ol class="steps">{steps_html}</ol>
+        <div class="expected"><span class="expected-label">Résultat attendu</span>{esc(expected)}</div>
+        <div class="result-line">
+          <span class="rbox ok">&#9744; ✅ OK</span>
+          <span class="rbox ko">&#9744; ❌ Bug</span>
+          <span class="rbox partial">&#9744; ⚠️ Partiel</span>
+          <span class="notes">Notes : ________________________________________</span>
+        </div>
+      </div>
+    </div>"""
+
+
+def render_section(s):
+    num, title, tests = s
+    tests_html = "\n".join(render_test(t) for t in tests)
+    return f"""
+    <section class="section">
+      <div class="section-head">
+        <span class="section-num">{esc(num)}</span>
+        <h2 class="section-title">{esc(title)}</h2>
+      </div>
+      {tests_html}
+    </section>"""
+
+
+sections_html = "\n".join(render_section(s) for s in SECTIONS)
+
+HTML = f"""<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+  * {{ margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }}
+  @page {{ size:A4; margin:0; }}
+  html,body {{ background:#0a0a0b; color:#e7e7ea; font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; font-size:11px; line-height:1.5; }}
+  .page-pad {{ padding:0 40px 80px; }}
+
+  /* Header */
+  .hero {{ background:linear-gradient(100deg,#ff7a1a 0%,#ec4899 50%,#a855f7 100%); padding:36px 40px 32px; position:relative; }}
+  .hero .brand {{ font-size:13px; font-weight:800; letter-spacing:5px; color:rgba(255,255,255,.92); text-transform:uppercase; }}
+  .hero h1 {{ font-size:30px; font-weight:800; color:#fff; margin-top:8px; letter-spacing:-.5px; }}
+  .hero .meta {{ margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; }}
+  .hero .chip {{ background:rgba(0,0,0,.28); color:#fff; font-size:11px; font-weight:600; padding:5px 12px; border-radius:999px; backdrop-filter:blur(4px); }}
+
+  /* Intro */
+  .intro {{ margin:26px 0 8px; background:#141416; border:1px solid #26262b; border-left:3px solid #ff7a1a; border-radius:12px; padding:16px 18px; color:#c7c7cd; }}
+  .intro b {{ color:#fff; }}
+
+  /* Legend */
+  .legend {{ display:flex; gap:18px; flex-wrap:wrap; margin:14px 0 6px; font-size:10.5px; color:#9a9aa2; }}
+  .legend span b {{ color:#e7e7ea; }}
+
+  /* Section */
+  .section {{ margin-top:26px; break-inside:avoid; }}
+  .section-head {{ display:flex; align-items:center; gap:12px; padding-bottom:10px; border-bottom:1px solid #26262b; margin-bottom:14px; }}
+  .section-num {{ width:30px; height:30px; flex:0 0 30px; display:flex; align-items:center; justify-content:center;
+    border-radius:9px; background:linear-gradient(135deg,#ff7a1a,#ec4899,#a855f7); color:#fff; font-weight:800; font-size:13px; }}
+  .section-title {{ font-size:17px; font-weight:700; color:#fff; letter-spacing:-.3px;
+    background:linear-gradient(90deg,#ff8a3a,#ec4899); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }}
+
+  /* Test card */
+  .test {{ background:#121214; border:1px solid #232329; border-radius:12px; padding:14px 16px; margin-bottom:12px; break-inside:avoid; }}
+  .test-head {{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; }}
+  .checkbox {{ font-size:16px; color:#ff7a1a; line-height:1; }}
+  .test-id {{ font-size:10px; font-weight:800; letter-spacing:.5px; color:#0a0a0b; background:#ff8a3a; padding:3px 8px; border-radius:6px; text-transform:uppercase; }}
+  .test-title {{ font-size:13.5px; font-weight:700; color:#fff; }}
+  .badge-important {{ font-size:8.5px; font-weight:800; letter-spacing:.5px; color:#fff; background:linear-gradient(90deg,#ec4899,#a855f7); padding:3px 8px; border-radius:6px; text-transform:uppercase; }}
+
+  .test-body {{ margin-top:10px; padding-left:25px; }}
+  .howto-label {{ font-size:9.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#8a8a92; margin-bottom:6px; }}
+  ol.steps {{ list-style:none; }}
+  ol.steps li {{ display:flex; gap:9px; align-items:flex-start; margin-bottom:5px; }}
+  .stepnum {{ flex:0 0 17px; width:17px; height:17px; display:flex; align-items:center; justify-content:center;
+    border-radius:50%; background:#26262b; color:#cfcfd6; font-size:9px; font-weight:700; margin-top:1px; }}
+  .steptext {{ color:#cdcdd3; }}
+
+  .expected {{ margin-top:10px; background:rgba(168,85,247,.10); border:1px solid rgba(168,85,247,.28); border-radius:9px; padding:9px 12px; color:#e3d6f5; font-size:11px; }}
+  .expected-label {{ display:inline-block; font-size:9px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:#c79bf0; margin-right:8px; }}
+
+  .result-line {{ margin-top:9px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; font-size:10px; color:#9a9aa2; }}
+  .rbox {{ color:#bdbdc4; }}
+  .notes {{ color:#6c6c74; flex:1; min-width:200px; }}
+
+  /* Footer */
+  .footer {{ position:fixed; bottom:0; left:0; right:0; height:34px; background:#0a0a0b; border-top:1px solid #1f1f24;
+    display:flex; align-items:center; justify-content:space-between; padding:0 40px; font-size:9px; color:#6c6c74; }}
+  .footer .dot {{ color:#ff7a1a; font-weight:800; letter-spacing:3px; }}
+
+  .closing {{ margin-top:28px; background:linear-gradient(120deg,rgba(255,122,26,.12),rgba(168,85,247,.12)); border:1px solid #2b2b31; border-radius:12px; padding:18px 20px; }}
+  .closing h3 {{ font-size:14px; color:#fff; margin-bottom:8px; }}
+  .closing ul {{ list-style:none; margin:4px 0 10px; }}
+  .closing li {{ margin-bottom:4px; color:#cdcdd3; }}
+  .closing .thanks {{ font-size:15px; font-weight:700; color:#fff; margin-top:6px; }}
+</style>
+</head>
+<body>
+  <div class="hero">
+    <div class="brand">Trakalog</div>
+    <h1>Guide de Tests Beta</h1>
+    <div class="meta">
+      <span class="chip">Pour : Eliot (Poultry)</span>
+      <span class="chip">Date : {DATE}</span>
+      <span class="chip">app.trakalog.com</span>
+    </div>
+  </div>
+
+  <div class="page-pad">
+    <div class="intro">{INTRO}</div>
+
+    <div class="legend">
+      <span><b>✅</b> fonctionne parfaitement</span>
+      <span><b>❌</b> ne fonctionne pas (décrire)</span>
+      <span><b>⚠️</b> fonctionne partiellement (décrire)</span>
+    </div>
+
+    {sections_html}
+
+    <div class="closing">
+      <h3>Instructions finales</h3>
+      <ul>
+        <li><b>✅</b> = fonctionne parfaitement</li>
+        <li><b>❌</b> = ne fonctionne pas (décrire ce qui se passe)</li>
+        <li><b>⚠️</b> = fonctionne partiellement (décrire ce qui manque)</li>
+      </ul>
+      <div style="color:#cdcdd3">Captures d'écran bienvenues pour les bugs. Envoyer les résultats à Yannick.</div>
+      <div class="thanks">Merci Eliot ! \U0001f64f</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Document confidentiel — Trakalog Beta</span>
+    <span class="dot">TRAKALOG</span>
+    <span>{DATE}</span>
+  </div>
+</body>
+</html>"""
+
+with open("/Users/yannickrastogi/Desktop/DEV/trakalog-app/outputs/trakalog-tests-poultry.html", "w", encoding="utf-8") as f:
+    f.write(HTML)
+print("HTML written")
