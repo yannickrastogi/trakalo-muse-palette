@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -140,9 +140,8 @@ interface RoleContextValue {
   accessLevel: AccessLevel;
   professionalTitle: string | null;
   permissions: Permissions;
-  // Legacy — kept for UserMenu role switcher (testing)
+  // Legacy — kept for UserMenu role switcher (read-only derived value)
   role: AppRole;
-  setRole: (role: AppRole) => void;
 }
 
 const RoleContext = createContext<RoleContextValue | undefined>(undefined);
@@ -150,7 +149,7 @@ const RoleContext = createContext<RoleContextValue | undefined>(undefined);
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
-  const [accessLevel, setAccessLevel] = useState<AccessLevel>("admin");
+  const [accessLevel, setAccessLevel] = useState<AccessLevel>("viewer");
   const [professionalTitle, setProfessionalTitle] = useState<string | null>(null);
 
   // Fetch access_level from workspace_members
@@ -196,26 +195,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     viewer: "Viewer",
   };
   var role = legacyRoleMap[accessLevel] || "Viewer";
-  var setRole = useCallback(function (r: AppRole) {
-    // Allow manual override for testing
-    var levelMap: Record<string, AccessLevel> = {
-      Admin: "admin",
-      Manager: "editor",
-      "A&R": "editor",
-      Assistant: "pitcher",
-      Publisher: "pitcher",
-      Producer: "pitcher",
-      Songwriter: "pitcher",
-      Musician: "pitcher",
-      "Mix Engineer": "pitcher",
-      "Mastering Engineer": "pitcher",
-      Viewer: "viewer",
-    };
-    setAccessLevel(levelMap[r] || "viewer");
-  }, []);
 
   return (
-    <RoleContext.Provider value={useMemo(() => ({ accessLevel, professionalTitle, permissions, role, setRole }), [accessLevel, professionalTitle, permissions, role, setRole])}>
+    <RoleContext.Provider value={useMemo(() => ({ accessLevel, professionalTitle, permissions, role }), [accessLevel, professionalTitle, permissions, role])}>
       {children}
     </RoleContext.Provider>
   );
