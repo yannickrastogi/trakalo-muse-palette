@@ -46,9 +46,7 @@ export default function StudioSession() {
     }
 
     anonClient
-      .from("tracks")
-      .select("id, title, artist, cover_url, workspace_id")
-      .eq("qr_token", token)
+      .rpc("get_track_by_qr_token", { _qr_token: token })
       .single()
       .then(function (res) {
         if (!isMounted) return;
