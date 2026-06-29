@@ -1045,17 +1045,32 @@ function LeakTracingSection() {
   useEffect(() => { loadLeakTraces(); }, [loadLeakTraces]);
 
   const handleLeakFile = async (file: File) => {
-    if (!activeWorkspace || !user) return;
+    if (!activeWorkspace) {
+      toast.error("No active workspace selected");
+      return;
+    }
     if (!file.name.match(/\.(wav|mp3|flac|ogg|m4a|aac)$/i)) {
       toast.error("Please upload an audio file");
+      return;
+    }
+    // Source user_id from a hydrated session — useAuth().user can lag the real
+    // session (known auth.uid-null bug), so fall back to getSession() before bailing.
+    let userId = user?.id;
+    if (!userId) {
+      const { data: { session } } = await supabase.auth.getSession();
+      userId = session?.user?.id;
+    }
+    if (!userId) {
+      toast.error("Session not ready — please retry in a moment");
       return;
     }
     setLeakAnalyzing(true);
     setLeakResult(null);
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("audio", file);
       formData.append("workspace_id", activeWorkspace.id);
+      formData.append("user_id", userId);
       formData.append("file_name", file.name);
       const res = await fetch(SUPABASE_URL + "/functions/v1/trace-leak", {
         method: "POST",

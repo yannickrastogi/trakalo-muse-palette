@@ -47,9 +47,14 @@ Deno.serve(async (req) => {
     const userId = formData.get("user_id") as string | null;
     const fileName = formData.get("file_name") as string | null;
 
-    if (!audioFile || !workspaceId || !userId) {
+    const missingFields: string[] = [];
+    if (!audioFile) missingFields.push("audio");
+    if (!workspaceId) missingFields.push("workspace_id");
+    if (!userId) missingFields.push("user_id");
+
+    if (missingFields.length > 0) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: audio, workspace_id, user_id" }),
+        JSON.stringify({ error: `Missing required fields: ${missingFields.join(", ")}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
