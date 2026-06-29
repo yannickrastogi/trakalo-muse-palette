@@ -1181,7 +1181,7 @@ export default function TrackDetail() {
                         toast.error(t("trackContext.failedSaveUpdate"));
                       }
                     }}
-                    className="data-[state=checked]:bg-brand-orange"
+                    className="data-[state=unchecked]:bg-secondary data-[state=unchecked]:border data-[state=unchecked]:border-border data-[state=checked]:bg-brand-orange"
                   />
                 </div>
               )}
