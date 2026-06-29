@@ -87,6 +87,7 @@ import {
   Bookmark,
   Scale,
   Tag,
+  Globe,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -1151,11 +1152,19 @@ export default function TrackDetail() {
 
               {/* Trakalog Access — opt this track into the public marketplace */}
               {!isViewerShared && permissions.canEditTracks && (
-                <div className="mt-3 flex items-center justify-between gap-3 p-3 rounded-xl bg-secondary/30 border border-border/50">
+                <div className={"mt-3 flex items-center justify-between gap-3 p-3 rounded-xl border transition-colors " + (track.isMarketplacePublic ? "border-brand-orange/50 bg-brand-orange/5" : "border-border/50 bg-secondary/30")}>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">{t("trackDetail.accessPublic")}</p>
-                    <p className="text-xs text-muted-foreground">{t("trackDetail.accessPublicDesc")}</p>
-                    <a href="/access" target="_blank" rel="noopener noreferrer" className="text-xs text-brand-orange hover:underline mt-1 inline-block">
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-brand-orange shrink-0" />
+                      <p className="text-sm font-medium text-foreground">{t("trackDetail.accessPublic")}</p>
+                      {track.isMarketplacePublic && (
+                        <span className="px-1.5 py-0.5 rounded text-xs bg-brand-orange/20 text-brand-orange font-medium">
+                          Live
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 ml-6">{t("trackDetail.accessPublicDesc")}</p>
+                    <a href="/access" target="_blank" rel="noopener noreferrer" className="text-xs text-brand-orange hover:underline mt-1 ml-6 inline-block">
                       {t("trackDetail.accessPublicLink")} →
                     </a>
                   </div>
@@ -1172,6 +1181,7 @@ export default function TrackDetail() {
                         toast.error(t("trackContext.failedSaveUpdate"));
                       }
                     }}
+                    className="data-[state=checked]:bg-brand-orange"
                   />
                 </div>
               )}
