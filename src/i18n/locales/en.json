@@ -1699,6 +1699,8 @@
     "downloadingFile": "Downloading {{name}} ({{quality}})",
     "qualityHiRes": "Hi-Res",
     "qualityLowRes": "Low-Res",
+    "preparingDownload": "Preparing your download…",
+    "downloadFailed": "Download failed. Please try again.",
     "error": {
       "invalidLink": "Invalid link",
       "linkNotFound": "This link does not exist or has been removed.",

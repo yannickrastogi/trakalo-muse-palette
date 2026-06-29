@@ -791,6 +791,67 @@ export default function SharedLinkPage() {
     }
   }, [slug]);
 
+  // Download a per-visitor, watermarked & traceable copy of a track.
+  // Routes through get-watermarked-audio (MP3 128k) instead of serving the raw
+  // file from the "tracks" bucket — a leaked download stays traceable to the visitor.
+  // Never falls back to the un-watermarked original: no watermark → no download.
+  var downloadTrackFile = function(track: TrackData) {
+    if (!linkData?.allow_download) return;
+    var storagePath = track.audio_url;
+    var linkId = linkData?.id;
+    var visitorEmail = visitorEmailRef.current;
+    if (!storagePath || !linkId) {
+      toast.error(t("sharedLink.downloadFailed"));
+      return;
+    }
+    // No visitor email captured (gate skipped) → watermark can't be attributed → refuse.
+    if (!visitorEmail) {
+      toast.error(t("sharedLink.downloadFailed"));
+      return;
+    }
+    var loadingId = toast.loading(t("sharedLink.preparingDownload"));
+    var dlAbort = new AbortController();
+    var dlTimeout = setTimeout(function() { dlAbort.abort(); }, 60000);
+    fetch(SUPABASE_URL + "/functions/v1/get-watermarked-audio", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
+      body: JSON.stringify({
+        storage_path: storagePath,
+        link_id: linkId,
+        visitor_email: visitorEmail,
+        visitor_name: visitorName || ""
+      }),
+      signal: dlAbort.signal
+    }).then(function(res) {
+      if (!res.ok) throw new Error("watermark failed: " + res.status);
+      return res.json();
+    }).then(function(wmJson) {
+      if (!wmJson || !wmJson.url) throw new Error("no watermarked url");
+      return fetch(wmJson.url);
+    }).then(function(res) {
+      if (!res.ok) throw new Error("Download failed: " + res.status);
+      return res.blob();
+    }).then(function(blob) {
+      var blobUrl = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = track.title + " - " + track.artist + ".mp3";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+      // Log the download only once the watermarked file actually reached the visitor.
+      logEvent(track.id, "download");
+      toast.dismiss(loadingId);
+    }).catch(function(err) {
+      console.error("[watermark-download] failed:", err && err.message);
+      toast.dismiss(loadingId);
+      toast.error(t("sharedLink.downloadFailed"));
+    }).finally(function() {
+      clearTimeout(dlTimeout);
+    });
+  };
+
   // Load a new track into the audio element and play it
   var loadAndPlayTrack = useCallback(function(track: TrackData) {
     var audio = audioRef.current;
@@ -1963,21 +2024,7 @@ export default function SharedLinkPage() {
                           title={t("sharedLink.downloadTrack")}
                           onClick={function(e) {
                             e.stopPropagation(); // do NOT trigger row playback
-                            logEvent(track.id, "download");
-                            var hiRes = linkData.download_quality === "hi-res";
-                            fetchAudioUrl(track.id, hiRes ? "original" : "preview").then(function(url) {
-                              if (!url) return;
-                              fetch(url).then(function(res) { if (!res.ok) throw new Error("Download failed: " + res.status); return res.blob(); }).then(function(blob) {
-                                var blobUrl = URL.createObjectURL(blob);
-                                var a = document.createElement("a");
-                                a.href = blobUrl;
-                                a.download = track.title + " - " + track.artist + (hiRes ? ".wav" : ".mp3");
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(blobUrl);
-                              }).catch(function (err) { console.error("Error:", err); });
-                            }).catch(function (err) { console.error("Error:", err); });
+                            downloadTrackFile(track);
                           }}
                           className={"shrink-0 p-1.5 rounded-lg transition-colors " + (plImmersive ? "text-white/60 hover:text-white hover:bg-white/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}
                         >
@@ -2336,26 +2383,12 @@ export default function SharedLinkPage() {
             {linkData?.allow_download && (trackData.audio_url || slug) && linkData.share_type !== "pack" && (
               <div className={"px-6 py-4 " + (immersive ? "border-t border-white/10" : "border-t border-border")}>
                 <button
-                  onClick={function() {
-                    logEvent(trackData!.id, "download");
-                    fetchAudioUrl(trackData!.id, linkData.download_quality === "hi-res" ? "original" : "preview").then(function(url) {
-                      if (!url) return;
-                      fetch(url).then(function(res) { if (!res.ok) throw new Error("Download failed: " + res.status); return res.blob(); }).then(function(blob) {
-                        var blobUrl = URL.createObjectURL(blob);
-                        var a = document.createElement("a");
-                        a.href = blobUrl;
-                        a.download = trackData!.title + " - " + trackData!.artist + (linkData.download_quality === "hi-res" ? ".wav" : ".mp3");
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(blobUrl);
-                      }).catch(function (err) { console.error("Error:", err); });
-                    }).catch(function (err) { console.error("Error:", err); });
-                  }}
+                  onClick={function() { downloadTrackFile(trackData!); }}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold btn-brand"
                 >
                   <Download className="w-4 h-4" />
-                  {t("sharedLink.downloadButton", { quality: t(linkData.download_quality === "hi-res" ? "sharedLink.qualityHiRes" : "sharedLink.qualityLowRes") })}
+                  {/* Delivery is always watermarked MP3 128k for traceability — label the real format, not download_quality */}
+                  {t("sharedLink.downloadButton", { quality: "MP3" })}
                 </button>
               </div>
             )}

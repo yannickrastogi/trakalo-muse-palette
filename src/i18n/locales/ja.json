@@ -1618,6 +1618,8 @@
     "downloadingFile": "{{name}}をダウンロード中 ({{quality}})",
     "qualityHiRes": "Hi-Res",
     "qualityLowRes": "Low-Res",
+    "preparingDownload": "ダウンロードを準備しています…",
+    "downloadFailed": "ダウンロードに失敗しました。もう一度お試しください。",
     "error": {
       "invalidLink": "無効なリンク",
       "linkNotFound": "このリンクは存在しないか削除されました。",

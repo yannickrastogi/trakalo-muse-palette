@@ -1618,6 +1618,8 @@
     "downloadingFile": "Baixando {{name}} ({{quality}})",
     "qualityHiRes": "Hi-Res",
     "qualityLowRes": "Low-Res",
+    "preparingDownload": "Preparando o seu download…",
+    "downloadFailed": "Falha no download. Tente novamente.",
     "error": {
       "invalidLink": "Link inválido",
       "linkNotFound": "Este link não existe ou foi removido.",

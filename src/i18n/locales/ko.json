@@ -1618,6 +1618,8 @@
     "downloadingFile": "{{name}} 다운로드 중 ({{quality}})",
     "qualityHiRes": "Hi-Res",
     "qualityLowRes": "Low-Res",
+    "preparingDownload": "다운로드를 준비하는 중…",
+    "downloadFailed": "다운로드에 실패했습니다. 다시 시도해 주세요.",
     "error": {
       "invalidLink": "잘못된 링크",
       "linkNotFound": "이 링크는 존재하지 않거나 삭제되었습니다.",
