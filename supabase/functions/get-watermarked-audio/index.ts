@@ -78,9 +78,11 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Build cache key: hash of link_id + visitor_email + storage_path
+    // Build cache key: hash of link_id + visitor_email + storage_path.
+    // Delivery copy is MP3 128k (.mp3) — the new extension means legacy ".wav"
+    // cache objects are never matched, so we never serve a stale WAV.
     const cacheKey = await sha256Hex(`${link_id}_${visitor_email}_${storage_path}`);
-    const watermarkedPath = `${cacheKey}.wav`;
+    const watermarkedPath = `${cacheKey}.mp3`;
 
     // All storage I/O routed through the storage abstraction (Supabase or R2 via STORAGE_PROVIDER).
     const storage = getStorageProvider();
@@ -145,7 +147,7 @@ Deno.serve(async (req) => {
     // 4. Upload watermarked audio to "watermarked" bucket via storage abstraction.
     const watermarkedBuffer = await wmResponse.arrayBuffer();
     try {
-      await storage.upload("watermarked", watermarkedPath, watermarkedBuffer, "audio/wav");
+      await storage.upload("watermarked", watermarkedPath, watermarkedBuffer, "audio/mpeg");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "unknown";
       console.error("get-watermarked-audio upload error:", msg);

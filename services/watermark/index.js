@@ -123,31 +123,61 @@ app.post(
     }
 
     const outputPath = path.join(tmpDir, `${uuidv4()}.wav`);
+    const mp3Path = path.join(tmpDir, `${uuidv4()}.mp3`);
 
+    // Two sequential CPU-bound steps now run (audiowmark add, then ffmpeg),
+    // each with its own 110s inner limit — the global budget must cover both.
     const timeout = setTimeout(() => {
-      cleanup(inputPath, outputPath);
+      cleanup(inputPath, outputPath, mp3Path);
       if (!res.headersSent) {
         res.status(504).json({ error: "Processing timeout" });
       }
-    }, 120000);
+    }, 240000);
 
+    // Step 1: embed the watermark (WAV master stays untouched; we work on a copy).
+    // strength 12 survives lossy compression (MP3/Opus/AAC 128k) — verified on Ubuntu 24.04.
     execFile(
       "audiowmark",
-      ["add", inputPath, outputPath, payload],
+      ["add", "--strength", "12", inputPath, outputPath, payload],
       { timeout: 110000 },
       (error, stdout, stderr) => {
-        clearTimeout(timeout);
-
         if (error) {
-          cleanup(inputPath, outputPath);
+          clearTimeout(timeout);
+          cleanup(inputPath, outputPath, mp3Path);
           return res
             .status(500)
             .json({ error: "Watermark encoding failed", details: stderr });
         }
 
-        res.download(outputPath, "watermarked.wav", () => {
-          cleanup(inputPath, outputPath);
-        });
+        // Step 2: encode the delivery copy to MP3 128k CBR (~10-15x smaller than WAV).
+        // The watermark survives this lossy pass; trace-leak decodes the MP3 fine.
+        execFile(
+          "ffmpeg",
+          ["-i", outputPath, "-c:a", "libmp3lame", "-b:a", "128k", "-y", mp3Path],
+          { timeout: 110000 },
+          (ffError, ffStdout, ffStderr) => {
+            clearTimeout(timeout);
+            // The watermarked WAV is a temp artifact — drop it now, keep only the MP3.
+            cleanup(inputPath, outputPath);
+
+            // The global timeout may have already responded (504) — never respond twice.
+            if (res.headersSent) {
+              cleanup(mp3Path);
+              return;
+            }
+
+            if (ffError) {
+              cleanup(mp3Path);
+              return res
+                .status(500)
+                .json({ error: "MP3 encoding failed", details: ffStderr });
+            }
+
+            res.download(mp3Path, "watermarked.mp3", () => {
+              cleanup(mp3Path);
+            });
+          }
+        );
       }
     );
   }
