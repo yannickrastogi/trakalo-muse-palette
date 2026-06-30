@@ -217,6 +217,8 @@ Deno.serve(async (req) => {
         visitor_name: visitorName,
         link_id: linkId,
         raw_payload: rawPayload,
+        leaker_ip: leakerIp,
+        ip_source: ipSource,
       })
       .select("id")
       .single();

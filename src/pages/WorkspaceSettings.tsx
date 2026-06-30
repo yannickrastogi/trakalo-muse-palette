@@ -25,6 +25,7 @@ import {
   Link2,
   ExternalLink,
   CheckCircle2,
+  Download,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import {
@@ -37,6 +38,12 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -1020,27 +1027,110 @@ function CatalogSharingSection() {
    SECTION: LEAK TRACING
    ═══════════════════════════════════════════════════════ */
 
+type LeakTrace = {
+  id: string;
+  file_name: string;
+  created_at: string;
+  match: boolean;
+  visitor_email: string | null;
+  visitor_name: string | null;
+  link_id: string | null;
+  confidence: number;
+  hash_hex: string | null;
+  leaker_ip: string | null;
+  ip_source: "download" | "listen" | "link_only" | null;
+};
+
 function LeakTracingSection() {
   const { t } = useTranslation();
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
-  const REST_URL = SUPABASE_URL + "/rest/v1";
-  const SB_HEADERS: Record<string, string> = { "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + (user as any)?.access_token || SUPABASE_PUBLISHABLE_KEY };
 
   const [leakAnalyzing, setLeakAnalyzing] = useState(false);
   const [leakResult, setLeakResult] = useState<{ match: boolean; visitor_email?: string | null; visitor_name?: string | null; link_id?: string | null; confidence?: number; hash_hex?: string | null; leaker_ip?: string | null; ip_source?: "download" | "listen" | "link_only" | null } | null>(null);
-  const [leakTraces, setLeakTraces] = useState<{ id: string; file_name: string; created_at: string; match: boolean; visitor_email: string | null; confidence: number }[]>([]);
+  const [leakTraces, setLeakTraces] = useState<LeakTrace[]>([]);
   const [leakDragOver, setLeakDragOver] = useState(false);
   const leakInputRef = useRef<HTMLInputElement>(null);
+  const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; fileName: string } | null>(null);
+  const [deletingTrace, setDeletingTrace] = useState(false);
+  const selectedTrace = leakTraces.find((tr) => tr.id === selectedTraceId) || null;
 
   const loadLeakTraces = useCallback(async () => {
     if (!activeWorkspace) return;
     try {
-      const { data } = await supabase.from("leak_traces").select("id, file_name, created_at, match, visitor_email, confidence")
+      const { data } = await supabase.from("leak_traces")
+        .select("id, file_name, created_at, match, visitor_email, visitor_name, link_id, confidence, hash_hex, leaker_ip, ip_source")
         .eq("workspace_id", activeWorkspace.id).order("created_at", { ascending: false }).limit(10);
-      if (data) setLeakTraces(data);
+      if (data) setLeakTraces(data as LeakTrace[]);
     } catch (e) { console.error("Failed to load leak traces:", e); }
   }, [activeWorkspace]);
+
+  const handleDeleteTrace = async () => {
+    if (!deleteTarget) return;
+    setDeletingTrace(true);
+    // Robust user_id sourcing (known auth.uid-null bug) before the SECURITY DEFINER RPC.
+    let userId = user?.id;
+    if (!userId) {
+      const { data: { session } } = await supabase.auth.getSession();
+      userId = session?.user?.id;
+    }
+    if (!userId) {
+      toast.error("Session not ready — please retry in a moment");
+      setDeletingTrace(false);
+      return;
+    }
+    // delete_leak_trace enforces workspace ownership server-side (SECURITY DEFINER).
+    const { error } = await supabase.rpc("delete_leak_trace", { _user_id: userId, _trace_id: deleteTarget.id });
+    if (error) {
+      toast.error(error.message || t("workspaceSettings.deleteFailed"));
+    } else {
+      const deletedId = deleteTarget.id;
+      setLeakTraces((prev) => prev.filter((tr) => tr.id !== deletedId));
+      if (selectedTraceId === deletedId) setSelectedTraceId(null);
+      toast.success(t("workspaceSettings.traceDeletedSuccess"));
+    }
+    setDeletingTrace(false);
+    setDeleteTarget(null);
+  };
+
+  const downloadTraceReport = async (tr: LeakTrace) => {
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ unit: "pt", format: "letter" });
+      const left = 56;
+      let y = 64;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("Trakalog — Leak Trace Report", left, y);
+      y += 28;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      const row = (label: string, value: string) => {
+        doc.setFont("helvetica", "bold");
+        doc.text(label, left, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(value || "—", left + 130, y);
+        y += 20;
+      };
+      row("Date", tr.created_at ? new Date(tr.created_at).toLocaleString() : "—");
+      row("File", tr.file_name || "—");
+      row("Status", tr.match ? "LEAK DETECTED" : "Clean (no watermark)");
+      if (tr.match) {
+        row("Name", tr.visitor_name || "—");
+        row("Email", tr.visitor_email || "—");
+        row("Shared Link", tr.link_id || "—");
+        row("IP", tr.leaker_ip ? tr.leaker_ip + (tr.ip_source === "link_only" ? " (via link, email unverified)" : "") : "—");
+        row("Confidence", tr.confidence != null ? Math.round(tr.confidence * 100) + "%" : "—");
+        row("Watermark hash", tr.hash_hex || "—");
+      }
+      const datePart = (tr.created_at ? new Date(tr.created_at) : new Date()).toISOString().slice(0, 10);
+      doc.save("leak-report-" + datePart + ".pdf");
+    } catch (e) {
+      console.error("Failed to generate leak report:", e);
+      toast.error(t("workspaceSettings.deleteFailed"));
+    }
+  };
 
   useEffect(() => { loadLeakTraces(); }, [loadLeakTraces]);
 
@@ -1164,18 +1254,111 @@ function LeakTracingSection() {
           <div className="mt-4 space-y-2">
             <h4 className="text-[12px] font-bold text-muted-foreground/50 uppercase tracking-widest">{t("workspaceSettings.recentTraces")}</h4>
             {leakTraces.map((trace) => (
-              <div key={trace.id} className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-secondary/20 border border-border/15">
-                <div>
-                  <p className="text-[12px] font-medium text-foreground">{trace.file_name}</p>
+              <div
+                key={trace.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedTraceId(trace.id)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedTraceId(trace.id); } }}
+                className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-secondary/20 border border-border/15 cursor-pointer hover:bg-secondary/40 transition-colors"
+              >
+                <div className="min-w-0">
+                  <p className="text-[12px] font-medium text-foreground truncate">{trace.file_name}</p>
                   <p className="text-[10px] text-muted-foreground/40">{new Date(trace.created_at).toLocaleString()}</p>
                 </div>
-                <span className={"text-[11px] font-semibold px-2 py-0.5 rounded-full " + (trace.match ? "bg-destructive/10 text-destructive" : "bg-emerald-500/10 text-emerald-500")}>
-                  {trace.match ? t("workspaceSettings.traceLeak") : t("workspaceSettings.traceClean")}
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={"text-[11px] font-semibold px-2 py-0.5 rounded-full " + (trace.match ? "bg-destructive/10 text-destructive" : "bg-emerald-500/10 text-emerald-500")}>
+                    {trace.match ? t("workspaceSettings.traceLeak") : t("workspaceSettings.traceClean")}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={t("workspaceSettings.deleteTrace")}
+                    title={t("workspaceSettings.deleteTrace")}
+                    onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: trace.id, fileName: trace.file_name }); }}
+                    className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
+
+        {/* Trace detail */}
+        <Dialog open={!!selectedTrace} onOpenChange={(open) => { if (!open) setSelectedTraceId(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t("workspaceSettings.traceDetail")}</DialogTitle>
+            </DialogHeader>
+            {selectedTrace && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  {selectedTrace.match
+                    ? <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">{t("workspaceSettings.traceLeak")}</span>
+                    : <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">{t("workspaceSettings.traceClean")}</span>}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">{t("workspaceSettings.file")}</span> {selectedTrace.file_name}</p>
+                  <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">{t("workspaceSettings.traceAnalyzedOn")}</span> {new Date(selectedTrace.created_at).toLocaleString()}</p>
+                  {selectedTrace.match && (
+                    <>
+                      {selectedTrace.visitor_name && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">{t("workspaceSettings.leakName")}</span> {selectedTrace.visitor_name}</p>}
+                      {selectedTrace.visitor_email && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">{t("workspaceSettings.leakEmail")}</span> {selectedTrace.visitor_email}</p>}
+                      {selectedTrace.link_id && <p className="text-[12px] text-foreground break-all"><span className="text-muted-foreground/60">{t("workspaceSettings.leakSharedLink")}</span> {selectedTrace.link_id}</p>}
+                      {selectedTrace.confidence != null && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">{t("workspaceSettings.leakConfidence")}</span> {Math.round(selectedTrace.confidence * 100)}%</p>}
+                      {selectedTrace.leaker_ip && (
+                        <p className="text-[12px] text-foreground flex items-center gap-1.5 flex-wrap">
+                          <span className="text-muted-foreground/60">{t("workspaceSettings.leakIp")}</span> <span className="font-mono">{selectedTrace.leaker_ip}</span>
+                          {selectedTrace.ip_source === "link_only" && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500">{t("workspaceSettings.leakIpLinkOnly")}</span>
+                          )}
+                        </p>
+                      )}
+                      {selectedTrace.hash_hex && <p className="text-[12px] text-foreground break-all"><span className="text-muted-foreground/60">{t("workspaceSettings.leakHash")}</span> <span className="font-mono">{selectedTrace.hash_hex}</span></p>}
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => downloadTraceReport(selectedTrace)}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold btn-brand"
+                  >
+                    <Download className="w-4 h-4" /> {t("workspaceSettings.downloadReport")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDeleteTarget({ id: selectedTrace.id, fileName: selectedTrace.file_name }); }}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" /> {t("workspaceSettings.deleteTrace")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete confirmation */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("workspaceSettings.deleteTrace")}</AlertDialogTitle>
+              <AlertDialogDescription>{t("workspaceSettings.deleteTraceConfirm")}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deletingTrace}>{t("workspaceSettings.cancel")}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteTrace}
+                disabled={deletingTrace}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deletingTrace ? t("workspaceSettings.deletingTrace") : t("workspaceSettings.delete")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </SectionBlock>
     </motion.div>
   );
