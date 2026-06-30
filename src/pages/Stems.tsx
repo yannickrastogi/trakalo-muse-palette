@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getStorageSignedUrl } from "@/lib/audio";
 
 // Use centralized constants
-import { STEM_TYPES, GENRES, DEFAULT_COVER } from "@/lib/constants";
+import { STEM_TYPES, DEFAULT_COVER } from "@/lib/constants";
 import type { StemType } from "@/lib/constants";
 import { INSTRUMENTS, LYRIC_THEMES, MOOD_FEEL, TEMPO_DESCRIPTORS, SYNC_TAGS } from "@/lib/tagsVocabulary";
 import { TagFilterDropdown, TempoToggle } from "@/components/TagFilterDropdown";
@@ -23,6 +23,7 @@ interface FlatStem extends TrackStem {
   trackTitle: string;
   trackArtist: string;
   trackGenre: string;
+  trackGenres: string[];
   trackBpm: number;
   trackKey: string;
   trackCoverIdx: number;
@@ -247,6 +248,7 @@ function StemsInner() {
         trackTitle: track.title,
         trackArtist: track.artist,
         trackGenre: Array.isArray(track.genre) ? track.genre.join(", ") : (track.genre as unknown as string) || "",
+        trackGenres: Array.isArray(track.genre) ? track.genre.filter((g) => typeof g === "string" && g.trim() !== "") : (track.genre ? [track.genre as unknown as string] : []),
         trackBpm: track.bpm,
         trackKey: track.key,
         trackCoverIdx: track.coverIdx,
@@ -264,6 +266,7 @@ function StemsInner() {
           trackTitle: track.title,
           trackArtist: track.artist,
           trackGenre: Array.isArray(track.genre) ? track.genre.join(", ") : (track.genre as unknown as string) || "",
+          trackGenres: Array.isArray(track.genre) ? track.genre.filter((g) => typeof g === "string" && g.trim() !== "") : (track.genre ? [track.genre as unknown as string] : []),
           trackBpm: track.bpm,
           trackKey: track.key,
           trackCoverIdx: track.coverIdx,
@@ -278,8 +281,16 @@ function StemsInner() {
   // Derive unique options — tracks & artists from ALL tracks so new additions auto-appear
   const uniqueTracks = useMemo(() => [...new Set(tracks.map((t) => t.title))].sort(), [tracks]);
   const uniqueArtists = useMemo(() => [...new Set(tracks.map((t) => t.artist))].sort(), [tracks]);
-  // Genre & Keys: use centralized predefined lists from constants
-  const uniqueGenres = [...GENRES];
+  // Genre filter options = genres actually present on the stems' parent tracks
+  // (standards + custom), flattened from genre[], deduped, sorted.
+  const uniqueGenres = useMemo(() => {
+    const set = new Set<string>();
+    tracks.forEach((t) => {
+      const g = Array.isArray(t.genre) ? t.genre : (t.genre ? [t.genre as unknown as string] : []);
+      g.forEach((val) => { if (val && val.trim()) set.add(val); });
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [tracks]);
   const uniqueKeys = useMemo(() => [...new Set(tracks.map((t) => t.key).filter(Boolean))].sort(), [tracks]);
 
 
@@ -332,7 +343,7 @@ function StemsInner() {
       if (trackFilter !== "all" && s.trackTitle !== trackFilter) return false;
       if (artistFilter !== "all" && s.trackArtist !== artistFilter) return false;
       if (typeFilter !== "all" && s.type !== typeFilter) return false;
-      if (genreFilter !== "all" && s.trackGenre !== genreFilter) return false;
+      if (genreFilter !== "all" && !(s.trackGenres || []).some((g) => g.toLowerCase() === genreFilter.toLowerCase())) return false;
       if (keyFilter !== "all" && (s.key || s.trackKey) !== keyFilter) return false;
       if (bpmMinVal && s.trackBpm < bpmMinVal) return false;
       if (bpmMaxVal && s.trackBpm > bpmMaxVal) return false;

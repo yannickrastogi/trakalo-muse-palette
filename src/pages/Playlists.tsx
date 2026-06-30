@@ -23,7 +23,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
 import { EmptyState } from "@/components/EmptyState";
 import { usePlaylists } from "@/contexts/PlaylistContext";
-import { DEFAULT_COVER, GENRES } from "@/lib/constants";
+import { DEFAULT_COVER } from "@/lib/constants";
 import { useTrack } from "@/contexts/TrackContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useRole } from "@/contexts/RoleContext";
@@ -288,6 +288,12 @@ export default function Playlists() {
     return map;
   }, [playlists, allTracks]);
 
+  // Style filter options = the dominant styles actually present across playlists
+  // (derived from real track genres, standards + custom) — every option matches one.
+  var availableStyles = useMemo(function () {
+    return Array.from(new Set(Object.values(playlistDominantStyle))).sort(function (a, b) { return a.localeCompare(b); });
+  }, [playlistDominantStyle]);
+
   var activeFilterCount = [moodFilter, styleFilter, trackCountFilter].filter(Boolean).length;
 
   var clearFilters = function () {
@@ -419,7 +425,7 @@ export default function Playlists() {
               <div className="card-premium p-5" style={{ overflow: "visible" }}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   <FilterSelect label={t("playlists.filters.mood")} value={moodFilter} options={playlistMoods} onChange={setMoodFilter} />
-                  <FilterSelect label={t("playlists.filters.style")} value={styleFilter} options={[...GENRES]} onChange={setStyleFilter} />
+                  <FilterSelect label={t("playlists.filters.style")} value={styleFilter} options={availableStyles} onChange={setStyleFilter} />
                   <FilterSelect label={t("playlists.filters.tracks")} value={trackCountFilter} options={trackCountRanges.slice(1).map(function (r) { return r.label; })} onChange={setTrackCountFilter} />
                 </div>
                 {activeFilterCount > 0 && (

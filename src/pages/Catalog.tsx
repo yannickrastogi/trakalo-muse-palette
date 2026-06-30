@@ -11,7 +11,7 @@ import { TrackCompletenessBar } from "@/components/TrackCompletenessBar";
 import { useTrackCompleteness } from "@/hooks/useTrackCompleteness";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useEngagement } from "@/contexts/EngagementContext";
-import { GENRES, KEYS, LANGUAGES, GENDERS, DEFAULT_COVER, PRODUCTION_STAGES } from "@/lib/constants";
+import { KEYS, LANGUAGES, GENDERS, DEFAULT_COVER, PRODUCTION_STAGES } from "@/lib/constants";
 import { INSTRUMENTS, LYRIC_THEMES, MOOD_FEEL, TEMPO_DESCRIPTORS, SYNC_TAGS } from "@/lib/tagsVocabulary";
 import { TagFilterDropdown, TempoToggle } from "@/components/TagFilterDropdown";
 import { NameAutocomplete } from "@/components/NameAutocomplete";
@@ -167,7 +167,16 @@ export default function Catalog() {
   }, [searchParams]);
 
   const types = useMemo(() => [...new Set(allTracks.map((t) => t.type))].sort(), [allTracks]);
-  const genres = [...GENRES];
+  // Genre filter options = genres actually present on the catalog's tracks (standards
+  // + custom like Bouyon/Shatta), flattened from the genre[] arrays, deduped, sorted.
+  const genres = useMemo(() => {
+    const set = new Set<string>();
+    allTracks.forEach((t) => {
+      const g = Array.isArray(t.genre) ? t.genre : (t.genre ? [t.genre as unknown as string] : []);
+      g.forEach((val) => { if (val && val.trim()) set.add(val); });
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [allTracks]);
   const keys = [...KEYS];
 
   // Upload-month options, newest first. We expose the formatted label ("June 2026")

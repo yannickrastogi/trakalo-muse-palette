@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useTrack } from "@/contexts/TrackContext";
-import { GENRES, KEYS, MOODS, LANGUAGES, GENDERS, DEFAULT_COVER } from "@/lib/constants";
+import { KEYS, MOODS, LANGUAGES, GENDERS, DEFAULT_COVER } from "@/lib/constants";
 import { motion } from "framer-motion";
 import {
   Music, Search, Play, Pause, MoreHorizontal, ChevronDown, X,
@@ -40,6 +40,16 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
   const navigate = useNavigate();
 
   const sharedTracks = useMemo(() => allTracks.filter((t) => sharedTrackIds.includes(t.id)), [allTracks, sharedTrackIds]);
+
+  // Genre filter options = genres actually present on the shared tracks (standards + custom).
+  const availableGenres = useMemo(() => {
+    const set = new Set<string>();
+    sharedTracks.forEach((t) => {
+      const g = Array.isArray(t.genre) ? t.genre : (t.genre ? [t.genre as unknown as string] : []);
+      g.forEach((val) => { if (val && val.trim()) set.add(val); });
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [sharedTracks]);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
@@ -155,7 +165,7 @@ export function TeamSharedCatalog({ teamName, sharedTrackIds, onBack }: TeamShar
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="card-premium p-5">
           <div className="flex flex-wrap gap-4 items-end">
             <FilterSelect label="Type" value={typeFilter} options={types} onChange={setTypeFilter} />
-            <FilterSelect label="Genre" value={genreFilter} options={[...GENRES]} onChange={setGenreFilter} />
+            <FilterSelect label="Genre" value={genreFilter} options={availableGenres} onChange={setGenreFilter} />
             <FilterSelect label="Key" value={keyFilter} options={[...KEYS]} onChange={setKeyFilter} />
             <div className="flex flex-col gap-1.5">
               <label className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">BPM</label>
