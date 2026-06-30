@@ -8,26 +8,29 @@ export const COUNTRIES: readonly string[] = (getNames() as string[]).slice().sor
 
 export const DEFAULT_COVER = "/images/default-cover.png";
 
+// Industry-reference primary genres (alphabetical). Niche sub-genres / styles
+// (Bouyon, Shatta, Compas, Zouk, …) stay available as user CUSTOM values via
+// GenreMultiSelect — existing track genres outside this list are preserved,
+// displayed, and editable; they are never stripped.
 export const GENRES = [
-  "Afro Trap", "Afrobeats", "Afrohouse", "Amapiano", "Ambient",
-  "Blues", "Bouyon",
-  "Caribbean", "Classical", "Compas", "Country",
-  "Dance", "Dancehall", "Dembow", "Disco-Funk", "DnB", "Drill", "Dubstep",
+  "Afrobeats", "Alternative", "Amapiano", "Ambient",
+  "Blues",
+  "Classical", "Country",
+  "Dance / EDM", "Dancehall", "Disco", "Drum & Bass", "Dubstep",
   "Electronic",
-  "Film", "Folk", "Funk",
-  "Garage", "Gospel",
-  "Hip-Hop", "House", "Hyperpop",
-  "I-Pop", "Indie",
-  "Jazz", "Jersey Club",
-  "K-Pop", "Kompa",
-  "Latin", "Latin Trap", "Lo-fi", "Lounge",
+  "Folk", "Funk",
+  "Gospel",
+  "Hip-Hop / Rap", "House",
+  "Indie",
+  "Jazz",
+  "K-Pop",
+  "Latin", "Lo-Fi",
   "Metal",
-  "Phonk", "Pluggnb", "Pop", "Progressive", "Punk",
-  "R&B", "Reggae", "Reggae-Dancehall", "Reggaeton", "Rock",
-  "Shatta", "Soca", "Soul",
+  "Pop", "Punk",
+  "R&B / Soul", "Reggae", "Reggaeton", "Rock",
+  "Soca", "Soundtrack / Score",
   "Techno", "Trance", "Trap",
   "World",
-  "Zouk",
 ] as const;
 
 export const STEM_TYPES = [
