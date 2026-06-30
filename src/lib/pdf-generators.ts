@@ -90,21 +90,43 @@ function drawHeaderCard(doc: jsPDF, marginX: number, contentW: number, pageW: nu
   let y = 92;
   doc.setFillColor(...cardBg);
   doc.roundedRect(marginX, y, contentW, 80, 8, 8, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor(...textLight);
-  doc.text(title, marginX + 20, y + 32);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(13);
-  doc.setTextColor(...textMuted);
-  doc.text(artist, marginX + 20, y + 54);
-  doc.setFillColor(...brandOrange);
+
+  // Badge geometry (top-right) — computed first so the title can be clamped to it.
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   const badgeW = doc.getTextWidth(badgeLabel) + 16;
-  doc.roundedRect(pageW - marginX - badgeW - 20, y + 16, badgeW, 18, 4, 4, "F");
+  const badgeX = pageW - marginX - badgeW - 20;
+
+  // Title — truncate with an ellipsis so a long name never runs under the badge.
+  // Short titles fit within titleMaxW and render unchanged.
+  const titleX = marginX + 20;
+  const titleMaxW = badgeX - titleX - 12; // 12pt gutter before the badge
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(...textLight);
+  // ASCII "..." rather than the … glyph — jsPDF standard fonts may not render U+2026.
+  let shownTitle = title;
+  if (doc.getTextWidth(shownTitle) > titleMaxW) {
+    while (shownTitle.length > 1 && doc.getTextWidth(shownTitle + "...") > titleMaxW) {
+      shownTitle = shownTitle.slice(0, -1);
+    }
+    shownTitle = shownTitle.replace(/\s+$/, "") + "...";
+  }
+  doc.text(shownTitle, titleX, y + 32);
+
+  // Artist sits on the row below the badge (never overlaps it) — unchanged.
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(13);
+  doc.setTextColor(...textMuted);
+  doc.text(artist, titleX, y + 54);
+
+  // Badge on top of everything (the title is already clamped clear of it).
+  doc.setFillColor(...brandOrange);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.roundedRect(badgeX, y + 16, badgeW, 18, 4, 4, "F");
   doc.setTextColor(255, 255, 255);
-  doc.text(badgeLabel, pageW - marginX - badgeW / 2 - 20, y + 28, { align: "center" });
+  doc.text(badgeLabel, badgeX + badgeW / 2, y + 28, { align: "center" });
 }
 
 function drawDividerDots(doc: jsPDF, pageW: number) {
