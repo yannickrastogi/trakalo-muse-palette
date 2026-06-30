@@ -1096,36 +1096,9 @@ function LeakTracingSection() {
 
   const downloadTraceReport = async (tr: LeakTrace) => {
     try {
-      const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF({ unit: "pt", format: "letter" });
-      const left = 56;
-      let y = 64;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text("Trakalog — Leak Trace Report", left, y);
-      y += 28;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(11);
-      const row = (label: string, value: string) => {
-        doc.setFont("helvetica", "bold");
-        doc.text(label, left, y);
-        doc.setFont("helvetica", "normal");
-        doc.text(value || "—", left + 130, y);
-        y += 20;
-      };
-      row("Date", tr.created_at ? new Date(tr.created_at).toLocaleString() : "—");
-      row("File", tr.file_name || "—");
-      row("Status", tr.match ? "LEAK DETECTED" : "Clean (no watermark)");
-      if (tr.match) {
-        row("Name", tr.visitor_name || "—");
-        row("Email", tr.visitor_email || "—");
-        row("Shared Link", tr.link_id || "—");
-        row("IP", tr.leaker_ip ? tr.leaker_ip + (tr.ip_source === "link_only" ? " (via link, email unverified)" : "") : "—");
-        row("Confidence", tr.confidence != null ? Math.round(tr.confidence * 100) + "%" : "—");
-        row("Watermark hash", tr.hash_hex || "—");
-      }
-      const datePart = (tr.created_at ? new Date(tr.created_at) : new Date()).toISOString().slice(0, 10);
-      doc.save("leak-report-" + datePart + ".pdf");
+      // Branded report matching the splits/credits PDF style (shared header/footer).
+      const { generateLeakReportPdf } = await import("@/lib/pdf-generators");
+      generateLeakReportPdf(tr, activeWorkspace?.name);
     } catch (e) {
       console.error("Failed to generate leak report:", e);
       toast.error(t("workspaceSettings.deleteFailed"));

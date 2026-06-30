@@ -498,6 +498,96 @@ export function generateMetadataPdf(
   doc.save(`${title} - Metadata.pdf`);
 }
 
+export interface LeakReportData {
+  file_name: string | null;
+  created_at: string | null;
+  match: boolean;
+  visitor_email: string | null;
+  visitor_name: string | null;
+  link_id: string | null;
+  confidence: number | null;
+  hash_hex: string | null;
+  leaker_ip: string | null;
+  ip_source: "download" | "listen" | "link_only" | null;
+}
+
+/** Generate a branded Leak Trace Report PDF — matches the splits/credits style. */
+export function generateLeakReportPdf(trace: LeakReportData, workspaceName?: string, asBlob?: boolean): Blob | void {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 56;
+  const contentW = pageW - marginX * 2;
+
+  drawPageBackground(doc);
+  drawLogo(doc, marginX);
+  drawHeaderCard(
+    doc,
+    marginX,
+    contentW,
+    pageW,
+    trace.file_name || "Leak Trace Report",
+    workspaceName || "Leak Tracing",
+    trace.match ? "LEAK DETECTED" : "CLEAN",
+  );
+  drawDividerDots(doc, pageW);
+
+  let y = 210;
+
+  // Status banner — red when a leak is traced, green when clean.
+  const leakRed: [number, number, number] = [200, 55, 65];
+  const cleanGreen: [number, number, number] = [40, 165, 110];
+  doc.setFillColor(...(trace.match ? leakRed : cleanGreen));
+  doc.roundedRect(marginX, y, contentW, 30, 6, 6, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(255, 255, 255);
+  doc.text(
+    trace.match ? "WATERMARK DETECTED — LEAK TRACED" : "NO WATERMARK DETECTED — CLEAN",
+    marginX + 14,
+    y + 19.5,
+  );
+  y += 48;
+
+  const rowH = 40;
+  const drawRow = (label: string, value: string) => {
+    if (y + rowH > pageH - 60) { doc.addPage(); drawPageBackground(doc); y = 48; }
+    doc.setFillColor(...cardBg);
+    doc.roundedRect(marginX, y, contentW, rowH - 6, 4, 4, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...brandOrange);
+    doc.text(label.toUpperCase(), marginX + 14, y + 14);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...textLight);
+    const wrapped = doc.splitTextToSize(value, contentW - 28);
+    doc.text(wrapped[0] || "—", marginX + 14, y + 27);
+    y += rowH;
+  };
+
+  drawRow("Date analyzed", trace.created_at ? new Date(trace.created_at).toLocaleString() : "—");
+  drawRow("File", trace.file_name || "—");
+  if (trace.match) {
+    drawRow("Name", trace.visitor_name || "Not available");
+    drawRow("Email", trace.visitor_email || "Not available");
+    drawRow("Shared link", trace.link_id || "Not available");
+    const ipSuffix =
+      trace.ip_source === "link_only" ? "  (via link — email unverified)"
+      : trace.ip_source === "listen" ? "  (from listen)"
+      : trace.ip_source === "download" ? "  (from download)"
+      : "";
+    drawRow("IP address", trace.leaker_ip ? trace.leaker_ip + ipSuffix : "Not available");
+    drawRow("Confidence", trace.confidence != null ? Math.round(trace.confidence * 100) + "%" : "—");
+    drawRow("Watermark hash", trace.hash_hex || "Not available");
+  }
+
+  drawFooters(doc, marginX);
+
+  if (asBlob) return doc.output("blob");
+  const datePart = (trace.created_at ? new Date(trace.created_at) : new Date()).toISOString().slice(0, 10);
+  doc.save("leak-report-" + datePart + ".pdf");
+}
 
 export interface CreditEntry {
   label: string;
