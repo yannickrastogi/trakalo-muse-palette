@@ -216,27 +216,31 @@ app.post(
             .json({ error: "Watermark decoding failed", details: stderr });
         }
 
-        // Parse audiowmark output
-        // audiowmark get outputs lines like: "pattern <bit_count> <payload> <confidence>"
+        // Parse audiowmark 0.6.5 output. Lines look like:
+        //   "pattern  0:00 <32-hex-payload> 1.530 0.279 CLIP-B"
+        //   "pattern   all <32-hex-payload> 1.234 ..."
+        // The 2nd token is a timestamp ("0:00") or "all" — NOT a bit count — so the
+        // old /^pattern\s+\d+.../ regex never matched. Capture the 32-hex payload and
+        // the first float score regardless of that token.
         const lines = stdout.trim().split("\n");
         let payload = null;
         let confidence = 0;
 
         for (const line of lines) {
-          const match = line.match(/^pattern\s+\d+\s+(\S+)\s+([\d.]+)/);
+          const match = line.match(/^pattern\s+\S+\s+([0-9a-f]{32})\s+([\d.]+)/i);
           if (match) {
-            payload = match[1];
-            confidence = parseFloat(match[2]);
-            break;
+            const score = parseFloat(match[2]);
+            // Keep the strongest detection across all lines.
+            if (score > confidence) {
+              confidence = score;
+              payload = match[1].toLowerCase();
+            }
           }
         }
 
-        if (!payload) {
-          // Try raw output as fallback
-          const trimmed = stdout.trim();
-          if (trimmed) {
-            return res.json({ payload: trimmed, confidence: null, raw: true });
-          }
+        // A genuine watermark scores ~1.5; clean-file noise sits around 0.2-0.3.
+        // Require >= 1.0 to count as detected, avoiding false positives on clean audio.
+        if (!payload || confidence < 1.0) {
           return res.json({ payload: null, confidence: 0, message: "No watermark detected" });
         }
 
