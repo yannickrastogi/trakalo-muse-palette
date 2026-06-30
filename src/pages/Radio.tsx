@@ -497,9 +497,11 @@ export default function RadioPage() {
               <span className="bg-secondary rounded-full px-3 py-1 text-xs text-muted-foreground">
                 {availableGenres.length + " " + t("radio.genresAvailable", "genres available")}
               </span>
-              <span className="bg-secondary rounded-full px-3 py-1 text-xs text-muted-foreground">
-                {availableMoods.length + " " + t("radio.moodsLabel", "moods")}
-              </span>
+              {availableMoods.length > 0 && (
+                <span className="bg-secondary rounded-full px-3 py-1 text-xs text-muted-foreground">
+                  {availableMoods.length + " " + t("radio.moodsLabel", "moods")}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -557,10 +559,9 @@ export default function RadioPage() {
         {/* Genre dropdown */}
         {mode === "genre" && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
           >
             <div className="flex flex-col gap-1.5 w-full sm:w-64" ref={genreDropdownRef}>
               <div className="relative">
@@ -606,10 +607,9 @@ export default function RadioPage() {
         {/* Mood dropdown */}
         {mode === "mood" && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
           >
             <div className="flex flex-col gap-1.5 w-full sm:w-64" ref={moodDropdownRef}>
               <div className="relative">
