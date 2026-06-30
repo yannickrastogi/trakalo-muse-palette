@@ -1028,7 +1028,7 @@ function LeakTracingSection() {
   const SB_HEADERS: Record<string, string> = { "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + (user as any)?.access_token || SUPABASE_PUBLISHABLE_KEY };
 
   const [leakAnalyzing, setLeakAnalyzing] = useState(false);
-  const [leakResult, setLeakResult] = useState<{ match: boolean; visitor_email?: string | null; visitor_name?: string | null; link_id?: string | null; confidence?: number; hash_hex?: string | null } | null>(null);
+  const [leakResult, setLeakResult] = useState<{ match: boolean; visitor_email?: string | null; visitor_name?: string | null; link_id?: string | null; confidence?: number; hash_hex?: string | null; leaker_ip?: string | null; ip_source?: "download" | "listen" | "link_only" | null } | null>(null);
   const [leakTraces, setLeakTraces] = useState<{ id: string; file_name: string; created_at: string; match: boolean; visitor_email: string | null; confidence: number }[]>([]);
   const [leakDragOver, setLeakDragOver] = useState(false);
   const leakInputRef = useRef<HTMLInputElement>(null);
@@ -1136,6 +1136,14 @@ function LeakTracingSection() {
                   {leakResult.visitor_email && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">{t("workspaceSettings.leakEmail")}</span> {leakResult.visitor_email}</p>}
                   {leakResult.link_id && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">{t("workspaceSettings.leakSharedLink")}</span> {leakResult.link_id}</p>}
                   {leakResult.confidence != null && <p className="text-[12px] text-foreground"><span className="text-muted-foreground/60">{t("workspaceSettings.leakConfidence")}</span> {Math.round(leakResult.confidence * 100)}%</p>}
+                  {leakResult.leaker_ip && (
+                    <p className="text-[12px] text-foreground flex items-center gap-1.5 flex-wrap">
+                      <span className="text-muted-foreground/60">{t("workspaceSettings.leakIp")}</span> <span className="font-mono">{leakResult.leaker_ip}</span>
+                      {leakResult.ip_source === "link_only" && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500">{t("workspaceSettings.leakIpLinkOnly")}</span>
+                      )}
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (

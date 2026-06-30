@@ -1968,6 +1968,8 @@
     "leakEmail": "이메일:",
     "leakSharedLink": "공유 링크:",
     "leakConfidence": "신뢰도:",
+    "leakIp": "IP:",
+    "leakIpLinkOnly": "링크 기반 IP (이메일 미확인)",
     "recentTraces": "최근 추적 내역",
     "traceLeak": "유출",
     "traceClean": "정상",

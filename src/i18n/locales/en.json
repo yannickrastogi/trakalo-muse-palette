@@ -2049,6 +2049,8 @@
     "leakEmail": "Email:",
     "leakSharedLink": "Shared Link:",
     "leakConfidence": "Confidence:",
+    "leakIp": "IP:",
+    "leakIpLinkOnly": "IP via link (email unverified)",
     "recentTraces": "Recent Traces",
     "traceLeak": "Leak",
     "traceClean": "Clean",

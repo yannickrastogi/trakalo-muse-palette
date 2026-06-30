@@ -126,6 +126,83 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 2b. Resolve the leaker's IP. Best-effort and fully additive: any failure here
+    // leaves leakerIp/ipSource null and never affects the decode/match result.
+    let leakerIp: string | null = null;
+    let ipSource: "download" | "listen" | "link_only" | null = null;
+    const normIp = (v: unknown): string | null => {
+      if (typeof v !== "string") return null;
+      const s = v.trim();
+      return s && s.toLowerCase() !== "unknown" ? s : null;
+    };
+    if (match && linkId) {
+      try {
+        // Priority 1: a download by this visitor on this link — the leak act itself.
+        if (visitorEmail) {
+          const { data: dl } = await supabaseAdmin
+            .from("link_downloads")
+            .select("visitor_ip, ip_address, downloaded_at")
+            .eq("link_id", linkId)
+            .eq("downloader_email", visitorEmail)
+            .order("downloaded_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (dl) {
+            const ip2 = normIp(dl.visitor_ip) || normIp(dl.ip_address);
+            if (ip2) { leakerIp = ip2; ipSource = "download"; }
+          }
+        }
+        // Priority 2: a listen/play event by this visitor on this link.
+        if (!leakerIp && visitorEmail) {
+          const { data: ev } = await supabaseAdmin
+            .from("link_events")
+            .select("visitor_ip, created_at")
+            .eq("link_id", linkId)
+            .eq("visitor_email", visitorEmail)
+            .not("visitor_ip", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (ev) {
+            const ip2 = normIp(ev.visitor_ip);
+            if (ip2) { leakerIp = ip2; ipSource = "listen"; }
+          }
+        }
+        // Priority 3 (fallback): fake / non-matching email — resolve by link_id alone.
+        // Most recent valid IP across this link's downloads + events.
+        if (!leakerIp) {
+          const [dlRes, evRes] = await Promise.all([
+            supabaseAdmin
+              .from("link_downloads")
+              .select("visitor_ip, ip_address, downloaded_at")
+              .eq("link_id", linkId)
+              .order("downloaded_at", { ascending: false })
+              .limit(10),
+            supabaseAdmin
+              .from("link_events")
+              .select("visitor_ip, created_at")
+              .eq("link_id", linkId)
+              .not("visitor_ip", "is", null)
+              .order("created_at", { ascending: false })
+              .limit(10),
+          ]);
+          const candidates: { ip: string; ts: string }[] = [];
+          for (const r of (dlRes.data || [])) {
+            const ip2 = normIp(r.visitor_ip) || normIp(r.ip_address);
+            if (ip2) candidates.push({ ip: ip2, ts: r.downloaded_at });
+          }
+          for (const r of (evRes.data || [])) {
+            const ip2 = normIp(r.visitor_ip);
+            if (ip2) candidates.push({ ip: ip2, ts: r.created_at });
+          }
+          candidates.sort((a, b) => (a.ts < b.ts ? 1 : -1));
+          if (candidates.length > 0) { leakerIp = candidates[0].ip; ipSource = "link_only"; }
+        }
+      } catch (_e) {
+        // IP resolution is best-effort; leave leakerIp/ipSource null on any error.
+      }
+    }
+
     // 3. Insert trace record
     const { data: trace, error: traceErr } = await supabaseAdmin
       .from("leak_traces")
@@ -153,6 +230,8 @@ Deno.serve(async (req) => {
       link_id: linkId,
       raw_payload: rawPayload,
       trace_id: trace?.id || null,
+      leaker_ip: leakerIp,
+      ip_source: ipSource,
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

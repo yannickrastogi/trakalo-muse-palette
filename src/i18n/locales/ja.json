@@ -1968,6 +1968,8 @@
     "leakEmail": "メール:",
     "leakSharedLink": "共有リンク:",
     "leakConfidence": "信頼度:",
+    "leakIp": "IP：",
+    "leakIpLinkOnly": "リンク経由のIP（メール未確認）",
     "recentTraces": "最近のトレース",
     "traceLeak": "流出",
     "traceClean": "クリーン",

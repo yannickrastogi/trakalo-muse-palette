@@ -1968,6 +1968,8 @@
     "leakEmail": "Email:",
     "leakSharedLink": "Link Condiviso:",
     "leakConfidence": "Affidabilità:",
+    "leakIp": "IP:",
+    "leakIpLinkOnly": "IP tramite link (email non verificata)",
     "recentTraces": "Tracce Recenti",
     "traceLeak": "Fuga",
     "traceClean": "Pulito",
