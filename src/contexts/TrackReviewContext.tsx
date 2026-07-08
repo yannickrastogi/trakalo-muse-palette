@@ -117,9 +117,10 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
     // 2. Comments from track_comments table
     const trackUuids = (data || []).map((r) => r.id);
     if (trackUuids.length > 0) {
-      // Fetch comments via RPC (SECURITY DEFINER) to bypass RLS when auth.uid() is null
+      // Fetch comments via RPC (SECURITY DEFINER) to bypass RLS when auth.uid() is null.
+      // Scope internal notes to the active workspace so cross-workspace notes never surface.
       const rpcResults = await Promise.all(
-        trackUuids.map((uuid) => supabase.rpc("get_track_comments", { _track_id: uuid }))
+        trackUuids.map((uuid) => supabase.rpc("get_track_comments", { _track_id: uuid, _workspace_id: activeWorkspace.id }))
       );
 
       for (const { data: dbComments } of rpcResults) {
@@ -163,7 +164,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
         if (sharedTrackIds.length > 0) {
           const sharedRpcResults = await Promise.all(
             sharedTrackIds.map((uuid) =>
-              supabase.rpc("get_track_comments", { _track_id: uuid })
+              supabase.rpc("get_track_comments", { _track_id: uuid, _workspace_id: activeWorkspace.id })
             )
           );
 
@@ -251,7 +252,9 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
     persistCommentsForTrack(data.trackId, allTrackComments)
       .catch(function (err) { console.error("Error persisting to waveform_data:", err); });
 
-    // Also persist to track_comments table via RPC (SECURITY DEFINER) to bypass RLS
+    // Also persist to track_comments table via RPC (SECURITY DEFINER) to bypass RLS.
+    // _workspace_id scopes the note to the ACTIVE workspace so it never leaks into
+    // other workspaces that can see the same (catalog-shared) track.
     supabase.rpc("add_track_comment", {
       _track_id: data.trackId,
       _author_name: data.authorName,
@@ -259,6 +262,7 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
       _author_type: data.authorType,
       _timestamp_sec: data.timestampSeconds,
       _content: data.commentText,
+      _workspace_id: activeWorkspace?.id ?? null,
     }).then(({ error: insertErr }) => {
       if (insertErr) console.error("Error inserting to track_comments:", insertErr);
     }).catch(function (err) { console.error("Error:", err); });
