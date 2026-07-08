@@ -214,23 +214,74 @@ function commonInfoHasContent(c: CommonInfo): boolean {
   return false;
 }
 
-function parseFileName(fileName: string): { artist: string; title: string } {
-  var nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
-  var separators = [" - ", " – ", " — "];
-  for (var i = 0; i < separators.length; i++) {
-    var idx = nameWithoutExt.indexOf(separators[i]);
-    if (idx > 0) {
-      return {
-        artist: nameWithoutExt.substring(0, idx).trim(),
-        title: nameWithoutExt.substring(idx + separators[i].length).trim(),
-      };
-    }
+// Split "Main, A & B x C" into individual collaborator names.
+function splitCollaborators(raw: string): string[] {
+  return raw
+    .split(/\s*,\s*|\s*&\s*|\s+x\s+|\s+×\s+|\s+ft\.?\s+|\s+feat\.?\s+|\s+featuring\s+/i)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
+// Pull a trailing "(feat. X)" / "feat. X" clause out of a string.
+function extractFeatClause(raw: string): { base: string; featured: string[] } {
+  const m = raw.match(/[\s([]*(?:feat\.?|ft\.?|featuring|with)\s+([^)\]]+)[)\]]*\s*$/i);
+  if (m && m.index !== undefined && m.index > 0) {
+    return { base: raw.slice(0, m.index).trim(), featured: splitCollaborators(m[1]) };
   }
-  return { artist: "", title: nameWithoutExt.trim() };
+  return { base: raw.trim(), featured: [] };
+}
+
+// Parse "Artist - Title"-style filenames. Does NOT hard-assume the order — the
+// caller passes `invert` to swap which side is the artist (the upload UI exposes
+// a global toggle, since naming conventions differ). Commas / & / x and feat./ft.
+// clauses on either side are pulled out as featured artists.
+function parseFileName(fileName: string, invert = false): { artist: string; title: string; featuring: string } {
+  const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "").trim();
+  const separators = [" - ", " – ", " — "];
+  let left = "", right = "", hasSep = false;
+  for (const sep of separators) {
+    const idx = nameWithoutExt.indexOf(sep);
+    if (idx > 0) { left = nameWithoutExt.slice(0, idx).trim(); right = nameWithoutExt.slice(idx + sep.length).trim(); hasSep = true; break; }
+  }
+  const featured: string[] = [];
+  if (!hasSep) {
+    const whole = extractFeatClause(nameWithoutExt);
+    return { artist: "", title: whole.base, featuring: whole.featured.join(", ") };
+  }
+  // Default convention: "Artist - Title". `invert` swaps the two sides.
+  const artistSide = invert ? right : left;
+  const titleSide = invert ? left : right;
+  const titleParsed = extractFeatClause(titleSide);
+  featured.push(...titleParsed.featured);
+  const artistFeat = extractFeatClause(artistSide);
+  const artistParts = splitCollaborators(artistFeat.base);
+  const primaryArtist = artistParts.shift() || "";
+  featured.push(...artistParts, ...artistFeat.featured);
+  const uniqFeatured = Array.from(new Set(featured.map((f) => f.trim()).filter(Boolean)));
+  return { artist: primaryArtist, title: titleParsed.base, featuring: uniqFeatured.join(", ") };
+}
+
+// Detect metadata the selected tracks genuinely share (identical non-empty value
+// across ALL of them) — used to pre-fill Common Info instead of listing names.
+function detectCommonFields(entries: TrackEntry[]): { artist?: string; featuring?: string; producers?: string } {
+  if (entries.length < 2) return {};
+  const common = (vals: string[]): string | undefined => {
+    const norm = vals.map((v) => (v || "").trim());
+    return norm.every((v) => v && v === norm[0]) ? norm[0] : undefined;
+  };
+  const producersOf = (e: TrackEntry) => {
+    const fromDetails = (e.details?.producers || []).map((s) => s.trim()).filter(Boolean).join(", ");
+    return fromDetails || (e.producedBy || "").trim();
+  };
+  return {
+    artist: common(entries.map((e) => e.artist)),
+    featuring: common(entries.map((e) => e.featuring)),
+    producers: common(entries.map(producersOf)),
+  };
 }
 
 function createTrackEntry(file: File): TrackEntry {
-  var parsed = parseFileName(file.name);
+  const parsed = parseFileName(file.name);
   return {
     id: crypto.randomUUID(),
     file,
@@ -244,7 +295,7 @@ function createTrackEntry(file: File): TrackEntry {
     compressed: null,
     title: parsed.title,
     artist: parsed.artist,
-    featuring: "",
+    featuring: parsed.featuring,
     bpm: "",
     trackKey: "",
     genre: [],
@@ -427,6 +478,28 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const updateCurrent = useCallback((updates: Partial<TrackEntry>) => {
     setQueue((prev) => prev.map((e, i) => i === currentIdx ? { ...e, ...updates } : e));
   }, [currentIdx]);
+
+  // Edit a queued entry by id (used by the confirmable filename preview in the
+  // upload step, before per-track editing).
+  const updateEntry = useCallback((id: string, updates: Partial<TrackEntry>) => {
+    setQueue((prev) => prev.map((e) => e.id === id ? { ...e, ...updates } : e));
+  }, []);
+
+  // Global "Invert Title ↔ Artist": re-derive title/artist/featuring for every
+  // queued file from its filename with the flipped convention. Lets the user fix
+  // the parse direction in one click when files are named "Title - Artist".
+  const [invertNaming, setInvertNaming] = useState(false);
+  const toggleInvertNaming = useCallback(() => {
+    setInvertNaming((prev) => {
+      const next = !prev;
+      setQueue((q) => q.map((e) => ({ ...e, ...parseFileName(e.fileName, next) })));
+      return next;
+    });
+  }, []);
+
+  // Fields the selected tracks genuinely share — memoized so it isn't recomputed
+  // on every keystroke while editing Common Info.
+  const detectedCommon = useMemo(() => detectCommonFields(queue), [queue]);
 
   const updateDetail = useCallback((key: string, index: number, value: string) => {
     if (!currentTrack) return;
@@ -1364,6 +1437,18 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const startEditing = () => {
     if (queue.length === 0) return;
     if (queue.length > 1) {
+      // Pre-fill Common Info with fields the tracks genuinely share (same value
+      // across all of them), so the user confirms real shared metadata instead
+      // of starting blank. Only fills fields the user hasn't already set.
+      const detected = detectCommonFields(queue);
+      setCommonInfo((prev) => ({
+        ...prev,
+        artist: prev.artist || detected.artist || "",
+        featuring: prev.featuring || detected.featuring || "",
+        details: detected.producers && !(prev.details?.producers?.some((p) => p.trim()))
+          ? { ...prev.details, producers: [detected.producers] }
+          : prev.details,
+      }));
       setPhase("common");
       return;
     }
@@ -2006,6 +2091,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                 <StepCommonInfo
                   trackCount={queue.length}
                   trackNames={queue.map((e) => e.title || e.fileName)}
+                  detectedCommon={detectedCommon}
                   commonInfo={commonInfo}
                   commonInfoApplied={commonInfoApplied}
                   onUpdate={updateCommonInfo}
@@ -2044,6 +2130,9 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   onDrop={handleDrop}
                   onAddFiles={addFiles}
                   onRemove={removeFromQueue}
+                  onUpdateEntry={updateEntry}
+                  invertNaming={invertNaming}
+                  onToggleInvert={toggleInvertNaming}
                 />
               )}
               {phase === "edit" && currentTrack && editStep === 0 && (
@@ -2685,6 +2774,7 @@ function LanguageMultiSelect({ value, onChange, placeholder }: { value: string; 
 function StepBulkUpload({
   queue, isDragOver, fileInputRef,
   onDragOver, onDragLeave, onDrop, onAddFiles, onRemove,
+  onUpdateEntry, invertNaming, onToggleInvert,
 }: {
   queue: TrackEntry[];
   isDragOver: boolean;
@@ -2694,6 +2784,9 @@ function StepBulkUpload({
   onDrop: (e: React.DragEvent) => void;
   onAddFiles: (files: File[]) => void;
   onRemove: (id: string) => void;
+  onUpdateEntry: (id: string, updates: Partial<TrackEntry>) => void;
+  invertNaming: boolean;
+  onToggleInvert: () => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -2749,50 +2842,90 @@ function StepBulkUpload({
         />
       </div>
 
-      {/* Queue */}
+      {/* Queue — with a confirmable per-track Title / Artist / Featured preview.
+          The filename parse is a best-effort guess; the user can correct each
+          field here (or flip the whole batch) before uploading. */}
       {queue.length > 0 && (
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <p className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">
               {t("uploadTrack.uploadQueue", "Upload Queue")} ({queue.length})
             </p>
-            {queue.length >= MAX_TRACKS && (
-              <span className="text-2xs text-brand-orange font-semibold">{t("uploadTrack.maximumReached", "Maximum reached")}</span>
-            )}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onToggleInvert}
+                title={t("uploadTrack.invertTitleArtistHint", "Flip if files are named \"Title - Artist\"")}
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-semibold border transition-colors ${
+                  invertNaming
+                    ? "bg-brand-orange/15 border-brand-orange/30 text-brand-orange"
+                    : "bg-secondary/60 border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <ArrowRightLeft className="w-2.5 h-2.5" />
+                {t("uploadTrack.invertTitleArtist", "Invert Title ↔ Artist")}
+              </button>
+              {queue.length >= MAX_TRACKS && (
+                <span className="text-2xs text-brand-orange font-semibold">{t("uploadTrack.maximumReached", "Maximum reached")}</span>
+              )}
+            </div>
           </div>
-          <div className="space-y-1 max-h-[280px] overflow-y-auto pr-1">
+          <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
             {queue.map((entry) => (
-              <div key={entry.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-secondary/50 border border-border group">
-                <div className="w-8 h-8 rounded-lg bg-brand-orange/10 flex items-center justify-center shrink-0">
-                  <FileAudio className="w-3.5 h-3.5 text-brand-orange" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold text-foreground truncate">{entry.fileName}</p>
-                  <div className="flex items-center gap-2 text-2xs text-muted-foreground">
-                    <span>{entry.fileSize}</span>
-                    {entry.analyzing && (
-                      <span className="flex items-center gap-1 text-brand-purple">
-                        <Loader2 className="w-2.5 h-2.5 animate-spin" /> {t("uploadTrack.analyzing", "Analyzing...")}
-                      </span>
-                    )}
-                    {entry.analysisResult && !entry.analyzing && (
-                      <span className="flex items-center gap-1 text-emerald-400">
-                        <Check className="w-2.5 h-2.5" /> {t("uploadTrack.analysisComplete", "Analysis complete")}
-                      </span>
-                    )}
-                    {entry.analysisError && (
-                      <span className="flex items-center gap-1 text-destructive">
-                        <AlertCircle className="w-2.5 h-2.5" /> {t("uploadTrack.analysisFailed", "Analysis failed")}
-                      </span>
-                    )}
+              <div key={entry.id} className="px-3 py-2.5 rounded-lg bg-secondary/50 border border-border group">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-brand-orange/10 flex items-center justify-center shrink-0">
+                    <FileAudio className="w-3.5 h-3.5 text-brand-orange" />
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-foreground truncate">{entry.fileName}</p>
+                    <div className="flex items-center gap-2 text-2xs text-muted-foreground">
+                      <span>{entry.fileSize}</span>
+                      {entry.analyzing && (
+                        <span className="flex items-center gap-1 text-brand-purple">
+                          <Loader2 className="w-2.5 h-2.5 animate-spin" /> {t("uploadTrack.analyzing", "Analyzing...")}
+                        </span>
+                      )}
+                      {entry.analysisResult && !entry.analyzing && (
+                        <span className="flex items-center gap-1 text-emerald-400">
+                          <Check className="w-2.5 h-2.5" /> {t("uploadTrack.analysisComplete", "Analysis complete")}
+                        </span>
+                      )}
+                      {entry.analysisError && (
+                        <span className="flex items-center gap-1 text-destructive">
+                          <AlertCircle className="w-2.5 h-2.5" /> {t("uploadTrack.analysisFailed", "Analysis failed")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onRemove(entry.id); }}
+                    className="p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onRemove(entry.id); }}
-                  className="p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                {/* Editable parse preview */}
+                <div className="grid grid-cols-3 gap-1.5 mt-2">
+                  <input
+                    value={entry.title}
+                    onChange={(e) => onUpdateEntry(entry.id, { title: e.target.value })}
+                    placeholder={t("uploadTrack.trackTitle", "Title")}
+                    className="h-8 px-2 rounded-md bg-card/60 border border-border/50 text-2xs text-foreground outline-none focus:border-primary/40 transition-colors placeholder:text-muted-foreground/40"
+                  />
+                  <input
+                    value={entry.artist}
+                    onChange={(e) => onUpdateEntry(entry.id, { artist: e.target.value })}
+                    placeholder={t("uploadTrack.artist", "Artist")}
+                    className="h-8 px-2 rounded-md bg-card/60 border border-border/50 text-2xs text-foreground outline-none focus:border-primary/40 transition-colors placeholder:text-muted-foreground/40"
+                  />
+                  <input
+                    value={entry.featuring}
+                    onChange={(e) => onUpdateEntry(entry.id, { featuring: e.target.value })}
+                    placeholder={t("uploadTrack.featured", "Featured")}
+                    className="h-8 px-2 rounded-md bg-card/60 border border-border/50 text-2xs text-foreground outline-none focus:border-primary/40 transition-colors placeholder:text-muted-foreground/40"
+                  />
+                </div>
               </div>
             ))}
           </div>
@@ -2805,7 +2938,7 @@ function StepBulkUpload({
 /* ─── Common Info Step ─── */
 
 function StepCommonInfo({
-  trackCount, trackNames, commonInfo, commonInfoApplied, onUpdate,
+  trackCount, trackNames, detectedCommon, commonInfo, commonInfoApplied, onUpdate,
   splits, totalSplit, onAddSplit, onUpdateSplit, onRemoveSplit, onBatchUpdateSplit, onEqualSplit,
   contacts, existingSplitNames,
   updateCommonDetail, addCommonDetailEntry, removeCommonDetailEntry, assignCommonDetails,
@@ -2814,6 +2947,7 @@ function StepCommonInfo({
 }: {
   trackCount: number;
   trackNames: string[];
+  detectedCommon: { artist?: string; featuring?: string; producers?: string };
   commonInfo: CommonInfo;
   commonInfoApplied: boolean;
   onUpdate: (updates: Partial<CommonInfo>) => void;
@@ -2863,9 +2997,6 @@ function StepCommonInfo({
 
   const setPublishers = (pubs: string[]) => onUpdate({ publishers: pubs });
 
-  const previewNames = trackNames.slice(0, 4);
-  const remainingCount = Math.max(0, trackNames.length - previewNames.length);
-
   return (
     <div className="space-y-5">
       {/* Prominent gradient header */}
@@ -2899,27 +3030,38 @@ function StepCommonInfo({
             </div>
           </div>
 
-          {/* Tracks preview */}
-          {previewNames.length > 0 && (
-            <div className="rounded-xl bg-card/60 backdrop-blur-sm border border-border/50 p-3">
-              <p className="text-2xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
-                {t("uploadTrack.theseTracksWillShare", { count: trackCount, defaultValue: "These " + trackCount + " tracks will share these details:" })}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {previewNames.map((name, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-secondary/80 text-2xs font-medium text-foreground max-w-[180px]">
-                    <Music className="w-2.5 h-2.5 text-brand-orange shrink-0" />
-                    <span className="truncate">{name}</span>
-                  </span>
-                ))}
-                {remainingCount > 0 && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-md bg-secondary/60 text-2xs font-semibold text-muted-foreground">
-                    +{remainingCount} {t("uploadTrack.more", "more")}
-                  </span>
+          {/* Detected shared fields — the real intersection across the selected
+              tracks (not just their names). Pre-filled into the fields below. */}
+          {(() => {
+            const shared: { label: string; value: string }[] = [];
+            if (detectedCommon.artist) shared.push({ label: t("uploadTrack.artist", "Artist"), value: detectedCommon.artist });
+            if (detectedCommon.featuring) shared.push({ label: t("uploadTrack.featured", "Featured"), value: detectedCommon.featuring });
+            if (detectedCommon.producers) shared.push({ label: t("uploadTrack.producer", "Producer"), value: detectedCommon.producers });
+            return (
+              <div className="rounded-xl bg-card/60 backdrop-blur-sm border border-border/50 p-3">
+                {shared.length > 0 ? (
+                  <>
+                    <p className="text-2xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
+                      {t("uploadTrack.tracksShareDetected", { count: trackCount, defaultValue: "These " + trackCount + " tracks share:" })}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {shared.map((s, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-brand-orange/10 border border-brand-orange/20 text-2xs font-medium text-foreground max-w-[220px]">
+                          <Check className="w-2.5 h-2.5 text-brand-orange shrink-0" />
+                          <span className="text-muted-foreground">{s.label}:</span>
+                          <span className="truncate font-semibold">{s.value}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-2xs text-muted-foreground">
+                    {t("uploadTrack.noSharedDetected", { count: trackCount, defaultValue: "No shared fields detected across these " + trackCount + " tracks — fill in below what they have in common." })}
+                  </p>
                 )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {commonInfoApplied && (
             <div className="flex items-center gap-1.5 text-2xs font-semibold text-emerald-400">

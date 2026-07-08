@@ -645,19 +645,49 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     try {
       while (sonicDnaQueueRef.current.length > 0) {
         const task = sonicDnaQueueRef.current.shift()!;
-        try {
-          const res = await fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
-            body: JSON.stringify({ track_id: task.track_id, storage_path: task.storage_path }),
-            signal: AbortSignal.timeout(120000),
-          });
-          const dnaResult = await res.json();
-          if (dnaResult?.success) {
-            await fetchTracksRef.current();
+        let succeeded = false;
+        // Try twice (one auto-retry) — the analysis API can transiently timeout.
+        for (let attempt = 0; attempt < 2 && !succeeded; attempt++) {
+          try {
+            const res = await fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
+              body: JSON.stringify({ track_id: task.track_id, storage_path: task.storage_path }),
+              signal: AbortSignal.timeout(120000),
+            });
+            const dnaResult = await res.json();
+            if (dnaResult?.success) {
+              succeeded = true;
+              await fetchTracksRef.current();
+            } else {
+              // Non-2xx / { success:false } doesn't throw — log the real reason so
+              // failures aren't silent (the catch below only fires on network/timeout).
+              console.error('[SonicDNA] Non-success for', task.track_id, '(attempt', attempt + 1, '):', dnaResult?.error || ('HTTP ' + res.status));
+            }
+          } catch (err) {
+            console.error('[SonicDNA] Error for', task.track_id, '(attempt', attempt + 1, '):', err);
           }
-        } catch (err) {
-          console.error('[SonicDNA] Error for', task.track_id, ':', err);
+        }
+        // Persist a failure marker so the UI can surface it + offer a retry,
+        // instead of leaving the track silently without BPM/Key. Merge into the
+        // existing sonic_dna so we never clobber a prior successful analysis.
+        if (!succeeded) {
+          try {
+            const { data: sess } = await supabase.auth.getSession();
+            const uid = sess.session?.user?.id;
+            if (uid) {
+              const { data: row } = await supabase.from("tracks").select("sonic_dna").eq("id", task.track_id).single();
+              const existing = (row?.sonic_dna as Record<string, unknown>) || {};
+              await supabase.rpc("update_track", {
+                _user_id: uid,
+                _track_id: task.track_id,
+                _updates: { sonic_dna: { ...existing, status: "failed" } },
+              });
+              await fetchTracksRef.current();
+            }
+          } catch (e) {
+            console.error('[SonicDNA] Failed to persist failure marker for', task.track_id, ':', e);
+          }
         }
       }
     } finally {

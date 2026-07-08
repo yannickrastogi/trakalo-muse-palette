@@ -743,10 +743,41 @@ export default function TrackDetail() {
                   {!isEmptyValue(track.genre) && <MetaChip icon={Disc3} label={Array.isArray(track.genre) ? track.genre.join(", ") : track.genre} />}
                   {!isEmptyValue(track.bpm) && <MetaChip icon={Activity} label={track.bpm + " BPM"} />}
                   {!isEmptyValue(track.key) && <MetaChip icon={({ className }: { className?: string }) => <span className={className}>#</span>} label={track.key} />}
-                  {isEmptyValue(track.bpm) && isEmptyValue(track.key) && track.createdAt && (Date.now() - new Date(track.createdAt).getTime()) < 5 * 60 * 1000 && (
+                  {isEmptyValue(track.bpm) && isEmptyValue(track.key) && track.sonicDna?.status !== "failed" && track.createdAt && (Date.now() - new Date(track.createdAt).getTime()) < 5 * 60 * 1000 && (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-orange/10 text-xs font-medium text-brand-orange animate-pulse">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       Analyzing...
+                    </span>
+                  )}
+                  {isEmptyValue(track.bpm) && isEmptyValue(track.key) && track.sonicDna?.status === "failed" && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-destructive/10 text-xs font-medium text-destructive">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      Analysis failed
+                      <button
+                        onClick={async () => {
+                          try {
+                            toast.info("Retrying Sonic DNA analysis…");
+                            const { data: row, error: fetchErr } = await supabase.from("tracks").select("audio_url").eq("id", track.uuid).single();
+                            if (fetchErr) throw new Error(fetchErr.message);
+                            if (!row?.audio_url) throw new Error("No audio file linked to this track");
+                            const res = await fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY, "apikey": SUPABASE_PUBLISHABLE_KEY },
+                              body: JSON.stringify({ track_id: track.uuid, storage_path: row.audio_url, force: true }),
+                            });
+                            const result = await res.json();
+                            if (!res.ok) throw new Error(result.error || "Sonic DNA analysis failed");
+                            refreshTracks();
+                            toast.success("Sonic DNA analysis complete");
+                          } catch (err: any) {
+                            console.error("Retry analysis failed:", err);
+                            toast.error("Retry failed: " + (err?.message || "unknown error"));
+                          }
+                        }}
+                        className="ml-1 underline underline-offset-2 hover:text-destructive/80 font-semibold"
+                      >
+                        Retry
+                      </button>
                     </span>
                   )}
                   {!isEmptyValue(track.language) && <MetaChip icon={Mic} label={track.language} />}
