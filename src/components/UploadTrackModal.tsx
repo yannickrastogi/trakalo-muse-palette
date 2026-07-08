@@ -1889,12 +1889,32 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
   // ─── Render ────────────────────────────────────────────────
 
+  // The user has in-flight, unsaved work whenever tracks are queued and we're not
+  // on a post-upload success screen. While true, accidental closes (outside click,
+  // Escape, background upload completions) must NEVER discard the queue — only an
+  // explicit, confirmed close may. This is what stops the modal from vanishing
+  // mid-edit (e.g. while carefully editing track 3 of a bulk upload).
+  const hasUnsavedWork = queue.length > 0 && !quickUploadDone && !skipReviewDone;
+
   return (
-    <Dialog open={open} onOpenChange={(val) => { if (isSaving) return; if (!val) handleReset(); onOpenChange(val); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(val) => {
+        if (isSaving) return; // never close mid-save
+        if (!val) {
+          // Explicit close attempt (X button). Confirm before discarding edits.
+          if (hasUnsavedWork && !window.confirm(t("uploadTrack.confirmDiscard", "You have tracks still in progress. Close and discard them?"))) {
+            return; // keep the modal open — preserve the user's edits
+          }
+          handleReset();
+        }
+        onOpenChange(val);
+      }}
+    >
       <DialogContent
         className="md:max-w-2xl overflow-hidden flex flex-col p-0 gap-0 bg-card border-border"
-        onInteractOutside={(e) => { if (isSaving) e.preventDefault(); }}
-        onEscapeKeyDown={(e) => { if (isSaving) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (isSaving || hasUnsavedWork) e.preventDefault(); }}
+        onEscapeKeyDown={(e) => { if (isSaving || hasUnsavedWork) e.preventDefault(); }}
       >
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border space-y-3">

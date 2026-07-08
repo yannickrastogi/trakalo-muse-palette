@@ -7,6 +7,7 @@ import type { WorkspaceScoped } from "@/types/workspace";
 import type { ProductionStage } from "@/lib/constants";
 import { toast } from "sonner";
 import i18n from "@/i18n";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 export interface TrackStem {
   id: string;
@@ -304,11 +305,11 @@ interface TrackContextValue {
   getTrack: (id: number) => TrackData | undefined;
   getTrackByUuid: (uuid: string) => TrackData | undefined;
   addTrack: (track: Partial<TrackData> & { title: string; artist: string }) => Promise<TrackData | null>;
-  updateTrack: (id: number, updates: Partial<TrackData>) => void;
+  updateTrack: (id: number, updates: Partial<TrackData>) => Promise<boolean>;
   updateTrackStatus: (id: number, newStatus: string, note: string) => void;
   updateTrackLyrics: (id: number, lyrics: string, lyricsSegments?: { start: number; end: number; text: string }[]) => void;
   updateTrackStems: (id: number, stems: TrackStem[]) => void;
-  updateTrackSplits: (id: number, splits: TrackSplit[]) => void;
+  updateTrackSplits: (id: number, splits: TrackSplit[]) => Promise<boolean>;
   deleteTrack: (uuid: string) => Promise<boolean>;
   refreshTracks: () => Promise<void>;
   submitRating: (id: number, rating: number) => Promise<void>;
@@ -798,10 +799,35 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     [activeWorkspace, user, fetchTracks, processSonicDnaQueue, tracks.length]
   );
 
+  // Resolve a reliable user id for DB writes. AuthContext `user` can be
+  // momentarily null on unstable sessions (auth.uid() → NULL), which would make
+  // an update silently no-op. Mirror the ensureSession pattern: refreshSession →
+  // getSession → localStorage backup. Returns null only if truly signed out.
+  const resolveUserId = useCallback(async (): Promise<string | null> => {
+    if (user?.id) return user.id;
+    const { data: refreshed } = await supabase.auth.refreshSession();
+    if (refreshed?.session?.user?.id) return refreshed.session.user.id;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.id) return session.user.id;
+    try {
+      const backup = safeLocalStorage.getItem("trakalog_session_backup");
+      if (backup) {
+        const parsed = JSON.parse(backup);
+        const accessToken = parsed?.access_token || parsed?.currentSession?.access_token;
+        const refreshToken = parsed?.refresh_token || parsed?.currentSession?.refresh_token;
+        if (accessToken && refreshToken) {
+          const { data: restored } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          if (restored?.session?.user?.id) return restored.session.user.id;
+        }
+      }
+    } catch { /* ignore */ }
+    return null;
+  }, [user]);
+
   const updateTrack = useCallback(
-    async (id: number, updates: Partial<TrackData>) => {
+    async (id: number, updates: Partial<TrackData>): Promise<boolean> => {
       const track = tracks.find((t) => t.id === id);
-      if (!track) return;
+      if (!track) return false;
 
       // Update locally first for instant UI
       setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
@@ -856,9 +882,15 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (updates.tags !== undefined) payload.tags = updates.tags;
       if (updates.productionStage !== undefined) payload.production_stage = updates.productionStage || "work_in_progress";
 
-      if (Object.keys(payload).length > 0 && user) {
+      if (Object.keys(payload).length > 0) {
+        const userId = await resolveUserId();
+        if (!userId) {
+          console.error("Error updating track: no auth session");
+          toast.error(i18n.t("trackContext.failedSaveUpdate"));
+          return false;
+        }
         const { error } = await supabase.rpc("update_track", {
-          _user_id: user.id,
+          _user_id: userId,
           _track_id: track.uuid,
           _updates: payload,
         });
@@ -866,10 +898,12 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         if (error) {
           console.error("Error updating track:", error);
           toast.error(i18n.t("trackContext.failedSaveUpdate"));
+          return false;
         }
       }
+      return true;
     },
-    [tracks, user]
+    [tracks, resolveUserId]
   );
 
   const updateTrackStatus = useCallback(
@@ -974,9 +1008,9 @@ export function TrackProvider({ children }: { children: ReactNode }) {
   );
 
   const updateTrackSplits = useCallback(
-    async (id: number, splits: TrackSplit[]) => {
+    async (id: number, splits: TrackSplit[]): Promise<boolean> => {
       const track = tracks.find((t) => t.id === id);
-      if (!track) return;
+      if (!track) return false;
 
       const normalized = splits.map((s) => ({ ...s, share: s.share || 0 }));
 
@@ -984,19 +1018,26 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         prev.map((t) => (t.id === id ? { ...t, splits: normalized } : t))
       );
 
-      if (user) {
-        const { error } = await supabase.rpc("update_track", {
-          _user_id: user.id,
-          _track_id: track.uuid,
-          _updates: { splits: normalized },
-        });
-
-        if (error) {
-          console.error("Error updating splits:", error);
-        }
+      const userId = await resolveUserId();
+      if (!userId) {
+        console.error("Error updating splits: no auth session");
+        toast.error(i18n.t("trackContext.failedSaveUpdate"));
+        return false;
       }
+      const { error } = await supabase.rpc("update_track", {
+        _user_id: userId,
+        _track_id: track.uuid,
+        _updates: { splits: normalized },
+      });
+
+      if (error) {
+        console.error("Error updating splits:", error);
+        toast.error(i18n.t("trackContext.failedSaveUpdate"));
+        return false;
+      }
+      return true;
     },
-    [tracks, user]
+    [tracks, resolveUserId]
   );
 
   const deleteTrack = useCallback(

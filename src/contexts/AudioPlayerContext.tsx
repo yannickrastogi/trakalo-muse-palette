@@ -61,6 +61,12 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   }, [queue]);
   const playTrackInternalRef = useRef<(track: TrackData) => void>(() => {});
 
+  // Monotonic token guarding against out-of-order URL resolution. Each playTrack
+  // bumps it; after the async sign returns we only touch audio.src if our token
+  // is still the latest — otherwise a slow-resolving older track would clobber
+  // the src while currentTrack already shows a newer one (displayed ≠ playing).
+  const playRequestIdRef = useRef(0);
+
   // Create audio element once
   useEffect(() => {
     const audio = new Audio();
@@ -189,6 +195,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     const audio = audioRef.current;
     if (!audio) return;
 
+    // Claim the latest request slot. Any older in-flight playTrack becomes stale
+    // and must NOT write audio.src after this point.
+    const requestId = ++playRequestIdRef.current;
+
     // Playing a catalog track takes over from the radio — stop it so both
     // engines don't play at once (no-op if the radio was never started).
     const radio = getExistingCrossfadePlayer();
@@ -212,12 +222,19 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     }));
 
     const signedUrl = await resolveAudioUrl(rawUrl, track.uuid);
+
+    // A newer playTrack superseded us while we were signing — bail so we don't
+    // load this (now-stale) track's audio over the one currently displayed.
+    if (requestId !== playRequestIdRef.current) return;
+
     if (!signedUrl) {
       toast.error(i18n.t("audioPlayer.couldNotLoad"));
       setState((prev) => ({ ...prev, isPlaying: false }));
       return;
     }
 
+    // currentTrack (displayed) and audio.src (played) are now committed from the
+    // SAME track object, atomically — the single source of truth for this slot.
     audio.src = signedUrl;
     audio.dataset.trackId = String(track.id);
     audio.dataset.trackUuid = track.uuid;
@@ -225,6 +242,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     delete audio.dataset.fallbackAttempted;
     audio.play().catch(function(err) {
       console.error("Play failed:", err);
+      if (requestId !== playRequestIdRef.current) return;
       toast.error(i18n.t("audioPlayer.playbackFailed"));
       setState((prev) => ({ ...prev, isPlaying: false }));
     });

@@ -298,9 +298,18 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
       tags,
     };
 
-    updateTrack(trackId, updates);
+    // Persist metadata + splits. Both resolve the user id via session internally
+    // (auth.uid can be null) and surface their own error toast on failure. We
+    // await them so a failed save never silently closes the modal and loses edits.
+    const okTrack = await updateTrack(trackId, updates);
     var filteredSplits = splits.filter(s => s.name.trim());
-    updateTrackSplits(trackId, filteredSplits);
+    const okSplits = await updateTrackSplits(trackId, filteredSplits);
+
+    if (!okTrack || !okSplits) {
+      // Error already toasted by the context — keep the modal open so the user
+      // can retry without losing their edits.
+      return;
+    }
 
     // Auto-save collaborators to contacts (direct RPC, fire-and-forget)
     if (user && activeWorkspace) {
