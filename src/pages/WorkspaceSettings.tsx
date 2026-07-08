@@ -231,6 +231,8 @@ function BrandingSection() {
   const [socialFacebook, setSocialFacebook] = useState(activeWorkspace?.social_facebook || "");
   const [socialX, setSocialX] = useState(activeWorkspace?.social_x || "");
   const [socialWebsite, setSocialWebsite] = useState(activeWorkspace?.social_website || "");
+  const [socialSpotify, setSocialSpotify] = useState(activeWorkspace?.social_spotify || "");
+  const [socialApple, setSocialApple] = useState(activeWorkspace?.social_apple || "");
   const [bio, setBio] = useState(activeWorkspace?.bio || "");
 
   useEffect(() => {
@@ -247,6 +249,8 @@ function BrandingSection() {
       setSocialFacebook(activeWorkspace.social_facebook || "");
       setSocialX(activeWorkspace.social_x || "");
       setSocialWebsite(activeWorkspace.social_website || "");
+      setSocialSpotify(activeWorkspace.social_spotify || "");
+      setSocialApple(activeWorkspace.social_apple || "");
     }
   }, [activeWorkspace]);
 
@@ -299,7 +303,7 @@ function BrandingSection() {
       _hero_position: pos, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
       _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
-      _bio: bio || null,
+      _bio: bio || null, _social_spotify: socialSpotify || null, _social_apple: socialApple || null,
     });
     if (error) { toast.error(error.message); return; }
     setHeroPosition(pos);
@@ -328,7 +332,7 @@ function BrandingSection() {
       _hero_position: heroPosition, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
       _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
-      _bio: bio || null,
+      _bio: bio || null, _social_spotify: socialSpotify || null, _social_apple: socialApple || null,
     });
     if (error) { toast.error(error.message); return; }
     setEditingFocal(false);
@@ -362,7 +366,7 @@ function BrandingSection() {
           _hero_position: heroPosition, _hero_focal_point: focalPoint,
           _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
           _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
-          _bio: bio || null,
+          _bio: bio || null, _social_spotify: socialSpotify || null, _social_apple: socialApple || null,
         });
         if (updateErr) { toast.error(updateErr.message); setUploading(null); return; }
         if (type === "hero") setHeroUrl(publicUrl);
@@ -387,7 +391,7 @@ function BrandingSection() {
       _hero_position: heroPosition, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
       _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
-      _bio: bio || null,
+      _bio: bio || null, _social_spotify: socialSpotify || null, _social_apple: socialApple || null,
     });
     if (error) { toast.error(error.message); return; }
     if (type === "hero") setHeroUrl(null);
@@ -408,7 +412,7 @@ function BrandingSection() {
       _hero_position: heroPosition, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
       _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
-      _bio: bio || null,
+      _bio: bio || null, _social_spotify: socialSpotify || null, _social_apple: socialApple || null,
     });
     if (error) toast.error(error.message);
     else { toast.success(t("workspaceSettings.toasts.brandColorSaved")); await refreshWorkspaces(); }
@@ -422,6 +426,8 @@ function BrandingSection() {
       [socialYoutube, "youtube"],
       [socialFacebook, "facebook"],
       [socialX, "x"],
+      [socialSpotify, "spotify"],
+      [socialApple, "apple"],
     ];
     for (const [value, platform] of checks) {
       const result = validateSocialInput(value, platform);
@@ -433,7 +439,7 @@ function BrandingSection() {
       _hero_position: heroPosition, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
       _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
-      _bio: bio || null,
+      _bio: bio || null, _social_spotify: socialSpotify || null, _social_apple: socialApple || null,
     });
     if (error) toast.error(error.message);
     else { toast.success(t("workspaceSettings.toasts.socialLinksSaved")); await refreshWorkspaces(); }
@@ -655,7 +661,7 @@ function BrandingSection() {
           _hero_position: heroPosition, _hero_focal_point: focalPoint,
           _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
           _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
-          _bio: bio || null,
+          _bio: bio || null, _social_spotify: socialSpotify || null, _social_apple: socialApple || null,
         });
         if (error) toast.error(error.message);
         else { toast.success(t("workspaceSettings.toasts.bioSaved")); await refreshWorkspaces(); }
@@ -707,6 +713,18 @@ function BrandingSection() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             </div>
             <input type="text" value={socialX} placeholder="@yourusername or https://x.com/yourusername" onChange={(e) => setSocialX(e.target.value)} className="w-full h-11 pl-10 pr-4 rounded-xl bg-secondary/40 border border-border/30 text-[13px] text-foreground font-medium outline-none focus:border-primary/30 focus:bg-secondary/60 transition-all placeholder:text-muted-foreground/30" />
+          </div>
+          <div className="relative group/input">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+            </div>
+            <input type="text" value={socialSpotify} placeholder="https://open.spotify.com/artist/..." onChange={(e) => setSocialSpotify(e.target.value)} className="w-full h-11 pl-10 pr-4 rounded-xl bg-secondary/40 border border-border/30 text-[13px] text-foreground font-medium outline-none focus:border-primary/30 focus:bg-secondary/60 transition-all placeholder:text-muted-foreground/30" />
+          </div>
+          <div className="relative group/input">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.997 6.124a9.23 9.23 0 00-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 00-1.877-.726 10.496 10.496 0 00-1.564-.15c-.04-.003-.083-.01-.124-.013H5.988c-.152.01-.303.017-.455.026-.747.043-1.49.123-2.193.4-1.336.53-2.3 1.452-2.865 2.78-.192.448-.292.925-.363 1.408-.056.392-.088.785-.1 1.18 0 .032-.007.062-.01.093v12.223c.01.14.017.283.027.424.05.815.154 1.624.497 2.373.65 1.42 1.738 2.353 3.234 2.801.42.127.856.187 1.293.228.555.053 1.11.06 1.667.06h11.03a12.5 12.5 0 001.57-.1c.822-.106 1.596-.35 2.295-.81a5.046 5.046 0 001.88-2.207c.186-.42.293-.87.37-1.324.113-.675.138-1.358.137-2.04-.002-3.8 0-7.595-.003-11.393zm-6.423 3.99v5.712c0 .417-.058.827-.244 1.206-.29.59-.76.962-1.388 1.14-.35.1-.706.157-1.07.173-.95.045-1.773-.6-1.943-1.536-.142-.773.227-1.624 1.038-2.022.323-.16.67-.25 1.018-.324.378-.082.758-.153 1.134-.24.274-.063.457-.23.51-.516a.904.904 0 00.02-.193c0-1.815 0-3.63-.002-5.443a.725.725 0 00-.026-.185c-.04-.15-.15-.243-.304-.234-.16.008-.318.035-.475.066l-4.605.93c-.277.077-.377.203-.39.49-.002.042 0 .086 0 .13-.002 2.602 0 5.204-.003 7.805 0 .42-.047.836-.215 1.227-.278.64-.77 1.04-1.434 1.233-.35.1-.71.16-1.075.172-.96.036-1.755-.6-1.92-1.544-.14-.812.23-1.685 1.154-2.075.357-.15.73-.232 1.108-.31l.877-.183c.32-.076.49-.276.51-.602.003-.055.002-.11.002-.166 0-2.847 0-5.694.003-8.54 0-.11.013-.223.033-.332.06-.31.257-.507.566-.575l3.196-.649 2.494-.505 1.65-.334c.046-.01.093-.017.14-.02.29-.02.5.17.52.46.004.06.003.12.003.18.002 1.86.002 3.72.002 5.58z"/></svg>
+            </div>
+            <input type="text" value={socialApple} placeholder="https://music.apple.com/..." onChange={(e) => setSocialApple(e.target.value)} className="w-full h-11 pl-10 pr-4 rounded-xl bg-secondary/40 border border-border/30 text-[13px] text-foreground font-medium outline-none focus:border-primary/30 focus:bg-secondary/60 transition-all placeholder:text-muted-foreground/30" />
           </div>
           <div className="relative group/input">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40">

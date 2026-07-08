@@ -578,8 +578,9 @@ export default function TrackDetail() {
               </Breadcrumb>
             </motion.div>
 
-            {/* Shared track banner */}
-            {track.isShared && (
+            {/* Shared track banner — only when the source workspace name is resolved
+                (avoids rendering an empty "shared from" banner). */}
+            {track.isShared && track.sharedFrom && (
               <motion.div variants={item} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-purple/8 border border-brand-purple/20">
                 <Info className="w-4 h-4 text-brand-purple shrink-0" />
                 <p className="text-sm text-foreground flex-1">

@@ -1,4 +1,4 @@
-export type SocialPlatform = "instagram" | "tiktok" | "youtube" | "facebook" | "x";
+export type SocialPlatform = "instagram" | "tiktok" | "youtube" | "facebook" | "x" | "spotify" | "apple";
 
 const PLATFORM_DOMAINS: Record<SocialPlatform, string[]> = {
   instagram: ["instagram.com", "www.instagram.com"],
@@ -6,6 +6,8 @@ const PLATFORM_DOMAINS: Record<SocialPlatform, string[]> = {
   youtube: ["youtube.com", "www.youtube.com", "youtu.be", "www.youtu.be", "m.youtube.com", "music.youtube.com"],
   facebook: ["facebook.com", "www.facebook.com", "fb.com", "www.fb.com", "m.facebook.com"],
   x: ["x.com", "www.x.com", "twitter.com", "www.twitter.com", "mobile.twitter.com"],
+  spotify: ["open.spotify.com", "spotify.com", "www.spotify.com", "play.spotify.com"],
+  apple: ["music.apple.com", "apple.com", "www.apple.com", "itunes.apple.com"],
 };
 
 const PLATFORM_LABEL: Record<SocialPlatform, string> = {
@@ -14,6 +16,8 @@ const PLATFORM_LABEL: Record<SocialPlatform, string> = {
   youtube: "youtube.com",
   facebook: "facebook.com",
   x: "x.com",
+  spotify: "open.spotify.com",
+  apple: "music.apple.com",
 };
 
 const HANDLE_RE = /^[A-Za-z0-9._-]+$/;
@@ -25,6 +29,8 @@ function buildCanonical(platform: SocialPlatform, handle: string): string {
     case "x": return "https://x.com/" + handle;
     case "youtube": return "https://youtube.com/@" + handle;
     case "facebook": return "https://facebook.com/" + handle;
+    case "spotify": return "https://open.spotify.com/" + handle;
+    case "apple": return "https://music.apple.com/" + handle;
   }
 }
 
@@ -88,6 +94,8 @@ export function platformDisplayName(platform: SocialPlatform): string {
     case "youtube": return "YouTube";
     case "facebook": return "Facebook";
     case "x": return "X";
+    case "spotify": return "Spotify";
+    case "apple": return "Apple Music";
   }
 }
 

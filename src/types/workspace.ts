@@ -31,6 +31,8 @@ export interface Workspace {
   social_facebook: string | null;
   social_x: string | null;
   social_website: string | null;
+  social_spotify: string | null;
+  social_apple: string | null;
   bio: string | null;
   is_personal: boolean;
 }

@@ -139,6 +139,10 @@ export default function PlaylistDetail() {
   });
 
   const [dbTracks, setDbTracks] = useState<Track[]>([]);
+  // Ordered track UUIDs of this playlist (from playlist_tracks). Resolved against
+  // the hydrated catalog below — that store includes catalog-shared tracks, which
+  // a direct `from(tracks)` select can't see due to RLS.
+  const [playlistUuids, setPlaylistUuids] = useState<string[]>([]);
 
   useEffect(function() {
     if (!id) return;
@@ -147,6 +151,7 @@ export default function PlaylistDetail() {
         const res = await supabase.from("playlist_tracks").select("track_id, position").eq("playlist_id", id).order("position", { ascending: true });
         if (!res.data || res.data.length === 0) return;
         const uuids = res.data.map(function(r) { return r.track_id; });
+        setPlaylistUuids(uuids as string[]);
         const res2 = await supabase.from("tracks").select("*").in("id", uuids);
         if (!res2.data) return;
         const map: Record<string, any> = {};
@@ -158,6 +163,20 @@ export default function PlaylistDetail() {
       } catch (err) { console.error("Error:", err); }
     })();
   }, [id]);
+
+  // Once the catalog store (allTracks) has hydrated — including catalog-shared
+  // tracks pulled in via RPC — resolve the playlist's tracks from it. This fixes
+  // playlists in shared workspaces showing empty: the initial `tracks` seed runs
+  // once at mount (before hydration) and the `dbTracks` fallback is RLS-blocked
+  // for shared tracks. We only fill while `tracks` is empty, so manual
+  // reorder/add edits are never clobbered.
+  useEffect(function() {
+    if (tracks.length > 0 || playlistUuids.length === 0) return;
+    const resolved = playlistUuids
+      .map(function(uuid) { return allTracks.find(function(t) { return t.uuid === uuid; }); })
+      .filter(function(t): t is Track { return !!t; });
+    if (resolved.length > 0) setTracks(resolved);
+  }, [playlistUuids, allTracks, tracks.length]);
 
   var displayTracks = tracks.length > 0 ? tracks : dbTracks;
 

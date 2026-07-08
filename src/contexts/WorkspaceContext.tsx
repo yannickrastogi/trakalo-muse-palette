@@ -105,6 +105,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                   social_facebook: ws.social_facebook || null,
                   social_x: ws.social_x || null,
                   social_website: ws.social_website || null,
+                  social_spotify: ws.social_spotify || null,
+                  social_apple: ws.social_apple || null,
                   bio: ws.bio || null,
                   is_personal: !!ws.is_personal,
                 }));
@@ -149,6 +151,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         social_facebook: ws.social_facebook || null,
         social_x: ws.social_x || null,
         social_website: ws.social_website || null,
+        social_spotify: ws.social_spotify || null,
+        social_apple: ws.social_apple || null,
         bio: ws.bio || null,
         is_personal: !!ws.is_personal,
       }));
