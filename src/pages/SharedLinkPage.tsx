@@ -195,6 +195,76 @@ function ChapterPills({ chapters, duration, onSeek, dark }: {
   );
 }
 
+// Derive public credit categories from splits. Reads ONLY name/stage_name/role(s)
+// — never share/ipi/pro/publisher/email — so nothing confidential is rendered.
+function deriveSharedCredits(splits: TrackData["splits"]): { label: string; names: string }[] {
+  if (!Array.isArray(splits) || splits.length === 0) return [];
+  var formatName = function (s: { name: string; stage_name?: string }) { return s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name; };
+  var creditsMap: Record<string, string[]> = {};
+  for (var ci = 0; ci < splits.length; ci++) {
+    var sp = splits[ci];
+    if (!sp || !sp.name) continue;
+    var displayName = formatName(sp);
+    var splitRoles: string[] = [];
+    if (Array.isArray((sp as any).roles) && (sp as any).roles.length > 0) {
+      splitRoles = (sp as any).roles;
+    } else if (sp.role) {
+      splitRoles = sp.role.split(",").map(function (r) { return r.trim(); }).filter(function (r) { return r !== ""; });
+    }
+    for (var ri = 0; ri < splitRoles.length; ri++) {
+      var rl = String(splitRoles[ri]).toLowerCase();
+      var cat = "";
+      if (rl.indexOf("songwriter") >= 0 || rl.indexOf("writer") >= 0) cat = "WRITTEN BY";
+      else if (rl.indexOf("producer") >= 0) cat = "PRODUCED BY";
+      else if (rl.indexOf("artist") >= 0) cat = "PERFORMED BY";
+      else if (rl.indexOf("musician") >= 0) cat = "MUSICIANS";
+      if (cat) {
+        if (!creditsMap[cat]) creditsMap[cat] = [];
+        if (creditsMap[cat].indexOf(displayName) < 0) creditsMap[cat].push(displayName);
+      }
+    }
+  }
+  var categoryOrder = ["WRITTEN BY", "PRODUCED BY", "PERFORMED BY", "MUSICIANS"];
+  var entries: { label: string; names: string }[] = [];
+  for (var oi = 0; oi < categoryOrder.length; oi++) {
+    if (creditsMap[categoryOrder[oi]]) entries.push({ label: categoryOrder[oi], names: creditsMap[categoryOrder[oi]].join(", ") });
+  }
+  return entries;
+}
+
+// Reusable collapsible credits block — used by both the track link and each
+// active track of a playlist link (same public-safe rendering rules).
+function SharedCredits({ splits, immersive, open, onToggle }: {
+  splits: TrackData["splits"];
+  immersive: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  var entries = deriveSharedCredits(splits);
+  if (entries.length === 0) return null;
+  return (
+    <div className="px-6 pt-3">
+      <button onClick={onToggle} className={"flex items-center gap-1.5 text-sm transition-colors " + (immersive ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-foreground")}>
+        <Award className="w-3.5 h-3.5" />
+        Credits
+        {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+      </button>
+      {open && (
+        <div className={"mt-2 rounded-lg p-4 space-y-2.5 " + (immersive ? "bg-white/5" : "bg-secondary/50")}>
+          {entries.map(function (entry) {
+            return (
+              <div key={entry.label}>
+                <p className={"text-[10px] uppercase tracking-wider font-semibold " + (immersive ? "text-white/40" : "text-muted-foreground")}>{entry.label}</p>
+                <p className={"text-sm " + (immersive ? "text-white" : "text-foreground")}>{entry.names}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function KaraokeLyrics({ segments, currentTime, isPlaying, onSeek, className, darkBg }: {
   segments: { start: number; end: number; text: string }[];
   currentTime: number;
@@ -1821,6 +1891,7 @@ export default function SharedLinkPage() {
                       onSeek={handleSeekPercent}
                       onDoubleClick={handleWaveformDoubleClickPercent}
                       isPlaying={isPlaying}
+                      chapters={activeTrack && Array.isArray(activeTrack.chapters) ? activeTrack.chapters : undefined}
                       unplayedColor={plImmersive ? "rgba(255,255,255,0.3)" : undefined}
                     />
                     <CommentMarkers comments={comments} totalDuration={effectiveDuration} />
@@ -1830,6 +1901,12 @@ export default function SharedLinkPage() {
                     duration={effectiveDuration || (activeTrack?.duration_sec || 0)}
                     onSeek={handleSeekPercent}
                     dark={plImmersive}
+                  />
+                  <SharedCredits
+                    splits={activeTrack ? activeTrack.splits : null}
+                    immersive={plImmersive}
+                    open={creditsOpen}
+                    onToggle={function () { setCreditsOpen(!creditsOpen); }}
                   />
                   <p className={"text-[10px] text-center " + (plImmersive ? "text-white/40" : "text-muted-foreground/40")}>{t("sharedLink.doubleClickHint")}</p>
                   {renderCommentsList(plImmersive)}
@@ -2169,63 +2246,12 @@ export default function SharedLinkPage() {
             </div>
 
             {/* Credits */}
-            {(() => {
-              if (!trackData.splits || trackData.splits.length === 0) return null;
-              var creditEntries: { label: string; names: string }[] = [];
-              var formatName = function (s: { name: string; stage_name?: string }) { return s.stage_name ? s.name + " (" + s.stage_name + ")" : s.name; };
-              // Build credits map from splits
-              var creditsMap: Record<string, string[]> = {};
-              for (var ci = 0; ci < trackData.splits.length; ci++) {
-                var sp = trackData.splits[ci];
-                if (!sp.name) continue;
-                var displayName = formatName(sp);
-                // Read roles: support both role (comma string) and roles (array)
-                var splitRoles: string[] = [];
-                if (Array.isArray((sp as any).roles) && (sp as any).roles.length > 0) {
-                  splitRoles = (sp as any).roles;
-                } else if (sp.role) {
-                  splitRoles = sp.role.split(",").map(function (r) { return r.trim(); }).filter(function (r) { return r !== ""; });
-                }
-                for (var ri = 0; ri < splitRoles.length; ri++) {
-                  var rl = splitRoles[ri].toLowerCase();
-                  var cat = "";
-                  if (rl.indexOf("songwriter") >= 0 || rl.indexOf("writer") >= 0) cat = "WRITTEN BY";
-                  else if (rl.indexOf("producer") >= 0) cat = "PRODUCED BY";
-                  else if (rl.indexOf("artist") >= 0) cat = "PERFORMED BY";
-                  else if (rl.indexOf("musician") >= 0) cat = "MUSICIANS";
-                  if (cat) {
-                    if (!creditsMap[cat]) creditsMap[cat] = [];
-                    if (creditsMap[cat].indexOf(displayName) < 0) creditsMap[cat].push(displayName);
-                  }
-                }
-              }
-              var categoryOrder = ["WRITTEN BY", "PRODUCED BY", "PERFORMED BY", "MUSICIANS"];
-              for (var oi = 0; oi < categoryOrder.length; oi++) {
-                if (creditsMap[categoryOrder[oi]]) creditEntries.push({ label: categoryOrder[oi], names: creditsMap[categoryOrder[oi]].join(", ") });
-              }
-              if (creditEntries.length === 0) return null;
-              return (
-                <div className="px-6 pt-3">
-                  <button onClick={function () { setCreditsOpen(!creditsOpen); }} className={"flex items-center gap-1.5 text-sm transition-colors " + (immersive ? "text-white/50 hover:text-white" : "text-muted-foreground hover:text-foreground")}>
-                    <Award className="w-3.5 h-3.5" />
-                    Credits
-                    {creditsOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                  </button>
-                  {creditsOpen && (
-                    <div className={"mt-2 rounded-lg p-4 space-y-2.5 " + (immersive ? "bg-white/5" : "bg-secondary/50")}>
-                      {creditEntries.map(function (entry) {
-                        return (
-                          <div key={entry.label}>
-                            <p className={"text-[10px] uppercase tracking-wider font-semibold " + (immersive ? "text-white/40" : "text-muted-foreground")}>{entry.label}</p>
-                            <p className={"text-sm " + (immersive ? "text-white" : "text-foreground")}>{entry.names}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+            <SharedCredits
+              splits={trackData.splits}
+              immersive={immersive}
+              open={creditsOpen}
+              onToggle={function () { setCreditsOpen(!creditsOpen); }}
+            />
 
             {/* Player */}
             {(trackData.audio_url || slug) && (
@@ -2252,6 +2278,7 @@ export default function SharedLinkPage() {
                     onSeek={handleSeekPercent}
                     onDoubleClick={handleWaveformDoubleClickPercent}
                     isPlaying={isPlaying}
+                    chapters={Array.isArray(trackData.chapters) ? trackData.chapters : undefined}
                     unplayedColor={immersive ? "rgba(255,255,255,0.3)" : undefined}
                   />
                   <CommentMarkers comments={comments} totalDuration={effectiveDuration} />
