@@ -195,6 +195,41 @@ function ChapterPills({ chapters, duration, onSeek, dark }: {
   );
 }
 
+// Map a single role string to a credit category. Case-insensitive, substring
+// based, and covers the role vocabulary actually used across the catalog
+// (Songwriter, Composer, Producer, Beatmaker, Artist, Performer, Vocalist,
+// Mixing/Mastering engineer, instrumentalists…). Returns "" for unknown roles.
+function mapRoleToCategory(roleRaw: string): string {
+  var rl = String(roleRaw || "").toLowerCase().trim();
+  if (!rl) return "";
+  if (rl.indexOf("songwriter") >= 0 || rl.indexOf("writer") >= 0 || rl.indexOf("compos") >= 0 || rl.indexOf("author") >= 0 || rl.indexOf("lyric") >= 0 || rl.indexOf("topline") >= 0) return "WRITTEN BY";
+  if (rl.indexOf("produc") >= 0 || rl.indexOf("beatmaker") >= 0 || rl.indexOf("beat maker") >= 0) return "PRODUCED BY";
+  if (rl.indexOf("master") >= 0) return "MASTERED BY";
+  if (rl.indexOf("mix") >= 0) return "MIXED BY";
+  if (rl.indexOf("artist") >= 0 || rl.indexOf("perform") >= 0 || rl.indexOf("vocal") >= 0 || rl.indexOf("singer") >= 0 || rl.indexOf("rapper") >= 0 || rl.indexOf("feat") >= 0) return "PERFORMED BY";
+  if (rl.indexOf("musician") >= 0 || rl.indexOf("instrument") >= 0 || rl.indexOf("guitar") >= 0 || rl.indexOf("bass") >= 0 || rl.indexOf("drum") >= 0 || rl.indexOf("keys") >= 0 || rl.indexOf("piano") >= 0 || rl.indexOf("synth") >= 0 || rl.indexOf("sax") >= 0 || rl.indexOf("string") >= 0) return "MUSICIANS";
+  return "";
+}
+
+// Collect the role strings from a split, supporting BOTH the legacy `role`
+// comma-string AND the `roles` array — and, within `roles`, both plain strings
+// and objects of the form { role: "..." } (Trakalog rétrocompat shapes).
+function extractSplitRoles(sp: any): string[] {
+  var out: string[] = [];
+  if (Array.isArray(sp && sp.roles)) {
+    for (var i = 0; i < sp.roles.length; i++) {
+      var r = sp.roles[i];
+      if (typeof r === "string") out.push(r);
+      else if (r && typeof r === "object" && typeof r.role === "string") out.push(r.role);
+    }
+  }
+  if (sp && typeof sp.role === "string" && sp.role.trim() !== "") {
+    var parts = sp.role.split(",").map(function (x) { return x.trim(); }).filter(Boolean);
+    for (var j = 0; j < parts.length; j++) out.push(parts[j]);
+  }
+  return out;
+}
+
 // Derive public credit categories from splits. Reads ONLY name/stage_name/role(s)
 // — never share/ipi/pro/publisher/email — so nothing confidential is rendered.
 function deriveSharedCredits(splits: TrackData["splits"]): { label: string; names: string }[] {
@@ -205,26 +240,16 @@ function deriveSharedCredits(splits: TrackData["splits"]): { label: string; name
     var sp = splits[ci];
     if (!sp || !sp.name) continue;
     var displayName = formatName(sp);
-    var splitRoles: string[] = [];
-    if (Array.isArray((sp as any).roles) && (sp as any).roles.length > 0) {
-      splitRoles = (sp as any).roles;
-    } else if (sp.role) {
-      splitRoles = sp.role.split(",").map(function (r) { return r.trim(); }).filter(function (r) { return r !== ""; });
-    }
+    var splitRoles = extractSplitRoles(sp);
     for (var ri = 0; ri < splitRoles.length; ri++) {
-      var rl = String(splitRoles[ri]).toLowerCase();
-      var cat = "";
-      if (rl.indexOf("songwriter") >= 0 || rl.indexOf("writer") >= 0) cat = "WRITTEN BY";
-      else if (rl.indexOf("producer") >= 0) cat = "PRODUCED BY";
-      else if (rl.indexOf("artist") >= 0) cat = "PERFORMED BY";
-      else if (rl.indexOf("musician") >= 0) cat = "MUSICIANS";
+      var cat = mapRoleToCategory(splitRoles[ri]);
       if (cat) {
         if (!creditsMap[cat]) creditsMap[cat] = [];
         if (creditsMap[cat].indexOf(displayName) < 0) creditsMap[cat].push(displayName);
       }
     }
   }
-  var categoryOrder = ["WRITTEN BY", "PRODUCED BY", "PERFORMED BY", "MUSICIANS"];
+  var categoryOrder = ["WRITTEN BY", "PRODUCED BY", "PERFORMED BY", "MIXED BY", "MASTERED BY", "MUSICIANS"];
   var entries: { label: string; names: string }[] = [];
   for (var oi = 0; oi < categoryOrder.length; oi++) {
     if (creditsMap[categoryOrder[oi]]) entries.push({ label: categoryOrder[oi], names: creditsMap[categoryOrder[oi]].join(", ") });
