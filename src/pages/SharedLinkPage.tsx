@@ -678,9 +678,16 @@ export default function SharedLinkPage() {
     var host = "";
     try { host = audio && audio.currentSrc ? new URL(audio.currentSrc).hostname : ""; } catch (e) { host = ""; }
     var mediaErr = audio && audio.error ? audio.error : null;
+    // code 3 = MEDIA_ERR_DECODE — the browser choked decoding the stream. On a
+    // watermarked source this points at a truncated/corrupt cached MP3 (R2) or an
+    // encoder issue, which also manifests as the intermittent "crackling radio"
+    // distortion. Surface it explicitly to make the issue reproducible.
+    var decodeHint = mediaErr && mediaErr.code === 3
+      ? " (DECODE — likely a truncated/corrupt watermarked MP3; fetch the cached R2 copy and run ffprobe to confirm)"
+      : "";
     console.error(
       "[watermark-audio] " + context +
-      " code=" + (mediaErr ? mediaErr.code : "n/a") +
+      " code=" + (mediaErr ? mediaErr.code : "n/a") + decodeHint +
       " message=" + (mediaErr && mediaErr.message ? mediaErr.message : "") +
       " host=" + host +
       " watermarked=" + watermarkActiveRef.current
@@ -738,6 +745,15 @@ export default function SharedLinkPage() {
     var onPause = function() { setIsPlaying(false); };
     var onWaiting = function() { setAudioLoading(true); };
     var onCanPlay = function() { setAudioLoading(false); clearWatchdog(); };
+    // Diagnostic only (no behavior change): a stall mid-stream is a strong signal
+    // of a truncated download / partial R2 response — the leading suspect for the
+    // intermittent watermarked-audio distortion. Helps reproduce #14.
+    var onStalled = function() {
+      var a = audioRef.current;
+      var h = ""; try { h = a && a.currentSrc ? new URL(a.currentSrc).hostname : ""; } catch (e) { h = ""; }
+      var buffered = a && a.buffered && a.buffered.length ? a.buffered.end(a.buffered.length - 1) : 0;
+      console.warn("[watermark-audio] stalled mid-stream (possible truncated download) host=" + h + " bufferedSec=" + Math.round(buffered) + " watermarked=" + watermarkActiveRef.current);
+    };
     // Surface and recover from <audio> load/decode failures (e.g. a watermarked
     // stream that won't play) instead of leaving the "Preparing" spinner forever.
     var onError = function() { handleWatermarkFailover("audio element error event"); };
@@ -749,6 +765,7 @@ export default function SharedLinkPage() {
     audio.addEventListener("pause", onPause);
     audio.addEventListener("waiting", onWaiting);
     audio.addEventListener("canplay", onCanPlay);
+    audio.addEventListener("stalled", onStalled);
     audio.addEventListener("error", onError);
 
     return function() {
@@ -761,6 +778,7 @@ export default function SharedLinkPage() {
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("waiting", onWaiting);
       audio.removeEventListener("canplay", onCanPlay);
+      audio.removeEventListener("stalled", onStalled);
       clearWatchdog();
       audio.pause();
       audio.src = "";

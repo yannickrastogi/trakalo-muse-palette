@@ -15,6 +15,8 @@ interface AudioPlayerState {
   currentTime: number; // seconds
 }
 
+export type RepeatMode = "off" | "all" | "one";
+
 interface AudioPlayerContextValue extends AudioPlayerState {
   playTrack: (track: TrackData) => void;
   togglePlay: () => void;
@@ -27,6 +29,13 @@ interface AudioPlayerContextValue extends AudioPlayerState {
   setQueue: (tracks: TrackData[]) => void;
   queue: TrackData[];
   isTrackPlaying: (trackId: number) => boolean;
+  /** Repeat mode: off (stop at end of queue), all (loop queue), one (loop track). */
+  repeatMode: RepeatMode;
+  /** Cycle off → all → one → off. */
+  cycleRepeatMode: () => void;
+  /** Shuffle: next/auto-advance picks a random track instead of the next index. */
+  shuffle: boolean;
+  toggleShuffle: () => void;
   /**
    * Swap the underlying audio source while preserving the current timecode and
    * play state. Used by Track Versioning A/B switch — caller passes a raw
@@ -53,13 +62,33 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     currentTime: 0,
   });
   const [queue, setQueue] = useState<TrackData[]>([]);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>("off");
+  const [shuffle, setShuffle] = useState(false);
 
   // Keep refs so event handlers inside the one-time useEffect avoid stale closures
   const queueRef = useRef(queue);
   useEffect(() => {
     queueRef.current = queue;
   }, [queue]);
+  const repeatModeRef = useRef(repeatMode);
+  useEffect(() => { repeatModeRef.current = repeatMode; }, [repeatMode]);
+  const shuffleRef = useRef(shuffle);
+  useEffect(() => { shuffleRef.current = shuffle; }, [shuffle]);
   const playTrackInternalRef = useRef<(track: TrackData) => void>(() => {});
+
+  // Pick the index to advance to from `fromIdx`, honoring shuffle + repeat mode.
+  // Returns -1 when playback should stop (end of queue, repeat off).
+  const computeNextIndex = (q: TrackData[], fromIdx: number, isShuffle: boolean, mode: RepeatMode): number => {
+    if (q.length === 0 || fromIdx < 0) return -1;
+    if (isShuffle && q.length > 1) {
+      let n = fromIdx;
+      while (n === fromIdx) n = Math.floor(Math.random() * q.length);
+      return n;
+    }
+    const next = fromIdx + 1;
+    if (next < q.length) return next;
+    return mode === "all" ? 0 : -1; // wrap only when repeating the whole queue
+  };
 
   // Monotonic token guarding against out-of-order URL resolution. Each playTrack
   // bumps it; after the async sign returns we only touch audio.src if our token
@@ -92,16 +121,19 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
     const onEnded = () => {
       setState((prev) => ({ ...prev, isPlaying: false, progress: 100 }));
-      // Auto-play next track (use queueRef to avoid stale closure)
+      // Auto-advance per repeat/shuffle mode (use refs to avoid stale closures).
       const currentId = audioRef.current?.dataset.trackId;
-      if (currentId) {
-        const currentQueue = queueRef.current;
-        const idx = currentQueue.findIndex((t) => String(t.id) === currentId);
-        if (idx >= 0 && idx < currentQueue.length - 1) {
-          const nextTrack = currentQueue[idx + 1];
-          playTrackInternalRef.current(nextTrack);
-        }
+      if (!currentId) return;
+      const currentQueue = queueRef.current;
+      const idx = currentQueue.findIndex((t) => String(t.id) === currentId);
+      if (idx < 0) return;
+      if (repeatModeRef.current === "one") {
+        // Loop the same track.
+        playTrackInternalRef.current(currentQueue[idx]);
+        return;
       }
+      const nextIdx = computeNextIndex(currentQueue, idx, shuffleRef.current, repeatModeRef.current);
+      if (nextIdx >= 0) playTrackInternalRef.current(currentQueue[nextIdx]);
     };
 
     // Single safety-net: when the loaded variant was the MP3 preview, retry
@@ -307,19 +339,34 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
   const nextTrack = useCallback(() => {
     const idx = findCurrentIndex();
-    if (idx >= 0 && idx < queue.length - 1) {
-      playTrackInternal(queue[idx + 1]);
-    }
-  }, [queue, state.currentTrack, playTrackInternal]);
+    if (idx < 0) return;
+    const nextIdx = computeNextIndex(queue, idx, shuffle, repeatMode === "off" ? "off" : "all");
+    // Manual "next" always advances if possible: wrap at the end unless repeat is
+    // off AND we're at the last track (then it's a no-op, same as before).
+    if (nextIdx >= 0) playTrackInternal(queue[nextIdx]);
+  }, [queue, state.currentTrack, playTrackInternal, shuffle, repeatMode]);
 
   const prevTrack = useCallback(() => {
     const idx = findCurrentIndex();
-    if (idx > 0) {
-      playTrackInternal(queue[idx - 1]);
-    } else {
-      seek(0);
+    if (idx < 0) return;
+    // Restart the track if we're past the first few seconds (standard behavior).
+    if ((audioRef.current?.currentTime ?? 0) > 3) { seek(0); return; }
+    if (shuffle && queue.length > 1) {
+      let n = idx;
+      while (n === idx) n = Math.floor(Math.random() * queue.length);
+      playTrackInternal(queue[n]);
+      return;
     }
-  }, [queue, state.currentTrack, playTrackInternal, seek]);
+    if (idx > 0) playTrackInternal(queue[idx - 1]);
+    else if (repeatMode === "all" && queue.length > 0) playTrackInternal(queue[queue.length - 1]);
+    else seek(0);
+  }, [queue, state.currentTrack, playTrackInternal, seek, shuffle, repeatMode]);
+
+  const cycleRepeatMode = useCallback(() => {
+    setRepeatMode((prev) => (prev === "off" ? "all" : prev === "all" ? "one" : "off"));
+  }, []);
+
+  const toggleShuffle = useCallback(() => setShuffle((s) => !s), []);
 
   const isTrackPlaying = useCallback((trackId: number) => {
     return state.currentTrack?.id === trackId && state.isPlaying;
@@ -378,7 +425,11 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       queue,
       isTrackPlaying,
       swapAudioSource,
-    }), [state, playTrack, togglePlay, pause, seek, seekToTime, setVolume, nextTrack, prevTrack, setQueue, queue, isTrackPlaying, swapAudioSource])}>
+      repeatMode,
+      cycleRepeatMode,
+      shuffle,
+      toggleShuffle,
+    }), [state, playTrack, togglePlay, pause, seek, seekToTime, setVolume, nextTrack, prevTrack, setQueue, queue, isTrackPlaying, swapAudioSource, repeatMode, cycleRepeatMode, shuffle, toggleShuffle])}>
       {children}
     </AudioPlayerContext.Provider>
   );

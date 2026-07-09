@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useRadioPlayer } from "@/contexts/RadioPlayerContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ChevronUp, ChevronDown, X, Radio } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ChevronUp, ChevronDown, X, Radio, Repeat, Repeat1, Shuffle } from "lucide-react";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -32,6 +32,10 @@ export function PersistentPlayer() {
     setVolume,
     nextTrack,
     prevTrack,
+    repeatMode,
+    cycleRepeatMode,
+    shuffle,
+    toggleShuffle,
   } = useAudioPlayer();
 
   const { radioState, isRadioActive, radioToggle, radioNext, radioPrev, radioStop } = useRadioPlayer();
@@ -91,7 +95,7 @@ export function PersistentPlayer() {
       <motion.div
         initial={{ y: 60 }}
         animate={{ y: 0 }}
-        className="fixed bottom-4 right-4 z-50"
+        className="fixed bottom-4 right-4 z-40"
       >
         <button
           onClick={() => setMinimized(false)}
@@ -223,7 +227,7 @@ export function PersistentPlayer() {
       initial={{ y: 80 }}
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="fixed bottom-0 left-0 right-0 z-50"
+      className="fixed bottom-0 left-0 right-0 z-40"
     >
       {/* Progress bar — above the player, clickable */}
       <div
@@ -269,6 +273,14 @@ export function PersistentPlayer() {
         {/* Center — controls (fixed width) */}
         <div className="flex items-center gap-1.5 sm:gap-2 justify-self-center">
           <button
+            onClick={toggleShuffle}
+            title={t("player.shuffle", "Shuffle")}
+            aria-pressed={shuffle}
+            className={`p-2 rounded-lg transition-all hidden sm:inline-flex ${shuffle ? "text-brand-orange" : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"}`}
+          >
+            <Shuffle className="w-4 h-4" />
+          </button>
+          <button
             onClick={prevTrack}
             className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
           >
@@ -285,6 +297,14 @@ export function PersistentPlayer() {
             className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
           >
             <SkipForward className="w-4 h-4" />
+          </button>
+          <button
+            onClick={cycleRepeatMode}
+            title={repeatMode === "one" ? t("player.repeatOne", "Repeat one") : repeatMode === "all" ? t("player.repeatAll", "Repeat all") : t("player.repeat", "Repeat")}
+            aria-pressed={repeatMode !== "off"}
+            className={`p-2 rounded-lg transition-all hidden sm:inline-flex ${repeatMode !== "off" ? "text-brand-orange" : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"}`}
+          >
+            {repeatMode === "one" ? <Repeat1 className="w-4 h-4" /> : <Repeat className="w-4 h-4" />}
           </button>
         </div>
 
@@ -359,7 +379,7 @@ function RadioMiniBar({ isMobile, radioState, onToggle, onNext, onPrev, onStop, 
 
   const wrapperClass = isMobile
     ? "fixed left-0 right-0 z-40"
-    : "fixed bottom-0 left-0 right-0 z-50";
+    : "fixed bottom-0 left-0 right-0 z-40";
   const wrapperStyle = isMobile
     ? { bottom: "calc(52px + env(safe-area-inset-bottom, 0px))" }
     : undefined;
