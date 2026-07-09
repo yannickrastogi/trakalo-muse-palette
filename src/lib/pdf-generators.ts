@@ -933,6 +933,8 @@ export interface SignedSplitEntry {
   publisher: string;
   signatureData: string | null;
   signedAt: string | null;
+  /** Marked as signed elsewhere (migrated track) — no on-file signature image. */
+  signedExternally?: boolean;
 }
 
 function buildSignedAgreementDoc(title: string, artist: string, entries: SignedSplitEntry[]) {
@@ -1081,7 +1083,8 @@ function buildSignedAgreementDoc(title: string, artist: string, entries: SignedS
     doc.setTextColor(...textMuted);
     doc.text(e.role + " — " + e.share + "%", marginX + 14, y + 32);
 
-    // Signature image
+    // Signature image — or an explicit "signed externally" note for migrated
+    // tracks (no on-file signature image), vs "[Pending]" for the not-yet-signed.
     if (e.signatureData) {
       try {
         doc.addImage(e.signatureData, "PNG", marginX + contentW - 170, y + 6, 150, 50);
@@ -1090,6 +1093,10 @@ function buildSignedAgreementDoc(title: string, artist: string, entries: SignedS
         doc.setTextColor(...textMuted);
         doc.text("[Signature on file]", marginX + contentW - 100, y + 35);
       }
+    } else if (e.signedExternally) {
+      doc.setFontSize(8);
+      doc.setTextColor(...textMuted);
+      doc.text("[Signed externally]", marginX + contentW - 110, y + 35);
     } else {
       doc.setFontSize(8);
       doc.setTextColor(...brandOrange);

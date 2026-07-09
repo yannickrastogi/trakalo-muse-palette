@@ -85,6 +85,7 @@
     "title": "Complétude du track",
     "missing": "Manquant",
     "complete": "Track complet à 100% ✓",
+    "coreInfo": "Titre & Artiste",
     "cover": "Pochette",
     "bpmKey": "BPM et tonalité",
     "genreMood": "Genre et ambiance",

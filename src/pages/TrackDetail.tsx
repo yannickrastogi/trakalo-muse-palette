@@ -2620,6 +2620,7 @@ interface SignatureStatus {
   signed_at: string | null;
   signature_data: string | null;
   split_share: number;
+  signed_externally?: boolean;
 }
 
 interface StudioSubmission {
@@ -2674,6 +2675,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
   const [editingEmailValue, setEditingEmailValue] = useState("");
   const [sendingExecuted, setSendingExecuted] = useState(false);
   const [executedSent, setExecutedSent] = useState(false);
+  const [markingExternal, setMarkingExternal] = useState(false);
 
   const fetchSubmissions = useCallback(function () {
     if (!trackUuid) return;
@@ -2698,7 +2700,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
     if (!trackUuid) return;
     supabase
       .from("signature_requests")
-      .select("id, collaborator_name, collaborator_email, status, signed_at, signature_data, split_share")
+      .select("id, collaborator_name, collaborator_email, status, signed_at, signature_data, split_share, signed_externally")
       .eq("track_id", trackUuid)
       .then(function (res) {
         if (!res.data) return;
@@ -2880,6 +2882,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
         publisher: matchingSplit ? matchingSplit.publisher : "",
         signatureData: sig.signature_data,
         signedAt: sig.signed_at,
+        signedExternally: sig.signed_externally === true,
       };
     });
 
@@ -2909,6 +2912,45 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
         setExecutedSent(true);
       }).catch(function (err) { console.error("Error:", err); });
   }, [trackUuid, t, signatureStatuses, splits, trackData]);
+
+  // Mark all splits as already signed elsewhere (migrated / externally-executed
+  // tracks). Creates signature_requests rows status='signed', signed_externally=true,
+  // WITHOUT sending any signature emails. Admin-only (RPC enforces access level).
+  var handleMarkSignedExternally = useCallback(function () {
+    if (!trackUuid) return;
+    setMarkingExternal(true);
+    supabase.auth.getSession().then(function (s) {
+      var uid = s.data.session && s.data.session.user ? s.data.session.user.id : null;
+      if (!uid) { setMarkingExternal(false); toast.error(t("signature.markExternalError", "Could not mark as signed")); return undefined; }
+      return supabase.rpc("mark_splits_signed_externally", { _user_id: uid, _track_id: trackUuid });
+    }).then(function (res) {
+      setMarkingExternal(false);
+      if (!res) return;
+      if (res.error) { toast.error(t("signature.markExternalError", "Could not mark as signed")); return; }
+      toast.success(t("signature.markedExternal", "Marked as already signed"));
+      fetchSignatures();
+    }).catch(function (err) { setMarkingExternal(false); console.error("Error:", err); toast.error(t("signature.markExternalError", "Could not mark as signed")); });
+  }, [trackUuid, t, fetchSignatures]);
+
+  // Reverse the above — only ever deletes signed_externally=true rows, never real
+  // signatures. Admin-only (RPC enforces access level).
+  var handleUnmarkSignedExternally = useCallback(function () {
+    if (!trackUuid) return;
+    setMarkingExternal(true);
+    supabase.auth.getSession().then(function (s) {
+      var uid = s.data.session && s.data.session.user ? s.data.session.user.id : null;
+      if (!uid) { setMarkingExternal(false); toast.error(t("signature.markExternalError", "Could not mark as signed")); return undefined; }
+      return supabase.rpc("unmark_splits_signed_externally", { _user_id: uid, _track_id: trackUuid });
+    }).then(function (res) {
+      setMarkingExternal(false);
+      if (!res) return;
+      if (res.error) { toast.error(t("signature.unmarkExternalError", "Could not unmark")); return; }
+      toast.success(t("signature.unmarkedExternal", "Removed external signatures"));
+      fetchSignatures();
+    }).catch(function (err) { setMarkingExternal(false); console.error("Error:", err); toast.error(t("signature.unmarkExternalError", "Could not unmark")); });
+  }, [trackUuid, t, fetchSignatures]);
+
+  var hasExternalSignatures = signatureStatuses.some(function (s) { return s.signed_externally === true; });
 
   var pendingSubs = submissions.filter(function (s) { return s.status === "pending"; });
   var processedSubs = submissions.filter(function (s) { return s.status !== "pending"; });
@@ -3329,7 +3371,12 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
                     ) : null}
                     <p className="text-[11px] text-muted-foreground">{s.role} · {s.pro || "—"} · IPI: {s.ipi || "—"}</p>
                     {sigStatus && (
-                      sigStatus.status === "signed" ? (
+                      sigStatus.status === "signed" && sigStatus.signed_externally ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400 mt-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          {t("signature.signedExternally", "Signed externally")}
+                        </span>
+                      ) : sigStatus.status === "signed" ? (
                         <button
                           onClick={function () { setViewSignature(sigStatus.signature_data); }}
                           className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400 mt-1 hover:underline"
@@ -3382,6 +3429,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
                             publisher: matchingSplit ? matchingSplit.publisher : "",
                             signatureData: sig.signature_data,
                             signedAt: sig.signed_at,
+                            signedExternally: sig.signed_externally === true,
                           };
                         });
                         import("@/lib/pdf-generators").then(function (mod) {
@@ -3450,6 +3498,43 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
                   </TooltipContent>
                 )}
               </Tooltip>
+
+              <span className="text-border">|</span>
+
+              {/* Mark as already signed (migrated / externally-executed tracks) —
+                  no emails sent. Reversible via Unmark. */}
+              {!hasExternalSignatures ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <button
+                        onClick={handleMarkSignedExternally}
+                        disabled={markingExternal || allSigned || !allSplitsHaveEmail}
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+                      >
+                        {markingExternal ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                        {t("signature.markAsAlreadySigned", "Mark as already signed")}
+                      </button>
+                    </span>
+                  </TooltipTrigger>
+                  {allSigned ? (
+                    <TooltipContent side="top"><p className="text-xs">{t("signature.allAlreadySigned")}</p></TooltipContent>
+                  ) : !allSplitsHaveEmail ? (
+                    <TooltipContent side="top"><p className="text-xs">{t("signature.allNeedEmail")}</p></TooltipContent>
+                  ) : (
+                    <TooltipContent side="top"><p className="text-xs">{t("signature.markAsAlreadySignedHint", "Record these splits as signed elsewhere, without sending emails")}</p></TooltipContent>
+                  )}
+                </Tooltip>
+              ) : (
+                <button
+                  onClick={handleUnmarkSignedExternally}
+                  disabled={markingExternal}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {markingExternal ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+                  {t("signature.unmarkExternal", "Unmark as signed")}
+                </button>
+              )}
             </div>
           </TooltipProvider>
         )}

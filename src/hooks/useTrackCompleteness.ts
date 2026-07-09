@@ -26,17 +26,26 @@ interface CompletenessCtx {
 }
 
 // Criteria + weights (total = 100). Field names match the real TrackData shape.
+//
+// Weighting reflects real importance for a rights/sync-ready catalog:
+//  - Core creative & rights data carry the most weight — credits, splits (+ signed),
+//    genre, cover, core info (title/artist), lyrics.
+//  - Auto-detected or secondary fields carry little — BPM/Key are filled
+//    automatically by Sonic DNA, so a track that is otherwise complete but missing
+//    only BPM/Key still scores high (missing BPM/Key alone = 93%). ISRC / stems /
+//    extra metadata are minor.
 const CRITERIA: { key: string; weight: number; check: (c: CompletenessCtx) => boolean }[] = [
+  { key: "coreInfo", weight: 8, check: (c) => !!c.track.title?.trim() && !!c.track.artist?.trim() },
   { key: "cover", weight: 10, check: (c) => !!c.track.coverImage },
-  { key: "bpmKey", weight: 10, check: (c) => !!c.track.bpm && !!c.track.key },
-  { key: "genreMood", weight: 10, check: (c) => (c.track.genre?.length ?? 0) > 0 && (c.track.mood?.length ?? 0) > 0 },
-  { key: "lyrics", weight: 10, check: (c) => !!c.track.lyrics && c.track.lyrics.trim().length > 0 },
+  { key: "genreMood", weight: 12, check: (c) => (c.track.genre?.length ?? 0) > 0 && (c.track.mood?.length ?? 0) > 0 },
+  { key: "lyrics", weight: 8, check: (c) => !!c.track.lyrics && c.track.lyrics.trim().length > 0 },
+  { key: "credits", weight: 15, check: (c) => !!c.track.credits && Object.values(c.track.credits).some((v) => Array.isArray(v) ? v.length > 0 : !!v) },
   { key: "splits", weight: 15, check: (c) => (c.track.splits?.length ?? 0) > 0 },
   { key: "splitsSigned", weight: 10, check: (c) => (c.track.splits?.length ?? 0) > 0 && c.splitsAllSigned === true },
-  { key: "credits", weight: 10, check: (c) => !!c.track.credits && Object.values(c.track.credits).some((v) => Array.isArray(v) ? v.length > 0 : !!v) },
-  { key: "isrc", weight: 5, check: (c) => !!c.track.isrc && c.track.isrc.trim().length > 0 },
-  { key: "stems", weight: 10, check: (c) => c.stems.length > 0 },
-  { key: "metadata", weight: 10, check: (c) => !!c.track.album || !!c.track.label || !!c.track.copyright },
+  { key: "stems", weight: 5, check: (c) => c.stems.length > 0 },
+  { key: "isrc", weight: 4, check: (c) => !!c.track.isrc && c.track.isrc.trim().length > 0 },
+  { key: "metadata", weight: 6, check: (c) => !!c.track.album || !!c.track.label || !!c.track.copyright },
+  { key: "bpmKey", weight: 7, check: (c) => !!c.track.bpm && !!c.track.key },
 ];
 
 export function useTrackCompleteness(track: TrackData, opts?: CompletenessOptions): CompletenessResult {

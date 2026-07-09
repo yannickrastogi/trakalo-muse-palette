@@ -85,6 +85,7 @@
     "title": "Track Completeness",
     "missing": "Missing",
     "complete": "Track is 100% complete ✓",
+    "coreInfo": "Title & Artist",
     "cover": "Cover art",
     "bpmKey": "BPM & Key",
     "genreMood": "Genre & Mood",
