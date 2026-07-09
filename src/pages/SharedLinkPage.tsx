@@ -459,8 +459,9 @@ export default function SharedLinkPage() {
   var [editContent, setEditContent] = useState("");
   var commentInputRef = useRef<HTMLInputElement>(null);
 
-  // Credits
-  var [creditsOpen, setCreditsOpen] = useState(false);
+  // Credits — open by default so the derived credits (Written/Produced/Performed…)
+  // are visible on load; still collapsible. Applies to track AND playlist links.
+  var [creditsOpen, setCreditsOpen] = useState(true);
 
   // Pack download state
   var [packDownloading, setPackDownloading] = useState(false);
