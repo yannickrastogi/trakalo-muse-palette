@@ -2,8 +2,11 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Link2, Lock, Copy, Check, Music, ListMusic, Download, ShieldOff, ShieldCheck, Bookmark, Layers, Upload, User, AlertTriangle } from "lucide-react";
+import { X, Link2, Lock, Copy, Check, Music, ListMusic, Download, ShieldOff, ShieldCheck, Bookmark, Layers, Upload, User, AlertTriangle, Mail, Send, Loader2 } from "lucide-react";
 import { useSharedLinks, type SharedLink, type ShareType } from "@/contexts/SharedLinksContext";
+import { useContacts } from "@/contexts/ContactsContext";
+import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
@@ -43,6 +46,7 @@ export function ShareModal({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { createSharedLink } = useSharedLinks();
+  const { contacts } = useContacts();
   const hasNoStems = shareType === "stems" && (!stems || stems.length === 0);
 
   const [linkType, setLinkType] = useState<"public" | "secured">("public");
@@ -57,6 +61,12 @@ export function ShareModal({
   const [gateScreenEnabled, setGateScreenEnabled] = useState(true);
   const [copied, setCopied] = useState(false);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
+  const [createdSlug, setCreatedSlug] = useState<string | null>(null);
+  // "Send by email" (optional) — post-creation. Never blocks link creation.
+  const [emailRecipients, setEmailRecipients] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const shareTypeLabels: Record<ShareType, string> = {
     stems: t("shareModal.shareStems"),
@@ -134,9 +144,71 @@ export function ShareModal({
     if (created && created.linkSlug) {
       const url = window.location.origin + "/share/" + created.linkSlug;
       setCreatedLink(url);
+      setCreatedSlug(created.linkSlug);
       toast.success(t("shareModal.linkCreatedToast"));
     } else {
       toast.error(t("shareModal.createFailed"));
+    }
+  };
+
+  // Parse the recipients input into a de-duplicated list of valid emails.
+  const parseRecipientEmails = (raw: string): string[] => {
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const seen: Record<string, true> = {};
+    const out: string[] = [];
+    raw.split(/[,;\s]+/).map((e) => e.trim()).filter(Boolean).forEach((e) => {
+      const low = e.toLowerCase();
+      if (emailRe.test(low) && !seen[low]) { seen[low] = true; out.push(low); }
+    });
+    return out;
+  };
+
+  const itemName = shareType === "playlist" ? (playlistName || "") : (trackTitle || playlistName || "");
+
+  const handleSendEmail = async () => {
+    if (!createdSlug || sendingEmail) return;
+    const recipients = parseRecipientEmails(emailRecipients);
+    if (recipients.length === 0) {
+      toast.error(t("shareModal.emailInvalidRecipients", "Enter at least one valid email address"));
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      // Authenticate the request with the USER's access token (not the anon key):
+      // the Edge Function derives the sender + workspace from this and verifies
+      // the caller is a member of the link's workspace.
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        toast.error(t("shareModal.emailSendFailed", "Could not send the email"));
+        setSendingEmail(false);
+        return;
+      }
+      const res = await fetch(SUPABASE_URL + "/functions/v1/send-shared-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + accessToken, "apikey": SUPABASE_PUBLISHABLE_KEY },
+        body: JSON.stringify({
+          recipients,
+          message: emailMessage.trim() || undefined,
+          link_slug: createdSlug,
+          item_type: shareType,
+          item_name: itemName || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.success) {
+        toast.error(data?.error || t("shareModal.emailSendFailed", "Could not send the email"));
+        return;
+      }
+      setEmailSent(true);
+      setEmailRecipients("");
+      setEmailMessage("");
+      toast.success(t("shareModal.emailSent", { count: data.sent, defaultValue: "Email sent to " + data.sent + " recipient(s)" }));
+    } catch (err) {
+      console.error("send-shared-link failed:", err);
+      toast.error(t("shareModal.emailSendFailed", "Could not send the email"));
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -150,6 +222,11 @@ export function ShareModal({
 
   const handleClose = () => {
     setCreatedLink(null);
+    setCreatedSlug(null);
+    setEmailRecipients("");
+    setEmailMessage("");
+    setSendingEmail(false);
+    setEmailSent(false);
     setLinkType("public");
     setPassword("");
     setLinkName("");
@@ -238,6 +315,45 @@ export function ShareModal({
                     {t("shareModal.password")}: <span className="text-foreground font-mono">{password}</span>
                   </p>
                 )}
+
+                {/* Send by email (optional) — link is already created; this is extra. */}
+                <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+                    <p className="text-xs font-semibold text-foreground">{t("shareModal.sendByEmail", "Send by email")}</p>
+                    <span className="text-2xs text-muted-foreground/60">({t("shareModal.optional", "optional")})</span>
+                  </div>
+                  <input
+                    type="text"
+                    list="share-email-contacts"
+                    value={emailRecipients}
+                    onChange={(e) => setEmailRecipients(e.target.value)}
+                    placeholder={t("shareModal.emailRecipientsPlaceholder", "email@example.com, ...")}
+                    className="w-full h-10 px-3 rounded-lg bg-card border border-border/50 text-xs text-foreground outline-none focus:border-primary/40 transition-colors placeholder:text-muted-foreground/40"
+                  />
+                  <datalist id="share-email-contacts">
+                    {contacts.filter((c) => c.email).map((c) => (
+                      <option key={c.id} value={c.email}>{[c.firstName, c.lastName].filter(Boolean).join(" ") || c.stageName || c.email}</option>
+                    ))}
+                  </datalist>
+                  <textarea
+                    value={emailMessage}
+                    onChange={(e) => setEmailMessage(e.target.value)}
+                    rows={2}
+                    maxLength={1000}
+                    placeholder={t("shareModal.emailMessagePlaceholder", "Add an optional message…")}
+                    className="w-full px-3 py-2 rounded-lg bg-card border border-border/50 text-xs text-foreground outline-none focus:border-primary/40 transition-colors resize-none placeholder:text-muted-foreground/40"
+                  />
+                  <button
+                    onClick={handleSendEmail}
+                    disabled={sendingEmail || parseRecipientEmails(emailRecipients).length === 0}
+                    className="w-full px-4 py-2.5 rounded-lg text-xs font-semibold btn-brand flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {sendingEmail ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : emailSent ? <Check className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
+                    {sendingEmail ? t("shareModal.sending", "Sending…") : emailSent ? t("shareModal.emailSentLabel", "Sent — send again?") : t("shareModal.sendLinkByEmail", "Send link by email")}
+                  </button>
+                </div>
+
                 <button onClick={handleClose} className="w-full px-4 py-2.5 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-secondary transition-colors">
                   {t("shareModal.done")}
                 </button>
