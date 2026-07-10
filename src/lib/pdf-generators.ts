@@ -269,7 +269,8 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
   let barX = marginX;
   splits.forEach((s, i) => {
     const color = splitColors[i % splitColors.length];
-    const w = (s.share / 100) * contentW;
+    // `share` is absent on public/sanitized splits → treat as 0 (no bar segment).
+    const w = ((s.share ?? 0) / 100) * contentW;
     doc.setFillColor(...color);
     doc.roundedRect(barX, y, Math.max(w, 2), barHeight, i === 0 ? 4 : 0, i === splits.length - 1 ? 4 : 0, "F");
     barX += w;
@@ -386,7 +387,7 @@ export function generateSplitsPdf(title: string, artist: string, splits: SplitDa
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...color);
-    doc.text(s.share + "%", colShare + shareW - 6, y + 14, { align: "right" });
+    doc.text(s.share != null ? s.share + "%" : "—", colShare + shareW - 6, y + 14, { align: "right" });
 
     y += rowH;
   });

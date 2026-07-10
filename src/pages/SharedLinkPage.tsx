@@ -75,7 +75,11 @@ interface TrackData {
   waveform_data: number[] | null;
   lyrics: string | null;
   lyrics_segments: { start: number; end: number; text: string }[] | null;
-  splits: { name: string; stage_name?: string; role: string; share: number; pro: string; ipi: string; publisher: string }[] | null;
+  // Public/anon shape only: the RPC sanitizes splits to names + roles. Confidential
+  // fields (share %, pro, ipi, email, publisher) are NEVER sent to the client.
+  splits: { name: string; stage_name?: string; role?: string; roles?: string[] }[] | null;
+  // Pre-computed sum of split shares (replaces the removed per-split `share`).
+  total_shares: number | null;
   isrc: string | null;
   labels: string[] | null;
   publishers: string[] | null;
@@ -1516,10 +1520,13 @@ export default function SharedLinkPage() {
         root.folder("Metadata")!.file(trackData.title + " - Metadata.pdf", metaBlob);
       }
 
-      // Splits — branded PDF (included with metadata, same as owner pack)
+      // Splits — branded PDF (included with metadata, same as owner pack).
+      // Uses the sanitized splits (names + roles) and the pre-computed total_shares
+      // from the RPC — the confidential per-split share/pro/ipi/publisher are no
+      // longer sent to anon, so nothing confidential can appear in the PDF.
       if (items.indexOf("metadata") >= 0 && Array.isArray(trackData.splits) && trackData.splits.length > 0) {
-        var totalShares = trackData.splits.reduce(function(sum, s) { return sum + (s.share || 0); }, 0);
-        var splitsBlob = generateSplitsPdf(trackData.title, trackData.artist, trackData.splits, totalShares, true) as Blob;
+        var totalShares = trackData.total_shares || 0;
+        var splitsBlob = generateSplitsPdf(trackData.title, trackData.artist, trackData.splits as unknown as Parameters<typeof generateSplitsPdf>[2], totalShares, true) as Blob;
         root.folder("Metadata")!.file(trackData.title + " - Splits.pdf", splitsBlob);
       }
 
