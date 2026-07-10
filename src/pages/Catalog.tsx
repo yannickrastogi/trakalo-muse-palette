@@ -6,6 +6,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { useRole } from "@/contexts/RoleContext";
 import { FirstUseTooltip } from "@/components/FirstUseTooltip";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
+import { toast } from "sonner";
+import { BulkEditBar } from "@/components/BulkEditBar";
 import { StarRating } from "@/components/StarRating";
 import { TrackCompletenessBar } from "@/components/TrackCompletenessBar";
 import { useTrackCompleteness } from "@/hooks/useTrackCompleteness";
@@ -29,6 +31,8 @@ import {
   SlidersHorizontal,
   LayoutGrid,
   List,
+  CheckSquare,
+  Square,
   Headphones,
   Download,
   Edit3,
@@ -115,7 +119,7 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 
 export default function Catalog() {
   const { t } = useTranslation();
-  const { tracks: allTracks, deleteTrack, submitRating } = useTrack();
+  const { tracks: allTracks, deleteTrack, submitRating, bulkUpdateTracks } = useTrack();
   const { getTotalPlaysForTrack, getTotalDownloadsForTrack } = useEngagement();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
@@ -148,6 +152,10 @@ export default function Catalog() {
   const [deleting, setDeleting] = useState(false);
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<"tracks" | "stems">("tracks");
+  // Multi-select bulk editing (table view). Only own (non catalog-shared) tracks
+  // are selectable — the RPC would reject shared ones anyway.
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   // Force grid on mobile
   const effectiveViewMode = isMobile ? "grid" : viewMode;
 
@@ -287,6 +295,33 @@ export default function Catalog() {
     });
   }, [allTracks, search, typeFilter, genreFilter, keyFilter, statusFilter, productionStageFilter, bpmFilter, languageFilter, voiceFilter, instrumentsFilter, lyricThemesFilter, moodFeelFilter, syncTagsFilter, tempoFilter, personFilter, uploadMonthFilter]);
 
+  // ─── Multi-select bulk editing ───
+  const selectableTracks = useMemo(() => filteredTracks.filter((t) => !t.isShared), [filteredTracks]);
+  const allSelectableSelected = selectableTracks.length > 0 && selectableTracks.every((t) => selectedIds.has(t.id));
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => (allSelectableSelected ? new Set() : new Set(selectableTracks.map((t) => t.id))));
+  };
+  const exitSelection = () => { setSelectionMode(false); setSelectedIds(new Set()); };
+
+  const handleBulkApply = async (updates: Partial<TrackData>): Promise<number> => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return 0;
+    const n = await bulkUpdateTracks(ids, updates);
+    if (n > 0) {
+      toast.success(t("catalog.bulkUpdated", { count: n, defaultValue: "Updated " + n + " tracks" }));
+      exitSelection();
+    }
+    return n;
+  };
+
   const clearFilters = () => {
     setTypeFilter(null);
     setGenreFilter(null);
@@ -409,6 +444,17 @@ export default function Catalog() {
                 <LayoutGrid className="w-3.5 h-3.5" />
               </button>
             </div>
+            {effectiveViewMode === "table" && (
+              <button
+                onClick={() => { if (selectionMode) exitSelection(); else setSelectionMode(true); }}
+                className={`hidden md:inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-[13px] font-semibold transition-all ${
+                  selectionMode ? "bg-brand-orange/10 border-brand-orange/30 text-brand-orange" : "border-border bg-card text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {selectionMode ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
+                {selectionMode ? t("catalog.doneSelecting", "Done") : t("catalog.select", "Select")}
+              </button>
+            )}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border transition-all ${
@@ -569,11 +615,22 @@ export default function Catalog() {
               onSecondaryAction={() => setUploadOpen(true)}
             />
           ) : effectiveViewMode === "table" ? (
+          <>
+          {selectionMode && selectedIds.size > 0 && (
+            <BulkEditBar count={selectedIds.size} onApply={handleBulkApply} onClear={exitSelection} />
+          )}
           <div className="card-premium overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-border">
+                    {selectionMode && (
+                      <th className="pl-4 pr-1 py-3 w-8">
+                        <button onClick={toggleSelectAll} className="text-muted-foreground hover:text-foreground" title={t("catalog.selectAll", "Select all")}>
+                          {allSelectableSelected ? <CheckSquare className="w-4 h-4 text-brand-orange" /> : <Square className="w-4 h-4" />}
+                        </button>
+                      </th>
+                    )}
                     <th className="text-left pl-5 pr-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-8">#</th>
                     <th className="text-left px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">Track</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest hidden sm:table-cell">Details</th>
@@ -587,7 +644,7 @@ export default function Catalog() {
                 <tbody>
                   {filteredTracks.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-5 py-20 text-center text-muted-foreground">
+                      <td colSpan={selectionMode ? 9 : 8} className="px-5 py-20 text-center text-muted-foreground">
                         <Music className="w-10 h-10 mx-auto mb-4 opacity-15" />
                         <p className="text-sm font-semibold">{t("catalog.noTracks")}</p>
                         <p className="text-xs mt-1.5 text-muted-foreground/70">{t("catalog.adjustFilters")}</p>
@@ -600,8 +657,19 @@ export default function Catalog() {
                         <tr
                           key={track.id}
                           className="border-b border-border/40 last:border-0 hover:bg-secondary/25 transition-all duration-200 group/row cursor-pointer"
-                          onClick={() => navigate(`/track/${track.uuid}`)}
+                          onClick={() => { if (selectionMode) { if (!track.isShared) toggleSelect(track.id); } else navigate(`/track/${track.uuid}`); }}
                         >
+                          {selectionMode && (
+                            <td className="pl-4 pr-1 py-3 w-8" onClick={(e) => { e.stopPropagation(); if (!track.isShared) toggleSelect(track.id); }}>
+                              {track.isShared ? (
+                                <Square className="w-4 h-4 text-muted-foreground/20" />
+                              ) : selectedIds.has(track.id) ? (
+                                <CheckSquare className="w-4 h-4 text-brand-orange cursor-pointer" />
+                              ) : (
+                                <Square className="w-4 h-4 text-muted-foreground/50 hover:text-foreground cursor-pointer" />
+                              )}
+                            </td>
+                          )}
                           <td className="pl-5 pr-2 py-3">
                             <button
                               disabled={!track.previewUrl && !track.originalFileUrl && !isPlaying}
@@ -760,6 +828,7 @@ export default function Catalog() {
               <span className="text-2xs text-muted-foreground/50">{t("catalog.brandLabel")}</span>
             </div>
           </div>
+          </>
           ) : (
           /* Grid View */
           <div>

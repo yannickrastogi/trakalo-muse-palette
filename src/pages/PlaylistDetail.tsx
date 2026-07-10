@@ -29,6 +29,8 @@ import {
   ChevronRight,
   ListMusic,
   GripVertical,
+  CheckSquare,
+  Square,
   Copy,
   Trash2,
   Check,
@@ -59,6 +61,8 @@ import { usePlaylists, type PlaylistItem } from "@/contexts/PlaylistContext";
 import { DEFAULT_COVER } from "@/lib/constants";
 import { statusColors } from "./Catalog";
 import { useTrack, mapRowToTrack, type TrackData } from "@/contexts/TrackContext";
+import { BulkEditBar } from "@/components/BulkEditBar";
+import { toast } from "sonner";
 import { useRole } from "@/contexts/RoleContext";
 import {
   Dialog,
@@ -83,7 +87,9 @@ export default function PlaylistDetail() {
   const navigate = useNavigate();
   const { getPlaylist, updatePlaylist, deletePlaylist } = usePlaylists();
   const { permissions } = useRole();
-  const { tracks: allTracks } = useTrack();
+  const { tracks: allTracks, bulkUpdateTracks } = useTrack();
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const { getTotalPlaysForTrack, getPlaylistEngagement } = useEngagement();
   const { playTrack, togglePlay, isTrackPlaying, isPlaying: audioIsPlaying, currentTrack, setQueue, progress } = useAudioPlayer();
   const { activeWorkspace } = useWorkspace();
@@ -281,6 +287,34 @@ export default function PlaylistDetail() {
     pendingReorderRef.current = updated;
     flushReorder();
   }, [displayTracks, flushReorder]);
+
+  // ─── Multi-select (bulk edit + bulk remove-from-playlist) ───
+  const selectableTracks = displayTracks.filter((t): t is Track => !!t && t.id != null);
+  const allSelected = selectableTracks.length > 0 && selectableTracks.every((t) => selectedIds.has(t.id));
+  const toggleSelect = (tid: number) => setSelectedIds((prev) => { const n = new Set(prev); if (n.has(tid)) n.delete(tid); else n.add(tid); return n; });
+  const toggleSelectAll = () => setSelectedIds(() => (allSelected ? new Set() : new Set(selectableTracks.map((t) => t.id))));
+  const exitSelection = () => { setSelectionMode(false); setSelectedIds(new Set()); };
+
+  const bulkRemoveSelected = () => {
+    const source = displayTracks.filter((t): t is Track => !!t && t.id != null);
+    const updated = source.filter((t) => !selectedIds.has(t.id));
+    const removed = source.length - updated.length;
+    if (removed === 0) return;
+    setTracks(updated);
+    setDbTracks(updated);
+    pendingReorderRef.current = updated;
+    flushReorder();
+    toast.success(t("playlistDetail.bulkRemoved", { count: removed, defaultValue: "Removed " + removed + " tracks from the playlist" }));
+    exitSelection();
+  };
+
+  const bulkEditSelected = async (updates: Partial<TrackData>): Promise<number> => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return 0;
+    const n = await bulkUpdateTracks(ids, updates);
+    if (n > 0) { toast.success(t("catalog.bulkUpdated", { count: n, defaultValue: "Updated " + n + " tracks" })); exitSelection(); }
+    return n;
+  };
 
   const availableToAdd = allTracks.filter((t) => !displayTracks.some((pt) => pt.id === t.id));
   const filteredAvailable = addSearch
@@ -525,12 +559,37 @@ export default function PlaylistDetail() {
                   <Trash2 className="w-4 h-4" /> {t("playlistDetail.delete")}
                 </button>
               )}
+              {permissions.canEditPlaylists && !isMobile && (
+                <button
+                  onClick={() => { if (selectionMode) exitSelection(); else setSelectionMode(true); }}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium border transition-colors min-h-[44px] ${
+                    selectionMode ? "bg-brand-orange/10 border-brand-orange/30 text-brand-orange" : "border-border bg-card text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {selectionMode ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />} {selectionMode ? t("catalog.doneSelecting", "Done") : t("catalog.select", "Select")}
+                </button>
+              )}
             </div>
           </div>
         </motion.div>
 
         {/* Track list */}
         <motion.div variants={itemVariant}>
+          {selectionMode && selectedIds.size > 0 && (
+            <BulkEditBar
+              count={selectedIds.size}
+              onApply={bulkEditSelected}
+              onClear={exitSelection}
+              extra={
+                <button
+                  onClick={bulkRemoveSelected}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-destructive/30 bg-card text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> {t("playlistDetail.removeSelected", "Remove from playlist")}
+                </button>
+              }
+            />
+          )}
           {(() => {
             const safeTracks = displayTracks.filter((t): t is Track => !!t && t.id != null);
             return (
@@ -550,6 +609,11 @@ export default function PlaylistDetail() {
                       setPlayingTrackId={setPlayingTrackId}
                       removeTrack={removeTrack}
                       totalDuration={playlist.duration}
+                      selectionMode={selectionMode}
+                      selectedIds={selectedIds}
+                      onToggleSelect={toggleSelect}
+                      allSelected={allSelected}
+                      onToggleAll={toggleSelectAll}
                     />
                   )}
                 </SortableContext>
@@ -669,12 +733,18 @@ function SortableDesktopRow({
   isPlaying,
   setPlayingTrackId,
   removeTrack,
+  selectionMode,
+  selected,
+  onToggleSelect,
 }: {
   track: Track;
   idx: number;
   isPlaying: boolean;
   setPlayingTrackId: (id: number | null) => void;
   removeTrack: (id: number) => void;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (id: number) => void;
 }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -695,8 +765,13 @@ function SortableDesktopRow({
       className={`border-b border-border/40 last:border-0 hover:bg-secondary/25 transition-all duration-200 group/row cursor-pointer ${
         isDragging ? "bg-secondary/40 shadow-lg opacity-90" : ""
       }`}
-      onClick={() => navigate("/track/" + track.uuid)}
+      onClick={() => { if (selectionMode) { onToggleSelect?.(track.id); } else navigate("/track/" + track.uuid); }}
     >
+      {selectionMode && (
+        <td className="pl-3 pr-1 py-3 w-6" onClick={(e) => { e.stopPropagation(); onToggleSelect?.(track.id); }}>
+          {selected ? <CheckSquare className="w-4 h-4 text-brand-orange cursor-pointer" /> : <Square className="w-4 h-4 text-muted-foreground/50 hover:text-foreground cursor-pointer" />}
+        </td>
+      )}
       {/* Drag handle */}
       <td className="pl-3 pr-1 py-3" onClick={(e) => e.stopPropagation()}>
         <button
@@ -779,12 +854,22 @@ function DesktopTrackTable({
   setPlayingTrackId,
   removeTrack,
   totalDuration,
+  selectionMode,
+  selectedIds,
+  onToggleSelect,
+  allSelected,
+  onToggleAll,
 }: {
   tracks: Track[];
   playingTrackId: number | null;
   setPlayingTrackId: (id: number | null) => void;
   removeTrack: (id: number) => void;
   totalDuration: string;
+  selectionMode?: boolean;
+  selectedIds?: Set<number>;
+  onToggleSelect?: (id: number) => void;
+  allSelected?: boolean;
+  onToggleAll?: () => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -793,6 +878,13 @@ function DesktopTrackTable({
         <table className="w-full text-[13px]">
           <thead>
             <tr className="border-b border-border">
+              {selectionMode && (
+                <th className="pl-3 pr-1 py-3 w-6">
+                  <button onClick={onToggleAll} className="text-muted-foreground hover:text-foreground" title={t("catalog.selectAll", "Select all")}>
+                    {allSelected ? <CheckSquare className="w-4 h-4 text-brand-orange" /> : <Square className="w-4 h-4" />}
+                  </button>
+                </th>
+              )}
               <th className="text-left pl-3 pr-1 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-6"></th>
               <th className="text-left pl-2 pr-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest w-8">#</th>
               <th className="text-left px-2 py-3 font-semibold text-muted-foreground text-2xs uppercase tracking-widest">{t("playlistDetail.columns.track")}</th>
@@ -810,7 +902,7 @@ function DesktopTrackTable({
           <tbody>
             {tracks.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-5 py-20 text-center text-muted-foreground">
+                <td colSpan={selectionMode ? 13 : 12} className="px-5 py-20 text-center text-muted-foreground">
                   <Music className="w-10 h-10 mx-auto mb-4 opacity-15" />
                   <p className="text-sm font-semibold">{t("playlistDetail.noTracksInPlaylist")}</p>
                   <p className="text-xs mt-1.5 text-muted-foreground/70">{t("playlistDetail.addFromCatalog")}</p>
@@ -825,6 +917,9 @@ function DesktopTrackTable({
                   isPlaying={playingTrackId === track.id}
                   setPlayingTrackId={setPlayingTrackId}
                   removeTrack={removeTrack}
+                  selectionMode={selectionMode}
+                  selected={selectedIds?.has(track.id)}
+                  onToggleSelect={onToggleSelect}
                 />
               ))
             )}

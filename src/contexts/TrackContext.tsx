@@ -306,6 +306,7 @@ interface TrackContextValue {
   getTrackByUuid: (uuid: string) => TrackData | undefined;
   addTrack: (track: Partial<TrackData> & { title: string; artist: string }) => Promise<TrackData | null>;
   updateTrack: (id: number, updates: Partial<TrackData>) => Promise<boolean>;
+  bulkUpdateTracks: (ids: number[], updates: Partial<TrackData>) => Promise<number>;
   updateTrackStatus: (id: number, newStatus: string, note: string) => void;
   updateTrackLyrics: (id: number, lyrics: string, lyricsSegments?: { start: number; end: number; text: string }[]) => void;
   updateTrackStems: (id: number, stems: TrackStem[]) => void;
@@ -936,6 +937,61 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     [tracks, resolveUserId]
   );
 
+  // Bulk-edit the SAME field value across many tracks via the atomic
+  // bulk_update_tracks RPC (server enforces the same whitelist + editor/pitcher
+  // access check as update_track). Shared/uneditable tracks are skipped client-
+  // side (the RPC would reject them anyway). Returns the number of tracks updated.
+  const bulkUpdateTracks = useCallback(
+    async (ids: number[], updates: Partial<TrackData>): Promise<number> => {
+      // Resolve editable UUIDs (never touch catalog-shared tracks from other ws).
+      const uuids: string[] = [];
+      for (const id of ids) {
+        const track = tracks.find((t) => t.id === id);
+        if (track && track.uuid && !track.isShared) uuids.push(track.uuid);
+      }
+      if (uuids.length === 0) {
+        toast.error(i18n.t("trackContext.failedSaveUpdate"));
+        return 0;
+      }
+
+      // Map to DB columns exactly like update_track (same whitelist).
+      const payload: Record<string, unknown> = {};
+      if (updates.title !== undefined) payload.title = updates.title;
+      if (updates.artist !== undefined) payload.artist = updates.artist;
+      if (updates.status !== undefined) payload.status = mapStatusToDb(updates.status);
+      if (updates.genre !== undefined) payload.genre = updates.genre && updates.genre.length > 0 ? updates.genre : null;
+      if (updates.mood !== undefined) payload.mood = updates.mood;
+      if (updates.language !== undefined) payload.language = updates.language || null;
+      if (updates.productionStage !== undefined) payload.production_stage = updates.productionStage || "work_in_progress";
+      if (Object.keys(payload).length === 0) return 0;
+
+      // Optimistic local update for instant UI.
+      const idSet = new Set(ids);
+      setTracks((prev) => prev.map((t) => (idSet.has(t.id) && !t.isShared ? { ...t, ...updates } : t)));
+
+      const userId = await resolveUserId();
+      if (!userId) {
+        console.error("Bulk update: no auth session");
+        toast.error(i18n.t("trackContext.failedSaveUpdate"));
+        return 0;
+      }
+      const { data, error } = await supabase.rpc("bulk_update_tracks", {
+        _user_id: userId,
+        _track_ids: uuids,
+        _updates: payload,
+      });
+      if (error) {
+        console.error("Error bulk-updating tracks:", error);
+        toast.error(i18n.t("trackContext.failedSaveUpdate"));
+        await fetchTracks(); // re-sync after a rolled-back (atomic) failure
+        return 0;
+      }
+      await fetchTracks();
+      return typeof data === "number" ? data : uuids.length;
+    },
+    [tracks, resolveUserId, fetchTracks]
+  );
+
   const updateTrackStatus = useCallback(
     async (id: number, newStatus: string, note: string) => {
       const track = tracks.find((t) => t.id === id);
@@ -1185,6 +1241,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     getTrackByUuid,
     addTrack,
     updateTrack,
+    bulkUpdateTracks,
     updateTrackStatus,
     updateTrackLyrics,
     updateTrackStems,
@@ -1194,7 +1251,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     submitRating,
     fetchTrackVersions,
     queueSonicDnaAnalysis,
-  }), [tracks, loading, getTrack, getTrackByUuid, addTrack, updateTrack, updateTrackStatus, updateTrackLyrics, updateTrackStems, updateTrackSplits, deleteTrack, fetchTracks, submitRating, fetchTrackVersions, queueSonicDnaAnalysis]);
+  }), [tracks, loading, getTrack, getTrackByUuid, addTrack, updateTrack, bulkUpdateTracks, updateTrackStatus, updateTrackLyrics, updateTrackStems, updateTrackSplits, deleteTrack, fetchTracks, submitRating, fetchTrackVersions, queueSonicDnaAnalysis]);
 
   return (
     <TrackContext.Provider value={contextValue}>
