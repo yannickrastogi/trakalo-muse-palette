@@ -197,7 +197,8 @@ export default function Playlists() {
   const [editDesc, setEditDesc] = useState("");
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { playlists, addPlaylist, deletePlaylist, updatePlaylist } = usePlaylists();
+  const { playlists, addPlaylist, deletePlaylist, updatePlaylist, sharedPlaylists } = usePlaylists();
+  const incomingSharedPlaylists = sharedPlaylists.filter((s) => s.direction === "incoming" && s.status === "active");
   const { tracks: allTracks } = useTrack();
   const { playTrack, togglePlay, setQueue, isPlaying: audioIsPlaying, currentTrack, queue } = useAudioPlayer();
   const { permissions } = useRole();
@@ -597,6 +598,34 @@ export default function Playlists() {
               );
             })}
           </div>
+        )}
+
+        {/* Shared with me — playlists shared into this workspace by others (read-only) */}
+        {incomingSharedPlaylists.length > 0 && (
+          <motion.div variants={item} className="space-y-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-foreground">{t("playlists.sharedWithMe", "Shared with me")}</h2>
+              <span className="text-2xs px-2 py-0.5 rounded-full bg-brand-purple/12 text-brand-purple font-semibold">{incomingSharedPlaylists.length}</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+              {incomingSharedPlaylists.map((s) => (
+                <button
+                  key={s.share_id}
+                  onClick={function () { navigate("/playlist/shared/" + s.playlist_id); }}
+                  className="text-left p-4 rounded-2xl border border-border/60 bg-card hover:bg-secondary/40 hover:border-brand-purple/30 transition-colors group"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-purple/20 to-brand-pink/10 flex items-center justify-center mb-3">
+                    <ListMusic className="w-5 h-5 text-brand-purple" />
+                  </div>
+                  <p className="text-sm font-semibold text-foreground truncate">{s.playlist_name}</p>
+                  <p className="text-2xs text-muted-foreground mt-1 truncate">{t("playlists.sharedFrom", "Shared from")} {s.source_workspace_name}</p>
+                  <div className="flex items-center gap-1 mt-2 text-2xs text-muted-foreground/70">
+                    <Music className="w-3 h-3" /> {s.track_count} {t("playlists.trackCount")} · {t("playlists.viewOnly", "view only")}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
         )}
       </motion.div>
       <CreatePlaylistModal open={createOpen} onOpenChange={setCreateOpen} onCreate={addPlaylist} />

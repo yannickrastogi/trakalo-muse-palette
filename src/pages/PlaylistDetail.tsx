@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ShareModal } from "@/components/ShareModal";
+import { PlaylistWorkspaceShare } from "@/components/PlaylistWorkspaceShare";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -513,6 +514,9 @@ export default function PlaylistDetail() {
               >
                 <Share2 className="w-4 h-4" /> {t("playlistDetail.share")}
               </button>
+              {permissions.canManageTeam && id && (
+                <PlaylistWorkspaceShare playlistId={id} playlistName={playlistName} />
+              )}
               {permissions.canEditPlaylists && (
                 <button
                   onClick={() => setDeleteConfirmOpen(true)}

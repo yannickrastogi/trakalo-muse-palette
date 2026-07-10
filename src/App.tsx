@@ -24,6 +24,7 @@ import Auth from "./pages/Auth";
 import Index from "./pages/Index";
 import Playlists from "./pages/Playlists";
 import PlaylistDetail from "./pages/PlaylistDetail";
+import SharedPlaylistView from "./pages/SharedPlaylistView";
 import Stems from "./pages/Stems";
 import Team from "./pages/Team";
 import { lazy, Suspense, useEffect } from "react";
@@ -180,6 +181,7 @@ const MainApp = () => (
               {/* Alias: /tracks/:id kept for backwards compatibility with older shared URLs */}
               <Route path="/tracks/:id" element={<Suspense fallback={<LazyFallback />}><TrackDetail /></Suspense>} />
               <Route path="/playlists" element={<Playlists />} />
+              <Route path="/playlist/shared/:playlistId" element={<SharedPlaylistView />} />
               <Route path="/playlist/:id" element={<PlaylistDetail />} />
               <Route path="/stems" element={<Stems />} />
               <Route path="/pitch" element={<Suspense fallback={<LazyFallback />}><Pitch /></Suspense>} />

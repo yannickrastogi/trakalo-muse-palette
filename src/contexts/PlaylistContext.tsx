@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { type NewPlaylistData } from "@/components/CreatePlaylistModal";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTrack } from "@/contexts/TrackContext";
+import { useTrack, mapRowToTrack, type TrackData } from "@/contexts/TrackContext";
 import type { WorkspaceScoped } from "@/types/workspace";
+import { toast } from "sonner";
 
 import cover1 from "@/assets/covers/cover-1.jpg";
 import cover2 from "@/assets/covers/cover-2.jpg";
@@ -66,12 +67,34 @@ function mapRowToPlaylist(
   };
 }
 
+// A playlist shared between workspaces (row shape of get_shared_workspace_playlists).
+export interface SharedPlaylistShare {
+  share_id: string;
+  playlist_id: string;
+  playlist_name: string;
+  source_workspace_id: string;
+  source_workspace_name: string;
+  target_workspace_id: string;
+  target_workspace_name: string;
+  access_level: string;
+  status: string;
+  created_at: string;
+  direction: "incoming" | "outgoing";
+  track_count: number;
+}
+
 interface PlaylistContextType {
   playlists: PlaylistItem[];
   addPlaylist: (pl: NewPlaylistData) => Promise<string | undefined>;
   getPlaylist: (id: string) => PlaylistItem | undefined;
   updatePlaylist: (id: string, updates: Partial<PlaylistItem>) => void;
   deletePlaylist: (id: string) => Promise<void>;
+  // ─── Cross-workspace playlist sharing ───
+  sharedPlaylists: SharedPlaylistShare[];
+  sharePlaylistWithWorkspace: (playlistId: string, targetWorkspaceId: string, accessLevel?: string) => Promise<boolean>;
+  revokePlaylistShare: (shareId: string) => Promise<boolean>;
+  getSharedPlaylistTracks: (playlistId: string) => Promise<TrackData[]>;
+  refreshSharedPlaylists: () => void;
 }
 
 const PlaylistContext = createContext<PlaylistContextType | null>(null);
@@ -81,6 +104,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { tracks } = useTrack();
   const [playlists, setPlaylists] = useState<PlaylistItem[]>([]);
+  const [sharedPlaylists, setSharedPlaylists] = useState<SharedPlaylistShare[]>([]);
 
   const fetchPlaylists = useCallback(async () => {
     if (!activeWorkspace || !user) {
@@ -258,8 +282,80 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     [fetchPlaylists]
   );
 
+  // ─── Cross-workspace playlist sharing ─────────────────────────────────
+
+  // Resolve a reliable user id (auth.uid can be momentarily null on unstable
+  // sessions) before any share write — mirrors the ensureSession pattern.
+  const resolveShareUserId = useCallback(async (): Promise<string | null> => {
+    if (user?.id) return user.id;
+    const { data } = await supabase.auth.getSession();
+    return data.session?.user?.id ?? null;
+  }, [user]);
+
+  const fetchSharedPlaylists = useCallback(async () => {
+    if (!activeWorkspace) { setSharedPlaylists([]); return; }
+    const { data, error } = await supabase.rpc("get_shared_workspace_playlists", { _workspace_id: activeWorkspace.id });
+    if (error) {
+      console.error("Error fetching shared playlists:", error);
+      setSharedPlaylists([]);
+      return;
+    }
+    setSharedPlaylists((data as unknown as SharedPlaylistShare[]) || []);
+  }, [activeWorkspace]);
+
+  useEffect(() => { fetchSharedPlaylists(); }, [fetchSharedPlaylists]);
+
+  const sharePlaylistWithWorkspace = useCallback(
+    async (playlistId: string, targetWorkspaceId: string, accessLevel = "pitcher"): Promise<boolean> => {
+      if (!activeWorkspace) return false;
+      const uid = await resolveShareUserId();
+      if (!uid) { toast.error("Session expired — please sign in again"); return false; }
+      const { error } = await supabase.rpc("share_playlist_with_workspace", {
+        _user_id: uid,
+        _playlist_id: playlistId,
+        _source_workspace_id: activeWorkspace.id,
+        _target_workspace_id: targetWorkspaceId,
+        _access_level: accessLevel,
+      });
+      if (error) { console.error("Error sharing playlist:", error); toast.error(error.message); return false; }
+      await fetchSharedPlaylists();
+      return true;
+    },
+    [activeWorkspace, resolveShareUserId, fetchSharedPlaylists]
+  );
+
+  const revokePlaylistShare = useCallback(
+    async (shareId: string): Promise<boolean> => {
+      const uid = await resolveShareUserId();
+      if (!uid) { toast.error("Session expired — please sign in again"); return false; }
+      const { error } = await supabase.rpc("revoke_catalog_share", { _user_id: uid, _share_id: shareId });
+      if (error) { console.error("Error revoking playlist share:", error); toast.error(error.message); return false; }
+      await fetchSharedPlaylists();
+      return true;
+    },
+    [resolveShareUserId, fetchSharedPlaylists]
+  );
+
+  // Read-only tracks of an incoming shared playlist (ordered by position),
+  // mapped like normal tracks so the global player can play them.
+  const getSharedPlaylistTracks = useCallback(
+    async (playlistId: string): Promise<TrackData[]> => {
+      if (!activeWorkspace) return [];
+      const { data, error } = await supabase.rpc("get_shared_playlist_tracks", {
+        _playlist_id: playlistId,
+        _target_workspace_id: activeWorkspace.id,
+      });
+      if (error) { console.error("Error fetching shared playlist tracks:", error); toast.error("Could not load the shared playlist"); throw error; }
+      return ((data as unknown as Record<string, unknown>[]) || []).map((row, i) => mapRowToTrack(row, i));
+    },
+    [activeWorkspace]
+  );
+
   return (
-    <PlaylistContext.Provider value={useMemo(() => ({ playlists, addPlaylist, getPlaylist, updatePlaylist, deletePlaylist }), [playlists, addPlaylist, getPlaylist, updatePlaylist, deletePlaylist])}>
+    <PlaylistContext.Provider value={useMemo(() => ({
+      playlists, addPlaylist, getPlaylist, updatePlaylist, deletePlaylist,
+      sharedPlaylists, sharePlaylistWithWorkspace, revokePlaylistShare, getSharedPlaylistTracks, refreshSharedPlaylists: fetchSharedPlaylists,
+    }), [playlists, addPlaylist, getPlaylist, updatePlaylist, deletePlaylist, sharedPlaylists, sharePlaylistWithWorkspace, revokePlaylistShare, getSharedPlaylistTracks, fetchSharedPlaylists])}>
       {children}
     </PlaylistContext.Provider>
   );
