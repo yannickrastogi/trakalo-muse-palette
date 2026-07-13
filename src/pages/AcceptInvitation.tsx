@@ -120,7 +120,10 @@ export default function AcceptInvitation() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+          // Send the USER's access token — the Edge Function authenticates the
+          // caller and enforces that their email matches the invitation.
+          "Authorization": "Bearer " + (session.access_token || SUPABASE_PUBLISHABLE_KEY),
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({ token: invitation.token, user_id: session.user.id }),
       });

@@ -59,7 +59,7 @@ interface Props {
 export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTeamId }: Props) {
   const { t } = useTranslation();
   const { teams, createTeam, addMember } = useTeams();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { activeWorkspace } = useWorkspace();
 
   const [selectedTeamId, setSelectedTeamId] = useState<string>(preselectedTeamId || "");
@@ -123,7 +123,10 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+          // Send the USER's access token — the Edge Function authenticates the
+          // caller and verifies workspace admin before creating the invitation.
+          "Authorization": "Bearer " + (session?.access_token || SUPABASE_PUBLISHABLE_KEY),
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           workspace_id: activeWorkspace?.id,

@@ -72,7 +72,7 @@ function fallbackPlaylistName(): string {
 export default function SmartAR() {
   var { activeWorkspace } = useWorkspace();
   var { tracks } = useTrack();
-  var { user } = useAuth();
+  var { user, session } = useAuth();
   var navigate = useNavigate();
   var { toast } = useToast();
 
@@ -148,7 +148,9 @@ export default function SmartAR() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+        // Send the USER's access token — get-audio-url authenticates the caller
+        // and verifies workspace membership on the no-slug (authenticated) path.
+        "Authorization": "Bearer " + (session?.access_token || SUPABASE_PUBLISHABLE_KEY),
         "apikey": SUPABASE_PUBLISHABLE_KEY,
       },
       body: JSON.stringify({ track_id: trackId, quality: "preview" }),

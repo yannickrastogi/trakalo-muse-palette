@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { buildEmail, htmlEscape, isValidEmail } from "../_shared/email-template.ts";
 import { isValidUUID, sanitizeEmailSubject } from "../_shared/validation.ts";
+import { getAuthedUser, assertWorkspaceMember, HttpError } from "../_shared/auth.ts";
 
 function generateToken(length: number): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -19,17 +20,21 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
-    const { workspace_id, workspace_name, invited_by, inviter_name, email, first_name, last_name, role, access_level, professional_title } = await req.json();
+    // Authenticate the caller FIRST (before touching the body), so an
+    // unauthenticated request is rejected outright.
+    const { user } = await getAuthedUser(req);
 
-    if (!workspace_id || !email || !invited_by) {
-      return new Response(JSON.stringify({ error: "workspace_id, email, and invited_by are required" }), {
+    const { workspace_id, workspace_name, inviter_name, email, first_name, last_name, role, access_level, professional_title } = await req.json();
+
+    if (!workspace_id || !email) {
+      return new Response(JSON.stringify({ error: "workspace_id and email are required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!isValidUUID(workspace_id) || !isValidUUID(invited_by)) {
-      return new Response(JSON.stringify({ error: "Invalid workspace_id or invited_by format" }), {
+    if (!isValidUUID(workspace_id)) {
+      return new Response(JSON.stringify({ error: "Invalid workspace_id format" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -62,6 +67,11 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Require the (already authenticated) caller to be an ADMIN of the target
+    // workspace. The sender identity is forced from the authed user, never the body.
+    await assertWorkspaceMember(supabase, user.id, workspace_id, "admin");
+    const invitedBy = user.id;
+
     // Rate limiting: max 10 invitations per workspace per hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count } = await supabase
@@ -81,7 +91,7 @@ serve(async (req) => {
 
     const { error: insertError } = await supabase.from("invitations").insert({
       workspace_id,
-      invited_by,
+      invited_by: invitedBy,
       email,
       first_name: first_name || null,
       last_name: last_name || null,
@@ -158,6 +168,12 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    if (error instanceof HttpError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: error.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

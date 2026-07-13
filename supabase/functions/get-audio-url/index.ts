@@ -11,6 +11,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { isValidUUID } from "../_shared/validation.ts";
 import { getStorageProvider } from "../_shared/storage.ts";
+import { getAuthedUser, assertWorkspaceMember, resolveTrackWorkspace, HttpError } from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
   // CORS preflight
@@ -115,8 +116,19 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+    } else {
+      // No slug: authenticated user flow (Smart A&R, catalog preview, etc.).
+      // The caller must be a member (>= viewer) of the track's own workspace.
+      const { user } = await getAuthedUser(req);
+      const ws = await resolveTrackWorkspace(supabaseAdmin, track_id);
+      if (!ws) {
+        return new Response(JSON.stringify({ error: "Track not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      await assertWorkspaceMember(supabaseAdmin, user.id, ws, "viewer");
     }
-    // No slug: authenticated user flow (Smart A&R, catalog preview, etc.)
 
     // 3. Get the audio_url (storage path) from the tracks table
     const { data: track, error: trackErr } = await supabaseAdmin
@@ -188,6 +200,12 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    if (err instanceof HttpError) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: err.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

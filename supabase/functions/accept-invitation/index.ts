@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
-import { isValidUUID } from "../_shared/validation.ts";
+import { getAuthedUser, HttpError } from "../_shared/auth.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -28,23 +28,20 @@ serve(async (req) => {
   }
 
   try {
-    const { token, user_id } = await req.json();
+    // Authenticate the caller FIRST; the acting user is the authed user, never the
+    // body. (The body `user_id`, if any, is ignored.)
+    const { user: authedUser } = await getAuthedUser(req);
 
-    if (!token || !user_id) {
-      return new Response(JSON.stringify({ error: "token and user_id are required" }), {
+    const { token } = await req.json();
+
+    if (!token) {
+      return new Response(JSON.stringify({ error: "token is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!isValidUUID(user_id)) {
-      return new Response(JSON.stringify({ error: "Invalid user_id format" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const userId = user_id;
+    const userId = authedUser.id;
     const supabase = supabaseRl;
 
     // 1. Find the invitation by token
@@ -73,6 +70,17 @@ serve(async (req) => {
     if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
       return new Response(JSON.stringify({ error: "This invitation has expired" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // 3b. The authed user's email MUST match the invitation email — a user can
+    // only accept an invitation addressed to them (no accepting others' invites).
+    const authEmail = (authedUser.email || "").toLowerCase().trim();
+    const inviteEmail = String(invitation.email || "").toLowerCase().trim();
+    if (!authEmail || authEmail !== inviteEmail) {
+      return new Response(JSON.stringify({ error: "This invitation was sent to a different email address" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -157,6 +165,12 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    if (error instanceof HttpError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: error.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
