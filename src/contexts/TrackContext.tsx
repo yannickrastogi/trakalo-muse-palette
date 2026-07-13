@@ -330,6 +330,9 @@ export function TrackProvider({ children }: { children: ReactNode }) {
   const sonicDnaQueueRef = useRef<Array<{ track_id: string; storage_path: string }>>([]);
   const sonicDnaProcessingRef = useRef(false);
   const fetchTracksRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  // Monotonic id: only the latest fetchTracks run is allowed to write state, so a
+  // slow shared-catalog cascade from a previous workspace can't clobber a newer load.
+  const fetchSeqRef = useRef(0);
 
   // Fetch tracks from Supabase when workspace changes
   const fetchTracks = useCallback(async () => {
@@ -338,6 +341,9 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
+
+    const mySeq = ++fetchSeqRef.current;
+    const isCurrent = () => fetchSeqRef.current === mySeq;
 
     setLoading(true);
     try {
@@ -425,6 +431,19 @@ export function TrackProvider({ children }: { children: ReactNode }) {
               shareId: s.id,
             };
           }
+        }
+
+        // Progressive render (P0): own catalog is the first useful view of
+        // Dashboard/Tracks. Paint it NOW instead of waiting for the shared-catalog
+        // cascade below (which can be 8-10 requests). Shared tracks are appended
+        // once their heavier fetches resolve. Only worth an extra paint when there
+        // is own content to show AND shared work is actually pending.
+        const hasSharedWork =
+          (!sharedRes.error && sharedRes.data && sharedRes.data.length > 0) ||
+          (!fullCatalogRes.error && fullCatalogRes.data && fullCatalogRes.data.length > 0);
+        if (hasSharedWork && mapped.length > 0 && isCurrent()) {
+          setTracks(mapped.slice());
+          setLoading(false);
         }
 
         // Full catalog shares — all tracks from source workspaces
@@ -623,12 +642,14 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         //   const { data: signedUrls } = await supabase.storage
         //     .from("tracks").createSignedUrls(Array.from(pathsToSign), 3600);
 
-        setTracks(mapped);
+        // Final paint with own + shared tracks. Skip if a newer fetch superseded
+        // this one (workspace switched mid-cascade) so we never clobber it.
+        if (isCurrent()) setTracks(mapped);
       }
     } catch (err) {
       console.error("Unexpected error fetching tracks:", err);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, [activeWorkspace, user]);
 

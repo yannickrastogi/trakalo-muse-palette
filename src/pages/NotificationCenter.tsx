@@ -110,9 +110,16 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 export default function NotificationCenter() {
   const { t } = useTranslation();
   const timeFilters = useTimeFilters();
-  const { teams } = useTeams();
+  const { teams, loadTeamDetails } = useTeams();
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
+
+  // team.activities (audit_logs + link_events) is deferred out of app boot, so
+  // hydrate it here — NotificationCenter merges it into its feed (see below).
+  useEffect(() => {
+    loadTeamDetails();
+  }, [loadTeamDetails]);
+
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");

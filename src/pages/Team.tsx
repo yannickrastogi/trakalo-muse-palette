@@ -160,8 +160,14 @@ export default function Team() {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { permissions } = useRole();
-  const { teams, addMember, removeMember, updateMemberAccess } = useTeams();
+  const { teams, loadTeamDetails, addMember, removeMember, updateMemberAccess } = useTeams();
   const { activeWorkspace } = useWorkspace();
+
+  // Hydrate the Team-page-only detail (shared-track ids + activity feed) on mount
+  // and on workspace change. These queries are deferred out of app boot.
+  React.useEffect(() => {
+    loadTeamDetails();
+  }, [loadTeamDetails]);
 
   const [showSharedCatalog, setShowSharedCatalog] = useState(false);
   const [activityRange, setActivityRange] = useState<"1d" | "1w" | "1m" | "1y">("1w");

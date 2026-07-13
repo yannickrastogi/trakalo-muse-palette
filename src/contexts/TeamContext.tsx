@@ -42,6 +42,8 @@ export interface Team extends WorkspaceScoped {
 
 interface TeamContextValue {
   teams: Team[];
+  /** Lazily load the Team-page-only detail (shared-track ids + activity feed). */
+  loadTeamDetails: () => Promise<void>;
   createTeam: (name: string) => Team;
   deleteTeam: (teamId: string) => void;
   renameTeam: (teamId: string, name: string) => void;
@@ -88,24 +90,26 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Fetch workspace members with access_level and professional_title
-    const { data: members, error: mErr } = await supabase
-      .from("workspace_members")
-      .select("id, user_id, joined_at, access_level, professional_title")
-      .eq("workspace_id", activeWorkspace.id);
+    // Workspace members + legacy roles are independent → fetch in parallel.
+    const [membersRes, rolesRes] = await Promise.all([
+      supabase
+        .from("workspace_members")
+        .select("id, user_id, joined_at, access_level, professional_title")
+        .eq("workspace_id", activeWorkspace.id),
+      supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .eq("workspace_id", activeWorkspace.id),
+    ]);
 
+    const { data: members, error: mErr } = membersRes;
     if (mErr) {
       console.error("Error fetching workspace members:", mErr);
       setTeams([]);
       return;
     }
 
-    // Also fetch legacy roles for backward compat display
-    const { data: roles, error: rErr } = await supabase
-      .from("user_roles")
-      .select("user_id, role")
-      .eq("workspace_id", activeWorkspace.id);
-
+    const { data: roles, error: rErr } = rolesRes;
     if (rErr) {
       console.error("Error fetching user roles:", rErr);
     }
@@ -168,25 +172,55 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       };
     });
 
-    // Fetch tracks for this workspace
-    const { data: tracks, error: tErr } = await supabase
-      .from("tracks")
-      .select("id")
-      .eq("workspace_id", activeWorkspace.id);
+    // Model workspace as a single team. The activity feed + shared-track ids are
+    // Team-page-only and cost 3 extra queries (tracks, audit_logs, link_events),
+    // so they are NOT fetched at boot — loadTeamDetails() hydrates them lazily
+    // when the Team page mounts. Every other consumer only needs `members`.
+    //
+    // Preserve already-hydrated detail across a same-workspace core re-fetch
+    // (e.g. after addMember/removeMember, which re-run fetchTeam): only reset it
+    // to empty when the workspace actually changed. Otherwise a mutation on the
+    // Team page would blank the activity feed / shared count until a reload.
+    const wsId = activeWorkspace.id;
+    setTeams((prev) => {
+      const keep = prev[0] && prev[0].workspace_id === wsId;
+      const team: Team = {
+        id: wsId,
+        workspace_id: wsId,
+        name: activeWorkspace.name,
+        createdAt: activeWorkspace.created_at ? activeWorkspace.created_at.split("T")[0] : "",
+        members: teamMembers,
+        sharedTrackIds: keep ? prev[0].sharedTrackIds : [],
+        activities: keep ? prev[0].activities : [],
+      };
+      return [team];
+    });
+  }, [activeWorkspace, user]);
 
-    if (tErr) {
-      console.error("Error fetching workspace tracks:", tErr);
+  // Lazily hydrate the Team-page-only detail (shared-track ids + activity feed).
+  // Called by the Team page on mount, so these 3 queries never run at boot.
+  const loadTeamDetails = useCallback(async () => {
+    if (!activeWorkspace || !user) return;
+    const wsId = activeWorkspace.id;
+
+    // tracks (for the shared-track count) + recent audit_logs are independent.
+    const [tracksRes, auditRes] = await Promise.all([
+      supabase.from("tracks").select("id").eq("workspace_id", wsId),
+      supabase
+        .from("audit_logs")
+        .select("id, user_id, action, resource_type, resource_id, metadata, created_at")
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
+
+    if (tracksRes.error) {
+      console.error("Error fetching workspace tracks:", tracksRes.error);
     }
 
-    // Fetch recent audit_logs
-    const { data: auditData } = await supabase
-      .from("audit_logs")
-      .select("id, user_id, action, resource_type, resource_id, metadata, created_at")
-      .order("created_at", { ascending: false })
-      .limit(50);
+    const tracks = tracksRes.data || [];
+    const trackIds = tracks.map((t) => t.id);
 
-    // Fetch recent link_events for workspace tracks
-    const trackIds = (tracks || []).map(t => t.id);
+    // link_events depends on the track ids → fetch after.
     let linkEventsData: any[] | null = null;
     if (trackIds.length > 0) {
       const { data } = await supabase
@@ -198,65 +232,50 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       linkEventsData = data;
     }
 
-    // Map audit_logs to TeamActivity
-    const auditActionMap: Record<string, { type: ActivityType; message: string }> = {
-      "user.login": { type: "member", message: "logged in" },
-      "track.saved_from_share": { type: "link", message: "saved a track from shared link" },
-      "track.removed_from_share": { type: "link", message: "removed a track from catalog" },
-    };
+    const auditData = auditRes.data;
 
-    const auditActivities: TeamActivity[] = (auditData || [])
-      .filter(a => auditActionMap[a.action])
-      .map(a => {
-        const mapped = auditActionMap[a.action];
-        const member = teamMembers.find(m => m.id === a.user_id);
-        const userName = member ? `${member.firstName} ${member.lastName}`.trim() : "User";
-        return {
-          id: a.id,
-          type: mapped.type,
-          message: mapped.message,
-          user: userName,
-          date: a.created_at || "",
-        };
-      });
+    // Merge into the existing team. Guard on workspace id so a stale details load
+    // (workspace switched mid-flight) never writes onto the new workspace's team.
+    setTeams((prev) => {
+      const base = prev[0];
+      if (!base || base.workspace_id !== wsId) return prev;
+      const teamMembers = base.members;
 
-    // Map link_events to TeamActivity
-    const linkEventMap: Record<string, { type: ActivityType; message: string }> = {
-      play: { type: "recipient_played", message: "played a track" },
-      download: { type: "recipient_downloaded", message: "downloaded a track" },
-      open: { type: "recipient_opened", message: "opened a shared link" },
-    };
+      // Map audit_logs to TeamActivity
+      const auditActionMap: Record<string, { type: ActivityType; message: string }> = {
+        "user.login": { type: "member", message: "logged in" },
+        "track.saved_from_share": { type: "link", message: "saved a track from shared link" },
+        "track.removed_from_share": { type: "link", message: "removed a track from catalog" },
+      };
+      const auditActivities: TeamActivity[] = (auditData || [])
+        .filter((a) => auditActionMap[a.action])
+        .map((a) => {
+          const mapped = auditActionMap[a.action];
+          const member = teamMembers.find((m) => m.id === a.user_id);
+          const userName = member ? `${member.firstName} ${member.lastName}`.trim() : "User";
+          return { id: a.id, type: mapped.type, message: mapped.message, user: userName, date: a.created_at || "" };
+        });
 
-    const linkActivities: TeamActivity[] = (linkEventsData || [])
-      .filter(e => linkEventMap[e.event_type])
-      .map(e => {
-        const mapped = linkEventMap[e.event_type];
-        return {
-          id: e.id,
-          type: mapped.type,
-          message: mapped.message,
-          user: e.visitor_email || "Anonymous",
-          date: e.created_at || "",
-        };
-      });
+      // Map link_events to TeamActivity
+      const linkEventMap: Record<string, { type: ActivityType; message: string }> = {
+        play: { type: "recipient_played", message: "played a track" },
+        download: { type: "recipient_downloaded", message: "downloaded a track" },
+        open: { type: "recipient_opened", message: "opened a shared link" },
+      };
+      const linkActivities: TeamActivity[] = (linkEventsData || [])
+        .filter((e) => linkEventMap[e.event_type])
+        .map((e) => {
+          const mapped = linkEventMap[e.event_type];
+          return { id: e.id, type: mapped.type, message: mapped.message, user: e.visitor_email || "Anonymous", date: e.created_at || "" };
+        });
 
-    // Combine, sort by date desc, limit to 50
-    const allActivities = [...auditActivities, ...linkActivities]
-      .sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0))
-      .slice(0, 50);
+      // Combine, sort by date desc, limit to 50
+      const allActivities = [...auditActivities, ...linkActivities]
+        .sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0))
+        .slice(0, 50);
 
-    // Model workspace as a single team
-    const team: Team = {
-      id: activeWorkspace.id,
-      workspace_id: activeWorkspace.id,
-      name: activeWorkspace.name,
-      createdAt: activeWorkspace.created_at ? activeWorkspace.created_at.split("T")[0] : "",
-      members: teamMembers,
-      sharedTrackIds: (tracks || []).map(t => t.id),
-      activities: allActivities,
-    };
-
-    setTeams([team]);
+      return [{ ...base, sharedTrackIds: trackIds, activities: allActivities }];
+    });
   }, [activeWorkspace, user]);
 
   useEffect(() => {
@@ -436,7 +455,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <TeamContext.Provider value={useMemo(() => ({ teams, createTeam, deleteTeam, renameTeam, addMember, removeMember, updateMemberRole, updateMemberAccess, updateWorkspaceMember }), [teams, createTeam, deleteTeam, renameTeam, addMember, removeMember, updateMemberRole, updateMemberAccess, updateWorkspaceMember])}>
+    <TeamContext.Provider value={useMemo(() => ({ teams, loadTeamDetails, createTeam, deleteTeam, renameTeam, addMember, removeMember, updateMemberRole, updateMemberAccess, updateWorkspaceMember }), [teams, loadTeamDetails, createTeam, deleteTeam, renameTeam, addMember, removeMember, updateMemberRole, updateMemberAccess, updateWorkspaceMember])}>
       {children}
     </TeamContext.Provider>
   );
