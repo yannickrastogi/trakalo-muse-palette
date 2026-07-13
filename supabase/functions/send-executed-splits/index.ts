@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { buildEmail, isValidEmail, htmlEscape } from "../_shared/email-template.ts";
 import { isValidUUID, sanitizeEmailSubject } from "../_shared/validation.ts";
+import { getAuthedUser, assertWorkspaceMember, resolveTrackWorkspace, HttpError } from "../_shared/auth.ts";
 
 const maskIpi = (ipi: string | undefined) => ipi ? "***" + ipi.slice(-3) : "\u2014";
 
@@ -21,6 +22,9 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the caller FIRST (fail-closed before any work).
+    const { user } = await getAuthedUser(req);
+
     const { track_id, pdf_base64 } = await req.json() as { track_id: string; pdf_base64?: string };
 
     if (!track_id) {
@@ -37,6 +41,18 @@ serve(async (req) => {
       });
     }
 
+    // Authorization: only an editor of the track's own workspace may send the
+    // executed agreement — this also gates the caller-supplied pdf_base64
+    // attachment, which is only accepted from an editor of the track.
+    const ws = await resolveTrackWorkspace(supabaseRl, track_id);
+    if (!ws) {
+      return new Response(JSON.stringify({ error: "Track not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    await assertWorkspaceMember(supabaseRl, user.id, ws, "editor");
+
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY not configured" }), {
@@ -45,9 +61,8 @@ serve(async (req) => {
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Reuse the service_role client created above (rate-limit + auth guards).
+    const supabase = supabaseRl;
 
     // Fetch track info including splits JSON
     const { data: track, error: trackError } = await supabase
@@ -184,7 +199,13 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
+    if (error instanceof HttpError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: error.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

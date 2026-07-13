@@ -234,17 +234,20 @@ export function PitchProvider({ children }: { children: ReactNode }) {
 
       var shareLink = window.location.origin + "/share/" + slug;
 
+      // send-pitch-email now requires an authenticated pitcher — send the real
+      // session access_token (fail closed to the anon key, which the EF rejects).
+      const { data: pitchSess } = await supabase.auth.getSession();
+      const pitchToken = pitchSess.session?.access_token || SUPABASE_PUBLISHABLE_KEY;
       fetch(SUPABASE_URL + "/functions/v1/send-pitch-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": "Bearer " + pitchToken,
         },
         body: JSON.stringify({
           to_email: pitch.recipientEmail,
           to_name: pitch.recipientName,
-          from_name: user.user_metadata?.full_name || user.email,
-          from_email: user.email,
           subject: pitch.itemName || "New Pitch from Trakalog",
           message: pitch.notes || "",
           tracks: [{ title: pitch.itemName, artist: pitch.artist }],

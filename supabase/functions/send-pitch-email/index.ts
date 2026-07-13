@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { buildEmail, isValidEmail, htmlEscape } from "../_shared/email-template.ts";
-import { isValidUUID } from "../_shared/validation.ts";
+import { isValidUUID, sanitizeEmailSubject } from "../_shared/validation.ts";
+import { getAuthedUser, assertWorkspaceMember, HttpError } from "../_shared/auth.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -19,7 +20,10 @@ serve(async (req) => {
   }
 
   try {
-    const { to_email, to_name, from_name, from_email, subject, message, tracks, share_link, workspace_id } = await req.json();
+    // Authenticate the caller FIRST (fail-closed before any work).
+    const { user } = await getAuthedUser(req);
+
+    const { to_email, to_name, subject, message, tracks, share_link, workspace_id } = await req.json();
 
     if (!to_email || !subject) {
       return new Response(JSON.stringify({ error: "to_email and subject required" }), {
@@ -35,25 +39,40 @@ serve(async (req) => {
       });
     }
 
-    if (workspace_id && !isValidUUID(workspace_id)) {
-      return new Response(JSON.stringify({ error: "Invalid workspace_id format" }), {
+    // workspace_id is REQUIRED: the caller must be a pitcher (>=) of the workspace
+    // whose branding/identity the pitch is sent under.
+    if (!workspace_id || !isValidUUID(workspace_id)) {
+      return new Response(JSON.stringify({ error: "Invalid or missing workspace_id" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Fetch workspace branding
+    await assertWorkspaceMember(supabaseAdmin, user.id, workspace_id, "pitcher");
+
+    // Per-user rate limit (in addition to the per-IP one above) so a single
+    // account can't fan out pitches from behind rotating IPs.
+    const { data: userRateOk } = await supabaseAdmin.rpc("check_rate_limit", { _key: "send-pitch-email-user:" + user.id, _max_requests: 30, _window_seconds: 3600 });
+    if (userRateOk === false) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Fetch workspace branding + sender identity SERVER-SIDE. Never trust the body
+    // for who the pitch is from — derive it from the authed user's profile and the
+    // workspace, so a caller can't spoof another sender/brand.
     let logoUrl = "";
     let brandColor = "";
     let workspaceName = "";
-    if (workspace_id) {
-      const { data: ws } = await supabaseAdmin.from("workspaces").select("logo_url, brand_color, name").eq("id", workspace_id).single();
-      if (ws) {
-        logoUrl = ws.logo_url || "";
-        brandColor = ws.brand_color || "";
-        workspaceName = ws.name || "";
-      }
+    const { data: ws } = await supabaseAdmin.from("workspaces").select("logo_url, brand_color, name").eq("id", workspace_id).single();
+    if (ws) {
+      logoUrl = ws.logo_url || "";
+      brandColor = ws.brand_color || "";
+      workspaceName = ws.name || "";
     }
+
+    const { data: senderProfile } = await supabaseAdmin.from("profiles").select("full_name, email").eq("id", user.id).maybeSingle();
+    const from_name = senderProfile?.full_name || user.email || "Someone";
+    const from_email = senderProfile?.email || user.email || undefined;
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
@@ -104,7 +123,7 @@ serve(async (req) => {
         from: "Trakalog <noreply@trakalog.com>",
         reply_to: from_email || undefined,
         to: [to_email],
-        subject: subject,
+        subject: sanitizeEmailSubject(subject),
         html: htmlBody,
       }),
     });
@@ -112,8 +131,9 @@ serve(async (req) => {
     const data = await res.json();
 
     if (!res.ok) {
-      return new Response(JSON.stringify({ error: data.message || "Failed to send email" }), {
-        status: res.status,
+      console.error("send-pitch-email: Resend send failed (status=" + res.status + ")");
+      return new Response(JSON.stringify({ error: "Failed to send email" }), {
+        status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -123,7 +143,13 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
+    if (error instanceof HttpError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: error.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
