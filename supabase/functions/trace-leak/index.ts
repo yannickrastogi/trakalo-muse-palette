@@ -10,6 +10,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { isValidUUID } from "../_shared/validation.ts";
+import { getAuthedUser, assertWorkspaceMember, HttpError } from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
   const corsRes = handleCors(req);
@@ -26,13 +27,16 @@ Deno.serve(async (req) => {
   }
 
   const ip = req.headers.get("x-forwarded-for") || "unknown";
-  const supabaseRateLimit = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  const { data: rateLimitOk } = await supabaseRateLimit.rpc("check_rate_limit", { _key: "trace-leak:" + ip, _max_requests: 5, _window_seconds: 3600 });
+  const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", { _key: "trace-leak:" + ip, _max_requests: 5, _window_seconds: 3600 });
   if (rateLimitOk === false) {
     return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
   try {
+    // Authenticate the caller FIRST (fail-closed before any work).
+    const { user } = await getAuthedUser(req);
+
     const contentType = req.headers.get("content-type") || "";
     if (!contentType.includes("multipart/form-data")) {
       return new Response(
@@ -44,13 +48,11 @@ Deno.serve(async (req) => {
     const formData = await req.formData();
     const audioFile = formData.get("audio") as File | null;
     const workspaceId = formData.get("workspace_id") as string | null;
-    const userId = formData.get("user_id") as string | null;
     const fileName = formData.get("file_name") as string | null;
 
     const missingFields: string[] = [];
     if (!audioFile) missingFields.push("audio");
     if (!workspaceId) missingFields.push("workspace_id");
-    if (!userId) missingFields.push("user_id");
 
     if (missingFields.length > 0) {
       return new Response(
@@ -59,12 +61,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!isValidUUID(workspaceId) || !isValidUUID(userId)) {
+    if (!isValidUUID(workspaceId)) {
       return new Response(
-        JSON.stringify({ error: "Invalid workspace_id or user_id format" }),
+        JSON.stringify({ error: "Invalid workspace_id format" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Authorization: leak tracing exposes visitor PII (email/name/IP) and writes
+    // an audit record — restrict to workspace admins. The acting user_id is
+    // forced from the authed session, never the body.
+    await assertWorkspaceMember(supabaseAdmin, user.id, workspaceId, "admin");
 
     const WATERMARK_API_URL = Deno.env.get("WATERMARK_API_URL");
     const WATERMARK_API_KEY = Deno.env.get("WATERMARK_API_KEY");
@@ -87,9 +94,10 @@ Deno.serve(async (req) => {
     });
 
     if (!decodeRes.ok) {
-      const errText = await decodeRes.text();
+      // Log server-side only; never echo the upstream body to the client.
+      console.error("trace-leak: watermark decode failed (HTTP " + decodeRes.status + ")");
       return new Response(
-        JSON.stringify({ error: "Watermark decode failed", details: errText }),
+        JSON.stringify({ error: "Watermark decode failed" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -97,11 +105,6 @@ Deno.serve(async (req) => {
     const decodeResult = await decodeRes.json();
     const hashHex = decodeResult.payload;
     const confidence = decodeResult.confidence;
-
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // 2. Look up hash in watermark_payloads
     let match = false;
@@ -118,11 +121,32 @@ Deno.serve(async (req) => {
         .single();
 
       if (payloadRow) {
-        match = true;
-        visitorEmail = payloadRow.visitor_email;
-        visitorName = payloadRow.visitor_name;
-        linkId = payloadRow.link_id;
-        rawPayload = payloadRow.raw_payload;
+        // Cross-tenant guard: watermark_payloads is a GLOBAL namespace (no
+        // workspace_id column), so a matching hash could belong to ANY workspace.
+        // The admin check above is bound to the body-supplied workspace_id, which
+        // the caller controls. We must therefore confirm the decoded link belongs
+        // to the authorized workspace before disclosing any visitor PII/IP.
+        // If it doesn't (or the link can't be resolved), report no match and leak
+        // nothing — never return another workspace's recipient email/name/IP.
+        let linkWorkspaceId: string | null = null;
+        if (payloadRow.link_id) {
+          const { data: linkRow } = await supabaseAdmin
+            .from("shared_links")
+            .select("workspace_id")
+            .eq("id", payloadRow.link_id)
+            .maybeSingle();
+          linkWorkspaceId = linkRow?.workspace_id ?? null;
+        }
+
+        if (linkWorkspaceId && linkWorkspaceId === workspaceId) {
+          match = true;
+          visitorEmail = payloadRow.visitor_email;
+          visitorName = payloadRow.visitor_name;
+          linkId = payloadRow.link_id;
+          rawPayload = payloadRow.raw_payload;
+        } else {
+          console.error("trace-leak: watermark hash matched a link outside the requested workspace — withholding PII");
+        }
       }
     }
 
@@ -208,7 +232,7 @@ Deno.serve(async (req) => {
       .from("leak_traces")
       .insert({
         workspace_id: workspaceId,
-        user_id: userId,
+        user_id: user.id,
         file_name: fileName || audioFile.name || "unknown",
         hash_hex: hashHex || null,
         confidence: confidence || 0,
@@ -222,6 +246,12 @@ Deno.serve(async (req) => {
       })
       .select("id")
       .single();
+
+    if (traceErr) {
+      // Best-effort audit insert: log server-side but still return the decode
+      // result to the caller (the trace record is secondary to the match answer).
+      console.error("trace-leak: leak_traces insert failed (code=" + (traceErr.code || "unknown") + ")");
+    }
 
     return new Response(JSON.stringify({
       match,
@@ -239,6 +269,12 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    if (err instanceof HttpError) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: err.status,
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },

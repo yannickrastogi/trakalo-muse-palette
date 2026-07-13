@@ -1151,11 +1151,14 @@ function LeakTracingSection() {
       const formData = new FormData();
       formData.append("audio", file);
       formData.append("workspace_id", activeWorkspace.id);
-      formData.append("user_id", userId);
       formData.append("file_name", file.name);
+      // trace-leak requires an authenticated workspace admin — send the real
+      // session access_token (fail closed to the anon key).
+      const { data: sessData } = await supabase.auth.getSession();
+      const accessToken = sessData.session?.access_token || SUPABASE_PUBLISHABLE_KEY;
       const res = await fetch(SUPABASE_URL + "/functions/v1/trace-leak", {
         method: "POST",
-        headers: { "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY },
+        headers: { "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + accessToken },
         body: formData,
       });
       const result = await res.json();

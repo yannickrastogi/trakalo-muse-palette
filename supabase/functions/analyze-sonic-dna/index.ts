@@ -11,6 +11,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { isValidUUID } from "../_shared/validation.ts";
 import { getStorageProvider } from "../_shared/storage.ts";
+import { getAuthedUser, assertWorkspaceMember, resolveTrackWorkspace, HttpError } from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
   // CORS preflight
@@ -38,6 +39,11 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Authenticate the caller FIRST (fail-closed before any work). verify_jwt is
+    // TRUE for this function, but we still validate the user JWT here to obtain
+    // a real user id (the gateway only checks the token is a valid JWT).
+    const { user } = await getAuthedUser(req);
+
     const { track_id, storage_path, force } = await req.json();
 
     if (!track_id || !storage_path) {
@@ -49,6 +55,25 @@ Deno.serve(async (req) => {
 
     if (!isValidUUID(track_id)) {
       return new Response(JSON.stringify({ error: "Invalid track_id format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Authorization (IDOR guard): the caller must be an editor of the track's
+    // own workspace, and storage_path must belong to that same workspace so a
+    // valid track_id can't be paired with an arbitrary path to read foreign audio.
+    const ws = await resolveTrackWorkspace(supabaseAdmin, track_id);
+    if (!ws) {
+      return new Response(JSON.stringify({ error: "Track not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    await assertWorkspaceMember(supabaseAdmin, user.id, ws, "editor");
+
+    if (typeof storage_path !== "string" || !storage_path.startsWith(ws + "/")) {
+      return new Response(JSON.stringify({ error: "Invalid storage_path" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -109,8 +134,10 @@ Deno.serve(async (req) => {
     clearTimeout(timeout);
 
     if (!analyzeResponse.ok) {
+      // Log the upstream body server-side only; never echo it to the client.
       const errText = await analyzeResponse.text().catch(() => "Unknown error");
-      return new Response(JSON.stringify({ error: "Sonic DNA API error: " + errText }), {
+      console.error("analyze-sonic-dna: Sonic DNA API error (HTTP " + analyzeResponse.status + "): " + errText);
+      return new Response(JSON.stringify({ error: "Sonic DNA analysis failed" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -128,6 +155,7 @@ Deno.serve(async (req) => {
       .from("tracks")
       .select("bpm, key, title, artist, featuring, genre, mood, gender, language, track_type, tags, sonic_dna")
       .eq("id", track_id)
+      .eq("workspace_id", ws)
       .single();
 
     const existingSonicDnaObj = (existingTrack?.sonic_dna as Record<string, unknown> | null) || null;
@@ -180,7 +208,8 @@ Deno.serve(async (req) => {
       const { error: updateErr } = await supabaseAdmin
         .from("tracks")
         .update(updatePayload)
-        .eq("id", track_id);
+        .eq("id", track_id)
+        .eq("workspace_id", ws);
 
       if (updateErr) {
         console.error("analyze-sonic-dna update error:", updateErr.message);
@@ -202,6 +231,12 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    if (err instanceof HttpError) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: err.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -760,9 +760,11 @@ export default function TrackDetail() {
                             const { data: row, error: fetchErr } = await supabase.from("tracks").select("audio_url").eq("id", track.uuid).single();
                             if (fetchErr) throw new Error(fetchErr.message);
                             if (!row?.audio_url) throw new Error("No audio file linked to this track");
+                            const { data: sessData } = await supabase.auth.getSession();
+                            const accessToken = sessData.session?.access_token || SUPABASE_PUBLISHABLE_KEY;
                             const res = await fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
                               method: "POST",
-                              headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY, "apikey": SUPABASE_PUBLISHABLE_KEY },
+                              headers: { "Content-Type": "application/json", "Authorization": "Bearer " + accessToken, "apikey": SUPABASE_PUBLISHABLE_KEY },
                               body: JSON.stringify({ track_id: track.uuid, storage_path: row.audio_url, force: true }),
                             });
                             const result = await res.json();
@@ -926,12 +928,14 @@ export default function TrackDetail() {
                                   if (fetchErr) throw new Error("Could not fetch track: " + fetchErr.message);
                                   if (!row?.audio_url) throw new Error("No audio file linked to this track");
 
-                                  // 2. Call Sonic DNA Edge Function
+                                  // 2. Call Sonic DNA Edge Function (authenticated editor)
+                                  const { data: sessData } = await supabase.auth.getSession();
+                                  const accessToken = sessData.session?.access_token || SUPABASE_PUBLISHABLE_KEY;
                                   const res = await fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
                                     method: "POST",
                                     headers: {
                                       "Content-Type": "application/json",
-                                      "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+                                      "Authorization": "Bearer " + accessToken,
                                       "apikey": SUPABASE_PUBLISHABLE_KEY,
                                     },
                                     body: JSON.stringify({ track_id: track.uuid, storage_path: row.audio_url, force: true }),
@@ -2321,11 +2325,13 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
     if (hasLyrics && !confirm("Existing lyrics will be replaced. Continue?")) return;
     try {
       toast.info("Transcribing lyrics...");
+      const { data: sessData } = await supabase.auth.getSession();
+      const accessToken = sessData.session?.access_token || SUPABASE_PUBLISHABLE_KEY;
       const res = await fetch(SUPABASE_URL + "/functions/v1/transcribe-lyrics", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": "Bearer " + accessToken,
           "apikey": SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({ track_id: trackUuid }),

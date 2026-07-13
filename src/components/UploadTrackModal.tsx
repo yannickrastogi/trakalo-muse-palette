@@ -1087,11 +1087,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           if (!currentTrack.lyrics?.trim()) {
           try {
             toast.info(t("uploadTrack.transcribingLyrics", "Transcribing lyrics..."));
+            const { data: sessData } = await supabase.auth.getSession();
+            const accessToken = sessData.session?.access_token || SUPABASE_PUBLISHABLE_KEY;
             const res = await fetch(SUPABASE_URL + "/functions/v1/transcribe-lyrics", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+                "Authorization": "Bearer " + accessToken,
                 "apikey": SUPABASE_PUBLISHABLE_KEY,
               },
               body: JSON.stringify({ track_id: bgTrackUuid }),
@@ -1592,11 +1594,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
             try {
               toast.info(t("uploadTrack.transcribingLyrics", "Transcribing lyrics..."));
+              const { data: sessData } = await supabase.auth.getSession();
+              const accessToken = sessData.session?.access_token || SUPABASE_PUBLISHABLE_KEY;
               const res = await fetch(SUPABASE_URL + "/functions/v1/transcribe-lyrics", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+                  "Authorization": "Bearer " + accessToken,
                   "apikey": SUPABASE_PUBLISHABLE_KEY,
                 },
                 body: JSON.stringify({ track_id: bgTrackUuid }),
@@ -1909,11 +1913,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               }
               if (!bgHasLyrics) {
                 try {
+                  const { data: sessData } = await supabase.auth.getSession();
+                  const accessToken = sessData.session?.access_token || SUPABASE_PUBLISHABLE_KEY;
                   const res = await fetch(SUPABASE_URL + "/functions/v1/transcribe-lyrics", {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
-                      "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+                      "Authorization": "Bearer " + accessToken,
                       "apikey": SUPABASE_PUBLISHABLE_KEY,
                     },
                     body: JSON.stringify({ track_id: bgTrackUuid }),

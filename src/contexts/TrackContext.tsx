@@ -647,12 +647,16 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       while (sonicDnaQueueRef.current.length > 0) {
         const task = sonicDnaQueueRef.current.shift()!;
         let succeeded = false;
+        // analyze-sonic-dna now requires an authenticated editor (verify_jwt + IDOR
+        // guard). Send the real session access_token; fail closed to the anon key.
+        const { data: sessData } = await supabase.auth.getSession();
+        const accessToken = sessData.session?.access_token || SUPABASE_PUBLISHABLE_KEY;
         // Try twice (one auto-retry) — the analysis API can transiently timeout.
         for (let attempt = 0; attempt < 2 && !succeeded; attempt++) {
           try {
             const res = await fetch(SUPABASE_URL + "/functions/v1/analyze-sonic-dna", {
               method: "POST",
-              headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
+              headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY, "Authorization": "Bearer " + accessToken },
               body: JSON.stringify({ track_id: task.track_id, storage_path: task.storage_path }),
               signal: AbortSignal.timeout(120000),
             });

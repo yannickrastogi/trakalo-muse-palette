@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { isValidUUID } from "../_shared/validation.ts";
 import { getStorageProvider } from "../_shared/storage.ts";
+import { getAuthedUser, assertWorkspaceMember, resolveTrackWorkspace, HttpError } from "../_shared/auth.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -22,6 +23,9 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the caller FIRST (fail-closed before any work).
+    const { user } = await getAuthedUser(req);
+
     const { track_id } = await req.json();
 
     if (!track_id) {
@@ -37,6 +41,17 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Authorization: only an editor of the track's own workspace may transcribe
+    // (reads the master audio + writes lyrics).
+    const ws = await resolveTrackWorkspace(supabaseAdmin, track_id);
+    if (!ws) {
+      return new Response(JSON.stringify({ error: "Track not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    await assertWorkspaceMember(supabaseAdmin, user.id, ws, "editor");
 
     const groqApiKey = Deno.env.get("GROQ_API_KEY");
     if (!groqApiKey) {
@@ -149,8 +164,10 @@ serve(async (req) => {
     });
 
     if (!groqRes.ok) {
-      const errText = await groqRes.text();
-      return new Response(JSON.stringify({ error: "Groq API error: " + errText }), {
+      // Log the upstream body server-side only; never echo it to the client.
+      const errText = await groqRes.text().catch(() => "Unknown error");
+      console.error("transcribe-lyrics: Groq API error (HTTP " + groqRes.status + "): " + errText);
+      return new Response(JSON.stringify({ error: "Transcription failed" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -228,8 +245,14 @@ serve(async (req) => {
     });
 
   } catch (err) {
+    if (err instanceof HttpError) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: err.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     console.error("transcribe-lyrics: internal error (" + (err instanceof Error ? err.name : "unknown") + ")");
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
