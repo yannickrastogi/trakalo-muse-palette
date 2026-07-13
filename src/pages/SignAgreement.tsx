@@ -158,21 +158,23 @@ export default function SignAgreement() {
 
     var base64 = sigRef.current.toDataURL("image/png");
 
-    // CRIT-02: write via SECURITY DEFINER RPC that re-validates the token server-side.
-    // The previous direct UPDATE relied on an anon RLS policy that did not bind the
-    // token to the row, so any pending row could be PATCHed by id alone.
-    var rpcRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/sign_agreement_via_token", {
+    // Write via the submit-signature Edge Function, which validates the token
+    // server-side (service_role) and scopes the UPDATE to this token's still-
+    // pending row. This is an anonymous token flow — no session required — and
+    // lets the base lock `anon_sign` to USING(false) so no anon client can PATCH
+    // signature_requests directly anymore.
+    var sigRes = await fetch(SUPABASE_URL + "/functions/v1/submit-signature", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "apikey": SUPABASE_PUBLISHABLE_KEY,
         "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
       },
-      body: JSON.stringify({ _token: token, _signature_data: base64 }),
+      body: JSON.stringify({ token: token, signature_data: base64 }),
     });
-    var rpcJson = rpcRes.ok ? await rpcRes.json() : null;
-    if (!rpcRes.ok || !rpcJson?.success) {
-      setSigError((rpcJson && rpcJson.error) || "Could not sign — invalid or expired token");
+    var sigJson = sigRes.ok ? await sigRes.json() : null;
+    if (!sigRes.ok || !sigJson?.success) {
+      setSigError((sigJson && sigJson.error) || "Could not sign — invalid or expired token");
       setSigning(false);
       return;
     }

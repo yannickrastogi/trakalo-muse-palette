@@ -123,6 +123,12 @@ verify_jwt = false
 import_map = "./functions/log-link-event/deno.json"
 entrypoint = "./functions/log-link-event/index.ts"
 
+[functions.submit-signature]
+enabled = true
+verify_jwt = false
+import_map = "./functions/submit-signature/deno.json"
+entrypoint = "./functions/submit-signature/index.ts"
+
 [functions.trace-leak]
 enabled = true
 verify_jwt = true
