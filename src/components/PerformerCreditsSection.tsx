@@ -64,6 +64,7 @@ export function PerformerCreditsSection({
                     placeholder={"Enter " + t(f.labelKey).toLowerCase()}
                     className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
                     extraSuggestions={extraSuggestions}
+                    allowCreate
                   />
                   {entries.length > 1 && (
                     <button
@@ -120,6 +121,7 @@ export function PerformerCreditsSection({
                     placeholder="Enter name"
                     className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-pink-500/30 transition-all font-medium placeholder:text-muted-foreground/40"
                     extraSuggestions={extraSuggestions}
+                    allowCreate
                   />
                   {entry.values.length > 1 && (
                     <button
