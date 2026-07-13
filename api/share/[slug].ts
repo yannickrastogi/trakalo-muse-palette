@@ -4,7 +4,9 @@ const SUPABASE_URL = "https://xhmeitivkclbeziqavxw.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik";
 
-const DEFAULT_OG_IMAGE = "https://app.trakalog.com/images/app-preview.png";
+// Clean branded fallback (the Trakalog logo) — NOT the app-preview.png UI
+// screenshot, which made shared-link previews look like the catalog manager.
+const DEFAULT_OG_IMAGE = "https://app.trakalog.com/trakalog-logo.png";
 const APP_URL = "https://app.trakalog.com";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -51,11 +53,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           SUPABASE_URL + "/rest/v1/playlists?select=name,cover_url&id=eq." + link.playlist_id,
           { headers: { ...headers, Accept: "application/vnd.pgrst.object+json" } }
         );
+
+        // Workspace branding (name + logo) via the SAME anon SECURITY DEFINER RPC
+        // the public page uses. `workspaces` has no anon SELECT policy, so this
+        // slug-scoped RPC is the only anon-safe way to reach the logo/name.
+        let wsName = "";
+        let wsLogo = "";
+        try {
+          const brandRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_workspace_branding_for_shared_link", {
+            method: "POST",
+            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({ _slug: slug }),
+          });
+          if (brandRes.ok) {
+            const rows = await brandRes.json();
+            const b = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+            if (b) { wsName = b.name || ""; wsLogo = b.logo_url || ""; }
+          }
+        } catch { /* branding is best-effort; fall back to defaults */ }
+
         if (plRes.ok) {
           const pl = await plRes.json();
-          title = (pl.name || "Playlist") + " — Trakalog";
-          description = "Listen to " + (pl.name || "this playlist") + " on Trakalog";
-          if (pl.cover_url) image = pl.cover_url;
+          // og:title = the playlist name; og:description carries the workspace so
+          // the preview reads as a branded playlist, not the app UI.
+          title = pl.name || "Playlist";
+          description = wsName ? (wsName + " · Playlist on Trakalog") : "Playlist on Trakalog";
+          // og:image priority: the playlist's own artwork, then the workspace
+          // logo (branded), then the clean default — never the UI screenshot.
+          image = pl.cover_url || wsLogo || DEFAULT_OG_IMAGE;
+        } else if (wsLogo || wsName) {
+          title = wsName ? (wsName + " · Playlist") : "Playlist";
+          description = wsName ? (wsName + " · Playlist on Trakalog") : "Playlist on Trakalog";
+          image = wsLogo || DEFAULT_OG_IMAGE;
         }
       } else {
         title = (link.link_name || "Shared Content") + " — Trakalog";
