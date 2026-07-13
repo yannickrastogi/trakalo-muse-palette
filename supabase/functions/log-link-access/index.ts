@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { isValidEmail } from "../_shared/email-template.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -15,10 +16,27 @@ serve(async (req) => {
   }
 
   try {
-    const { slug, name, email, role, company, city, country } = await req.json();
+    const { slug, name: rawName, email: rawEmail, role, company, city, country } = await req.json();
 
-    if (!slug || !name || !email) {
+    if (!slug || !rawName || !rawEmail) {
       return new Response(JSON.stringify({ error: "slug, name, and email are required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Cap visitor-supplied identity to 200 chars and validate email format before
+    // any DB write (public endpoint — untrusted input).
+    const name = typeof rawName === "string" ? rawName.trim().slice(0, 200) : "";
+    const email = typeof rawEmail === "string" ? rawEmail.trim().slice(0, 200) : "";
+    if (!name || !email) {
+      return new Response(JSON.stringify({ error: "slug, name, and email are required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!isValidEmail(email)) {
+      return new Response(JSON.stringify({ error: "Invalid email format" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -37,13 +55,28 @@ serve(async (req) => {
     // Find the shared link by slug (include track title for notification)
     const { data: link, error: linkError } = await supabase
       .from("shared_links")
-      .select("id, workspace_id, track_id, link_name")
+      .select("id, workspace_id, track_id, link_name, status, expires_at")
       .eq("link_slug", slug)
       .single();
 
     if (linkError || !link) {
       return new Response(JSON.stringify({ error: "Link not found" }), {
         status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Only log access for a live link — never write download/contact rows for an
+    // inactive or expired link (a public endpoint should not accept stale slugs).
+    if (link.status !== "active") {
+      return new Response(JSON.stringify({ error: "Link is not active" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (link.expires_at && new Date(link.expires_at) < new Date()) {
+      return new Response(JSON.stringify({ error: "Link has expired" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -138,7 +171,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
+    console.error("log-link-access: internal error (" + (err instanceof Error ? err.name : "unknown") + ")");
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

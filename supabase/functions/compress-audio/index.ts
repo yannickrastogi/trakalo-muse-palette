@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { isValidUUID } from "../_shared/validation.ts";
+import { getAuthedUser, assertWorkspaceMember, resolveTrackWorkspace, HttpError } from "../_shared/auth.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -10,7 +11,7 @@ serve(async (req) => {
   if (originRes) return originRes;
   const corsHeaders = getCorsHeaders(req);
 
-  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -21,6 +22,9 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the caller FIRST (fail-closed before any work).
+    const { user } = await getAuthedUser(req);
+
     const { track_id, audio_path } = await req.json();
 
     if (!track_id || !audio_path) {
@@ -35,7 +39,24 @@ serve(async (req) => {
       });
     }
 
-    if (audio_path.includes('..') || audio_path.includes('//') || audio_path.startsWith('/')) {
+    if (typeof audio_path !== "string" || audio_path.includes('..') || audio_path.includes('//') || audio_path.startsWith('/')) {
+      return new Response(JSON.stringify({ error: "Invalid file path" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Authorization: only an editor of the track's own workspace may compress it,
+    // and audio_path must belong to that same workspace (prefix scoping) so a
+    // valid track_id can't be paired with a foreign path.
+    const ws = await resolveTrackWorkspace(supabaseAdmin, track_id);
+    if (!ws) {
+      return new Response(JSON.stringify({ error: "Track not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    await assertWorkspaceMember(supabaseAdmin, user.id, ws, "editor");
+
+    if (!audio_path.startsWith(ws + "/")) {
       return new Response(JSON.stringify({ error: "Invalid file path" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -88,7 +109,8 @@ serve(async (req) => {
     const { error: updateError } = await supabaseAdmin
       .from("tracks")
       .update({ audio_preview_url: previewPath })
-      .eq("id", track_id);
+      .eq("id", track_id)
+      .eq("workspace_id", ws);
 
     if (updateError) {
       console.error("compress-audio update error:", updateError.message);
@@ -102,7 +124,12 @@ serve(async (req) => {
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
+    if (err instanceof HttpError) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: err.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

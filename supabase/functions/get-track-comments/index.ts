@@ -29,6 +29,11 @@ serve(async (req) => {
     const body = await req.json();
     const slug = body.slug;
     const track_id = body.track_id;
+    // The visitor's own email (from the gate) — used only to mark their own
+    // comments. Never used to disclose other visitors' emails.
+    const visitorEmail = typeof body.visitor_email === "string"
+      ? body.visitor_email.trim().toLowerCase()
+      : "";
 
     if (!slug || !track_id) {
       return new Response(JSON.stringify({ error: "slug and track_id are required" }), {
@@ -46,7 +51,7 @@ serve(async (req) => {
     // Resolve the active shared link for this slug.
     const { data: link, error: linkError } = await supabase
       .from("shared_links")
-      .select("id, track_id, playlist_id, status")
+      .select("id, track_id, playlist_id, status, expires_at")
       .eq("link_slug", slug)
       .eq("status", "active")
       .maybeSingle();
@@ -54,6 +59,15 @@ serve(async (req) => {
     if (linkError || !link) {
       return new Response(JSON.stringify({ error: "Link not found" }), {
         status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Don't serve comments on an expired link (consistent with get-audio-url /
+    // log-link-access, which both gate on expires_at).
+    if (link.expires_at && new Date(link.expires_at) < new Date()) {
+      return new Response(JSON.stringify({ error: "Link has expired" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -76,9 +90,12 @@ serve(async (req) => {
       });
     }
 
+    // author_email is fetched server-side (needed to identify the caller's own
+    // comments) but is NEVER returned for other visitors' comments — otherwise
+    // every link visitor could harvest every commenter's email.
     const { data: comments, error: selError } = await supabase
       .from("track_comments")
-      .select("*")
+      .select("id, track_id, shared_link_id, author_name, author_email, author_type, timestamp_sec, content, created_at, updated_at, is_edited")
       .eq("track_id", track_id)
       .eq("shared_link_id", link.id)
       .order("timestamp_sec", { ascending: true });
@@ -91,12 +108,24 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, comments: comments || [] }), {
+    // Never return author_email to the client (commenter PII). Instead expose a
+    // server-computed `is_own` boolean so the UI can flag the visitor's own
+    // comments (edit/delete are authorized separately via a token RPC). This also
+    // closes the confirmation-oracle channel of echoing the supplied email back.
+    const safeComments = (comments || []).map((c) => {
+      const own = !!visitorEmail && typeof c.author_email === "string"
+        && c.author_email.toLowerCase() === visitorEmail;
+      const { author_email: _omit, ...rest } = c;
+      return { ...rest, is_own: own };
+    });
+
+    return new Response(JSON.stringify({ success: true, comments: safeComments }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
+    console.error("get-track-comments: internal error (" + (err instanceof Error ? err.name : "unknown") + ")");
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

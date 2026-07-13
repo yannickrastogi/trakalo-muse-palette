@@ -103,7 +103,9 @@ interface TrackComment {
   track_id: string;
   shared_link_id: string | null;
   author_name: string;
-  author_email: string | null;
+  // is_own is computed server-side by get-track-comments (the visitor's own
+  // comments); author_email is never sent to the client anymore.
+  is_own?: boolean;
   author_type: string;
   timestamp_sec: number;
   content: string;
@@ -1272,7 +1274,7 @@ export default function SharedLinkPage() {
           {t("sharedLink.comments")} ({comments.length})
         </p>
         {comments.map(function(c) {
-          var isOwn = !!c.author_email && !!visitorEmailRef.current && c.author_email.toLowerCase() === visitorEmailRef.current.toLowerCase();
+          var isOwn = !!c.is_own;
           var isEditing = editingCommentId === c.id;
           return (
             <div key={c.id} className={"flex gap-2 p-2 rounded-lg " + (dark ? "bg-white/8" : "bg-secondary/20")}>
@@ -1365,7 +1367,7 @@ export default function SharedLinkPage() {
     fetch(SUPABASE_URL + "/functions/v1/get-track-comments", {
       method: "POST",
       headers: { ...SB_HEADERS, "Content-Type": "application/json" },
-      body: JSON.stringify({ slug: slug, track_id: trackId }),
+      body: JSON.stringify({ slug: slug, track_id: trackId, visitor_email: visitorEmailRef.current || null }),
     })
       .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
       .then(function(data) {
@@ -1427,7 +1429,10 @@ export default function SharedLinkPage() {
       .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
       .then(function(data) {
         if (data && data.comment) {
-          setComments(function(prev) { return prev.concat([data.comment as TrackComment]); });
+          // The just-posted comment is always the visitor's own — mark it so the
+          // edit/delete controls show immediately (get-track-comments no longer
+          // returns author_email; ownership is a server-computed is_own flag).
+          setComments(function(prev) { return prev.concat([{ ...(data.comment as TrackComment), is_own: true }]); });
           setCommentComposerOpen(false);
           setCommentText("");
         }
