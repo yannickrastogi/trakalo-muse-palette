@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Pause, ListMusic, Users, Loader2 } from "lucide-react";
+import { ArrowLeft, Play, Pause, ListMusic, Users, Loader2, Music } from "lucide-react";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
 import type { TrackData } from "@/contexts/TrackContext";
 import { PageShell } from "@/components/PageShell";
+import { MiniWaveform } from "@/components/MiniWaveform";
+import { statusColors } from "./Catalog";
 import { DEFAULT_COVER } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -15,7 +17,7 @@ export default function SharedPlaylistView() {
   const { playlistId } = useParams();
   const navigate = useNavigate();
   const { sharedPlaylists, getSharedPlaylistTracks } = usePlaylists();
-  const { playTrack, togglePlay, isTrackPlaying, currentTrack, isPlaying, setQueue } = useAudioPlayer();
+  const { playTrack, togglePlay, isTrackPlaying, currentTrack, isPlaying, setQueue, progress } = useAudioPlayer();
   const [tracks, setTracks] = useState<TrackData[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -88,11 +90,39 @@ export default function SharedPlaylistView() {
                       {playing && isPlaying ? <Pause className="w-4 h-4 text-white" /> : <Play className="w-4 h-4 text-white" />}
                     </span>
                   </button>
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 w-40 sm:w-48 shrink-0">
                     <p className={"text-sm font-medium truncate " + (playing ? "text-brand-orange" : "text-foreground")}>{track.title}</p>
                     <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
                   </div>
-                  {track.duration && <span className="text-xs text-muted-foreground/50 tabular-nums shrink-0">{track.duration}</span>}
+
+                  {/* Waveform (desktop) — display only, playback is via the cover button */}
+                  <div className={"hidden lg:flex items-center flex-1 min-w-0 transition-opacity " + (playing ? "opacity-100" : "opacity-30 group-hover:opacity-60")}>
+                    <MiniWaveform seed={track.id * 13 + 7} bars={40} peaks={track.waveformData} progress={playing ? progress : undefined} />
+                  </div>
+
+                  {/* Metadata cluster (view-only, mirrors the owner detail view) */}
+                  {track.genre.length > 0 && (
+                    <span className="hidden xl:block text-xs text-muted-foreground truncate max-w-[120px] shrink-0">{track.genre.join(", ")}</span>
+                  )}
+                  {track.bpm > 0 && (
+                    <span className="hidden md:block font-mono text-2xs text-foreground/60 tabular-nums w-14 text-right shrink-0">{track.bpm} BPM</span>
+                  )}
+                  {track.key && (
+                    <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary text-2xs font-semibold text-foreground/70 shrink-0">
+                      <Music className="w-2.5 h-2.5 text-brand-orange/50" />{track.key}
+                    </span>
+                  )}
+                  {track.mood.length > 0 && (
+                    <div className="hidden xl:flex flex-wrap gap-1 max-w-[110px] shrink-0">
+                      {track.mood.slice(0, 2).map((tag) => (
+                        <span key={tag} className="inline-flex px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/10 text-accent/70">#{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                  {track.status && (
+                    <span className={"hidden sm:inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold shrink-0 " + (statusColors[track.status] || "bg-secondary text-muted-foreground")}>{track.status}</span>
+                  )}
+                  {track.duration && <span className="text-xs text-muted-foreground/50 tabular-nums shrink-0 w-10 text-right">{track.duration}</span>}
                 </div>
               );
             })}
