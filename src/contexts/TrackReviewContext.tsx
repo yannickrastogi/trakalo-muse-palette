@@ -49,6 +49,8 @@ type CommentSort = "timecode" | "latest";
 interface TrackReviewContextValue {
   comments: TimecodedComment[];
   notifications: CommentNotification[];
+  /** Lazily load one track's comments (called when a track detail/review opens). */
+  loadCommentsForTrack: (trackUuid: string) => Promise<void>;
   getCommentsForTrack: (trackId: string) => TimecodedComment[];
   addComment: (comment: Omit<TimecodedComment, "id" | "createdAt" | "updatedAt" | "isEdited">) => TimecodedComment;
   editComment: (commentId: string, newText: string) => void;
@@ -84,125 +86,71 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
   const commentsRef = useRef<TimecodedComment[]>(comments);
   commentsRef.current = comments;
 
-  // Load comments from waveform_data + track_comments table
-  const fetchComments = useCallback(async () => {
-    if (!activeWorkspace || !user) {
-      setComments([]);
-      return;
-    }
+  // Comments are loaded LAZILY, per track, only when a detail/review view opens.
+  // The old boot fetch issued one get_track_comments RPC PER track (~N+1 for the
+  // whole catalog) plus a shared-catalog pass — for data the listing never shows.
+  const loadedTracksRef = useRef<Set<string>>(new Set());
 
-    const { data, error } = await supabase
+  const loadCommentsForTrack = useCallback(async (trackUuid: string) => {
+    if (!activeWorkspace || !user || !trackUuid) return;
+    if (loadedTracksRef.current.has(trackUuid)) return;
+    loadedTracksRef.current.add(trackUuid);
+
+    const loaded: TimecodedComment[] = [];
+
+    // 1. Legacy comments in tracks.waveform_data (own tracks; a catalog-shared
+    //    track's row may be RLS-blocked here → yields none, the RPC below covers it).
+    const { data: trackRow } = await supabase
       .from("tracks")
       .select("id, waveform_data")
-      .eq("workspace_id", activeWorkspace.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching track comments:", error);
-      setComments([]);
-      return;
+      .eq("id", trackUuid)
+      .maybeSingle();
+    const wd = trackRow?.waveform_data as WaveformDataWithComments | null;
+    if (wd?.comments && Array.isArray(wd.comments)) {
+      for (const c of wd.comments) loaded.push({ ...c, trackId: trackUuid });
     }
 
-    // 1. Comments from waveform_data (legacy) — tag each with the track UUID
-    const allComments: TimecodedComment[] = [];
-    for (const row of data || []) {
-      const wd = row.waveform_data as WaveformDataWithComments | null;
-      if (wd?.comments && Array.isArray(wd.comments)) {
-        for (const c of wd.comments) {
-          allComments.push({ ...c, trackId: row.id });
-        }
+    // 2. Table comments via SECURITY DEFINER RPC (works for own + catalog-shared
+    //    tracks; _workspace_id scopes internal notes to the active workspace).
+    const { data: dbComments } = await supabase.rpc("get_track_comments", { _track_id: trackUuid, _workspace_id: activeWorkspace.id });
+    if (dbComments) {
+      for (const c of dbComments as any[]) {
+        if (loaded.some((existing) => existing.id === c.id)) continue;
+        loaded.push({
+          id: c.id,
+          trackId: c.track_id,
+          authorName: c.author_name,
+          authorEmail: c.author_email || undefined,
+          authorType: (c.author_type || "guest_recipient") as AuthorType,
+          commentText: c.content,
+          timestampSeconds: Number(c.timestamp_sec),
+          timestampLabel: formatTimestamp(Number(c.timestamp_sec)),
+          createdAt: c.created_at,
+          updatedAt: c.updated_at || c.created_at,
+          isEdited: !!c.is_edited,
+          sourceContext: "shared_link_review" as SourceContext,
+          sharedLinkId: c.shared_link_id || undefined,
+          sharedLinkName: undefined,
+        });
       }
     }
 
-    // 2. Comments from track_comments table
-    const trackUuids = (data || []).map((r) => r.id);
-    if (trackUuids.length > 0) {
-      // Fetch comments via RPC (SECURITY DEFINER) to bypass RLS when auth.uid() is null.
-      // Scope internal notes to the active workspace so cross-workspace notes never surface.
-      const rpcResults = await Promise.all(
-        trackUuids.map((uuid) => supabase.rpc("get_track_comments", { _track_id: uuid, _workspace_id: activeWorkspace.id }))
-      );
-
-      for (const { data: dbComments } of rpcResults) {
-        if (dbComments) {
-          for (const c of dbComments as any[]) {
-            // Skip if already exists (by id)
-            if (allComments.some((existing) => existing.id === c.id)) continue;
-            allComments.push({
-              id: c.id,
-              trackId: c.track_id,
-              authorName: c.author_name,
-              authorEmail: c.author_email || undefined,
-              authorType: (c.author_type || "guest_recipient") as AuthorType,
-              commentText: c.content,
-              timestampSeconds: Number(c.timestamp_sec),
-              timestampLabel: formatTimestamp(Number(c.timestamp_sec)),
-              createdAt: c.created_at,
-              updatedAt: c.updated_at || c.created_at,
-              isEdited: !!c.is_edited,
-              sourceContext: "shared_link_review" as SourceContext,
-              sharedLinkId: c.shared_link_id || undefined,
-              sharedLinkName: undefined,
-            });
-          }
-        }
-      }
-    }
-
-    // 3. Comments from shared tracks via catalog_shares
-    try {
-      const { data: shares, error: sharesError } = await supabase.rpc(
-        "get_workspace_catalog_shares",
-        { _workspace_id: activeWorkspace.id }
-      );
-
-      if (!sharesError && shares && shares.length > 0) {
-        const sharedTrackIds: string[] = shares
-          .map((s: any) => s.track_id)
-          .filter((id: string) => id && !trackUuids.includes(id));
-
-        if (sharedTrackIds.length > 0) {
-          const sharedRpcResults = await Promise.all(
-            sharedTrackIds.map((uuid) =>
-              supabase.rpc("get_track_comments", { _track_id: uuid, _workspace_id: activeWorkspace.id })
-            )
-          );
-
-          for (const { data: dbComments } of sharedRpcResults) {
-            if (dbComments) {
-              for (const c of dbComments as any[]) {
-                if (allComments.some((existing) => existing.id === c.id)) continue;
-                allComments.push({
-                  id: c.id,
-                  trackId: c.track_id,
-                  authorName: c.author_name,
-                  authorEmail: c.author_email || undefined,
-                  authorType: (c.author_type || "guest_recipient") as AuthorType,
-                  commentText: c.content,
-                  timestampSeconds: Number(c.timestamp_sec),
-                  timestampLabel: formatTimestamp(Number(c.timestamp_sec)),
-                  createdAt: c.created_at,
-                  updatedAt: c.updated_at || c.created_at,
-                  isEdited: !!c.is_edited,
-                  sourceContext: "shared_link_review" as SourceContext,
-                  sharedLinkId: c.shared_link_id || undefined,
-                  sharedLinkName: undefined,
-                });
-              }
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Error fetching shared track comments:", err);
-    }
-
-    setComments(allComments);
+    // Merge this track's slice. Runs at most once per track (loadedTracksRef
+    // guard) before any local add/edit, so we preserve any local-only comments
+    // for the track (defensive) and drop-in the freshly fetched ones.
+    setComments((prev) => {
+      const others = prev.filter((c) => c.trackId !== trackUuid);
+      const loadedIds = new Set(loaded.map((c) => c.id));
+      const keptLocal = prev.filter((c) => c.trackId === trackUuid && !loadedIds.has(c.id));
+      return [...others, ...loaded, ...keptLocal];
+    });
   }, [activeWorkspace, user]);
 
+  // Comments are workspace-scoped — reset the lazy cache when it changes.
   useEffect(() => {
-    fetchComments();
-  }, [fetchComments]);
+    setComments([]);
+    loadedTracksRef.current = new Set();
+  }, [activeWorkspace?.id]);
 
   // Persist comments for a specific track back to waveform_data
   const persistCommentsForTrack = useCallback(async (trackUuid: string, trackComments: TimecodedComment[]) => {
@@ -394,9 +342,9 @@ export function TrackReviewProvider({ children }: { children: ReactNode }) {
   return (
     <TrackReviewContext.Provider
       value={useMemo(() => ({
-        comments, notifications, getCommentsForTrack, addComment, editComment, deleteComment,
+        comments, notifications, loadCommentsForTrack, getCommentsForTrack, addComment, editComment, deleteComment,
         getFilteredComments, getSortedComments, getCommentCountForTrack, markNotificationRead, unreadNotificationCount,
-      }), [comments, notifications, getCommentsForTrack, addComment, editComment, deleteComment,
+      }), [comments, notifications, loadCommentsForTrack, getCommentsForTrack, addComment, editComment, deleteComment,
         getFilteredComments, getSortedComments, getCommentCountForTrack, markNotificationRead, unreadNotificationCount])}
     >
       {children}

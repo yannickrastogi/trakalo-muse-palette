@@ -261,7 +261,7 @@ export default function TrackDetail() {
   const [versions, setVersions] = useState<TrackVersion[]>([]);
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const { getTrackEngagement } = useEngagement();
-  const { getCommentsForTrack, addComment } = useTrackReview();
+  const { getCommentsForTrack, addComment, loadCommentsForTrack } = useTrackReview();
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTrackModalOpen, setShareTrackModalOpen] = useState(false);
@@ -462,6 +462,10 @@ export default function TrackDetail() {
 
   const numericId = track?.id;
   const engagement = numericId ? getTrackEngagement(numericId) : undefined;
+  // Lazily load this track's comments (deferred out of app boot).
+  useEffect(() => {
+    if (track?.uuid) loadCommentsForTrack(track.uuid);
+  }, [track?.uuid, loadCommentsForTrack]);
   const trackComments = track?.uuid ? getCommentsForTrack(track.uuid) : [];
   const commentCount = trackComments.length;
 
@@ -4150,13 +4154,17 @@ function StatusHistoryTimeline({ trackId }: { trackId: number }) {
 /* ─── ENGAGEMENT TAB ─── */
 function EngagementTab({ trackId, onSeek }: { trackId: number; onSeek?: (seconds: number, totalDuration: number) => void }) {
   const { getTrackEngagement } = useEngagement();
-  const { getCommentsForTrack } = useTrackReview();
+  const { getCommentsForTrack, loadCommentsForTrack } = useTrackReview();
   const { getTrack } = useTrack();
   const [expandedRecipient, setExpandedRecipient] = useState<string | null>(null);
   const engagement = getTrackEngagement(trackId);
 
   // Fetch link_events for this track
   const trackUuid = getTrack(trackId)?.uuid;
+  // Lazily load this track's comments (deferred out of app boot).
+  useEffect(() => {
+    if (trackUuid) loadCommentsForTrack(trackUuid);
+  }, [trackUuid, loadCommentsForTrack]);
   const trackComments = trackUuid ? getCommentsForTrack(trackUuid) : [];
   const [linkEvents, setLinkEvents] = useState<{ event_type: string; visitor_email: string | null; created_at: string }[]>([]);
 

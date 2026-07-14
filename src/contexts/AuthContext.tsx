@@ -211,8 +211,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = "/auth";
   }, []);
 
+  // Stabilise `user` by identity: at boot Supabase sets the session twice
+  // (onAuthStateChange INITIAL_SESSION *and* getSession both fire before the
+  // init guard settles), each a fresh session object with a fresh `.user`. Every
+  // downstream provider keys its fetch effects on `user`, so a second reference
+  // for the SAME user caused every boot resource to be fetched twice.
+  //
+  // Key the memo on (id, updated_at): stable across the boot double-emission and
+  // across pure token refreshes (user record unchanged → same updated_at), so we
+  // collapse the double boot fetch — yet a real profile update bumps updated_at,
+  // so live metadata changes (avatar, name) still propagate to consumers.
+  const userId = session?.user?.id ?? null;
+  const userUpdatedAt = session?.user?.updated_at ?? null;
+  const user = useMemo(() => session?.user ?? null, [userId, userUpdatedAt]);
+
   return (
-    <AuthContext.Provider value={useMemo(() => ({ session, user: session?.user ?? null, loading, needsMfaVerification, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, verifyMfa }), [session, loading, needsMfaVerification, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, verifyMfa])}>
+    <AuthContext.Provider value={useMemo(() => ({ session, user, loading, needsMfaVerification, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, verifyMfa }), [session, user, loading, needsMfaVerification, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, verifyMfa])}>
       {children}
     </AuthContext.Provider>
   );
