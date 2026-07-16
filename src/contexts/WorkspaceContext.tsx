@@ -108,6 +108,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                   social_spotify: ws.social_spotify || null,
                   social_apple: ws.social_apple || null,
                   bio: ws.bio || null,
+                  epk_url: ws.epk_url || null,
                   is_personal: !!ws.is_personal,
                 }));
                 setWorkspaces(mapped);
@@ -154,6 +155,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         social_spotify: ws.social_spotify || null,
         social_apple: ws.social_apple || null,
         bio: ws.bio || null,
+        epk_url: ws.epk_url || null,
         is_personal: !!ws.is_personal,
       }));
 

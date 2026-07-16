@@ -58,6 +58,7 @@ interface WorkspaceBranding {
   social_spotify: string | null;
   social_apple: string | null;
   bio: string | null;
+  epk_url: string | null;
 }
 
 interface TrackData {
@@ -2577,7 +2578,8 @@ function SocialIcons({ branding, immersive }: { branding?: WorkspaceBranding | n
   var appleUrl = branding.social_apple ? normalizeSocialUrl(branding.social_apple, "apple") : null;
   if (appleUrl) links.push({ url: appleUrl, platform: "apple", icon: <svg width={iconSize} height={iconSize} viewBox="0 0 24 24"><defs><linearGradient id="trakalog-grad-ap" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f97316"/><stop offset="50%" stopColor="#ec4899"/><stop offset="100%" stopColor="#8b5cf6"/></linearGradient></defs><path fill="url(#trakalog-grad-ap)" d="M23.997 6.124a9.23 9.23 0 00-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 00-1.877-.726 10.496 10.496 0 00-1.564-.15c-.04-.003-.083-.01-.124-.013H5.988c-.152.01-.303.017-.455.026-.747.043-1.49.123-2.193.4-1.336.53-2.3 1.452-2.865 2.78-.192.448-.292.925-.363 1.408-.056.392-.088.785-.1 1.18 0 .032-.007.062-.01.093v12.223c.01.14.017.283.027.424.05.815.154 1.624.497 2.373.65 1.42 1.738 2.353 3.234 2.801.42.127.856.187 1.293.228.555.053 1.11.06 1.667.06h11.03a12.5 12.5 0 001.57-.1c.822-.106 1.596-.35 2.295-.81a5.046 5.046 0 001.88-2.207c.186-.42.293-.87.37-1.324.113-.675.138-1.358.137-2.04-.002-3.8 0-7.595-.003-11.393zm-6.423 3.99v5.712c0 .417-.058.827-.244 1.206-.29.59-.76.962-1.388 1.14-.35.1-.706.157-1.07.173-.95.045-1.773-.6-1.943-1.536-.142-.773.227-1.624 1.038-2.022.323-.16.67-.25 1.018-.324.378-.082.758-.153 1.134-.24.274-.063.457-.23.51-.516a.904.904 0 00.02-.193c0-1.815 0-3.63-.002-5.443a.725.725 0 00-.026-.185c-.04-.15-.15-.243-.304-.234-.16.008-.318.035-.475.066-.76.15-1.52.303-2.28.456l-2.325.47-1.374.278c-.016.003-.032.01-.048.013-.277.077-.377.203-.39.49-.002.042 0 .086 0 .13-.002 2.602 0 5.204-.003 7.805 0 .42-.047.836-.215 1.227-.278.64-.77 1.04-1.434 1.233-.35.1-.71.16-1.075.172-.96.036-1.755-.6-1.92-1.544-.14-.812.23-1.685 1.154-2.075.357-.15.73-.232 1.108-.31.293-.06.588-.114.877-.183.32-.076.49-.276.51-.602.003-.055.002-.11.002-.166 0-2.847 0-5.694.003-8.54 0-.11.013-.223.033-.332.06-.31.257-.507.566-.575.263-.058.53-.11.796-.164l2.4-.485 2.494-.505 1.65-.334c.046-.01.093-.017.14-.02.29-.02.5.17.52.46.004.06.003.12.003.18.002 1.86.002 3.72.002 5.58z"/></svg> });
   if (branding.social_website && (branding.social_website.startsWith("https://") || branding.social_website.startsWith("http://"))) links.push({ url: branding.social_website, platform: "website", icon: <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="url(#trakalog-grad-web)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><defs><linearGradient id="trakalog-grad-web" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#f97316"/><stop offset="50%" stopColor="#ec4899"/><stop offset="100%" stopColor="#8b5cf6"/></linearGradient></defs><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> });
-  if (links.length === 0) return null;
+  var epkUrl = (branding.epk_url && (branding.epk_url.startsWith("https://") || branding.epk_url.startsWith("http://"))) ? branding.epk_url : null;
+  if (links.length === 0 && !epkUrl) return null;
   return (
     <div className="mt-4">
       <div
@@ -2605,6 +2607,35 @@ function SocialIcons({ branding, immersive }: { branding?: WorkspaceBranding | n
             </a>
           );
         })}
+        {epkUrl && (
+          <>
+            {links.length > 0 && (
+              <span
+                className="w-px h-5 self-center"
+                style={{ background: immersive ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)" }}
+              />
+            )}
+            <a
+              href={epkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all duration-250 hover:scale-[1.05] opacity-90 hover:opacity-100"
+              style={{
+                background: "linear-gradient(90deg, #f97316, #ec4899, #8b5cf6)",
+                color: "#ffffff",
+              }}
+            >
+              <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <path d="M14 2v6h6"/>
+                <path d="M16 13H8"/>
+                <path d="M16 17H8"/>
+                <path d="M10 9H8"/>
+              </svg>
+              <span>EPK</span>
+            </a>
+          </>
+        )}
       </div>
     </div>
   );

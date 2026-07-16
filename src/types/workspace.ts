@@ -34,6 +34,7 @@ export interface Workspace {
   social_spotify: string | null;
   social_apple: string | null;
   bio: string | null;
+  epk_url: string | null;
   is_personal: boolean;
 }
 

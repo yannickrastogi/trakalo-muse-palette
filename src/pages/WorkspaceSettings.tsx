@@ -26,6 +26,7 @@ import {
   ExternalLink,
   CheckCircle2,
   Download,
+  FileText,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import {
@@ -234,6 +235,8 @@ function BrandingSection() {
   const [socialSpotify, setSocialSpotify] = useState(activeWorkspace?.social_spotify || "");
   const [socialApple, setSocialApple] = useState(activeWorkspace?.social_apple || "");
   const [bio, setBio] = useState(activeWorkspace?.bio || "");
+  const [epkUrl, setEpkUrl] = useState<string | null>(activeWorkspace?.epk_url || null);
+  const [uploadingEpk, setUploadingEpk] = useState(false);
 
   useEffect(() => {
     if (activeWorkspace) {
@@ -251,6 +254,7 @@ function BrandingSection() {
       setSocialWebsite(activeWorkspace.social_website || "");
       setSocialSpotify(activeWorkspace.social_spotify || "");
       setSocialApple(activeWorkspace.social_apple || "");
+      setEpkUrl(activeWorkspace.epk_url || null);
     }
   }, [activeWorkspace]);
 
@@ -397,6 +401,57 @@ function BrandingSection() {
     if (type === "hero") setHeroUrl(null);
     else setLogoUrl(null);
     toast.success((type === "hero" ? "Background" : "Logo") + " removed");
+    await refreshWorkspaces();
+  };
+
+  const EPK_MAX_BYTES = 25 * 1024 * 1024;
+
+  const handleEpkUpload = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/pdf";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file || !activeWorkspace) return;
+      if (file.type !== "application/pdf") {
+        toast.error("EPK must be a PDF file.");
+        return;
+      }
+      if (file.size > EPK_MAX_BYTES) {
+        toast.error("EPK is too large (max 25 MB).");
+        return;
+      }
+      setUploadingEpk(true);
+      try {
+        const path = activeWorkspace.id + "/epk_" + Date.now() + ".pdf";
+        const { error: uploadErr } = await supabase.storage.from("branding").upload(path, file, { upsert: true, contentType: "application/pdf" });
+        if (uploadErr) { toast.error(uploadErr.message); setUploadingEpk(false); return; }
+        const { data: urlData } = supabase.storage.from("branding").getPublicUrl(path);
+        const publicUrl = urlData?.publicUrl;
+        if (!publicUrl) { toast.error("Failed to get URL"); setUploadingEpk(false); return; }
+        const { error: updateErr } = await supabase.rpc("update_workspace_branding", {
+          _user_id: user!.id, _workspace_id: activeWorkspace.id, _epk_url: publicUrl,
+        });
+        if (updateErr) { toast.error(updateErr.message); setUploadingEpk(false); return; }
+        setEpkUrl(publicUrl);
+        toast.success("EPK uploaded");
+        await refreshWorkspaces();
+      } catch (err: any) {
+        toast.error(err?.message || "Upload failed");
+      }
+      setUploadingEpk(false);
+    };
+    input.click();
+  };
+
+  const handleEpkRemove = async () => {
+    if (!activeWorkspace || !user) return;
+    const { error } = await supabase.rpc("update_workspace_branding", {
+      _user_id: user.id, _workspace_id: activeWorkspace.id, _epk_url: "",
+    });
+    if (error) { toast.error(error.message); return; }
+    setEpkUrl(null);
+    toast.success("EPK removed");
     await refreshWorkspaces();
   };
 
@@ -733,6 +788,46 @@ function BrandingSection() {
             <input type="url" value={socialWebsite} placeholder="https://yoursite.com" onChange={(e) => setSocialWebsite(e.target.value)} className="w-full h-11 pl-10 pr-4 rounded-xl bg-secondary/40 border border-border/30 text-[13px] text-foreground font-medium outline-none focus:border-primary/30 focus:bg-secondary/60 transition-all placeholder:text-muted-foreground/30" />
           </div>
         </div>
+      </SectionBlock>
+
+      {/* EPK (PDF) */}
+      <SectionBlock title="EPK" subtitle="A press kit (PDF) recipients can open from your shared links." icon={FileText}>
+        <FieldGroup label="EPK (PDF)" hint="Electronic Press Kit shown to recipients on your shared links. PDF only, max 25 MB.">
+          {epkUrl ? (
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl border border-border/50 bg-secondary/30 flex items-center justify-center flex-shrink-0">
+                <FileText className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <a href={epkUrl} target="_blank" rel="noopener noreferrer" className="text-[13px] font-semibold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5">
+                  {epkUrl.split("/").pop() || "EPK.pdf"}
+                  <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+                </a>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <button onClick={handleEpkUpload} disabled={uploadingEpk} className="px-3 py-2 rounded-lg text-[12px] font-medium bg-secondary hover:bg-secondary/80 transition-colors">
+                  {uploadingEpk ? t("workspaceSettings.uploading") : t("workspaceSettings.change")}
+                </button>
+                <button onClick={handleEpkRemove} disabled={uploadingEpk} className="px-3 py-2 rounded-lg text-[12px] font-medium text-destructive hover:bg-destructive/10 transition-colors">
+                  {t("workspaceSettings.remove")}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={handleEpkUpload}
+              disabled={uploadingEpk}
+              className="w-full border-2 border-dashed border-border/50 rounded-xl py-6 flex flex-col items-center gap-2 hover:border-primary/30 hover:bg-primary/[0.02] transition-all cursor-pointer group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-secondary/60 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                <Upload className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <span className="text-[12px] font-semibold text-muted-foreground/60 group-hover:text-foreground transition-colors">
+                {uploadingEpk ? t("workspaceSettings.uploading") : "Click to upload EPK (PDF)"}
+              </span>
+            </button>
+          )}
+        </FieldGroup>
       </SectionBlock>
     </motion.div>
   );
