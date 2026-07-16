@@ -12,6 +12,10 @@ interface WorkspaceContextValue {
   workspaces: Workspace[];
   /** Whether workspaces are still loading */
   loading: boolean;
+  /** True from the moment a workspace switch starts until the new workspace's core data is ready */
+  isSwitchingWorkspace: boolean;
+  /** Called by the core data context (tracks) to signal the switched workspace is ready */
+  endWorkspaceSwitch: () => void;
   /** Switch to a different workspace by id */
   switchWorkspace: (workspaceId: string) => void;
   /** Update settings on the active workspace */
@@ -30,6 +34,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
+  const [isSwitchingWorkspace, setIsSwitchingWorkspace] = useState(false);
   const creatingWorkspaceRef = useRef(false);
 
   const fetchWorkspaces = useCallback(async (opts?: { switchTo?: string }) => {
@@ -213,9 +218,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 
   const switchWorkspace = useCallback((workspaceId: string) => {
+    if (workspaceId === activeId) return;
+    setIsSwitchingWorkspace(true);
     setActiveId(workspaceId);
     safeLocalStorage.setItem("trakalog_active_workspace", workspaceId);
+  }, [activeId]);
+
+  const endWorkspaceSwitch = useCallback(() => {
+    setIsSwitchingWorkspace(false);
   }, []);
+
+  // Safety net: never let the switch overlay stick if the core data signal never arrives
+  useEffect(() => {
+    if (!isSwitchingWorkspace) return;
+    const timer = setTimeout(() => setIsSwitchingWorkspace(false), 8000);
+    return () => clearTimeout(timer);
+  }, [isSwitchingWorkspace]);
 
   const createWorkspace = useCallback(async (name: string, description?: string): Promise<string | null> => {
     try {
@@ -273,11 +291,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     activeWorkspace: activeWorkspace as Workspace,
     workspaces,
     loading,
+    isSwitchingWorkspace,
+    endWorkspaceSwitch,
     switchWorkspace,
     updateWorkspaceSettings,
     createWorkspace,
     refreshWorkspaces,
-  }), [activeWorkspace, workspaces, loading, switchWorkspace, updateWorkspaceSettings, createWorkspace, refreshWorkspaces]);
+  }), [activeWorkspace, workspaces, loading, isSwitchingWorkspace, endWorkspaceSwitch, switchWorkspace, updateWorkspaceSettings, createWorkspace, refreshWorkspaces]);
 
   // a) Auth still loading → spinner
   if (authLoading) {

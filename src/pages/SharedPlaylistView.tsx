@@ -23,6 +23,7 @@ export default function SharedPlaylistView() {
   const [loadError, setLoadError] = useState(false);
 
   const share = sharedPlaylists.find((s) => s.playlist_id === playlistId && s.direction === "incoming");
+  const accessLabel = share?.access_level === "editor" ? "can edit" : share?.access_level === "pitcher" ? "can pitch" : "view only";
 
   useEffect(() => {
     let cancelled = false;
@@ -62,7 +63,7 @@ export default function SharedPlaylistView() {
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-purple/10 text-brand-purple font-medium">
                 <Users className="w-3 h-3" /> Shared from {share?.source_workspace_name || "another workspace"}
               </span>
-              <span>· {tracks.length} tracks · view only</span>
+              <span>· {tracks.length} tracks · {accessLabel}</span>
             </div>
           </div>
         </div>

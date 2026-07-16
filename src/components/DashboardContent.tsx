@@ -33,6 +33,7 @@ import {
   Sparkles,
   Radio,
   FileSpreadsheet,
+  MessageCircle,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
@@ -186,6 +187,22 @@ export function DashboardContent() {
       }).catch(function(err) { console.error("Error fetching link events:", err); });
   }, [activeWorkspace, allTracks]);
 
+  // Fetch recent track comments for this workspace (comments left on tracks via shared links)
+  const [comments, setComments] = useState<{ id: string; track_id: string | null; author_name: string | null; content: string | null; created_at: string | null }[]>([]);
+  useEffect(function() {
+    if (!activeWorkspace) return;
+    supabase
+      .from("track_comments")
+      .select("id, track_id, author_name, content, created_at")
+      .eq("workspace_id", activeWorkspace.id)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(function(res) {
+        if (res.error) console.error("Error fetching track comments:", res.error);
+        setComments(res.data || []);
+      }).catch(function(err) { console.error("Error fetching track comments:", err); });
+  }, [activeWorkspace]);
+
   const linkPlays = linkEvents.filter(function(e) { return e.event_type === "play"; });
   const linkDownloads = linkEvents.filter(function(e) { return e.event_type === "download"; });
   const playRecipients = new Set(linkPlays.filter(function(e) { return e.visitor_email; }).map(function(e) { return e.visitor_email; })).size;
@@ -199,7 +216,7 @@ export function DashboardContent() {
 
   // Build real activity feed
   const activityFeed = useMemo(function() {
-    type ActivityItem = { icon: typeof Music; text: string; time: string; sortDate: Date };
+    type ActivityItem = { icon: typeof Music; text: string; time: string; sortDate: Date; trackUuid?: string };
     const items: ActivityItem[] = [];
 
     // Recent link events (plays/downloads)
@@ -224,9 +241,18 @@ export function DashboardContent() {
       items.push({ icon: Send, text: '"' + p.itemName + '" pitched to ' + p.recipientCompany + " — " + p.recipientName, time: timeAgo(p.date), sortDate: new Date(p.date) });
     });
 
+    // Recent track comments
+    comments.slice(0, 10).forEach(function(c) {
+      if (!c.created_at) return;
+      const track = c.track_id ? allTracks.find(function(t) { return t.uuid === c.track_id; }) : null;
+      const trackName = track ? '"' + track.title + '"' : "a track";
+      const who = c.author_name || "Someone";
+      items.push({ icon: MessageCircle, text: who + " commented on " + trackName, time: timeAgo(c.created_at), sortDate: new Date(c.created_at), trackUuid: c.track_id || undefined });
+    });
+
     items.sort(function(a, b) { return b.sortDate.getTime() - a.sortDate.getTime(); });
     return items.slice(0, 10);
-  }, [linkEvents, allTracks, allPitches]);
+  }, [linkEvents, allTracks, allPitches, comments]);
 
   // Use real created_at from tracks
   const trackUploadDates = useMemo(() => {
@@ -1268,7 +1294,7 @@ export function DashboardContent() {
             {activityFeed.length === 0 ? (
               <div className="px-4 py-10 text-center text-muted-foreground text-sm">No recent activity</div>
             ) : activityFeed.map((a, i) => (
-              <div key={i} className="flex items-start gap-3 px-3 sm:px-4 py-3 sm:py-3.5 hover:bg-secondary/20 transition-colors">
+              <div key={i} onClick={a.trackUuid ? () => navigate("/track/" + a.trackUuid) : undefined} className={"flex items-start gap-3 px-3 sm:px-4 py-3 sm:py-3.5 hover:bg-secondary/20 transition-colors" + (a.trackUuid ? " cursor-pointer" : "")}>
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${a.icon === Upload ? "bg-emerald-400/10" : a.icon === Headphones ? "bg-brand-pink/10" : a.icon === Download ? "bg-brand-purple/10" : a.icon === Send ? "bg-brand-orange/10" : "bg-secondary"}`}>
                   <a.icon className={`w-3.5 h-3.5 ${a.icon === Upload ? "text-emerald-400" : a.icon === Headphones ? "text-brand-pink" : a.icon === Download ? "text-brand-purple" : a.icon === Send ? "text-brand-orange" : "text-muted-foreground"}`} />
                 </div>

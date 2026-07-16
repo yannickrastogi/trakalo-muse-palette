@@ -321,7 +321,7 @@ interface TrackContextValue {
 const TrackContext = createContext<TrackContextValue | null>(null);
 
 export function TrackProvider({ children }: { children: ReactNode }) {
-  const { activeWorkspace } = useWorkspace();
+  const { activeWorkspace, endWorkspaceSwitch } = useWorkspace();
   const { user } = useAuth();
   const [tracks, setTracks] = useState<TrackData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -339,6 +339,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     if (!activeWorkspace || !user) {
       // Don't clear tracks during transient auth/workspace revalidation
       setLoading(false);
+      endWorkspaceSwitch();
       return;
     }
 
@@ -649,9 +650,13 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error("Unexpected error fetching tracks:", err);
     } finally {
-      if (isCurrent()) setLoading(false);
+      if (isCurrent()) {
+        setLoading(false);
+        // Core data for the (possibly switched) workspace is ready — clear the switch overlay
+        endWorkspaceSwitch();
+      }
     }
-  }, [activeWorkspace, user]);
+  }, [activeWorkspace, user, endWorkspaceSwitch]);
 
   // Keep ref in sync so the long-running queue always calls the latest fetchTracks
   fetchTracksRef.current = fetchTracks;

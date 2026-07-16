@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTeams, type TeamActivity, type ActivityType } from "@/contexts/TeamContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useTrack } from "@/contexts/TrackContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/PageShell";
@@ -25,6 +27,7 @@ import {
   Filter,
   Users,
   Bookmark,
+  MessageCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -34,9 +37,12 @@ type TimeFilter = "24h" | "7d" | "30d" | "1y" | "all";
 interface EnrichedActivity extends TeamActivity {
   teamName: string;
   teamId: string;
+  /** Optional track to navigate to on click (e.g. comment notifications) */
+  trackId?: string;
 }
 
-const activityMeta: Record<ActivityType, { icon: LucideIcon; color: string; bg: string; badgeCls: string }> = {
+const activityMeta: Record<ActivityType | "comment_added", { icon: LucideIcon; color: string; bg: string; badgeCls: string }> = {
+  comment_added: { icon: MessageCircle, color: "text-fuchsia-400", bg: "bg-fuchsia-400/10", badgeCls: "bg-fuchsia-400/10 text-fuchsia-400 border-fuchsia-400/20" },
   upload: { icon: Upload, color: "text-emerald-400", bg: "bg-emerald-400/10", badgeCls: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20" },
   pitch: { icon: Send, color: "text-brand-orange", bg: "bg-brand-orange/10", badgeCls: "bg-brand-orange/10 text-brand-orange border-brand-orange/20" },
   link: { icon: Link2, color: "text-sky-400", bg: "bg-sky-400/10", badgeCls: "bg-sky-400/10 text-sky-400 border-sky-400/20" },
@@ -112,7 +118,9 @@ export default function NotificationCenter() {
   const timeFilters = useTimeFilters();
   const { teams, loadTeamDetails } = useTeams();
   const { activeWorkspace } = useWorkspace();
+  const { tracks } = useTrack();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // team.activities (audit_logs + link_events) is deferred out of app boot, so
   // hydrate it here — NotificationCenter merges it into its feed (see below).
@@ -125,6 +133,47 @@ export default function NotificationCenter() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [linkEventActivities, setLinkEventActivities] = useState<EnrichedActivity[]>([]);
   const [creatorActivities, setCreatorActivities] = useState<EnrichedActivity[]>([]);
+  const [commentRows, setCommentRows] = useState<{ id: string; track_id: string | null; author_name: string | null; content: string | null; created_at: string | null }[]>([]);
+
+  // Fetch recent track comments for this workspace (title resolution happens separately so a
+  // tracks re-render doesn't re-trigger the fetch)
+  useEffect(function () {
+    if (!activeWorkspace) return;
+
+    async function fetchComments() {
+      var { data, error } = await supabase
+        .from("track_comments")
+        .select("id, track_id, author_name, content, created_at")
+        .eq("workspace_id", activeWorkspace!.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) { console.error("Error fetching track comments:", error); setCommentRows([]); return; }
+      setCommentRows(data || []);
+    }
+
+    fetchComments();
+  }, [activeWorkspace]);
+
+  // Resolve track titles and build activity items (recomputes when tracks or comments change)
+  const commentActivities = useMemo<EnrichedActivity[]>(function () {
+    if (!activeWorkspace) return [];
+    var titleByUuid: Record<string, string> = {};
+    tracks.forEach(function (tr) { if (tr.uuid) titleByUuid[tr.uuid] = tr.title; });
+    return commentRows.map(function (c) {
+      var trackTitle = c.track_id && titleByUuid[c.track_id] ? "\"" + titleByUuid[c.track_id] + "\"" : "a track";
+      return {
+        id: "comment-" + c.id,
+        type: "comment_added" as ActivityType,
+        user: c.author_name || "Someone",
+        message: "commented on " + trackTitle,
+        date: c.created_at || "",
+        teamName: activeWorkspace.name || "",
+        teamId: activeWorkspace.id || "",
+        trackId: c.track_id || undefined,
+      };
+    });
+  }, [commentRows, tracks, activeWorkspace]);
 
   // Fetch link_events and convert to activities
   useEffect(function() {
@@ -291,8 +340,9 @@ export default function NotificationCenter() {
     });
     linkEventActivities.forEach(function(a) { merged.push(a); });
     creatorActivities.forEach(function(a) { merged.push(a); });
+    commentActivities.forEach(function(a) { merged.push(a); });
     return merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [teams, linkEventActivities, creatorActivities]);
+  }, [teams, linkEventActivities, creatorActivities, commentActivities]);
 
   // Apply filters
   const filteredActivities = useMemo(() => {
@@ -357,6 +407,7 @@ export default function NotificationCenter() {
     recipient_pack: t("notifications.packType"),
     recipient_stems: t("notifications.stemsDownloadedType"),
     recipient_saved: t("notifications.savedType"),
+    comment_added: t("notifications.commentType", "Comments"),
   };
 
   return (
@@ -492,12 +543,14 @@ export default function NotificationCenter() {
                   const bgClass = meta?.bg || "bg-secondary";
                   const badgeCls = meta?.badgeCls || "bg-secondary text-muted-foreground border-border/60";
 
+                  const clickable = !!activity.trackId;
                   return (
                     <motion.div
                       key={activity.id}
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="flex items-start gap-3 px-4 py-3.5 hover:bg-secondary/30 transition-colors group"
+                      onClick={clickable ? () => navigate("/track/" + activity.trackId) : undefined}
+                      className={"flex items-start gap-3 px-4 py-3.5 hover:bg-secondary/30 transition-colors group" + (clickable ? " cursor-pointer" : "")}
                     >
                       <div className={`w-9 h-9 rounded-xl ${bgClass} flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform`}>
                         <Icon className={`w-4 h-4 ${colorClass}`} />

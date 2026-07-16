@@ -608,7 +608,13 @@ export default function Playlists() {
               <span className="text-2xs px-2 py-0.5 rounded-full bg-brand-purple/12 text-brand-purple font-semibold">{incomingSharedPlaylists.length}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-              {incomingSharedPlaylists.map((s) => (
+              {incomingSharedPlaylists.map((s) => {
+                const accessLabel = s.access_level === "editor"
+                  ? t("playlists.accessEditor", "can edit")
+                  : s.access_level === "pitcher"
+                  ? t("playlists.accessPitcher", "can pitch")
+                  : t("playlists.viewOnly", "view only");
+                return (
                 <button
                   key={s.share_id}
                   onClick={function () { navigate("/playlist/shared/" + s.playlist_id); }}
@@ -620,10 +626,11 @@ export default function Playlists() {
                   <p className="text-sm font-semibold text-foreground truncate">{s.playlist_name}</p>
                   <p className="text-2xs text-muted-foreground mt-1 truncate">{t("playlists.sharedFrom", "Shared from")} {s.source_workspace_name}</p>
                   <div className="flex items-center gap-1 mt-2 text-2xs text-muted-foreground/70">
-                    <Music className="w-3 h-3" /> {s.track_count} {t("playlists.trackCount")} · {t("playlists.viewOnly", "view only")}
+                    <Music className="w-3 h-3" /> {s.track_count} {t("playlists.trackCount")} · {accessLabel}
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
         )}
