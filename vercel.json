@@ -45,6 +45,7 @@
       ],
       "destination": "/api/share/:slug"
     },
-    { "source": "/((?!api/).*)", "destination": "/" }
+    { "source": "/epk/:workspaceSlug", "destination": "/api/epk/:workspaceSlug" },
+    { "source": "/((?!api/|epk/).*)", "destination": "/" }
   ]
 }
