@@ -9,6 +9,42 @@ const SUPABASE_ANON_KEY =
 const DEFAULT_OG_IMAGE = "https://app.trakalog.com/trakalog-logo.png";
 const APP_URL = "https://app.trakalog.com";
 
+// Only accept absolute http(s) URLs for og:image so a malformed/hostile stored
+// value can never inject a non-image scheme (javascript:, data:, …).
+function safeUrl(u: unknown): string {
+  return typeof u === "string" && (u.startsWith("https://") || u.startsWith("http://")) ? u : "";
+}
+
+// SECURITY DEFINER RPC via the anon key — the same slug-scoped RPCs the public
+// SharedLinkPage uses. Direct REST reads on shared_links / tracks / playlists
+// return nothing for anon (RLS: no anon SELECT policy), so these RPCs are the
+// only anon-safe way to resolve a slug. 3.5s timeout so 2 sequential rounds
+// stay well under the 10s function budget.
+async function rpc(fn: string, body: Record<string, unknown>): Promise<any[] | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3500);
+  try {
+    const r = await fetch(SUPABASE_URL + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: "Bearer " + SUPABASE_ANON_KEY,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return Array.isArray(rows) ? rows : rows ? [rows] : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { slug } = req.query;
   if (!slug || typeof slug !== "string") {
@@ -17,78 +53,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const spaUrl = APP_URL + "/share/" + slug;
 
-  // Fetch shared link data
   let title = "Trakalog";
-  let description = "Listen on Trakalog";
+  let description = "Shared via Trakalog";
   let image = DEFAULT_OG_IMAGE;
 
   try {
-    const headers = {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: "Bearer " + SUPABASE_ANON_KEY,
-      Accept: "application/vnd.pgrst.object+json",
-    };
+    // Resolve the link and workspace branding in parallel (both slug-scoped RPCs).
+    const [linkRows, brandRows] = await Promise.all([
+      rpc("get_shared_link_by_slug", { _slug: slug }),
+      rpc("get_workspace_branding_for_shared_link", { _slug: slug }),
+    ]);
 
-    const linkRes = await fetch(
-      SUPABASE_URL + "/rest/v1/shared_links?select=link_name,share_type,track_id,playlist_id&link_slug=eq." + encodeURIComponent(slug),
-      { headers }
-    );
+    const link = linkRows && linkRows.length > 0 ? linkRows[0] : null;
+    const b = brandRows && brandRows.length > 0 ? brandRows[0] : null;
 
-    if (linkRes.ok) {
-      const link = await linkRes.json();
+    const wsName: string = b?.name || "";
+    const wsLogo = safeUrl(b?.logo_url);
+    const wsHero = safeUrl(b?.hero_image_url);
+    const brandedDesc = wsName ? "Shared via Trakalog · " + wsName : "Shared via Trakalog";
+    const brandFallbackImage = wsLogo || wsHero || DEFAULT_OG_IMAGE;
+
+    // Don't surface content previews for disabled / revoked / expired links.
+    const linkActive =
+      !!link &&
+      link.status !== "disabled" &&
+      link.status !== "revoked" &&
+      link.status !== "expired" &&
+      !(link.expires_at && new Date(link.expires_at) < new Date());
+
+    if (linkActive) {
+      description = brandedDesc;
 
       if (link.track_id) {
-        const trackRes = await fetch(
-          SUPABASE_URL + "/rest/v1/tracks?select=title,artist,cover_url&id=eq." + link.track_id,
-          { headers: { ...headers, Accept: "application/vnd.pgrst.object+json" } }
-        );
-        if (trackRes.ok) {
-          const track = await trackRes.json();
-          title = (track.title || "Track") + " — " + (track.artist || "Unknown Artist");
-          description = "Listen to " + (track.title || "this track") + " on Trakalog";
-          if (track.cover_url) image = track.cover_url;
+        const trackRows = await rpc("get_track_for_shared_link", { _slug: slug });
+        const track = trackRows && trackRows.length > 0 ? trackRows[0] : null;
+        if (track) {
+          title = (track.title || "Track") + (track.artist ? " — " + track.artist : "");
+          image = safeUrl(track.cover_url) || brandFallbackImage;
+        } else {
+          title = link.link_name || (wsName ? wsName + " · Track" : "Track");
+          image = brandFallbackImage;
         }
       } else if (link.playlist_id) {
-        const plRes = await fetch(
-          SUPABASE_URL + "/rest/v1/playlists?select=name,cover_url&id=eq." + link.playlist_id,
-          { headers: { ...headers, Accept: "application/vnd.pgrst.object+json" } }
-        );
-
-        // Workspace branding (name + logo) via the SAME anon SECURITY DEFINER RPC
-        // the public page uses. `workspaces` has no anon SELECT policy, so this
-        // slug-scoped RPC is the only anon-safe way to reach the logo/name.
-        let wsName = "";
-        let wsLogo = "";
-        try {
-          const brandRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_workspace_branding_for_shared_link", {
-            method: "POST",
-            headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY, "Content-Type": "application/json", Accept: "application/json" },
-            body: JSON.stringify({ _slug: slug }),
-          });
-          if (brandRes.ok) {
-            const rows = await brandRes.json();
-            const b = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
-            if (b) { wsName = b.name || ""; wsLogo = b.logo_url || ""; }
-          }
-        } catch { /* branding is best-effort; fall back to defaults */ }
-
-        if (plRes.ok) {
-          const pl = await plRes.json();
-          // og:title = the playlist name; og:description carries the workspace so
-          // the preview reads as a branded playlist, not the app UI.
-          title = pl.name || "Playlist";
-          description = wsName ? (wsName + " · Playlist on Trakalog") : "Playlist on Trakalog";
-          // og:image priority: the playlist's own artwork, then the workspace
-          // logo (branded), then the clean default — never the UI screenshot.
-          image = pl.cover_url || wsLogo || DEFAULT_OG_IMAGE;
-        } else if (wsLogo || wsName) {
-          title = wsName ? (wsName + " · Playlist") : "Playlist";
-          description = wsName ? (wsName + " · Playlist on Trakalog") : "Playlist on Trakalog";
-          image = wsLogo || DEFAULT_OG_IMAGE;
-        }
+        // Playlist name is not anon-readable directly; the link's own name is the
+        // reliable anon-safe title. og:image uses the first track's cover (via the
+        // slug-scoped RPC) then the workspace branding.
+        title = link.link_name || (wsName ? wsName + " · Playlist" : "Playlist");
+        const plTracks = await rpc("get_playlist_tracks_for_shared_link", { _slug: slug });
+        const firstCover = plTracks && plTracks.length > 0 ? safeUrl(plTracks[0]?.cover_url) : "";
+        image = firstCover || brandFallbackImage;
       } else {
         title = (link.link_name || "Shared Content") + " — Trakalog";
+        image = brandFallbackImage;
       }
+    } else if (b) {
+      // Unknown / inactive link but we still have workspace branding.
+      description = brandedDesc;
+      image = brandFallbackImage;
     }
   } catch {
     // Fallback to defaults on any error

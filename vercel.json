@@ -30,8 +30,21 @@
       ]
     }
   ],
+  "functions": {
+    "api/share/[slug].ts": { "maxDuration": 10 }
+  },
   "rewrites": [
-    { "source": "/share/:slug", "destination": "/api/share/:slug" },
-    { "source": "/(.*)", "destination": "/" }
+    {
+      "source": "/share/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|Discordbot|Slackbot|Slack-ImgProxy|WhatsApp|LinkedInBot|TelegramBot|Pinterest|redditbot|Googlebot|Google-InspectionTool|bingbot|Applebot|vkShare|SkypeUriPreview|Embedly|Iframely|W3C_Validator|Mastodon|nuzzel|Snapchat).*"
+        }
+      ],
+      "destination": "/api/share/:slug"
+    },
+    { "source": "/((?!api/).*)", "destination": "/" }
   ]
 }
