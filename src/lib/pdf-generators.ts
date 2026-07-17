@@ -47,9 +47,8 @@ function drawLogo(doc: jsPDF, marginX: number) {
 }
 
 /**
- * Renders the TRAKALOG wordmark letter-by-letter with an orange→pink→purple gradient.
- * Each character is colored along the gradient interpolation (T = orange, A (middle) ≈ pink, G = purple).
- * Caller controls position, font size, and baseline — replaces a single doc.text("TRAKALOG", ...) call.
+ * Renders the TRAKALOG wordmark in solid white.
+ * Caller controls position, font size, and baseline.
  */
 function drawTrakalogWordmark(
   doc: jsPDF,
@@ -59,31 +58,10 @@ function drawTrakalogWordmark(
   options?: { baseline?: "alphabetic" | "top" | "middle" | "bottom" | "hanging" | "ideographic" }
 ) {
   const baseline = options?.baseline ?? "alphabetic";
-  const word = "TRAKALOG";
-  const orange: [number, number, number] = [249, 115, 22];
-  const pink: [number, number, number] = [236, 72, 153];
-  const purple: [number, number, number] = [168, 85, 247];
   doc.setFont("helvetica", "bold");
   doc.setFontSize(fontSize);
-  let cursorX = x;
-  for (let i = 0; i < word.length; i++) {
-    const t = i / (word.length - 1); // 0..1 across T..G
-    let r: number, g: number, b: number;
-    if (t < 0.5) {
-      const tt = t * 2;
-      r = Math.round(orange[0] + (pink[0] - orange[0]) * tt);
-      g = Math.round(orange[1] + (pink[1] - orange[1]) * tt);
-      b = Math.round(orange[2] + (pink[2] - orange[2]) * tt);
-    } else {
-      const tt = (t - 0.5) * 2;
-      r = Math.round(pink[0] + (purple[0] - pink[0]) * tt);
-      g = Math.round(pink[1] + (purple[1] - pink[1]) * tt);
-      b = Math.round(pink[2] + (purple[2] - pink[2]) * tt);
-    }
-    doc.setTextColor(r, g, b);
-    doc.text(word[i], cursorX, y, { baseline });
-    cursorX += doc.getTextWidth(word[i]);
-  }
+  doc.setTextColor(255, 255, 255);
+  doc.text("TRAKALOG", x, y, { baseline });
 }
 
 function drawHeaderCard(doc: jsPDF, marginX: number, contentW: number, pageW: number, title: string, artist: string, badgeLabel: string) {
