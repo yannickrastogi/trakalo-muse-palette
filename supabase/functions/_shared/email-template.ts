@@ -66,7 +66,7 @@ export function buildEmail(options: {
       + '</td></tr></table>'
     : '';
 
-  const trakalogLogoUrl = 'https://app.trakalog.com/trakalog-logo.png';
+  const trakalogLogoUrl = 'https://www.trakalog.com/brand/logo-full.png';
 
   const footerLogo = workspaceLogoUrl
     ? '<tr><td align="center" style="padding:0 0 8px 0;"><img src="' + workspaceLogoUrl + '" alt="" style="max-height:24px;display:block;margin:0 auto;" /></td></tr>'
@@ -91,22 +91,8 @@ export function buildEmail(options: {
     + '<tr><td align="center" style="padding:32px 32px 0 32px;">'
     + '<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">'
     + '<tr><td align="center" style="padding:0;">'
-    + '<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="display:inline-table;"><tr>'
-    + '<td style="vertical-align:middle;padding-right:12px;"><img src="' + trakalogLogoUrl + '" alt="Trakalog" style="height:48px;display:block;" /></td>'
-    + '<td style="vertical-align:middle;">'
-    + '<div style="font-family:\'Sora\',Arial,Helvetica,sans-serif;font-size:28px;font-weight:700;letter-spacing:4px;line-height:1;">'
-    + '<span style="color:#f97316;">T</span>'
-    + '<span style="color:#f97316;">R</span>'
-    + '<span style="color:#f97316;">A</span>'
-    + '<span style="color:#ec4899;">K</span>'
-    + '<span style="color:#d946ef;">A</span>'
-    + '<span style="color:#a855f7;">L</span>'
-    + '<span style="color:#8b5cf6;">O</span>'
-    + '<span style="color:#8b5cf6;">G</span>'
-    + '</div>'
-    + '<div style="font-family:\'Sora\',Arial,Helvetica,sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;color:#71717a;text-transform:uppercase;margin-top:4px;">CATALOG MANAGER</div>'
-    + '</td>'
-    + '</tr></table>'
+    // Full Trakalog lockup (icon + TRAKALOG + CATALOG MANAGER) as a single image.
+    + '<img src="' + trakalogLogoUrl + '" alt="Trakalog" style="height:64px;width:auto;display:block;margin:0 auto;" />'
     + '</td></tr>'
     + '</table>'
     + '</td></tr>'

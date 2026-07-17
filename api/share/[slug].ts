@@ -4,9 +4,9 @@ const SUPABASE_URL = "https://xhmeitivkclbeziqavxw.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhobWVpdGl2a2NsYmV6aXFhdnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNjQ0OTcsImV4cCI6MjA4ODg0MDQ5N30.QPq57P0_fWu3hcNC2THDhdtRX7g2oTgrnw4Hb_iAqik";
 
-// Clean branded fallback (the Trakalog logo) — NOT the app-preview.png UI
-// screenshot, which made shared-link previews look like the catalog manager.
-const DEFAULT_OG_IMAGE = "https://app.trakalog.com/trakalog-logo.png";
+// Clean branded fallback (the Trakalog brand OG card) — NOT the app-preview.png
+// UI screenshot, which made shared-link previews look like the catalog manager.
+const DEFAULT_OG_IMAGE = "https://www.trakalog.com/brand/og-default.png";
 const APP_URL = "https://app.trakalog.com";
 
 // Only accept absolute http(s) URLs for og:image so a malformed/hostile stored
