@@ -172,7 +172,7 @@ export function WelcomeOnboarding({ onComplete }: WelcomeOnboardingProps) {
             style={{ boxShadow: "0 25px 60px rgba(0,0,0,0.4)" }}
           >
             {/* Logo */}
-            <h1 className="text-3xl font-bold gradient-text tracking-tight">TRAKALOG</h1>
+            <h1 className="text-3xl font-bold text-white tracking-tight">TRAKALOG</h1>
             <p className="text-xs tracking-widest text-muted-foreground uppercase mt-1">{t("welcomeOnboarding.catalogManager")}</p>
 
             {/* Separator */}

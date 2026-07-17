@@ -246,7 +246,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         {isMobile && !mobileSearchOpen && (
           <div className="flex items-center gap-2 shrink-0">
             <img src={trakalogLogo} alt="Trakalog" className="w-8 h-8 rounded-lg object-contain" />
-            <span className="text-sm font-bold tracking-tight gradient-text">TRAKALOG</span>
+            <span className="text-sm font-bold tracking-tight text-white">TRAKALOG</span>
           </div>
         )}
 

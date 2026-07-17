@@ -277,7 +277,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
             <img src={trakalogLogo} alt="Trakalog" className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg object-contain" />
-            <span className="text-sm sm:text-lg font-bold tracking-tight gradient-text">TRAKALOG</span>
+            <span className="text-sm sm:text-lg font-bold tracking-tight text-white">TRAKALOG</span>
           </Link>
           <div className="flex items-center gap-1.5 sm:gap-3">
             <LanguageSwitcher />
@@ -492,7 +492,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-5 sm:px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <img src={trakalogLogo} alt="Trakalog" className="w-7 h-7 rounded-lg object-contain" />
-            <span className="text-sm font-semibold gradient-text">TRAKALOG</span>
+            <span className="text-sm font-semibold text-white">TRAKALOG</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-muted-foreground">
             <Link to="/privacy" className="hover:text-foreground transition-colors">{t("landing.privacyPolicy", { ns: "translation", defaultValue: "Privacy" })}</Link>

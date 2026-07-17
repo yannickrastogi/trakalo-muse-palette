@@ -1207,7 +1207,7 @@ function ExternalShell({ children }: { children: React.ReactNode }) {
       <div className="border-b border-border">
         <div className="max-w-2xl mx-auto px-6 h-16 flex items-center gap-3">
           <img src={trakalogLogo} alt="Trakalog" className="w-8 h-8 rounded-lg object-contain" />
-          <span className="text-sm font-bold tracking-tight gradient-text">TRAKALOG</span>
+          <span className="text-sm font-bold tracking-tight text-white">TRAKALOG</span>
         </div>
       </div>
       <div className="px-4">{children}</div>

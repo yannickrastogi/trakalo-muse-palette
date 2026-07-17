@@ -2676,7 +2676,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               className="flex flex-col items-center pointer-events-auto transition-opacity hover:opacity-90"
               style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}
             >
-              <span className="text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+              <span className="text-xl md:text-2xl font-bold tracking-tight text-white">TRAKALOG</span>
               <span className="text-[8px] md:text-[10px] tracking-[0.2em] text-white/60 font-medium block mt-0.5">{t("sharedLink.catalogManagerTagline")}</span>
             </a>
           </div>
@@ -2687,7 +2687,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
                 <img src={logoUrl} alt="Logo" className="object-contain max-h-[100px] md:max-h-[150px]" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
               ) : (
                 <div className="flex flex-col items-center" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}>
-                  <span className="text-3xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+                  <span className="text-3xl md:text-5xl font-bold tracking-tight text-white">TRAKALOG</span>
                   <span className="text-[10px] md:text-xs tracking-[0.2em] text-white/50 font-medium block mt-1">{t("sharedLink.catalogManagerTagline")}</span>
                 </div>
               )}
@@ -2723,7 +2723,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               <img src={logoUrl} alt="Logo" className="object-contain max-h-[100px] sm:max-h-[150px]" />
             ) : (
               <div className="flex flex-col items-center">
-                <span className="text-3xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-brand-orange via-brand-pink to-brand-purple bg-clip-text text-transparent">TRAKALOG</span>
+                <span className="text-3xl sm:text-5xl font-bold tracking-tight text-white">TRAKALOG</span>
                 <span className="text-[10px] sm:text-xs tracking-[0.2em] text-muted-foreground/60 font-medium block mt-1">{t("sharedLink.catalogManagerTagline")}</span>
               </div>
             )}

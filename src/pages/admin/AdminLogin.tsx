@@ -102,7 +102,7 @@ export default function AdminLogin() {
 
       <div className="relative z-10 w-full max-w-[420px]">
         <div className="mb-8 flex flex-col items-center gap-1">
-          <h1 className="text-3xl font-bold tracking-tight gradient-text font-[Sora]">TRAKALOG</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-white font-[Sora]">TRAKALOG</h1>
           <span className="text-xs font-bold tracking-[0.4em] text-orange-500 uppercase">Admin</span>
         </div>
 

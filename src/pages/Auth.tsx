@@ -58,7 +58,7 @@ export default function Auth() {
         <div className="relative z-10 w-full max-w-[420px]">
           <div className="mb-8 flex flex-col items-center gap-2">
             <img src={trakalogLogo} alt="Trakalog" className="w-16 h-16 rounded-xl object-contain" />
-            <h1 className="text-2xl font-bold tracking-tight gradient-text font-[Sora] mt-2">TRAKALOG</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-white font-[Sora] mt-2">TRAKALOG</h1>
           </div>
           <div className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-elevated)]">
             <div className="flex flex-col items-center gap-2 mb-6">

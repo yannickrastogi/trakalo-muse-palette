@@ -306,7 +306,7 @@ export default function SignAgreement() {
       <nav className="sticky top-0 z-50 glass border-b border-border/40">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center gap-3">
           <img src={trakalogLogo} alt="Trakalog" className="w-8 h-8" />
-          <span className="gradient-text font-bold">TRAKALOG</span>
+          <span className="text-white font-bold">TRAKALOG</span>
         </div>
       </nav>
 
