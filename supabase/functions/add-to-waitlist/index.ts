@@ -6,6 +6,7 @@ import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors
 // values — final uniqueness is enforced server-side by the waitlist UNIQUE index.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_EMAIL_LEN = 254; // per RFC 5321
+const MAX_NAME_LEN = 200;
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -33,6 +34,10 @@ serve(async (req) => {
       });
     }
 
+    // Optional display name: trim, cap length, store null when empty.
+    const rawName = typeof body.name === "string" ? body.name : "";
+    const name = rawName.trim().slice(0, MAX_NAME_LEN) || null;
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -54,9 +59,9 @@ serve(async (req) => {
 
     // Service-role insert. The waitlist table is otherwise un-writeable from the client
     // (no anon INSERT policy). The UNIQUE index on email surfaces duplicates as 23505.
-    // The table has 5 real columns: id, email, created_at, invited_at,
-    // invitation_sent_by — `email` is the only one we set; the rest default.
-    const { error: insertErr } = await supabaseAdmin.from("waitlist").insert({ email });
+    // We set `email` + optional `name`; the rest (id, created_at, invited_at,
+    // invitation_sent_by) default.
+    const { error: insertErr } = await supabaseAdmin.from("waitlist").insert({ email, name });
 
     if (insertErr) {
       // Duplicate email is a success-equivalent for the user-facing flow.
