@@ -1620,6 +1620,8 @@
     "qualityHiRes": "Hi-Res",
     "qualityLowRes": "Low-Res",
     "preparingDownload": "ダウンロードを準備しています…",
+    "downloadAll": "すべてダウンロード",
+    "preparingProgress": "準備中… {{n}}/{{total}}",
     "downloadFailed": "ダウンロードに失敗しました。もう一度お試しください。",
     "error": {
       "invalidLink": "無効なリンク",

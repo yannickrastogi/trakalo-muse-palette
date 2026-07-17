@@ -1702,6 +1702,8 @@
     "qualityHiRes": "Hi-Res",
     "qualityLowRes": "Low-Res",
     "preparingDownload": "Preparing your download…",
+    "downloadAll": "Download all",
+    "preparingProgress": "Preparing… {{n}}/{{total}}",
     "downloadFailed": "Download failed. Please try again.",
     "error": {
       "invalidLink": "Invalid link",

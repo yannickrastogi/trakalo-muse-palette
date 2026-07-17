@@ -1620,6 +1620,8 @@
     "qualityHiRes": "Hi-Res",
     "qualityLowRes": "Low-Res",
     "preparingDownload": "Preparazione del download…",
+    "downloadAll": "Scarica tutto",
+    "preparingProgress": "Preparazione… {{n}}/{{total}}",
     "downloadFailed": "Download non riuscito. Riprova.",
     "error": {
       "invalidLink": "Link non valido",

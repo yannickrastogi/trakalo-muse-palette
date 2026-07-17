@@ -473,6 +473,9 @@ export default function SharedLinkPage() {
 
   // Pack download state
   var [packDownloading, setPackDownloading] = useState(false);
+  // "Download all" (playlist) state
+  var [downloadingAll, setDownloadingAll] = useState(false);
+  var [downloadAllProgress, setDownloadAllProgress] = useState(0);
   var [savedToTrakalog, setSavedToTrakalog] = useState(false);
   var [savingToTrakalog, setSavingToTrakalog] = useState(false);
   var [currentUserSession, setCurrentUserSession] = useState<any>(null);
@@ -974,6 +977,30 @@ export default function SharedLinkPage() {
     }).finally(function() {
       clearTimeout(dlTimeout);
     });
+  };
+
+  // "Download all" — reuse the exact per-track download handler for every track,
+  // fired sequentially with a small gap so the browser doesn't block the batch.
+  // Per-track failures are surfaced by downloadTrackFile itself (toast) and never
+  // abort the loop.
+  var handleDownloadAll = async function() {
+    if (downloadingAll) return;
+    var tracks = playlistTracksRef.current;
+    if (!linkData?.allow_download || tracks.length <= 1) return;
+    setDownloadingAll(true);
+    setDownloadAllProgress(0);
+    for (var i = 0; i < tracks.length; i++) {
+      try {
+        downloadTrackFile(tracks[i]);
+      } catch (err) {
+        // per-track failure already handled inside downloadTrackFile
+      }
+      setDownloadAllProgress(i + 1);
+      if (i < tracks.length - 1) {
+        await new Promise(function(resolve) { setTimeout(resolve, 450); });
+      }
+    }
+    setDownloadingAll(false);
   };
 
   // Load a new track into the audio element and play it
@@ -2114,6 +2141,21 @@ export default function SharedLinkPage() {
             <div className={plImmersive ? "rounded-2xl p-px bg-gradient-to-br from-brand-orange/15 via-brand-pink/15 to-brand-purple/15 hover:from-brand-orange/25 hover:via-brand-pink/25 hover:to-brand-purple/25 transition-all duration-500" : ""}>
             <div className={"rounded-2xl overflow-hidden " + (plImmersive ? "bg-white/8 backdrop-blur-xl border border-white/10" : "bg-card border border-border")} style={plImmersive ? { boxShadow: "0 0 40px rgba(255,255,255,0.03), 0 8px 32px rgba(0,0,0,0.4)" } : { boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
               <div>
+                {linkData?.allow_download && playlistTracks.length > 1 && (
+                  <div className={"flex items-center justify-end px-6 py-3 " + (plImmersive ? "border-b border-white/5" : "border-b border-border/40")}>
+                    <button
+                      type="button"
+                      onClick={handleDownloadAll}
+                      disabled={downloadingAll}
+                      className={"inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed " + (plImmersive ? "text-white/80 hover:text-white hover:bg-white/10 border border-white/15" : "text-foreground hover:bg-secondary border border-border")}
+                    >
+                      {downloadingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                      {downloadingAll
+                        ? t("sharedLink.preparingProgress", { n: downloadAllProgress, total: playlistTracks.length })
+                        : t("sharedLink.downloadAll")}
+                    </button>
+                  </div>
+                )}
                 {playlistTracks.map(function(track) {
                   var isActive = playingTrackId === track.id;
                   var isAudioPlaying = isActive && isPlaying;

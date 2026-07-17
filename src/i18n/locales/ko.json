@@ -1620,6 +1620,8 @@
     "qualityHiRes": "Hi-Res",
     "qualityLowRes": "Low-Res",
     "preparingDownload": "다운로드를 준비하는 중…",
+    "downloadAll": "전체 다운로드",
+    "preparingProgress": "준비 중… {{n}}/{{total}}",
     "downloadFailed": "다운로드에 실패했습니다. 다시 시도해 주세요.",
     "error": {
       "invalidLink": "잘못된 링크",
