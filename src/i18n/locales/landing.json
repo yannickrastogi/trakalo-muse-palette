@@ -1,6 +1,7 @@
 {
   "en": {
     "nav": { "signIn": "Sign in", "startFree": "Start free" },
+    "joinWaitlist": "Join the waitlist",
     "hero": {
       "title": "Your music works for you now.",
       "subtitle": "Trakalog is the intelligent nervous system for your unreleased catalog. It protects every track, learns its sound, finds who needs it — and tells you who's listening.",
@@ -63,6 +64,7 @@
 
   "fr": {
     "nav": { "signIn": "Se connecter", "startFree": "Commencer gratuitement" },
+    "joinWaitlist": "Rejoindre la liste d'attente",
     "hero": {
       "title": "Votre musique travaille pour vous, maintenant.",
       "subtitle": "Trakalog est le système nerveux intelligent de votre catalogue non sorti. Il protège chaque titre, apprend son son, trouve à qui il s'adresse — et vous dit qui l'écoute.",
@@ -125,6 +127,7 @@
 
   "es": {
     "nav": { "signIn": "Iniciar sesión", "startFree": "Empezar gratis" },
+    "joinWaitlist": "Unirse a la lista de espera",
     "hero": {
       "title": "Tu música ya trabaja para ti.",
       "subtitle": "Trakalog es el sistema nervioso inteligente de tu catálogo inédito. Protege cada tema, aprende su sonido, encuentra a quién le sirve — y te dice quién lo está escuchando.",
@@ -187,6 +190,7 @@
 
   "pt": {
     "nav": { "signIn": "Entrar", "startFree": "Começar grátis" },
+    "joinWaitlist": "Entrar na lista de espera",
     "hero": {
       "title": "Sua música já trabalha para você.",
       "subtitle": "O Trakalog é o sistema nervoso inteligente do seu catálogo inédito. Ele protege cada faixa, aprende o som dela, encontra quem precisa — e diz quem está ouvindo.",
@@ -249,6 +253,7 @@
 
   "it": {
     "nav": { "signIn": "Accedi", "startFree": "Inizia gratis" },
+    "joinWaitlist": "Unisciti alla lista d'attesa",
     "hero": {
       "title": "La tua musica adesso lavora per te.",
       "subtitle": "Trakalog è il sistema nervoso intelligente del tuo catalogo inedito. Protegge ogni traccia, ne impara il suono, trova a chi serve — e ti dice chi la sta ascoltando.",
@@ -311,6 +316,7 @@
 
   "de": {
     "nav": { "signIn": "Anmelden", "startFree": "Kostenlos starten" },
+    "joinWaitlist": "Der Warteliste beitreten",
     "hero": {
       "title": "Deine Musik arbeitet jetzt für dich.",
       "subtitle": "Trakalog ist das intelligente Nervensystem für deinen unveröffentlichten Katalog. Es schützt jeden Track, lernt seinen Sound, findet, wer ihn braucht — und sagt dir, wer zuhört.",
@@ -373,6 +379,7 @@
 
   "ko": {
     "nav": { "signIn": "로그인", "startFree": "무료로 시작하기" },
+    "joinWaitlist": "대기자 명단에 참여하기",
     "hero": {
       "title": "이제 음악이 당신을 위해 일합니다.",
       "subtitle": "Trakalog은 미발매 카탈로그를 위한 지능형 신경계입니다. 모든 트랙을 보호하고, 그 사운드를 학습하며, 누가 필요로 하는지 찾아내고 — 누가 듣고 있는지 알려줍니다.",
@@ -435,6 +442,7 @@
 
   "ja": {
     "nav": { "signIn": "ログイン", "startFree": "無料で始める" },
+    "joinWaitlist": "ウェイトリストに登録する",
     "hero": {
       "title": "あなたの音楽が、今、あなたのために働く。",
       "subtitle": "Trakalogは、未発表カタログのためのインテリジェントな神経系です。すべてのトラックを守り、その音を学習し、必要としている人を見つけ出し — 誰が聴いているかを教えます。",

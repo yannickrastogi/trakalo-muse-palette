@@ -254,11 +254,20 @@ export default function LandingPage() {
     document.getElementById("protection")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Pre-launch: every primary CTA opens the same waitlist form (in the Access
+  // section) — no auth / signup exposed yet.
+  const openWaitlist = () => {
+    setShowEarlyAccess(true);
+    document.getElementById("access")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Stable ids so the grid items never remount on language switch (which left
+  // whileInView items stuck at opacity 0).
   const moreItems = [
-    { icon: Radio, title: t("more.radioTitle"), desc: t("more.radioDesc") },
-    { icon: Bell, title: t("more.notifTitle"), desc: t("more.notifDesc") },
-    { icon: Users, title: t("more.teamTitle"), desc: t("more.teamDesc") },
-    { icon: Languages, title: t("more.langTitle"), desc: t("more.langDesc") },
+    { id: "radio", icon: Radio, title: t("more.radioTitle"), desc: t("more.radioDesc") },
+    { id: "notif", icon: Bell, title: t("more.notifTitle"), desc: t("more.notifDesc") },
+    { id: "team", icon: Users, title: t("more.teamTitle"), desc: t("more.teamDesc") },
+    { id: "lang", icon: Languages, title: t("more.langTitle"), desc: t("more.langDesc") },
   ];
 
   return (
@@ -272,18 +281,12 @@ export default function LandingPage() {
           </Link>
           <div className="flex items-center gap-1.5 sm:gap-3">
             <LanguageSwitcher />
-            <Link
-              to="/auth"
-              className="inline-flex px-2.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold min-h-[44px] items-center border border-brand-orange/30 text-brand-orange hover:bg-brand-orange/10 transition-all duration-200 whitespace-nowrap"
-            >
-              {t("nav.signIn")}
-            </Link>
-            <Link
-              to="/auth"
+            <button
+              onClick={openWaitlist}
               className="px-2.5 sm:px-4 py-2 rounded-lg btn-brand text-xs sm:text-sm font-semibold min-h-[44px] inline-flex items-center whitespace-nowrap"
             >
-              {t("nav.startFree")}
-            </Link>
+              {t("joinWaitlist")}
+            </button>
           </div>
         </div>
       </nav>
@@ -313,13 +316,13 @@ export default function LandingPage() {
             {t("hero.subtitle")}
           </motion.p>
           <motion.div variants={fadeUp} className="mt-9 flex flex-col sm:flex-row gap-3 w-full sm:w-auto justify-center">
-            <Link
-              to="/auth"
+            <button
+              onClick={openWaitlist}
               className="h-12 px-7 rounded-xl btn-brand text-sm sm:text-base font-semibold inline-flex items-center gap-2 justify-center min-h-[44px]"
             >
-              {t("hero.ctaPrimary")}
+              {t("joinWaitlist")}
               <ArrowRight className="w-4 h-4" />
-            </Link>
+            </button>
             <button
               onClick={scrollToProtection}
               className="h-12 px-7 rounded-xl border border-border text-sm sm:text-base font-semibold text-foreground hover:bg-secondary/60 transition-all inline-flex items-center gap-2 justify-center min-h-[44px]"
@@ -388,13 +391,13 @@ export default function LandingPage() {
               </div>
             </motion.div>
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-3">
-              <Link
-                to="/auth"
+              <button
+                onClick={openWaitlist}
                 className="h-12 px-6 rounded-xl btn-brand text-sm font-semibold inline-flex items-center gap-2 justify-center min-h-[44px]"
               >
-                {t("access.ctaList")}
+                {t("joinWaitlist")}
                 <ArrowRight className="w-4 h-4" />
-              </Link>
+              </button>
               <button
                 onClick={() => setShowEarlyAccess(true)}
                 className="h-12 px-6 rounded-xl border border-border text-sm font-semibold text-foreground hover:bg-secondary/60 transition-all inline-flex items-center justify-center min-h-[44px]"
@@ -431,7 +434,7 @@ export default function LandingPage() {
         <motion.div
           initial="hidden"
           whileInView="show"
-          viewport={{ once: true, margin: "-80px" }}
+          viewport={{ once: false, margin: "-80px" }}
           variants={stagger}
         >
           <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold tracking-tight mb-12">
@@ -439,7 +442,7 @@ export default function LandingPage() {
           </motion.h2>
           <motion.div variants={stagger} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
             {moreItems.map((m) => (
-              <motion.div key={m.title} variants={fadeUp} className="card-premium p-6">
+              <motion.div key={m.id} variants={fadeUp} className="card-premium p-6">
                 <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-orange/15 via-brand-pink/15 to-brand-purple/15 border border-border/50 flex items-center justify-center mb-4">
                   <m.icon className="w-5 h-5 text-brand-pink" />
                 </div>
@@ -472,13 +475,13 @@ export default function LandingPage() {
               {t("closer.body")}
             </motion.p>
             <motion.div variants={fadeUp} className="mt-9">
-              <Link
-                to="/auth"
+              <button
+                onClick={openWaitlist}
                 className="px-8 py-3.5 rounded-xl btn-brand text-base font-semibold inline-flex items-center gap-2 min-h-[44px]"
               >
-                {t("closer.cta")}
+                {t("joinWaitlist")}
                 <ArrowRight className="w-4 h-4" />
-              </Link>
+              </button>
             </motion.div>
           </motion.div>
         </div>
