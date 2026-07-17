@@ -2588,7 +2588,7 @@ function SocialIcons({ branding, immersive }: { branding?: WorkspaceBranding | n
   return (
     <div className="mt-4">
       <div
-        className="inline-flex items-center gap-4 px-5 py-3 rounded-2xl border backdrop-blur-md"
+        className="inline-flex flex-wrap justify-center items-center gap-2.5 px-4 py-3 rounded-2xl border backdrop-blur-md max-w-[calc(100vw-2rem)] sm:flex-nowrap sm:gap-4 sm:px-5 sm:max-w-none"
         style={{
           background: immersive
             ? "rgba(0, 0, 0, 0.45)"
@@ -2606,7 +2606,7 @@ function SocialIcons({ branding, immersive }: { branding?: WorkspaceBranding | n
               href={l.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-all duration-250 hover:scale-[1.18] hover:drop-shadow-[0_0_8px_rgba(249,115,22,0.4)] opacity-85 hover:opacity-100"
+              className="transition-all duration-250 hover:scale-[1.18] hover:drop-shadow-[0_0_8px_rgba(249,115,22,0.4)] opacity-85 hover:opacity-100 [&>svg]:w-6 [&>svg]:h-6 sm:[&>svg]:w-7 sm:[&>svg]:h-7"
             >
               {l.icon}
             </a>
@@ -2693,7 +2693,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               )}
               <SocialIcons branding={branding} immersive={true} />
               {branding?.bio && (
-                <p className="mt-2 max-w-md text-xs md:text-sm text-white/50 italic text-center" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>{branding.bio}</p>
+                <p className="mt-2 max-w-md px-4 md:px-0 text-[11px] md:text-sm text-white/50 italic text-center" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>{branding.bio}</p>
               )}
               <div className="text-center mt-4">
                 <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 hover:text-white/50 transition-colors">
@@ -2729,7 +2729,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
             )}
             <SocialIcons branding={branding} immersive={false} />
             {branding?.bio && (
-              <p className="mt-2 max-w-md text-xs sm:text-sm text-muted-foreground/50 italic text-center">{branding.bio}</p>
+              <p className="mt-2 max-w-md px-4 sm:px-0 text-[11px] sm:text-sm text-muted-foreground/50 italic text-center">{branding.bio}</p>
             )}
             <div className="text-center mt-4">
               <a href="https://trakalog.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors">
