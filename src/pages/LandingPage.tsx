@@ -281,6 +281,12 @@ export default function LandingPage() {
           </Link>
           <div className="flex items-center gap-1.5 sm:gap-3">
             <LanguageSwitcher />
+            <Link
+              to="/auth"
+              className="text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors px-1.5 sm:px-2 min-h-[44px] inline-flex items-center whitespace-nowrap"
+            >
+              {t("nav.signIn")}
+            </Link>
             <button
               onClick={openWaitlist}
               className="px-2.5 sm:px-4 py-2 rounded-lg btn-brand text-xs sm:text-sm font-semibold min-h-[44px] inline-flex items-center whitespace-nowrap"
@@ -495,6 +501,7 @@ export default function LandingPage() {
             <span className="text-sm font-semibold text-white">TRAKALOG</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-muted-foreground">
+            <Link to="/auth" className="hover:text-foreground transition-colors">{t("nav.signIn")}</Link>
             <Link to="/privacy" className="hover:text-foreground transition-colors">{t("landing.privacyPolicy", { ns: "translation", defaultValue: "Privacy" })}</Link>
             <Link to="/terms" className="hover:text-foreground transition-colors">{t("landing.termsOfService", { ns: "translation", defaultValue: "Terms" })}</Link>
             <a href="mailto:contact@trakalog.com" className="hover:text-foreground transition-colors">contact@trakalog.com</a>
