@@ -1,0 +1,497 @@
+{
+  "en": {
+    "nav": { "signIn": "Sign in", "startFree": "Start free" },
+    "hero": {
+      "title": "Your music works for you now.",
+      "subtitle": "Trakalog is the intelligent nervous system for your unreleased catalog. It protects every track, learns its sound, finds who needs it — and tells you who's listening.",
+      "ctaPrimary": "Start free",
+      "ctaSecondary": "See how it works"
+    },
+    "protection": {
+      "kicker": "Protection",
+      "title": "Send fearlessly.",
+      "body": "Every file you share carries an invisible, inaudible watermark. If a track leaks, Trakalog tells you exactly which link it came from."
+    },
+    "intelligence": {
+      "kicker": "Intelligence",
+      "title": "Hear it. Know it.",
+      "body1": "Upload a track. Trakalog instantly detects BPM and key, and builds its Sonic DNA — an audio fingerprint of its energy. You add the story. Trakalog handles the science.",
+      "body2": "Then put it to work: find the right track to send through Smart A&R — a system that understands any brief and ranks your catalog by match score."
+    },
+    "pitch": {
+      "kicker": "Pitch",
+      "title": "Pitch at label level.",
+      "body": "Branded links. Password gates. Playlists with your name on them — not ours. And you see everything: when they open, what they play, what they download. Stop guessing if your track landed."
+    },
+    "access": {
+      "kicker": "Trakalog Access",
+      "badge": "Early Access",
+      "title": "Where music meets the people who need it.",
+      "bodyMakers": "If you make music — list your tracks on Access and get discovered by sound, not by luck. The industry comes to you.",
+      "bodySeekers": "If you're looking for music — search unreleased records by BPM, key, genre. Or just write your brief: Smart A&R scans everything and ranks the best matches with a precision score. The right track, in minutes — not weeks of unsolicited emails.",
+      "ctaList": "List your catalog",
+      "ctaEarlyAccess": "Request early access"
+    },
+    "splits": {
+      "kicker": "Splits & Signatures",
+      "title": "Signed in the studio. Settled forever.",
+      "body": "Everyone in the session scans one QR code. Names, roles, splits — captured in real time, signed digitally, attached to the track for good. “We'll sort it out later” has killed more royalties than piracy ever did. Not here."
+    },
+    "contacts": {
+      "kicker": "Contacts",
+      "title": "A network that builds itself.",
+      "body": "Every listener on your links becomes a contact — name, email, role. Scan them in at the studio. Add them by hand. Export anytime. Most people chase contacts. Yours accumulate while you sleep."
+    },
+    "organization": {
+      "kicker": "Organization",
+      "title": "One track. Everything attached.",
+      "body": "Stems, metadata, label copy, lyrics, paperwork — everything lives with the track, forever. And with separate workspaces for every hat you wear — artist, label, studio — your whole world stays organized without ever mixing."
+    },
+    "more": {
+      "title": "And more",
+      "radioTitle": "Radio", "radioDesc": "Stream your own catalog, crossfaded.",
+      "notifTitle": "Notifications", "notifDesc": "Know the second someone listens.",
+      "teamTitle": "Team & Permissions", "teamDesc": "Four access levels, zero chaos.",
+      "langTitle": "8 languages", "langDesc": "Your catalog speaks yours."
+    },
+    "closer": {
+      "title": "Storage is a folder. This is a system.",
+      "body": "Anyone can hold your files. Trakalog protects them, analyzes them, pitches them, and reports back. The things others sell as add-ons come standard here.",
+      "cta": "Start free today."
+    }
+  },
+
+  "fr": {
+    "nav": { "signIn": "Se connecter", "startFree": "Commencer gratuitement" },
+    "hero": {
+      "title": "Votre musique travaille pour vous, maintenant.",
+      "subtitle": "Trakalog est le système nerveux intelligent de votre catalogue non sorti. Il protège chaque titre, apprend son son, trouve à qui il s'adresse — et vous dit qui l'écoute.",
+      "ctaPrimary": "Commencer gratuitement",
+      "ctaSecondary": "Voir comment ça marche"
+    },
+    "protection": {
+      "kicker": "Protection",
+      "title": "Partagez sans crainte.",
+      "body": "Chaque fichier que vous partagez porte un filigrane invisible et inaudible. Si un titre fuite, Trakalog vous dit exactement de quel lien il provient."
+    },
+    "intelligence": {
+      "kicker": "Intelligence",
+      "title": "Écoutez-le. Comprenez-le.",
+      "body1": "Importez un titre. Trakalog détecte instantanément le BPM et la tonalité, et construit son Sonic DNA — l'empreinte audio de son énergie. Vous racontez l'histoire. Trakalog gère la science.",
+      "body2": "Puis mettez-le au travail : trouvez le bon titre à envoyer grâce à Smart A&R — un système qui comprend n'importe quel brief et classe votre catalogue par score de correspondance."
+    },
+    "pitch": {
+      "kicker": "Pitch",
+      "title": "Pitchez au niveau des labels.",
+      "body": "Des liens à votre image. Des accès protégés par mot de passe. Des playlists à votre nom — pas au nôtre. Et vous voyez tout : quand ils ouvrent, ce qu'ils écoutent, ce qu'ils téléchargent. Arrêtez de deviner si votre titre a fait mouche."
+    },
+    "access": {
+      "kicker": "Trakalog Access",
+      "badge": "Accès anticipé",
+      "title": "Là où la musique rencontre ceux qui en ont besoin.",
+      "bodyMakers": "Vous faites de la musique — référencez vos titres sur Access et faites-vous découvrir par le son, pas par chance. L'industrie vient à vous.",
+      "bodySeekers": "Vous cherchez de la musique — explorez des titres inédits par BPM, tonalité, genre. Ou écrivez simplement votre brief : Smart A&R analyse tout et classe les meilleures correspondances avec un score de précision. Le bon titre, en minutes — pas en semaines d'e-mails non sollicités.",
+      "ctaList": "Référencer mon catalogue",
+      "ctaEarlyAccess": "Demander un accès anticipé"
+    },
+    "splits": {
+      "kicker": "Splits & Signatures",
+      "title": "Signé en studio. Réglé pour toujours.",
+      "body": "Toute la session scanne un seul QR code. Noms, rôles, splits — capturés en temps réel, signés numériquement, attachés au titre pour de bon. « On réglera ça plus tard » a tué plus de royalties que le piratage. Pas ici."
+    },
+    "contacts": {
+      "kicker": "Contacts",
+      "title": "Un réseau qui se construit tout seul.",
+      "body": "Chaque auditeur de vos liens devient un contact — nom, e-mail, rôle. Scannez-les en studio. Ajoutez-les à la main. Exportez quand vous voulez. La plupart courent après les contacts. Les vôtres s'accumulent pendant que vous dormez."
+    },
+    "organization": {
+      "kicker": "Organisation",
+      "title": "Un titre. Tout est rattaché.",
+      "body": "Stems, métadonnées, label copy, paroles, paperasse — tout vit avec le titre, pour toujours. Et avec des espaces séparés pour chaque casquette que vous portez — artiste, label, studio — tout votre univers reste organisé sans jamais se mélanger."
+    },
+    "more": {
+      "title": "Et plus encore",
+      "radioTitle": "Radio", "radioDesc": "Diffusez votre propre catalogue, en fondu enchaîné.",
+      "notifTitle": "Notifications", "notifDesc": "Sachez à la seconde où quelqu'un écoute.",
+      "teamTitle": "Équipe & permissions", "teamDesc": "Quatre niveaux d'accès, zéro chaos.",
+      "langTitle": "8 langues", "langDesc": "Votre catalogue parle la vôtre."
+    },
+    "closer": {
+      "title": "Le stockage, c'est un dossier. Ça, c'est un système.",
+      "body": "N'importe qui peut héberger vos fichiers. Trakalog les protège, les analyse, les pitche, et vous fait un rapport. Ce que les autres vendent en option est ici de série.",
+      "cta": "Commencez gratuitement aujourd'hui."
+    }
+  },
+
+  "es": {
+    "nav": { "signIn": "Iniciar sesión", "startFree": "Empezar gratis" },
+    "hero": {
+      "title": "Tu música ya trabaja para ti.",
+      "subtitle": "Trakalog es el sistema nervioso inteligente de tu catálogo inédito. Protege cada tema, aprende su sonido, encuentra a quién le sirve — y te dice quién lo está escuchando.",
+      "ctaPrimary": "Empezar gratis",
+      "ctaSecondary": "Ver cómo funciona"
+    },
+    "protection": {
+      "kicker": "Protección",
+      "title": "Comparte sin miedo.",
+      "body": "Cada archivo que compartes lleva una marca de agua invisible e inaudible. Si un tema se filtra, Trakalog te dice exactamente de qué enlace salió."
+    },
+    "intelligence": {
+      "kicker": "Inteligencia",
+      "title": "Escúchalo. Conócelo.",
+      "body1": "Sube un tema. Trakalog detecta al instante el BPM y la tonalidad, y construye su Sonic DNA — la huella de audio de su energía. Tú pones la historia. Trakalog pone la ciencia.",
+      "body2": "Y luego ponlo a trabajar: encuentra el tema perfecto para enviar con Smart A&R — un sistema que entiende cualquier brief y ordena tu catálogo por puntuación de coincidencia."
+    },
+    "pitch": {
+      "kicker": "Pitch",
+      "title": "Presenta a nivel de sello.",
+      "body": "Enlaces con tu marca. Accesos con contraseña. Playlists con tu nombre — no el nuestro. Y lo ves todo: cuándo abren, qué reproducen, qué descargan. Deja de adivinar si tu tema llegó."
+    },
+    "access": {
+      "kicker": "Trakalog Access",
+      "badge": "Acceso anticipado",
+      "title": "Donde la música se encuentra con quien la necesita.",
+      "bodyMakers": "Si haces música — publica tus temas en Access y que te descubran por el sonido, no por suerte. La industria viene a ti.",
+      "bodySeekers": "Si buscas música — explora temas inéditos por BPM, tonalidad y género. O simplemente escribe tu brief: Smart A&R lo analiza todo y ordena las mejores coincidencias con una puntuación de precisión. El tema correcto, en minutos — no en semanas de correos no solicitados.",
+      "ctaList": "Publicar mi catálogo",
+      "ctaEarlyAccess": "Solicitar acceso anticipado"
+    },
+    "splits": {
+      "kicker": "Splits y firmas",
+      "title": "Firmado en el estudio. Resuelto para siempre.",
+      "body": "Todos en la sesión escanean un solo código QR. Nombres, roles, splits — capturados en tiempo real, firmados digitalmente, unidos al tema para siempre. «Ya lo arreglamos luego» ha matado más regalías que la piratería. Aquí no."
+    },
+    "contacts": {
+      "kicker": "Contactos",
+      "title": "Una red que se construye sola.",
+      "body": "Cada oyente de tus enlaces se convierte en un contacto — nombre, correo, rol. Escanéalos en el estudio. Añádelos a mano. Expórtalos cuando quieras. La mayoría persigue contactos. Los tuyos se acumulan mientras duermes."
+    },
+    "organization": {
+      "kicker": "Organización",
+      "title": "Un tema. Todo adjunto.",
+      "body": "Stems, metadatos, label copy, letras, papeleo — todo vive con el tema, para siempre. Y con espacios separados para cada rol que ejerces — artista, sello, estudio — todo tu mundo se mantiene ordenado sin mezclarse jamás."
+    },
+    "more": {
+      "title": "Y mucho más",
+      "radioTitle": "Radio", "radioDesc": "Transmite tu propio catálogo, con fundido continuo.",
+      "notifTitle": "Notificaciones", "notifDesc": "Entérate en el segundo en que alguien escucha.",
+      "teamTitle": "Equipo y permisos", "teamDesc": "Cuatro niveles de acceso, cero caos.",
+      "langTitle": "8 idiomas", "langDesc": "Tu catálogo habla el tuyo."
+    },
+    "closer": {
+      "title": "El almacenamiento es una carpeta. Esto es un sistema.",
+      "body": "Cualquiera puede guardar tus archivos. Trakalog los protege, los analiza, los presenta y te informa. Lo que otros venden como extras, aquí viene de serie.",
+      "cta": "Empieza gratis hoy."
+    }
+  },
+
+  "pt": {
+    "nav": { "signIn": "Entrar", "startFree": "Começar grátis" },
+    "hero": {
+      "title": "Sua música já trabalha para você.",
+      "subtitle": "O Trakalog é o sistema nervoso inteligente do seu catálogo inédito. Ele protege cada faixa, aprende o som dela, encontra quem precisa — e diz quem está ouvindo.",
+      "ctaPrimary": "Começar grátis",
+      "ctaSecondary": "Ver como funciona"
+    },
+    "protection": {
+      "kicker": "Proteção",
+      "title": "Compartilhe sem medo.",
+      "body": "Cada arquivo que você compartilha carrega uma marca d'água invisível e inaudível. Se uma faixa vazar, o Trakalog diz exatamente de qual link ela saiu."
+    },
+    "intelligence": {
+      "kicker": "Inteligência",
+      "title": "Ouça. Entenda.",
+      "body1": "Suba uma faixa. O Trakalog detecta na hora o BPM e o tom, e constrói o Sonic DNA — a impressão digital de áudio da energia dela. Você conta a história. O Trakalog cuida da ciência.",
+      "body2": "Depois, coloque-a para trabalhar: encontre a faixa certa para enviar com o Smart A&R — um sistema que entende qualquer brief e ordena seu catálogo por pontuação de correspondência."
+    },
+    "pitch": {
+      "kicker": "Pitch",
+      "title": "Apresente no nível de gravadora.",
+      "body": "Links com a sua marca. Acessos com senha. Playlists com o seu nome — não o nosso. E você vê tudo: quando abrem, o que tocam, o que baixam. Pare de adivinhar se a sua faixa chegou."
+    },
+    "access": {
+      "kicker": "Trakalog Access",
+      "badge": "Acesso antecipado",
+      "title": "Onde a música encontra quem precisa dela.",
+      "bodyMakers": "Se você faz música — liste suas faixas no Access e seja descoberto pelo som, não pela sorte. A indústria vem até você.",
+      "bodySeekers": "Se você procura música — busque faixas inéditas por BPM, tom e gênero. Ou apenas escreva seu brief: o Smart A&R analisa tudo e ordena as melhores correspondências com uma pontuação de precisão. A faixa certa, em minutos — não em semanas de e-mails não solicitados.",
+      "ctaList": "Listar meu catálogo",
+      "ctaEarlyAccess": "Solicitar acesso antecipado"
+    },
+    "splits": {
+      "kicker": "Splits e assinaturas",
+      "title": "Assinado no estúdio. Resolvido para sempre.",
+      "body": "Todos na sessão escaneiam um único QR code. Nomes, funções, splits — capturados em tempo real, assinados digitalmente, anexados à faixa de vez. “A gente resolve depois” já matou mais royalties do que a pirataria. Aqui não."
+    },
+    "contacts": {
+      "kicker": "Contatos",
+      "title": "Uma rede que se constrói sozinha.",
+      "body": "Cada ouvinte dos seus links vira um contato — nome, e-mail, função. Escaneie no estúdio. Adicione na mão. Exporte quando quiser. A maioria corre atrás de contatos. Os seus se acumulam enquanto você dorme."
+    },
+    "organization": {
+      "kicker": "Organização",
+      "title": "Uma faixa. Tudo anexado.",
+      "body": "Stems, metadados, label copy, letras, papelada — tudo vive com a faixa, para sempre. E com espaços separados para cada papel que você exerce — artista, gravadora, estúdio — todo o seu mundo fica organizado sem nunca se misturar."
+    },
+    "more": {
+      "title": "E muito mais",
+      "radioTitle": "Rádio", "radioDesc": "Transmita seu próprio catálogo, com fusão contínua.",
+      "notifTitle": "Notificações", "notifDesc": "Saiba no segundo em que alguém ouve.",
+      "teamTitle": "Equipe e permissões", "teamDesc": "Quatro níveis de acesso, zero caos.",
+      "langTitle": "8 idiomas", "langDesc": "Seu catálogo fala o seu."
+    },
+    "closer": {
+      "title": "Armazenamento é uma pasta. Isto é um sistema.",
+      "body": "Qualquer um pode guardar seus arquivos. O Trakalog os protege, analisa, apresenta e te dá o retorno. O que os outros vendem como extras, aqui vem de fábrica.",
+      "cta": "Comece grátis hoje."
+    }
+  },
+
+  "it": {
+    "nav": { "signIn": "Accedi", "startFree": "Inizia gratis" },
+    "hero": {
+      "title": "La tua musica adesso lavora per te.",
+      "subtitle": "Trakalog è il sistema nervoso intelligente del tuo catalogo inedito. Protegge ogni traccia, ne impara il suono, trova a chi serve — e ti dice chi la sta ascoltando.",
+      "ctaPrimary": "Inizia gratis",
+      "ctaSecondary": "Scopri come funziona"
+    },
+    "protection": {
+      "kicker": "Protezione",
+      "title": "Condividi senza paura.",
+      "body": "Ogni file che condividi porta una filigrana invisibile e inudibile. Se una traccia trapela, Trakalog ti dice esattamente da quale link è uscita."
+    },
+    "intelligence": {
+      "kicker": "Intelligenza",
+      "title": "Ascoltala. Conoscila.",
+      "body1": "Carica una traccia. Trakalog rileva all'istante BPM e tonalità, e costruisce il suo Sonic DNA — l'impronta audio della sua energia. Tu metti la storia. Trakalog mette la scienza.",
+      "body2": "Poi mettila al lavoro: trova la traccia giusta da inviare con Smart A&R — un sistema che capisce qualsiasi brief e ordina il tuo catalogo per punteggio di corrispondenza."
+    },
+    "pitch": {
+      "kicker": "Pitch",
+      "title": "Proponi da vera etichetta.",
+      "body": "Link con il tuo brand. Accessi con password. Playlist con il tuo nome — non il nostro. E vedi tutto: quando aprono, cosa ascoltano, cosa scaricano. Basta indovinare se la tua traccia è arrivata."
+    },
+    "access": {
+      "kicker": "Trakalog Access",
+      "badge": "Accesso anticipato",
+      "title": "Dove la musica incontra chi ne ha bisogno.",
+      "bodyMakers": "Se fai musica — pubblica le tue tracce su Access e fatti scoprire dal suono, non dalla fortuna. L'industria viene da te.",
+      "bodySeekers": "Se cerchi musica — esplora brani inediti per BPM, tonalità e genere. O scrivi semplicemente il tuo brief: Smart A&R analizza tutto e ordina le migliori corrispondenze con un punteggio di precisione. La traccia giusta, in minuti — non in settimane di email non richieste.",
+      "ctaList": "Pubblica il mio catalogo",
+      "ctaEarlyAccess": "Richiedi l'accesso anticipato"
+    },
+    "splits": {
+      "kicker": "Split e firme",
+      "title": "Firmato in studio. Risolto per sempre.",
+      "body": "Tutti in sessione scansionano un solo QR code. Nomi, ruoli, split — catturati in tempo reale, firmati digitalmente, allegati alla traccia per sempre. «Lo sistemiamo dopo» ha ucciso più royalty della pirateria. Non qui."
+    },
+    "contacts": {
+      "kicker": "Contatti",
+      "title": "Una rete che si costruisce da sola.",
+      "body": "Ogni ascoltatore dei tuoi link diventa un contatto — nome, email, ruolo. Scansionali in studio. Aggiungili a mano. Esporta quando vuoi. I più rincorrono i contatti. I tuoi si accumulano mentre dormi."
+    },
+    "organization": {
+      "kicker": "Organizzazione",
+      "title": "Una traccia. Tutto allegato.",
+      "body": "Stems, metadati, label copy, testi, scartoffie — tutto vive con la traccia, per sempre. E con spazi separati per ogni ruolo che ricopri — artista, etichetta, studio — tutto il tuo mondo resta ordinato senza mai mescolarsi."
+    },
+    "more": {
+      "title": "E molto altro",
+      "radioTitle": "Radio", "radioDesc": "Trasmetti il tuo catalogo, in dissolvenza incrociata.",
+      "notifTitle": "Notifiche", "notifDesc": "Scopri nell'istante in cui qualcuno ascolta.",
+      "teamTitle": "Team e permessi", "teamDesc": "Quattro livelli di accesso, zero caos.",
+      "langTitle": "8 lingue", "langDesc": "Il tuo catalogo parla la tua."
+    },
+    "closer": {
+      "title": "L'archiviazione è una cartella. Questo è un sistema.",
+      "body": "Chiunque può conservare i tuoi file. Trakalog li protegge, li analizza, li propone e ti riferisce. Ciò che gli altri vendono come extra, qui è di serie.",
+      "cta": "Inizia gratis oggi."
+    }
+  },
+
+  "de": {
+    "nav": { "signIn": "Anmelden", "startFree": "Kostenlos starten" },
+    "hero": {
+      "title": "Deine Musik arbeitet jetzt für dich.",
+      "subtitle": "Trakalog ist das intelligente Nervensystem für deinen unveröffentlichten Katalog. Es schützt jeden Track, lernt seinen Sound, findet, wer ihn braucht — und sagt dir, wer zuhört.",
+      "ctaPrimary": "Kostenlos starten",
+      "ctaSecondary": "So funktioniert's"
+    },
+    "protection": {
+      "kicker": "Schutz",
+      "title": "Teile ohne Angst.",
+      "body": "Jede Datei, die du teilst, trägt ein unsichtbares, unhörbares Wasserzeichen. Leakt ein Track, sagt dir Trakalog genau, aus welchem Link er stammt."
+    },
+    "intelligence": {
+      "kicker": "Intelligenz",
+      "title": "Hör ihn. Versteh ihn.",
+      "body1": "Lade einen Track hoch. Trakalog erkennt sofort BPM und Tonart und erstellt seine Sonic DNA — den Audio-Fingerabdruck seiner Energie. Du lieferst die Story. Trakalog übernimmt die Wissenschaft.",
+      "body2": "Dann lass ihn arbeiten: Finde den richtigen Track zum Senden mit Smart A&R — ein System, das jedes Briefing versteht und deinen Katalog nach Match-Score sortiert."
+    },
+    "pitch": {
+      "kicker": "Pitch",
+      "title": "Pitche auf Label-Niveau.",
+      "body": "Gebrandete Links. Passwortschutz. Playlists mit deinem Namen — nicht unserem. Und du siehst alles: wann sie öffnen, was sie abspielen, was sie herunterladen. Schluss mit dem Rätselraten, ob dein Track angekommen ist."
+    },
+    "access": {
+      "kicker": "Trakalog Access",
+      "badge": "Early Access",
+      "title": "Wo Musik auf die Menschen trifft, die sie brauchen.",
+      "bodyMakers": "Du machst Musik — liste deine Tracks auf Access und werde über den Sound entdeckt, nicht über Glück. Die Industrie kommt zu dir.",
+      "bodySeekers": "Du suchst Musik — durchstöbere unveröffentlichte Tracks nach BPM, Tonart und Genre. Oder schreib einfach dein Briefing: Smart A&R scannt alles und sortiert die besten Treffer mit einem Präzisions-Score. Der richtige Track, in Minuten — nicht in Wochen unaufgeforderter E-Mails.",
+      "ctaList": "Katalog listen",
+      "ctaEarlyAccess": "Early Access anfragen"
+    },
+    "splits": {
+      "kicker": "Splits & Signaturen",
+      "title": "Im Studio signiert. Für immer geklärt.",
+      "body": "Alle in der Session scannen einen einzigen QR-Code. Namen, Rollen, Splits — in Echtzeit erfasst, digital signiert, dauerhaft an den Track geheftet. „Machen wir später“ hat mehr Tantiemen gekostet als jede Piraterie. Hier nicht."
+    },
+    "contacts": {
+      "kicker": "Kontakte",
+      "title": "Ein Netzwerk, das sich selbst aufbaut.",
+      "body": "Jeder Hörer deiner Links wird zum Kontakt — Name, E-Mail, Rolle. Scanne sie im Studio ein. Füge sie manuell hinzu. Exportiere jederzeit. Die meisten jagen Kontakten hinterher. Deine sammeln sich, während du schläfst."
+    },
+    "organization": {
+      "kicker": "Organisation",
+      "title": "Ein Track. Alles dran.",
+      "body": "Stems, Metadaten, Label Copy, Lyrics, Papierkram — alles bleibt für immer beim Track. Und mit getrennten Workspaces für jede Rolle, die du hast — Artist, Label, Studio — bleibt deine ganze Welt geordnet, ohne sich je zu vermischen."
+    },
+    "more": {
+      "title": "Und mehr",
+      "radioTitle": "Radio", "radioDesc": "Streame deinen eigenen Katalog, überblendet.",
+      "notifTitle": "Benachrichtigungen", "notifDesc": "Erfahre in der Sekunde, in der jemand zuhört.",
+      "teamTitle": "Team & Berechtigungen", "teamDesc": "Vier Zugriffsstufen, null Chaos.",
+      "langTitle": "8 Sprachen", "langDesc": "Dein Katalog spricht deine."
+    },
+    "closer": {
+      "title": "Speicher ist ein Ordner. Das hier ist ein System.",
+      "body": "Deine Dateien aufbewahren kann jeder. Trakalog schützt sie, analysiert sie, pitcht sie und meldet zurück. Was andere als Add-ons verkaufen, ist hier Standard.",
+      "cta": "Heute kostenlos starten."
+    }
+  },
+
+  "ko": {
+    "nav": { "signIn": "로그인", "startFree": "무료로 시작하기" },
+    "hero": {
+      "title": "이제 음악이 당신을 위해 일합니다.",
+      "subtitle": "Trakalog은 미발매 카탈로그를 위한 지능형 신경계입니다. 모든 트랙을 보호하고, 그 사운드를 학습하며, 누가 필요로 하는지 찾아내고 — 누가 듣고 있는지 알려줍니다.",
+      "ctaPrimary": "무료로 시작하기",
+      "ctaSecondary": "작동 방식 보기"
+    },
+    "protection": {
+      "kicker": "보호",
+      "title": "두려움 없이 보내세요.",
+      "body": "공유하는 모든 파일에는 보이지 않고 들리지 않는 워터마크가 담깁니다. 트랙이 유출되면, Trakalog이 어떤 링크에서 나갔는지 정확히 알려줍니다."
+    },
+    "intelligence": {
+      "kicker": "인텔리전스",
+      "title": "듣고. 파악하세요.",
+      "body1": "트랙을 업로드하세요. Trakalog이 즉시 BPM과 키를 감지하고, 그 에너지의 오디오 지문인 Sonic DNA를 만들어냅니다. 이야기는 당신이, 과학은 Trakalog이 담당합니다.",
+      "body2": "그다음 활용하세요: Smart A&R로 보낼 완벽한 트랙을 찾으세요 — 어떤 브리프든 이해하고, 매치 점수로 카탈로그를 정렬하는 시스템입니다."
+    },
+    "pitch": {
+      "kicker": "피치",
+      "title": "레이블 수준으로 피치하세요.",
+      "body": "브랜드가 입혀진 링크. 비밀번호 게이트. 우리가 아닌 당신의 이름이 붙은 플레이리스트. 그리고 모든 것을 확인하세요: 언제 열었는지, 무엇을 재생했는지, 무엇을 다운로드했는지. 트랙이 통했는지 더 이상 추측하지 마세요."
+    },
+    "access": {
+      "kicker": "Trakalog Access",
+      "badge": "얼리 액세스",
+      "title": "음악이 그것을 필요로 하는 사람과 만나는 곳.",
+      "bodyMakers": "음악을 만든다면 — Access에 트랙을 등록하고, 운이 아니라 사운드로 발견되세요. 업계가 당신에게 찾아옵니다.",
+      "bodySeekers": "음악을 찾고 있다면 — 미발매 트랙을 BPM, 키, 장르로 검색하세요. 아니면 그냥 브리프를 적으세요: Smart A&R이 모든 것을 스캔해 정밀 점수로 최적의 결과를 정렬합니다. 원하는 트랙을, 몇 주간의 무작정 이메일이 아니라 몇 분 만에.",
+      "ctaList": "내 카탈로그 등록하기",
+      "ctaEarlyAccess": "얼리 액세스 신청하기"
+    },
+    "splits": {
+      "kicker": "지분 & 서명",
+      "title": "스튜디오에서 서명. 영원히 정리.",
+      "body": "세션에 있는 모두가 하나의 QR 코드를 스캔합니다. 이름, 역할, 지분 — 실시간으로 기록되고, 디지털로 서명되어, 트랙에 영구히 첨부됩니다. “나중에 정리하자”는 그 어떤 불법 복제보다 더 많은 로열티를 앗아갔습니다. 여기서는 아닙니다."
+    },
+    "contacts": {
+      "kicker": "연락처",
+      "title": "스스로 커지는 네트워크.",
+      "body": "당신의 링크를 듣는 모든 사람이 연락처가 됩니다 — 이름, 이메일, 역할. 스튜디오에서 스캔하세요. 직접 추가하세요. 언제든 내보내세요. 대부분은 연락처를 쫓아다닙니다. 당신의 연락처는 자는 동안 쌓입니다."
+    },
+    "organization": {
+      "kicker": "정리",
+      "title": "하나의 트랙. 모든 것이 함께.",
+      "body": "스템, 메타데이터, 레이블 카피, 가사, 서류 — 모든 것이 트랙과 함께 영원히 존재합니다. 그리고 당신이 맡은 각 역할마다 별도의 워크스페이스로 — 아티스트, 레이블, 스튜디오 — 당신의 모든 세계가 뒤섞이지 않고 정리된 채 유지됩니다."
+    },
+    "more": {
+      "title": "그리고 더",
+      "radioTitle": "라디오", "radioDesc": "당신의 카탈로그를 크로스페이드로 스트리밍하세요.",
+      "notifTitle": "알림", "notifDesc": "누군가 듣는 바로 그 순간 알 수 있습니다.",
+      "teamTitle": "팀 & 권한", "teamDesc": "네 가지 액세스 레벨, 혼란은 제로.",
+      "langTitle": "8개 언어", "langDesc": "당신의 카탈로그가 당신의 언어로 말합니다."
+    },
+    "closer": {
+      "title": "저장소는 폴더일 뿐. 이것은 시스템입니다.",
+      "body": "누구나 당신의 파일을 보관할 수 있습니다. Trakalog은 그것을 보호하고, 분석하고, 피치하고, 결과를 보고합니다. 다른 곳에서 부가 기능으로 파는 것들이, 여기서는 기본입니다.",
+      "cta": "오늘 무료로 시작하세요."
+    }
+  },
+
+  "ja": {
+    "nav": { "signIn": "ログイン", "startFree": "無料で始める" },
+    "hero": {
+      "title": "あなたの音楽が、今、あなたのために働く。",
+      "subtitle": "Trakalogは、未発表カタログのためのインテリジェントな神経系です。すべてのトラックを守り、その音を学習し、必要としている人を見つけ出し — 誰が聴いているかを教えます。",
+      "ctaPrimary": "無料で始める",
+      "ctaSecondary": "仕組みを見る"
+    },
+    "protection": {
+      "kicker": "保護",
+      "title": "恐れずに送ろう。",
+      "body": "共有するすべてのファイルに、目にも耳にも見えないウォーターマークが刻まれます。トラックが流出しても、Trakalogがどのリンクから出たかを正確に教えます。"
+    },
+    "intelligence": {
+      "kicker": "インテリジェンス",
+      "title": "聴いて、知る。",
+      "body1": "トラックをアップロード。TrakalogがBPMとキーを即座に検出し、そのエネルギーの音声指紋であるSonic DNAを構築します。物語はあなたが、科学はTrakalogが担います。",
+      "body2": "そして活かす：Smart A&Rで送るべき最適なトラックを見つけましょう — どんなブリーフも理解し、マッチスコアでカタログをランク付けするシステムです。"
+    },
+    "pitch": {
+      "kicker": "ピッチ",
+      "title": "レーベル水準でピッチする。",
+      "body": "ブランド化されたリンク。パスワードゲート。私たちではなく、あなたの名前が入ったプレイリスト。そしてすべてが見える：いつ開いたか、何を再生したか、何をダウンロードしたか。トラックが届いたかを推測するのは、もう終わりです。"
+    },
+    "access": {
+      "kicker": "Trakalog Access",
+      "badge": "アーリーアクセス",
+      "title": "音楽が、それを必要とする人と出会う場所。",
+      "bodyMakers": "音楽をつくるなら — Accessにトラックを掲載し、運ではなく音で見つけてもらいましょう。業界の方からあなたにやって来ます。",
+      "bodySeekers": "音楽を探しているなら — 未発表トラックをBPM、キー、ジャンルで検索。あるいはブリーフを書くだけ：Smart A&Rがすべてをスキャンし、精度スコアで最適な候補をランク付けします。求めるトラックが、何週間もの一方的なメールではなく、数分で。",
+      "ctaList": "カタログを掲載する",
+      "ctaEarlyAccess": "アーリーアクセスを申請する"
+    },
+    "splits": {
+      "kicker": "スプリット & サイン",
+      "title": "スタジオでサイン。永遠に解決。",
+      "body": "セッションの全員が一つのQRコードをスキャン。名前、役割、スプリット — リアルタイムで記録され、デジタルで署名され、トラックに永久に添付されます。「あとで整理しよう」は、海賊行為よりも多くの印税を奪ってきました。ここでは違います。"
+    },
+    "contacts": {
+      "kicker": "コンタクト",
+      "title": "ひとりでに育つネットワーク。",
+      "body": "あなたのリンクを聴いた人が、すべてコンタクトになります — 名前、メール、役割。スタジオでスキャン。手で追加。いつでもエクスポート。多くの人はコンタクトを追いかけます。あなたのコンタクトは、眠っている間に積み上がります。"
+    },
+    "organization": {
+      "kicker": "整理",
+      "title": "ひとつのトラックに、すべてが付随。",
+      "body": "ステム、メタデータ、レーベルコピー、歌詞、書類 — すべてがトラックとともに、ずっと存在します。そして、あなたが担うそれぞれの役割ごとに別のワークスペースで — アーティスト、レーベル、スタジオ — あなたの世界すべてが、混ざることなく整理されたままです。"
+    },
+    "more": {
+      "title": "さらに",
+      "radioTitle": "ラジオ", "radioDesc": "自分のカタログをクロスフェードでストリーミング。",
+      "notifTitle": "通知", "notifDesc": "誰かが聴いた、その瞬間にわかる。",
+      "teamTitle": "チーム & 権限", "teamDesc": "4つのアクセスレベル、混乱はゼロ。",
+      "langTitle": "8言語", "langDesc": "あなたのカタログが、あなたの言葉で話す。"
+    },
+    "closer": {
+      "title": "ストレージはフォルダ。これはシステム。",
+      "body": "ファイルを預かるだけなら誰にでもできます。Trakalogはそれを守り、分析し、ピッチし、そして報告します。他社がアドオンとして売るものが、ここでは標準です。",
+      "cta": "今日、無料で始めよう。"
+    }
+  }
+}

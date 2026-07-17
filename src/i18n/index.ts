@@ -9,21 +9,24 @@ import it from "./locales/it.json";
 import de from "./locales/de.json";
 import ko from "./locales/ko.json";
 import ja from "./locales/ja.json";
+import landing from "./locales/landing.json";
 
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources: {
-      en: { translation: en },
-      fr: { translation: fr },
-      es: { translation: es },
-      pt: { translation: pt },
-      it: { translation: it },
-      de: { translation: de },
-      ko: { translation: ko },
-      ja: { translation: ja },
+      en: { translation: en, landing: landing.en },
+      fr: { translation: fr, landing: landing.fr },
+      es: { translation: es, landing: landing.es },
+      pt: { translation: pt, landing: landing.pt },
+      it: { translation: it, landing: landing.it },
+      de: { translation: de, landing: landing.de },
+      ko: { translation: ko, landing: landing.ko },
+      ja: { translation: ja, landing: landing.ja },
     },
+    ns: ["translation", "landing"],
+    defaultNS: "translation",
     supportedLngs: ["en", "fr", "es", "pt", "it", "de", "ko", "ja"],
     fallbackLng: "en",
     load: "languageOnly",
