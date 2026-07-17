@@ -2716,14 +2716,14 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               href="https://trakalog.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 pointer-events-auto transition-opacity hover:opacity-90"
+              className="flex flex-col items-center pointer-events-auto transition-opacity hover:opacity-90"
               style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}
             >
-              <img src={trakalogLogo} alt="" className="h-6 w-6 md:h-7 md:w-7 object-contain shrink-0" />
-              <span className="flex flex-col items-start">
+              <span className="flex items-center gap-1.5">
+                <img src={trakalogLogo} alt="" className="h-5 w-5 md:h-6 md:w-6 object-contain shrink-0" />
                 <span className="text-xl md:text-2xl font-bold tracking-tight text-white leading-none">TRAKALOG</span>
-                <span className="text-[8px] md:text-[10px] tracking-[0.2em] text-white/60 font-medium mt-0.5">{t("sharedLink.catalogManagerTagline")}</span>
               </span>
+              <span className="text-[8px] md:text-[10px] tracking-[0.2em] text-white/60 font-medium mt-0.5">{t("sharedLink.catalogManagerTagline")}</span>
             </a>
           </div>
           {/* Logo header — pushed down to leave hero image visible */}
@@ -2732,12 +2732,12 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="object-contain max-h-[100px] md:max-h-[150px]" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
               ) : (
-                <div className="flex items-center gap-3" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}>
-                  <img src={trakalogLogo} alt="" className="h-12 w-12 md:h-16 md:w-16 object-contain shrink-0" />
-                  <div className="flex flex-col items-start">
+                <div className="flex flex-col items-center" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}>
+                  <div className="flex items-center gap-2.5">
+                    <img src={trakalogLogo} alt="" className="h-8 w-8 md:h-12 md:w-12 object-contain shrink-0" />
                     <span className="text-3xl md:text-5xl font-bold tracking-tight text-white leading-none">TRAKALOG</span>
-                    <span className="text-[10px] md:text-xs tracking-[0.2em] text-white/50 font-medium mt-1">{t("sharedLink.catalogManagerTagline")}</span>
                   </div>
+                  <span className="text-[10px] md:text-xs tracking-[0.2em] text-white/50 font-medium mt-1">{t("sharedLink.catalogManagerTagline")}</span>
                 </div>
               )}
               <SocialIcons branding={branding} immersive={true} />
@@ -2771,12 +2771,12 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
             {logoUrl ? (
               <img src={logoUrl} alt="Logo" className="object-contain max-h-[100px] sm:max-h-[150px]" />
             ) : (
-              <div className="flex items-center gap-3">
-                <img src={trakalogLogo} alt="" className="h-12 w-12 sm:h-16 sm:w-16 object-contain shrink-0" />
-                <div className="flex flex-col items-start">
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2.5">
+                  <img src={trakalogLogo} alt="" className="h-8 w-8 sm:h-12 sm:w-12 object-contain shrink-0" />
                   <span className="text-3xl sm:text-5xl font-bold tracking-tight text-white leading-none">TRAKALOG</span>
-                  <span className="text-[10px] sm:text-xs tracking-[0.2em] text-muted-foreground/60 font-medium mt-1">{t("sharedLink.catalogManagerTagline")}</span>
                 </div>
+                <span className="text-[10px] sm:text-xs tracking-[0.2em] text-muted-foreground/60 font-medium mt-1">{t("sharedLink.catalogManagerTagline")}</span>
               </div>
             )}
             <SocialIcons branding={branding} immersive={false} />
