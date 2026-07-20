@@ -194,7 +194,7 @@ export default function Onboarding() {
             alt="Trakalog"
             className="w-[60px] h-[60px] rounded-xl object-contain"
           />
-          <h1 className="text-2xl font-bold tracking-tight gradient-text font-[Sora] mt-2">
+          <h1 className="text-2xl font-bold tracking-tight text-white font-[Sora] mt-2">
             TRAKALOG
           </h1>
           <p className="text-[10px] text-muted-foreground tracking-widest uppercase font-medium">

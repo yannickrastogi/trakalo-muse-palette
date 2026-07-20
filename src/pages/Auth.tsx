@@ -143,7 +143,7 @@ export default function Auth() {
             alt="Trakalog"
             className="w-16 h-16 rounded-xl object-contain"
           />
-          <h1 className="text-2xl font-bold tracking-tight gradient-text font-[Sora] mt-2">
+          <h1 className="text-2xl font-bold tracking-tight text-white font-[Sora] mt-2">
             TRAKALOG
           </h1>
           <p className="text-[11px] text-muted-foreground tracking-widest uppercase font-medium">

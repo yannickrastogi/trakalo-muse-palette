@@ -101,7 +101,7 @@ function SidebarLogo() {
         className="w-14 h-14 rounded-xl object-contain shrink-0"
       />
       <div className="flex flex-col leading-none">
-        <span className="text-xl font-bold tracking-tight gradient-text">
+        <span className="text-xl font-bold tracking-tight text-white">
           TRAKALOG
         </span>
         <span className="text-[11px] text-muted-foreground mt-1 tracking-widest uppercase font-medium">
@@ -248,7 +248,7 @@ export function AppSidebar() {
             transition={{ duration: 0.15 }}
             className="flex flex-col leading-none"
           >
-            <span className="text-xl font-bold tracking-tight gradient-text">
+            <span className="text-xl font-bold tracking-tight text-white">
               TRAKALOG
             </span>
             <span className="text-[11px] text-muted-foreground mt-1 tracking-widest uppercase font-medium">
