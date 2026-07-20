@@ -27,6 +27,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const initializedRef = useRef(false);
 
   useEffect(() => {
+    // Watchdog: session restore can stall (e.g. an invalid/expired refresh token
+    // that never settles) and leave `loading` true forever. Guarantee it always
+    // resolves so route guards can redirect to the sign-in screen instead of
+    // spinning. A late-arriving real session still applies (this doesn't mark
+    // init done).
+    const authWatchdog = setTimeout(() => setLoading(false), 8000);
+
     const checkMfa = async (sess: Session): Promise<boolean> => {
       try {
         const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -59,8 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      // Allow INITIAL_SESSION through to capture OAuth callback tokens
-      if (!initializedRef.current && event !== "INITIAL_SESSION") return;
+      // Allow INITIAL_SESSION through to capture OAuth callback tokens, and let
+      // SIGNED_OUT through too — an invalid/expired refresh token makes Supabase
+      // sign out during boot; ignoring that event left `loading` stuck true
+      // forever (infinite spinner on the admin screens).
+      if (!initializedRef.current && event !== "INITIAL_SESSION" && event !== "SIGNED_OUT") return;
       if (!newSession && event !== "SIGNED_OUT") {
         return;
       }
@@ -142,7 +152,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(authWatchdog);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
