@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, ListMusic, Briefcase, UserPlus, Contact, Play } from "lucide-react";
+import TrafficSection from "@/components/admin/TrafficSection";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -223,6 +224,8 @@ export default function OverviewTab() {
           )}
         </CardContent>
       </Card>
+
+      <TrafficSection />
     </div>
   );
 }

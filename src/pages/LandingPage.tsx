@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import { useTranslation } from "react-i18next";
+import { trackPageView } from "@/lib/analytics";
 
 const LANDING_LANGUAGES = [
   { code: "en", label: "EN", flag: "🇬🇧" },
@@ -249,6 +250,9 @@ export default function LandingPage() {
       sessionStorage.setItem(LANDING_VISITED_KEY, "1");
     }
   }, []);
+
+  // Fire-and-forget page-view tracking (fail-silent, once per mount)
+  useEffect(() => { trackPageView(); }, []);
 
   const scrollToProtection = () => {
     document.getElementById("protection")?.scrollIntoView({ behavior: "smooth" });
