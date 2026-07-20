@@ -236,12 +236,16 @@ export default function SmartAR() {
     setStep("count");
   }, [brief, tracks.length]);
 
-  var callSmartAR = useCallback(function (fullBrief: string, count: number | "all", loadingId: string) {
+  var callSmartAR = useCallback(async function (fullBrief: string, count: number | "all", loadingId: string) {
+    // Smart A&R now enforces a per-user plan quota server-side, so send the real
+    // session access_token (fail closed to the anon key, which the EF rejects).
+    const { data: sessData } = await supabase.auth.getSession();
+    const accessToken = sessData.session?.access_token || SUPABASE_PUBLISHABLE_KEY;
     fetch(SUPABASE_URL + "/functions/v1/smart-ar", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+        "Authorization": "Bearer " + accessToken,
         "apikey": SUPABASE_PUBLISHABLE_KEY,
       },
       body: JSON.stringify({

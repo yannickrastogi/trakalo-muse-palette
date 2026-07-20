@@ -53,6 +53,35 @@ serve(async (req) => {
     }
     await assertWorkspaceMember(supabaseAdmin, user.id, ws, "editor");
 
+    // Billing gate: lyrics transcription is an INCLUDED Starter+ feature (Free =
+    // false), consuming NO credits. Read the user's plan feature flag.
+    const { data: sub } = await supabaseAdmin
+      .from("subscriptions").select("plan").eq("user_id", user.id).maybeSingle();
+    const plan = (sub?.plan as string) || "free";
+    const { data: planRow } = await supabaseAdmin
+      .from("plan_limits").select("features").eq("plan", plan).maybeSingle();
+    const features = (planRow?.features ?? {}) as Record<string, unknown>;
+    if (features.lyrics_transcription !== true) {
+      return new Response(JSON.stringify({ error: "plan_limit_reached", feature: "lyrics_transcription" }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Anti-abuse: cap repeated re-transcription of the SAME track by this user
+    // (5 / hour). Uses the shared check_rate_limit infra — not a billing quota.
+    const { data: perTrackOk } = await supabaseAdmin.rpc("check_rate_limit", {
+      _key: "transcribe-track:" + user.id + ":" + track_id,
+      _max_requests: 5,
+      _window_seconds: 3600,
+    });
+    if (perTrackOk === false) {
+      return new Response(JSON.stringify({ error: "rate_limited" }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const groqApiKey = Deno.env.get("GROQ_API_KEY");
     if (!groqApiKey) {
       return new Response(JSON.stringify({ error: "GROQ_API_KEY not configured" }), {

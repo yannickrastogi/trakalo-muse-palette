@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { isValidUUID } from "../_shared/validation.ts";
+import { getAuthedUser, HttpError } from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
   const corsRes = handleCors(req);
@@ -20,6 +21,26 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Authenticate the caller, then enforce their plan's Smart A&R quota BEFORE
+    // any AI work. assert_caller() bypasses for service_role, so the service-role
+    // client passes the JWT-validated _user_id straight through.
+    const { user } = await getAuthedUser(req);
+    const { data: quota, error: quotaErr } = await supabase.rpc("check_smart_ar_quota", { _user_id: user.id });
+    if (quotaErr) {
+      // Fail closed, but signal a server error rather than a misleading "limit reached".
+      console.error("smart-ar: quota check failed: " + quotaErr.message);
+      return new Response(
+        JSON.stringify({ error: "quota_check_failed" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!quota || quota.allowed !== true) {
+      return new Response(
+        JSON.stringify({ error: "plan_limit_reached", scope: quota?.scope ?? null, used: quota?.used ?? null, limit: quota?.limit ?? null }),
+        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const body = await req.json();
     const brief = typeof body.brief === 'string' ? body.brief.substring(0, 2000) : '';
     const track_count = body.track_count;
@@ -366,11 +387,26 @@ Deno.serve(async (req) => {
         .filter(Boolean);
     }
 
+    // Successful query → count it against the user's monthly/lifetime quota.
+    // Best-effort: a counter failure must not deny the user their result.
+    try {
+      const { error: incrErr } = await supabase.rpc("increment_smart_ar_usage", { _user_id: user.id });
+      if (incrErr) console.error("smart-ar: usage increment failed: " + incrErr.message);
+    } catch (incrErr) {
+      console.error("smart-ar: usage increment threw: " + (incrErr instanceof Error ? incrErr.message : "unknown"));
+    }
+
     return new Response(JSON.stringify(result), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    if (error instanceof HttpError) {
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { status: error.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
