@@ -8,7 +8,6 @@ import { PageShell } from "@/components/PageShell";
 import { MiniWaveform } from "@/components/MiniWaveform";
 import { statusColors } from "./Catalog";
 import { DEFAULT_COVER } from "@/lib/constants";
-import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 
 // Read-only viewer for a playlist shared INTO the active workspace by another
@@ -25,9 +24,6 @@ export default function SharedPlaylistView() {
 
   const share = sharedPlaylists.find((s) => s.playlist_id === playlistId && s.direction === "incoming");
   const accessLabel = share?.access_level === "editor" ? "can edit" : share?.access_level === "pitcher" ? "can pitch" : "view only";
-
-  // Fire-and-forget page-view tracking (fail-silent, once per mount)
-  useEffect(() => { trackPageView(); }, []);
 
   useEffect(() => {
     let cancelled = false;
