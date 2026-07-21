@@ -17,7 +17,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 /* ─── Catalogue statique (les prix RÉELS sont résolus côté Stripe via stripe_prices) ─── */
-type PlanId = "starter" | "pro" | "business";
+type PlanId = "free" | "starter" | "pro" | "business";
+type PaidPlanId = "starter" | "pro" | "business";
 type BillingCycle = "monthly" | "yearly";
 
 const PLANS: {
@@ -29,18 +30,45 @@ const PLANS: {
   highlighted?: boolean;
 }[] = [
   {
+    id: "free",
+    name: "Free",
+    monthly: 0,
+    yearly: 0,
+    features: [
+      "10 tracks · 1.5 GB storage",
+      "1 playlist · 1 shared link",
+      "2 Smart A&R queries (lifetime)",
+      "Sonic DNA + Trakalog Radio",
+    ],
+  },
+  {
     id: "starter",
     name: "Starter",
     monthly: 10,
     yearly: 90,
-    features: ["Catalogue pré-release", "Partage sécurisé", "Watermarking invisible"],
+    features: [
+      "100 tracks · 40 GB storage",
+      "Unlimited playlists & shared links",
+      "Invisible watermarking + leak tracing",
+      "15 pitches/mo · 15 Smart A&R/mo",
+      "Splits, signatures & QR Studio",
+      "Automatic lyrics transcription",
+    ],
   },
   {
     id: "pro",
     name: "Pro",
     monthly: 25,
     yearly: 225,
-    features: ["Tout Starter", "Smart A&R", "Sonic DNA", "Viewers gratuits"],
+    features: [
+      "Everything in Starter",
+      "1,000 tracks · 400 GB storage",
+      "Unlimited pitches · 50 Smart A&R/mo",
+      "5 workspaces · 5 seats included (+$10/extra seat)",
+      "Unlimited free viewers",
+      "Team, approvals & cross-workspace catalog sharing",
+      "Trakalog Access marketplace",
+    ],
     highlighted: true,
   },
   {
@@ -48,7 +76,13 @@ const PLANS: {
     name: "Business",
     monthly: 45,
     yearly: 405,
-    features: ["Tout Pro", "Sécurité enterprise", "Leak tracing avancé", "Sièges illimités"],
+    features: [
+      "Everything in Pro",
+      "5,000 tracks · 2 TB storage",
+      "500 Smart A&R/mo",
+      "15 workspaces · 10 seats included (+$10/extra seat)",
+      "Priority support",
+    ],
   },
 ];
 
@@ -135,7 +169,7 @@ export default function BillingPage() {
 
   const redirectToStripe = async (
     key: string,
-    body: { plan: PlanId; billing_cycle: BillingCycle } | { credits_pack: number },
+    body: { plan: PaidPlanId; billing_cycle: BillingCycle } | { credits_pack: number },
   ) => {
     setPending(key);
     try {
@@ -262,10 +296,14 @@ export default function BillingPage() {
         </div>
 
         {/* Cartes plans */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PLANS.map((plan) => {
             const price = cycle === "yearly" ? plan.yearly : plan.monthly;
-            const isCurrent = currentPlan === plan.id && sub?.billing_cycle === cycle && isActive;
+            const isFree = plan.id === "free";
+            // Sur le plan gratuit : "actuel" dès qu'aucun abonnement payant actif.
+            const isCurrent = isFree
+              ? !isActive || currentPlan === "free" || currentPlan == null
+              : currentPlan === plan.id && sub?.billing_cycle === cycle && isActive;
             const key = "plan-" + plan.id;
             return (
               <Card
@@ -299,13 +337,17 @@ export default function BillingPage() {
                   <Button
                     className="w-full"
                     variant={plan.highlighted ? "default" : "outline"}
-                    disabled={pending !== null || isCurrent}
-                    onClick={() => redirectToStripe(key, { plan: plan.id, billing_cycle: cycle })}
+                    disabled={pending !== null || isCurrent || isFree}
+                    onClick={
+                      isFree
+                        ? undefined
+                        : () => redirectToStripe(key, { plan: plan.id as PaidPlanId, billing_cycle: cycle })
+                    }
                   >
                     {pending === key ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {isCurrent ? "Plan actuel" : "S'abonner"}
+                    {isFree ? "Gratuit" : isCurrent ? "Plan actuel" : "S'abonner"}
                   </Button>
                 </CardFooter>
               </Card>

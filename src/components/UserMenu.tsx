@@ -74,7 +74,7 @@ export function UserMenu() {
               {[
                 { icon: HelpCircle, label: "Help & Guide", path: "/guide" },
                 { icon: Settings, label: t("userMenu.settings"), path: "/settings" },
-                { icon: CreditCard, label: t("userMenu.billing"), path: "/settings" },
+                { icon: CreditCard, label: t("userMenu.billing"), path: "/settings/billing" },
               ].map((item) => (
                 <button
                   key={item.label}
