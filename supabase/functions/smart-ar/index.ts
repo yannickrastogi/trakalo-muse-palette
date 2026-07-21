@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
 import { isValidUUID } from "../_shared/validation.ts";
-import { getAuthedUser, HttpError } from "../_shared/auth.ts";
+import { getAuthedUser, assertWorkspaceMember, HttpError } from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
   const corsRes = handleCors(req);
@@ -82,6 +82,24 @@ Deno.serve(async (req) => {
       }
       dedupedTracks = pub || [];
     } else {
+      // IDOR guard: personal mode reads this workspace's own catalog AND the
+      // catalogs shared INTO it, so the caller must be a member of workspace_id
+      // itself (their active workspace) — otherwise a non-member could enumerate
+      // another workspace's catalog and its inbound third-party shares. This does
+      // NOT break shared-catalog Smart A&R: shares reach the user through THEIR
+      // own workspace (the share target), which they are a member of.
+      try {
+        await assertWorkspaceMember(supabase, user.id, workspace_id, "viewer");
+      } catch (accessErr) {
+        if (accessErr instanceof HttpError && accessErr.status === 403) {
+          return new Response(JSON.stringify({ error: "forbidden" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        throw accessErr;
+      }
+
       const { data: tracks, error: tracksError } = await supabase
         .from("tracks")
         .select(PERSONAL_COLS)
