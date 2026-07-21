@@ -40,6 +40,7 @@ const WorkspaceSettings = lazy(() => import("./pages/WorkspaceSettings"));
 const Contacts = lazy(() => import("./pages/Contacts"));
 const Access = lazy(() => import("./pages/Access"));
 import SettingsPage from "./pages/SettingsPage";
+const BillingPage = lazy(() => import("./pages/BillingPage"));
 import SharedLinks from "./pages/SharedLinks";
 import SharedStemAccess from "./pages/SharedStemAccess";
 import NotFound from "./pages/NotFound";
@@ -193,6 +194,7 @@ const MainApp = () => (
               <Route path="/contacts" element={<Suspense fallback={<LazyFallback />}><Contacts /></Suspense>} />
               <Route path="/shared-links" element={<SharedLinks />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/settings/billing" element={<Suspense fallback={<LazyFallback />}><BillingPage /></Suspense>} />
               <Route path="/workspace-settings" element={<Suspense fallback={<LazyFallback />}><WorkspaceSettings /></Suspense>} />
               <Route path="/notifications" element={<NotificationCenter />} />
               <Route path="/approvals" element={<ApprovalQueue />} />
