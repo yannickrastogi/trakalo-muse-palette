@@ -190,6 +190,22 @@ export default function SharedStemAccess() {
 
       setLink(sl);
 
+      // Load tracks through the sanitizing RPC: splits (email/IPI/PRO/%/publisher) are
+      // stripped server-side for public links. Handles both playlist and single-track
+      // links and returns 0 rows for an inactive/expired link. Same anon-fetch style as
+      // get_shared_link_by_id above.
+      var tracksRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_tracks_for_shared_link", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ _link_id: linkId }),
+      });
+      if (!isMounted) return;
+      var sharedTracks: TrackRow[] = tracksRes.ok ? await tracksRes.json() : [];
+
       if (sl.share_type === "playlist" && sl.playlist_id) {
         // Fetch playlist metadata
         var { data: pl } = await anonSupabase
@@ -216,34 +232,20 @@ export default function SharedStemAccess() {
 
         if (ptRows && ptRows.length > 0) {
           var trackIds = ptRows.map(function(r) { return r.track_id; });
-          var { data: tracks } = await anonSupabase
-            .from("tracks")
-            .select("*")
-            .in("id", trackIds);
-
-          if (!isMounted) return;
-
-          if (tracks) {
-            var trackMap: Record<string, TrackRow> = {};
-            tracks.forEach(function(t) { trackMap[t.id] = t as unknown as TrackRow; });
-            var sorted = trackIds
-              .map(function(tid) { return trackMap[tid]; })
-              .filter(function(t) { return !!t; });
-            setPlaylistTracks(sorted);
-          }
+          // Order the RPC rows by the playlist's track positions (same behavior as before).
+          var trackMap: Record<string, TrackRow> = {};
+          sharedTracks.forEach(function(t) { trackMap[t.id] = t; });
+          var sorted = trackIds
+            .map(function(tid) { return trackMap[tid]; })
+            .filter(function(t) { return !!t; });
+          setPlaylistTracks(sorted);
         }
       } else if (sl.track_id) {
-        // Fetch single track
-        var { data: track } = await anonSupabase
-          .from("tracks")
-          .select("*")
-          .eq("id", sl.track_id)
-          .single();
-
-        if (!isMounted) return;
+        // Single-track link: pick the matching row from the RPC result.
+        var track = sharedTracks.find(function(t) { return t.id === sl.track_id; }) || null;
 
         if (track) {
-          setTrackData(track as unknown as TrackRow);
+          setTrackData(track);
         }
 
         // Fetch stems for this track
