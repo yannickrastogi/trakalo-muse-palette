@@ -419,6 +419,14 @@
     "sendPitch": "Envoyer le pitch"
   },
   "team": {
+    "seats": {
+      "usage": "{{used}} sur {{total}} sièges utilisés",
+      "unlimitedViewers": "spectateurs gratuits illimités",
+      "pending": "{{count}} en attente",
+      "addSeat": "Ajouter un siège"
+    },
+    "seatLimitError": "Aucun siège disponible sur votre plan. Améliorez votre offre ou ajoutez un siège pour ce rôle.",
+    "roleUpdateFailed": "Impossible de mettre à jour le rôle. Réessayez.",
     "title": "Membres",
     "teamsSubtitle": "{{count}} membres dans {{workspace}}",
     "subtitle": "{{count}} membres dans {{workspace}}",
@@ -1208,6 +1216,9 @@
     "ja": "日本語"
   },
   "inviteMember": {
+    "noSeats": "Aucun siège disponible — améliorez votre offre ou ajoutez un siège",
+    "goToBilling": "Aller à la facturation",
+    "seatLimitError": "Aucun siège disponible sur votre plan. Améliorez votre offre ou ajoutez un siège pour inviter ce rôle.",
     "title": "Inviter un membre",
     "description": "Envoyez une invitation pour rejoindre votre équipe.",
     "firstName": "Prénom",

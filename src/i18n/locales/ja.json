@@ -415,6 +415,14 @@
     "sendPitch": "ピッチを送信"
   },
   "team": {
+    "seats": {
+      "usage": "{{total}}席中{{used}}席使用中",
+      "unlimitedViewers": "無制限の無料ビューア",
+      "pending": "{{count}}席保留中",
+      "addSeat": "シートを追加"
+    },
+    "seatLimitError": "プランに利用可能なシートがありません。アップグレードするか、この役割用のシートを追加してください。",
+    "roleUpdateFailed": "役割を更新できませんでした。もう一度お試しください。",
     "title": "チーム",
     "teamsSubtitle": "ワークスペースに{{count}}チーム",
     "subtitle": "このチームに{{count}}人のコラボレーター",
@@ -1126,6 +1134,9 @@
     "ja": "日本語"
   },
   "inviteMember": {
+    "noSeats": "利用可能なシートがありません — アップグレードまたはシートを追加してください",
+    "goToBilling": "お支払いへ移動",
+    "seatLimitError": "プランに利用可能なシートがありません。アップグレードするか、この役割を招待するためのシートを追加してください。",
     "title": "メンバーを招待",
     "description": "チームに参加する招待を送信します。",
     "firstName": "名",

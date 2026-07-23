@@ -48,9 +48,9 @@ interface TeamContextValue {
   deleteTeam: (teamId: string) => void;
   renameTeam: (teamId: string, name: string) => void;
   addMember: (teamId: string, member: Omit<TeamMember, "id" | "membershipId" | "joinedAt" | "status">) => void;
-  removeMember: (teamId: string, memberId: string) => void;
+  removeMember: (teamId: string, memberId: string) => Promise<void>;
   updateMemberRole: (teamId: string, memberId: string, role: TeamRole) => void;
-  updateMemberAccess: (teamId: string, memberId: string, accessLevel: AccessLevel, professionalTitle: string | null) => void;
+  updateMemberAccess: (teamId: string, memberId: string, accessLevel: AccessLevel, professionalTitle: string | null) => Promise<string | null>;
   /** Edit a workspace member: title is editable by self or admin; access level by admin only. */
   updateWorkspaceMember: (
     workspaceId: string,
@@ -419,9 +419,11 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
         if (error) {
           console.error("Error updating member access:", error);
-          await fetchTeam();
+          await fetchTeam(); // revert optimistic update
+          return error.message; // surfaced to caller for a clean toast
         }
       }
+      return null;
     },
     [activeWorkspace, fetchTeam]
   );

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { TeamSharedCatalog } from "@/components/TeamSharedCatalog";
 import { SendApprovalSettings } from "@/components/SendApprovalSettings";
@@ -19,6 +20,7 @@ import { toast } from "sonner";
 import { useRole, type AccessLevel } from "@/contexts/RoleContext";
 import { useTeams, type TeamRole, type ActivityType } from "@/contexts/TeamContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useWorkspaceSeats, SEAT_LIMIT_ERROR } from "@/hooks/useWorkspaceSeats";
 import {
   Select,
   SelectContent,
@@ -162,6 +164,7 @@ export default function Team() {
   const { permissions } = useRole();
   const { teams, loadTeamDetails, addMember, removeMember, updateMemberAccess } = useTeams();
   const { activeWorkspace } = useWorkspace();
+  const { seats, refresh: refreshSeats } = useWorkspaceSeats();
 
   // Hydrate the Team-page-only detail (shared-track ids + activity feed) on mount
   // and on workspace change. These queries are deferred out of app boot.
@@ -182,24 +185,34 @@ export default function Team() {
 
   const handleInvite = (payload: InvitePayload) => {
     toast.success(t("inviteMember.inviteSent", { email: payload.email }));
+    refreshSeats(); // a new pending/active seat may have been consumed
   };
 
-  const handleRemoveMember = (memberId: string) => {
+  const handleRemoveMember = async (memberId: string) => {
     if (!selectedTeamId) return;
-    removeMember(selectedTeamId, memberId);
+    await removeMember(selectedTeamId, memberId);
     toast.success(t("team.memberRemoved"));
+    refreshSeats(); // a seat may have been freed
+  };
+
+  // Apply a member access/title change, surfacing a clean toast on seat limits.
+  const applyMemberUpdate = async (memberId: string, level: AccessLevel, title: string | null) => {
+    if (!selectedTeamId) return;
+    const err = await updateMemberAccess(selectedTeamId, memberId, level, title);
+    if (err) {
+      toast.error(err.includes(SEAT_LIMIT_ERROR) ? t("team.seatLimitError") : t("team.roleUpdateFailed"));
+      return;
+    }
+    toast.success(t("team.roleUpdated"));
+    refreshSeats();
   };
 
   const handleAccessLevelChange = (memberId: string, newLevel: AccessLevel, currentTitle: string | null) => {
-    if (!selectedTeamId) return;
-    updateMemberAccess(selectedTeamId, memberId, newLevel, currentTitle);
-    toast.success(t("team.roleUpdated"));
+    void applyMemberUpdate(memberId, newLevel, currentTitle);
   };
 
   const handleProfessionalTitleChange = (memberId: string, currentLevel: AccessLevel, newTitle: string | null) => {
-    if (!selectedTeamId) return;
-    updateMemberAccess(selectedTeamId, memberId, currentLevel, newTitle);
-    toast.success(t("team.roleUpdated"));
+    void applyMemberUpdate(memberId, currentLevel, newTitle);
   };
 
   const filteredMembers = selectedTeam
@@ -237,6 +250,28 @@ export default function Team() {
             )}
           </div>
         </motion.div>
+
+        {/* Seat usage counter */}
+        {selectedTeam && seats && (
+          <motion.div
+            variants={item}
+            className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-[13px] text-muted-foreground"
+          >
+            <UserCheck className="w-3.5 h-3.5 text-brand-orange" />
+            <span className="font-medium text-foreground">
+              {t("team.seats.usage", { used: seats.seats_used, total: seats.seats_included })}
+            </span>
+            {seats.seats_pending > 0 && (
+              <span className="text-muted-foreground">· {t("team.seats.pending", { count: seats.seats_pending })}</span>
+            )}
+            <span className="text-muted-foreground">· {t("team.seats.unlimitedViewers")}</span>
+            {!seats.can_invite_active && (
+              <Link to="/settings/billing" className="font-semibold text-brand-orange hover:underline">
+                {t("team.seats.addSeat")}
+              </Link>
+            )}
+          </motion.div>
+        )}
 
         {!selectedTeam ? (
           <motion.div variants={item} className="card-premium p-12 flex flex-col items-center gap-4 text-center">

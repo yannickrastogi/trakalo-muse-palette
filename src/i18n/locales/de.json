@@ -415,6 +415,14 @@
     "sendPitch": "Pitch senden"
   },
   "team": {
+    "seats": {
+      "usage": "{{used}} von {{total}} Sitzen belegt",
+      "unlimitedViewers": "unbegrenzte kostenlose Zuschauer",
+      "pending": "{{count}} ausstehend",
+      "addSeat": "Sitz hinzufügen"
+    },
+    "seatLimitError": "Keine Sitze in deinem Tarif verfügbar. Führe ein Upgrade durch oder füge einen Sitz für diese Rolle hinzu.",
+    "roleUpdateFailed": "Die Rolle konnte nicht aktualisiert werden. Bitte erneut versuchen.",
     "title": "Teams",
     "teamsSubtitle": "{{count}} Teams in deinem Arbeitsbereich",
     "subtitle": "{{count}} Mitwirkende in diesem Team",
@@ -1139,6 +1147,9 @@
     "ja": "日本語"
   },
   "inviteMember": {
+    "noSeats": "Keine Sitze verfügbar — Upgrade durchführen oder Sitz hinzufügen",
+    "goToBilling": "Zur Abrechnung",
+    "seatLimitError": "Keine Sitze in deinem Tarif verfügbar. Führe ein Upgrade durch oder füge einen Sitz hinzu, um diese Rolle einzuladen.",
     "title": "Mitglied einladen",
     "description": "Sende eine Einladung, deinem Team beizutreten.",
     "firstName": "Vorname",

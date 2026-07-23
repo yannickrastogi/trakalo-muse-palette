@@ -415,6 +415,14 @@
     "sendPitch": "Enviar pitch"
   },
   "team": {
+    "seats": {
+      "usage": "{{used}} de {{total}} assentos usados",
+      "unlimitedViewers": "espectadores gratuitos ilimitados",
+      "pending": "{{count}} pendentes",
+      "addSeat": "Adicionar um assento"
+    },
+    "seatLimitError": "Nenhum assento disponível no seu plano. Faça upgrade ou adicione um assento para este cargo.",
+    "roleUpdateFailed": "Não foi possível atualizar o cargo. Tente novamente.",
     "title": "Equipas",
     "teamsSubtitle": "{{count}} equipas no seu espaço de trabalho",
     "subtitle": "{{count}} colaboradores nesta equipa",
@@ -1126,6 +1134,9 @@
     "ja": "日本語"
   },
   "inviteMember": {
+    "noSeats": "Nenhum assento disponível — faça upgrade ou adicione um assento",
+    "goToBilling": "Ir para o faturamento",
+    "seatLimitError": "Nenhum assento disponível no seu plano. Faça upgrade ou adicione um assento para convidar este cargo.",
     "title": "Convidar membro",
     "description": "Envie um convite para se juntar à sua equipa.",
     "firstName": "Primeiro nome",

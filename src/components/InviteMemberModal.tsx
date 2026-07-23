@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Mail, ShieldCheck, User, Users, Plus, AlertTriangle, Eye, Send, Edit3, Shield } from "lucide-react";
 import {
@@ -25,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/integrations/supabase/client";
 import type { AccessLevel } from "@/contexts/RoleContext";
+import { useWorkspaceSeats, SEAT_LIMIT_ERROR } from "@/hooks/useWorkspaceSeats";
 
 const PROFESSIONAL_TITLES = [
   "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer",
@@ -61,6 +63,10 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
   const { teams, createTeam, addMember } = useTeams();
   const { user, session } = useAuth();
   const { activeWorkspace } = useWorkspace();
+  // Fetch seat usage only while the modal is open. Viewer stays free; paid roles
+  // are gated when no seat is available. The DB triggers enforce this regardless.
+  const { seats } = useWorkspaceSeats(open);
+  const paidRolesDisabled = seats ? !seats.can_invite_active : false;
 
   const [selectedTeamId, setSelectedTeamId] = useState<string>(preselectedTeamId || "");
   const [newTeamName, setNewTeamName] = useState("");
@@ -73,6 +79,11 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
+
+  // If seats run out while a paid role is selected, fall back to the free Viewer role.
+  useEffect(() => {
+    if (paidRolesDisabled && accessLevel !== "viewer") setAccessLevel("viewer");
+  }, [paidRolesDisabled, accessLevel]);
 
   const reset = () => {
     setSelectedTeamId(preselectedTeamId || "");
@@ -146,7 +157,9 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Failed to send invitation");
+        const raw = typeof data?.error === "string" ? data.error : "";
+        // Backend DB trigger blocks over-quota seats — show a clean message.
+        setError(raw.includes(SEAT_LIMIT_ERROR) ? t("inviteMember.seatLimitError") : raw || "Failed to send invitation");
         setSending(false);
         return;
       }
@@ -378,14 +391,19 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
               {ACCESS_LEVEL_CARDS.map(function (card) {
                 var CardIcon = card.icon;
                 var isSelected = accessLevel === card.level;
+                // Viewer is always free; paid roles are gated when no seat is available.
+                var isDisabled = paidRolesDisabled && card.level !== "viewer";
                 return (
                   <button
                     key={card.level}
                     type="button"
-                    onClick={function () { setAccessLevel(card.level); }}
+                    disabled={isDisabled}
+                    onClick={function () { if (!isDisabled) setAccessLevel(card.level); }}
                     className={
                       "border rounded-xl p-3 sm:p-4 text-left transition-all min-h-[44px] " +
-                      (isSelected
+                      (isDisabled
+                        ? "border-border opacity-50 cursor-not-allowed"
+                        : isSelected
                         ? "border-brand-orange/40 bg-brand-orange/5"
                         : "border-border hover:border-brand-orange/30")
                     }
@@ -400,6 +418,19 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
                 );
               })}
             </div>
+            {paidRolesDisabled && (
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-lg border border-brand-orange/30 bg-brand-orange/5 px-3 py-2 text-2xs">
+                <AlertTriangle className="w-3.5 h-3.5 text-brand-orange shrink-0" />
+                <span className="text-foreground font-medium">{t("inviteMember.noSeats")}</span>
+                <Link
+                  to="/settings/billing"
+                  onClick={() => { reset(); onOpenChange(false); }}
+                  className="font-semibold text-brand-orange hover:underline"
+                >
+                  {t("inviteMember.goToBilling")}
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Professional Title (optional) */}

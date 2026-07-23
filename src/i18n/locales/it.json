@@ -415,6 +415,14 @@
     "sendPitch": "Invia pitch"
   },
   "team": {
+    "seats": {
+      "usage": "{{used}} di {{total}} postazioni usate",
+      "unlimitedViewers": "spettatori gratuiti illimitati",
+      "pending": "{{count}} in sospeso",
+      "addSeat": "Aggiungi una postazione"
+    },
+    "seatLimitError": "Nessuna postazione disponibile nel tuo piano. Esegui l'upgrade o aggiungi una postazione per questo ruolo.",
+    "roleUpdateFailed": "Impossibile aggiornare il ruolo. Riprova.",
     "title": "Team",
     "teamsSubtitle": "{{count}} team nel tuo spazio di lavoro",
     "subtitle": "{{count}} collaboratori in questo team",
@@ -1126,6 +1134,9 @@
     "ja": "日本語"
   },
   "inviteMember": {
+    "noSeats": "Nessuna postazione disponibile — esegui l'upgrade o aggiungi una postazione",
+    "goToBilling": "Vai alla fatturazione",
+    "seatLimitError": "Nessuna postazione disponibile nel tuo piano. Esegui l'upgrade o aggiungi una postazione per invitare questo ruolo.",
     "title": "Invita membro",
     "description": "Invia un invito per unirsi al tuo team.",
     "firstName": "Nome",

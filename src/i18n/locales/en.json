@@ -419,6 +419,14 @@
     "sendPitch": "Send Pitch"
   },
   "team": {
+    "seats": {
+      "usage": "{{used}} of {{total}} seats used",
+      "unlimitedViewers": "unlimited free viewers",
+      "pending": "{{count}} pending",
+      "addSeat": "Add a seat"
+    },
+    "seatLimitError": "No seats available on your plan. Upgrade or add a seat for this role.",
+    "roleUpdateFailed": "Couldn't update the role. Please try again.",
     "title": "Members",
     "teamsSubtitle": "{{count}} members in {{workspace}}",
     "subtitle": "{{count}} members in {{workspace}}",
@@ -1208,6 +1216,9 @@
     "ja": "日本語"
   },
   "inviteMember": {
+    "noSeats": "No seats available — upgrade or add a seat",
+    "goToBilling": "Go to billing",
+    "seatLimitError": "No seats available on your plan. Upgrade or add a seat to invite this role.",
     "title": "Invite Member",
     "description": "Send an invitation to join your team.",
     "firstName": "First Name",
