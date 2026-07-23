@@ -50,6 +50,7 @@ interface WorkspaceBranding {
   hero_position: number | null;
   hero_focal_point: string | null;
   logo_url: string | null;
+  logo_size: number | null;
   brand_color: string | null;
   social_instagram: string | null;
   social_tiktok: string | null;
@@ -2701,6 +2702,14 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
   var heroFocalPoint = branding?.hero_focal_point
     || (branding?.hero_position != null ? "50% " + branding.hero_position + "%" : "50% 50%");
   var logoUrl = branding?.logo_url || null;
+  // Logo size as a percentage of the base max-height (100% = default). Scales both the
+  // mobile (100px) and desktop (150px) caps via CSS vars so the responsive breakpoints
+  // are preserved. Falls back to 100 when logo_size is absent.
+  var logoSizePct = branding?.logo_size ?? 100;
+  var logoStyleVars = {
+    "--logo-mh": Math.round(100 * logoSizePct / 100) + "px",
+    "--logo-mh-lg": Math.round(150 * logoSizePct / 100) + "px",
+  } as React.CSSProperties;
   var immersive = !!heroUrl;
 
   if (immersive) {
@@ -2737,7 +2746,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
           <header className="pt-[35vh] md:pt-[25vh] pb-4">
             <div className="flex flex-col items-center gap-1">
               {logoUrl ? (
-                <img src={logoUrl} alt="Logo" className="object-contain max-h-[100px] md:max-h-[150px]" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
+                <img src={logoUrl} alt="Logo" className="object-contain max-h-[var(--logo-mh)] md:max-h-[var(--logo-mh-lg)]" style={{ ...logoStyleVars, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
               ) : (
                 <div className="flex flex-col items-center" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}>
                   <div className="flex items-center gap-2.5">
@@ -2776,7 +2785,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
         <div className="max-w-2xl mx-auto px-4 flex items-center justify-center relative z-10 py-5">
           <div className="flex flex-col items-center">
             {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="object-contain max-h-[100px] sm:max-h-[150px]" />
+              <img src={logoUrl} alt="Logo" className="object-contain max-h-[var(--logo-mh)] sm:max-h-[var(--logo-mh-lg)]" style={logoStyleVars} />
             ) : (
               <div className="flex flex-col items-center">
                 <div className="flex items-center gap-2.5">

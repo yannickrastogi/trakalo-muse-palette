@@ -55,6 +55,7 @@ import { useWorkspaceSeats, SEAT_LIMIT_ERROR } from "@/hooks/useWorkspaceSeats";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { InviteMemberModal, type InvitePayload } from "@/components/InviteMemberModal";
 import { EditMemberModal } from "@/components/EditMemberModal";
@@ -220,6 +221,7 @@ function BrandingSection() {
   const { user } = useAuth();
   const [heroUrl, setHeroUrl] = useState<string | null>(activeWorkspace?.hero_image_url || null);
   const [logoUrl, setLogoUrl] = useState<string | null>(activeWorkspace?.logo_url || null);
+  const [logoSize, setLogoSize] = useState<number>(activeWorkspace?.logo_size ?? 100);
   const [brandColor, setBrandColor] = useState<string>(activeWorkspace?.brand_color || "");
   const [uploading, setUploading] = useState<"hero" | "logo" | null>(null);
   const [heroPosition, setHeroPosition] = useState<number>(activeWorkspace?.hero_position ?? 50);
@@ -245,6 +247,7 @@ function BrandingSection() {
     if (activeWorkspace) {
       setHeroUrl(activeWorkspace.hero_image_url || null);
       setLogoUrl(activeWorkspace.logo_url || null);
+      setLogoSize(activeWorkspace.logo_size ?? 100);
       setBrandColor(activeWorkspace.brand_color || "");
       setHeroPosition(activeWorkspace.hero_position ?? 50);
       setFocalPoint(activeWorkspace.hero_focal_point || "50% 50%");
@@ -353,6 +356,19 @@ function BrandingSection() {
     setHeroPosition(heroPos);
     setEditingFocal(false);
     toast.success(t("workspaceSettings.toasts.focalPointSaved"));
+    await refreshWorkspaces();
+  };
+
+  // Persist only the logo size. Every other _* param defaults to NULL and the RPC
+  // COALESCEs each column, so unrelated branding fields are preserved untouched.
+  const handleSaveLogoSize = async (size: number) => {
+    if (!activeWorkspace || !user) return;
+    const { error } = await supabase.rpc("update_workspace_branding", {
+      _user_id: user.id, _workspace_id: activeWorkspace.id,
+      _logo_size: size,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success(t("workspaceSettings.toasts.logoSizeSaved"));
     await refreshWorkspaces();
   };
 
@@ -539,9 +555,17 @@ function BrandingSection() {
                 {!repositioning && !editingFocal && (
                   <div className="absolute inset-0 flex flex-col items-center pointer-events-none select-none">
                     <div className="flex flex-col items-center mt-[8%] gap-0.5">
-                      <img src={logoUrl || trakalogLogo} alt="Logo" className="h-[40px] object-contain" />
-                      <span className="text-[9px] font-bold tracking-wider text-white">TRAKALOG</span>
-                      <span className="text-[5px] tracking-[0.15em] text-white/30 font-medium">CATALOG MANAGER</span>
+                      {/* Mirror the real shared link: a custom logo replaces the Trakalog
+                          lockup and scales with logoSize (base 40px = 100%). */}
+                      {logoUrl ? (
+                        <img src={logoUrl} alt="Logo" className="object-contain" style={{ maxHeight: Math.round(40 * logoSize / 100) + "px" }} />
+                      ) : (
+                        <>
+                          <img src={trakalogLogo} alt="Logo" className="h-[40px] object-contain" />
+                          <span className="text-[9px] font-bold tracking-wider text-white">TRAKALOG</span>
+                          <span className="text-[5px] tracking-[0.15em] text-white/30 font-medium">CATALOG MANAGER</span>
+                        </>
+                      )}
                     </div>
                     <div className="mt-[5%] w-[55%] flex items-start gap-1.5 rounded bg-white/5 border border-white/10 px-2 py-1.5">
                       <div className="w-[2px] h-3 rounded-full bg-gradient-to-b from-brand-orange to-brand-pink flex-shrink-0 mt-0.5" />
@@ -663,17 +687,34 @@ function BrandingSection() {
       <SectionBlock title={t("workspaceSettings.logo")} subtitle={t("workspaceSettings.logoSubtitle")} icon={Image}>
         <FieldGroup label="Workspace Logo" hint="Displayed on shared links and pitch emails. Square or horizontal format recommended.">
           {logoUrl ? (
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-xl border border-border/50 bg-secondary/30 flex items-center justify-center overflow-hidden">
-                <img src={logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
+            <div className="space-y-5">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl border border-border/50 bg-secondary/30 flex items-center justify-center overflow-hidden">
+                  <img src={logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleUpload("logo")} className="px-3 py-2 rounded-lg text-[12px] font-medium bg-secondary hover:bg-secondary/80 transition-colors">
+                    {t("workspaceSettings.change")}
+                  </button>
+                  <button onClick={() => handleRemove("logo")} className="px-3 py-2 rounded-lg text-[12px] font-medium text-destructive hover:bg-destructive/10 transition-colors">
+                    {t("workspaceSettings.remove")}
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => handleUpload("logo")} className="px-3 py-2 rounded-lg text-[12px] font-medium bg-secondary hover:bg-secondary/80 transition-colors">
-                  {t("workspaceSettings.change")}
-                </button>
-                <button onClick={() => handleRemove("logo")} className="px-3 py-2 rounded-lg text-[12px] font-medium text-destructive hover:bg-destructive/10 transition-colors">
-                  {t("workspaceSettings.remove")}
-                </button>
+              {/* Logo size — 50%–200%, live preview above; persisted on release. */}
+              <div className="space-y-2 max-w-sm">
+                <div className="flex items-center justify-between">
+                  <label className="text-[12px] font-medium text-foreground">{t("workspaceSettings.logoSize")}</label>
+                  <span className="text-[12px] tabular-nums text-muted-foreground">{logoSize}%</span>
+                </div>
+                <Slider
+                  min={50}
+                  max={200}
+                  step={10}
+                  value={[logoSize]}
+                  onValueChange={(v) => setLogoSize(v[0])}
+                  onValueCommit={(v) => handleSaveLogoSize(v[0])}
+                />
               </div>
             </div>
           ) : (
