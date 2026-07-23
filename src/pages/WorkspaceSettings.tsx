@@ -304,16 +304,20 @@ function BrandingSection() {
   const handleSavePosition = async () => {
     if (!activeWorkspace || !user) return;
     const pos = Math.round(dragPosition);
+    // Sync the focal point to the drag reposition so shared links (rendered from
+    // hero_focal_point) match the workspace preview (hero_position).
+    const focal = "50% " + pos + "%";
     const { error } = await supabase.rpc("update_workspace_branding", {
       _user_id: user.id, _workspace_id: activeWorkspace.id,
       _hero_image_url: heroUrl, _logo_url: logoUrl, _brand_color: brandColor || null,
-      _hero_position: pos, _hero_focal_point: focalPoint,
+      _hero_position: pos, _hero_focal_point: focal,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
       _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
       _bio: bio || null, _social_spotify: socialSpotify || null, _social_apple: socialApple || null,
     });
     if (error) { toast.error(error.message); return; }
     setHeroPosition(pos);
+    setFocalPoint(focal);
     setRepositioning(false);
     toast.success(t("workspaceSettings.toasts.heroPositionSaved"));
     await refreshWorkspaces();
@@ -333,15 +337,20 @@ function BrandingSection() {
 
   const handleSaveFocalPoint = async () => {
     if (!activeWorkspace || !user) return;
+    // Sync hero_position to the focal point's vertical component so the workspace
+    // preview (rendered from hero_position) matches the focal-point edit.
+    const posY = parseInt(focalPoint.split(" ")[1] || "", 10);
+    const heroPos = Number.isFinite(posY) ? posY : heroPosition;
     const { error } = await supabase.rpc("update_workspace_branding", {
       _user_id: user.id, _workspace_id: activeWorkspace.id,
       _hero_image_url: heroUrl, _logo_url: logoUrl, _brand_color: brandColor || null,
-      _hero_position: heroPosition, _hero_focal_point: focalPoint,
+      _hero_position: heroPos, _hero_focal_point: focalPoint,
       _social_instagram: socialInstagram || null, _social_tiktok: socialTiktok || null,
       _social_youtube: socialYoutube || null, _social_facebook: socialFacebook || null, _social_x: socialX || null, _social_website: (socialWebsite && !socialWebsite.startsWith("http") ? "https://" + socialWebsite : socialWebsite) || null,
       _bio: bio || null, _social_spotify: socialSpotify || null, _social_apple: socialApple || null,
     });
     if (error) { toast.error(error.message); return; }
+    setHeroPosition(heroPos);
     setEditingFocal(false);
     toast.success(t("workspaceSettings.toasts.focalPointSaved"));
     await refreshWorkspaces();

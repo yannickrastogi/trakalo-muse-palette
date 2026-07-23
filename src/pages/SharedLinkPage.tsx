@@ -2696,7 +2696,10 @@ function SocialIcons({ branding, immersive }: { branding?: WorkspaceBranding | n
 function Shell({ children, branding }: { children: React.ReactNode; branding?: WorkspaceBranding | null }) {
   const { t } = useTranslation();
   var heroUrl = branding?.hero_image_url || null;
-  var heroFocalPoint = branding?.hero_focal_point || "50% 50%";
+  // Prefer the focal point; fall back to the drag reposition (hero_position) so older
+  // records without a focal point still render at the intended crop, then a safe center.
+  var heroFocalPoint = branding?.hero_focal_point
+    || (branding?.hero_position != null ? "50% " + branding.hero_position + "%" : "50% 50%");
   var logoUrl = branding?.logo_url || null;
   var immersive = !!heroUrl;
 
