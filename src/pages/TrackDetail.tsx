@@ -2657,7 +2657,8 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
   const { contacts, refreshContacts } = useContacts();
   const trackData = getTrack(trackId);
   const splits = trackData?.splits || [];
-  const totalShares = splits.reduce((sum, s) => sum + s.share, 0);
+  // share is undefined on splits sanitized server-side for viewers/pitchers.
+  const totalShares = splits.reduce((sum, s) => sum + (s.share ?? 0), 0);
   const [editing, setEditing] = useState(false);
   const [editSplits, setEditSplits] = useState<TrackSplit[]>([]);
 
@@ -3316,7 +3317,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
           <div className="flex h-3 rounded-full overflow-hidden gap-0.5">
             {splits.map((s, i) => {
               const colors = ["bg-primary", "bg-brand-pink", "bg-brand-purple", "bg-brand-orange"];
-              return <div key={s.name + i} className={colors[i % colors.length] + " rounded-full"} style={{ width: s.share + "%" }} />;
+              return <div key={s.name + i} className={colors[i % colors.length] + " rounded-full"} style={{ width: (s.share ?? 0) + "%" }} />;
             })}
           </div>
         </div>
@@ -3403,7 +3404,7 @@ function SplitsTab({ trackId, trackUuid, readOnly }: { trackId: number; trackUui
                     )}
                   </div>
                 </div>
-                <span className="text-sm font-bold text-foreground shrink-0">{s.share}%</span>
+                <span className="text-sm font-bold text-foreground shrink-0">{typeof s.share === "number" ? s.share + "%" : "—"}</span>
               </div>
             );
           })}

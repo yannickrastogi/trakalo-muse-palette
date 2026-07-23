@@ -350,11 +350,18 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     try {
       // Fetch own tracks, stems, ratings, individual shares, and full catalog shares in parallel
       const [tracksRes, stemsRes, ratingsRes, catalogSharesRes] = await Promise.all([
-        supabase
-          .from("tracks")
-          .select("*")
-          .eq("workspace_id", activeWorkspace.id)
-          .order("created_at", { ascending: false }),
+        // Own catalog read goes through get_workspace_tracks (SECURITY DEFINER):
+        // identical columns to SELECT *, ordered by created_at DESC, but splits are
+        // sanitized server-side for pitcher/viewer (share/ipi/pro/email/publisher
+        // stripped). RLS can't filter a single column, hence the RPC. Not yet in the
+        // generated types → local cast, same pattern as useWorkspaceSeats.
+        (supabase.rpc as unknown as (
+          fn: string,
+          args: Record<string, unknown>,
+        ) => Promise<{ data: Record<string, unknown>[] | null; error: unknown }>)(
+          "get_workspace_tracks",
+          { _workspace_id: activeWorkspace.id, _user_id: user.id },
+        ),
         supabase
           .from("stems")
           .select("*")
