@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Check, Loader2, CreditCard, Sparkles, ExternalLink } from "lucide-react";
+import { Check, Loader2, CreditCard, Sparkles, ExternalLink, Users } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { supabase } from "@/integrations/supabase/client";
+import { useWorkspaceSeats } from "@/hooks/useWorkspaceSeats";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -86,6 +87,8 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [pending, setPending] = useState<string | null>(null);
+  // Seat usage for the active workspace (plan seats + purchased add-ons).
+  const { seats } = useWorkspaceSeats();
 
   const loadSubscription = useCallback(async () => {
     setLoading(true);
@@ -215,6 +218,43 @@ export default function BillingPage() {
                     : t(`billing.status.${sub.subscription_status}`, { defaultValue: sub.subscription_status ?? "" })}
                 </Badge>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Seats — paid, active subscribers only. The Stripe portal manages qty. */}
+        {isActive && seats && seats.plan !== "free" && (
+          <Card className="mb-8">
+            <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
+              <div className="flex items-start gap-3">
+                <Users className="mt-0.5 h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="font-semibold">{t("billing.seats.title")}</p>
+                  <p className="text-sm text-muted-foreground">{t("billing.seats.subtitle")}</p>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                    <span>
+                      {t("billing.seats.includedInPlan")}:{" "}
+                      <span className="font-medium text-foreground">{seats.seats_from_plan}</span>
+                    </span>
+                    <span>
+                      {t("billing.seats.purchased")}:{" "}
+                      <span className="font-medium text-foreground">{seats.seats_purchased}</span>
+                    </span>
+                    <span>
+                      {t("billing.seats.total")}:{" "}
+                      <span className="font-medium text-foreground">{seats.seats_included}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <Button variant="outline" onClick={openPortal} disabled={pending !== null}>
+                {pending === "portal" ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                )}
+                {t("billing.seats.manage")}
+              </Button>
             </CardContent>
           </Card>
         )}

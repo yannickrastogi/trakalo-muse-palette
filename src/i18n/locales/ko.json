@@ -1,5 +1,13 @@
 {
   "billing": {
+    "seats": {
+      "title": "좌석",
+      "subtitle": "활성 협업자를 위한 유료 좌석을 추가하거나 제거하세요. 좌석당 월 $10.",
+      "includedInPlan": "플랜 포함",
+      "purchased": "추가 구매",
+      "total": "총 좌석",
+      "manage": "좌석 관리"
+    },
     "discountBadge": "−25%",
     "title": "결제",
     "subtitle": "구독, 크레딧, 결제 수단을 관리하세요.",

@@ -1,5 +1,13 @@
 {
   "billing": {
+    "seats": {
+      "title": "Sitze",
+      "subtitle": "Füge bezahlte Sitze für aktive Mitarbeiter hinzu oder entferne sie. 10 $/Sitz/Monat.",
+      "includedInPlan": "Im Tarif enthalten",
+      "purchased": "Zusätzlich gekauft",
+      "total": "Sitze gesamt",
+      "manage": "Sitze verwalten"
+    },
     "discountBadge": "−25%",
     "title": "Abrechnung",
     "subtitle": "Verwalte dein Abo, deine Credits und deine Zahlungsmethode.",

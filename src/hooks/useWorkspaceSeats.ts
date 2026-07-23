@@ -9,7 +9,9 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
  */
 export interface WorkspaceSeats {
   plan: string;
-  seats_included: number;
+  seats_included: number; // effective total (plan + purchased)
+  seats_from_plan: number; // seats granted by the plan
+  seats_purchased: number; // additional paid seat add-ons
   seats_used: number;
   seats_pending: number;
   seats_available: number;

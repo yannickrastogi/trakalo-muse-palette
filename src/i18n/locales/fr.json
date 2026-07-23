@@ -1,5 +1,13 @@
 {
   "billing": {
+    "seats": {
+      "title": "Sièges",
+      "subtitle": "Ajoutez ou retirez des sièges payants pour vos collaborateurs actifs. 10 $/siège/mois.",
+      "includedInPlan": "Inclus dans le plan",
+      "purchased": "Achetés en supplément",
+      "total": "Total des sièges",
+      "manage": "Gérer les sièges"
+    },
     "discountBadge": "−25%",
     "title": "Facturation",
     "subtitle": "Gérez votre abonnement, vos crédits et votre moyen de paiement.",

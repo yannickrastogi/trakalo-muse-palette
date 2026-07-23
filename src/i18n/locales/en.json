@@ -1,5 +1,13 @@
 {
   "billing": {
+    "seats": {
+      "title": "Seats",
+      "subtitle": "Add or remove paid seats for active collaborators. $10/seat/month.",
+      "includedInPlan": "Included in plan",
+      "purchased": "Additional purchased",
+      "total": "Total seats",
+      "manage": "Manage seats"
+    },
     "discountBadge": "−25%",
     "title": "Billing",
     "subtitle": "Manage your subscription, credits, and payment method.",

@@ -1,5 +1,13 @@
 {
   "billing": {
+    "seats": {
+      "title": "Postazioni",
+      "subtitle": "Aggiungi o rimuovi postazioni a pagamento per i collaboratori attivi. 10 $/postazione/mese.",
+      "includedInPlan": "Incluse nel piano",
+      "purchased": "Acquistate in aggiunta",
+      "total": "Totale postazioni",
+      "manage": "Gestisci postazioni"
+    },
     "discountBadge": "−25%",
     "title": "Fatturazione",
     "subtitle": "Gestisci il tuo abbonamento, i crediti e il metodo di pagamento.",

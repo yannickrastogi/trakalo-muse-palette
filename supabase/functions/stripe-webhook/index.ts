@@ -45,36 +45,55 @@ Deno.serve(async (req) => {
       case "customer.subscription.updated": {
         const sub = event.data.object as Stripe.Subscription;
         const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-        const item = sub.items?.data?.[0];
-        const priceId = item?.price?.id ?? null;
+        const items = sub.items?.data ?? [];
 
-        if (!priceId) {
-          console.warn("stripe-webhook: subscription without a price id, sub=" + sub.id);
+        if (items.length === 0) {
+          console.warn("stripe-webhook: subscription without items, sub=" + sub.id);
           break;
         }
 
-        // Map the Stripe price back to our plan/cycle via the stripe_prices table.
-        const { data: price } = await supabase
+        // Resolve EVERY line item's price via stripe_prices in one query, then
+        // classify by kind: 'subscription' drives the plan, 'seat' the add-on qty.
+        const priceIds = items
+          .map((it) => it.price?.id)
+          .filter((id): id is string => typeof id === "string");
+        const { data: priceRows } = await supabase
           .from("stripe_prices")
-          .select("plan, billing_cycle")
-          .eq("stripe_price_id", priceId)
-          .maybeSingle();
+          .select("stripe_price_id, kind, plan, billing_cycle")
+          .in("stripe_price_id", priceIds);
+        const priceById = new Map(
+          (priceRows ?? []).map((p) => [p.stripe_price_id as string, p]),
+        );
 
-        if (!price?.plan || !price?.billing_cycle) {
-          console.warn("stripe-webhook: unknown price id " + priceId + " for sub " + sub.id);
+        let planItem: Stripe.SubscriptionItem | null = null;
+        let planRow: { plan: string | null; billing_cycle: string | null } | null = null;
+        let seatQty = 0; // 0 when no seat add-on present (or it was removed)
+        for (const it of items) {
+          const row = it.price?.id ? priceById.get(it.price.id) : undefined;
+          if (!row) continue;
+          if (row.kind === "subscription") {
+            planItem = it;
+            planRow = { plan: row.plan, billing_cycle: row.billing_cycle };
+          } else if (row.kind === "seat") {
+            seatQty += it.quantity ?? 0;
+          }
+        }
+
+        if (!planItem || !planRow?.plan || !planRow?.billing_cycle) {
+          console.warn("stripe-webhook: no subscription plan item resolved for sub " + sub.id);
           break;
         }
 
         // Period bounds live at subscription or item level depending on API version.
         const periodStart = toIso((sub as unknown as { current_period_start?: number }).current_period_start
-          ?? (item as unknown as { current_period_start?: number })?.current_period_start);
+          ?? (planItem as unknown as { current_period_start?: number })?.current_period_start);
         const periodEnd = toIso((sub as unknown as { current_period_end?: number }).current_period_end
-          ?? (item as unknown as { current_period_end?: number })?.current_period_end);
+          ?? (planItem as unknown as { current_period_end?: number })?.current_period_end);
 
         const { error } = await supabase.rpc("stripe_apply_subscription", {
           _customer_id: customerId,
-          _plan: price.plan,
-          _cycle: price.billing_cycle,
+          _plan: planRow.plan,
+          _cycle: planRow.billing_cycle,
           _status: sub.status,
           _stripe_sub_id: sub.id,
           _period_start: periodStart,
@@ -82,6 +101,13 @@ Deno.serve(async (req) => {
           _cancel_at_period_end: sub.cancel_at_period_end ?? false,
         });
         if (error) throw new Error("stripe_apply_subscription: " + error.message);
+
+        // Sync purchased seat add-ons (resets to 0 when the seat item is gone).
+        const { error: seatErr } = await supabase.rpc("stripe_set_purchased_seats", {
+          _customer_id: customerId,
+          _seats: seatQty,
+        });
+        if (seatErr) throw new Error("stripe_set_purchased_seats: " + seatErr.message);
         break;
       }
 

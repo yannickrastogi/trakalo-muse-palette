@@ -1,5 +1,13 @@
 {
   "billing": {
+    "seats": {
+      "title": "シート",
+      "subtitle": "アクティブなコラボレーター用の有料シートを追加・削除できます。1シートあたり月$10。",
+      "includedInPlan": "プランに含まれる",
+      "purchased": "追加購入",
+      "total": "シート合計",
+      "manage": "シートを管理"
+    },
     "discountBadge": "−25%",
     "title": "お支払い",
     "subtitle": "サブスクリプション、クレジット、お支払い方法を管理します。",

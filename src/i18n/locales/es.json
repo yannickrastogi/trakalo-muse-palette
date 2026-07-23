@@ -1,5 +1,13 @@
 {
   "billing": {
+    "seats": {
+      "title": "Asientos",
+      "subtitle": "Añade o quita asientos de pago para colaboradores activos. 10 $/asiento/mes.",
+      "includedInPlan": "Incluidos en el plan",
+      "purchased": "Comprados adicionales",
+      "total": "Total de asientos",
+      "manage": "Gestionar asientos"
+    },
     "discountBadge": "−25%",
     "title": "Facturación",
     "subtitle": "Gestiona tu suscripción, tus créditos y tu método de pago.",

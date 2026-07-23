@@ -1,5 +1,13 @@
 {
   "billing": {
+    "seats": {
+      "title": "Assentos",
+      "subtitle": "Adicione ou remova assentos pagos para colaboradores ativos. US$ 10/assento/mês.",
+      "includedInPlan": "Incluídos no plano",
+      "purchased": "Comprados adicionais",
+      "total": "Total de assentos",
+      "manage": "Gerenciar assentos"
+    },
     "discountBadge": "−25%",
     "title": "Faturamento",
     "subtitle": "Gerencie sua assinatura, seus créditos e sua forma de pagamento.",
