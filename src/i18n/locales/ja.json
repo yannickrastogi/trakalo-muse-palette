@@ -1,4 +1,84 @@
 {
+  "billing": {
+    "discountBadge": "−25%",
+    "title": "お支払い",
+    "subtitle": "サブスクリプション、クレジット、お支払い方法を管理します。",
+    "managePlan": "サブスクリプションを管理",
+    "currentPlan": "現在のプラン",
+    "noSubscription": "サブスクリプションなし",
+    "cycleYearlyLower": "年額",
+    "cycleMonthlyLower": "月額",
+    "cancelScheduled": "キャンセル予約済み",
+    "monthly": "月額",
+    "yearly": "年額",
+    "popular": "人気",
+    "free": "無料",
+    "subscribe": "登録する",
+    "perYear": "年",
+    "perMonth": "月",
+    "creditsTitle": "AIクレジット",
+    "creditsSubtitle": "Smart A&R、文字起こし、分析用の単発クレジットを購入できます。",
+    "creditsCount": "{{count}} クレジット",
+    "oneTimePayment": "1回限りのお支払い",
+    "buy": "購入",
+    "status": {
+      "active": "有効",
+      "trialing": "トライアル",
+      "past_due": "支払い遅延",
+      "canceled": "キャンセル済み",
+      "unpaid": "未払い"
+    },
+    "toast": {
+      "loadFailed": "サブスクリプションを読み込めませんでした。",
+      "checkoutSuccess": "お支払いが確認されました！アカウントはまもなく更新されます。",
+      "checkoutCanceled": "お支払いがキャンセルされました。",
+      "checkoutFailed": "お支払いを作成できませんでした。もう一度お試しください。",
+      "invalidPaymentResponse": "無効なお支払い応答です。",
+      "genericError": "エラーが発生しました。もう一度お試しください。",
+      "portalFailed": "請求ポータルを開けませんでした。",
+      "invalidPortalResponse": "無効なポータル応答です。"
+    },
+    "plans": {
+      "free": {
+        "features": [
+          "10トラック · 1.5GBストレージ",
+          "1プレイリスト · 1共有リンク",
+          "Smart A&Rクエリ2回（永久）",
+          "Sonic DNA + Trakalog Radio"
+        ]
+      },
+      "starter": {
+        "features": [
+          "100トラック · 40GBストレージ",
+          "無制限のプレイリストと共有リンク",
+          "不可視ウォーターマーク + リーク追跡",
+          "15ピッチ/月 · 15 Smart A&R/月",
+          "スプリット、署名、QR Studio",
+          "歌詞の自動文字起こし"
+        ]
+      },
+      "pro": {
+        "features": [
+          "Starterのすべて",
+          "1,000トラック · 400GBストレージ",
+          "無制限のピッチ · 50 Smart A&R/月",
+          "5ワークスペース · 5シート込み（追加シートごとに+$10）",
+          "無制限の無料ビューア",
+          "チーム、承認、ワークスペース間のカタログ共有",
+          "Trakalog Access マーケットプレイス"
+        ]
+      },
+      "business": {
+        "features": [
+          "Proのすべて",
+          "5,000トラック · 2TBストレージ",
+          "500 Smart A&R/月",
+          "15ワークスペース · 10シート込み（追加シートごとに+$10）",
+          "優先サポート"
+        ]
+      }
+    }
+  },
   "nav": {
     "access": "Access",
     "dashboard": "ダッシュボード",

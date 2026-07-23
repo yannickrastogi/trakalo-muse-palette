@@ -1,4 +1,84 @@
 {
+  "billing": {
+    "discountBadge": "−25%",
+    "title": "Fatturazione",
+    "subtitle": "Gestisci il tuo abbonamento, i crediti e il metodo di pagamento.",
+    "managePlan": "Gestisci abbonamento",
+    "currentPlan": "Piano attuale",
+    "noSubscription": "Nessun abbonamento",
+    "cycleYearlyLower": "annuale",
+    "cycleMonthlyLower": "mensile",
+    "cancelScheduled": "Annullamento programmato",
+    "monthly": "Mensile",
+    "yearly": "Annuale",
+    "popular": "Popolare",
+    "free": "Gratis",
+    "subscribe": "Abbonati",
+    "perYear": "anno",
+    "perMonth": "mese",
+    "creditsTitle": "Crediti IA",
+    "creditsSubtitle": "Acquista crediti una tantum per Smart A&R, trascrizione e analisi.",
+    "creditsCount": "{{count}} crediti",
+    "oneTimePayment": "Pagamento unico",
+    "buy": "Acquista",
+    "status": {
+      "active": "Attivo",
+      "trialing": "Prova",
+      "past_due": "Pagamento scaduto",
+      "canceled": "Annullato",
+      "unpaid": "Non pagato"
+    },
+    "toast": {
+      "loadFailed": "Impossibile caricare il tuo abbonamento.",
+      "checkoutSuccess": "Pagamento confermato! Il tuo account verrà aggiornato a breve.",
+      "checkoutCanceled": "Pagamento annullato.",
+      "checkoutFailed": "Impossibile creare il pagamento. Riprova.",
+      "invalidPaymentResponse": "Risposta di pagamento non valida.",
+      "genericError": "Si è verificato un errore. Riprova.",
+      "portalFailed": "Impossibile aprire il portale di fatturazione.",
+      "invalidPortalResponse": "Risposta del portale non valida."
+    },
+    "plans": {
+      "free": {
+        "features": [
+          "10 brani · 1,5 GB di spazio",
+          "1 playlist · 1 link condiviso",
+          "2 richieste Smart A&R (a vita)",
+          "Sonic DNA + Trakalog Radio"
+        ]
+      },
+      "starter": {
+        "features": [
+          "100 brani · 40 GB di spazio",
+          "Playlist e link condivisi illimitati",
+          "Watermarking invisibile + tracciamento delle fughe",
+          "15 pitch/mese · 15 Smart A&R/mese",
+          "Split, firme e QR Studio",
+          "Trascrizione automatica dei testi"
+        ]
+      },
+      "pro": {
+        "features": [
+          "Tutto di Starter",
+          "1.000 brani · 400 GB di spazio",
+          "Pitch illimitati · 50 Smart A&R/mese",
+          "5 spazi di lavoro · 5 postazioni incluse (+10 $/postazione extra)",
+          "Spettatori gratuiti illimitati",
+          "Team, approvazioni e condivisione del catalogo tra spazi",
+          "Marketplace Trakalog Access"
+        ]
+      },
+      "business": {
+        "features": [
+          "Tutto di Pro",
+          "5.000 brani · 2 TB di spazio",
+          "500 Smart A&R/mese",
+          "15 spazi di lavoro · 10 postazioni incluse (+10 $/postazione extra)",
+          "Supporto prioritario"
+        ]
+      }
+    }
+  },
   "nav": {
     "access": "Access",
     "dashboard": "Dashboard",

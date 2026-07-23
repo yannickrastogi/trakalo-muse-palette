@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Check, Loader2, CreditCard, Sparkles, ExternalLink } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
@@ -21,69 +22,18 @@ type PlanId = "free" | "starter" | "pro" | "business";
 type PaidPlanId = "starter" | "pro" | "business";
 type BillingCycle = "monthly" | "yearly";
 
+/* name = nom commercial (non traduit) ; les features sont résolues via i18n (billing.plans.<id>.features). */
 const PLANS: {
   id: PlanId;
   name: string;
   monthly: number;
   yearly: number;
-  features: string[];
   highlighted?: boolean;
 }[] = [
-  {
-    id: "free",
-    name: "Free",
-    monthly: 0,
-    yearly: 0,
-    features: [
-      "10 tracks · 1.5 GB storage",
-      "1 playlist · 1 shared link",
-      "2 Smart A&R queries (lifetime)",
-      "Sonic DNA + Trakalog Radio",
-    ],
-  },
-  {
-    id: "starter",
-    name: "Starter",
-    monthly: 10,
-    yearly: 90,
-    features: [
-      "100 tracks · 40 GB storage",
-      "Unlimited playlists & shared links",
-      "Invisible watermarking + leak tracing",
-      "15 pitches/mo · 15 Smart A&R/mo",
-      "Splits, signatures & QR Studio",
-      "Automatic lyrics transcription",
-    ],
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    monthly: 25,
-    yearly: 225,
-    features: [
-      "Everything in Starter",
-      "1,000 tracks · 400 GB storage",
-      "Unlimited pitches · 50 Smart A&R/mo",
-      "5 workspaces · 5 seats included (+$10/extra seat)",
-      "Unlimited free viewers",
-      "Team, approvals & cross-workspace catalog sharing",
-      "Trakalog Access marketplace",
-    ],
-    highlighted: true,
-  },
-  {
-    id: "business",
-    name: "Business",
-    monthly: 45,
-    yearly: 405,
-    features: [
-      "Everything in Pro",
-      "5,000 tracks · 2 TB storage",
-      "500 Smart A&R/mo",
-      "15 workspaces · 10 seats included (+$10/extra seat)",
-      "Priority support",
-    ],
-  },
+  { id: "free", name: "Free", monthly: 0, yearly: 0 },
+  { id: "starter", name: "Starter", monthly: 10, yearly: 90 },
+  { id: "pro", name: "Pro", monthly: 25, yearly: 225, highlighted: true },
+  { id: "business", name: "Business", monthly: 45, yearly: 405 },
 ];
 
 const CREDIT_PACKS: { credits: number; price: number }[] = [
@@ -130,6 +80,7 @@ async function readFunctionError(error: unknown): Promise<string | null> {
 }
 
 export default function BillingPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [sub, setSub] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -140,14 +91,14 @@ export default function BillingPage() {
     setLoading(true);
     const { data, error } = await supabase.rpc("get_my_subscription");
     if (error) {
-      toast.error("Impossible de charger votre abonnement.");
+      toast.error(t("billing.toast.loadFailed"));
       setSub(null);
     } else {
       setSub((data as Subscription | null) ?? null);
       if (data && (data as Subscription).billing_cycle === "yearly") setCycle("yearly");
     }
     setLoading(false);
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadSubscription();
@@ -158,9 +109,9 @@ export default function BillingPage() {
     const checkout = searchParams.get("checkout");
     if (!checkout) return;
     if (checkout === "success") {
-      toast.success("Paiement confirmé ! Votre compte sera mis à jour dans un instant.");
+      toast.success(t("billing.toast.checkoutSuccess"));
     } else if (checkout === "cancel") {
-      toast("Paiement annulé.");
+      toast(t("billing.toast.checkoutCanceled"));
     }
     searchParams.delete("checkout");
     setSearchParams(searchParams, { replace: true });
@@ -176,16 +127,16 @@ export default function BillingPage() {
       const { data, error } = await supabase.functions.invoke("create-checkout-session", { body });
       if (error) {
         const msg = await readFunctionError(error);
-        toast.error(msg ?? "La création du paiement a échoué. Réessayez.");
+        toast.error(msg ?? t("billing.toast.checkoutFailed"));
         return;
       }
       if (isSafeStripeUrl(data?.url)) {
         window.location.href = data.url;
       } else {
-        toast.error("Réponse de paiement invalide.");
+        toast.error(t("billing.toast.invalidPaymentResponse"));
       }
     } catch {
-      toast.error("Une erreur est survenue. Réessayez.");
+      toast.error(t("billing.toast.genericError"));
     } finally {
       setPending(null);
     }
@@ -197,16 +148,16 @@ export default function BillingPage() {
       const { data, error } = await supabase.functions.invoke("create-portal-session", { body: {} });
       if (error) {
         const msg = await readFunctionError(error);
-        toast.error(msg ?? "Impossible d'ouvrir le portail de facturation.");
+        toast.error(msg ?? t("billing.toast.portalFailed"));
         return;
       }
       if (isSafeStripeUrl(data?.url)) {
         window.location.href = data.url;
       } else {
-        toast.error("Réponse du portail invalide.");
+        toast.error(t("billing.toast.invalidPortalResponse"));
       }
     } catch {
-      toast.error("Une erreur est survenue. Réessayez.");
+      toast.error(t("billing.toast.genericError"));
     } finally {
       setPending(null);
     }
@@ -222,10 +173,8 @@ export default function BillingPage() {
         {/* En-tête */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Facturation</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Gérez votre abonnement, vos crédits et votre moyen de paiement.
-            </p>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("billing.title")}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t("billing.subtitle")}</p>
           </div>
           {hasBillingAccount && (
             <Button variant="outline" onClick={openPortal} disabled={pending !== null}>
@@ -234,7 +183,7 @@ export default function BillingPage() {
               ) : (
                 <ExternalLink className="mr-2 h-4 w-4" />
               )}
-              Gérer mon abonnement
+              {t("billing.managePlan")}
             </Button>
           )}
         </div>
@@ -248,12 +197,12 @@ export default function BillingPage() {
               <div className="flex items-center gap-3">
                 <CreditCard className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Plan actuel</p>
+                  <p className="text-sm text-muted-foreground">{t("billing.currentPlan")}</p>
                   <p className="font-semibold capitalize">
-                    {currentPlan ?? "Aucun abonnement"}
+                    {currentPlan ?? t("billing.noSubscription")}
                     {sub?.billing_cycle ? (
                       <span className="ml-2 text-sm font-normal text-muted-foreground">
-                        ({sub.billing_cycle === "yearly" ? "annuel" : "mensuel"})
+                        ({sub.billing_cycle === "yearly" ? t("billing.cycleYearlyLower") : t("billing.cycleMonthlyLower")})
                       </span>
                     ) : null}
                   </p>
@@ -261,7 +210,9 @@ export default function BillingPage() {
               </div>
               {sub?.subscription_status && (
                 <Badge variant={isActive ? "default" : "secondary"} className="capitalize">
-                  {sub.cancel_at_period_end ? "Annulation programmée" : sub.subscription_status}
+                  {sub.cancel_at_period_end
+                    ? t("billing.cancelScheduled")
+                    : t(`billing.status.${sub.subscription_status}`, { defaultValue: sub.subscription_status ?? "" })}
                 </Badge>
               )}
             </CardContent>
@@ -279,7 +230,7 @@ export default function BillingPage() {
                 (cycle === "monthly" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground")
               }
             >
-              Mensuel
+              {t("billing.monthly")}
             </button>
             <button
               type="button"
@@ -289,8 +240,8 @@ export default function BillingPage() {
                 (cycle === "yearly" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground")
               }
             >
-              Annuel
-              <span className="ml-1.5 text-xs text-emerald-600">−25%</span>
+              {t("billing.yearly")}
+              <span className="ml-1.5 text-xs text-emerald-600">{t("billing.discountBadge")}</span>
             </button>
           </div>
         </div>
@@ -313,19 +264,19 @@ export default function BillingPage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{plan.name}</CardTitle>
-                    {plan.highlighted && <Badge>Populaire</Badge>}
+                    {plan.highlighted && <Badge>{t("billing.popular")}</Badge>}
                   </div>
                   <CardDescription>
                     <span className="text-3xl font-bold text-foreground">${price}</span>
                     <span className="text-sm text-muted-foreground">
                       {" "}
-                      / {cycle === "yearly" ? "an" : "mois"}
+                      / {cycle === "yearly" ? t("billing.perYear") : t("billing.perMonth")}
                     </span>
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1">
                   <ul className="space-y-2">
-                    {plan.features.map((f) => (
+                    {(t(`billing.plans.${plan.id}.features`, { returnObjects: true }) as string[]).map((f) => (
                       <li key={f} className="flex items-start gap-2 text-sm">
                         <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                         <span>{f}</span>
@@ -347,7 +298,7 @@ export default function BillingPage() {
                     {pending === key ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {isFree ? "Gratuit" : isCurrent ? "Plan actuel" : "S'abonner"}
+                    {isFree ? t("billing.free") : isCurrent ? t("billing.currentPlan") : t("billing.subscribe")}
                   </Button>
                 </CardFooter>
               </Card>
@@ -359,19 +310,17 @@ export default function BillingPage() {
         <div className="mt-12">
           <div className="mb-4 flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">Crédits IA</h2>
+            <h2 className="text-lg font-semibold">{t("billing.creditsTitle")}</h2>
           </div>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Achetez des crédits ponctuels pour Smart A&amp;R, transcription et analyses.
-          </p>
+          <p className="mb-4 text-sm text-muted-foreground">{t("billing.creditsSubtitle")}</p>
           <div className="grid gap-4 sm:grid-cols-2">
             {CREDIT_PACKS.map((pack) => {
               const key = "credits-" + pack.credits;
               return (
                 <Card key={pack.credits} className="flex items-center justify-between p-4">
                   <div>
-                    <p className="font-semibold">{pack.credits} crédits</p>
-                    <p className="text-sm text-muted-foreground">Paiement unique</p>
+                    <p className="font-semibold">{t("billing.creditsCount", { count: pack.credits })}</p>
+                    <p className="text-sm text-muted-foreground">{t("billing.oneTimePayment")}</p>
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="text-xl font-bold">${pack.price}</span>
@@ -381,7 +330,7 @@ export default function BillingPage() {
                       onClick={() => redirectToStripe(key, { credits_pack: pack.credits })}
                     >
                       {pending === key ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      Acheter
+                      {t("billing.buy")}
                     </Button>
                   </div>
                 </Card>

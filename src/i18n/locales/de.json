@@ -1,4 +1,84 @@
 {
+  "billing": {
+    "discountBadge": "−25%",
+    "title": "Abrechnung",
+    "subtitle": "Verwalte dein Abo, deine Credits und deine Zahlungsmethode.",
+    "managePlan": "Abo verwalten",
+    "currentPlan": "Aktueller Plan",
+    "noSubscription": "Kein Abo",
+    "cycleYearlyLower": "jährlich",
+    "cycleMonthlyLower": "monatlich",
+    "cancelScheduled": "Kündigung geplant",
+    "monthly": "Monatlich",
+    "yearly": "Jährlich",
+    "popular": "Beliebt",
+    "free": "Kostenlos",
+    "subscribe": "Abonnieren",
+    "perYear": "Jahr",
+    "perMonth": "Monat",
+    "creditsTitle": "KI-Credits",
+    "creditsSubtitle": "Kaufe einmalige Credits für Smart A&R, Transkription und Analysen.",
+    "creditsCount": "{{count}} Credits",
+    "oneTimePayment": "Einmalige Zahlung",
+    "buy": "Kaufen",
+    "status": {
+      "active": "Aktiv",
+      "trialing": "Testphase",
+      "past_due": "Zahlung überfällig",
+      "canceled": "Gekündigt",
+      "unpaid": "Unbezahlt"
+    },
+    "toast": {
+      "loadFailed": "Dein Abo konnte nicht geladen werden.",
+      "checkoutSuccess": "Zahlung bestätigt! Dein Konto wird in Kürze aktualisiert.",
+      "checkoutCanceled": "Zahlung abgebrochen.",
+      "checkoutFailed": "Zahlung konnte nicht erstellt werden. Bitte erneut versuchen.",
+      "invalidPaymentResponse": "Ungültige Zahlungsantwort.",
+      "genericError": "Ein Fehler ist aufgetreten. Bitte erneut versuchen.",
+      "portalFailed": "Das Abrechnungsportal konnte nicht geöffnet werden.",
+      "invalidPortalResponse": "Ungültige Portalantwort."
+    },
+    "plans": {
+      "free": {
+        "features": [
+          "10 Tracks · 1,5 GB Speicher",
+          "1 Playlist · 1 geteilter Link",
+          "2 Smart-A&R-Abfragen (lebenslang)",
+          "Sonic DNA + Trakalog Radio"
+        ]
+      },
+      "starter": {
+        "features": [
+          "100 Tracks · 40 GB Speicher",
+          "Unbegrenzte Playlists und geteilte Links",
+          "Unsichtbares Watermarking + Leak-Tracing",
+          "15 Pitches/Monat · 15 Smart A&R/Monat",
+          "Splits, Signaturen und QR Studio",
+          "Automatische Songtext-Transkription"
+        ]
+      },
+      "pro": {
+        "features": [
+          "Alles aus Starter",
+          "1.000 Tracks · 400 GB Speicher",
+          "Unbegrenzte Pitches · 50 Smart A&R/Monat",
+          "5 Workspaces · 5 Sitze inklusive (+10 $/zusätzlicher Sitz)",
+          "Unbegrenzte kostenlose Zuschauer",
+          "Team, Freigaben und Workspace-übergreifendes Katalog-Sharing",
+          "Trakalog Access Marketplace"
+        ]
+      },
+      "business": {
+        "features": [
+          "Alles aus Pro",
+          "5.000 Tracks · 2 TB Speicher",
+          "500 Smart A&R/Monat",
+          "15 Workspaces · 10 Sitze inklusive (+10 $/zusätzlicher Sitz)",
+          "Priorisierter Support"
+        ]
+      }
+    }
+  },
   "nav": {
     "access": "Access",
     "dashboard": "Dashboard",

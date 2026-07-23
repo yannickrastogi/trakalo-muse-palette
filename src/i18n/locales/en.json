@@ -1,4 +1,84 @@
 {
+  "billing": {
+    "discountBadge": "−25%",
+    "title": "Billing",
+    "subtitle": "Manage your subscription, credits, and payment method.",
+    "managePlan": "Manage subscription",
+    "currentPlan": "Current plan",
+    "noSubscription": "No subscription",
+    "cycleYearlyLower": "yearly",
+    "cycleMonthlyLower": "monthly",
+    "cancelScheduled": "Cancellation scheduled",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "popular": "Popular",
+    "free": "Free",
+    "subscribe": "Subscribe",
+    "perYear": "year",
+    "perMonth": "month",
+    "creditsTitle": "AI Credits",
+    "creditsSubtitle": "Buy one-time credits for Smart A&R, transcription, and analysis.",
+    "creditsCount": "{{count}} credits",
+    "oneTimePayment": "One-time payment",
+    "buy": "Buy",
+    "status": {
+      "active": "Active",
+      "trialing": "Trial",
+      "past_due": "Past due",
+      "canceled": "Canceled",
+      "unpaid": "Unpaid"
+    },
+    "toast": {
+      "loadFailed": "Couldn't load your subscription.",
+      "checkoutSuccess": "Payment confirmed! Your account will update in a moment.",
+      "checkoutCanceled": "Payment canceled.",
+      "checkoutFailed": "Checkout could not be created. Please try again.",
+      "invalidPaymentResponse": "Invalid payment response.",
+      "genericError": "Something went wrong. Please try again.",
+      "portalFailed": "Couldn't open the billing portal.",
+      "invalidPortalResponse": "Invalid portal response."
+    },
+    "plans": {
+      "free": {
+        "features": [
+          "10 tracks · 1.5 GB storage",
+          "1 playlist · 1 shared link",
+          "2 Smart A&R queries (lifetime)",
+          "Sonic DNA + Trakalog Radio"
+        ]
+      },
+      "starter": {
+        "features": [
+          "100 tracks · 40 GB storage",
+          "Unlimited playlists & shared links",
+          "Invisible watermarking + leak tracing",
+          "15 pitches/mo · 15 Smart A&R/mo",
+          "Splits, signatures & QR Studio",
+          "Automatic lyrics transcription"
+        ]
+      },
+      "pro": {
+        "features": [
+          "Everything in Starter",
+          "1,000 tracks · 400 GB storage",
+          "Unlimited pitches · 50 Smart A&R/mo",
+          "5 workspaces · 5 seats included (+$10/extra seat)",
+          "Unlimited free viewers",
+          "Team, approvals & cross-workspace catalog sharing",
+          "Trakalog Access marketplace"
+        ]
+      },
+      "business": {
+        "features": [
+          "Everything in Pro",
+          "5,000 tracks · 2 TB storage",
+          "500 Smart A&R/mo",
+          "15 workspaces · 10 seats included (+$10/extra seat)",
+          "Priority support"
+        ]
+      }
+    }
+  },
   "nav": {
     "access": "Access",
     "dashboard": "Dashboard",

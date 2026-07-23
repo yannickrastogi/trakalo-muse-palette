@@ -1,4 +1,84 @@
 {
+  "billing": {
+    "discountBadge": "−25%",
+    "title": "Facturación",
+    "subtitle": "Gestiona tu suscripción, tus créditos y tu método de pago.",
+    "managePlan": "Gestionar suscripción",
+    "currentPlan": "Plan actual",
+    "noSubscription": "Sin suscripción",
+    "cycleYearlyLower": "anual",
+    "cycleMonthlyLower": "mensual",
+    "cancelScheduled": "Cancelación programada",
+    "monthly": "Mensual",
+    "yearly": "Anual",
+    "popular": "Popular",
+    "free": "Gratis",
+    "subscribe": "Suscribirse",
+    "perYear": "año",
+    "perMonth": "mes",
+    "creditsTitle": "Créditos IA",
+    "creditsSubtitle": "Compra créditos puntuales para Smart A&R, transcripción y análisis.",
+    "creditsCount": "{{count}} créditos",
+    "oneTimePayment": "Pago único",
+    "buy": "Comprar",
+    "status": {
+      "active": "Activa",
+      "trialing": "Prueba",
+      "past_due": "Pago vencido",
+      "canceled": "Cancelada",
+      "unpaid": "Sin pagar"
+    },
+    "toast": {
+      "loadFailed": "No se pudo cargar tu suscripción.",
+      "checkoutSuccess": "¡Pago confirmado! Tu cuenta se actualizará en un momento.",
+      "checkoutCanceled": "Pago cancelado.",
+      "checkoutFailed": "No se pudo crear el pago. Inténtalo de nuevo.",
+      "invalidPaymentResponse": "Respuesta de pago no válida.",
+      "genericError": "Se produjo un error. Inténtalo de nuevo.",
+      "portalFailed": "No se pudo abrir el portal de facturación.",
+      "invalidPortalResponse": "Respuesta del portal no válida."
+    },
+    "plans": {
+      "free": {
+        "features": [
+          "10 pistas · 1,5 GB de almacenamiento",
+          "1 lista · 1 enlace compartido",
+          "2 consultas Smart A&R (de por vida)",
+          "Sonic DNA + Trakalog Radio"
+        ]
+      },
+      "starter": {
+        "features": [
+          "100 pistas · 40 GB de almacenamiento",
+          "Listas y enlaces compartidos ilimitados",
+          "Marca de agua invisible + rastreo de filtraciones",
+          "15 pitches/mes · 15 Smart A&R/mes",
+          "Splits, firmas y QR Studio",
+          "Transcripción automática de letras"
+        ]
+      },
+      "pro": {
+        "features": [
+          "Todo lo de Starter",
+          "1000 pistas · 400 GB de almacenamiento",
+          "Pitches ilimitados · 50 Smart A&R/mes",
+          "5 espacios de trabajo · 5 asientos incluidos (+10 $/asiento adicional)",
+          "Espectadores gratuitos ilimitados",
+          "Equipo, aprobaciones y uso compartido de catálogo entre espacios",
+          "Marketplace de Trakalog Access"
+        ]
+      },
+      "business": {
+        "features": [
+          "Todo lo de Pro",
+          "5000 pistas · 2 TB de almacenamiento",
+          "500 Smart A&R/mes",
+          "15 espacios de trabajo · 10 asientos incluidos (+10 $/asiento adicional)",
+          "Soporte prioritario"
+        ]
+      }
+    }
+  },
   "nav": {
     "access": "Access",
     "dashboard": "Panel",

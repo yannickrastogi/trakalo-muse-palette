@@ -1,4 +1,84 @@
 {
+  "billing": {
+    "discountBadge": "−25%",
+    "title": "결제",
+    "subtitle": "구독, 크레딧, 결제 수단을 관리하세요.",
+    "managePlan": "구독 관리",
+    "currentPlan": "현재 플랜",
+    "noSubscription": "구독 없음",
+    "cycleYearlyLower": "연간",
+    "cycleMonthlyLower": "월간",
+    "cancelScheduled": "취소 예약됨",
+    "monthly": "월간",
+    "yearly": "연간",
+    "popular": "인기",
+    "free": "무료",
+    "subscribe": "구독하기",
+    "perYear": "년",
+    "perMonth": "월",
+    "creditsTitle": "AI 크레딧",
+    "creditsSubtitle": "Smart A&R, 전사, 분석에 사용할 일회성 크레딧을 구매하세요.",
+    "creditsCount": "{{count}} 크레딧",
+    "oneTimePayment": "일회성 결제",
+    "buy": "구매",
+    "status": {
+      "active": "활성",
+      "trialing": "체험",
+      "past_due": "결제 연체",
+      "canceled": "취소됨",
+      "unpaid": "미결제"
+    },
+    "toast": {
+      "loadFailed": "구독 정보를 불러오지 못했습니다.",
+      "checkoutSuccess": "결제가 확인되었습니다! 계정이 곧 업데이트됩니다.",
+      "checkoutCanceled": "결제가 취소되었습니다.",
+      "checkoutFailed": "결제를 생성하지 못했습니다. 다시 시도해 주세요.",
+      "invalidPaymentResponse": "잘못된 결제 응답입니다.",
+      "genericError": "오류가 발생했습니다. 다시 시도해 주세요.",
+      "portalFailed": "결제 포털을 열 수 없습니다.",
+      "invalidPortalResponse": "잘못된 포털 응답입니다."
+    },
+    "plans": {
+      "free": {
+        "features": [
+          "트랙 10개 · 저장공간 1.5GB",
+          "플레이리스트 1개 · 공유 링크 1개",
+          "Smart A&R 조회 2회 (평생)",
+          "Sonic DNA + Trakalog Radio"
+        ]
+      },
+      "starter": {
+        "features": [
+          "트랙 100개 · 저장공간 40GB",
+          "무제한 플레이리스트 및 공유 링크",
+          "비가시성 워터마킹 + 유출 추적",
+          "월 15회 피치 · 월 15회 Smart A&R",
+          "스플릿, 서명 및 QR Studio",
+          "자동 가사 전사"
+        ]
+      },
+      "pro": {
+        "features": [
+          "Starter의 모든 기능",
+          "트랙 1,000개 · 저장공간 400GB",
+          "무제한 피치 · 월 50회 Smart A&R",
+          "워크스페이스 5개 · 시트 5개 포함 (추가 시트당 +$10)",
+          "무제한 무료 뷰어",
+          "팀, 승인 및 워크스페이스 간 카탈로그 공유",
+          "Trakalog Access 마켓플레이스"
+        ]
+      },
+      "business": {
+        "features": [
+          "Pro의 모든 기능",
+          "트랙 5,000개 · 저장공간 2TB",
+          "월 500회 Smart A&R",
+          "워크스페이스 15개 · 시트 10개 포함 (추가 시트당 +$10)",
+          "우선 지원"
+        ]
+      }
+    }
+  },
   "nav": {
     "access": "Access",
     "dashboard": "대시보드",
