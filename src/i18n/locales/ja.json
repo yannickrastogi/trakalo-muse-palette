@@ -2031,6 +2031,8 @@
     "title": "肩書き",
     "access": "アクセス",
     "manageMembersSubtitle": "ワークスペースのメンバーとアクセスレベルを管理する",
+    "membersTitle": "メンバー ({{count}})",
+    "memberCount": "メンバー{{count}}人",
     "editMember": "編集",
     "editMyTitle": "肩書きを編集",
     "removeMember": "削除",

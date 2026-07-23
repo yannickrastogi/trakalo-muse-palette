@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 import {
@@ -14,6 +15,7 @@ import {
   Trash2,
   Crosshair,
   UserPlus,
+  UserCheck,
   ChevronDown,
   Shield,
   ShieldCheck,
@@ -49,6 +51,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/contexts/RoleContext";
 import { useTeams } from "@/contexts/TeamContext";
+import { useWorkspaceSeats, SEAT_LIMIT_ERROR } from "@/hooks/useWorkspaceSeats";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
@@ -843,6 +846,7 @@ function MembersSection() {
   const { permissions } = useRole();
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
+  const { seats, refresh: refreshSeats } = useWorkspaceSeats();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<{ member: TeamMember; mode: "admin" | "self" } | null>(null);
 
@@ -852,27 +856,47 @@ function MembersSection() {
 
   const handleInvite = async (payload: InvitePayload) => {
     toast.success(t("inviteMember.inviteSent", { email: payload.email }));
+    refreshSeats(); // a new pending/active seat may have been consumed
   };
 
-  const handleRemoveMember = (memberId: string) => {
-    removeMember(teamId, memberId);
+  const handleRemoveMember = async (memberId: string) => {
+    await removeMember(teamId, memberId);
+    refreshSeats(); // a seat may have been freed
   };
 
   const isAdmin = permissions.canManageTeam;
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-6">
-      <SectionBlock title={"Members (" + members.length + ")"} subtitle={t("workspaceSettings.manageMembersSubtitle")} icon={Users}>
+      <SectionBlock title={t("workspaceSettings.membersTitle", { count: members.length })} subtitle={t("workspaceSettings.manageMembersSubtitle")} icon={Users}>
         <div className="space-y-4">
+          {/* Seat usage counter */}
+          {seats && (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
+              <UserCheck className="w-3.5 h-3.5 text-brand-orange" />
+              <span className="font-medium text-foreground">
+                {t("team.seats.usage", { used: seats.seats_used, total: seats.seats_included })}
+              </span>
+              {seats.seats_pending > 0 && (
+                <span className="text-muted-foreground">· {t("team.seats.pending", { count: seats.seats_pending })}</span>
+              )}
+              <span className="text-muted-foreground">· {t("team.seats.unlimitedViewers")}</span>
+              {!seats.can_invite_active && (
+                <Link to="/settings/billing" className="font-semibold text-brand-orange hover:underline">
+                  {t("team.seats.addSeat")}
+                </Link>
+              )}
+            </div>
+          )}
           <div className="flex items-center justify-between">
-            <p className="text-[12px] text-muted-foreground/60">{members.length} member{members.length !== 1 ? "s" : ""}</p>
+            <p className="text-[12px] text-muted-foreground/60">{t("workspaceSettings.memberCount", { count: members.length })}</p>
             {permissions.canInviteMembers && (
               <button
                 onClick={() => setInviteOpen(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-white transition-opacity hover:opacity-90"
                 style={{ background: "var(--gradient-brand-horizontal)" }}
               >
-                <UserPlus className="w-3.5 h-3.5" /> Invite Member
+                <UserPlus className="w-3.5 h-3.5" /> {t("team.inviteMember")}
               </button>
             )}
           </div>
@@ -941,6 +965,7 @@ function MembersSection() {
         onOpenChange={(v) => { if (!v) setEditTarget(null); }}
         member={editTarget?.member || null}
         mode={editTarget?.mode || "self"}
+        onSaved={refreshSeats}
       />
     </motion.div>
   );

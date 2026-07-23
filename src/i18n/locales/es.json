@@ -2031,6 +2031,8 @@
     "title": "Título",
     "access": "Acceso",
     "manageMembersSubtitle": "Gestiona los miembros del espacio de trabajo y sus niveles de acceso",
+    "membersTitle": "Miembros ({{count}})",
+    "memberCount": "{{count}} miembros",
     "editMember": "Editar",
     "editMyTitle": "Editar mi título",
     "removeMember": "Eliminar",

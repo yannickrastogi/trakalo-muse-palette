@@ -2113,6 +2113,8 @@
     "title": "Title",
     "access": "Access",
     "manageMembersSubtitle": "Manage workspace members and their access levels",
+    "membersTitle": "Members ({{count}})",
+    "memberCount": "{{count}} members",
     "editMember": "Edit",
     "editMyTitle": "Edit my title",
     "removeMember": "Remove",

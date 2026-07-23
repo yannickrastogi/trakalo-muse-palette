@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Save, Shield, Eye, Send, Edit3, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTeams, type TeamMember } from "@/contexts/TeamContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { SEAT_LIMIT_ERROR } from "@/hooks/useWorkspaceSeats";
 import type { AccessLevel } from "@/contexts/RoleContext";
 import { INDUSTRY_ROLES } from "@/lib/constants";
 
@@ -20,9 +22,12 @@ interface Props {
   member: TeamMember | null;
   /** "admin" → can edit both; "self" → title only. */
   mode: "admin" | "self";
+  /** Called after a successful save (e.g. to refresh seat usage). */
+  onSaved?: () => void;
 }
 
-export function EditMemberModal({ open, onOpenChange, member, mode }: Props) {
+export function EditMemberModal({ open, onOpenChange, member, mode, onSaved }: Props) {
+  const { t } = useTranslation();
   const { activeWorkspace } = useWorkspace();
   const { updateWorkspaceMember } = useTeams();
 
@@ -54,11 +59,13 @@ export function EditMemberModal({ open, onOpenChange, member, mode }: Props) {
     setSaving(false);
 
     if (error) {
-      toast.error(error);
+      // Surface a clean message when the DB seat-limit trigger blocks the change.
+      toast.error(error.includes(SEAT_LIMIT_ERROR) ? t("team.seatLimitError") : error);
       return;
     }
 
     toast.success("Member updated");
+    onSaved?.();
     onOpenChange(false);
   };
 

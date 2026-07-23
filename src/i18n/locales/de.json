@@ -2031,6 +2031,8 @@
     "title": "Titel",
     "access": "Zugriff",
     "manageMembersSubtitle": "Workspace-Mitglieder und deren Zugriffsebenen verwalten",
+    "membersTitle": "Mitglieder ({{count}})",
+    "memberCount": "{{count}} Mitglieder",
     "editMember": "Bearbeiten",
     "editMyTitle": "Meinen Titel bearbeiten",
     "removeMember": "Entfernen",
