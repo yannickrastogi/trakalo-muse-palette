@@ -15,6 +15,21 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",")
   : [];
 
+// Encode tuning. strength 10 = audiowmark default (inaudible); 320k MP3 avoids the
+// 128k pre-echo "ticks". A post-encode verify (audiowmark get on the MP3) guards leak
+// tracing: if the mark doesn't survive the lossy pass we fall back to the WAV.
+const WM_STRENGTH = "10";
+const MP3_BITRATE = "320k";
+const WM_DETECT_THRESHOLD = 1.0; // genuine mark ~1.5, clean-file noise ~0.2-0.3
+// Three sequential CPU steps (add, ffmpeg, verify). Their inner caps sum below the
+// global budget so no single step can starve the others.
+const ADD_TIMEOUT_MS = 110000;
+const FFMPEG_TIMEOUT_MS = 60000;
+const VERIFY_TIMEOUT_MS = 60000;
+const ENCODE_GLOBAL_TIMEOUT_MS = 240000;
+const DECODE_GLOBAL_TIMEOUT_MS = 120000;
+const DECODE_STEP_TIMEOUT_MS = 110000;
+
 // CORS restrictif
 app.use(
   cors({
@@ -25,6 +40,8 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
+    // Server-to-server callers (the Edge Function) read the delivered format here.
+    exposedHeaders: ["X-Watermark-Format"],
   })
 );
 
@@ -62,6 +79,27 @@ function cleanup(...files) {
       // ignore cleanup errors
     }
   }
+}
+
+// Parse audiowmark 0.6.5 "get" output → strongest { payload, confidence }.
+// Lines look like: "pattern  0:00 <32-hex-payload> 1.530 0.279 CLIP-B". The 2nd token
+// is a timestamp ("0:00") or "all", NOT a bit count. Shared by /decode and the
+// /encode post-encode verification (single source of truth for the parser).
+function parseWatermark(stdout) {
+  const lines = (stdout || "").trim().split("\n");
+  let payload = null;
+  let confidence = 0;
+  for (const line of lines) {
+    const match = line.match(/^pattern\s+\S+\s+([0-9a-f]{32})\s+([\d.]+)/i);
+    if (match) {
+      const score = parseFloat(match[2]);
+      if (score > confidence) {
+        confidence = score;
+        payload = match[1].toLowerCase();
+      }
+    }
+  }
+  return { payload, confidence };
 }
 
 // Download a file from URL to a local path
@@ -125,21 +163,22 @@ app.post(
     const outputPath = path.join(tmpDir, `${uuidv4()}.wav`);
     const mp3Path = path.join(tmpDir, `${uuidv4()}.mp3`);
 
-    // Two sequential CPU-bound steps now run (audiowmark add, then ffmpeg),
-    // each with its own 110s inner limit — the global budget must cover both.
+    // Three sequential CPU-bound steps run (audiowmark add, ffmpeg, audiowmark get).
+    // The global budget covers all three; the timeout cleans every temp artifact.
     const timeout = setTimeout(() => {
       cleanup(inputPath, outputPath, mp3Path);
       if (!res.headersSent) {
         res.status(504).json({ error: "Processing timeout" });
       }
-    }, 240000);
+    }, ENCODE_GLOBAL_TIMEOUT_MS);
 
-    // Step 1: embed the watermark (WAV master stays untouched; we work on a copy).
-    // strength 12 survives lossy compression (MP3/Opus/AAC 128k) — verified on Ubuntu 24.04.
+    // Step 1: embed the watermark (WAV master untouched; we work on a copy).
+    // strength 10 = audiowmark default — inaudible; the post-encode verify below
+    // confirms it survives the lossy MP3 pass before we ship the smaller file.
     execFile(
       "audiowmark",
-      ["add", "--strength", "12", inputPath, outputPath, payload],
-      { timeout: 110000 },
+      ["add", "--strength", WM_STRENGTH, inputPath, outputPath, payload],
+      { timeout: ADD_TIMEOUT_MS },
       (error, stdout, stderr) => {
         if (error) {
           clearTimeout(timeout);
@@ -149,33 +188,68 @@ app.post(
             .json({ error: "Watermark encoding failed", details: stderr });
         }
 
-        // Step 2: encode the delivery copy to MP3 128k CBR (~10-15x smaller than WAV).
-        // The watermark survives this lossy pass; trace-leak decodes the MP3 fine.
+        // Step 2: encode the delivery copy to MP3 320k CBR (~4x smaller than WAV, no
+        // 128k pre-echo). Keep the watermarked WAV as a fallback until the verify passes.
         execFile(
           "ffmpeg",
-          ["-i", outputPath, "-c:a", "libmp3lame", "-b:a", "128k", "-y", mp3Path],
-          { timeout: 110000 },
+          ["-i", outputPath, "-c:a", "libmp3lame", "-b:a", MP3_BITRATE, "-y", mp3Path],
+          { timeout: FFMPEG_TIMEOUT_MS },
           (ffError, ffStdout, ffStderr) => {
-            clearTimeout(timeout);
-            // The watermarked WAV is a temp artifact — drop it now, keep only the MP3.
-            cleanup(inputPath, outputPath);
+            // Input no longer needed; keep outputPath (WAV) + mp3Path until we pick one.
+            cleanup(inputPath);
 
-            // The global timeout may have already responded (504) — never respond twice.
-            if (res.headersSent) {
-              cleanup(mp3Path);
+            if (res.headersSent) { // global timeout already responded (504)
+              clearTimeout(timeout);
+              cleanup(outputPath, mp3Path);
               return;
             }
-
             if (ffError) {
-              cleanup(mp3Path);
+              clearTimeout(timeout);
+              cleanup(outputPath, mp3Path);
               return res
                 .status(500)
                 .json({ error: "MP3 encoding failed", details: ffStderr });
             }
 
-            res.download(mp3Path, "watermarked.mp3", () => {
-              cleanup(mp3Path);
-            });
+            // Step 3: verify the watermark still decodes from the MP3. If it does,
+            // ship the small MP3; otherwise fall back to the watermarked WAV so leak
+            // tracing NEVER silently breaks.
+            execFile(
+              "audiowmark",
+              ["get", mp3Path],
+              { timeout: VERIFY_TIMEOUT_MS },
+              (vError, vStdout) => {
+                clearTimeout(timeout);
+                if (res.headersSent) { // global timeout already responded (504)
+                  cleanup(outputPath, mp3Path);
+                  return;
+                }
+
+                const { payload: detected, confidence } = vError
+                  ? { payload: null, confidence: 0 }
+                  : parseWatermark(vStdout);
+                const mp3Ok = !!detected
+                  && confidence >= WM_DETECT_THRESHOLD
+                  && detected.toLowerCase() === payload.toLowerCase();
+
+                if (mp3Ok) {
+                  cleanup(outputPath); // drop the WAV fallback
+                  res.set("X-Watermark-Format", "mp3");
+                  res.download(mp3Path, "watermarked.mp3", () => cleanup(mp3Path));
+                } else {
+                  // Fallback: the MP3 lost the watermark — serve the watermarked WAV so
+                  // the payload is still traceable. Loud log so this never hides silently.
+                  console.warn(
+                    "encode: MP3 watermark verify FAILED (confidence=" + confidence +
+                    ", detected=" + (detected ? detected.substring(0, 8) : "none") +
+                    ", expected=" + payload.substring(0, 8) + ") — falling back to WAV"
+                  );
+                  cleanup(mp3Path); // drop the unusable MP3
+                  res.set("X-Watermark-Format", "wav");
+                  res.download(outputPath, "watermarked.wav", () => cleanup(outputPath));
+                }
+              }
+            );
           }
         );
       }
@@ -200,12 +274,12 @@ app.post(
       if (!res.headersSent) {
         res.status(504).json({ error: "Processing timeout" });
       }
-    }, 120000);
+    }, DECODE_GLOBAL_TIMEOUT_MS);
 
     execFile(
       "audiowmark",
       ["get", inputPath],
-      { timeout: 110000 },
+      { timeout: DECODE_STEP_TIMEOUT_MS },
       (error, stdout, stderr) => {
         clearTimeout(timeout);
         cleanup(inputPath);
@@ -216,31 +290,11 @@ app.post(
             .json({ error: "Watermark decoding failed", details: stderr });
         }
 
-        // Parse audiowmark 0.6.5 output. Lines look like:
-        //   "pattern  0:00 <32-hex-payload> 1.530 0.279 CLIP-B"
-        //   "pattern   all <32-hex-payload> 1.234 ..."
-        // The 2nd token is a timestamp ("0:00") or "all" — NOT a bit count — so the
-        // old /^pattern\s+\d+.../ regex never matched. Capture the 32-hex payload and
-        // the first float score regardless of that token.
-        const lines = stdout.trim().split("\n");
-        let payload = null;
-        let confidence = 0;
-
-        for (const line of lines) {
-          const match = line.match(/^pattern\s+\S+\s+([0-9a-f]{32})\s+([\d.]+)/i);
-          if (match) {
-            const score = parseFloat(match[2]);
-            // Keep the strongest detection across all lines.
-            if (score > confidence) {
-              confidence = score;
-              payload = match[1].toLowerCase();
-            }
-          }
-        }
+        const { payload, confidence } = parseWatermark(stdout);
 
         // A genuine watermark scores ~1.5; clean-file noise sits around 0.2-0.3.
-        // Require >= 1.0 to count as detected, avoiding false positives on clean audio.
-        if (!payload || confidence < 1.0) {
+        // Require >= threshold to count as detected, avoiding false positives.
+        if (!payload || confidence < WM_DETECT_THRESHOLD) {
           return res.json({ payload: null, confidence: 0, message: "No watermark detected" });
         }
 

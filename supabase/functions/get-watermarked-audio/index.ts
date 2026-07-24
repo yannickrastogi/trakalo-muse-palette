@@ -78,26 +78,29 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Build cache key: hash of link_id + visitor_email + storage_path.
-    // Delivery copy is MP3 128k (.mp3) — the new extension means legacy ".wav"
-    // cache objects are never matched, so we never serve a stale WAV.
-    const cacheKey = await sha256Hex(`${link_id}_${visitor_email}_${storage_path}`);
-    const watermarkedPath = `${cacheKey}.mp3`;
+    // Build cache key: hash of link_id + visitor_email + storage_path. The "-v2"
+    // suffix invalidates legacy objects from the old 128k/strength-12 pipeline — they
+    // stay in the bucket (not deleted, still traceable) but are never matched again.
+    const cacheBase = (await sha256Hex(`${link_id}_${visitor_email}_${storage_path}`)) + "-v2";
+    const mp3Path = `${cacheBase}.mp3`;
+    const wavPath = `${cacheBase}.wav`;
 
     // All storage I/O routed through the storage abstraction (Supabase or R2 via STORAGE_PROVIDER).
     const storage = getStorageProvider();
 
-    // Check if watermarked file already exists in cache (bucket "watermarked")
-    if (await storage.exists("watermarked", watermarkedPath)) {
-      try {
-        const cachedUrl = await storage.createSignedUrl("watermarked", watermarkedPath, 300);
-        return new Response(JSON.stringify({ url: cachedUrl }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      } catch (e) {
-        // Cache hit but URL signing failed — fall through and regenerate.
-        console.error("get-watermarked-audio: cache sign failed (" + (e instanceof Error ? e.message : "unknown") + ")");
+    // Cache: a delivery copy is MP3 (verified) or WAV (fallback) — accept either.
+    for (const cachedPath of [mp3Path, wavPath]) {
+      if (await storage.exists("watermarked", cachedPath)) {
+        try {
+          const cachedUrl = await storage.createSignedUrl("watermarked", cachedPath, 300);
+          return new Response(JSON.stringify({ url: cachedUrl }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        } catch (e) {
+          // Cache hit but URL signing failed — fall through and regenerate.
+          console.error("get-watermarked-audio: cache sign failed (" + (e instanceof Error ? e.message : "unknown") + ")");
+        }
       }
     }
 
@@ -144,10 +147,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 4. Upload watermarked audio to "watermarked" bucket via storage abstraction.
+    // 4. Upload the watermarked audio. Railway signals the delivered format via
+    // X-Watermark-Format (mp3 = verified, wav = fallback when the MP3 lost the mark).
+    const format = (wmResponse.headers.get("X-Watermark-Format") || "mp3").toLowerCase();
+    const isWav = format === "wav";
+    const watermarkedPath = isWav ? wavPath : mp3Path;
+    const contentType = isWav ? "audio/wav" : "audio/mpeg";
+    if (isWav) {
+      console.warn("get-watermarked-audio: Railway returned WAV fallback (payload_prefix=" + payload.substring(0, 8) + ")");
+    }
+
     const watermarkedBuffer = await wmResponse.arrayBuffer();
     try {
-      await storage.upload("watermarked", watermarkedPath, watermarkedBuffer, "audio/mpeg");
+      await storage.upload("watermarked", watermarkedPath, watermarkedBuffer, contentType);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "unknown";
       console.error("get-watermarked-audio upload error:", msg);
