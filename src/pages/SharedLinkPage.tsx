@@ -2755,13 +2755,13 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               href="https://trakalog.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 pointer-events-auto rounded-2xl bg-black/40 backdrop-blur-sm px-4 py-2 transition-opacity hover:opacity-90"
+              className="flex items-center gap-3 pointer-events-auto rounded-2xl bg-black/40 backdrop-blur-sm px-4 py-2.5 transition-opacity hover:opacity-90"
               style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}
             >
-              <img src={trakalogLogo} alt="" className="h-6 w-6 md:h-7 md:w-7 object-contain shrink-0" />
+              <img src={trakalogLogo} alt="" className="h-11 w-11 md:h-12 md:w-12 rounded-xl object-contain shrink-0" />
               <span className="flex flex-col leading-none">
-                <span className="text-xl md:text-2xl font-bold tracking-tight text-white leading-none">TRAKALOG</span>
-                <span className="text-[8px] md:text-[10px] tracking-[0.2em] text-white/60 font-medium mt-1">{BRAND_TAGLINE}</span>
+                <span className="text-base md:text-lg font-bold tracking-tight text-white leading-none">TRAKALOG</span>
+                <span className="text-[9px] md:text-[10px] tracking-widest uppercase text-white/60 font-medium mt-1">{BRAND_TAGLINE}</span>
               </span>
             </a>
           </div>
@@ -2771,11 +2771,11 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               {logoUrl ? (
                 <img src={logoUrl} alt="Logo" className="object-contain max-h-[var(--logo-mh)] md:max-h-[var(--logo-mh-lg)]" style={{ ...logoStyleVars, filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
               ) : (
-                <div className="flex items-center gap-2.5" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}>
-                  <img src={trakalogLogo} alt="" className="h-12 w-12 md:h-16 md:w-16 object-contain shrink-0" />
+                <div className="flex items-center gap-5 md:gap-7" style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}>
+                  <img src={trakalogLogo} alt="" className="h-20 w-20 md:h-32 md:w-32 rounded-2xl md:rounded-3xl object-contain shrink-0" />
                   <div className="flex flex-col leading-none">
                     <span className="text-3xl md:text-5xl font-bold tracking-tight text-white leading-none">TRAKALOG</span>
-                    <span className="text-[10px] md:text-xs tracking-[0.2em] text-white/50 font-medium mt-1">{BRAND_TAGLINE}</span>
+                    <span className="text-[11px] md:text-sm tracking-widest uppercase text-white/50 font-medium mt-1.5">{BRAND_TAGLINE}</span>
                   </div>
                 </div>
               )}
@@ -2810,11 +2810,11 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
             {logoUrl ? (
               <img src={logoUrl} alt="Logo" className="object-contain max-h-[var(--logo-mh)] sm:max-h-[var(--logo-mh-lg)]" style={logoStyleVars} />
             ) : (
-              <div className="flex items-center gap-2.5">
-                <img src={trakalogLogo} alt="" className="h-12 w-12 sm:h-16 sm:w-16 object-contain shrink-0" />
+              <div className="flex items-center gap-5 sm:gap-7">
+                <img src={trakalogLogo} alt="" className="h-20 w-20 sm:h-32 sm:w-32 rounded-2xl sm:rounded-3xl object-contain shrink-0" />
                 <div className="flex flex-col leading-none">
                   <span className="text-3xl sm:text-5xl font-bold tracking-tight text-white leading-none">TRAKALOG</span>
-                  <span className="text-[10px] sm:text-xs tracking-[0.2em] text-muted-foreground/60 font-medium mt-1">{BRAND_TAGLINE}</span>
+                  <span className="text-[11px] sm:text-sm tracking-widest uppercase text-muted-foreground/60 font-medium mt-1.5">{BRAND_TAGLINE}</span>
                 </div>
               </div>
             )}
