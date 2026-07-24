@@ -71,7 +71,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const wsLogo = safeUrl(b?.logo_url);
     const wsHero = safeUrl(b?.hero_image_url);
     const brandedDesc = wsName ? "Shared via Trakalog · " + wsName : "Shared via Trakalog";
-    const brandFallbackImage = wsLogo || wsHero || DEFAULT_OG_IMAGE;
+    // Prefer the hero image over the logo: a logo is often transparent/small and makes
+    // a poor social thumbnail. Falls back to the branded default OG card.
+    const brandFallbackImage = wsHero || wsLogo || DEFAULT_OG_IMAGE;
 
     // Don't surface content previews for disabled / revoked / expired links.
     const linkActive =
@@ -95,13 +97,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           image = brandFallbackImage;
         }
       } else if (link.playlist_id) {
-        // Playlist name is not anon-readable directly; the link's own name is the
-        // reliable anon-safe title. og:image uses the first track's cover (via the
-        // slug-scoped RPC) then the workspace branding.
-        title = link.link_name || (wsName ? wsName + " · Playlist" : "Playlist");
-        const plTracks = await rpc("get_playlist_tracks_for_shared_link", { _slug: slug });
-        const firstCover = plTracks && plTracks.length > 0 ? safeUrl(plTracks[0]?.cover_url) : "";
-        image = firstCover || brandFallbackImage;
+        // The playlist's name/cover ARE anon-readable via the slug-scoped SECURITY
+        // DEFINER RPC (the anon RLS policy on playlists was fixed). Prefer the
+        // playlist's own cover and real name; fall back to the first track's cover,
+        // then workspace branding. Title falls back to the link name, then workspace.
+        const plMetaRows = await rpc("get_playlist_meta_for_shared_link", { _slug: slug });
+        const plMeta = plMetaRows && plMetaRows.length > 0 ? plMetaRows[0] : null;
+        title = plMeta?.name || link.link_name || (wsName ? wsName + " · Playlist" : "Playlist");
+        const playlistCover = safeUrl(plMeta?.cover_url);
+        let firstCover = "";
+        if (!playlistCover) {
+          const plTracks = await rpc("get_playlist_tracks_for_shared_link", { _slug: slug });
+          firstCover = plTracks && plTracks.length > 0 ? safeUrl(plTracks[0]?.cover_url) : "";
+        }
+        image = playlistCover || firstCover || brandFallbackImage;
       } else {
         title = (link.link_name || "Shared Content") + " — Trakalog";
         image = brandFallbackImage;
