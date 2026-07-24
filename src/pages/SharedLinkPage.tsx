@@ -22,6 +22,11 @@ import { normalizeSocialUrl } from "@/lib/social-urls";
 import { safeLocalStorage } from "@/lib/safeStorage";
 import type { TrackChapter } from "@/contexts/TrackContext";
 
+// Brand lockup descriptor — intentionally NOT translated. At 8-11px under an 8-letter
+// wordmark, long translations (e.g. "Gestionnaire de catalogue") overflow and break the
+// logo proportions, so this stays fixed in English across all languages.
+const BRAND_TAGLINE = "Catalog Manager";
+
 interface SharedLinkData {
   id: string;
   share_type: string;
@@ -486,8 +491,11 @@ export default function SharedLinkPage() {
   var [userHasNoWorkspace, setUserHasNoWorkspace] = useState(false);
   var wsCheckedRef = useRef(false);
 
-  // Workspace branding
+  // Workspace branding (public: name/hero/logo/colors/socials). Loaded before the gate
+  // so the gate renders the same immersive Shell as the content. brandingLoaded flips
+  // true on success AND failure so the render never hangs waiting on it.
   var [branding, setBranding] = useState<WorkspaceBranding | null>(null);
+  var [brandingLoaded, setBrandingLoaded] = useState(false);
 
   // Cache resolved audio URLs to avoid re-fetching
   var audioUrlCache = useRef<Record<string, string>>({});
@@ -777,7 +785,8 @@ export default function SharedLinkPage() {
         var data = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
         if (data) setBranding(data as WorkspaceBranding);
       })
-      .catch(function(err) { console.error("Failed to fetch workspace branding:", err); });
+      .catch(function(err) { console.error("Failed to fetch workspace branding:", err); })
+      .finally(function() { setBrandingLoaded(true); });
   }, [slug, linkData]);
 
   // Recover from a media-element failure. Falls back from the watermarked stream
@@ -1696,10 +1705,24 @@ export default function SharedLinkPage() {
     );
   }
 
+  // Hold on the spinner until the (public) branding has resolved, so the gate and the
+  // content render the identical immersive Shell — no flash from non-immersive to
+  // immersive once the gate is passed. Purely a render gate: no data is loaded here,
+  // and NO protected data (tracks/stems) is fetched ahead of the gate.
+  if (linkData && !brandingLoaded) {
+    return (
+      <Shell>
+        <div className="flex items-center justify-center py-24">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      </Shell>
+    );
+  }
+
   // Visitor gate
   if (needsGate) {
     return (
-      <Shell>
+      <Shell branding={branding}>
         <div className="max-w-sm mx-auto py-12 px-4">
           <div className="rounded-2xl p-8 text-center" style={{ background: "linear-gradient(145deg, rgba(249,115,22,0.08), rgba(139,92,246,0.05), transparent)", border: "1px solid rgba(249,115,22,0.15)" }}>
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "linear-gradient(135deg, rgba(249,115,22,0.2), rgba(139,92,246,0.2))" }}>
@@ -1804,7 +1827,7 @@ export default function SharedLinkPage() {
   // Password gate
   if (needsPassword) {
     return (
-      <Shell>
+      <Shell branding={branding}>
         <div className="max-w-sm mx-auto text-center py-12 px-4">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Lock className="w-6 h-6 text-primary" />
@@ -2738,7 +2761,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
               <img src={trakalogLogo} alt="" className="h-6 w-6 md:h-7 md:w-7 object-contain shrink-0" />
               <span className="flex flex-col leading-none">
                 <span className="text-xl md:text-2xl font-bold tracking-tight text-white leading-none">TRAKALOG</span>
-                <span className="text-[8px] md:text-[10px] tracking-[0.2em] text-white/60 font-medium mt-1">{t("sharedLink.catalogManagerTagline")}</span>
+                <span className="text-[8px] md:text-[10px] tracking-[0.2em] text-white/60 font-medium mt-1">{BRAND_TAGLINE}</span>
               </span>
             </a>
           </div>
@@ -2752,7 +2775,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
                   <img src={trakalogLogo} alt="" className="h-12 w-12 md:h-16 md:w-16 object-contain shrink-0" />
                   <div className="flex flex-col leading-none">
                     <span className="text-3xl md:text-5xl font-bold tracking-tight text-white leading-none">TRAKALOG</span>
-                    <span className="text-[10px] md:text-xs tracking-[0.2em] text-white/50 font-medium mt-1">{t("sharedLink.catalogManagerTagline")}</span>
+                    <span className="text-[10px] md:text-xs tracking-[0.2em] text-white/50 font-medium mt-1">{BRAND_TAGLINE}</span>
                   </div>
                 </div>
               )}
@@ -2791,7 +2814,7 @@ function Shell({ children, branding }: { children: React.ReactNode; branding?: W
                 <img src={trakalogLogo} alt="" className="h-12 w-12 sm:h-16 sm:w-16 object-contain shrink-0" />
                 <div className="flex flex-col leading-none">
                   <span className="text-3xl sm:text-5xl font-bold tracking-tight text-white leading-none">TRAKALOG</span>
-                  <span className="text-[10px] sm:text-xs tracking-[0.2em] text-muted-foreground/60 font-medium mt-1">{t("sharedLink.catalogManagerTagline")}</span>
+                  <span className="text-[10px] sm:text-xs tracking-[0.2em] text-muted-foreground/60 font-medium mt-1">{BRAND_TAGLINE}</span>
                 </div>
               </div>
             )}
