@@ -1134,6 +1134,7 @@
     "back": "Back",
     "next": "Next",
     "saveToCatalog": "Save Track to Catalog",
+    "suggestedCollaborators": "Detected in title / artist — tap to add (share stays 0%)",
     "reviewNextTrack": "Next track",
     "uploadAllCount": "Upload {{count}} tracks",
     "trackTitle": "Track Title",

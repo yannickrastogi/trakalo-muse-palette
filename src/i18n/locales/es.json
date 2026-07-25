@@ -1052,6 +1052,7 @@
     "back": "Atrás",
     "next": "Siguiente",
     "saveToCatalog": "Guardar pista en el catálogo",
+    "suggestedCollaborators": "Detectado en el título / artista — toca para añadir (participación al 0 %)",
     "reviewNextTrack": "Siguiente pista",
     "uploadAllCount": "Subir {{count}} pistas",
     "trackTitle": "Título de la pista",

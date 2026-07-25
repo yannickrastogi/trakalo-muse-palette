@@ -1065,6 +1065,7 @@
     "back": "뒤로",
     "next": "다음",
     "saveToCatalog": "카탈로그에 트랙 저장",
+    "suggestedCollaborators": "제목/아티스트에서 감지됨 — 탭하여 추가 (지분 0%)",
     "reviewNextTrack": "다음 트랙",
     "uploadAllCount": "{{count}}개 트랙 업로드",
     "trackTitle": "트랙 제목",

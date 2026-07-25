@@ -1052,6 +1052,7 @@
     "back": "戻る",
     "next": "次へ",
     "saveToCatalog": "カタログにトラックを保存",
+    "suggestedCollaborators": "タイトル／アーティストで検出 — タップで追加（シェアは0%）",
     "reviewNextTrack": "次のトラック",
     "uploadAllCount": "{{count}}件のトラックをアップロード",
     "trackTitle": "トラックタイトル",

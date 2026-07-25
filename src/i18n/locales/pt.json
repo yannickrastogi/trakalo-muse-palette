@@ -1052,6 +1052,7 @@
     "back": "Voltar",
     "next": "Seguinte",
     "saveToCatalog": "Guardar faixa no catálogo",
+    "suggestedCollaborators": "Detectado no título / artista — toque para adicionar (participação em 0%)",
     "reviewNextTrack": "Próxima faixa",
     "uploadAllCount": "Enviar {{count}} faixas",
     "trackTitle": "Título da faixa",

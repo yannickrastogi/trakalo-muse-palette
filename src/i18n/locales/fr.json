@@ -1134,6 +1134,7 @@
     "back": "Retour",
     "next": "Suivant",
     "saveToCatalog": "Enregistrer dans le catalogue",
+    "suggestedCollaborators": "Détecté dans le titre / l'artiste — cliquez pour ajouter (part à 0 %)",
     "reviewNextTrack": "Piste suivante",
     "uploadAllCount": "Envoyer {{count}} pistes",
     "trackTitle": "Titre du morceau",

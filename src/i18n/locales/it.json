@@ -1052,6 +1052,7 @@
     "back": "Indietro",
     "next": "Avanti",
     "saveToCatalog": "Salva brano nel catalogo",
+    "suggestedCollaborators": "Rilevato nel titolo / artista — tocca per aggiungere (quota allo 0%)",
     "reviewNextTrack": "Traccia successiva",
     "uploadAllCount": "Carica {{count}} tracce",
     "trackTitle": "Titolo brano",

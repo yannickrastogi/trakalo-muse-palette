@@ -43,6 +43,7 @@ import {
 import { CollaboratorAutocomplete, type CollaboratorSuggestion } from "@/components/CollaboratorAutocomplete";
 import { ImageCropperModal } from "@/components/ImageCropperModal";
 import { useContacts, type Contact } from "@/contexts/ContactsContext";
+import { CollaboratorSuggestions } from "@/components/CollaboratorSuggestions";
 import { useTrack as useTrackContext } from "@/contexts/TrackContext";
 import { PerformerCreditsSection, type CustomCreditEntry } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
@@ -647,6 +648,29 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
     if (s.publisher && !current.publisher) patch.publisher = s.publisher;
     var updated = currentTrack.splits.map(function (sp) { return sp.id === id ? { ...sp, ...patch } : sp; });
     updateCurrent({ splits: updated });
+  }, [currentTrack, updateCurrent]);
+
+  // Add a KNOWN collaborator detected in the title/artist as a new split, fully
+  // prefilled but with share = 0 (the user sets the percentage). Never automatic —
+  // only fired by an explicit chip click.
+  const addSuggestedCollaborator = useCallback((c: Contact) => {
+    if (!currentTrack) return;
+    const full = ((c.firstName || "") + " " + (c.lastName || "")).trim();
+    const newSplit: Split = {
+      id: crypto.randomUUID(),
+      name: full,
+      email: c.email || "",
+      stage_name: c.stageName || "",
+      role: c.role || "",
+      percentage: 0,
+      pro: c.pro || "",
+      ipi: c.ipi || "",
+      publisher: c.publisher || "",
+    };
+    const splits = currentTrack.splits;
+    // Fill the lone empty placeholder row if present; otherwise append.
+    const onlyEmpty = splits.length === 1 && !splits[0].name.trim();
+    updateCurrent({ splits: onlyEmpty ? [newSplit] : [...splits, newSplit] });
   }, [currentTrack, updateCurrent]);
 
   const totalSplit = currentTrack ? currentTrack.splits.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0) : 0;
@@ -2302,6 +2326,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                         </div>
                       </div>
                     )}
+                    <CollaboratorSuggestions
+                      text={(currentTrack.title || "") + " " + (currentTrack.artist || "") + " " + (currentTrack.featuring || "")}
+                      contacts={contacts}
+                      aliases={aliases}
+                      existingNamesKey={currentTrack.splits.flatMap((s) => [s.name, s.stage_name]).map((x) => (x || "").trim().toLowerCase()).filter(Boolean).join("\n")}
+                      onAdd={addSuggestedCollaborator}
+                    />
                     <StepDetails
                   splits={currentTrack.splits}
                   totalSplit={totalSplit}
