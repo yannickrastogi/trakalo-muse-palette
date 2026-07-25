@@ -1190,7 +1190,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       // Delete audio file from storage
       const { data: trackRow } = await supabase
         .from("tracks")
-        .select("storage_path")
+        .select("storage_path, cover_url")
         .eq("id", uuid)
         .single();
 
@@ -1198,9 +1198,16 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         await supabase.storage.from("tracks").remove([trackRow.storage_path]);
       }
 
-      // Delete cover from storage
-      const coverPath = activeWorkspace.id + "/" + uuid + ".jpg";
-      await supabase.storage.from("covers").remove([coverPath]);
+      // Delete cover(s) from storage. Covers now use a timestamped filename, so derive
+      // the real path from the stored cover_url; also remove the legacy fixed-path name
+      // (<uuid>.jpg) for covers created before the unique-filename change.
+      const coverPaths: string[] = [activeWorkspace.id + "/" + uuid + ".jpg"];
+      const coverUrl = trackRow?.cover_url;
+      if (coverUrl && coverUrl.indexOf("/covers/") !== -1) {
+        const p = coverUrl.split("/covers/")[1].split("?")[0];
+        if (p && !coverPaths.includes(p)) coverPaths.push(p);
+      }
+      await supabase.storage.from("covers").remove(coverPaths);
 
       // Delete the track row
       if (!user) return false;

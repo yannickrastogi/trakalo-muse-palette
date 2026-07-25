@@ -965,7 +965,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       // Upload cover art if provided — same pattern as TrackDetail.tsx
       if (savedTrack && coverFileToUpload && workspaceId) {
         setUploadStage(t("uploadTrack.uploadingCover", "Uploading cover..."));
-        const coverPath = workspaceId + "/" + savedTrack.uuid + ".jpg";
+        // Unique filename per upload so a later cover replacement produces a new URL.
+        const coverPath = workspaceId + "/" + savedTrack.uuid + "-" + Date.now() + ".jpg";
         const { error: coverError } = await supabase.storage
           .from("covers")
           .upload(coverPath, coverFileToUpload, { upsert: true, contentType: coverFileToUpload.type });
@@ -1815,7 +1816,8 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
           // ── Stage 5: Cover upload (if any) ──
           if (savedTrack && coverFileToUpload && workspaceId && user) {
-            const coverPath = workspaceId + "/" + savedTrack.uuid + ".jpg";
+            // Unique filename per upload so a later cover replacement produces a new URL.
+            const coverPath = workspaceId + "/" + savedTrack.uuid + "-" + Date.now() + ".jpg";
             const { error: coverError } = await supabase.storage
               .from("covers")
               .upload(coverPath, coverFileToUpload, { upsert: true, contentType: coverFileToUpload.type });

@@ -626,7 +626,11 @@ export default function TrackDetail() {
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      const path = activeWorkspace.id + "/" + track.uuid + ".jpg";
+                      const oldUrl = track.coverImage;
+                      // Unique filename per upload → new public URL → the DB value actually
+                      // changes and the browser/CDN cache is busted (fixed path + upsert kept
+                      // the URL identical, so cover replacements never showed).
+                      const path = activeWorkspace.id + "/" + track.uuid + "-" + Date.now() + ".jpg";
                       const { error } = await supabase.storage
                         .from("covers")
                         .upload(path, file, { upsert: true, contentType: file.type });
@@ -638,6 +642,12 @@ export default function TrackDetail() {
                         .from("covers")
                         .getPublicUrl(path);
                       updateTrack(track.id, { coverImage: urlData.publicUrl });
+                      // Best-effort: drop the previous cover file (now a different name) to
+                      // avoid orphans. Never delete the just-uploaded file.
+                      const oldPath = oldUrl && oldUrl.indexOf("/covers/") !== -1 ? oldUrl.split("/covers/")[1].split("?")[0] : "";
+                      if (oldPath && oldPath !== path) {
+                        void supabase.storage.from("covers").remove([oldPath]).catch(() => {});
+                      }
                       e.target.value = "";
                     }}
                   />
