@@ -1,4 +1,11 @@
 {
+  "imageCropper": {
+    "title": "Recortar imagen",
+    "instruction": "Arrastra para reposicionar · rueda o control deslizante para hacer zoom",
+    "zoom": "Zoom",
+    "cancel": "Cancelar",
+    "save": "Guardar"
+  },
   "billing": {
     "seats": {
       "title": "Asientos",

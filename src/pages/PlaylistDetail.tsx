@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ShareModal } from "@/components/ShareModal";
+import { ImageCropperModal } from "@/components/ImageCropperModal";
 import { PlaylistWorkspaceShare } from "@/components/PlaylistWorkspaceShare";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { useAudioPlayer } from "@/contexts/AudioPlayerContext";
@@ -94,6 +95,7 @@ export default function PlaylistDetail() {
   const { playTrack, togglePlay, isTrackPlaying, isPlaying: audioIsPlaying, currentTrack, setQueue, progress } = useAudioPlayer();
   const { activeWorkspace } = useWorkspace();
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const playlistData = getPlaylist(id || "");
   // Persistent DB fallback — survives context resets, tab switch, refresh
   const dbPlaylistRef = useRef<PlaylistItem | null>(null);
@@ -395,9 +397,19 @@ export default function PlaylistDetail() {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={async (e) => {
-                  var file = e.target.files?.[0];
-                  if (!file || !id) return;
+                onChange={(e) => {
+                  var f = e.target.files?.[0];
+                  if (f) setCropFile(f); // open the square cropper first
+                  e.target.value = "";
+                }}
+              />
+              <ImageCropperModal
+                open={!!cropFile}
+                onOpenChange={(o) => { if (!o) setCropFile(null); }}
+                imageFile={cropFile}
+                onCropped={async (file) => {
+                  setCropFile(null);
+                  if (!id) return;
                   var oldUrl = playlist.coverImage;
                   // Unique filename per upload → new public URL → the DB value actually
                   // changes and the browser/CDN cache is busted. A fixed path + upsert kept
@@ -420,7 +432,6 @@ export default function PlaylistDetail() {
                   if (oldPath && oldPath !== path) {
                     void supabase.storage.from("covers").remove([oldPath]).catch(() => {});
                   }
-                  e.target.value = "";
                 }}
               />
               {permissions.canEditPlaylists && (

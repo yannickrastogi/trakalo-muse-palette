@@ -1,4 +1,11 @@
 {
+  "imageCropper": {
+    "title": "Ritaglia immagine",
+    "instruction": "Trascina per riposizionare · rotellina o cursore per lo zoom",
+    "zoom": "Zoom",
+    "cancel": "Annulla",
+    "save": "Salva"
+  },
   "billing": {
     "seats": {
       "title": "Postazioni",

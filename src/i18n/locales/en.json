@@ -1,4 +1,11 @@
 {
+  "imageCropper": {
+    "title": "Crop image",
+    "instruction": "Drag to reposition · scroll or use the slider to zoom",
+    "zoom": "Zoom",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
   "billing": {
     "seats": {
       "title": "Seats",

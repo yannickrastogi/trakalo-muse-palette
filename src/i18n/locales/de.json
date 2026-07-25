@@ -1,4 +1,11 @@
 {
+  "imageCropper": {
+    "title": "Bild zuschneiden",
+    "instruction": "Zum Verschieben ziehen · scrollen oder Schieberegler zum Zoomen",
+    "zoom": "Zoom",
+    "cancel": "Abbrechen",
+    "save": "Speichern"
+  },
   "billing": {
     "seats": {
       "title": "Sitze",

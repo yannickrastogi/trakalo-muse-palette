@@ -1,4 +1,11 @@
 {
+  "imageCropper": {
+    "title": "Recadrer l'image",
+    "instruction": "Glissez pour repositionner · molette ou curseur pour zoomer",
+    "zoom": "Zoom",
+    "cancel": "Annuler",
+    "save": "Enregistrer"
+  },
   "billing": {
     "seats": {
       "title": "Sièges",

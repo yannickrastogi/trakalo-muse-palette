@@ -1,4 +1,11 @@
 {
+  "imageCropper": {
+    "title": "이미지 자르기",
+    "instruction": "드래그하여 위치 조정 · 스크롤 또는 슬라이더로 확대/축소",
+    "zoom": "확대/축소",
+    "cancel": "취소",
+    "save": "저장"
+  },
   "billing": {
     "seats": {
       "title": "좌석",

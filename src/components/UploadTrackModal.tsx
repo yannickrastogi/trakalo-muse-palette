@@ -41,6 +41,7 @@ import {
   ListMusic,
 } from "lucide-react";
 import { CollaboratorAutocomplete, type CollaboratorSuggestion } from "@/components/CollaboratorAutocomplete";
+import { ImageCropperModal } from "@/components/ImageCropperModal";
 import { useContacts, type Contact } from "@/contexts/ContactsContext";
 import { useTrack as useTrackContext } from "@/contexts/TrackContext";
 import { PerformerCreditsSection, type CustomCreditEntry } from "@/components/PerformerCreditsSection";
@@ -2996,11 +2997,12 @@ function StepCommonInfo({
   const [showCredits, setShowCredits] = useState(false);
   const [showMetadata, setShowMetadata] = useState(false);
 
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const handleCoverSelect = (file: File) => {
     const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!validTypes.includes(file.type)) return;
     if (file.size > 5 * 1024 * 1024) return;
-    onUpdate({ coverFile: file });
+    setCropFile(file); // open the square cropper; store the cropped result on save
   };
 
   const setPublishers = (pubs: string[]) => onUpdate({ publishers: pubs });
@@ -3115,6 +3117,12 @@ function StepCommonInfo({
               }}
             />
           </div>
+          <ImageCropperModal
+            open={!!cropFile}
+            onOpenChange={(o) => { if (!o) setCropFile(null); }}
+            imageFile={cropFile}
+            onCropped={(c) => { onUpdate({ coverFile: c }); setCropFile(null); }}
+          />
           {commonInfo.coverFile && (
             <div className="flex flex-col gap-1 pt-1">
               <p className="text-[13px] font-medium text-foreground truncate max-w-[200px]">{commonInfo.coverFile.name}</p>
@@ -3397,11 +3405,12 @@ function StepInfo({
     return () => { if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl); };
   }, [coverPreviewUrl]);
 
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const handleCoverSelect = (file: File) => {
     const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!validTypes.includes(file.type)) return;
     if (file.size > 5 * 1024 * 1024) return; // 5MB max
-    setCoverFile(file);
+    setCropFile(file); // open the square cropper; store the cropped result on save
   };
 
   return (
@@ -3452,6 +3461,12 @@ function StepInfo({
               }}
             />
           </div>
+          <ImageCropperModal
+            open={!!cropFile}
+            onOpenChange={(o) => { if (!o) setCropFile(null); }}
+            imageFile={cropFile}
+            onCropped={(c) => { setCoverFile(c); setCropFile(null); }}
+          />
           {coverFile && (
             <div className="flex flex-col gap-1 pt-1">
               <p className="text-[13px] font-medium text-foreground truncate max-w-[200px]">{coverFile.name}</p>

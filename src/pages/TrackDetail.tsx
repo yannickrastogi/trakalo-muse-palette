@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTeams } from "@/contexts/TeamContext";
 import { useTrack, mapRowToTrack, type TrackData, type TrackStem, type TrackSplit, type TrackVersion, type TrackChapter } from "@/contexts/TrackContext";
+import { ImageCropperModal } from "@/components/ImageCropperModal";
 import { useEngagement } from "@/contexts/EngagementContext";
 import { useTrackReview, formatTimestamp } from "@/contexts/TrackReviewContext";
 import { generateLyricsPdf, generateSplitsPdf, generateMetadataPdf, generateCreditsPdf, type CreditEntry } from "@/lib/pdf-generators";
@@ -263,6 +264,7 @@ export default function TrackDetail() {
   const { getTrackEngagement } = useEngagement();
   const { getCommentsForTrack, addComment, loadCommentsForTrack } = useTrackReview();
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTrackModalOpen, setShareTrackModalOpen] = useState(false);
   const [downloadModalOpen, setDownloadModalOpen] = useState(false);
@@ -623,9 +625,18 @@ export default function TrackDetail() {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) setCropFile(f); // open the square cropper first
+                      e.target.value = "";
+                    }}
+                  />
+                  <ImageCropperModal
+                    open={!!cropFile}
+                    onOpenChange={(o) => { if (!o) setCropFile(null); }}
+                    imageFile={cropFile}
+                    onCropped={async (file) => {
+                      setCropFile(null);
                       const oldUrl = track.coverImage;
                       // Unique filename per upload → new public URL → the DB value actually
                       // changes and the browser/CDN cache is busted (fixed path + upsert kept
@@ -648,7 +659,6 @@ export default function TrackDetail() {
                       if (oldPath && oldPath !== path) {
                         void supabase.storage.from("covers").remove([oldPath]).catch(() => {});
                       }
-                      e.target.value = "";
                     }}
                   />
                   {!isViewerShared && permissions.canEditTracks && (

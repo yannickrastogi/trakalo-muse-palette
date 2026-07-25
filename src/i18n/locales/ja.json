@@ -1,4 +1,11 @@
 {
+  "imageCropper": {
+    "title": "画像をトリミング",
+    "instruction": "ドラッグで位置調整 · スクロールまたはスライダーでズーム",
+    "zoom": "ズーム",
+    "cancel": "キャンセル",
+    "save": "保存"
+  },
   "billing": {
     "seats": {
       "title": "シート",
