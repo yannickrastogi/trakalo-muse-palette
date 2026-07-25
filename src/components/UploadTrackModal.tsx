@@ -3221,15 +3221,6 @@ function StepCommonInfo({
         />
       </div>
 
-      {/* Tags */}
-      <div className="border-t border-border pt-5">
-        <p className="text-[13px] font-semibold text-muted-foreground mb-3">
-          Tags
-          <span className="text-2xs text-muted-foreground/50 font-normal ml-1">— instruments, mood, themes & sync</span>
-        </p>
-        <TagsSection tags={(commonInfo.tags || {}) as TrackTags} onChange={(tags) => onUpdate({ tags: tags as Record<string, unknown> })} />
-      </div>
-
       {/* Credits (collapsible) — identical to solo StepDetails */}
       <div className="border-t border-border pt-5">
         <button
@@ -3293,6 +3284,15 @@ function StepCommonInfo({
             />
           </motion.div>
         )}
+      </div>
+
+      {/* Tags */}
+      <div className="border-t border-border pt-5">
+        <p className="text-[13px] font-semibold text-muted-foreground mb-3">
+          Tags
+          <span className="text-2xs text-muted-foreground/50 font-normal ml-1">— instruments, mood, themes & sync</span>
+        </p>
+        <TagsSection tags={(commonInfo.tags || {}) as TrackTags} onChange={(tags) => onUpdate({ tags: tags as Record<string, unknown> })} />
       </div>
 
       {/* Metadata (collapsible) */}
