@@ -1052,6 +1052,8 @@
     "back": "Voltar",
     "next": "Seguinte",
     "saveToCatalog": "Guardar faixa no catálogo",
+    "reviewNextTrack": "Próxima faixa",
+    "uploadAllCount": "Enviar {{count}} faixas",
     "trackTitle": "Título da faixa",
     "artist": "Artista",
     "bpm": "BPM",

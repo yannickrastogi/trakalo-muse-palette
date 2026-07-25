@@ -1052,6 +1052,8 @@
     "back": "Indietro",
     "next": "Avanti",
     "saveToCatalog": "Salva brano nel catalogo",
+    "reviewNextTrack": "Traccia successiva",
+    "uploadAllCount": "Carica {{count}} tracce",
     "trackTitle": "Titolo brano",
     "artist": "Artista",
     "bpm": "BPM",

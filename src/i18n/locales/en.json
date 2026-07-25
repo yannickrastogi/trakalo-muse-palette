@@ -1134,6 +1134,8 @@
     "back": "Back",
     "next": "Next",
     "saveToCatalog": "Save Track to Catalog",
+    "reviewNextTrack": "Next track",
+    "uploadAllCount": "Upload {{count}} tracks",
     "trackTitle": "Track Title",
     "artist": "Artist",
     "bpm": "BPM",

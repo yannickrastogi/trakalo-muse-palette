@@ -1725,6 +1725,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             language: entry.language || "",
             voice: entry.voice || "N/A",
             type: entry.trackType || "Song",
+            productionStage: entry.productionStage || "work_in_progress",
             originalFileUrl: audioUrl,
             previewFileUrl: undefined,
             originalFileName: entry.fileName,
@@ -2657,16 +2658,35 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                     </div>
                   ) : (
                     <button
-                      onClick={saveCurrentTrack}
+                      onClick={() => {
+                        if (currentIdx < queue.length - 1) {
+                          // Review flow: this track's metadata is already persisted to the
+                          // queue via updateCurrent — just advance to the next track. No
+                          // upload happens here anymore (the whole queue uploads at the end).
+                          setCurrentIdx(currentIdx + 1);
+                          setEditStep(0);
+                          setIsPlayingPreview(false);
+                        } else if (queue.length > 1) {
+                          // Last track of a batch: upload the whole reviewed queue at once
+                          // via the existing batch engine (it reads each entry's metadata
+                          // from the queue). Surface the Review step where its progress /
+                          // success UI already lives.
+                          setEditStep(4);
+                          handleSkipReviewUploadAll();
+                        } else {
+                          // Solo (single track): unchanged single-track upload.
+                          saveCurrentTrack();
+                        }
+                      }}
                       className="btn-brand flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-semibold"
                     >
-                      <Check className="w-3.5 h-3.5" />
+                      {currentIdx < queue.length - 1 ? <ChevronRight className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
                       {currentIdx < queue.length - 1
-                        ? t("uploadTrack.saveAndNext", "Save & Next") + " (" + (currentIdx + 2) + "/" + queue.length + ")"
+                        ? t("uploadTrack.reviewNextTrack", "Next track") + " (" + (currentIdx + 2) + "/" + queue.length + ")"
+                        : queue.length > 1
+                        ? t("uploadTrack.uploadAllCount", { count: queue.length, defaultValue: "Upload " + queue.length + " tracks" })
                         : currentTrack && currentTrack.sharedWorkspaces.length > 0
                         ? t("uploadTrack.uploadAndShare", "Upload & Share")
-                        : queue.length > 1
-                        ? t("uploadTrack.saveAllToCatalog", "Save All to Catalog")
                         : t("uploadTrack.saveToCatalog")
                       }
                     </button>

@@ -1052,6 +1052,8 @@
     "back": "Atrás",
     "next": "Siguiente",
     "saveToCatalog": "Guardar pista en el catálogo",
+    "reviewNextTrack": "Siguiente pista",
+    "uploadAllCount": "Subir {{count}} pistas",
     "trackTitle": "Título de la pista",
     "artist": "Artista",
     "bpm": "BPM",

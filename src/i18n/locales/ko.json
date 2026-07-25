@@ -1065,6 +1065,8 @@
     "back": "뒤로",
     "next": "다음",
     "saveToCatalog": "카탈로그에 트랙 저장",
+    "reviewNextTrack": "다음 트랙",
+    "uploadAllCount": "{{count}}개 트랙 업로드",
     "trackTitle": "트랙 제목",
     "artist": "아티스트",
     "bpm": "BPM",
