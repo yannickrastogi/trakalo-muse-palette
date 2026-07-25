@@ -43,7 +43,7 @@ import {
 import { CollaboratorAutocomplete, type CollaboratorSuggestion } from "@/components/CollaboratorAutocomplete";
 import { ImageCropperModal } from "@/components/ImageCropperModal";
 import { useContacts, type Contact } from "@/contexts/ContactsContext";
-import { CollaboratorSuggestions } from "@/components/CollaboratorSuggestions";
+import { detectCollaboratorsFromText } from "@/lib/detectCollaboratorsFromText";
 import { useTrack as useTrackContext } from "@/contexts/TrackContext";
 import { PerformerCreditsSection, type CustomCreditEntry } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
@@ -145,6 +145,9 @@ interface TrackEntry {
   tags: Record<string, unknown>;
   // Status
   metadataComplete: boolean;
+  // Contact ids already handled by the known-collaborator auto-fill (added or already
+  // present). Guards against re-adding a row the user deleted and against render loops.
+  autoFilledContactIds: string[];
 }
 
 interface UploadTrackModalProps {
@@ -331,6 +334,7 @@ function createTrackEntry(file: File): TrackEntry {
     explicit: false,
     tags: {},
     metadataComplete: false,
+    autoFilledContactIds: [],
   };
 }
 
@@ -653,25 +657,68 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   // Add a KNOWN collaborator detected in the title/artist as a new split, fully
   // prefilled but with share = 0 (the user sets the percentage). Never automatic —
   // only fired by an explicit chip click.
-  const addSuggestedCollaborator = useCallback((c: Contact) => {
-    if (!currentTrack) return;
-    const full = ((c.firstName || "") + " " + (c.lastName || "")).trim();
-    const newSplit: Split = {
-      id: crypto.randomUUID(),
-      name: full,
-      email: c.email || "",
-      stage_name: c.stageName || "",
-      role: c.role || "",
-      percentage: 0,
-      pro: c.pro || "",
-      ipi: c.ipi || "",
-      publisher: c.publisher || "",
+  // Auto-fill splits from KNOWN workspace collaborators detected in the current track's
+  // title / artist / featuring and the Common Info artist. It ONLY ever adds a prefilled
+  // split (share 0 — never auto-assigned) for a contact/alias that already exists in this
+  // workspace; unknown names produce nothing. Each contact is handled at most once per
+  // track (autoFilledContactIds), so it never loops, never overwrites manual entries, and
+  // never re-adds a row the user deleted. A multi-contact alias adds one split per contact.
+  useEffect(() => {
+    const tr = currentTrack;
+    if (!tr) return;
+    if (contacts.length === 0 && aliases.length === 0) return;
+
+    const text = (tr.title || "") + " " + (tr.artist || "") + " " + (commonInfo.artist || "") + " " + (tr.featuring || "");
+    const detectContacts = contacts.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, stageName: c.stageName }));
+    const detectAliases = aliases.map((a) => ({ alias_name: a.alias_name, contact_ids: a.contact_ids }));
+    const detected = detectCollaboratorsFromText(text, detectContacts, detectAliases);
+    if (detected.length === 0) return;
+
+    const alreadyHandled = new Set(tr.autoFilledContactIds || []);
+    const presentNames = new Set(
+      tr.splits.flatMap((s) => [s.name, s.stage_name]).map((x) => (x || "").trim().toLowerCase()).filter(Boolean),
+    );
+
+    const toAdd: Split[] = [];
+    const handledIds: string[] = [];
+    for (const d of detected) {
+      if (alreadyHandled.has(d.contactId)) continue; // handled once — never re-add (incl. after manual delete)
+      const c = contacts.find((ct) => ct.id === d.contactId);
+      if (!c) continue;
+      handledIds.push(d.contactId);
+      const full = ((c.firstName || "") + " " + (c.lastName || "")).trim();
+      const stage = (c.stageName || "").trim().toLowerCase();
+      // Skip if the contact is already present in the splits (never a duplicate).
+      if ((full && presentNames.has(full.toLowerCase())) || (stage && presentNames.has(stage))) continue;
+      toAdd.push({
+        id: crypto.randomUUID(),
+        name: full,
+        email: c.email || "",
+        stage_name: c.stageName || "",
+        role: c.role || "",
+        percentage: 0,
+        pro: c.pro || "",
+        ipi: c.ipi || "",
+        publisher: c.publisher || "",
+      });
+    }
+
+    if (handledIds.length === 0) return; // nothing new → no state update → no render loop
+
+    const updates: Partial<TrackEntry> = {
+      autoFilledContactIds: [...(tr.autoFilledContactIds || []), ...handledIds],
     };
-    const splits = currentTrack.splits;
-    // Fill the lone empty placeholder row if present; otherwise append.
-    const onlyEmpty = splits.length === 1 && !splits[0].name.trim();
-    updateCurrent({ splits: onlyEmpty ? [newSplit] : [...splits, newSplit] });
-  }, [currentTrack, updateCurrent]);
+    if (toAdd.length > 0) {
+      // Replace the lone empty placeholder row; otherwise append (never touch existing rows).
+      const onlyEmpty = tr.splits.length === 1 && !tr.splits[0].name.trim();
+      updates.splits = onlyEmpty ? [...toAdd] : [...tr.splits, ...toAdd];
+    }
+    updateCurrent(updates);
+    // Deliberately NOT depending on currentTrack.splits / autoFilledContactIds: the
+    // handled-ids guard makes this converge (no loop). Re-run only when the identity /
+    // detection inputs change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrack?.id, currentTrack?.title, currentTrack?.artist, currentTrack?.featuring, commonInfo.artist, contacts, aliases, updateCurrent]);
 
   const totalSplit = currentTrack ? currentTrack.splits.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0) : 0;
 
@@ -2326,13 +2373,6 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                         </div>
                       </div>
                     )}
-                    <CollaboratorSuggestions
-                      text={(currentTrack.title || "") + " " + (currentTrack.artist || "") + " " + (currentTrack.featuring || "")}
-                      contacts={contacts}
-                      aliases={aliases}
-                      existingNamesKey={currentTrack.splits.flatMap((s) => [s.name, s.stage_name]).map((x) => (x || "").trim().toLowerCase()).filter(Boolean).join("\n")}
-                      onAdd={addSuggestedCollaborator}
-                    />
                     <StepDetails
                   splits={currentTrack.splits}
                   totalSplit={totalSplit}
