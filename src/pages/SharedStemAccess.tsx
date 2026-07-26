@@ -10,6 +10,7 @@ import {
   AlertCircle, MoreHorizontal, Edit3, Trash2, Send, Loader2
 } from "lucide-react";
 import { DEFAULT_COVER } from "@/lib/constants";
+import { storeCommentSecret, getCommentSecret, hasCommentSecret, removeCommentSecret } from "@/lib/commentSecrets";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
@@ -92,6 +93,8 @@ interface CommentRow {
   created_at: string;
   updated_at: string | null;
   deleted_at: string | null;
+  // Returned once by the insert RPC; captured into localStorage, then stripped.
+  author_secret?: string;
 }
 
 function formatFileSize(bytes: number | null): string {
@@ -924,10 +927,14 @@ function AutonomousReviewPanel({
       .then(function(res) { return res.ok ? res.json() : null; })
       .then(function(raw) {
         setSubmitting(false);
-        // PostgREST may return the composite row as an object or a single-element
-        // array depending on the Accept header — handle both.
+        // The RPC returns a jsonb object; PostgREST may wrap it in a single-
+        // element array depending on the Accept header — handle both.
         var row = Array.isArray(raw) ? raw[0] : raw;
         if (row && row.id) {
+          // Capture the one-time author_secret (edit/delete proof) into
+          // localStorage, then strip it so it never lives in React state.
+          if (row.author_secret) storeCommentSecret(row.id, row.author_secret);
+          delete row.author_secret;
           setComments(function(prev) { return prev.concat([row as CommentRow]); });
           setComposerOpen(false);
           setCommentText("");
@@ -942,6 +949,10 @@ function AutonomousReviewPanel({
   // current shared link's slug. Previously the anon UPDATE/DELETE policies
   // allowed editing comments across ANY active shared link.
   var handleEdit = function(commentId: string, newText: string) {
+    if (!newText) return;
+    // author_secret is the only thing the RPC accepts as proof of authorship.
+    var secret = getCommentSecret(commentId);
+    if (!secret) { toast.error(t("sharedLink.editFailed")); return; }
     fetch(SUPABASE_URL + "/rest/v1/rpc/update_track_comment_via_token", {
       method: "POST",
       headers: {
@@ -953,28 +964,28 @@ function AutonomousReviewPanel({
         _comment_id: commentId,
         _shared_link_token: linkSlug,
         _new_content: newText,
+        _author_secret: secret,
       }),
     })
-      .then(function(res) { return res.ok ? res.json() : null; })
-      .then(function(json) {
-        if (json && json.success) {
-          setComments(function(prev) {
-            return prev.map(function(c) {
-              if (c.id === commentId) return Object.assign({}, c, { content: newText, updated_at: new Date().toISOString() });
-              return c;
-            });
+      .then(function(res) {
+        // RPC returns true (200) on success, or raises 'not authorized' (4xx).
+        if (!res.ok) throw new Error("not authorized");
+        setComments(function(prev) {
+          return prev.map(function(c) {
+            if (c.id === commentId) return Object.assign({}, c, { content: newText, updated_at: new Date().toISOString() });
+            return c;
           });
-          setEditingId(null);
-        } else {
-          console.error("update_track_comment_via_token failed:", json);
-        }
+        });
+        setEditingId(null);
       })
-      .catch(function (err) { console.error("Error:", err); });
+      .catch(function () { toast.error(t("sharedLink.editFailed")); });
   };
 
   var handleDelete = function() {
     if (!deleteConfirmId) return;
     var id = deleteConfirmId;
+    var secret = getCommentSecret(id);
+    if (!secret) { toast.error(t("sharedLink.deleteFailed")); setDeleteConfirmId(null); return; }
     fetch(SUPABASE_URL + "/rest/v1/rpc/delete_track_comment_via_token", {
       method: "POST",
       headers: {
@@ -985,18 +996,16 @@ function AutonomousReviewPanel({
       body: JSON.stringify({
         _comment_id: id,
         _shared_link_token: linkSlug,
+        _author_secret: secret,
       }),
     })
-      .then(function(res) { return res.ok ? res.json() : null; })
-      .then(function(json) {
-        if (json && json.success) {
-          setComments(function(prev) { return prev.filter(function(c) { return c.id !== id; }); });
-          setDeleteConfirmId(null);
-        } else {
-          console.error("delete_track_comment_via_token failed:", json);
-        }
+      .then(function(res) {
+        if (!res.ok) throw new Error("not authorized");
+        removeCommentSecret(id);
+        setComments(function(prev) { return prev.filter(function(c) { return c.id !== id; }); });
+        setDeleteConfirmId(null);
       })
-      .catch(function (err) { console.error("Error:", err); });
+      .catch(function () { toast.error(t("sharedLink.deleteFailed")); setDeleteConfirmId(null); });
   };
 
   return (
@@ -1087,7 +1096,7 @@ function AutonomousReviewPanel({
                       </>
                     )}
                   </div>
-                  {!isEditing && (
+                  {!isEditing && hasCommentSecret(comment.id) && (
                     <div className="relative shrink-0">
                       <button
                         onClick={function() { setOpenMenuId(openMenuId === comment.id ? null : comment.id); }}

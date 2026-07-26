@@ -20,6 +20,7 @@ import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { normalizeSocialUrl } from "@/lib/social-urls";
 import { safeLocalStorage } from "@/lib/safeStorage";
+import { storeCommentSecret, getCommentSecret, hasCommentSecret, removeCommentSecret } from "@/lib/commentSecrets";
 import type { TrackChapter } from "@/contexts/TrackContext";
 
 // Brand lockup descriptor — intentionally NOT translated. At 8-11px under an 8-letter
@@ -121,6 +122,9 @@ interface TrackComment {
   content: string;
   created_at: string;
   is_edited?: boolean;
+  // Returned once by the insert path; captured into localStorage, never kept in
+  // state. Present transiently on the create response only.
+  author_secret?: string;
 }
 
 function formatDuration(seconds: number): string {
@@ -1281,15 +1285,18 @@ export default function SharedLinkPage() {
   // the slug-validated token RPCs. Optimistic local update after each action.
   var handleSaveEdit = function(comment: TrackComment) {
     if (!editContent.trim() || !slug) return;
+    // The author_secret proves this browser created the comment; without it the
+    // RPC would reject, so don't even call — surface a clear message instead.
+    var secret = getCommentSecret(comment.id);
+    if (!secret) { toast.error(t("sharedLink.editFailed")); return; }
     var newContent = editContent.trim();
     fetch(SUPABASE_URL + "/rest/v1/rpc/update_track_comment_via_token", {
       method: "POST",
       headers: { ...SB_HEADERS, "Content-Type": "application/json" },
-      body: JSON.stringify({ _comment_id: comment.id, _shared_link_token: slug, _new_content: newContent }),
+      body: JSON.stringify({ _comment_id: comment.id, _shared_link_token: slug, _new_content: newContent, _author_secret: secret }),
     })
       .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
-      .then(function(data) {
-        if (data && data.success === false) throw new Error("update failed");
+      .then(function() {
         setComments(function(prev) { return prev.map(function(c) { return c.id === comment.id ? { ...c, content: newContent, is_edited: true } : c; }); });
         setEditingCommentId(null);
         setEditContent("");
@@ -1299,14 +1306,19 @@ export default function SharedLinkPage() {
 
   var handleDeleteComment = function(commentId: string) {
     if (!slug) return;
+    var secret = getCommentSecret(commentId);
+    if (!secret) { toast.error(t("sharedLink.deleteFailed")); return; }
     if (!window.confirm(t("sharedLink.deleteComment"))) return;
     fetch(SUPABASE_URL + "/rest/v1/rpc/delete_track_comment_via_token", {
       method: "POST",
       headers: { ...SB_HEADERS, "Content-Type": "application/json" },
-      body: JSON.stringify({ _comment_id: commentId, _shared_link_token: slug }),
+      body: JSON.stringify({ _comment_id: commentId, _shared_link_token: slug, _author_secret: secret }),
     })
       .then(function(r) { if (!r.ok) throw new Error(r.statusText); })
-      .then(function() { setComments(function(prev) { return prev.filter(function(c) { return c.id !== commentId; }); }); })
+      .then(function() {
+        removeCommentSecret(commentId);
+        setComments(function(prev) { return prev.filter(function(c) { return c.id !== commentId; }); });
+      })
       .catch(function() { toast.error(t("sharedLink.deleteFailed")); });
   };
 
@@ -1318,7 +1330,9 @@ export default function SharedLinkPage() {
           {t("sharedLink.comments")} ({comments.length})
         </p>
         {comments.map(function(c) {
-          var isOwn = !!c.is_own;
+          // Edit/delete are gated on holding the comment's author_secret (the
+          // only thing the RPCs accept), not on is_own — is_own is display-only.
+          var canModerate = hasCommentSecret(c.id);
           var isEditing = editingCommentId === c.id;
           return (
             <div key={c.id} className={"flex gap-2 p-2 rounded-lg " + (dark ? "bg-white/8" : "bg-secondary/20")}>
@@ -1349,7 +1363,7 @@ export default function SharedLinkPage() {
                   <p className={"text-xs mt-0.5 break-words " + (dark ? "text-white/70" : "text-foreground/70")}>{c.content}</p>
                 )}
               </div>
-              {isOwn && !isEditing && (
+              {canModerate && !isEditing && (
                 <div className="flex gap-1 shrink-0">
                   <button
                     onClick={function() { setEditingCommentId(c.id); setEditContent(c.content); }}
@@ -1473,10 +1487,14 @@ export default function SharedLinkPage() {
       .then(function(r) { if (!r.ok) throw new Error(r.statusText); return r.json(); })
       .then(function(data) {
         if (data && data.comment) {
-          // The just-posted comment is always the visitor's own — mark it so the
-          // edit/delete controls show immediately (get-track-comments no longer
-          // returns author_email; ownership is a server-computed is_own flag).
-          setComments(function(prev) { return prev.concat([{ ...(data.comment as TrackComment), is_own: true }]); });
+          // Capture the one-time author_secret into localStorage (proof of
+          // authorship for later edit/delete), then drop it from the object so
+          // it never lives in React state. Edit/delete controls are gated on
+          // the presence of this secret, not on is_own.
+          var comment = data.comment as TrackComment;
+          if (comment.author_secret) storeCommentSecret(comment.id, comment.author_secret);
+          delete comment.author_secret;
+          setComments(function(prev) { return prev.concat([{ ...comment, is_own: true }]); });
           setCommentComposerOpen(false);
           setCommentText("");
         }

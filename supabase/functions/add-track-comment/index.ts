@@ -98,29 +98,31 @@ serve(async (req) => {
       });
     }
 
-    const { data: inserted, error: insertError } = await supabase
-      .from("track_comments")
-      .insert({
-        track_id,
-        shared_link_id: link.id,
-        author_name: author_name || "Anonymous",
-        author_email,
-        author_type: "recipient",
-        timestamp_sec,
-        content,
-      })
-      .select("*")
-      .single();
+    // Insert through the token-validated RPC so the DB mints the author_secret
+    // (returned once to the creator, only its hash is stored) — the same secret
+    // the visitor needs to edit/delete later. The pre-checks above give precise
+    // 404/403s; the RPC re-validates the link as defense in depth.
+    const { data: rpcComment, error: rpcError } = await supabase.rpc("insert_track_comment_via_token", {
+      _track_id: track_id,
+      _shared_link_token: slug,
+      _content: content,
+      _author_name: author_name || "Anonymous",
+      _author_email: author_email,
+      _timestamp_sec: timestamp_sec,
+    });
 
-    if (insertError) {
-      console.error("add-track-comment: insert failed (code=" + (insertError.code || "unknown") + ")");
-      return new Response(JSON.stringify({ error: "Failed to save comment" }), {
-        status: 500,
+    if (rpcError || !rpcComment) {
+      // 42501 = insufficient_privilege → invalid/expired link or track not on it.
+      const denied = rpcError?.code === "42501";
+      console.error("add-track-comment: rpc insert failed (code=" + (rpcError?.code || "unknown") + ")");
+      return new Response(JSON.stringify({ error: denied ? "Link not found" : "Failed to save comment" }), {
+        status: denied ? 404 : 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ success: true, comment: inserted }), {
+    // rpcComment carries author_secret (plaintext, once) — never log it.
+    return new Response(JSON.stringify({ success: true, comment: rpcComment }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
