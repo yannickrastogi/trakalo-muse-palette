@@ -9,7 +9,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { isValidUUID } from "../_shared/validation.ts";
+import { isValidUUID, boundStr, LIMITS, readJsonBounded, InputError } from "../_shared/validation.ts";
 import { getStorageProvider } from "../_shared/storage.ts";
 import { getAuthedUser, assertWorkspaceMember, resolveTrackWorkspace, HttpError } from "../_shared/auth.ts";
 
@@ -27,7 +27,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { slug, track_id, quality } = await req.json();
+    const body = await readJsonBounded(req);
+    const slug = boundStr(body.slug, LIMITS.SLUG);
+    const track_id = typeof body.track_id === "string" ? body.track_id : "";
+    const quality = boundStr(body.quality, 32);
 
     if (!track_id) {
       return new Response(JSON.stringify({ error: "Missing track_id" }), {
@@ -200,6 +203,13 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    if (err instanceof InputError) {
+      console.error("get-audio-url: rejected body (" + err.message + ")");
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (err instanceof HttpError) {
       return new Response(JSON.stringify({ error: err.message }), {
         status: err.status,

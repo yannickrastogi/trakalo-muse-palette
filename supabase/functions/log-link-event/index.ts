@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { isValidUUID } from "../_shared/validation.ts";
+import { isValidUUID, boundStr, LIMITS, readJsonBounded, InputError } from "../_shared/validation.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -16,7 +16,11 @@ serve(async (req) => {
   }
 
   try {
-    const { slug, track_id, visitor_email, event_type } = await req.json();
+    const body = await readJsonBounded(req);
+    const slug = boundStr(body.slug, LIMITS.SLUG);
+    const track_id = typeof body.track_id === "string" ? body.track_id : "";
+    const visitor_email = boundStr(body.visitor_email, LIMITS.EMAIL) || null;
+    const event_type = boundStr(body.event_type, LIMITS.SHORT_TEXT);
 
     if (!slug || !event_type) {
       return new Response(JSON.stringify({ error: "slug and event_type are required" }), {
@@ -82,7 +86,15 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
+    if (err instanceof InputError) {
+      console.error("log-link-event: rejected body (" + err.message + ")");
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    console.error("log-link-event: internal error");
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

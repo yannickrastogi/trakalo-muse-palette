@@ -14,6 +14,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
+import { LIMITS } from "../_shared/validation.ts";
 
 // A signature is a PNG data URL (data:image/png;base64,...). Cap the payload so a
 // caller can't push an unbounded blob into the row.
@@ -68,7 +69,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const cleanToken = token.trim();
+    // Opaque access token — cap length (the large field, signature_data, is
+    // already bounded by MAX_SIGNATURE_LEN above).
+    const cleanToken = token.trim().slice(0, LIMITS.TOKEN);
 
     // 2. Resolve the signature request for this token.
     const { data: reqRow, error: selErr } = await supabaseAdmin

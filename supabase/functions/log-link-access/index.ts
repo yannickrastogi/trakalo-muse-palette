@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { isValidEmail } from "../_shared/email-template.ts";
+import { boundStr, LIMITS, readJsonBounded, InputError } from "../_shared/validation.ts";
 
 serve(async (req) => {
   const corsRes = handleCors(req);
@@ -16,7 +17,14 @@ serve(async (req) => {
   }
 
   try {
-    const { slug, name: rawName, email: rawEmail, role, company, city, country } = await req.json();
+    const body = await readJsonBounded(req);
+    const slug = boundStr(body.slug, LIMITS.SLUG);
+    const rawName = typeof body.name === "string" ? body.name : "";
+    const rawEmail = typeof body.email === "string" ? body.email : "";
+    const role = boundStr(body.role, LIMITS.SHORT_TEXT) || null;
+    const company = boundStr(body.company, LIMITS.SHORT_TEXT) || null;
+    const city = typeof body.city === "string" ? body.city : "";
+    const country = typeof body.country === "string" ? body.country : "";
 
     if (!slug || !rawName || !rawEmail) {
       return new Response(JSON.stringify({ error: "slug, name, and email are required" }), {
@@ -171,6 +179,13 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    if (err instanceof InputError) {
+      console.error("log-link-access: rejected body (" + err.message + ")");
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     console.error("log-link-access: internal error (" + (err instanceof Error ? err.name : "unknown") + ")");
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,

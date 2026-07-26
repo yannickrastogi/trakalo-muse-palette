@@ -18,7 +18,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { isValidUUID } from "../_shared/validation.ts";
+import { isValidUUID, boundStr, LIMITS, readJsonBounded, InputError } from "../_shared/validation.ts";
 import { getStorageProvider } from "../_shared/storage.ts";
 
 function jsonResponse(body: unknown, status: number, headers: Record<string, string>): Response {
@@ -64,8 +64,10 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Rate limit exceeded" }, 429, corsHeaders);
     }
 
-    const { slug, track_id } = await req.json();
-    if (typeof slug !== "string" || !slug.trim()) {
+    const body = await readJsonBounded(req);
+    const slug = boundStr(body.slug, LIMITS.SLUG);
+    const track_id = typeof body.track_id === "string" ? body.track_id : "";
+    if (!slug) {
       return jsonResponse({ error: "slug is required" }, 400, corsHeaders);
     }
     if (!isValidUUID(track_id)) {
@@ -139,6 +141,10 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ url: signedUrl }, 200, corsHeaders);
   } catch (err) {
+    if (err instanceof InputError) {
+      console.error("get-shared-link-video: rejected body (" + err.message + ")");
+      return jsonResponse({ error: "Invalid request" }, 400, getCorsHeaders(req));
+    }
     console.error("get-shared-link-video: unexpected error", err instanceof Error ? err.message : String(err));
     return jsonResponse({ error: "Internal error" }, 500, getCorsHeaders(req));
   }

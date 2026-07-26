@@ -9,7 +9,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { isValidUUID } from "../_shared/validation.ts";
+import { isValidUUID, boundStr, LIMITS, readJsonBounded, InputError } from "../_shared/validation.ts";
 import { getStorageProvider } from "../_shared/storage.ts";
 
 async function sha256Hex(input: string): Promise<string> {
@@ -41,13 +41,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { storage_path: rawStoragePath, link_id, visitor_email, visitor_name } = await req.json();
+    const body = await readJsonBounded(req);
+    const rawStoragePath = typeof body.storage_path === "string" ? body.storage_path : "";
+    const link_id = typeof body.link_id === "string" ? body.link_id : "";
+    const visitor_email = boundStr(body.visitor_email, LIMITS.EMAIL);
+    const visitor_name = boundStr(body.visitor_name, LIMITS.NAME);
 
-    // Extract relative path if a full signed URL was sent instead of a relative path
+    // Extract relative path if a full signed URL was sent instead of a relative
+    // path (a signed URL can exceed the path cap, so cap AFTER extraction).
     let storage_path = rawStoragePath;
     if (storage_path && storage_path.includes("/object/sign/tracks/")) {
       storage_path = decodeURIComponent(storage_path.split("/object/sign/tracks/")[1].split("?")[0]);
     }
+    storage_path = storage_path.slice(0, LIMITS.STORAGE_PATH);
 
     if (!storage_path || !link_id || !visitor_email) {
       return new Response(
@@ -186,6 +192,13 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    if (err instanceof InputError) {
+      console.error("get-watermarked-audio: rejected body (" + err.message + ")");
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400,
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },

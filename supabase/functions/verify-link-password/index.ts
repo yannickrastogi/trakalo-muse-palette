@@ -1,6 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { boundStr, LIMITS, readJsonBounded, InputError } from "../_shared/validation.ts";
+
+// PBKDF2 runs 100k iterations over the supplied password; an unbounded password
+// is a CPU-exhaustion vector. Cap it (real passwords are <=128 — enforced at
+// creation by hash-link-password).
+const MAX_PASSWORD = 128;
 
 async function verifyPassword(password, stored) {
   const parts = stored.split(":");
@@ -22,11 +28,14 @@ serve(async function(req) {
   if (corsRes) return corsRes;
   const corsHeaders = getCorsHeaders(req);
   try {
-    const body = await req.json();
-    const slug = body.slug;
-    const password = body.password;
+    const body = await readJsonBounded(req);
+    const slug = boundStr(body.slug, LIMITS.SLUG);
+    const password = typeof body.password === "string" ? body.password : "";
     if (!slug || !password) {
       return new Response(JSON.stringify({ valid: false, error: "Slug and password are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (password.length > MAX_PASSWORD) {
+      return new Response(JSON.stringify({ valid: false, error: "Invalid request" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
     const ip = req.headers.get("x-forwarded-for") || "unknown";
@@ -41,6 +50,11 @@ serve(async function(req) {
     const valid = await verifyPassword(password, result.data.password_hash);
     return new Response(JSON.stringify({ valid: valid }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
-    return new Response(JSON.stringify({ valid: false, error: err instanceof Error ? err.message : String(err) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (err instanceof InputError) {
+      console.error("verify-link-password: rejected body (" + err.message + ")");
+      return new Response(JSON.stringify({ valid: false, error: "Invalid request" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    console.error("verify-link-password: internal error");
+    return new Response(JSON.stringify({ valid: false, error: "Internal server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

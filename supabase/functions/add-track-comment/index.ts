@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
-import { isValidUUID } from "../_shared/validation.ts";
+import { isValidUUID, boundStr, LIMITS, readJsonBounded, InputError } from "../_shared/validation.ts";
 
 // Anonymous (recipient) comments on a shared link.
 //
@@ -34,9 +34,9 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    const slug = body.slug;
-    const track_id = body.track_id;
+    const body = await readJsonBounded(req);
+    const slug = boundStr(body.slug, LIMITS.SLUG);
+    const track_id = typeof body.track_id === "string" ? body.track_id : "";
     const author_name = typeof body.author_name === "string" ? body.author_name.trim().slice(0, MAX_NAME) : "";
     const author_email = typeof body.author_email === "string" && body.author_email.trim() ? body.author_email.trim().slice(0, MAX_NAME) : null;
     const content = typeof body.content === "string" ? body.content.trim().slice(0, MAX_CONTENT) : "";
@@ -59,12 +59,21 @@ serve(async (req) => {
     // Resolve the active shared link for this slug.
     const { data: link, error: linkError } = await supabase
       .from("shared_links")
-      .select("id, track_id, playlist_id, status")
+      .select("id, track_id, playlist_id, status, expires_at")
       .eq("link_slug", slug)
       .eq("status", "active")
       .maybeSingle();
 
     if (linkError || !link) {
+      return new Response(JSON.stringify({ error: "Link not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Never accept a comment on an expired link (status is not auto-flipped on
+    // expiry — consistent with get-audio-url / get-track-comments).
+    if (link.expires_at && new Date(link.expires_at) < new Date()) {
       return new Response(JSON.stringify({ error: "Link not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -116,7 +125,15 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
+    if (err instanceof InputError) {
+      console.error("add-track-comment: rejected body (" + err.message + ")");
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    console.error("add-track-comment: internal error");
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

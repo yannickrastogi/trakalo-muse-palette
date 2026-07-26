@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
-import { isValidUUID } from "../_shared/validation.ts";
+import { isValidUUID, boundStr, LIMITS, readJsonBounded, InputError } from "../_shared/validation.ts";
 
 // Read comments for a track inside a shared link (anonymous recipients).
 //
@@ -26,14 +26,12 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    const slug = body.slug;
-    const track_id = body.track_id;
+    const body = await readJsonBounded(req);
+    const slug = boundStr(body.slug, LIMITS.SLUG);
+    const track_id = typeof body.track_id === "string" ? body.track_id : "";
     // The visitor's own email (from the gate) — used only to mark their own
     // comments. Never used to disclose other visitors' emails.
-    const visitorEmail = typeof body.visitor_email === "string"
-      ? body.visitor_email.trim().toLowerCase()
-      : "";
+    const visitorEmail = boundStr(body.visitor_email, LIMITS.EMAIL).toLowerCase();
 
     if (!slug || !track_id) {
       return new Response(JSON.stringify({ error: "slug and track_id are required" }), {
@@ -124,6 +122,13 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    if (err instanceof InputError) {
+      console.error("get-track-comments: rejected body (" + err.message + ")");
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     console.error("get-track-comments: internal error (" + (err instanceof Error ? err.name : "unknown") + ")");
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,

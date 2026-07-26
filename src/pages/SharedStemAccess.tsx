@@ -282,19 +282,29 @@ export default function SharedStemAccess() {
     setFormCompleted(true);
   }, [link, formCompleted]);
 
-  // Fetch comments when form is completed
+  // Fetch comments when form is completed. Anon can't SELECT track_comments
+  // directly — the anon RLS policy filters via a shared_links subquery that anon
+  // can't read (no anon SELECT policy on shared_links), so a direct select always
+  // returns []. Go through the slug-validated get-track-comments Edge Function
+  // (service role), the same read path SharedLinkPage uses.
   useEffect(function() {
     if (!formCompleted || !link || !trackData) return;
-    anonSupabase
-      .from("track_comments")
-      .select("*")
-      .eq("track_id", trackData.id)
-      .eq("shared_link_id", link.id)
-      .is("deleted_at", null)
-      .order("timestamp_sec", { ascending: true })
-      .then(function(res) {
-        if (res.data) setComments(res.data as CommentRow[]);
-      }).catch(function (err) { console.error("Error:", err); });
+    fetch(SUPABASE_URL + "/functions/v1/get-track-comments", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+        "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({ slug: link.link_slug, track_id: trackData.id }),
+    })
+      .then(function(res) { return res.ok ? res.json() : null; })
+      .then(function(json) {
+        if (json && Array.isArray(json.comments)) {
+          setComments(json.comments as unknown as CommentRow[]);
+        }
+      })
+      .catch(function (err) { console.error("Error:", err); });
   }, [formCompleted, link, trackData]);
 
   var handlePasswordSubmit = async function(e: React.FormEvent) {
@@ -886,30 +896,46 @@ function AutonomousReviewPanel({
     return comments.filter(function(c) { return c.author_name === recipientName; });
   }, [comments, recipientName]);
 
+  // CRIT-03 (insert): writes go through a SECURITY DEFINER RPC bound to the
+  // current shared link's slug — same token-gated pattern as edit/delete below.
+  // The old direct anon INSERT relied on the track_comments_anon_insert RLS
+  // policy, which (a) could never succeed (anon has no shared_links visibility)
+  // and (b) was slug-less. The RPC validates the link is active + not expired
+  // and that this track belongs to the link, then inserts server-side.
   var handleSubmit = function() {
     if (!commentText.trim() || submitting) return;
     setSubmitting(true);
-    anonSupabase
-      .from("track_comments")
-      .insert({
-        track_id: trackId,
-        shared_link_id: linkId,
-        author_name: recipientName,
-        author_email: recipientEmail || null,
-        author_type: "recipient",
-        timestamp_sec: Math.round(currentSeconds * 100) / 100,
-        content: commentText.trim(),
-      })
-      .select()
-      .single()
-      .then(function(res) {
+    fetch(SUPABASE_URL + "/rest/v1/rpc/insert_track_comment_via_token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+        "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({
+        _track_id: trackId,
+        _shared_link_token: linkSlug,
+        _content: commentText.trim(),
+        _author_name: recipientName,
+        _author_email: recipientEmail || null,
+        _timestamp_sec: Math.round(currentSeconds * 100) / 100,
+      }),
+    })
+      .then(function(res) { return res.ok ? res.json() : null; })
+      .then(function(raw) {
         setSubmitting(false);
-        if (res.data) {
-          setComments(function(prev) { return prev.concat([res.data as CommentRow]); });
+        // PostgREST may return the composite row as an object or a single-element
+        // array depending on the Accept header — handle both.
+        var row = Array.isArray(raw) ? raw[0] : raw;
+        if (row && row.id) {
+          setComments(function(prev) { return prev.concat([row as CommentRow]); });
           setComposerOpen(false);
           setCommentText("");
+        } else {
+          console.error("insert_track_comment_via_token failed");
         }
-      }).catch(function (err) { console.error("Error:", err); });
+      })
+      .catch(function (err) { setSubmitting(false); console.error("Error:", err); });
   };
 
   // CRIT-03: writes via SECURITY DEFINER RPCs that bind the operation to the
