@@ -24,6 +24,14 @@ serve(async (req) => {
     // unauthenticated request is rejected outright.
     const { user } = await getAuthedUser(req);
 
+    // Rate limit per authenticated user — 20 invitations/hour — so an authed admin
+    // can't spam invitations in a loop. Same pattern as the other Edge Functions.
+    const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", { _key: "create-invitation:" + user.id, _max_requests: 20, _window_seconds: 3600 });
+    if (rateLimitOk === false) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const { workspace_id, workspace_name, inviter_name, email, first_name, last_name, role, access_level, professional_title } = await req.json();
 
     if (!workspace_id || !email) {
