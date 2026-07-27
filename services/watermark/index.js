@@ -7,6 +7,8 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 const http = require("http");
+const dns = require("dns").promises;
+const net = require("net");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -102,23 +104,203 @@ function parseWatermark(stdout) {
   return { payload, confidence };
 }
 
-// Download a file from URL to a local path
-function downloadToFile(url, destPath) {
+// ── SSRF-hardened source_url download ────────────────────────────────────────
+// source_url is attacker-influenceable, so downloads are locked down: HTTPS only,
+// an EXACT-match host allowlist (fail closed — an empty allowlist refuses every
+// URL and forces file upload), per-resolved-IP checks against private / loopback /
+// link-local / CGNAT / ULA ranges, the connection pinned to the validated IP
+// (defeats DNS rebinding between check and connect), bounded redirects that are
+// each fully re-validated, and hard size / time caps. The req.file upload path is
+// completely unaffected.
+const ALLOWED_HOSTS = new Set(
+  (process.env.WATERMARK_ALLOWED_HOSTS || "")
+    .split(",")
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean)
+);
+const MAX_DOWNLOAD_BYTES = 100 * 1024 * 1024; // aligned with the multer upload limit
+const CONNECT_TIMEOUT_MS = 15000;
+const DOWNLOAD_TIMEOUT_MS = 120000;
+const MAX_REDIRECTS = 2;
+
+function ipv4ToInt(ip) {
+  const parts = ip.split(".");
+  if (parts.length !== 4) return null;
+  let n = 0;
+  for (const p of parts) {
+    if (!/^\d{1,3}$/.test(p)) return null;
+    const o = Number(p);
+    if (o > 255) return null;
+    n = n * 256 + o;
+  }
+  return n >>> 0;
+}
+function inCidr4(intIp, baseStr, bits) {
+  const base = ipv4ToInt(baseStr);
+  if (base === null) return false;
+  const mask = bits === 0 ? 0 : (0xffffffff << (32 - bits)) >>> 0;
+  return (intIp & mask) === (base & mask);
+}
+function isBlockedIpv4(ip) {
+  const n = ipv4ToInt(ip);
+  if (n === null) return true; // unparseable → block (fail closed)
+  return [
+    ["0.0.0.0", 8],
+    ["10.0.0.0", 8],
+    ["100.64.0.0", 10], // CGNAT
+    ["127.0.0.0", 8], // loopback
+    ["169.254.0.0", 16], // link-local incl. 169.254.169.254 (cloud metadata)
+    ["172.16.0.0", 12],
+    ["192.168.0.0", 16],
+  ].some(([b, bits]) => inCidr4(n, b, bits));
+}
+function expandIpv6(addr) {
+  let a = addr;
+  const pct = a.indexOf("%");
+  if (pct !== -1) a = a.slice(0, pct); // strip zone id
+  if (a.indexOf("::") !== -1) {
+    const [head, tail] = a.split("::");
+    const h = head ? head.split(":") : [];
+    const t = tail ? tail.split(":") : [];
+    const missing = 8 - (h.length + t.length);
+    if (missing < 0) return null;
+    a = [...h, ...Array(missing).fill("0"), ...t].join(":");
+  }
+  const parts = a.split(":");
+  if (parts.length !== 8) return null;
+  const groups = [];
+  for (const p of parts) {
+    if (!/^[0-9a-f]{1,4}$/i.test(p)) return null;
+    groups.push(parseInt(p, 16));
+  }
+  return groups;
+}
+function isBlockedIpv6(ip) {
+  let a = ip;
+  const pct = a.indexOf("%");
+  if (pct !== -1) a = a.slice(0, pct);
+  const lower = a.toLowerCase();
+  // IPv4-mapped / -compatible (::ffff:a.b.c.d or ::a.b.c.d) → check the IPv4.
+  const v4 = lower.match(/(?:::ffff:|::)((?:\d{1,3}\.){3}\d{1,3})$/);
+  if (v4) return isBlockedIpv4(v4[1]);
+  const g = expandIpv6(lower);
+  if (!g) return true; // unparseable → block
+  if (g.slice(0, 7).every((x) => x === 0) && (g[7] === 0 || g[7] === 1)) return true; // :: and ::1
+  if ((g[0] & 0xffc0) === 0xfe80) return true; // fe80::/10 link-local
+  if ((g[0] & 0xfe00) === 0xfc00) return true; // fc00::/7 unique-local
+  return false;
+}
+function isBlockedIp(address, family) {
+  if (family === 4 || net.isIPv4(address)) return isBlockedIpv4(address);
+  if (family === 6 || net.isIPv6(address)) return isBlockedIpv6(address);
+  return true; // unknown → block
+}
+
+// Parse + enforce scheme and the exact-match host allowlist. Throws on violation.
+function validateSourceUrl(urlString) {
+  let u;
+  try {
+    u = new URL(urlString);
+  } catch (_) {
+    throw new Error("malformed url");
+  }
+  if (u.protocol !== "https:") throw new Error("only https is allowed");
+  if (!ALLOWED_HOSTS.has(u.hostname.toLowerCase())) throw new Error("host not in allowlist");
+  return u;
+}
+
+// Resolve EVERY A/AAAA record and reject if ANY is a blocked address. Returns the
+// first record so the connection can be pinned to an already-validated IP.
+async function resolveSafeIp(hostname) {
+  const records = await dns.lookup(hostname, { all: true });
+  if (!records || records.length === 0) throw new Error("no dns records");
+  for (const r of records) {
+    if (isBlockedIp(r.address, r.family)) throw new Error("resolves to a blocked address");
+  }
+  return records[0];
+}
+
+// One bounded HTTPS GET, connecting to the pre-validated IP (anti DNS-rebinding)
+// while keeping TLS/SNI + Host on the real hostname. Resolves { redirect, location }
+// for a 3xx, or writes the body to destPath under a hard size cap.
+function fetchOnceToFile(u, ip, family, destPath) {
   return new Promise((resolve, reject) => {
-    const proto = url.startsWith("https") ? https : http;
-    proto.get(url, (response) => {
-      if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-        return downloadToFile(response.headers.location, destPath).then(resolve).catch(reject);
+    let settled = false;
+    let globalTimer;
+    const done = (fn, arg) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(globalTimer);
+      fn(arg);
+    };
+
+    // Pass the real URL (Node derives Host / SNI / cert validation from the
+    // hostname and handles IPv6 correctly), but PIN DNS resolution to the
+    // already-validated IP via a custom lookup so the connection can never
+    // re-resolve to a different address between check and connect (anti-rebinding).
+    const request = https.request(
+      u,
+      {
+        method: "GET",
+        timeout: CONNECT_TIMEOUT_MS,
+        lookup: (_hostname, opts, cb) =>
+          opts && opts.all ? cb(null, [{ address: ip, family }]) : cb(null, ip, family),
+      },
+      (response) => {
+        const status = response.statusCode || 0;
+        if (status >= 300 && status < 400 && response.headers.location) {
+          response.resume(); // drain, never write a redirect body
+          request.destroy();
+          return done(resolve, { redirect: true, location: response.headers.location });
+        }
+        if (status !== 200) {
+          response.resume();
+          request.destroy();
+          return done(reject, new Error("status " + status));
+        }
+        const file = fs.createWriteStream(destPath);
+        let downloaded = 0;
+        const fail = (err) => {
+          response.unpipe(file);
+          response.destroy();
+          file.destroy();
+          request.destroy();
+          cleanup(destPath);
+          done(reject, err);
+        };
+        response.on("data", (chunk) => {
+          downloaded += chunk.length;
+          if (downloaded > MAX_DOWNLOAD_BYTES) fail(new Error("download exceeds size limit"));
+        });
+        response.pipe(file);
+        file.on("finish", () => file.close(() => done(resolve, { redirect: false })));
+        file.on("error", (err) => fail(err));
+        response.on("error", (err) => fail(err));
       }
-      if (response.statusCode !== 200) {
-        return reject(new Error(`Download failed with status ${response.statusCode}`));
-      }
-      const file = fs.createWriteStream(destPath);
-      response.pipe(file);
-      file.on("finish", () => { file.close(); resolve(); });
-      file.on("error", (err) => { fs.unlinkSync(destPath); reject(err); });
-    }).on("error", reject);
+    );
+
+    globalTimer = setTimeout(() => request.destroy(new Error("download timeout")), DOWNLOAD_TIMEOUT_MS);
+    request.on("timeout", () => request.destroy(new Error("connection timeout")));
+    request.on("error", (err) => { cleanup(destPath); done(reject, err); });
+    request.end();
   });
+}
+
+// Public entry point used by /encode — same signature as before. Each redirect hop
+// is fully re-validated (allowlist + https + IP checks), so a naive allowlist can't
+// be bypassed by redirecting to an internal or non-allowlisted host.
+async function downloadToFile(sourceUrl, destPath) {
+  let current = sourceUrl;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    const u = validateSourceUrl(current);
+    const { address, family } = await resolveSafeIp(u.hostname);
+    const result = await fetchOnceToFile(u, address, family, destPath);
+    if (!result.redirect) return;
+    // Resolve a possibly-relative Location against the current URL, then loop to
+    // re-validate the destination from scratch.
+    current = new URL(result.location, u).toString();
+  }
+  throw new Error("too many redirects");
 }
 
 // POST /encode
@@ -143,7 +325,10 @@ app.post(
         await downloadToFile(sourceUrl, inputPath);
       } catch (err) {
         cleanup(inputPath);
-        return res.status(400).json({ error: "Failed to download source_url", details: err.message });
+        // Generic to the client; the reason (blocked host/IP, scheme, size, …)
+        // stays server-side so we never leak internal network topology.
+        console.error("encode: source_url rejected: " + (err instanceof Error ? err.message : "unknown"));
+        return res.status(400).json({ error: "Invalid source URL" });
       }
     } else {
       return res.status(400).json({ error: "No audio file or source_url provided" });
