@@ -39,6 +39,43 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  // Replay protection — runs ONLY after the signature check above. Stripe
+  // re-delivers events on timeouts; atomically claim this event id so a
+  // duplicate is acknowledged but never processed twice.
+  const { data: claimed, error: claimError } = await supabase.rpc("stripe_claim_webhook_event", {
+    _event_id: event.id,
+    _event_type: event.type,
+  });
+  if (claimError) {
+    // Claim state is unknown → 500 so Stripe retries; the claim itself is
+    // idempotent, so a retry that finds the row already inserted dedupes cleanly.
+    console.error("stripe-webhook: claim failed for " + event.id + " (" + event.type + "): " + claimError.message);
+    return new Response(JSON.stringify({ error: "claim_failed" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (claimed === false) {
+    // Already seen → acknowledge with 200 (a non-2xx would make Stripe retry forever).
+    console.log("stripe-webhook: duplicate event ignored " + event.id + " (" + event.type + ")");
+    return new Response(JSON.stringify({ received: true, duplicate: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (claimed !== true) {
+    // The RPC is declared to return boolean, so this shouldn't happen. Treat any
+    // unexpected non-boolean as an UNKNOWN claim state → 500 so Stripe retries,
+    // rather than processing without a confirmed claim (which risks a double-apply).
+    console.error("stripe-webhook: unexpected claim result for " + event.id + " (" + event.type + ")");
+    return new Response(JSON.stringify({ error: "claim_failed" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  console.log("stripe-webhook: processing event " + event.id + " (" + event.type + ")");
+
   try {
     switch (event.type) {
       case "customer.subscription.created":
@@ -189,11 +226,27 @@ Deno.serve(async (req) => {
     }
   } catch (err) {
     // Processing failed → return 500 so Stripe retries (billing must stay consistent).
-    console.error("stripe-webhook: handler error for " + event.type + ": " + (err instanceof Error ? err.message : "unknown"));
+    console.error("stripe-webhook: handler error for " + event.id + " (" + event.type + "): " + (err instanceof Error ? err.message : "unknown"));
+    // Release the claim taken above so Stripe's retry can reprocess — otherwise a
+    // transient failure would leave the event claimed and block it forever.
+    const { error: releaseError } = await supabase
+      .from("stripe_webhook_events")
+      .delete()
+      .eq("event_id", event.id);
+    if (releaseError) {
+      console.error("stripe-webhook: failed to release claim for " + event.id + ": " + releaseError.message);
+    }
     return new Response(JSON.stringify({ error: "handler_failed" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  // Processing succeeded → mark the event processed. Best-effort: the claim row
+  // already prevents re-processing, so a failure here only loses the timestamp.
+  const { error: markError } = await supabase.rpc("stripe_mark_webhook_processed", { _event_id: event.id });
+  if (markError) {
+    console.error("stripe-webhook: mark_processed failed for " + event.id + ": " + markError.message);
   }
 
   // Acknowledge receipt quickly.
