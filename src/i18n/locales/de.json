@@ -479,6 +479,8 @@
     "role_viewer": "Betrachter"
   },
   "trackDetail": {
+    "lyricsLowConfidence": "Kein Songtext erkannt. Dieser Track ist möglicherweise instrumental oder der Gesang ist zu stark bearbeitet, um zuverlässig transkribiert zu werden.",
+    "transcribeInLanguage": "Neu transkribieren in…",
     "tabComments": "Kommentare",
     "teamComments": "Team",
     "recipientComments": "Empfänger",

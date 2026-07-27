@@ -479,6 +479,8 @@
     "role_viewer": "Lector"
   },
   "trackDetail": {
+    "lyricsLowConfidence": "No se detectaron letras. Es posible que esta pista sea instrumental o que las voces estén demasiado procesadas para transcribirse de forma fiable.",
+    "transcribeInLanguage": "Volver a transcribir en…",
     "tabComments": "Comentarios",
     "teamComments": "Equipo",
     "recipientComments": "Destinatarios",

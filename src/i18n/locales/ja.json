@@ -479,6 +479,8 @@
     "role_viewer": "ビューア"
   },
   "trackDetail": {
+    "lyricsLowConfidence": "歌詞を検出できませんでした。このトラックはインストゥルメンタルか、ボーカルの加工が強すぎて正確に文字起こしできない可能性があります。",
+    "transcribeInLanguage": "言語を選んで再文字起こし…",
     "tabComments": "コメント",
     "teamComments": "チーム",
     "recipientComments": "受信者",

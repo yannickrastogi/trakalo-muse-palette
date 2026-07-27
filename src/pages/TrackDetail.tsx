@@ -111,7 +111,7 @@ import { VideoSection } from "@/components/VideoSection";
 import { VersionSelector } from "@/components/VersionSelector";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
 import { useContacts } from "@/contexts/ContactsContext";
-import { STEM_TYPES, DEFAULT_COVER, PROS, SPLIT_ROLES, PRODUCTION_STAGES, type ProductionStage } from "@/lib/constants";
+import { STEM_TYPES, DEFAULT_COVER, PROS, SPLIT_ROLES, PRODUCTION_STAGES, LANGUAGES, type ProductionStage } from "@/lib/constants";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { generateWaveform } from "@/lib/waveformGenerator";
@@ -2159,8 +2159,10 @@ function CreditsTab({ trackId, onEdit }: { trackId: number; onEdit: () => void }
 }
 
 function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: number; trackUuid: string; fallbackTrack?: TrackData; readOnly?: boolean }) {
+  const { t } = useTranslation();
   const { getTrack, updateTrackLyrics, refreshTracks } = useTrack();
   const { currentTrack, currentTime, isPlaying, seekToTime, playTrack } = useAudioPlayer();
+  const [transcribing, setTranscribing] = useState(false);
   const contextTrack = getTrack(trackId);
   const trackData = contextTrack || fallbackTrack;
   const [isEditing, setIsEditing] = useState(false);
@@ -2345,8 +2347,11 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
     generateLyricsPdf(effectiveTrackData.title, effectiveTrackData.artist, effectiveTrackData.lyrics);
   };
 
-  const handleTranscribe = async () => {
-    if (hasLyrics && !confirm("Existing lyrics will be replaced. Continue?")) return;
+  const handleTranscribe = async (langOverride?: string) => {
+    if (transcribing) return;
+    // Skip the "replace existing lyrics" confirm on an explicit language re-run.
+    if (hasLyrics && !langOverride && !confirm("Existing lyrics will be replaced. Continue?")) return;
+    setTranscribing(true);
     try {
       toast.info("Transcribing lyrics...");
       const { data: sessData } = await supabase.auth.getSession();
@@ -2358,11 +2363,13 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
           "Authorization": "Bearer " + accessToken,
           "apikey": SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ track_id: trackUuid }),
+        body: JSON.stringify(langOverride ? { track_id: trackUuid, language: langOverride } : { track_id: trackUuid }),
       });
       const json = await res.json();
       if (json.empty) {
-        toast.info("No vocals detected in this track");
+        // Honest message: the model wasn't confident enough (likely instrumental
+        // or heavily-processed vocals). Nothing was written to the track.
+        toast.info(t("trackDetail.lyricsLowConfidence"), { duration: 7000 });
       } else if (json.success) {
         // Refresh lyrics from DB
         dbFetchedRef.current = null;
@@ -2401,6 +2408,8 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
     } catch (err) {
       console.error("Transcription failed:", err);
       toast.warning("Lyrics transcription failed");
+    } finally {
+      setTranscribing(false);
     }
   };
 
@@ -2435,12 +2444,27 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
                 <Edit3 className="w-3.5 h-3.5" /> Edit
               </button>
               <button
-                onClick={handleTranscribe}
+                onClick={() => handleTranscribe()}
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
               >
                 <Mic className="w-3.5 h-3.5" /> Re-transcribe
               </button>
             </>
+          )}
+          {!isEditing && (
+            <select
+              aria-label={t("trackDetail.transcribeInLanguage")}
+              title={t("trackDetail.transcribeInLanguage")}
+              disabled={transcribing}
+              value=""
+              onChange={(e) => { const v = e.target.value; if (v) handleTranscribe(v); }}
+              className="text-xs bg-secondary/50 border border-border rounded px-1.5 py-1 text-muted-foreground hover:text-primary transition-colors max-w-[9rem] disabled:opacity-50"
+            >
+              <option value="">{t("trackDetail.transcribeInLanguage")}</option>
+              {LANGUAGES.filter((l) => l !== "Instrumental").map((l) => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
           )}
           {!isEditing && (
             <>
@@ -2620,7 +2644,7 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
                 <Upload className="w-3.5 h-3.5" /> Import File
               </button>
               <button
-                onClick={handleTranscribe}
+                onClick={() => handleTranscribe()}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border border-border text-foreground hover:bg-secondary transition-colors"
               >
                 <Mic className="w-3.5 h-3.5" /> Transcribe Lyrics

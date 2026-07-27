@@ -479,6 +479,8 @@
     "role_viewer": "Visualizzatore"
   },
   "trackDetail": {
+    "lyricsLowConfidence": "Nessun testo rilevato. Questa traccia potrebbe essere strumentale oppure le voci sono troppo elaborate per una trascrizione affidabile.",
+    "transcribeInLanguage": "Ritrascrivi in…",
     "tabComments": "Commenti",
     "teamComments": "Team",
     "recipientComments": "Destinatari",

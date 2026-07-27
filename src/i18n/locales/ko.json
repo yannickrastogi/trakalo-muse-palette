@@ -479,6 +479,8 @@
     "role_viewer": "뷰어"
   },
   "trackDetail": {
+    "lyricsLowConfidence": "가사를 감지하지 못했습니다. 이 트랙은 연주곡이거나 보컬이 과도하게 처리되어 정확하게 전사할 수 없습니다.",
+    "transcribeInLanguage": "다른 언어로 다시 전사…",
     "tabComments": "댓글",
     "teamComments": "팀",
     "recipientComments": "수신자",

@@ -552,6 +552,8 @@
     "revokeConfirmDesc": "{{name}} perdra l'accès à tous vos morceaux partagés."
   },
   "trackDetail": {
+    "lyricsLowConfidence": "Aucune parole détectée. Ce titre est peut-être instrumental, ou les voix sont trop transformées pour être transcrites de façon fiable.",
+    "transcribeInLanguage": "Re-transcrire en…",
     "tabComments": "Commentaires",
     "teamComments": "Équipe",
     "recipientComments": "Destinataires",
