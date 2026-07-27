@@ -479,6 +479,18 @@
     "role_viewer": "Visualizzatore"
   },
   "trackDetail": {
+    "deleteAllLyrics": "Elimina tutto il testo",
+    "deleteLyricsTitle": "Eliminare tutto il testo?",
+    "deleteLyricsBody": "Questo rimuoverà il testo e i suoi timestamp per questa traccia. Potrai sempre ritrascriverlo o riscriverlo in seguito.",
+    "deleteLyricsConfirm": "Elimina testo",
+    "lyricsDeleted": "Testo eliminato",
+    "lyricsDeleteFailed": "Impossibile eliminare il testo",
+    "removeArtwork": "Rimuovi copertina",
+    "removeArtworkTitle": "Rimuovere la copertina?",
+    "removeArtworkBody": "La traccia mostrerà la copertina predefinita. Puoi caricare una nuova copertina in qualsiasi momento.",
+    "removeArtworkConfirm": "Rimuovi",
+    "artworkRemoved": "Copertina rimossa",
+    "artworkRemoveFailed": "Impossibile rimuovere la copertina",
     "lyricsLowConfidence": "Nessun testo rilevato. Questa traccia potrebbe essere strumentale oppure le voci sono troppo elaborate per una trascrizione affidabile.",
     "transcribeInLanguage": "Ritrascrivi in…",
     "tabComments": "Commenti",

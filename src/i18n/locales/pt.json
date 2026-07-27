@@ -479,6 +479,18 @@
     "role_viewer": "Visualizador"
   },
   "trackDetail": {
+    "deleteAllLyrics": "Excluir toda a letra",
+    "deleteLyricsTitle": "Excluir toda a letra?",
+    "deleteLyricsBody": "Isto removerá a letra e seus timestamps desta faixa. Você poderá sempre transcrevê-la novamente ou reescrevê-la mais tarde.",
+    "deleteLyricsConfirm": "Excluir letra",
+    "lyricsDeleted": "Letra excluída",
+    "lyricsDeleteFailed": "Não foi possível excluir a letra",
+    "removeArtwork": "Remover a capa",
+    "removeArtworkTitle": "Remover a capa?",
+    "removeArtworkBody": "A faixa exibirá a capa padrão. Você pode enviar uma nova capa a qualquer momento.",
+    "removeArtworkConfirm": "Remover",
+    "artworkRemoved": "Capa removida",
+    "artworkRemoveFailed": "Não foi possível remover a capa",
     "lyricsLowConfidence": "Nenhuma letra detectada. Esta faixa pode ser instrumental, ou os vocais estão processados demais para uma transcrição confiável.",
     "transcribeInLanguage": "Transcrever novamente em…",
     "tabComments": "Comentários",

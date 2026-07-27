@@ -273,6 +273,8 @@ export default function TrackDetail() {
   const [studioQrOpen, setStudioQrOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [removeArtworkOpen, setRemoveArtworkOpen] = useState(false);
+  const [removingArtwork, setRemovingArtwork] = useState(false);
   const [shareExpanded, setShareExpanded] = useState(false);
   const [shareToWorkspaceOpen, setShareToWorkspaceOpen] = useState(false);
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
@@ -667,6 +669,16 @@ export default function TrackDetail() {
                     className="absolute bottom-3 right-3 p-2 rounded-lg bg-card/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground transition-all duration-200 opacity-0 group-hover:opacity-100"
                   >
                     <Edit3 className="w-4 h-4" />
+                  </button>
+                  )}
+                  {!isViewerShared && permissions.canEditTracks && track.coverImage && (
+                  <button
+                    onClick={() => setRemoveArtworkOpen(true)}
+                    title={t("trackDetail.removeArtwork")}
+                    aria-label={t("trackDetail.removeArtwork")}
+                    className="absolute bottom-3 left-3 p-2 rounded-lg bg-card/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-destructive transition-all duration-200 opacity-0 group-hover:opacity-100"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                   )}
                 </div>
@@ -1536,6 +1548,38 @@ export default function TrackDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={removeArtworkOpen} onOpenChange={setRemoveArtworkOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("trackDetail.removeArtworkTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("trackDetail.removeArtworkBody")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removingArtwork}>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={removingArtwork}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async (e) => {
+                e.preventDefault();
+                setRemovingArtwork(true);
+                // Only clears tracks.cover_url via the update_track RPC — the file
+                // stays in the covers bucket (other entities may point to it).
+                const ok = await updateTrack(track.id, { coverImage: "" });
+                setRemovingArtwork(false);
+                if (ok) {
+                  setRemoveArtworkOpen(false);
+                  toast.success(t("trackDetail.artworkRemoved"));
+                } else {
+                  toast.error(t("trackDetail.artworkRemoveFailed"));
+                }
+              }}
+            >
+              {removingArtwork ? t("trackDetail.removeArtworkConfirm") + "…" : t("trackDetail.removeArtworkConfirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
         </>
       )}
       </div>
@@ -2160,9 +2204,11 @@ function CreditsTab({ trackId, onEdit }: { trackId: number; onEdit: () => void }
 
 function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: number; trackUuid: string; fallbackTrack?: TrackData; readOnly?: boolean }) {
   const { t } = useTranslation();
-  const { getTrack, updateTrackLyrics, refreshTracks } = useTrack();
+  const { getTrack, updateTrackLyrics, updateTrack, refreshTracks } = useTrack();
   const { currentTrack, currentTime, isPlaying, seekToTime, playTrack } = useAudioPlayer();
   const [transcribing, setTranscribing] = useState(false);
+  const [deleteLyricsOpen, setDeleteLyricsOpen] = useState(false);
+  const [deletingLyrics, setDeletingLyrics] = useState(false);
   const contextTrack = getTrack(trackId);
   const trackData = contextTrack || fallbackTrack;
   const [isEditing, setIsEditing] = useState(false);
@@ -2413,7 +2459,29 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
     }
   };
 
+  // Clear BOTH lyrics and lyrics_segments (leaving segments would keep synced
+  // lyrics on screen). Writes through the existing update_track RPC via the
+  // context (which resolves the user and updates local state instantly), then
+  // drops the local lyric overrides so the tab falls back to the now-empty track.
+  const handleDeleteLyrics = async () => {
+    setDeletingLyrics(true);
+    const ok = await updateTrack(trackId, { lyrics: "", lyricsSegments: [] });
+    setDeletingLyrics(false);
+    if (!ok) {
+      toast.error(t("trackDetail.lyricsDeleteFailed"));
+      return;
+    }
+    setLocalLyrics(undefined);
+    setDbLyrics(undefined);
+    setDbSegments(undefined);
+    dbFetchedRef.current = null;
+    setIsEditing(false);
+    setDeleteLyricsOpen(false);
+    toast.success(t("trackDetail.lyricsDeleted"));
+  };
+
   return (
+    <>
     <SectionCard
       title="Lyrics"
       icon={FileText}
@@ -2448,6 +2516,12 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
               >
                 <Mic className="w-3.5 h-3.5" /> Re-transcribe
+              </button>
+              <button
+                onClick={() => setDeleteLyricsOpen(true)}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> {t("trackDetail.deleteAllLyrics")}
               </button>
             </>
           )}
@@ -2662,6 +2736,26 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
         )}
       </div>
     </SectionCard>
+
+    <AlertDialog open={deleteLyricsOpen} onOpenChange={setDeleteLyricsOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("trackDetail.deleteLyricsTitle")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("trackDetail.deleteLyricsBody")}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deletingLyrics}>{t("common.cancel")}</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={deletingLyrics}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={(e) => { e.preventDefault(); handleDeleteLyrics(); }}
+          >
+            {deletingLyrics ? t("trackDetail.deleteLyricsConfirm") + "…" : t("trackDetail.deleteLyricsConfirm")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 

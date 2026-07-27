@@ -479,6 +479,18 @@
     "role_viewer": "Betrachter"
   },
   "trackDetail": {
+    "deleteAllLyrics": "Alle Songtexte löschen",
+    "deleteLyricsTitle": "Alle Songtexte löschen?",
+    "deleteLyricsBody": "Dadurch werden der Songtext und seine Zeitstempel für diesen Track entfernt. Du kannst sie jederzeit neu transkribieren oder erneut schreiben.",
+    "deleteLyricsConfirm": "Songtext löschen",
+    "lyricsDeleted": "Songtext gelöscht",
+    "lyricsDeleteFailed": "Songtext konnte nicht gelöscht werden",
+    "removeArtwork": "Cover entfernen",
+    "removeArtworkTitle": "Cover entfernen?",
+    "removeArtworkBody": "Der Track zeigt das Standard-Cover. Du kannst jederzeit ein neues Cover hochladen.",
+    "removeArtworkConfirm": "Entfernen",
+    "artworkRemoved": "Cover entfernt",
+    "artworkRemoveFailed": "Cover konnte nicht entfernt werden",
     "lyricsLowConfidence": "Kein Songtext erkannt. Dieser Track ist möglicherweise instrumental oder der Gesang ist zu stark bearbeitet, um zuverlässig transkribiert zu werden.",
     "transcribeInLanguage": "Neu transkribieren in…",
     "tabComments": "Kommentare",

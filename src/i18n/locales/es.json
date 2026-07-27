@@ -479,6 +479,18 @@
     "role_viewer": "Lector"
   },
   "trackDetail": {
+    "deleteAllLyrics": "Eliminar toda la letra",
+    "deleteLyricsTitle": "¿Eliminar toda la letra?",
+    "deleteLyricsBody": "Esto eliminará la letra y sus marcas de tiempo de esta pista. Siempre podrás volver a transcribirla o escribirla más tarde.",
+    "deleteLyricsConfirm": "Eliminar letra",
+    "lyricsDeleted": "Letra eliminada",
+    "lyricsDeleteFailed": "No se pudo eliminar la letra",
+    "removeArtwork": "Quitar la portada",
+    "removeArtworkTitle": "¿Quitar la portada?",
+    "removeArtworkBody": "La pista mostrará la portada predeterminada. Puedes subir una nueva portada en cualquier momento.",
+    "removeArtworkConfirm": "Quitar",
+    "artworkRemoved": "Portada eliminada",
+    "artworkRemoveFailed": "No se pudo quitar la portada",
     "lyricsLowConfidence": "No se detectaron letras. Es posible que esta pista sea instrumental o que las voces estén demasiado procesadas para transcribirse de forma fiable.",
     "transcribeInLanguage": "Volver a transcribir en…",
     "tabComments": "Comentarios",

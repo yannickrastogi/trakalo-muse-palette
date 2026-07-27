@@ -552,6 +552,18 @@
     "revokeConfirmDesc": "{{name}} perdra l'accès à tous vos morceaux partagés."
   },
   "trackDetail": {
+    "deleteAllLyrics": "Supprimer toutes les paroles",
+    "deleteLyricsTitle": "Supprimer toutes les paroles ?",
+    "deleteLyricsBody": "Cela supprimera les paroles et leurs timestamps pour ce titre. Vous pourrez toujours les re-transcrire ou les réécrire plus tard.",
+    "deleteLyricsConfirm": "Supprimer les paroles",
+    "lyricsDeleted": "Paroles supprimées",
+    "lyricsDeleteFailed": "Impossible de supprimer les paroles",
+    "removeArtwork": "Supprimer la pochette",
+    "removeArtworkTitle": "Supprimer la pochette ?",
+    "removeArtworkBody": "Le titre affichera la pochette par défaut. Vous pourrez importer une nouvelle pochette à tout moment.",
+    "removeArtworkConfirm": "Supprimer",
+    "artworkRemoved": "Pochette supprimée",
+    "artworkRemoveFailed": "Impossible de supprimer la pochette",
     "lyricsLowConfidence": "Aucune parole détectée. Ce titre est peut-être instrumental, ou les voix sont trop transformées pour être transcrites de façon fiable.",
     "transcribeInLanguage": "Re-transcrire en…",
     "tabComments": "Commentaires",

@@ -921,6 +921,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
       if (updates.originalFileUrl !== undefined) payload.audio_url = updates.originalFileUrl || null;
       if (updates.previewFileUrl !== undefined) payload.audio_preview_url = updates.previewFileUrl || null;
       if (updates.lyrics !== undefined) payload.lyrics = updates.lyrics || null;
+      if (updates.lyricsSegments !== undefined) payload.lyrics_segments = updates.lyricsSegments && updates.lyricsSegments.length > 0 ? updates.lyricsSegments : null;
       if (updates.notes !== undefined) payload.notes = updates.notes || null;
       if (updates.splits !== undefined) payload.splits = updates.splits;
       if (updates.isrc !== undefined) payload.isrc = updates.isrc || null;

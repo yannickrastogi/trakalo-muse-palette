@@ -479,6 +479,18 @@
     "role_viewer": "뷰어"
   },
   "trackDetail": {
+    "deleteAllLyrics": "가사 모두 삭제",
+    "deleteLyricsTitle": "가사를 모두 삭제할까요?",
+    "deleteLyricsBody": "이 트랙의 가사와 타임스탬프가 삭제됩니다. 언제든지 다시 전사하거나 다시 작성할 수 있습니다.",
+    "deleteLyricsConfirm": "가사 삭제",
+    "lyricsDeleted": "가사가 삭제되었습니다",
+    "lyricsDeleteFailed": "가사를 삭제할 수 없습니다",
+    "removeArtwork": "아트워크 제거",
+    "removeArtworkTitle": "아트워크를 제거할까요?",
+    "removeArtworkBody": "트랙에 기본 커버가 표시됩니다. 언제든지 새 아트워크를 업로드할 수 있습니다.",
+    "removeArtworkConfirm": "제거",
+    "artworkRemoved": "아트워크가 제거되었습니다",
+    "artworkRemoveFailed": "아트워크를 제거할 수 없습니다",
     "lyricsLowConfidence": "가사를 감지하지 못했습니다. 이 트랙은 연주곡이거나 보컬이 과도하게 처리되어 정확하게 전사할 수 없습니다.",
     "transcribeInLanguage": "다른 언어로 다시 전사…",
     "tabComments": "댓글",

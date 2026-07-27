@@ -552,6 +552,18 @@
     "revokeConfirmDesc": "{{name}} will lose access to all your shared tracks."
   },
   "trackDetail": {
+    "deleteAllLyrics": "Delete all lyrics",
+    "deleteLyricsTitle": "Delete all lyrics?",
+    "deleteLyricsBody": "This will remove the lyrics and their timestamps for this track. You can always re-transcribe or write them again later.",
+    "deleteLyricsConfirm": "Delete lyrics",
+    "lyricsDeleted": "Lyrics deleted",
+    "lyricsDeleteFailed": "Couldn't delete lyrics",
+    "removeArtwork": "Remove artwork",
+    "removeArtworkTitle": "Remove artwork?",
+    "removeArtworkBody": "The track will show the default cover. You can upload a new artwork at any time.",
+    "removeArtworkConfirm": "Remove",
+    "artworkRemoved": "Artwork removed",
+    "artworkRemoveFailed": "Couldn't remove artwork",
     "lyricsLowConfidence": "No lyrics detected. This track may be instrumental, or the vocals are too processed to transcribe reliably.",
     "transcribeInLanguage": "Re-transcribe in…",
     "tabComments": "Comments",

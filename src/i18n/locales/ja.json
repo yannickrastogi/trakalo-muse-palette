@@ -479,6 +479,18 @@
     "role_viewer": "ビューア"
   },
   "trackDetail": {
+    "deleteAllLyrics": "歌詞をすべて削除",
+    "deleteLyricsTitle": "歌詞をすべて削除しますか？",
+    "deleteLyricsBody": "このトラックの歌詞とタイムスタンプが削除されます。いつでも再度文字起こししたり、書き直したりできます。",
+    "deleteLyricsConfirm": "歌詞を削除",
+    "lyricsDeleted": "歌詞を削除しました",
+    "lyricsDeleteFailed": "歌詞を削除できませんでした",
+    "removeArtwork": "アートワークを削除",
+    "removeArtworkTitle": "アートワークを削除しますか？",
+    "removeArtworkBody": "トラックにはデフォルトのカバーが表示されます。いつでも新しいアートワークをアップロードできます。",
+    "removeArtworkConfirm": "削除",
+    "artworkRemoved": "アートワークを削除しました",
+    "artworkRemoveFailed": "アートワークを削除できませんでした",
     "lyricsLowConfidence": "歌詞を検出できませんでした。このトラックはインストゥルメンタルか、ボーカルの加工が強すぎて正確に文字起こしできない可能性があります。",
     "transcribeInLanguage": "言語を選んで再文字起こし…",
     "tabComments": "コメント",
