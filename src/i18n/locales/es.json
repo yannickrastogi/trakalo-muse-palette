@@ -479,6 +479,8 @@
     "role_viewer": "Lector"
   },
   "trackDetail": {
+    "transcribeRateTrack": "Has vuelto a transcribir esta pista varias veces hoy, inténtalo de nuevo mañana.",
+    "transcribeRateGeneric": "La transcripción está temporalmente limitada. Inténtalo de nuevo más tarde.",
     "deleteAllLyrics": "Eliminar toda la letra",
     "deleteLyricsTitle": "¿Eliminar toda la letra?",
     "deleteLyricsBody": "Esto eliminará la letra y sus marcas de tiempo de esta pista. Siempre podrás volver a transcribirla o escribirla más tarde.",

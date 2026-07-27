@@ -479,6 +479,8 @@
     "role_viewer": "Visualizzatore"
   },
   "trackDetail": {
+    "transcribeRateTrack": "Hai ritrascritto questa traccia più volte oggi, riprova domani.",
+    "transcribeRateGeneric": "La trascrizione è temporaneamente limitata. Riprova più tardi.",
     "deleteAllLyrics": "Elimina tutto il testo",
     "deleteLyricsTitle": "Eliminare tutto il testo?",
     "deleteLyricsBody": "Questo rimuoverà il testo e i suoi timestamp per questa traccia. Potrai sempre ritrascriverlo o riscriverlo in seguito.",

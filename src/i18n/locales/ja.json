@@ -479,6 +479,8 @@
     "role_viewer": "ビューア"
   },
   "trackDetail": {
+    "transcribeRateTrack": "このトラックは本日すでに複数回文字起こしされています。明日また試してください。",
+    "transcribeRateGeneric": "文字起こしは一時的に制限されています。しばらくしてからもう一度お試しください。",
     "deleteAllLyrics": "歌詞をすべて削除",
     "deleteLyricsTitle": "歌詞をすべて削除しますか？",
     "deleteLyricsBody": "このトラックの歌詞とタイムスタンプが削除されます。いつでも再度文字起こししたり、書き直したりできます。",

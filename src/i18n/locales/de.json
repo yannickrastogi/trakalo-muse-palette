@@ -479,6 +479,8 @@
     "role_viewer": "Betrachter"
   },
   "trackDetail": {
+    "transcribeRateTrack": "Du hast diesen Track heute schon mehrfach neu transkribiert, versuche es morgen erneut.",
+    "transcribeRateGeneric": "Die Transkription ist vorübergehend limitiert. Bitte versuche es später erneut.",
     "deleteAllLyrics": "Alle Songtexte löschen",
     "deleteLyricsTitle": "Alle Songtexte löschen?",
     "deleteLyricsBody": "Dadurch werden der Songtext und seine Zeitstempel für diesen Track entfernt. Du kannst sie jederzeit neu transkribieren oder erneut schreiben.",

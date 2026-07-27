@@ -479,6 +479,8 @@
     "role_viewer": "뷰어"
   },
   "trackDetail": {
+    "transcribeRateTrack": "오늘 이 트랙을 여러 번 다시 전사했습니다. 내일 다시 시도해 주세요.",
+    "transcribeRateGeneric": "전사가 일시적으로 제한되었습니다. 나중에 다시 시도해 주세요.",
     "deleteAllLyrics": "가사 모두 삭제",
     "deleteLyricsTitle": "가사를 모두 삭제할까요?",
     "deleteLyricsBody": "이 트랙의 가사와 타임스탬프가 삭제됩니다. 언제든지 다시 전사하거나 다시 작성할 수 있습니다.",

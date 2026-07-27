@@ -25,6 +25,8 @@ Deno.serve(async (req) => {
     // any AI work. assert_caller() bypasses for service_role, so the service-role
     // client passes the JWT-validated _user_id straight through.
     const { user } = await getAuthedUser(req);
+    // Roll the monthly counter over if the billing period elapsed, THEN read the quota.
+    await supabase.rpc("reset_monthly_usage_if_due", { _user_id: user.id });
     const { data: quota, error: quotaErr } = await supabase.rpc("check_smart_ar_quota", { _user_id: user.id });
     if (quotaErr) {
       // Fail closed, but signal a server error rather than a misleading "limit reached".
@@ -35,10 +37,28 @@ Deno.serve(async (req) => {
       );
     }
     if (!quota || quota.allowed !== true) {
+      console.log("smart-ar: quota reached user=" + user.id + " scope=" + (quota?.scope ?? "unknown") + " used=" + (quota?.used ?? "?") + " limit=" + (quota?.limit ?? "?"));
       return new Response(
         JSON.stringify({ error: "plan_limit_reached", scope: quota?.scope ?? null, used: quota?.used ?? null, limit: quota?.limit ?? null }),
         { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Anti-loop (per user) + platform fuse — BEFORE the paid model call, after the
+    // plan quota. check_rate_limit increments per call, so refusals stop here.
+    const { data: userRateOk } = await supabase.rpc("check_rate_limit", { _key: "smartar:user:" + user.id, _max_requests: 100, _window_seconds: 3600 });
+    if (userRateOk === false) {
+      console.log("smart-ar: rate limit hit guard=user user=" + user.id + " limit=100/1h");
+      return new Response(JSON.stringify({ error: "rate_limited", scope: "user" }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: globalRateOk } = await supabase.rpc("check_rate_limit", { _key: "smartar:global", _max_requests: 3000, _window_seconds: 86400 });
+    if (globalRateOk === false) {
+      console.log("smart-ar: rate limit hit guard=global user=" + user.id + " limit=3000/24h");
+      return new Response(JSON.stringify({ error: "rate_limited", scope: "global" }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const body = await req.json();

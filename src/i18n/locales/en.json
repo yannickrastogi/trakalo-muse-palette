@@ -552,6 +552,8 @@
     "revokeConfirmDesc": "{{name}} will lose access to all your shared tracks."
   },
   "trackDetail": {
+    "transcribeRateTrack": "You've re-transcribed this track several times today, try again tomorrow.",
+    "transcribeRateGeneric": "Transcription is temporarily rate-limited. Please try again later.",
     "deleteAllLyrics": "Delete all lyrics",
     "deleteLyricsTitle": "Delete all lyrics?",
     "deleteLyricsBody": "This will remove the lyrics and their timestamps for this track. You can always re-transcribe or write them again later.",

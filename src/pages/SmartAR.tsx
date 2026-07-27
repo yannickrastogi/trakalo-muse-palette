@@ -256,6 +256,16 @@ export default function SmartAR() {
     })
       .then(function (res) {
         return res.json().then(function (json) {
+          // Server-side usage guards → helpful chat message instead of the generic
+          // "no tracks" fallback. 402 = plan quota reached; 429 = rate-limited.
+          if (res.status === 402 && json && json.error === "plan_limit_reached") {
+            var used = json.used != null ? json.used : "?";
+            var limit = json.limit != null ? json.limit : "?";
+            return { __guard: "You've reached your plan's Smart A&R limit (" + used + "/" + limit + "). Buy a credit pack (25 for $5 or 100 for $15) to keep searching, or upgrade your plan." };
+          }
+          if (res.status === 429) {
+            return { __guard: "Smart A&R is busy right now (temporary rate limit). Please try again in a little while." };
+          }
           if (!res.ok) {
             throw new Error(json.error || "Edge function error: " + res.status);
           }
@@ -263,6 +273,15 @@ export default function SmartAR() {
         });
       })
       .then(function (data) {
+        if (data && data.__guard) {
+          setMessages(function (prev) {
+            return prev
+              .filter(function (m) { return m.id !== loadingId; })
+              .concat({ id: makeId(), role: "bot", content: data.__guard, type: "text" });
+          });
+          setStep("brief");
+          return;
+        }
         if (data.error) {
           throw new Error(data.error);
         }

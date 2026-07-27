@@ -183,6 +183,40 @@ serve(async (req) => {
       });
     }
 
+    // Usage guards — refuse BEFORE any paid Groq call, narrowest → widest, stopping
+    // at the first refusal. No MONTHLY quota here on purpose: transcription is
+    // included in paid plans and already bounded by the plan's track limit.
+    // (a) Per-track: 3 / 24h — re-transcribing a track a few times is legit; thousands isn't.
+    const { data: dayTrackOk } = await supabaseAdmin.rpc("check_rate_limit", {
+      _key: "transcribe:track:" + track_id, _max_requests: 3, _window_seconds: 86400,
+    });
+    if (dayTrackOk === false) {
+      console.log("transcribe-lyrics: quota hit guard=track user=" + user.id + " track=" + track_id + " limit=3/24h");
+      return new Response(JSON.stringify({ error: "rate_limited", scope: "track" }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // (b) Per-user: 500 / 24h — deliberately generous so a big import passes without friction.
+    const { data: dayUserOk } = await supabaseAdmin.rpc("check_rate_limit", {
+      _key: "transcribe:user:" + user.id, _max_requests: 500, _window_seconds: 86400,
+    });
+    if (dayUserOk === false) {
+      console.log("transcribe-lyrics: quota hit guard=user user=" + user.id + " limit=500/24h");
+      return new Response(JSON.stringify({ error: "rate_limited", scope: "user" }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // (c) Platform fuse: 2000 / 24h across all users — never trips in normal use.
+    const { data: dayGlobalOk } = await supabaseAdmin.rpc("check_rate_limit", {
+      _key: "transcribe:global", _max_requests: 2000, _window_seconds: 86400,
+    });
+    if (dayGlobalOk === false) {
+      console.log("transcribe-lyrics: quota hit guard=global user=" + user.id + " limit=2000/24h");
+      return new Response(JSON.stringify({ error: "rate_limited", scope: "global" }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const groqApiKey = Deno.env.get("GROQ_API_KEY");
     if (!groqApiKey) {
       return new Response(JSON.stringify({ error: "GROQ_API_KEY not configured" }), {

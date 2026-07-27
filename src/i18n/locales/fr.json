@@ -552,6 +552,8 @@
     "revokeConfirmDesc": "{{name}} perdra l'accès à tous vos morceaux partagés."
   },
   "trackDetail": {
+    "transcribeRateTrack": "Vous avez re-transcrit ce titre plusieurs fois aujourd'hui, réessayez demain.",
+    "transcribeRateGeneric": "La transcription est temporairement limitée. Réessayez plus tard.",
     "deleteAllLyrics": "Supprimer toutes les paroles",
     "deleteLyricsTitle": "Supprimer toutes les paroles ?",
     "deleteLyricsBody": "Cela supprimera les paroles et leurs timestamps pour ce titre. Vous pourrez toujours les re-transcrire ou les réécrire plus tard.",

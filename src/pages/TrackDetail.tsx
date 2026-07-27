@@ -2412,6 +2412,14 @@ function LyricsTab({ trackId, trackUuid, fallbackTrack, readOnly }: { trackId: n
         body: JSON.stringify(langOverride ? { track_id: trackUuid, language: langOverride } : { track_id: trackUuid }),
       });
       const json = await res.json();
+      if (res.status === 429) {
+        // Usage guard tripped server-side — distinct message for the per-track cap.
+        toast.info(
+          json.scope === "track" ? t("trackDetail.transcribeRateTrack") : t("trackDetail.transcribeRateGeneric"),
+          { duration: 7000 },
+        );
+        return;
+      }
       if (json.empty) {
         // Honest message: the model wasn't confident enough (likely instrumental
         // or heavily-processed vocals). Nothing was written to the track.
