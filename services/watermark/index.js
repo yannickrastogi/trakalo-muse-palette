@@ -9,6 +9,7 @@ const https = require("https");
 const http = require("http");
 const dns = require("dns").promises;
 const net = require("net");
+const worker = require("./worker");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -303,6 +304,84 @@ async function downloadToFile(sourceUrl, destPath) {
   throw new Error("too many redirects");
 }
 
+// Watermark pipeline (audiowmark add → ffmpeg MP3 → audiowmark verify), extracted
+// so BOTH the synchronous /encode endpoint AND the job worker run the exact same
+// logic — commands, args and per-step timeouts are unchanged. Resolves with the
+// file to deliver + its format ("mp3", or "wav" fallback when the MP3 lost the
+// mark). The CALLER owns cleanup of the returned file; the input and the discarded
+// intermediate are cleaned here. Rejects with a WatermarkError on a tool failure.
+class WatermarkError extends Error {
+  constructor(message, details) {
+    super(message);
+    this.name = "WatermarkError";
+    this.details = details;
+  }
+}
+
+function runWatermarkPipeline(inputPath, payload) {
+  return new Promise((resolve, reject) => {
+    const outputPath = path.join(tmpDir, `${uuidv4()}.wav`);
+    const mp3Path = path.join(tmpDir, `${uuidv4()}.mp3`);
+
+    // Step 1: embed the watermark (WAV master untouched; we work on a copy).
+    execFile(
+      "audiowmark",
+      ["add", "--strength", WM_STRENGTH, inputPath, outputPath, payload],
+      { timeout: ADD_TIMEOUT_MS },
+      (error, stdout, stderr) => {
+        if (error) {
+          cleanup(inputPath, outputPath, mp3Path);
+          return reject(new WatermarkError("Watermark encoding failed", stderr));
+        }
+
+        // Step 2: encode the delivery copy to MP3 320k CBR (~4x smaller than WAV).
+        execFile(
+          "ffmpeg",
+          ["-i", outputPath, "-c:a", "libmp3lame", "-b:a", MP3_BITRATE, "-y", mp3Path],
+          { timeout: FFMPEG_TIMEOUT_MS },
+          (ffError, ffStdout, ffStderr) => {
+            cleanup(inputPath); // input no longer needed
+            if (ffError) {
+              cleanup(outputPath, mp3Path);
+              return reject(new WatermarkError("MP3 encoding failed", ffStderr));
+            }
+
+            // Step 3: verify the watermark still decodes from the MP3. If it does,
+            // ship the small MP3; otherwise fall back to the watermarked WAV so leak
+            // tracing NEVER silently breaks.
+            execFile(
+              "audiowmark",
+              ["get", mp3Path],
+              { timeout: VERIFY_TIMEOUT_MS },
+              (vError, vStdout) => {
+                const { payload: detected, confidence } = vError
+                  ? { payload: null, confidence: 0 }
+                  : parseWatermark(vStdout);
+                const mp3Ok = !!detected
+                  && confidence >= WM_DETECT_THRESHOLD
+                  && detected.toLowerCase() === payload.toLowerCase();
+
+                if (mp3Ok) {
+                  cleanup(outputPath); // drop the WAV fallback
+                  resolve({ filePath: mp3Path, format: "mp3", downloadName: "watermarked.mp3" });
+                } else {
+                  console.warn(
+                    "encode: MP3 watermark verify FAILED (confidence=" + confidence +
+                    ", detected=" + (detected ? detected.substring(0, 8) : "none") +
+                    ", expected=" + payload.substring(0, 8) + ") — falling back to WAV"
+                  );
+                  cleanup(mp3Path); // drop the unusable MP3
+                  resolve({ filePath: outputPath, format: "wav", downloadName: "watermarked.wav" });
+                }
+              }
+            );
+          }
+        );
+      }
+    );
+  });
+}
+
 // POST /encode
 app.post(
   "/encode",
@@ -345,100 +424,33 @@ app.post(
       return res.status(400).json({ error: "Payload must be a 128-bit hex string (32 hex chars)" });
     }
 
-    const outputPath = path.join(tmpDir, `${uuidv4()}.wav`);
-    const mp3Path = path.join(tmpDir, `${uuidv4()}.mp3`);
-
-    // Three sequential CPU-bound steps run (audiowmark add, ffmpeg, audiowmark get).
-    // The global budget covers all three; the timeout cleans every temp artifact.
+    // Global budget covers the whole pipeline; on timeout the shared pipeline
+    // cleans its own intermediates — here we release the input + respond 504.
     const timeout = setTimeout(() => {
-      cleanup(inputPath, outputPath, mp3Path);
+      cleanup(inputPath);
       if (!res.headersSent) {
         res.status(504).json({ error: "Processing timeout" });
       }
     }, ENCODE_GLOBAL_TIMEOUT_MS);
 
-    // Step 1: embed the watermark (WAV master untouched; we work on a copy).
-    // strength 10 = audiowmark default — inaudible; the post-encode verify below
-    // confirms it survives the lossy MP3 pass before we ship the smaller file.
-    execFile(
-      "audiowmark",
-      ["add", "--strength", WM_STRENGTH, inputPath, outputPath, payload],
-      { timeout: ADD_TIMEOUT_MS },
-      (error, stdout, stderr) => {
-        if (error) {
-          clearTimeout(timeout);
-          cleanup(inputPath, outputPath, mp3Path);
-          return res
-            .status(500)
-            .json({ error: "Watermark encoding failed", details: stderr });
-        }
-
-        // Step 2: encode the delivery copy to MP3 320k CBR (~4x smaller than WAV, no
-        // 128k pre-echo). Keep the watermarked WAV as a fallback until the verify passes.
-        execFile(
-          "ffmpeg",
-          ["-i", outputPath, "-c:a", "libmp3lame", "-b:a", MP3_BITRATE, "-y", mp3Path],
-          { timeout: FFMPEG_TIMEOUT_MS },
-          (ffError, ffStdout, ffStderr) => {
-            // Input no longer needed; keep outputPath (WAV) + mp3Path until we pick one.
-            cleanup(inputPath);
-
-            if (res.headersSent) { // global timeout already responded (504)
-              clearTimeout(timeout);
-              cleanup(outputPath, mp3Path);
-              return;
-            }
-            if (ffError) {
-              clearTimeout(timeout);
-              cleanup(outputPath, mp3Path);
-              return res
-                .status(500)
-                .json({ error: "MP3 encoding failed", details: ffStderr });
-            }
-
-            // Step 3: verify the watermark still decodes from the MP3. If it does,
-            // ship the small MP3; otherwise fall back to the watermarked WAV so leak
-            // tracing NEVER silently breaks.
-            execFile(
-              "audiowmark",
-              ["get", mp3Path],
-              { timeout: VERIFY_TIMEOUT_MS },
-              (vError, vStdout) => {
-                clearTimeout(timeout);
-                if (res.headersSent) { // global timeout already responded (504)
-                  cleanup(outputPath, mp3Path);
-                  return;
-                }
-
-                const { payload: detected, confidence } = vError
-                  ? { payload: null, confidence: 0 }
-                  : parseWatermark(vStdout);
-                const mp3Ok = !!detected
-                  && confidence >= WM_DETECT_THRESHOLD
-                  && detected.toLowerCase() === payload.toLowerCase();
-
-                if (mp3Ok) {
-                  cleanup(outputPath); // drop the WAV fallback
-                  res.set("X-Watermark-Format", "mp3");
-                  res.download(mp3Path, "watermarked.mp3", () => cleanup(mp3Path));
-                } else {
-                  // Fallback: the MP3 lost the watermark — serve the watermarked WAV so
-                  // the payload is still traceable. Loud log so this never hides silently.
-                  console.warn(
-                    "encode: MP3 watermark verify FAILED (confidence=" + confidence +
-                    ", detected=" + (detected ? detected.substring(0, 8) : "none") +
-                    ", expected=" + payload.substring(0, 8) + ") — falling back to WAV"
-                  );
-                  cleanup(mp3Path); // drop the unusable MP3
-                  res.set("X-Watermark-Format", "wav");
-                  res.download(outputPath, "watermarked.wav", () => cleanup(outputPath));
-                }
-              }
-            );
-          }
-        );
+    try {
+      const { filePath, format, downloadName } = await runWatermarkPipeline(inputPath, payload);
+      clearTimeout(timeout);
+      if (res.headersSent) { // global timeout already responded (504)
+        cleanup(filePath);
+        return;
       }
-    );
+      res.set("X-Watermark-Format", format);
+      res.download(filePath, downloadName, () => cleanup(filePath));
+    } catch (err) {
+      clearTimeout(timeout);
+      if (res.headersSent) return; // global timeout already responded (504)
+      // Preserve the original error shape (message + tool stderr in `details`).
+      if (err instanceof WatermarkError) {
+        return res.status(500).json({ error: err.message, details: err.details });
+      }
+      return res.status(500).json({ error: "Watermark encoding failed", details: err instanceof Error ? err.message : String(err) });
+    }
   }
 );
 
@@ -489,11 +501,47 @@ app.post(
   }
 );
 
-// GET /health
+// GET /health — extended with job-worker status.
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", version: "1.0.0" });
+  const w = worker.getWorkerStatus();
+  res.json({
+    status: "ok",
+    version: "1.0.0",
+    worker: {
+      active: w.active,
+      id: w.worker_id,
+      processed: w.processed,
+      last_job_at: w.last_job_at,
+    },
+  });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Watermark service running on port ${PORT}`);
+  // Start the job worker AFTER the HTTP server is up. It shares the exact same
+  // watermark pipeline + SSRF-hardened downloader as /encode (injected below).
+  // If the Supabase env is missing, startWorker logs a warning and returns false;
+  // the HTTP server keeps serving /encode and /decode regardless (fail-safe).
+  worker.startWorker({ tmpDir, cleanup, downloadToFile, runWatermarkPipeline });
 });
+
+// Graceful shutdown (Railway sends SIGTERM on redeploy): stop claiming new jobs,
+// let the in-flight job finish, then close the HTTP server and exit. Never abandon
+// a half-processed job.
+// Guards re-entrant signal delivery (distinct from the worker's own shutdown flag).
+let shutdownInProgress = false;
+async function shutdown(signal) {
+  if (shutdownInProgress) return;
+  shutdownInProgress = true;
+  console.log("watermark: " + signal + " received — draining worker, finishing in-flight job");
+  try {
+    await worker.stopWorker();
+  } catch (e) {
+    console.error("watermark: worker shutdown error: " + (e instanceof Error ? e.message : "unknown"));
+  }
+  server.close(() => process.exit(0));
+  // Hard cap so a stuck socket can't block the redeploy forever.
+  setTimeout(() => process.exit(0), 10000).unref();
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
