@@ -32,6 +32,7 @@ let processedCount = 0;
 let lastJobAt = null;
 let loopPromise = null;
 let staleTimer = null;
+let lastError = null; // surfaced on /health so a disabled/failed worker is visible
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -162,7 +163,15 @@ async function tick() {
 
 async function loop() {
   while (!shuttingDown) {
-    await tick();
+    try {
+      await tick();
+    } catch (err) {
+      // A single failed iteration must NEVER stop the loop (or reject loopPromise,
+      // which would surface as an unhandledRejection). Just log and move on — this
+      // does NOT touch lastError, which is reserved for the startup/disabled reason
+      // surfaced on /health (so a transient tick error can't mask "worker is up").
+      console.error("worker: tick failed (loop continues): " + (err instanceof Error ? err.message : String(err)));
+    }
     if (shuttingDown) break;
     await sleep(POLL_INTERVAL_MS);
   }
@@ -189,14 +198,25 @@ function startWorker(injectedDeps) {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
+    lastError = "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing";
     console.warn(
-      "worker: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing — job worker DISABLED " +
+      "worker: " + lastError + " — job worker DISABLED " +
       "(HTTP /encode and /decode still work). Set both to enable the queue worker."
     );
     return false;
   }
-  supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  // Isolate client construction: createClient can throw (e.g. a runtime without a
+  // native WebSocket for the realtime client). A failure here must DISABLE the
+  // worker, not crash the HTTP server — the caller keeps serving /encode + /decode.
+  try {
+    supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  } catch (err) {
+    lastError = err instanceof Error ? err.message : "supabase client init failed";
+    console.error("worker: supabase client init failed — job worker DISABLED (HTTP server unaffected): " + lastError);
+    return false;
+  }
   started = true;
+  lastError = null;
   console.log("worker: starting job worker id=" + WORKER_ID);
   loopPromise = loop();
   staleTimer = setInterval(requeueStale, STALE_INTERVAL_MS);
@@ -227,6 +247,7 @@ function getWorkerStatus() {
     worker_id: started ? WORKER_ID : null,
     processed: processedCount,
     last_job_at: lastJobAt,
+    error: lastError,
   };
 }
 

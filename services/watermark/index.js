@@ -512,6 +512,7 @@ app.get("/health", (_req, res) => {
       id: w.worker_id,
       processed: w.processed,
       last_job_at: w.last_job_at,
+      error: w.error,
     },
   });
 });
@@ -520,9 +521,19 @@ const server = app.listen(PORT, () => {
   console.log(`Watermark service running on port ${PORT}`);
   // Start the job worker AFTER the HTTP server is up. It shares the exact same
   // watermark pipeline + SSRF-hardened downloader as /encode (injected below).
-  // If the Supabase env is missing, startWorker logs a warning and returns false;
-  // the HTTP server keeps serving /encode and /decode regardless (fail-safe).
-  worker.startWorker({ tmpDir, cleanup, downloadToFile, runWatermarkPipeline });
+  // A worker startup failure must NEVER take the HTTP server down — /encode and
+  // /decode keep working and /health reports worker.active:false + worker.error.
+  try {
+    worker.startWorker({ tmpDir, cleanup, downloadToFile, runWatermarkPipeline });
+  } catch (err) {
+    console.error("watermark: worker failed to start (HTTP server unaffected): " + (err instanceof Error ? err.message : "unknown"));
+  }
+});
+
+// A stray promise rejection (e.g. a Supabase call inside the worker) must be
+// logged, never crash the process and take /encode + /decode down with it.
+process.on("unhandledRejection", (reason) => {
+  console.error("watermark: unhandledRejection: " + (reason instanceof Error ? reason.message : String(reason)));
 });
 
 // Graceful shutdown (Railway sends SIGTERM on redeploy): stop claiming new jobs,

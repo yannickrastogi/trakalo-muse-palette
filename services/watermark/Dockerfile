@@ -29,8 +29,10 @@ RUN git clone https://github.com/swesterfeld/audiowmark.git /tmp/audiowmark \
     && ldconfig \
     && rm -rf /tmp/audiowmark
 
-# Install Node.js 20
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+# Install Node.js 22 (Node 20 lacks a global WebSocket, which @supabase/supabase-js
+# requires for its realtime client — audiowmark + ffmpeg above are built
+# independently of Node and are unaffected by this bump).
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
