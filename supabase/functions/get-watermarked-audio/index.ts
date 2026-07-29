@@ -1,9 +1,17 @@
 // Supabase Edge Function: get-watermarked-audio
-// Generates a watermarked audio file for shared link playback.
+// Asynchronous watermarked-audio delivery for shared-link playback + download.
 //
 // POST /get-watermarked-audio
-// Body: { storage_path: string, link_id: string, visitor_email: string, visitor_name: string }
-// Returns: { url: string } or { error: string }
+// Body (encode): { storage_path, link_id, visitor_email, visitor_name }
+//   → cache hit:  200 { status: "done", url }
+//   → cache miss: 202 { status: "processing", job_id }  (a 'watermark_encode' job
+//                 is enqueued; the Railway worker produces + uploads the file)
+// Body (status): { storage_path, link_id, visitor_email, action: "status" }
+//   → 200 { status: "done", url } | 202 { status: "processing" } | 503 { status: "failed" }
+//
+// This function NEVER returns a URL to unwatermarked/original audio. On definitive
+// failure it returns 503 { status: "failed" } — the caller must NOT fall back to
+// the clean file.
 //
 // Deploy: supabase functions deploy get-watermarked-audio
 
@@ -42,6 +50,8 @@ Deno.serve(async (req) => {
 
   try {
     const body = await readJsonBounded(req);
+    // "encode" (default) enqueues on cache miss; "status" only reports job state.
+    const action = body.action === "status" ? "status" : "encode";
     const rawStoragePath = typeof body.storage_path === "string" ? body.storage_path : "";
     const link_id = typeof body.link_id === "string" ? body.link_id : "";
     const visitor_email = boundStr(body.visitor_email, LIMITS.EMAIL);
@@ -69,16 +79,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    const WATERMARK_API_URL = Deno.env.get("WATERMARK_API_URL");
-    const WATERMARK_API_KEY = Deno.env.get("WATERMARK_API_KEY");
-
-    if (!WATERMARK_API_URL || !WATERMARK_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "Watermark service not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -94,103 +94,96 @@ Deno.serve(async (req) => {
     // All storage I/O routed through the storage abstraction (Supabase or R2 via STORAGE_PROVIDER).
     const storage = getStorageProvider();
 
-    // Cache: a delivery copy is MP3 (verified) or WAV (fallback) — accept either.
-    for (const cachedPath of [mp3Path, wavPath]) {
-      if (await storage.exists("watermarked", cachedPath)) {
-        try {
-          const cachedUrl = await storage.createSignedUrl("watermarked", cachedPath, 300);
-          return new Response(JSON.stringify({ url: cachedUrl }), {
-            status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        } catch (e) {
-          // Cache hit but URL signing failed — fall through and regenerate.
-          console.error("get-watermarked-audio: cache sign failed (" + (e instanceof Error ? e.message : "unknown") + ")");
+    // Cache is the single source of truth for "ready": a delivery copy is MP3
+    // (verified) or WAV (fallback) — accept either. Returns a signed URL or null.
+    async function signedCacheUrl(): Promise<string | null> {
+      for (const cachedPath of [mp3Path, wavPath]) {
+        if (await storage.exists("watermarked", cachedPath)) {
+          try {
+            return await storage.createSignedUrl("watermarked", cachedPath, 300);
+          } catch (e) {
+            console.error("get-watermarked-audio: cache sign failed (" + (e instanceof Error ? e.message : "unknown") + ")");
+          }
         }
       }
+      return null;
     }
 
-    // 1. Create a signed URL for the original audio (60s) — passed to the Railway watermark service.
+    const jsonRes = (obj: unknown, status: number) =>
+      new Response(JSON.stringify(obj), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    // Ready in cache → hand back the watermarked URL (both encode + status paths).
+    const cachedUrl = await signedCacheUrl();
+    if (cachedUrl) return jsonRes({ status: "done", url: cachedUrl }, 200);
+
+    // STATUS: no cache yet → report the job's state (never enqueue, never fall back).
+    if (action === "status") {
+      const { data: job } = await supabaseAdmin
+        .from("jobs")
+        .select("status")
+        .eq("dedupe_key", cacheBase)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (job && (job.status === "failed" || job.status === "cancelled")) {
+        return jsonRes({ status: "failed" }, 503);
+      }
+      return jsonRes({ status: "processing" }, 202);
+    }
+
+    // ENCODE (cache miss) → enqueue a watermark_encode job for the Railway worker.
+    // The clean source_url is embedded ONLY in the job payload (visible to owning
+    // workspace members, never to the shared-link visitor) and never returned here.
     let originalSignedUrl: string;
     try {
-      originalSignedUrl = await storage.createSignedUrl("tracks", storage_path, 60);
+      // 1h TTL so the queued source URL stays valid until the worker claims the job.
+      originalSignedUrl = await storage.createSignedUrl("tracks", storage_path, 3600);
     } catch (e) {
       console.error("get-watermarked-audio: original sign failed (" + (e instanceof Error ? e.message : "unknown") + ")");
-      return new Response(
-        JSON.stringify({ error: "Failed to access original audio" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonRes({ status: "failed" }, 503);
     }
 
-    // 2. Build watermark payload — hash to 128-bit hex for audiowmark
+    // Watermark payload — hash to 128-bit hex for audiowmark (unchanged).
     const rawPayload = `lid_${link_id}_v_${visitor_email}`;
     const payloadHashFull = await sha256Hex(rawPayload);
     const payload = payloadHashFull.substring(0, 32); // 128 bits = 16 bytes = 32 hex chars
 
-    // Store mapping hash_hex → original payload for leak tracing
+    // Store mapping hash_hex → original payload for leak tracing (unchanged).
     await supabaseAdmin
       .from("watermark_payloads")
       .upsert({ hash_hex: payload, raw_payload: rawPayload, link_id, visitor_email, visitor_name: visitor_name || null }, { onConflict: "hash_hex" });
 
-    // 3. Call watermark service with source_url
-    const wmResponse = await fetch(`${WATERMARK_API_URL}/encode`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": WATERMARK_API_KEY,
-      },
-      body: JSON.stringify({
+    // Owning workspace (for job visibility / audit). Best-effort; null is fine.
+    const { data: link } = await supabaseAdmin
+      .from("shared_links")
+      .select("workspace_id, created_by")
+      .eq("id", link_id)
+      .maybeSingle();
+
+    // Enqueue. dedupe_key = the cache key → a visitor mashing "play" produces ONE job.
+    // priority 10 (a listener is waiting) beats background work. Worker uploads the
+    // result to watermarked/<cacheBase>.mp3 (content-type reflects the real format).
+    const { data: jobId, error: enqErr } = await supabaseAdmin.rpc("enqueue_job", {
+      _job_type: "watermark_encode",
+      _payload: {
         source_url: originalSignedUrl,
-        payload,
-      }),
+        payload_hex: payload,
+        output_bucket: "watermarked",
+        output_path: mp3Path,
+        format: "mp3",
+      },
+      _workspace_id: link?.workspace_id ?? null,
+      _created_by: link?.created_by ?? null,
+      _dedupe_key: cacheBase,
+      _priority: 10,
+      _max_attempts: 3,
     });
-
-    if (!wmResponse.ok) {
-      console.error("get-watermarked-audio: watermark encode failed (status=" + wmResponse.status + ", payload_prefix=" + payload.substring(0, 8) + ")");
-      return new Response(
-        JSON.stringify({ error: "Failed to generate watermarked audio" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (enqErr || !jobId) {
+      console.error("get-watermarked-audio: enqueue failed (" + (enqErr?.message || "no id") + ", payload_prefix=" + payload.substring(0, 8) + ")");
+      return jsonRes({ status: "failed" }, 503);
     }
 
-    // 4. Upload the watermarked audio. Railway signals the delivered format via
-    // X-Watermark-Format (mp3 = verified, wav = fallback when the MP3 lost the mark).
-    const format = (wmResponse.headers.get("X-Watermark-Format") || "mp3").toLowerCase();
-    const isWav = format === "wav";
-    const watermarkedPath = isWav ? wavPath : mp3Path;
-    const contentType = isWav ? "audio/wav" : "audio/mpeg";
-    if (isWav) {
-      console.warn("get-watermarked-audio: Railway returned WAV fallback (payload_prefix=" + payload.substring(0, 8) + ")");
-    }
-
-    const watermarkedBuffer = await wmResponse.arrayBuffer();
-    try {
-      await storage.upload("watermarked", watermarkedPath, watermarkedBuffer, contentType);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "unknown";
-      console.error("get-watermarked-audio upload error:", msg);
-      return new Response(
-        JSON.stringify({ error: "Failed to generate watermarked audio" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 5. Create signed URL for the watermarked file (300s)
-    let watermarkedUrl: string;
-    try {
-      watermarkedUrl = await storage.createSignedUrl("watermarked", watermarkedPath, 300);
-    } catch (e) {
-      console.error("get-watermarked-audio: watermarked sign failed (" + (e instanceof Error ? e.message : "unknown") + ")");
-      return new Response(
-        JSON.stringify({ error: "Failed to generate watermarked audio URL" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    return new Response(JSON.stringify({ url: watermarkedUrl }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonRes({ status: "processing", job_id: jobId }, 202);
   } catch (err) {
     if (err instanceof InputError) {
       console.error("get-watermarked-audio: rejected body (" + err.message + ")");

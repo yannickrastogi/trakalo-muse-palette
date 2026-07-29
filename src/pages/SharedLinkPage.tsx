@@ -21,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { normalizeSocialUrl } from "@/lib/social-urls";
 import { safeLocalStorage } from "@/lib/safeStorage";
 import { storeCommentSecret, getCommentSecret, hasCommentSecret, removeCommentSecret } from "@/lib/commentSecrets";
+import { getWatermarkedAudioUrl } from "@/lib/audio";
 import type { TrackChapter } from "@/contexts/TrackContext";
 
 // Brand lockup descriptor — intentionally NOT translated. At 8-11px under an 8-letter
@@ -459,13 +460,12 @@ export default function SharedLinkPage() {
 
   // Audio loading
   var [audioLoading, setAudioLoading] = useState(false);
-  // Media-load error surface (null = no error).
-  //   "fallback" = watermarked stream failed, now playing the original audio
-  //   "error"    = playback failed entirely
+  // Watermark playback surface (null = nothing to show).
+  //   "preparing" = the protected copy is being generated (async queue) — show progress
+  //   "error"     = protected playback failed / timed out (NEVER falls back to the clean file)
   var [watermarkError, setWatermarkError] = useState<string | null>(null);
 
   // Refs used by the media-error recovery path (see handleWatermarkFailover).
-  var originalUrlRef = useRef<string | null>(null);   // current track's non-watermarked URL (fallback)
   var watermarkActiveRef = useRef<boolean>(false);    // is the currently-loaded src the watermarked one?
   var loadWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -818,22 +818,12 @@ export default function SharedLinkPage() {
       " host=" + host +
       " watermarked=" + watermarkActiveRef.current
     );
-    if (audio && watermarkActiveRef.current && originalUrlRef.current) {
-      // Watermarked stream failed → play the original so the visitor can still listen.
-      watermarkActiveRef.current = false;
-      setIsWatermarked(false);
-      setWatermarkError("fallback");
-      audio.src = originalUrlRef.current;
-      audio.play().catch(function(e) {
-        console.error("[watermark-audio] fallback play failed:", e && e.name, e && e.message);
-        setAudioLoading(false);
-        setWatermarkError("error");
-      });
-    } else {
-      // No watermarked source involved, or the original also failed → stop spinner, show error.
-      setAudioLoading(false);
-      setWatermarkError("error");
-    }
+    // Protected playback is mandatory: a media failure NEVER falls back to the
+    // clean original. Surface an error and stop the spinner.
+    watermarkActiveRef.current = false;
+    setIsWatermarked(false);
+    setAudioLoading(false);
+    setWatermarkError("error");
   }, []);
 
   // Setup audio element (single instance for lifetime of page)
@@ -956,24 +946,15 @@ export default function SharedLinkPage() {
       return;
     }
     var loadingId = toast.loading(t("sharedLink.preparingDownload"));
-    var dlAbort = new AbortController();
-    var dlTimeout = setTimeout(function() { dlAbort.abort(); }, 60000);
-    fetch(SUPABASE_URL + "/functions/v1/get-watermarked-audio", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "apikey": SUPABASE_PUBLISHABLE_KEY },
-      body: JSON.stringify({
-        storage_path: storagePath,
-        link_id: linkId,
-        visitor_email: visitorEmail,
-        visitor_name: visitorName || ""
-      }),
-      signal: dlAbort.signal
-    }).then(function(res) {
-      if (!res.ok) throw new Error("watermark failed: " + res.status);
-      return res.json();
-    }).then(function(wmJson) {
-      if (!wmJson || !wmJson.url) throw new Error("no watermarked url");
-      return fetch(wmJson.url);
+    // Same async watermarking path as playback: resolve the protected URL (the
+    // helper enqueues + polls up to 90s), then stream it down. Never the original.
+    getWatermarkedAudioUrl({
+      storagePath: storagePath,
+      linkId: linkId,
+      visitorEmail: visitorEmail,
+      visitorName: visitorName || "",
+    }).then(function(wmUrl) {
+      return fetch(wmUrl);
     }).then(function(res) {
       if (!res.ok) throw new Error("Download failed: " + res.status);
       return res.blob();
@@ -993,8 +974,6 @@ export default function SharedLinkPage() {
       console.error("[watermark-download] failed:", err && err.message);
       toast.dismiss(loadingId);
       toast.error(t("sharedLink.downloadFailed"));
-    }).finally(function() {
-      clearTimeout(dlTimeout);
     });
   };
 
@@ -1033,89 +1012,80 @@ export default function SharedLinkPage() {
     setIsWatermarked(false);
     setWatermarkError(null);
     watermarkActiveRef.current = false;
-    originalUrlRef.current = null;
     if (loadWatchdogRef.current) { clearTimeout(loadWatchdogRef.current); loadWatchdogRef.current = null; }
-    fetchAudioUrl(track.id, "preview").then(function(url) {
-      if (!url) {
-        console.error("[watermark-audio] no audio URL returned for track", track.id);
-        loadedTrackIdRef.current = null;
-        setPlayingTrackId(null);
+
+    // Watchdog: if the chosen source never reaches playback (silent stall, no
+    // "error" event), surface an error so "Preparing" can't hang forever.
+    var armLoadWatchdog = function() {
+      if (loadWatchdogRef.current) clearTimeout(loadWatchdogRef.current);
+      loadWatchdogRef.current = setTimeout(function() {
+        var a = audioRef.current;
+        if (loadedTrackIdRef.current === track.id && a && a.paused && a.currentTime === 0) {
+          handleWatermarkFailover("media load watchdog (no playback within 25s)");
+        }
+      }, 25000);
+    };
+
+    var storagePath = track.audio_url;
+    var currentLinkId = linkData?.id;
+    var currentVisitorEmail = visitorEmailRef.current;
+    var watermarkingOn = linkData?.watermarking_enabled !== false;
+
+    if (watermarkingOn) {
+      // Protected playback is REQUIRED — the original clean file is never fetched
+      // or played here. Missing inputs (no gate email) means we can't attribute a
+      // watermark, so we refuse rather than leak the clean audio.
+      if (!storagePath || !currentLinkId || !currentVisitorEmail) {
         setAudioLoading(false);
         setWatermarkError("error");
         return;
       }
-      originalUrlRef.current = url;
-      // Watchdog: if the chosen source never reaches playback (silent stall, no
-      // "error" event), recover anyway so "Preparing" can't hang forever.
-      var armLoadWatchdog = function() {
-        if (loadWatchdogRef.current) clearTimeout(loadWatchdogRef.current);
-        loadWatchdogRef.current = setTimeout(function() {
-          var a = audioRef.current;
-          if (loadedTrackIdRef.current === track.id && a && a.paused && a.currentTime === 0) {
-            handleWatermarkFailover("media load watchdog (no playback within 25s)");
-          }
-        }, 25000);
-      };
-      // Try to get watermarked version first, wait up to 5s, then fallback to original
-      var storagePath = track.audio_url;
-      var currentLinkId = linkData?.id;
-      var currentVisitorEmail = visitorEmailRef.current;
-      var currentVisitorName = visitorName;
-      var watermarkingOn = linkData?.watermarking_enabled !== false;
-      if (watermarkingOn && storagePath && currentLinkId && currentVisitorEmail) {
-        var wmAbort = new AbortController();
-        var wmTimeout = setTimeout(function() { wmAbort.abort(); }, 30000);
-        fetch(SUPABASE_URL + "/functions/v1/get-watermarked-audio", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_PUBLISHABLE_KEY
-          },
-          body: JSON.stringify({
-            storage_path: storagePath,
-            link_id: currentLinkId,
-            visitor_email: currentVisitorEmail,
-            visitor_name: currentVisitorName || ""
-          }),
-          signal: wmAbort.signal
-        }).then(function(wmRes) {
-          clearTimeout(wmTimeout);
-          if (!wmRes.ok) throw new Error("Watermark request failed");
-          return wmRes.json();
-        }).then(function(wmJson) {
-          if (wmJson.url && loadedTrackIdRef.current === track.id) {
-            audio.src = wmJson.url;
-            watermarkActiveRef.current = true;
-            setIsWatermarked(true);
-          } else {
-            audio.src = url;
-            watermarkActiveRef.current = false;
-          }
-          armLoadWatchdog();
-          audio.play().catch(function(err) { console.error("[watermark-audio] play error:", err && err.name, err && err.message); setAudioLoading(false); });
-        }).catch(function(wmErr) {
-          clearTimeout(wmTimeout);
-          console.warn("[watermark-audio] watermark request unavailable, using original audio:", wmErr && wmErr.name, wmErr && wmErr.message);
-          if (loadedTrackIdRef.current === track.id) {
-            audio.src = url;
-            watermarkActiveRef.current = false;
-            setWatermarkError("fallback");
-            armLoadWatchdog();
-            audio.play().catch(function(err) { console.error("[watermark-audio] play error:", err && err.name, err && err.message); setAudioLoading(false); });
-          }
-        });
-      } else {
-        // No watermark possible, play original directly
+      // Async watermarking: the helper enqueues a job and polls (max 90s). "preparing"
+      // shows a progress indicator; on ready → play; on failure/timeout → error, NEVER
+      // a fallback to the original.
+      setWatermarkError("preparing");
+      getWatermarkedAudioUrl({
+        storagePath: storagePath,
+        linkId: currentLinkId,
+        visitorEmail: currentVisitorEmail,
+        visitorName: visitorName || "",
+      }).then(function(wmUrl) {
+        if (loadedTrackIdRef.current !== track.id) return; // superseded by another track
+        audio.src = wmUrl;
+        watermarkActiveRef.current = true;
+        setIsWatermarked(true);
+        setWatermarkError(null);
+        armLoadWatchdog();
+        audio.play().catch(function(err) { console.error("[watermark-audio] play error:", err && err.name, err && err.message); setAudioLoading(false); });
+      }).catch(function(wmErr) {
+        if (loadedTrackIdRef.current !== track.id) return;
+        console.error("[watermark-audio] protected audio unavailable:", wmErr && wmErr.message);
+        setAudioLoading(false);
+        setWatermarkError("error"); // never fall back to the clean original
+      });
+    } else {
+      // Watermarking is disabled for THIS link (an owner setting) → the original is
+      // the intended stream, not a fallback.
+      fetchAudioUrl(track.id, "preview").then(function(url) {
+        if (loadedTrackIdRef.current !== track.id) return;
+        if (!url) {
+          console.error("[watermark-audio] no audio URL returned for track", track.id);
+          loadedTrackIdRef.current = null;
+          setPlayingTrackId(null);
+          setAudioLoading(false);
+          setWatermarkError("error");
+          return;
+        }
         audio.src = url;
         watermarkActiveRef.current = false;
         armLoadWatchdog();
         audio.play().catch(function(err) { console.error("[watermark-audio] play error:", err && err.name, err && err.message); setAudioLoading(false); });
-      }
-    }).catch(function (err) {
-      console.error("[watermark-audio] loadAndPlayTrack error:", err && err.name, err && err.message);
-      setAudioLoading(false);
-      setWatermarkError("error");
-    });
+      }).catch(function (err) {
+        console.error("[watermark-audio] loadAndPlayTrack error:", err && err.name, err && err.message);
+        setAudioLoading(false);
+        setWatermarkError("error");
+      });
+    }
   }, [fetchAudioUrl, linkData, visitorName, handleWatermarkFailover]);
 
   // Keep ref in sync so onEnded can call it without stale closure
@@ -2070,17 +2040,23 @@ export default function SharedLinkPage() {
                   )}
 
                   {watermarkError && playingTrackId && (
-                    <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (plImmersive ? "bg-amber-500/10 border border-amber-400/25" : "bg-destructive/10 border border-destructive/25")}>
-                      <AlertCircle className={"w-4 h-4 mt-0.5 shrink-0 " + (plImmersive ? "text-amber-300" : "text-destructive")} />
-                      <div className="min-w-0 flex-1">
-                        <p className={"text-xs font-semibold " + (plImmersive ? "text-white" : "text-foreground")}>
-                          {watermarkError === "fallback" ? "Protection unavailable" : "Playback failed"}
-                        </p>
-                        <p className={"text-[10px] mt-0.5 " + (plImmersive ? "text-white/55" : "text-muted-foreground")}>
-                          {watermarkError === "fallback" ? "Playing the original audio instead." : "Couldn't load this track — please try again."}
-                        </p>
+                    watermarkError === "preparing" ? (
+                      <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (plImmersive ? "bg-white/8 backdrop-blur border border-white/10" : "bg-muted/40 border border-border")}>
+                        <ShieldCheck className={"w-4 h-4 mt-0.5 shrink-0 animate-pulse " + (plImmersive ? "text-white/80" : "text-primary")} />
+                        <div className="min-w-0 flex-1">
+                          <p className={"text-xs font-semibold " + (plImmersive ? "text-white" : "text-foreground")}>{t("sharedLink.watermark.preparingProtected")}</p>
+                          <p className={"text-[10px] mt-0.5 " + (plImmersive ? "text-white/55" : "text-muted-foreground")}>{t("sharedLink.watermark.explanation")}</p>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (plImmersive ? "bg-amber-500/10 border border-amber-400/25" : "bg-destructive/10 border border-destructive/25")}>
+                        <AlertCircle className={"w-4 h-4 mt-0.5 shrink-0 " + (plImmersive ? "text-amber-300" : "text-destructive")} />
+                        <div className="min-w-0 flex-1">
+                          <p className={"text-xs font-semibold " + (plImmersive ? "text-white" : "text-foreground")}>{t("sharedLink.watermark.playbackFailed")}</p>
+                          <p className={"text-[10px] mt-0.5 " + (plImmersive ? "text-white/55" : "text-muted-foreground")}>{t("sharedLink.watermark.retryHint")}</p>
+                        </div>
+                      </div>
+                    )
                   )}
 
                   {/* Controls row */}
@@ -2466,17 +2442,23 @@ export default function SharedLinkPage() {
                 )}
 
                 {watermarkError && playingTrackId === trackData.id && (
-                  <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (immersive ? "bg-amber-500/10 border border-amber-400/25" : "bg-destructive/10 border border-destructive/25")}>
-                    <AlertCircle className={"w-4 h-4 mt-0.5 shrink-0 " + (immersive ? "text-amber-300" : "text-destructive")} />
-                    <div className="min-w-0 flex-1">
-                      <p className={"text-xs font-semibold " + (immersive ? "text-white" : "text-foreground")}>
-                        {watermarkError === "fallback" ? "Protection unavailable" : "Playback failed"}
-                      </p>
-                      <p className={"text-[10px] mt-0.5 " + (immersive ? "text-white/55" : "text-muted-foreground")}>
-                        {watermarkError === "fallback" ? "Playing the original audio instead." : "Couldn't load this track — please try again."}
-                      </p>
+                  watermarkError === "preparing" ? (
+                    <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (immersive ? "bg-white/8 backdrop-blur border border-white/10" : "bg-muted/40 border border-border")}>
+                      <ShieldCheck className={"w-4 h-4 mt-0.5 shrink-0 animate-pulse " + (immersive ? "text-white/80" : "text-primary")} />
+                      <div className="min-w-0 flex-1">
+                        <p className={"text-xs font-semibold " + (immersive ? "text-white" : "text-foreground")}>{t("sharedLink.watermark.preparingProtected")}</p>
+                        <p className={"text-[10px] mt-0.5 " + (immersive ? "text-white/55" : "text-muted-foreground")}>{t("sharedLink.watermark.explanation")}</p>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className={"flex items-start gap-2.5 px-3 py-2.5 rounded-xl " + (immersive ? "bg-amber-500/10 border border-amber-400/25" : "bg-destructive/10 border border-destructive/25")}>
+                      <AlertCircle className={"w-4 h-4 mt-0.5 shrink-0 " + (immersive ? "text-amber-300" : "text-destructive")} />
+                      <div className="min-w-0 flex-1">
+                        <p className={"text-xs font-semibold " + (immersive ? "text-white" : "text-foreground")}>{t("sharedLink.watermark.playbackFailed")}</p>
+                        <p className={"text-[10px] mt-0.5 " + (immersive ? "text-white/55" : "text-muted-foreground")}>{t("sharedLink.watermark.retryHint")}</p>
+                      </div>
+                    </div>
+                  )
                 )}
 
                 <div className="flex items-center justify-between">

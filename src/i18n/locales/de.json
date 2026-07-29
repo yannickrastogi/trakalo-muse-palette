@@ -1789,6 +1789,9 @@
     },
     "watermark": {
       "preparing": "Bereite deine sichere Kopie vor",
+      "preparingProtected": "Geschütztes Audio wird vorbereitet…",
+      "playbackFailed": "Geschütztes Audio konnte nicht vorbereitet werden",
+      "retryHint": "Bitte versuche es gleich noch einmal.",
       "explanation": "Jede Wiedergabe wird eindeutig zum Schutz markiert",
       "protected": "Geschützt",
       "tooltip": "Jeder Hörer erhält einen einzigartigen unsichtbaren Audio-Fingerabdruck. Das schützt den Künstler bei Leaks.",

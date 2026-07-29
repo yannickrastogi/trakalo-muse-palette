@@ -1871,6 +1871,9 @@
     },
     "watermark": {
       "preparing": "Préparation de votre copie sécurisée",
+      "preparingProtected": "Préparation de l'audio protégé…",
+      "playbackFailed": "Impossible de préparer l'audio protégé",
+      "retryHint": "Veuillez réessayer dans un instant.",
       "explanation": "Chaque lecture est uniquement watermarkée pour votre protection",
       "protected": "Protégé",
       "tooltip": "Chaque auditeur reçoit une empreinte audio invisible unique. Cela protège l'artiste en cas de fuite du morceau.",

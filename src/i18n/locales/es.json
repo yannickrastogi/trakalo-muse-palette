@@ -1789,6 +1789,9 @@
     },
     "watermark": {
       "preparing": "Preparando tu copia segura",
+      "preparingProtected": "Preparando el audio protegido…",
+      "playbackFailed": "No se pudo preparar el audio protegido",
+      "retryHint": "Vuelve a intentarlo en un momento.",
       "explanation": "Cada reproducción tiene una marca de agua única para protección",
       "protected": "Protegido",
       "tooltip": "Cada oyente recibe una huella de audio invisible única. Esto protege al artista si la pista se filtra.",

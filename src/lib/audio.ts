@@ -258,8 +258,50 @@ export async function getAudioPlaybackUrl(
   return data.url;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Raw POST to get-watermarked-audio that reads { status, url? } from ANY response
+// code (200 done / 202 processing / 503 failed). Only genuine errors (4xx
+// validation, 429 rate limit, network) throw. No signed URL / token is logged.
+async function postWatermark(
+  body: Record<string, unknown>,
+): Promise<{ status?: string; url?: string; job_id?: string }> {
+  const token = await currentAccessToken();
+  const res = await fetch(SUPABASE_URL + "/functions/v1/get-watermarked-audio", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token,
+      "apikey": SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  let payload: unknown = null;
+  try { payload = text ? JSON.parse(text) : null; } catch { payload = null; }
+  // 503 carries the valid { status: "failed" } outcome — not an error to throw.
+  if (res.status !== 503 && (res.status < 200 || res.status >= 400)) {
+    console.error("[audio-lib] get-watermarked-audio HTTP " + res.status);
+    throw new Error("get-watermarked-audio HTTP " + res.status);
+  }
+  return payload && typeof payload === "object"
+    ? (payload as { status?: string; url?: string; job_id?: string })
+    : {};
+}
+
+const WM_POLL_INTERVAL_MS = 2000;
+const WM_MAX_WAIT_MS = 90000;
+
 /**
- * Returns a signed URL for a watermarked audio stream (shared link flow).
+ * Resolves a signed URL for the visitor's WATERMARKED audio (shared-link flow).
+ *
+ * Watermarking runs asynchronously on a Postgres queue: a cache miss enqueues a
+ * 'watermark_encode' job, then this polls the job status every 2s (max 90s) until
+ * the protected file is ready. It NEVER returns unwatermarked/original audio —
+ * on job failure or timeout it THROWS, so callers must surface an error and must
+ * NOT fall back to the clean file.
  */
 export async function getWatermarkedAudioUrl(
   args: {
@@ -280,15 +322,25 @@ export async function getWatermarkedAudioUrl(
     if (cached) return cached;
   }
 
-  const data = await callEdgeFunction<{ url?: string }>("get-watermarked-audio", {
+  const encodeBody = {
     storage_path: args.storagePath,
     link_id: args.linkId,
     visitor_email: args.visitorEmail,
     visitor_name: args.visitorName ?? null,
-  });
-  if (!data?.url) {
-    throw new Error("get-watermarked-audio: no url in response");
+  };
+
+  // Kick off (or hit cache): done → return; failed → throw; processing → poll.
+  const first = await postWatermark(encodeBody);
+  if (first.status === "done" && first.url) { cacheSet(cacheKey, first.url); return first.url; }
+  if (first.status === "failed") throw new Error("get-watermarked-audio: job failed");
+
+  const statusBody = { ...encodeBody, action: "status" };
+  const deadline = Date.now() + WM_MAX_WAIT_MS;
+  while (Date.now() < deadline) {
+    await sleep(WM_POLL_INTERVAL_MS);
+    const s = await postWatermark(statusBody);
+    if (s.status === "done" && s.url) { cacheSet(cacheKey, s.url); return s.url; }
+    if (s.status === "failed") throw new Error("get-watermarked-audio: job failed");
   }
-  cacheSet(cacheKey, data.url);
-  return data.url;
+  throw new Error("get-watermarked-audio: timed out preparing protected audio");
 }

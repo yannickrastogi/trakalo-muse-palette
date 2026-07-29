@@ -1871,6 +1871,9 @@
     },
     "watermark": {
       "preparing": "Preparing your secure copy",
+      "preparingProtected": "Preparing protected audio…",
+      "playbackFailed": "Couldn't prepare protected audio",
+      "retryHint": "Please try again in a moment.",
       "explanation": "Each playback is uniquely watermarked for protection",
       "protected": "Protected",
       "tooltip": "Every listener receives a unique invisible audio fingerprint. This protects the artist if the track leaks.",

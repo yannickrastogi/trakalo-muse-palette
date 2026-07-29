@@ -1789,6 +1789,9 @@
     },
     "watermark": {
       "preparing": "보안 사본 준비 중",
+      "preparingProtected": "보호된 오디오 준비 중…",
+      "playbackFailed": "보호된 오디오를 준비할 수 없습니다",
+      "retryHint": "잠시 후 다시 시도해 주세요.",
       "explanation": "각 재생에 고유한 워터마크가 적용됩니다",
       "protected": "보호됨",
       "tooltip": "각 청취자는 고유한 보이지 않는 오디오 지문을 받습니다. 트랙이 유출될 경우 아티스트를 보호합니다.",
