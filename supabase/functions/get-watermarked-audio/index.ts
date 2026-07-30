@@ -116,6 +116,12 @@ Deno.serve(async (req) => {
     const cachedUrl = await signedCacheUrl();
     if (cachedUrl) return jsonRes({ status: "done", url: cachedUrl }, 200);
 
+    // Observability: on a cache miss, log the EXACT target this EF reads from
+    // (provider + bucket + candidate paths). Line this up against the worker's
+    // "uploading … provider=… bucket=… path=…" log to spot a target divergence
+    // instantly instead of guessing through 40 repeated 202s.
+    console.error("get-watermarked-audio: cache MISS provider=" + storage.name + " bucket=watermarked action=" + action + " paths=[" + mp3Path + "," + wavPath + "]");
+
     // STATUS: no cache yet → report the job's state (never enqueue, never fall back).
     if (action === "status") {
       const { data: job } = await supabaseAdmin
@@ -171,6 +177,10 @@ Deno.serve(async (req) => {
         output_bucket: "watermarked",
         output_path: mp3Path,
         format: "mp3",
+        // Stamp the provider the EF ACTUALLY reads from (storage.name, from the
+        // already-instantiated provider) so the worker writes to the same target
+        // instead of deriving it from its own env — the root cause of the outage.
+        output_provider: storage.name,
       },
       _workspace_id: link?.workspace_id ?? null,
       _created_by: link?.created_by ?? null,

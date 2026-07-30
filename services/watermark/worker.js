@@ -13,6 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const { createClient } = require("@supabase/supabase-js");
+const { uploadToR2 } = require("./r2");
 
 const POLL_INTERVAL_MS = 5000; // claim every 5s
 const STALE_INTERVAL_MS = 5 * 60 * 1000; // requeue stale jobs every 5 min
@@ -73,9 +74,16 @@ async function processJob(job) {
   const payloadHex = payload.payload_hex;
   const outputBucket = payload.output_bucket;
   const outputPath = payload.output_path;
+  // The Edge Function stamps the target provider it ACTUALLY reads from into the
+  // job. The worker obeys it and never derives the target from its own env — a
+  // silent env divergence is exactly what broke this before.
+  const outputProvider = payload.output_provider;
 
   if (!sourceUrl || !payloadHex || !outputBucket || !outputPath) {
     throw new NonRetryableError("missing required payload fields");
+  }
+  if (outputProvider !== "supabase" && outputProvider !== "r2") {
+    throw new NonRetryableError("missing or unknown output_provider (got '" + String(outputProvider) + "') — refusing to guess a storage target");
   }
   // Same 128-bit hex payload validation as /encode.
   if (!/^[0-9a-f]{32}$/i.test(payloadHex)) {
@@ -94,10 +102,18 @@ async function processJob(job) {
 
     const buffer = fs.readFileSync(deliveredPath);
     const contentType = format === "wav" ? "audio/wav" : "audio/mpeg";
-    const { error: upErr } = await supabase.storage
-      .from(outputBucket)
-      .upload(outputPath, buffer, { contentType, upsert: true });
-    if (upErr) throw new Error("storage upload failed: " + upErr.message);
+    // Observability: log the EXACT target we WRITE to so any worker/EF target
+    // divergence is visible in one glance against the EF's cache-miss log.
+    console.log("worker: uploading job " + job.id + " → provider=" + outputProvider + " bucket=" + outputBucket + " path=" + outputPath);
+    if (outputProvider === "supabase") {
+      const { error: upErr } = await supabase.storage
+        .from(outputBucket)
+        .upload(outputPath, buffer, { contentType, upsert: true });
+      if (upErr) throw new Error("storage upload failed: " + upErr.message);
+    } else {
+      // r2 — presigned SigV4 PUT, same target + bucket mapping as the Edge Function.
+      await uploadToR2(outputBucket, outputPath, buffer, contentType);
+    }
 
     return {
       output_path: outputPath,
