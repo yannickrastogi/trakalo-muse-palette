@@ -9,7 +9,13 @@ const https = require("https");
 const http = require("http");
 const dns = require("dns").promises;
 const net = require("net");
-const worker = require("./worker");
+
+// The worker module is loaded LAZILY inside the app.listen try/catch below (never
+// require()d at module top level). That way a missing file (e.g. ./worker or its
+// ./r2 dependency not shipped in the image) or any load error only DISABLES the
+// worker — it can never crash the HTTP server before a try/catch can catch it.
+let workerModule = null;   // the loaded ./worker exports, or null if it failed to load
+let workerLoadError = null; // reason the worker is unavailable (surfaced on /health)
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -503,7 +509,11 @@ app.post(
 
 // GET /health — extended with job-worker status.
 app.get("/health", (_req, res) => {
-  const w = worker.getWorkerStatus();
+  // Report the worker as inactive (with the load reason) when it never loaded,
+  // instead of throwing — the service stays healthy for /encode + /decode.
+  const w = workerModule
+    ? workerModule.getWorkerStatus()
+    : { active: false, worker_id: null, processed: 0, last_job_at: null, error: workerLoadError };
   res.json({
     status: "ok",
     version: "1.0.0",
@@ -519,14 +529,17 @@ app.get("/health", (_req, res) => {
 
 const server = app.listen(PORT, () => {
   console.log(`Watermark service running on port ${PORT}`);
-  // Start the job worker AFTER the HTTP server is up. It shares the exact same
-  // watermark pipeline + SSRF-hardened downloader as /encode (injected below).
-  // A worker startup failure must NEVER take the HTTP server down — /encode and
-  // /decode keep working and /health reports worker.active:false + worker.error.
+  // LOAD + start the job worker AFTER the HTTP server is up, inside this try/catch.
+  // The require() is here (not at module top level) so a missing ./worker or ./r2
+  // file — or any load/start error — only DISABLES the worker; /encode and /decode
+  // keep working and /health reports worker.active:false + worker.error.
   try {
-    worker.startWorker({ tmpDir, cleanup, downloadToFile, runWatermarkPipeline });
+    workerModule = require("./worker");
+    workerModule.startWorker({ tmpDir, cleanup, downloadToFile, runWatermarkPipeline });
   } catch (err) {
-    console.error("watermark: worker failed to start (HTTP server unaffected): " + (err instanceof Error ? err.message : "unknown"));
+    workerModule = null;
+    workerLoadError = err instanceof Error ? err.message : "worker load/start failed";
+    console.error("watermark: worker failed to load/start (HTTP server unaffected): " + workerLoadError);
   }
 });
 
@@ -546,7 +559,7 @@ async function shutdown(signal) {
   shutdownInProgress = true;
   console.log("watermark: " + signal + " received — draining worker, finishing in-flight job");
   try {
-    await worker.stopWorker();
+    if (workerModule) await workerModule.stopWorker();
   } catch (e) {
     console.error("watermark: worker shutdown error: " + (e instanceof Error ? e.message : "unknown"));
   }

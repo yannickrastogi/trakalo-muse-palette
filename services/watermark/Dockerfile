@@ -41,8 +41,10 @@ WORKDIR /app
 COPY package.json .
 RUN npm install --production
 
-COPY index.js .
-COPY worker.js .
+# Copy ALL service source files (index.js, worker.js, r2.js, and any future
+# module) so a new file can never be silently left out of the image. A
+# .dockerignore keeps node_modules / tests out of the context.
+COPY *.js .
 
 EXPOSE 3000
 

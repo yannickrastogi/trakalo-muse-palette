@@ -1,0 +1,13 @@
+# Keep the build context lean and prevent `COPY *.js .` (and any COPY) from
+# pulling in dependencies, tests, or VCS noise. Production deps are installed in
+# the image via `npm install --production` from package.json.
+node_modules
+npm-debug.log*
+*.test.js
+*.spec.js
+__tests__
+.git
+.gitignore
+Dockerfile
+.dockerignore
+*.md
