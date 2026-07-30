@@ -13,7 +13,8 @@ const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const { createClient } = require("@supabase/supabase-js");
-const { uploadToR2 } = require("./r2");
+const { uploadToR2, validateR2Env } = require("./r2");
+const { env } = require("./env");
 
 const POLL_INTERVAL_MS = 5000; // claim every 5s
 const STALE_INTERVAL_MS = 5 * 60 * 1000; // requeue stale jobs every 5 min
@@ -21,7 +22,7 @@ const STALE_OLDER_THAN_MIN = 15;
 const JOB_TYPE = "watermark_encode";
 const MAX_ERROR_LEN = 500;
 
-const SERVICE_NAME = process.env.RAILWAY_SERVICE_NAME || "watermark";
+const SERVICE_NAME = env("RAILWAY_SERVICE_NAME") || "watermark";
 // WORKER_ID traces exactly which instance/process handled a job.
 const WORKER_ID = SERVICE_NAME + "-" + os.hostname() + "-" + process.pid;
 
@@ -211,14 +212,23 @@ async function requeueStale() {
 // and DON'T start the loop — the HTTP server keeps serving /encode and /decode.
 function startWorker(injectedDeps) {
   deps = injectedDeps;
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = env("SUPABASE_URL");
+  const key = env("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) {
     lastError = "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing";
     console.warn(
       "worker: " + lastError + " — job worker DISABLED " +
       "(HTTP /encode and /decode still work). Set both to enable the queue worker."
     );
+    return false;
+  }
+  // Validate R2 credentials at startup: a mis-pasted key (stray space, wrong
+  // length) must fail with a CLEAR boot message, not repeated job failures with a
+  // Cloudflare XML error later. Disables the worker cleanly; HTTP keeps serving.
+  const r2Error = validateR2Env();
+  if (r2Error) {
+    lastError = r2Error;
+    console.error("worker: " + r2Error + " — job worker DISABLED (HTTP /encode and /decode unaffected).");
     return false;
   }
   // Isolate client construction: createClient can throw (e.g. a runtime without a

@@ -9,6 +9,7 @@
 // Never logs the secret key or the presigned URL (the URL embeds the signature).
 
 const { webcrypto } = require("node:crypto");
+const { env } = require("./env");
 const subtle = webcrypto.subtle;
 
 const SIGV4_ALGO = "AWS4-HMAC-SHA256";
@@ -16,19 +17,37 @@ const R2_REGION = "auto";
 const R2_SERVICE = "s3";
 
 function getR2Config() {
-  const endpoint = process.env.R2_ENDPOINT;
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+  const endpoint = env("R2_ENDPOINT");
+  const accessKeyId = env("R2_ACCESS_KEY_ID");
+  const secretAccessKey = env("R2_SECRET_ACCESS_KEY");
   if (!endpoint || !accessKeyId || !secretAccessKey) {
     throw new Error("[storage:r2] Missing R2_ENDPOINT / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY");
   }
   return { endpoint: endpoint.replace(/\/+$/, ""), accessKeyId, secretAccessKey };
 }
 
+// Startup validation for R2 credentials — catch a mis-pasted value (e.g. a stray
+// space that trim() now strips, or a truncated/extra char) with a CLEAR message
+// at boot instead of a Cloudflare "access key has length N" XML error five
+// minutes into the first job. Reports ONLY lengths / format — never the value or
+// the secret. Returns an explicit error string, or null when the present config
+// is well-formed. Absent vars aren't validated here (a job needing R2 fails loudly).
+function validateR2Env() {
+  const accessKeyId = env("R2_ACCESS_KEY_ID");
+  if (accessKeyId && !/^[0-9a-f]{32}$/i.test(accessKeyId)) {
+    return "R2_ACCESS_KEY_ID invalide : " + accessKeyId.length + " caractères après trim, 32 hexadécimaux attendus";
+  }
+  const endpoint = env("R2_ENDPOINT");
+  if (endpoint && !endpoint.startsWith("https://")) {
+    return "R2_ENDPOINT invalide : doit commencer par https:// après trim";
+  }
+  return null;
+}
+
 // Map logical bucket name → physical R2 bucket (from env), identical to the EF.
 function r2BucketFor(bucket) {
   const envVar = "R2_BUCKET_" + bucket.toUpperCase();
-  const physical = process.env[envVar];
+  const physical = env(envVar);
   if (!physical) throw new Error("[storage:r2] Missing " + envVar + " env var");
   return physical;
 }
@@ -123,4 +142,4 @@ async function uploadToR2(bucket, key, body, contentType) {
   }
 }
 
-module.exports = { uploadToR2 };
+module.exports = { uploadToR2, validateR2Env };

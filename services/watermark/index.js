@@ -9,6 +9,7 @@ const https = require("https");
 const http = require("http");
 const dns = require("dns").promises;
 const net = require("net");
+const { env } = require("./env"); // trims every env var read (dependency-free helper)
 
 // The worker module is loaded LAZILY inside the app.listen try/catch below (never
 // require()d at module top level). That way a missing file (e.g. ./worker or its
@@ -18,10 +19,10 @@ let workerModule = null;   // the loaded ./worker exports, or null if it failed 
 let workerLoadError = null; // reason the worker is unavailable (surfaced on /health)
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const API_KEY = process.env.WATERMARK_API_KEY;
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
+const PORT = env("PORT") || 3000;
+const API_KEY = env("WATERMARK_API_KEY");
+const ALLOWED_ORIGINS = env("ALLOWED_ORIGINS")
+  ? env("ALLOWED_ORIGINS").split(",").map((o) => o.trim()).filter(Boolean)
   : [];
 
 // Encode tuning. strength 10 = audiowmark default (inaudible); 320k MP3 avoids the
@@ -120,7 +121,7 @@ function parseWatermark(stdout) {
 // each fully re-validated, and hard size / time caps. The req.file upload path is
 // completely unaffected.
 const ALLOWED_HOSTS = new Set(
-  (process.env.WATERMARK_ALLOWED_HOSTS || "")
+  (env("WATERMARK_ALLOWED_HOSTS") || "")
     .split(",")
     .map((h) => h.trim().toLowerCase())
     .filter(Boolean)
