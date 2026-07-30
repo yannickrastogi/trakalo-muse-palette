@@ -669,9 +669,10 @@ export default function PlaylistDetail() {
               </div>
             ) : (
               filteredAvailable.map((track) => (
-                <div
+                <button
+                  type="button"
                   key={track.id}
-                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer group/add"
+                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer group/add appearance-none bg-transparent border-0 text-left font-inherit"
                   onClick={() => { const updated = [...displayTracks, track]; setTracks(updated); syncToContext(updated); }}
                 >
                   <img src={track.coverImage || DEFAULT_COVER} alt={track.title} loading="lazy" className="w-9 h-9 rounded-lg object-cover shrink-0 ring-1 ring-border/50" />
@@ -681,7 +682,7 @@ export default function PlaylistDetail() {
                   </div>
                   <span className="text-2xs text-muted-foreground">{Array.isArray(track.genre) ? track.genre.join(", ") : track.genre}</span>
                   <Plus className="w-4 h-4 text-muted-foreground/40 group-hover/add:text-brand-orange transition-colors shrink-0" />
-                </div>
+                </button>
               ))
             )}
           </div>

@@ -689,10 +689,10 @@ export function DashboardContent() {
               ) : (
                 <div className="divide-y divide-border/40 max-h-[360px] overflow-y-auto">
                   {filteredByRange.map((track, idx) => (
-                    <div
+                    <Link
                       key={track.id}
-                      className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
-                      onClick={() => navigate(`/track/${track.uuid}`)}
+                      to={`/track/${track.uuid}`}
+                      className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row appearance-none bg-transparent border-0 text-left font-inherit"
                     >
                       <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
                       <img
@@ -707,7 +707,7 @@ export function DashboardContent() {
                       <span className="text-2xs text-muted-foreground hidden sm:inline">{Array.isArray(track.genre) ? track.genre.join(", ") : track.genre}</span>
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold ${statusColors[track.status]}`}>{track.status}</span>
                       <span className="text-2xs text-muted-foreground/50 font-mono hidden sm:inline">{track.duration}</span>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -796,10 +796,10 @@ export function DashboardContent() {
               ) : (
                 <div className="divide-y divide-border/40 max-h-[360px] overflow-y-auto">
                   {filteredPlaylists.map((pl, idx) => (
-                    <div
+                    <Link
                       key={pl.id}
-                      className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
-                      onClick={() => navigate(`/playlists/${pl.id}`)}
+                      to={`/playlists/${pl.id}`}
+                      className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row appearance-none bg-transparent border-0 text-left font-inherit"
                     >
                       <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
                       {pl.coverImage ? (
@@ -817,7 +817,7 @@ export function DashboardContent() {
                       <span className="inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-pink/12 text-brand-pink">
                         {pl.tracks} tracks
                       </span>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -1092,10 +1092,10 @@ export function DashboardContent() {
               ) : (
                 <div className="divide-y divide-border/40 max-h-[360px] overflow-y-auto">
                   {filteredContacts.map((contact, idx) => (
-                    <div
+                    <Link
                       key={contact.email}
-                      className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
-                      onClick={() => navigate("/contacts")}
+                      to="/contacts"
+                      className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row appearance-none bg-transparent border-0 text-left font-inherit"
                     >
                       <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
                       <div className="w-9 h-9 rounded-full bg-brand-purple/10 flex items-center justify-center shrink-0 ring-1 ring-border/50">
@@ -1117,7 +1117,7 @@ export function DashboardContent() {
                       <span className="inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold bg-brand-purple/12 text-brand-purple">
                         {contact.role}
                       </span>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -1215,10 +1215,10 @@ export function DashboardContent() {
                 ) : (
                   <div className="divide-y divide-border/40 max-h-[360px] overflow-y-auto">
                     {filteredPitches.map((pitch) => (
-                      <div
+                      <Link
                         key={pitch.id}
-                        className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row"
-                        onClick={() => navigate("/pitch")}
+                        to="/pitch"
+                        className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row appearance-none bg-transparent border-0 text-left font-inherit"
                       >
                         <div className="w-9 h-9 rounded-lg bg-brand-orange/10 flex items-center justify-center shrink-0 ring-1 ring-border/50">
                           <Send className="w-3.5 h-3.5 text-brand-orange" />
@@ -1238,7 +1238,7 @@ export function DashboardContent() {
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-2xs font-semibold ${pitchStatusColors[pitch.status] || "bg-muted text-muted-foreground"}`}>
                           {pitch.status}
                         </span>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 )}

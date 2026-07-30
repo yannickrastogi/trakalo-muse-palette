@@ -367,7 +367,7 @@ function ProfileSection() {
       <SectionBlock title={t("settings.personalInfo")} subtitle={t("settings.personalInfoDesc")} icon={User} onSave={handleSave} saveLabel={t("settings.saveChanges")} changesHint={t("settings.changesHint")}>
         {/* Avatar row */}
         <div className="flex items-center gap-5 pb-6 mb-6 border-b border-border/30">
-          <div className="relative group cursor-pointer" onClick={handleAvatarUpload}>
+          <button type="button" className="relative group cursor-pointer appearance-none bg-transparent border-0 p-0 m-0 text-left font-inherit" onClick={handleAvatarUpload}>
             <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-xl font-bold text-primary-foreground overflow-hidden"
               style={{ background: avatarUrl ? undefined : "var(--gradient-brand)", boxShadow: "0 4px 20px hsl(24 95% 53% / 0.2)" }}>
               {avatarUrl ? (
@@ -380,7 +380,7 @@ function ProfileSection() {
               <Camera className="w-5 h-5 text-foreground mb-0.5" />
               <span className="text-[9px] font-semibold text-foreground/80 uppercase tracking-wider">{t("settings.change")}</span>
             </div>
-          </div>
+          </button>
           <div className="space-y-1">
             <p className="text-sm font-bold text-foreground tracking-tight">{t("settings.profilePhoto")}</p>
             <p className="text-[11px] text-muted-foreground/50">{t("settings.photoHint")}</p>

@@ -847,8 +847,9 @@ function ItemRow({
   onClick: () => void;
 }) {
   return (
-    <div
-      className={`flex items-center gap-3 p-2.5 rounded-xl transition-all cursor-pointer group/item ${
+    <button
+      type="button"
+      className={`flex items-center gap-3 p-2.5 rounded-xl transition-all cursor-pointer group/item appearance-none bg-transparent border-0 text-left font-inherit ${
         selected ? "bg-primary/8 ring-1 ring-primary/20" : "hover:bg-secondary/50"
       }`}
       onClick={onClick}
@@ -873,7 +874,7 @@ function ItemRow({
       ) : (
         selected && <Check className="w-4 h-4 text-primary shrink-0" />
       )}
-    </div>
+    </button>
   );
 }
 
