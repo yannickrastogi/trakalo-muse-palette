@@ -271,7 +271,7 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
     return (
       <div className="mx-auto mb-3 flex justify-center">
         {activeWorkspace.logo_url ? (
-          <img src={activeWorkspace.logo_url} alt="" className="w-8 h-8 rounded-lg object-contain" />
+          <img src={activeWorkspace.logo_url} alt={`${activeWorkspace.name} logo`} className="w-8 h-8 rounded-lg object-contain" />
         ) : (
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center">
             <span className="text-[10px] font-bold text-white">{getInitials(activeWorkspace.name)}</span>

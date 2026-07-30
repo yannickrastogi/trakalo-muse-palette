@@ -561,6 +561,7 @@ function DesktopPitchTable({
                     <div className="flex items-center gap-3">
                       {/* Play button / cover */}
                       <button
+                        aria-label={isPlaying ? t("common.pause", "Pause") : t("common.play", "Play")}
                         className="relative w-9 h-9 rounded-lg overflow-hidden shrink-0 ring-1 ring-border/50 group/play"
                         onClick={function (e) {
                           if (!trackId) return;
@@ -777,6 +778,7 @@ function MobilePitchList({
             <div className="p-4 flex items-start gap-3">
               {/* Play button / cover */}
               <button
+                aria-label={isPlaying ? t("common.pause", "Pause") : t("common.play", "Play")}
                 className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 ring-1 ring-border/50"
                 onClick={function (e) {
                   if (!trackId) return;

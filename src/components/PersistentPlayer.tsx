@@ -101,7 +101,7 @@ export function PersistentPlayer() {
           onClick={() => setMinimized(false)}
           className="flex items-center gap-2 px-3 py-2 rounded-xl glass border border-border/60 shadow-lg hover:border-primary/30 transition-all group"
         >
-          <img src={coverSrc} alt="" className="w-8 h-8 rounded-lg object-cover ring-1 ring-border/50" />
+          <img src={coverSrc} alt={currentTrack.title} className="w-8 h-8 rounded-lg object-cover ring-1 ring-border/50" />
           <div className="flex items-center gap-1.5">
             <MiniWaveform seed={currentTrack.id * 13 + 7} bars={12} peaks={currentTrack.waveformData} progress={progress} />
             {isPlaying && <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}

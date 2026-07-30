@@ -44,7 +44,7 @@ export function UserMenu() {
       >
         <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-primary-foreground btn-brand overflow-hidden" style={{ boxShadow: "none" }}>
           {avatarUrl ? (
-            <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+            <img src={avatarUrl} alt={fullName ? `${fullName} avatar` : "Your avatar"} className="w-full h-full object-cover" />
           ) : (
             initials
           )}

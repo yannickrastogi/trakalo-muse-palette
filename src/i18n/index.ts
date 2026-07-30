@@ -38,4 +38,14 @@ i18n
     },
   });
 
+// Keep <html lang> in sync with the active language so screen readers announce
+// content with the correct pronunciation (WCAG 3.1.1 — Language of Page).
+const applyDocumentLang = (lng?: string) => {
+  if (typeof document !== "undefined" && lng) {
+    document.documentElement.lang = lng;
+  }
+};
+applyDocumentLang(i18n.language);
+i18n.on("languageChanged", applyDocumentLang);
+
 export default i18n;

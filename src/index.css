@@ -334,6 +334,20 @@
   }
 }
 
+/* WCAG 2.3.3 — honor the OS "reduce motion" setting for any CSS animation or
+   transition not already handled by Framer Motion's MotionConfig. This applies
+   from the OS preference directly, independent of the in-app reduce-motion toggle. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* DRM: prevent direct audio element interaction */
 audio {
   pointer-events: none;

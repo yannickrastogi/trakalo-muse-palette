@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -219,7 +220,14 @@ const App = () => {
     }, 5000);
     return () => clearTimeout(t);
   }, []);
-  return isAdminMode() ? <AdminApp /> : <MainApp />;
+  // MotionConfig with reducedMotion="user" makes Framer Motion honor the OS
+  // "reduce motion" preference everywhere at once (WCAG 2.3.3), without touching
+  // individual animations.
+  return (
+    <MotionConfig reducedMotion="user">
+      {isAdminMode() ? <AdminApp /> : <MainApp />}
+    </MotionConfig>
+  );
 };
 
 export default App;
