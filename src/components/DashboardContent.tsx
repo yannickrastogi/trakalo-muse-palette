@@ -798,7 +798,7 @@ export function DashboardContent() {
                   {filteredPlaylists.map((pl, idx) => (
                     <Link
                       key={pl.id}
-                      to={`/playlists/${pl.id}`}
+                      to={`/playlist/${pl.id}`}
                       className="px-5 py-3 flex items-center gap-3 hover:bg-secondary/25 transition-colors cursor-pointer group/row appearance-none bg-transparent border-0 text-left font-inherit"
                     >
                       <span className="text-2xs font-mono text-muted-foreground/40 w-5 text-right shrink-0">{idx + 1}</span>
