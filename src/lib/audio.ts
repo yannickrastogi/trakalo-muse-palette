@@ -309,6 +309,7 @@ export async function getWatermarkedAudioUrl(
     linkId: string;
     visitorEmail: string;
     visitorName?: string;
+    sessionToken?: string;
   },
   opts: { noCache?: boolean } = {},
 ): Promise<string> {
@@ -327,6 +328,7 @@ export async function getWatermarkedAudioUrl(
     link_id: args.linkId,
     visitor_email: args.visitorEmail,
     visitor_name: args.visitorName ?? null,
+    session_token: args.sessionToken ?? null,
   };
 
   // Kick off (or hit cache): done → return; failed → throw; processing → poll.

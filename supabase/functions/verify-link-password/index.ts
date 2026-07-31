@@ -43,12 +43,23 @@ serve(async function(req) {
     if (rateLimitOk === false) {
       return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const result = await supabaseAdmin.from("shared_links").select("password_hash").eq("link_slug", slug).single();
+    const result = await supabaseAdmin.from("shared_links").select("id, password_hash").eq("link_slug", slug).single();
     if (result.error || !result.data || !result.data.password_hash) {
       return new Response(JSON.stringify({ valid: false, error: "Link not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const valid = await verifyPassword(password, result.data.password_hash);
-    return new Response(JSON.stringify({ valid: valid }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!valid) {
+      return new Response(JSON.stringify({ valid: false }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    // Password OK → mint a server-verified session. create_shared_link_session
+    // returns the plaintext token ONCE (only its hash is stored) and fails if the
+    // link is inactive/expired. The token is a session id: never logged, never in a URL.
+    const { data: sessionToken, error: sessionErr } = await supabaseAdmin.rpc("create_shared_link_session", { _link_id: result.data.id });
+    if (sessionErr || !sessionToken) {
+      // Link no longer active/valid → fail closed (no token, no access).
+      return new Response(JSON.stringify({ valid: false }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    return new Response(JSON.stringify({ valid: true, session_token: sessionToken }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
     if (err instanceof InputError) {
       console.error("verify-link-password: rejected body (" + err.message + ")");

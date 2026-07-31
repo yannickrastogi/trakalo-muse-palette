@@ -56,6 +56,11 @@ Deno.serve(async (req) => {
     const link_id = typeof body.link_id === "string" ? body.link_id : "";
     const visitor_email = boundStr(body.visitor_email, LIMITS.EMAIL);
     const visitor_name = boundStr(body.visitor_name, LIMITS.NAME);
+    // Optional server session token from a password-protected link. Accepted now
+    // so the front can send it; enforcement (verify_shared_link_session) is added
+    // base-side later. Never logged. `void` marks it intentionally not-yet-consumed.
+    const session_token = typeof body.session_token === "string" ? body.session_token : "";
+    void session_token;
 
     // Extract relative path if a full signed URL was sent instead of a relative
     // path (a signed URL can exceed the path cap, so cap AFTER extraction).

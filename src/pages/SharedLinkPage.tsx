@@ -19,7 +19,7 @@ import {
 import { TrackWaveformPlayer } from "@/components/TrackWaveformPlayer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { normalizeSocialUrl } from "@/lib/social-urls";
-import { safeLocalStorage } from "@/lib/safeStorage";
+import { safeLocalStorage, safeSessionStorage } from "@/lib/safeStorage";
 import { storeCommentSecret, getCommentSecret, hasCommentSecret, removeCommentSecret } from "@/lib/commentSecrets";
 import { getWatermarkedAudioUrl } from "@/lib/audio";
 import type { TrackChapter } from "@/contexts/TrackContext";
@@ -439,6 +439,9 @@ export default function SharedLinkPage() {
   var [passwordInput, setPasswordInput] = useState("");
   var [passwordVerified, setPasswordVerified] = useState(false);
   var [passwordError, setPasswordError] = useState(false);
+  // Guards the one-time track-data load so the fetch effect re-running (when the
+  // password gate opens) never double-fetches.
+  var trackDataLoadedRef = useRef(false);
 
   // Audio player state
   var audioRef = useRef<HTMLAudioElement | null>(null);
@@ -618,6 +621,26 @@ export default function SharedLinkPage() {
 
       setLinkData(link);
 
+      // ── Password gate ──────────────────────────────────────────────────────
+      // On a SECURED link, load NO track/playlist metadata until the visitor
+      // holds a server-verified session token. Public links are unaffected.
+      var secured = link.link_type === "secured";
+      var sessKey = "trakalog_link_session_" + link.id;
+      var sessToken = secured ? safeSessionStorage.getItem(sessKey) : null;
+      if (secured && sessToken && !passwordVerified) {
+        setPasswordVerified(true);
+      }
+      if (secured && !sessToken) {
+        // No verified session yet → show the password screen, load nothing.
+        setLoading(false);
+        return;
+      }
+      if (trackDataLoadedRef.current) {
+        setLoading(false);
+        return;
+      }
+      trackDataLoadedRef.current = true;
+
       if (link.share_type === "playlist" && link.playlist_id) {
         // P0 (post-CRIT-01): call the SECURITY DEFINER RPC directly, aligned
         // with the track branch below. The previous code gated this RPC behind
@@ -628,7 +651,7 @@ export default function SharedLinkPage() {
         // fell through to "no track data available".
         var tracksRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_playlist_tracks_for_shared_link", {
           method: "POST",
-          headers: { ...SB_HEADERS, "Content-Type": "application/json" },
+          headers: { ...SB_HEADERS, "Content-Type": "application/json", ...(sessToken ? { "x-shared-link-session": sessToken } : {}) },
           body: JSON.stringify({ _slug: slug }),
         });
         var tracks = tracksRes.ok ? await tracksRes.json() : null;
@@ -661,7 +684,7 @@ export default function SharedLinkPage() {
         // P0-04: SECURITY DEFINER RPC scoped to this shared link's slug.
         var trackRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_track_for_shared_link", {
           method: "POST",
-          headers: { ...SB_HEADERS, "Content-Type": "application/json" },
+          headers: { ...SB_HEADERS, "Content-Type": "application/json", ...(sessToken ? { "x-shared-link-session": sessToken } : {}) },
           body: JSON.stringify({ _slug: slug }),
         });
         var trackRows = trackRes.ok ? await trackRes.json() : null;
@@ -685,7 +708,7 @@ export default function SharedLinkPage() {
       setError(t("sharedLink.error.loadFailed"));
       setLoading(false);
     });
-  }, [slug]);
+  }, [slug, passwordVerified]);
 
   // Detect if visitor is a logged-in Trakalog user (runs once, no retry on failure)
   useEffect(function() {
@@ -953,6 +976,7 @@ export default function SharedLinkPage() {
       linkId: linkId,
       visitorEmail: visitorEmail,
       visitorName: visitorName || "",
+      sessionToken: safeSessionStorage.getItem("trakalog_link_session_" + linkId) || undefined,
     }).then(function(wmUrl) {
       return fetch(wmUrl);
     }).then(function(res) {
@@ -1049,6 +1073,7 @@ export default function SharedLinkPage() {
         linkId: currentLinkId,
         visitorEmail: currentVisitorEmail,
         visitorName: visitorName || "",
+        sessionToken: safeSessionStorage.getItem("trakalog_link_session_" + currentLinkId) || undefined,
       }).then(function(wmUrl) {
         if (loadedTrackIdRef.current !== track.id) return; // superseded by another track
         audio.src = wmUrl;
@@ -1168,6 +1193,14 @@ export default function SharedLinkPage() {
       });
       var json = await res.json();
       if (json.valid) {
+        // Persist the server session token for this tab (cleared on close), then
+        // open the gate — the fetch effect re-runs and loads the data with it.
+        if (json.session_token && linkData.id) {
+          safeSessionStorage.setItem("trakalog_link_session_" + linkData.id, json.session_token);
+        }
+        // Show the loading spinner while the gated fetch effect re-runs and loads
+        // data — avoids a frame of empty content between gate-open and data-ready.
+        setLoading(true);
         setPasswordVerified(true);
         window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
         setPasswordError(false);

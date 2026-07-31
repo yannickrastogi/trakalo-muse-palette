@@ -10,6 +10,7 @@ import {
   AlertCircle, MoreHorizontal, Edit3, Trash2, Send, Loader2
 } from "lucide-react";
 import { DEFAULT_COVER } from "@/lib/constants";
+import { safeSessionStorage } from "@/lib/safeStorage";
 import { storeCommentSecret, getCommentSecret, hasCommentSecret, removeCommentSecret } from "@/lib/commentSecrets";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -119,7 +120,12 @@ function formatTimestamp(seconds: number): string {
 export default function SharedStemAccess() {
   const { t } = useTranslation();
   var anonSupabase = useRef(createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } })).current;
+  // Guards the one-time track-data load so re-runs of the fetch effect (triggered
+  // when the password gate opens) never double-fetch.
+  var tracksLoadedRef = useRef(false);
   var { linkId } = useParams();
+  // sessionStorage key holding this link's server-verified session token.
+  var sessionKey = "trakalog_link_session_" + (linkId || "");
 
   var [loading, setLoading] = useState(true);
   var [error, setError] = useState<string | null>(null);
@@ -193,16 +199,37 @@ export default function SharedStemAccess() {
 
       setLink(sl);
 
+      // ── Password gate ──────────────────────────────────────────────────────
+      // On a SECURED link, load NO track/stem/playlist data until the visitor
+      // holds a server-verified session token. Public links are unaffected.
+      var secured = sl.link_type === "secured";
+      var sessToken = secured ? safeSessionStorage.getItem(sessionKey) : null;
+      if (secured && sessToken && !passwordVerified) {
+        setPasswordVerified(true);
+      }
+      if (secured && !sessToken) {
+        // No verified session yet → show the password screen, load nothing.
+        setLoading(false);
+        return;
+      }
+      if (tracksLoadedRef.current) {
+        setLoading(false);
+        return;
+      }
+      tracksLoadedRef.current = true;
+
       // Load tracks through the sanitizing RPC: splits (email/IPI/PRO/%/publisher) are
       // stripped server-side for public links. Handles both playlist and single-track
       // links and returns 0 rows for an inactive/expired link. Same anon-fetch style as
-      // get_shared_link_by_id above.
+      // get_shared_link_by_id above. On a secured link the session token rides in a
+      // header (base-side enforcement reads it later; sending it now is non-breaking).
       var tracksRes = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_tracks_for_shared_link", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "apikey": SUPABASE_PUBLISHABLE_KEY,
           "Authorization": "Bearer " + SUPABASE_PUBLISHABLE_KEY,
+          ...(sessToken ? { "x-shared-link-session": sessToken } : {}),
         },
         body: JSON.stringify({ _link_id: linkId }),
       });
@@ -276,7 +303,7 @@ export default function SharedStemAccess() {
     });
 
     return function () { isMounted = false; };
-  }, [linkId]);
+  }, [linkId, passwordVerified]);
 
   // Auto-skip form when gate is disabled by sender
   useEffect(function() {
@@ -325,6 +352,14 @@ export default function SharedStemAccess() {
       });
       var json = await res.json();
       if (json.valid) {
+        // Persist the server session token for this tab (cleared on close), then
+        // open the gate — the fetch effect re-runs and loads the data with it.
+        if (json.session_token && linkId) {
+          safeSessionStorage.setItem(sessionKey, json.session_token);
+        }
+        // Show the loading spinner while the gated fetch effect re-runs and loads
+        // data — avoids a frame of empty content between gate-open and data-ready.
+        setLoading(true);
         setPasswordVerified(true);
         setPasswordError(false);
       } else {
