@@ -198,6 +198,32 @@ Deno.serve(async (req) => {
       return jsonRes({ status: "failed" }, 503);
     }
 
+    // Fire-and-forget: nudge the Railway worker to poll NOW so a waiting listener
+    // isn't stuck behind the idle backoff (up to 60s). This must NEVER block or fail
+    // the client response — short 2s timeout, errors swallowed, dispatched via
+    // waitUntil so it finishes after we return. On any failure the worker's backoff
+    // still claims the job within 60s. Reuses the existing WATERMARK_API_URL /
+    // WATERMARK_API_KEY project secrets (no new env vars); the key is never logged.
+    try {
+      const wakeUrl = Deno.env.get("WATERMARK_API_URL");
+      const wakeKey = Deno.env.get("WATERMARK_API_KEY");
+      if (wakeUrl && wakeKey) {
+        const ctrl = new AbortController();
+        const wakeTimer = setTimeout(() => ctrl.abort(), 2000);
+        const wakePromise = fetch(wakeUrl + "/wake", {
+          method: "POST",
+          headers: { "x-api-key": wakeKey },
+          signal: ctrl.signal,
+        }).catch(() => { /* worker unreachable → backoff is the safety net */ })
+          .finally(() => clearTimeout(wakeTimer));
+        // Keep the isolate alive until the wake settles, without delaying the
+        // response. If waitUntil is unavailable the fetch is still dispatched.
+        try { (globalThis as unknown as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil?.(wakePromise); } catch (_) { /* noop */ }
+      }
+    } catch (_) {
+      // Best-effort only — never let waking the worker affect the client response.
+    }
+
     return jsonRes({ status: "processing", job_id: jobId }, 202);
   } catch (err) {
     if (err instanceof InputError) {

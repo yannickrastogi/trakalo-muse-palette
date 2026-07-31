@@ -16,8 +16,9 @@ const { createClient } = require("@supabase/supabase-js");
 const { uploadToR2, validateR2Env } = require("./r2");
 const { env } = require("./env");
 
-const POLL_INTERVAL_MS = 5000; // claim every 5s
-const STALE_INTERVAL_MS = 5 * 60 * 1000; // requeue stale jobs every 5 min
+const POLL_INTERVAL_MS = 5000; // base interval: claim every 5s during a work burst
+const MAX_POLL_INTERVAL_MS = 60000; // cap: back off to 60s while the queue is empty
+const STALE_INTERVAL_MS = 30 * 60 * 1000; // requeue stale jobs every 30 min
 const STALE_OLDER_THAN_MIN = 15;
 const JOB_TYPE = "watermark_encode";
 const MAX_ERROR_LEN = 500;
@@ -35,9 +36,36 @@ let lastJobAt = null;
 let loopPromise = null;
 let staleTimer = null;
 let lastError = null; // surfaced on /health so a disabled/failed worker is visible
+let currentIntervalMs = POLL_INTERVAL_MS; // adaptive poll interval (backs off when idle)
+let wakeResolve = null; // resolver that interrupts the idle sleep for an immediate tick
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+// Idle sleep that /wake (or shutdown) can cut short for an immediate next tick.
+// The loop awaits sleeps sequentially, so only ONE is ever pending at a time — a
+// single resolver ref is safe.
+function interruptibleSleep(ms) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => { wakeResolve = null; resolve(); }, ms);
+    wakeResolve = () => {
+      clearTimeout(timer);
+      wakeResolve = null;
+      resolve();
+    };
+  });
+}
+
+// Wake the worker: drop back to the base interval and interrupt the idle sleep so
+// the next claim happens immediately. Idempotent; a no-op when the worker is not
+// started or is shutting down. Never throws.
+function wake() {
+  if (!started || shuttingDown) return false;
+  currentIntervalMs = POLL_INTERVAL_MS;
+  console.log("worker: wake received — poll interval → " + POLL_INTERVAL_MS + "ms" + (wakeResolve ? " (immediate tick)" : ""));
+  if (wakeResolve) {
+    const r = wakeResolve;
+    wakeResolve = null;
+    r();
+  }
+  return true;
 }
 
 // Validation failures can never succeed on retry (bad payload, SSRF-blocked host,
@@ -134,8 +162,10 @@ async function processJob(job) {
 
 // Claim + process at most one job. Fully awaited by the loop, so only ONE audio
 // task ever runs at a time (audiowmark + ffmpeg already saturate the CPU).
+// Returns true when a job was claimed (work burst → keep polling fast), false when
+// the queue was empty or the claim failed (idle → the loop backs off).
 async function tick() {
-  if (shuttingDown) return;
+  if (shuttingDown) return false;
 
   let jobs;
   try {
@@ -146,15 +176,15 @@ async function tick() {
     });
     if (error) {
       console.error("worker: claim_jobs failed: " + error.message);
-      return;
+      return false;
     }
     jobs = data || [];
   } catch (e) {
     console.error("worker: claim_jobs threw: " + (e instanceof Error ? e.message : "unknown"));
-    return;
+    return false;
   }
 
-  if (jobs.length === 0) return; // nothing to do — wait for the next tick, no log
+  if (jobs.length === 0) return false; // nothing to do — wait for the next tick, no log
 
   const job = jobs[0];
   try {
@@ -176,12 +206,14 @@ async function tick() {
     }
     console.error("worker: job " + job.id + " failed (retry=" + retry + "): " + message);
   }
+  return true;
 }
 
 async function loop() {
   while (!shuttingDown) {
+    let found = false;
     try {
-      await tick();
+      found = await tick();
     } catch (err) {
       // A single failed iteration must NEVER stop the loop (or reject loopPromise,
       // which would surface as an unhandledRejection). Just log and move on — this
@@ -190,7 +222,23 @@ async function loop() {
       console.error("worker: tick failed (loop continues): " + (err instanceof Error ? err.message : String(err)));
     }
     if (shuttingDown) break;
-    await sleep(POLL_INTERVAL_MS);
+    // A claimed job means more work may be pending — snap back to the base interval.
+    if (found && currentIntervalMs !== POLL_INTERVAL_MS) {
+      console.log("worker: poll interval " + currentIntervalMs + "ms → " + POLL_INTERVAL_MS + "ms (job claimed)");
+      currentIntervalMs = POLL_INTERVAL_MS;
+    }
+    const sleptMs = currentIntervalMs;
+    await interruptibleSleep(sleptMs);
+    // Escalate ONLY after an idle tick whose sleep ran to completion. If /wake (or
+    // shutdown) fired during the sleep it reset currentIntervalMs, so we skip the
+    // doubling and keep polling fast.
+    if (!found && !shuttingDown && currentIntervalMs === sleptMs) {
+      const next = Math.min(currentIntervalMs * 2, MAX_POLL_INTERVAL_MS);
+      if (next !== currentIntervalMs) {
+        console.log("worker: poll interval " + currentIntervalMs + "ms → " + next + "ms (queue empty)");
+        currentIntervalMs = next;
+      }
+    }
   }
 }
 
@@ -254,6 +302,13 @@ function startWorker(injectedDeps) {
 async function stopWorker() {
   if (!started) return;
   shuttingDown = true;
+  // Interrupt any pending idle sleep so the loop observes shuttingDown and exits
+  // promptly — the interval can now be up to 60s, and shutdown must not wait on it.
+  if (wakeResolve) {
+    const r = wakeResolve;
+    wakeResolve = null;
+    r();
+  }
   if (staleTimer) {
     clearInterval(staleTimer);
     staleTimer = null;
@@ -273,8 +328,9 @@ function getWorkerStatus() {
     worker_id: started ? WORKER_ID : null,
     processed: processedCount,
     last_job_at: lastJobAt,
+    poll_interval_ms: currentIntervalMs,
     error: lastError,
   };
 }
 
-module.exports = { startWorker, stopWorker, getWorkerStatus, WORKER_ID };
+module.exports = { startWorker, stopWorker, getWorkerStatus, wake, WORKER_ID };

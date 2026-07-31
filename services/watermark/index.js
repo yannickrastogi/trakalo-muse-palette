@@ -508,13 +508,29 @@ app.post(
   }
 );
 
+// POST /wake — nudge the job worker to poll immediately (called by the Edge
+// Function right after enqueue_job). Protected by the SAME requireApiKey as
+// /encode. Idempotent and side-effect-free when the worker is inactive; returns
+// 200 at once WITHOUT waiting for job processing.
+app.post("/wake", requireApiKey, (_req, res) => {
+  let woken = false;
+  try {
+    if (workerModule && typeof workerModule.wake === "function") {
+      woken = workerModule.wake();
+    }
+  } catch (_) {
+    // A wake failure must never affect the response — the backoff is the safety net.
+  }
+  res.json({ ok: true, woken });
+});
+
 // GET /health — extended with job-worker status.
 app.get("/health", (_req, res) => {
   // Report the worker as inactive (with the load reason) when it never loaded,
   // instead of throwing — the service stays healthy for /encode + /decode.
   const w = workerModule
     ? workerModule.getWorkerStatus()
-    : { active: false, worker_id: null, processed: 0, last_job_at: null, error: workerLoadError };
+    : { active: false, worker_id: null, processed: 0, last_job_at: null, poll_interval_ms: null, error: workerLoadError };
   res.json({
     status: "ok",
     version: "1.0.0",
@@ -523,6 +539,7 @@ app.get("/health", (_req, res) => {
       id: w.worker_id,
       processed: w.processed,
       last_job_at: w.last_job_at,
+      poll_interval_ms: w.poll_interval_ms,
       error: w.error,
     },
   });
