@@ -179,6 +179,150 @@ export default function Workspaces() {
     setDeleteId(null);
   };
 
+  function accessLevelLabel(level: string) {
+    if (level === "admin") return t("workspaces.accessAdmin");
+    if (level === "editor") return t("workspaces.accessEditor");
+    if (level === "pitcher") return t("workspaces.accessPitcher");
+    return t("workspaces.accessViewer");
+  }
+
+  function renderCard(ws: typeof workspaces[number], showOwner: boolean) {
+    var isActive = ws.id === activeWorkspace.id;
+    var s = stats[ws.id] || { trackCount: 0, memberCount: 0, pitchCount: 0, members: [], sharedCatalogs: 0, sharedTracks: 0 };
+
+    return (
+      <div
+        key={ws.id}
+        className="card-premium p-5 hover:ring-1 hover:ring-brand-orange/30 cursor-pointer transition-all relative group"
+        onClick={function () { handleSwitch(ws.id, ws.name); }}
+      >
+        {/* Top row: logo + active badge + menu */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            {ws.logo_url ? (
+              <img src={ws.logo_url} alt="" className="w-11 h-11 rounded-xl object-contain shrink-0" />
+            ) : (
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-white">{getInitials(ws.name)}</span>
+              </div>
+            )}
+            {isActive && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-500/12 text-emerald-400">
+                {t("workspaces.active")}
+              </span>
+            )}
+            {showOwner && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-secondary text-muted-foreground uppercase tracking-wide">
+                {accessLevelLabel(ws.myAccessLevel)}
+              </span>
+            )}
+          </div>
+
+          {/* 3 dot menu */}
+          <div className="relative" onClick={function (e) { e.stopPropagation(); }}>
+            <button
+              onClick={function () { setMenuOpenId(menuOpenId === ws.id ? null : ws.id); }}
+              className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+
+            {menuOpenId === ws.id && (
+              <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-xl shadow-xl min-w-[180px] py-1">
+                <button
+                  onClick={function () { setMenuOpenId(null); handleSwitch(ws.id, ws.name); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  <ArrowRightLeft className="w-3.5 h-3.5" /> {t("workspaces.switchTo")}
+                </button>
+                <button
+                  onClick={function () {
+                    setMenuOpenId(null);
+                    switchWorkspace(ws.id);
+                    navigate("/settings");
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  <Settings className="w-3.5 h-3.5" /> {t("workspaces.edit")}
+                </button>
+                {!isActive && workspaces.length > 1 && (
+                  <>
+                    <div className="h-px bg-border mx-2 my-1" />
+                    <button
+                      onClick={function () { setMenuOpenId(null); setDeleteId(ws.id); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> {t("workspaces.delete")}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Workspace name */}
+        <h3 className="text-[15px] font-bold text-foreground mt-3 group-hover:text-brand-orange transition-colors truncate">
+          {ws.name}
+        </h3>
+
+        {showOwner && ws.ownerName && (
+          <p className="text-[11px] text-muted-foreground mt-1 truncate">
+            {t("workspaces.ownedBy", { name: ws.ownerName })}
+          </p>
+        )}
+
+        {/* Stats */}
+        <p className="text-xs text-muted-foreground mt-1.5">
+          {s.trackCount + " tracks · " + s.memberCount + " members" + (s.pitchCount > 0 ? " · " + s.pitchCount + " pitches" : "")}
+        </p>
+        {(s.sharedCatalogs > 0 || s.sharedTracks > 0) && (
+          <p className="text-[10px] text-brand-purple mt-0.5 flex items-center gap-1">
+            <ArrowRightLeft className="w-3 h-3" />
+            {s.sharedCatalogs > 0
+              ? s.sharedCatalogs + " " + t("workspaces.sharedCatalogs")
+              : s.sharedTracks + " " + t("workspaces.sharedTracks")}
+          </p>
+        )}
+
+        {/* Member avatars */}
+        <div className="flex items-center gap-2 mt-3">
+          <div className="flex -space-x-2">
+            {s.members.slice(0, 5).map(function (m) {
+              return (
+                <Avatar key={m.id} className="w-7 h-7 border-2 border-card">
+                  <AvatarFallback className="bg-gradient-to-br from-brand-orange to-brand-pink text-primary-foreground text-[9px] font-bold">
+                    {getMemberInitials(m.firstName, m.lastName)}
+                  </AvatarFallback>
+                </Avatar>
+              );
+            })}
+            {s.memberCount > 5 && (
+              <Avatar className="w-7 h-7 border-2 border-card">
+                <AvatarFallback className="bg-secondary text-muted-foreground text-[9px] font-bold">
+                  +{s.memberCount - 5}
+                </AvatarFallback>
+              </Avatar>
+            )}
+          </div>
+        </div>
+
+        {/* Created date */}
+        <p className="text-2xs text-muted-foreground mt-3">
+          {t("workspaces.created", { date: formatDate(ws.created_at) })}
+        </p>
+      </div>
+    );
+  }
+
+  var uid = user == null ? undefined : user.id;
+  var ownedWorkspaces = workspaces
+    .filter(function (w) { return w.owner_id === uid; })
+    .sort(function (a, b) { return new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); });
+  var sharedWorkspaces = workspaces
+    .filter(function (w) { return w.owner_id !== uid; })
+    .sort(function (a, b) { return new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); });
+
   return (
     <PageShell>
       <motion.div variants={container} initial="hidden" animate="show" className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1400px]">
@@ -223,126 +367,30 @@ export default function Workspaces() {
           </motion.div>
         )}
 
-        {/* Workspace cards grid */}
-        <motion.div variants={item} className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {workspaces.map(function (ws) {
-            var isActive = ws.id === activeWorkspace.id;
-            var s = stats[ws.id] || { trackCount: 0, memberCount: 0, pitchCount: 0, members: [], sharedCatalogs: 0, sharedTracks: 0 };
-
-            return (
-              <div
-                key={ws.id}
-                className="card-premium p-5 hover:ring-1 hover:ring-brand-orange/30 cursor-pointer transition-all relative group"
-                onClick={function () { handleSwitch(ws.id, ws.name); }}
-              >
-                {/* Top row: logo + active badge + menu */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    {ws.logo_url ? (
-                      <img src={ws.logo_url} alt="" className="w-11 h-11 rounded-xl object-contain shrink-0" />
-                    ) : (
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
-                        <span className="text-xs font-bold text-white">{getInitials(ws.name)}</span>
-                      </div>
-                    )}
-                    {isActive && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-500/12 text-emerald-400">
-                        {t("workspaces.active")}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* 3 dot menu */}
-                  <div className="relative" onClick={function (e) { e.stopPropagation(); }}>
-                    <button
-                      onClick={function () { setMenuOpenId(menuOpenId === ws.id ? null : ws.id); }}
-                      className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                    >
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
-
-                    {menuOpenId === ws.id && (
-                      <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-xl shadow-xl min-w-[180px] py-1">
-                        <button
-                          onClick={function () { setMenuOpenId(null); handleSwitch(ws.id, ws.name); }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-secondary/50 transition-colors"
-                        >
-                          <ArrowRightLeft className="w-3.5 h-3.5" /> {t("workspaces.switchTo")}
-                        </button>
-                        <button
-                          onClick={function () {
-                            setMenuOpenId(null);
-                            switchWorkspace(ws.id);
-                            navigate("/settings");
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-secondary/50 transition-colors"
-                        >
-                          <Settings className="w-3.5 h-3.5" /> {t("workspaces.edit")}
-                        </button>
-                        {!isActive && workspaces.length > 1 && (
-                          <>
-                            <div className="h-px bg-border mx-2 my-1" />
-                            <button
-                              onClick={function () { setMenuOpenId(null); setDeleteId(ws.id); }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" /> {t("workspaces.delete")}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
+        {/* Workspace cards — split into owned vs shared. When nothing is shared, render a
+            single grid exactly as before (no section headers). */}
+        {sharedWorkspaces.length === 0 ? (
+          <motion.div variants={item} className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {ownedWorkspaces.map(function (ws) { return renderCard(ws, false); })}
+          </motion.div>
+        ) : (
+          <div className="space-y-6">
+            {ownedWorkspaces.length > 0 && (
+              <motion.div variants={item} className="space-y-3">
+                <h2 className="text-sm font-semibold text-foreground tracking-tight">{t("workspaces.myWorkspaces")}</h2>
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {ownedWorkspaces.map(function (ws) { return renderCard(ws, false); })}
                 </div>
-
-                {/* Workspace name */}
-                <h3 className="text-[15px] font-bold text-foreground mt-3 group-hover:text-brand-orange transition-colors truncate">
-                  {ws.name}
-                </h3>
-
-                {/* Stats */}
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  {s.trackCount + " tracks · " + s.memberCount + " members" + (s.pitchCount > 0 ? " · " + s.pitchCount + " pitches" : "")}
-                </p>
-                {(s.sharedCatalogs > 0 || s.sharedTracks > 0) && (
-                  <p className="text-[10px] text-brand-purple mt-0.5 flex items-center gap-1">
-                    <ArrowRightLeft className="w-3 h-3" />
-                    {s.sharedCatalogs > 0
-                      ? s.sharedCatalogs + " " + t("workspaces.sharedCatalogs")
-                      : s.sharedTracks + " " + t("workspaces.sharedTracks")}
-                  </p>
-                )}
-
-                {/* Member avatars */}
-                <div className="flex items-center gap-2 mt-3">
-                  <div className="flex -space-x-2">
-                    {s.members.slice(0, 5).map(function (m) {
-                      return (
-                        <Avatar key={m.id} className="w-7 h-7 border-2 border-card">
-                          <AvatarFallback className="bg-gradient-to-br from-brand-orange to-brand-pink text-primary-foreground text-[9px] font-bold">
-                            {getMemberInitials(m.firstName, m.lastName)}
-                          </AvatarFallback>
-                        </Avatar>
-                      );
-                    })}
-                    {s.memberCount > 5 && (
-                      <Avatar className="w-7 h-7 border-2 border-card">
-                        <AvatarFallback className="bg-secondary text-muted-foreground text-[9px] font-bold">
-                          +{s.memberCount - 5}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
-                </div>
-
-                {/* Created date */}
-                <p className="text-2xs text-muted-foreground mt-3">
-                  {t("workspaces.created", { date: formatDate(ws.created_at) })}
-                </p>
+              </motion.div>
+            )}
+            <motion.div variants={item} className="space-y-3">
+              <h2 className="text-sm font-semibold text-foreground tracking-tight">{t("workspaces.sharedWithMe")}</h2>
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {sharedWorkspaces.map(function (ws) { return renderCard(ws, true); })}
               </div>
-            );
-          })}
-        </motion.div>
+            </motion.div>
+          </div>
+        )}
       </motion.div>
 
       <CreateWorkspaceModal open={createOpen} onOpenChange={setCreateOpen} />

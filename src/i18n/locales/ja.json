@@ -751,6 +751,15 @@
     "noActivityDesc": "チームが操作を行うと、ここに表示されます。フィルターを調整するか、後でご確認ください。",
     "savedType": "Trakalog に保存しました"
   },
+  "workspaces": {
+    "myWorkspaces": "マイワークスペース",
+    "sharedWithMe": "自分と共有中",
+    "ownedBy": "所有者：{{name}}",
+    "accessViewer": "Viewer",
+    "accessEditor": "Editor",
+    "accessAdmin": "Admin",
+    "accessPitcher": "Pitcher"
+  },
   "sharedLinks": {
     "title": "共有リンク",
     "subtitle": "すべての共有コンテンツリンクを管理・監視",

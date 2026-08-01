@@ -504,7 +504,14 @@
     "singleWorkspace": "Vous avez un seul espace de travail. Créez-en d'autres pour gérer plusieurs projets, artistes ou labels.",
     "created": "Créé le {{date}}",
     "sharedCatalogs": "catalogues partagés",
-    "sharedTracks": "morceaux partagés"
+    "sharedTracks": "morceaux partagés",
+    "myWorkspaces": "Mes espaces de travail",
+    "sharedWithMe": "Partagés avec moi",
+    "ownedBy": "Détenu par {{name}}",
+    "accessViewer": "Viewer",
+    "accessEditor": "Editor",
+    "accessAdmin": "Admin",
+    "accessPitcher": "Pitcher"
   },
   "catalogSharing": {
     "title": "Partager vers un espace",

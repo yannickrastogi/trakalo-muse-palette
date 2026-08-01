@@ -281,6 +281,57 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
     );
   }
 
+  // Split owned vs shared. Personal workspace stays first among owned (oldest-first, the
+  // existing rule — reused, not rewritten). Shared list is hidden entirely when empty so
+  // the common solo case renders exactly as before.
+  var uid = user == null ? undefined : user.id;
+  var ownedWorkspaces = workspaces
+    .filter(function (w) { return w.owner_id === uid; })
+    .sort(function (a, b) { return new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); });
+  var sharedWorkspaces = workspaces
+    .filter(function (w) { return w.owner_id !== uid; })
+    .sort(function (a, b) { return new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); });
+
+  function accessLevelLabel(level: string) {
+    if (level === "admin") return t("workspaces.accessAdmin");
+    if (level === "editor") return t("workspaces.accessEditor");
+    if (level === "pitcher") return t("workspaces.accessPitcher");
+    return t("workspaces.accessViewer");
+  }
+
+  function renderWorkspaceItem(ws: typeof workspaces[number], showOwner: boolean) {
+    var isActive = ws.id === activeWorkspace.id;
+    return (
+      <button
+        key={ws.id}
+        onClick={function () { handleSwitch(ws.id); }}
+        className={"w-full flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors " + (isActive ? "bg-brand-orange/5" : "hover:bg-secondary/50")}
+      >
+        {ws.logo_url ? (
+          <img src={ws.logo_url} alt="" className="w-8 h-8 rounded-lg object-contain shrink-0" />
+        ) : (
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
+            <span className="text-[10px] font-bold text-white">{getInitials(ws.name)}</span>
+          </div>
+        )}
+        <div className="flex-1 min-w-0 text-left">
+          <div className="text-sm font-medium text-foreground truncate">{ws.name}</div>
+          {showOwner && ws.ownerName ? (
+            <div className="text-[10px] text-muted-foreground truncate">{t("workspaces.ownedBy", { name: ws.ownerName })}</div>
+          ) : (
+            <div className="text-[10px] text-muted-foreground">{trackCounts[ws.id] || 0} tracks</div>
+          )}
+        </div>
+        {showOwner && (
+          <span className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground shrink-0">
+            {accessLevelLabel(ws.myAccessLevel)}
+          </span>
+        )}
+        {isActive && <CheckCircle2 className="w-4 h-4 text-brand-orange shrink-0" />}
+      </button>
+    );
+  }
+
   return (
     <div ref={containerRef} className="mx-3 mb-3 relative">
       {/* Active workspace block */}
@@ -317,40 +368,30 @@ export function WorkspaceSwitcher({ collapsed, onSwitch }: { collapsed?: boolean
             transition={{ duration: 0.15 }}
             className="absolute left-0 right-0 top-full mt-1 z-50 bg-card border border-border rounded-xl shadow-xl max-h-80 overflow-y-auto"
           >
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-3 pt-3 pb-1">
-              Workspaces
-            </div>
-
-            {[...workspaces].sort(function (a, b) {
-              var aIsPersonal = a.owner_id === (user == null ? undefined : user.id);
-              var bIsPersonal = b.owner_id === (user == null ? undefined : user.id);
-              if (aIsPersonal && bIsPersonal) return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-              if (aIsPersonal) return -1;
-              if (bIsPersonal) return 1;
-              return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-            }).map(function (ws) {
-              var isActive = ws.id === activeWorkspace.id;
-              return (
-                <button
-                  key={ws.id}
-                  onClick={function () { handleSwitch(ws.id); }}
-                  className={"w-full flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors " + (isActive ? "bg-brand-orange/5" : "hover:bg-secondary/50")}
-                >
-                  {ws.logo_url ? (
-                    <img src={ws.logo_url} alt="" className="w-8 h-8 rounded-lg object-contain shrink-0" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-brand-pink flex items-center justify-center shrink-0">
-                      <span className="text-[10px] font-bold text-white">{getInitials(ws.name)}</span>
+            {sharedWorkspaces.length === 0 ? (
+              <>
+                {/* No shared workspaces → render exactly as before: one generic header + the list. */}
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-3 pt-3 pb-1">
+                  Workspaces
+                </div>
+                {ownedWorkspaces.map(function (ws) { return renderWorkspaceItem(ws, false); })}
+              </>
+            ) : (
+              <>
+                {ownedWorkspaces.length > 0 && (
+                  <>
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-3 pt-3 pb-1">
+                      {t("workspaces.myWorkspaces")}
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="text-sm font-medium text-foreground truncate">{ws.name}</div>
-                    <div className="text-[10px] text-muted-foreground">{trackCounts[ws.id] || 0} tracks</div>
-                  </div>
-                  {isActive && <CheckCircle2 className="w-4 h-4 text-brand-orange shrink-0" />}
-                </button>
-              );
-            })}
+                    {ownedWorkspaces.map(function (ws) { return renderWorkspaceItem(ws, false); })}
+                  </>
+                )}
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-3 pt-3 pb-1">
+                  {t("workspaces.sharedWithMe")}
+                </div>
+                {sharedWorkspaces.map(function (ws) { return renderWorkspaceItem(ws, true); })}
+              </>
+            )}
 
             <div className="h-px bg-border mx-3 my-1.5" />
 

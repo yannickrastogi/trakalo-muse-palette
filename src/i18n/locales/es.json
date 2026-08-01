@@ -751,6 +751,15 @@
     "noActivityDesc": "Cuando tu equipo realice acciones, aparecerán aquí. Prueba ajustando los filtros o vuelve más tarde.",
     "savedType": "Guardado en Trakalog"
   },
+  "workspaces": {
+    "myWorkspaces": "Mis espacios de trabajo",
+    "sharedWithMe": "Compartidos conmigo",
+    "ownedBy": "Propiedad de {{name}}",
+    "accessViewer": "Viewer",
+    "accessEditor": "Editor",
+    "accessAdmin": "Admin",
+    "accessPitcher": "Pitcher"
+  },
   "sharedLinks": {
     "title": "Enlaces compartidos",
     "subtitle": "Gestiona y monitorea todos tus enlaces de contenido compartido",

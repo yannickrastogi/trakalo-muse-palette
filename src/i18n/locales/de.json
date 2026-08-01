@@ -764,6 +764,15 @@
     "noActivityDesc": "Wenn dein Team aktiv wird, erscheint es hier. Passe deine Filter an oder schau später nochmal vorbei.",
     "savedType": "In Trakalog gespeichert"
   },
+  "workspaces": {
+    "myWorkspaces": "Meine Workspaces",
+    "sharedWithMe": "Mit mir geteilt",
+    "ownedBy": "Gehört {{name}}",
+    "accessViewer": "Viewer",
+    "accessEditor": "Editor",
+    "accessAdmin": "Admin",
+    "accessPitcher": "Pitcher"
+  },
   "sharedLinks": {
     "title": "Geteilte Links",
     "subtitle": "Verwalte und überwache alle deine geteilten Inhaltslinks",

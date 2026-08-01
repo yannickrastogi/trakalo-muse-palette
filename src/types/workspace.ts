@@ -37,6 +37,12 @@ export interface Workspace {
   bio: string | null;
   epk_url: string | null;
   is_personal: boolean;
+  // Full name of the workspace owner (email fallback), resolved server-side. May be null
+  // on a stale cached response — always treat as optional at the display layer.
+  ownerName: string | null;
+  // Current user's access level in this workspace: "admin" when they own it, otherwise their
+  // real access_level ("viewer" fallback). Defaulted in the mapping so it is never null.
+  myAccessLevel: "viewer" | "editor" | "admin" | "pitcher";
 }
 
 // ── Tenant-scoped entity base ──

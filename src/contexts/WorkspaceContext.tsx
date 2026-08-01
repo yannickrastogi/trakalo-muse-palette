@@ -116,6 +116,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                   bio: ws.bio || null,
                   epk_url: ws.epk_url || null,
                   is_personal: !!ws.is_personal,
+                  ownerName: ws.owner_name ?? null,
+                  myAccessLevel: (ws.my_access_level as Workspace["myAccessLevel"]) || "viewer",
                 }));
                 setWorkspaces(mapped);
                 setActiveId(mapped[0].id);
@@ -164,6 +166,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         bio: ws.bio || null,
         epk_url: ws.epk_url || null,
         is_personal: !!ws.is_personal,
+        ownerName: ws.owner_name ?? null,
+        myAccessLevel: (ws.my_access_level as Workspace["myAccessLevel"]) || "viewer",
       }));
 
       setWorkspaces(mapped);

@@ -764,6 +764,15 @@
     "noActivityDesc": "팀이 활동을 시작하면 여기에 표시됩니다. 필터를 조정하거나 나중에 다시 확인하세요.",
     "savedType": "Trakalog에 저장됨"
   },
+  "workspaces": {
+    "myWorkspaces": "내 워크스페이스",
+    "sharedWithMe": "나와 공유됨",
+    "ownedBy": "소유자: {{name}}",
+    "accessViewer": "Viewer",
+    "accessEditor": "Editor",
+    "accessAdmin": "Admin",
+    "accessPitcher": "Pitcher"
+  },
   "sharedLinks": {
     "title": "공유 링크",
     "subtitle": "모든 공유 콘텐츠 링크 관리 및 모니터링",

@@ -504,7 +504,14 @@
     "singleWorkspace": "You have one workspace. Create additional workspaces to manage multiple projects, artists, or labels.",
     "created": "Created {{date}}",
     "sharedCatalogs": "shared catalogs",
-    "sharedTracks": "shared tracks"
+    "sharedTracks": "shared tracks",
+    "myWorkspaces": "My workspaces",
+    "sharedWithMe": "Shared with me",
+    "ownedBy": "Owned by {{name}}",
+    "accessViewer": "Viewer",
+    "accessEditor": "Editor",
+    "accessAdmin": "Admin",
+    "accessPitcher": "Pitcher"
   },
   "catalogSharing": {
     "title": "Share to Workspace",
