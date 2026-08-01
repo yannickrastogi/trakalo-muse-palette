@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import type { TrackData } from "@/contexts/TrackContext";
 import type { Workspace } from "@/types/workspace";
 import { safeLocalStorage } from "@/lib/safeStorage";
+import { FEATURES } from "@/config/features";
 
 interface ChecklistProps {
   user: { user_metadata?: Record<string, unknown> } | null;
@@ -71,7 +72,8 @@ export function OnboardingChecklist({
     { id: "lyrics", label: "Add lyrics to a track", completed: hasLyrics, route: "/tracks" },
     { id: "playlist", label: "Create a playlist", completed: playlistCount > 0, route: "/playlists" },
     { id: "shared-link", label: "Create a shared link", completed: sharedLinkCount > 0, route: "/tracks" },
-    { id: "pitch", label: "Send your first pitch", completed: pitchCount > 0, route: "/pitch" },
+    // `total` is derived from items.length, so dropping this entry keeps the bar reaching 100%.
+    ...(FEATURES.PITCH_ENABLED ? [{ id: "pitch", label: "Send your first pitch", completed: pitchCount > 0, route: "/pitch" }] : []),
     { id: "contact", label: "Add a contact", completed: contactCount > 0, route: "/contacts" },
     { id: "invite", label: "Invite a team member", completed: memberCount > 1, route: "/workspace-settings", bonus: true },
   ];

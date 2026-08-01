@@ -103,6 +103,7 @@ import { PageShell } from "@/components/PageShell";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { useRole } from "@/contexts/RoleContext";
 import { type PitchEntry } from "@/components/CreatePitchModal";
+import { FEATURES } from "@/config/features";
 import { StemsTab } from "@/components/StemsTab";
 import { TrackCompletenessBar } from "@/components/TrackCompletenessBar";
 import { useTrackCompleteness } from "@/hooks/useTrackCompleteness";
@@ -4644,7 +4645,7 @@ function ActivityTimeline({ trackId, trackUuid }: { trackId: number; trackUuid: 
 
       // 1. Pitches — match by track title via context
       var trackTitle = trackData?.title;
-      if (trackTitle) {
+      if (FEATURES.PITCH_ENABLED && trackTitle) {
         var pitches = getPitchesForTrack(trackTitle);
         pitches.forEach(function (p) {
           allEvents.push({

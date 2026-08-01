@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Joyride, type Step, type CallBackProps, STATUS, ACTIONS, EVENTS } from "react-joyride";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { FEATURES } from "@/config/features";
 
 interface GuidedTourProps {
   run: boolean;
@@ -27,12 +28,14 @@ const sidebarSteps: Step[] = [
     content: "Organize your tracks into themed playlists for pitching. Share entire playlists with one branded link.",
     disableBeacon: true,
   },
-  {
+  // Gated on the flag so the sequence renumbers itself (Joyride counts the rendered
+  // steps); the sidebar target is also absent from the DOM when hidden.
+  ...(FEATURES.PITCH_ENABLED ? [{
     target: '[data-tour="sidebar-pitch"]',
     title: "Pitch",
     content: "Send your tracks to A&R, labels, supervisors, and publishers. Trakalog tracks every interaction — opens, listens, and engagement time.",
     disableBeacon: true,
-  },
+  }] : []),
   {
     target: '[data-tour="sidebar-contacts"]',
     title: "Contacts",
@@ -45,12 +48,12 @@ const sidebarSteps: Step[] = [
     content: "Create secure links to share tracks, playlists, or full packs. Password-protect them, set expiration dates, and track engagement in real-time.",
     disableBeacon: true,
   },
-  {
+  ...(FEATURES.APPROVALS_ENABLED ? [{
     target: '[data-tour="sidebar-approvals"]',
     title: "Approvals",
     content: "Review and approve changes submitted by your team members.",
     disableBeacon: true,
-  },
+  }] : []),
 ];
 
 const headerSteps: Step[] = [

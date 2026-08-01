@@ -49,6 +49,7 @@ import { useOnboarding } from "@/contexts/OnboardingContext";
 import { useOnboardingStatus } from "@/hooks/use-onboarding-status";
 
 import { DEFAULT_COVER } from "@/lib/constants";
+import { FEATURES } from "@/config/features";
 import { AuroraBackground } from "@/components/visual/AuroraBackground";
 import { AmbientWaveform } from "@/components/visual/AmbientWaveform";
 import { AnimatedCounter } from "@/components/visual/AnimatedCounter";
@@ -237,9 +238,11 @@ export function DashboardContent() {
     });
 
     // Recent pitches
-    allPitches.slice(0, 5).forEach(function(p) {
-      items.push({ icon: Send, text: '"' + p.itemName + '" pitched to ' + p.recipientCompany + " — " + p.recipientName, time: timeAgo(p.date), sortDate: new Date(p.date) });
-    });
+    if (FEATURES.PITCH_ENABLED) {
+      allPitches.slice(0, 5).forEach(function(p) {
+        items.push({ icon: Send, text: '"' + p.itemName + '" pitched to ' + p.recipientCompany + " — " + p.recipientName, time: timeAgo(p.date), sortDate: new Date(p.date) });
+      });
+    }
 
     // Recent track comments
     comments.slice(0, 10).forEach(function(c) {
@@ -439,7 +442,7 @@ export function DashboardContent() {
     { id: "downloads", label: t("dashboard.downloads"), value: linkDownloads.length || engagementStats.totalDownloads, icon: Download, change: t("dashboard.acrossContacts", { count: downloadRecipients || engagementStats.uniqueRecipients }), changeColor: "text-brand-purple", accent: "from-brand-purple to-brand-pink", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", hoverRing: "hover:ring-1 hover:ring-brand-purple/20", clickable: true },
     { id: "contacts", label: t("nav.contacts"), value: allContacts.length, icon: Users, change: t("dashboard.recent", { count: contactsThisWeek }), changeColor: "text-brand-purple", accent: "from-brand-purple to-brand-orange", iconBg: "bg-brand-purple/10", iconColor: "text-brand-purple", glowColor: "hsl(270 70% 55% / 0.06)", borderAccent: "hover:border-brand-purple/20", hoverRing: "hover:ring-1 hover:ring-brand-purple/20", clickable: true },
     { id: "pitches", label: t("pitch.title"), value: allPitches.length, icon: Send, change: t("pitch.active", { count: allPitches.filter(function(p) { return p.status === "Sent" || p.status === "Opened"; }).length }), changeColor: "text-brand-orange", accent: "from-brand-orange to-brand-purple", iconBg: "bg-brand-orange/8", iconColor: "text-brand-orange", glowColor: "hsl(24 100% 55% / 0.04)", borderAccent: "hover:border-brand-orange/20", hoverRing: "hover:ring-1 hover:ring-brand-orange/20", clickable: true },
-  ];
+  ].filter((s) => FEATURES.PITCH_ENABLED || s.id !== "pitches");
 
   const isFirstSaveUser = safeLocalStorage.getItem("trakalog_first_save_done") === "true";
   const { isLoading: onboardingLoading, isComplete: onboardingComplete, markComplete: markOnboardingComplete } = useOnboardingStatus();
@@ -513,7 +516,7 @@ export function DashboardContent() {
     { label: t("dashboard.newPlaylist"), icon: ListMusic, visible: permissions.canCreatePlaylists, onClick: () => setShowPlaylistModal(true) },
     { label: t("dashboard.inviteMember"), icon: Users, visible: permissions.canInviteMembers, onClick: () => setShowInviteModal(true) },
     { label: t("dashboard.createTeam"), icon: Users, visible: permissions.canInviteMembers, onClick: () => setShowCreateTeamModal(true) },
-    { label: t("dashboard.newPitch"), icon: Send, visible: permissions.canSendPitches, onClick: () => setShowPitchModal(true) },
+    { label: t("dashboard.newPitch"), icon: Send, visible: FEATURES.PITCH_ENABLED && permissions.canSendPitches, onClick: () => setShowPitchModal(true) },
     { label: t("nav.smartAR") || "Smart A&R", icon: Sparkles, visible: true, onClick: () => navigate("/smart-ar") },
     { label: t("radio.title") || "Radio", icon: Radio, visible: true, onClick: () => navigate("/radio") },
     { label: "Export Contacts", icon: FileSpreadsheet, visible: allContacts.length > 0, onClick: () => navigate("/contacts") },

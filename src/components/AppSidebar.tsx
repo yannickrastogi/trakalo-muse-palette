@@ -28,7 +28,11 @@ import trakalogLogo from "@/assets/trakalog-logo.png";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { safeLocalStorage } from "@/lib/safeStorage";
+import { FEATURES } from "@/config/features";
 
+// Single filter point for the whole nav: hiding an entry here removes it from the
+// desktop sidebar, the mobile sidebar, the mobile bottom bar AND the "More" drawer
+// at once. Flip the flag in @/config/features to restore.
 const navItems = [
   { titleKey: "nav.dashboard", icon: LayoutDashboard, url: "/dashboard", permKey: null, tourKey: "sidebar-dashboard" },
   { titleKey: "nav.tracks", icon: Music, url: "/tracks", permKey: null, tourKey: "sidebar-tracks" },
@@ -39,7 +43,11 @@ const navItems = [
   { titleKey: "nav.sharedLinks", icon: Link2, url: "/shared-links", permKey: null, tourKey: "sidebar-shared-links" },
   { titleKey: "nav.workspace", icon: Building2, url: "/workspace-settings", permKey: "canAccessSettings" as const, tourKey: "sidebar-workspace-settings" },
   { titleKey: "nav.approvals", icon: CheckCircle, url: "/approvals", permKey: "canManageTeam" as const, tourKey: "sidebar-approvals" },
-];
+].filter((item) => {
+  if (item.url === "/pitch") return FEATURES.PITCH_ENABLED;
+  if (item.url === "/approvals") return FEATURES.APPROVALS_ENABLED;
+  return true;
+});
 
 // Primary items for the bottom nav bar (mobile)
 const bottomNavKeys = new Set([

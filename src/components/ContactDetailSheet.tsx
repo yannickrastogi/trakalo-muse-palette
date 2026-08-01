@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Pencil, Send, Trash2, Mail, MapPin, Briefcase, Music2, Activity, ChevronRight, ChevronDown, ChevronUp, Download, Tag } from "lucide-react";
 import type { Contact, ArtistAlias } from "@/contexts/ContactsContext";
+import { FEATURES } from "@/config/features";
 
 const COLLAB_PREVIEW_LIMIT = 5;
 
@@ -239,6 +240,7 @@ export function ContactDetailSheet({
             <Pencil className="w-3.5 h-3.5" />
             {t("contactDetail.edit")}
           </button>
+          {FEATURES.PITCH_ENABLED && (
           <button
             onClick={() => onPitch(c)}
             className="flex-1 min-w-[130px] inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-sm font-semibold btn-brand"
@@ -246,6 +248,7 @@ export function ContactDetailSheet({
             <Send className="w-3.5 h-3.5" />
             {t("contactDetail.sendPitch")}
           </button>
+          )}
           {isAdmin && (
             <button
               onClick={() => onDelete(c)}

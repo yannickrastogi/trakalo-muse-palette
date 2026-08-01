@@ -10,6 +10,7 @@ import { useTrack } from "@/contexts/TrackContext";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { useContacts } from "@/contexts/ContactsContext";
 import { usePitches } from "@/contexts/PitchContext";
+import { FEATURES } from "@/config/features";
 import { motion, AnimatePresence } from "framer-motion";
 import trakalogLogo from "@/assets/trakalog-logo.png";
 
@@ -142,7 +143,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
     }
 
     // Pitches → match recipient name/email/company + subject (itemName)
-    for (const p of pitches) {
+    if (FEATURES.PITCH_ENABLED) for (const p of pitches) {
       const rn = (p.recipientName || "").toLowerCase();
       const re = (p.recipientEmail || "").toLowerCase();
       const rc = (p.recipientCompany || "").toLowerCase();

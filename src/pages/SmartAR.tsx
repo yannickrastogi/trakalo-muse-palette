@@ -6,6 +6,7 @@ import { useTrack } from "@/contexts/TrackContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { CreatePitchModal, type PitchEntry } from "@/components/CreatePitchModal";
 import { ShareModal } from "@/components/ShareModal";
+import { FEATURES } from "@/config/features";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, supabase } from "@/integrations/supabase/client";
@@ -771,7 +772,7 @@ export default function SmartAR() {
               {isCreating
                 ? "Creating..."
                 : d.tracks.length === 1
-                  ? "Save & Pitch"
+                  ? (FEATURES.PITCH_ENABLED ? "Save & Pitch" : "Save to Playlist")
                   : "Create Playlist"}
             </button>
             <button
@@ -790,13 +791,15 @@ export default function SmartAR() {
         <div>
           <p className="mb-3">{msg.content}</p>
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={function () { setPitchOpen(true); }}
-              className="btn-brand px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
-            >
-              <Send className="w-4 h-4" />
-              Pitch this playlist
-            </button>
+            {FEATURES.PITCH_ENABLED && (
+              <button
+                onClick={function () { setPitchOpen(true); }}
+                className="btn-brand px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Pitch this playlist
+              </button>
+            )}
             <button
               onClick={function () { setShareOpen(true); }}
               className="px-4 py-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors text-sm font-medium flex items-center gap-2"

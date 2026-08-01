@@ -7,6 +7,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack } from "@/contexts/TrackContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { FEATURES } from "@/config/features";
 import { PageShell } from "@/components/PageShell";
 import {
   Upload,
@@ -283,8 +284,8 @@ export default function NotificationCenter() {
       var currentUserId = user?.id || null;
       var activities: EnrichedActivity[] = [];
 
-      // Build pitch activities
-      (pitches || []).forEach(function (p) {
+      // Build pitch activities (hidden while the Pitch section is behind its flag)
+      if (FEATURES.PITCH_ENABLED) (pitches || []).forEach(function (p) {
         var creatorId = p.sent_by || null;
         var creatorName = "Someone";
         if (creatorId && currentUserId && creatorId === currentUserId) {

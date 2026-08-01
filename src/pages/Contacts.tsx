@@ -14,6 +14,7 @@ import { usePitches } from "@/contexts/PitchContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRole } from "@/contexts/RoleContext";
 import { CreatePitchModal, type PitchEntry } from "@/components/CreatePitchModal";
+import { FEATURES } from "@/config/features";
 import { format, differenceInDays } from "date-fns";
 import { generateContactListPdf, exportContactCardPdf } from "@/lib/pdf-generators";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -943,6 +944,7 @@ export default function Contacts() {
                       {/* Actions */}
                       <td className="px-5 py-3.5 text-right">
                         <div className="inline-flex items-center gap-1">
+                          {FEATURES.PITCH_ENABLED && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -954,6 +956,7 @@ export default function Contacts() {
                             <Send className="w-3.5 h-3.5" />
                             <span className="hidden xl:inline">{t("contacts.sendPitch")}</span>
                           </button>
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1093,6 +1096,7 @@ export default function Contacts() {
                 </div>
                 {/* Actions */}
                 <div className="flex items-center justify-between gap-1 pt-2 border-t border-border/30">
+                  {FEATURES.PITCH_ENABLED ? (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1103,6 +1107,7 @@ export default function Contacts() {
                     <Send className="w-4 h-4" />
                     {t("contacts.sendPitch")}
                   </button>
+                  ) : <span />}
                   <div className="flex items-center gap-1">
                     <button
                       onClick={(e) => {

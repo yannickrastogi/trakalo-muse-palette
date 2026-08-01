@@ -42,7 +42,6 @@ Tous les prix en **USD**. Rabais annuel **25 %**.
 | **Storage** | 1,5 GB | 40 GB | 400 GB | 2 TB | Custom |
 | **Playlists** | 1 | ∞ | ∞ | ∞ | ∞ |
 | **Shared links** | 1 (branding Trakalog) | ∞ | ∞ | ∞ | ∞ |
-| **Pitches/mois** | 0 | 15 | ∞ | ∞ | ∞ |
 | **Smart A&R** | 2 à vie | 15/mois | 50/mois | 500/mois | Custom |
 | **Lyrics** | Affichage seul | Transcription auto | Transcription auto | Transcription auto | ✅ |
 | **Workspaces** | 1 | 1 (solo) | 5 | 15 | Custom |
@@ -66,7 +65,7 @@ Tous les prix en **USD**. Rabais annuel **25 %**.
 - **Lyrics** — lyrics display
 - **Trakalog Radio** — your own on-demand streaming platform for your catalog
 
-**Not included — upgrade to Starter :** per-track stems · invisible watermarking & leak tracing · custom-branded links · automatic lyrics transcription · pitches · splits & digital signatures · QR Studio · unlimited playlists & shared links
+**Not included — upgrade to Starter :** per-track stems · invisible watermarking & leak tracing · custom-branded links · automatic lyrics transcription · splits & digital signatures · QR Studio · unlimited playlists & shared links
 
 ---
 
@@ -75,7 +74,7 @@ Tous les prix en **USD**. Rabais annuel **25 %**.
 **For independent creators — solo artists, beatmakers, and songwriters managing their own catalog.**
 
 - **Catalog & storage** — 100 tracks · 40 GB storage cap (tracks + stems + documents) · per-track stem storage · full metadata management (all standard music-industry credits, genre, tags, BPM & key, and more)
-- **Sharing & distribution** — unlimited playlists · unlimited shared links · custom-branded links (logo, hero & colors) · password protection & expiry controls · 15 pitches / month
+- **Sharing & distribution** — unlimited playlists · unlimited shared links · custom-branded links (logo, hero & colors) · password protection & expiry controls
 - **Protection** — invisible audio watermarking · leak tracing
 - **A&R intelligence** — 15 Smart A&R queries / month
 - **Lyrics** — automatic lyrics transcription
@@ -85,7 +84,7 @@ Tous les prix en **USD**. Rabais annuel **25 %**.
 
 **Not included — available in Pro :** multi-workspaces with multiple collaborators · cross-workspace catalog sharing · Trakalog Access (marketplace) · contact export (CSV / XLSX / PDF)
 
-*Note : Starter = solo strict. Aucun membre invité dans le workspace (ni editor, ni pitcher, ni viewer). Le partage externe (liens, pitches) reste évidemment inclus.*
+*Note : Starter = solo strict. Aucun membre invité dans le workspace (ni editor, ni pitcher, ni viewer). Le partage externe (liens) reste évidemment inclus.*
 
 ---
 
@@ -95,8 +94,8 @@ Tous les prix en **USD**. Rabais annuel **25 %**.
 
 **Everything in Starter, plus —**
 
-- **Scale** — 1,000 tracks · 400 GB storage cap (tracks + stems + documents) · unlimited pitches · 50 Smart A&R queries / month
-- **Team & workspaces** — up to 5 workspaces · 5 active seats included (owner + 4) — editors, admins, pitchers · unlimited free viewers · add active seats anytime — $10/seat/month · Approvals workflow (review and sign off tracks or pitches before they go out)
+- **Scale** — 1,000 tracks · 400 GB storage cap (tracks + stems + documents) · 50 Smart A&R queries / month
+- **Team & workspaces** — up to 5 workspaces · 5 active seats included (owner + 4) — editors, admins, pitchers · unlimited free viewers · add active seats anytime — $10/seat/month
 - **Collaboration & business** — cross-workspace catalog sharing · Trakalog Access — the marketplace: put your tracks in front of execs, and browse other creators' catalogs to find the song you need · contact export (CSV / XLSX / PDF)
 
 **Not included — available in Business :** more tracks, workspaces & active seats · higher Smart A&R limits · priority support

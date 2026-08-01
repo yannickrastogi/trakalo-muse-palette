@@ -58,6 +58,7 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import { isAdminMode } from "./lib/adminMode";
 import { safeLocalStorage } from "@/lib/safeStorage";
+import { FEATURES } from "@/config/features";
 
 const queryClient = new QueryClient();
 
@@ -186,7 +187,8 @@ const MainApp = () => (
               <Route path="/playlist/shared/:playlistId" element={<SharedPlaylistView />} />
               <Route path="/playlist/:id" element={<PlaylistDetail />} />
               <Route path="/stems" element={<Stems />} />
-              <Route path="/pitch" element={<Suspense fallback={<LazyFallback />}><Pitch /></Suspense>} />
+              {/* Route kept mounted; flag redirects to /dashboard so bookmarked URLs still resolve (no 404). Flip PITCH_ENABLED to restore. */}
+              <Route path="/pitch" element={FEATURES.PITCH_ENABLED ? <Suspense fallback={<LazyFallback />}><Pitch /></Suspense> : <Navigate to="/dashboard" replace />} />
               <Route path="/smart-ar" element={<Suspense fallback={<LazyFallback />}><SmartAR /></Suspense>} />
               <Route path="/radio" element={<RadioPage />} />
               <Route path="/access" element={<Suspense fallback={<LazyFallback />}><Access /></Suspense>} />
@@ -198,7 +200,8 @@ const MainApp = () => (
               <Route path="/settings/billing" element={<Suspense fallback={<LazyFallback />}><BillingPage /></Suspense>} />
               <Route path="/workspace-settings" element={<Suspense fallback={<LazyFallback />}><WorkspaceSettings /></Suspense>} />
               <Route path="/notifications" element={<NotificationCenter />} />
-              <Route path="/approvals" element={<ApprovalQueue />} />
+              {/* Route kept mounted; flag redirects to /dashboard so bookmarked URLs still resolve (no 404). Flip APPROVALS_ENABLED to restore. */}
+              <Route path="/approvals" element={FEATURES.APPROVALS_ENABLED ? <ApprovalQueue /> : <Navigate to="/dashboard" replace />} />
               <Route path="/guide" element={<Suspense fallback={<LazyFallback />}><Guide /></Suspense>} />
             </Route>
           </Route>
