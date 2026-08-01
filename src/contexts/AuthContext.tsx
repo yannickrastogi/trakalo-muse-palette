@@ -55,12 +55,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const checkWhitelist = async (sess: Session | null) => {
-      if (sess?.user?.email && !(await isEmailWhitelisted(sess.user.email))) {
+      if (!sess?.user?.email) return true;
+      const allowed = await isEmailWhitelisted(sess.user.email);
+      // Only an EXPLICIT server refusal (false) signs the user out. A `null`
+      // (transient RPC/network failure) must never terminate a valid session —
+      // otherwise a momentary blip force-logs-out a whitelisted user.
+      if (allowed === false) {
         await supabase.auth.signOut();
         toast.error("Trakalog is currently in private beta. Request access at hello@trakalog.com");
         setSession(null);
         setLoading(false);
         return false;
+      }
+      if (allowed === null) {
+        console.warn("Whitelist check indeterminate (transient RPC failure) — keeping session intact.");
       }
       return true;
     };
@@ -74,7 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!newSession && event !== "SIGNED_OUT") {
         return;
       }
-      if (newSession) {
+      // Whitelist is a gate for INITIAL access, not a per-refresh check. Running it
+      // on TOKEN_REFRESHED (periodic refresh + tab refocus) only multiplied the
+      // chances of a transient false-negative. Enforce it at connection/boot only.
+      if (newSession && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
         const allowed = await checkWhitelist(newSession);
         if (!allowed) return;
       }
@@ -179,8 +190,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUpWithEmail = useCallback(async (email: string, password: string) => {
-    if (!(await isEmailWhitelisted(email))) {
+    const allowed = await isEmailWhitelisted(email);
+    // Explicit refusal → blocked (unchanged). Indeterminate (null) → do NOT fabricate
+    // a refusal and do NOT let it through; ask to retry so a network blip never reads
+    // as "you're not whitelisted".
+    if (allowed === false) {
       return { error: new Error("Trakalog is currently in private beta. Request access at hello@trakalog.com") };
+    }
+    if (allowed === null) {
+      return { error: new Error("Couldn't verify access right now. Please check your connection and try again.") };
     }
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) return { error };
