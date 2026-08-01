@@ -2281,7 +2281,7 @@
       },
       "teamPermissions": {
         "title": "Permissões da equipe",
-        "body": "Convide membros da equipe com 4 níveis de permissão: Viewer (apenas ouvir), Pitcher (criar playlists e fazer pitch), Editor (modificar metadados e stems), Admin (controle total). Cada membro recebe um título profissional exibido nos créditos."
+        "body": "Convide membros da equipe com 3 níveis de permissão: Viewer (ouvir, navegar e avaliar — sem edições), Editor (enviar e editar faixas, criar playlists e links de compartilhamento, gerenciar contatos e stems) e Admin (tudo o que um editor pode fazer, além de excluir faixas, gerenciar membros e alterar as configurações do espaço de trabalho). Cada membro também recebe um título profissional exibido nos créditos — é apenas um rótulo de função e não concede nenhuma permissão."
       },
       "catalogSharing": {
         "title": "Compartilhamento de catálogo",

@@ -2281,7 +2281,7 @@
       },
       "teamPermissions": {
         "title": "Permisos del equipo",
-        "body": "Invita a miembros del equipo con 4 niveles de permisos: Viewer (solo escuchar), Pitcher (crear listas y pitches), Editor (modificar metadatos y stems), Admin (control total). Cada miembro tiene un título profesional visible en los créditos."
+        "body": "Invita a miembros del equipo con 3 niveles de permisos: Viewer (escuchar, explorar y valorar — sin ediciones), Editor (subir y editar pistas, crear listas y enlaces para compartir, gestionar contactos y stems) y Admin (todo lo que puede hacer un editor, además de eliminar pistas, gestionar miembros y cambiar los ajustes del espacio de trabajo). Cada miembro también recibe un título profesional visible en los créditos: es solo una etiqueta de oficio y no otorga ningún permiso."
       },
       "catalogSharing": {
         "title": "Compartir catálogo",

@@ -11,10 +11,10 @@ import { INDUSTRY_ROLES } from "@/lib/constants";
 import { FEATURES } from "@/config/features";
 
 const ACCESS_LEVELS: { level: AccessLevel; icon: typeof Eye; label: string; description: string }[] = [
-  { level: "viewer", icon: Eye, label: "Viewer", description: "View & listen only" },
+  { level: "viewer", icon: Eye, label: "Viewer", description: "Listen, browse & rate. No edits." },
   { level: "pitcher", icon: Send, label: "Pitcher", description: "+ playlists, pitches, share links" },
-  { level: "editor", icon: Edit3, label: "Editor", description: "+ edit metadata, stems, lyrics" },
-  { level: "admin", icon: Shield, label: "Admin", description: "Full access incl. splits, members" },
+  { level: "editor", icon: Edit3, label: "Editor", description: "Upload & edit tracks, playlists, share links, contacts & stems." },
+  { level: "admin", icon: Shield, label: "Admin", description: "Everything in Editor, plus delete, members & workspace settings." },
 ];
 
 interface Props {

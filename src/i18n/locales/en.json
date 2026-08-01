@@ -2363,7 +2363,7 @@
       },
       "teamPermissions": {
         "title": "Team permissions",
-        "body": "Invite team members with 4 permission levels: Viewer (listen only), Pitcher (create playlists & pitch), Editor (modify metadata & stems), Admin (full control). Each member gets a professional title displayed on credits."
+        "body": "Invite team members with 3 permission levels: Viewer (listen, browse, and rate — no edits), Editor (upload and edit tracks, create playlists and share links, manage contacts and stems), and Admin (everything an editor can do, plus delete tracks, manage members, and change workspace settings). Each member also gets a professional title shown on credits — it's just a job label and grants no permissions."
       },
       "catalogSharing": {
         "title": "Catalog sharing",

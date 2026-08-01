@@ -2363,7 +2363,7 @@
       },
       "teamPermissions": {
         "title": "Permissions de l'équipe",
-        "body": "Invitez des membres avec 4 niveaux de permission : Viewer (écoute uniquement), Pitcher (créer des playlists & pitcher), Editor (modifier métadonnées & stems), Admin (contrôle total). Chaque membre dispose d'un titre professionnel affiché dans les crédits."
+        "body": "Invitez des membres avec 3 niveaux de permission : Viewer (écouter, parcourir et noter — aucune modification), Editor (uploader et modifier les tracks, créer des playlists et des liens de partage, gérer les contacts et stems) et Admin (tout ce que fait un editor, plus supprimer des tracks, gérer les membres et modifier les réglages du workspace). Chaque membre reçoit aussi un titre professionnel affiché dans les crédits — c'est un simple libellé de métier qui ne donne aucune permission."
       },
       "catalogSharing": {
         "title": "Partage de catalogue",

@@ -2281,7 +2281,7 @@
       },
       "teamPermissions": {
         "title": "Team-Berechtigungen",
-        "body": "Lade Teammitglieder mit 4 Berechtigungsstufen ein: Viewer (nur zuhören), Pitcher (Playlists erstellen & pitchen), Editor (Metadaten & Stems bearbeiten), Admin (vollständige Kontrolle). Jedes Mitglied erhält einen professionellen Titel, der in den Credits angezeigt wird."
+        "body": "Lade Teammitglieder mit 3 Berechtigungsstufen ein: Viewer (zuhören, durchsuchen und bewerten — keine Bearbeitung), Editor (Titel hochladen und bearbeiten, Playlists und Freigabelinks erstellen, Kontakte und Stems verwalten) und Admin (alles, was ein Editor kann, plus Titel löschen, Mitglieder verwalten und Workspace-Einstellungen ändern). Jedes Mitglied erhält außerdem einen professionellen Titel, der in den Credits angezeigt wird — er ist nur eine Berufsbezeichnung und gewährt keine Berechtigungen."
       },
       "catalogSharing": {
         "title": "Katalog-Sharing",

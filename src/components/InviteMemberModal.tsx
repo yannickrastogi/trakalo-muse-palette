@@ -35,10 +35,10 @@ const PROFESSIONAL_TITLES = [
 ];
 
 const ACCESS_LEVEL_CARDS: { level: AccessLevel; icon: typeof Eye; title: string; subtitle: string; description: string }[] = [
-  { level: "viewer", icon: Eye, title: "Viewer", subtitle: "View & Listen", description: "Can browse and listen to tracks" },
+  { level: "viewer", icon: Eye, title: "Viewer", subtitle: "Listen & review", description: "Can play tracks, browse the catalog, and rate. No edits." },
   { level: "pitcher", icon: Send, title: "Pitcher", subtitle: "Pitch & Share", description: "Can create playlists, pitches, and share links" },
-  { level: "editor", icon: Edit3, title: "Editor", subtitle: "Edit & Manage", description: "Can also edit metadata, stems, and lyrics" },
-  { level: "admin", icon: Shield, title: "Admin", subtitle: "Full Access", description: "Complete control including splits, members, and branding" },
+  { level: "editor", icon: Edit3, title: "Editor", subtitle: "Work the catalog", description: "Can upload and edit tracks, create playlists and share links, and manage contacts, stems, and documents." },
+  { level: "admin", icon: Shield, title: "Admin", subtitle: "Manage the workspace", description: "Everything an editor can do, plus delete tracks, manage members, share the catalog, and change workspace settings." },
 ];
 
 export interface InvitePayload {
@@ -441,6 +441,7 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
               Professional Title
               <span className="text-2xs text-muted-foreground font-normal ml-1">(optional)</span>
             </Label>
+            <p className="text-2xs text-muted-foreground">A job label shown on credits (Producer, A&R, Mix Engineer…). It does not grant any permissions — access is set by the role above.</p>
             <Select value={professionalTitle || "__none__"} onValueChange={function (v) { setProfessionalTitle(v === "__none__" ? null : v); }}>
               <SelectTrigger className="bg-secondary border-border text-foreground text-[13px] min-h-[44px]">
                 <SelectValue placeholder="Select a title" />
