@@ -164,7 +164,6 @@ const MainApp = () => (
           {/* Public routes — no AuthProvider */}
           <Route path="/share/:slug" element={<Suspense fallback={<LazyFallback />}><SharedLinkPage /></Suspense>} />
           <Route path="/shared/:linkId" element={<SharedStemAccess />} />
-          <Route path="/invite/:token" element={<AcceptInvitation />} />
           <Route path="/studio/:token" element={<StudioSession />} />
           <Route path="/sign/:token" element={<SignAgreement />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -174,6 +173,8 @@ const MainApp = () => (
           <Route element={<AuthLayout />}>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<HomeRoute />} />
+            {/* Needs AuthProvider (calls useAuth) but must stay accessible without a session — "Sign up to accept" branch. AuthProvider forces no redirect at this level. */}
+            <Route path="/invite/:token" element={<AcceptInvitation />} />
             <Route path="/onboarding" element={<Suspense fallback={<LazyFallback />}><Onboarding /></Suspense>} />
 
             {/* Protected pages — single layout route, one provider stack mount */}
