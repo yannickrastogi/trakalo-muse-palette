@@ -204,6 +204,25 @@ export function DashboardContent() {
       }).catch(function(err) { console.error("Error fetching track comments:", err); });
   }, [activeWorkspace]);
 
+  // Resolve uploader user_ids → display name (full_name only, else "Someone"), so the
+  // activity feed attributes each upload to its real author instead of a hardcoded "You".
+  // Mirrors the profiles-batch pattern used in NotificationCenter; never falls back to email.
+  const [uploaderNames, setUploaderNames] = useState<Record<string, string>>({});
+  useEffect(function() {
+    const ids = Array.from(new Set(allTracks.map(function(tr) { return tr.uploadedBy; }).filter(function(id): id is string { return Boolean(id); })));
+    if (ids.length === 0) { setUploaderNames({}); return; }
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", ids)
+      .then(function(res) {
+        if (res.error) { console.error("Error fetching uploader profiles:", res.error); return; }
+        const map: Record<string, string> = {};
+        (res.data || []).forEach(function(p: { id: string; full_name: string | null }) { if (p.full_name) map[p.id] = p.full_name; });
+        setUploaderNames(map);
+      }).catch(function(err) { console.error("Error fetching uploader profiles:", err); });
+  }, [allTracks]);
+
   const linkPlays = linkEvents.filter(function(e) { return e.event_type === "play"; });
   const linkDownloads = linkEvents.filter(function(e) { return e.event_type === "download"; });
   const playRecipients = new Set(linkPlays.filter(function(e) { return e.visitor_email; }).map(function(e) { return e.visitor_email; })).size;
@@ -232,9 +251,18 @@ export function DashboardContent() {
       }
     });
 
-    // Recent tracks uploaded
-    allTracks.filter(function(t) { return t.createdAt; }).slice(0, 5).forEach(function(t) {
-      items.push({ icon: Upload, text: 'You uploaded "' + t.title + '"', time: timeAgo(t.createdAt!), sortDate: new Date(t.createdAt!) });
+    // Recent tracks uploaded — attribute to the real uploader (falls back to "Someone").
+    allTracks.filter(function(track) { return track.createdAt; }).slice(0, 5).forEach(function(track) {
+      const uploaderId = track.uploadedBy;
+      let text: string;
+      if (uploaderId && user && uploaderId === user.id) {
+        text = t("dashboard.activityUploadedByYou", { title: track.title });
+      } else if (uploaderId && uploaderNames[uploaderId]) {
+        text = t("dashboard.activityUploadedByUser", { name: uploaderNames[uploaderId], title: track.title });
+      } else {
+        text = t("dashboard.activityUploadedBySomeone", { title: track.title });
+      }
+      items.push({ icon: Upload, text: text, time: timeAgo(track.createdAt!), sortDate: new Date(track.createdAt!) });
     });
 
     // Recent pitches
@@ -255,7 +283,7 @@ export function DashboardContent() {
 
     items.sort(function(a, b) { return b.sortDate.getTime() - a.sortDate.getTime(); });
     return items.slice(0, 10);
-  }, [linkEvents, allTracks, allPitches, comments]);
+  }, [linkEvents, allTracks, allPitches, comments, uploaderNames, user, t]);
 
   // Use real created_at from tracks
   const trackUploadDates = useMemo(() => {

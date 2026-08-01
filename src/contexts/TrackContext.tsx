@@ -108,6 +108,7 @@ export interface TrackData extends WorkspaceScoped {
   waveformData?: number[];
   chapters?: TrackChapter[];
   createdAt?: string;
+  uploadedBy?: string | null; // user_id of the uploader (tracks.uploaded_by)
   statusHistory: TrackStatusEntry[];
   // Catalog sharing fields
   isShared?: boolean;
@@ -233,6 +234,7 @@ export function mapRowToTrack(row: Record<string, unknown>, index: number, stems
         : undefined,
     chapters: Array.isArray(row.chapters) ? (row.chapters as TrackChapter[]) : undefined,
     createdAt: (row.created_at as string) || undefined,
+    uploadedBy: (row.uploaded_by as string) || null,
     statusHistory: [],
     sonicDna: row.sonic_dna ? (row.sonic_dna as Record<string, any>) : undefined,
     tags: row.tags ? (row.tags as Record<string, any>) : {},
