@@ -8,6 +8,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { SEAT_LIMIT_ERROR } from "@/hooks/useWorkspaceSeats";
 import type { AccessLevel } from "@/contexts/RoleContext";
 import { INDUSTRY_ROLES } from "@/lib/constants";
+import { FEATURES } from "@/config/features";
 
 const ACCESS_LEVELS: { level: AccessLevel; icon: typeof Eye; label: string; description: string }[] = [
   { level: "viewer", icon: Eye, label: "Viewer", description: "View & listen only" },
@@ -137,7 +138,7 @@ export function EditMemberModal({ open, onOpenChange, member, mode, onSaved }: P
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    {ACCESS_LEVELS.map((opt) => {
+                    {ACCESS_LEVELS.filter((opt) => FEATURES.PITCHER_ROLE_ENABLED || opt.level !== "pitcher" || member.accessLevel === "pitcher").map((opt) => {
                       const Icon = opt.icon;
                       const selected = accessLevel === opt.level;
                       return (

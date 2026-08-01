@@ -27,6 +27,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/integrations/supabase/client";
 import type { AccessLevel } from "@/contexts/RoleContext";
 import { useWorkspaceSeats, SEAT_LIMIT_ERROR } from "@/hooks/useWorkspaceSeats";
+import { FEATURES } from "@/config/features";
 
 const PROFESSIONAL_TITLES = [
   "Producer", "Songwriter", "Musician", "Mix Engineer", "Mastering Engineer",
@@ -388,7 +389,7 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
               {t("inviteMember.roleLabel")}
             </Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {ACCESS_LEVEL_CARDS.map(function (card) {
+              {ACCESS_LEVEL_CARDS.filter(function (card) { return FEATURES.PITCHER_ROLE_ENABLED || card.level !== "pitcher"; }).map(function (card) {
                 var CardIcon = card.icon;
                 var isSelected = accessLevel === card.level;
                 // Viewer is always free; paid roles are gated when no seat is available.

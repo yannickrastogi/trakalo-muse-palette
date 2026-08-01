@@ -21,6 +21,7 @@ import { useRole, type AccessLevel } from "@/contexts/RoleContext";
 import { useTeams, type TeamRole, type ActivityType } from "@/contexts/TeamContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useWorkspaceSeats, SEAT_LIMIT_ERROR } from "@/hooks/useWorkspaceSeats";
+import { FEATURES } from "@/config/features";
 import {
   Select,
   SelectContent,
@@ -575,7 +576,7 @@ export default function Team() {
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent className="bg-card border-border">
-                                    {ACCESS_LEVELS.map(function (level) {
+                                    {ACCESS_LEVELS.filter(function (level) { return FEATURES.PITCHER_ROLE_ENABLED || level !== "pitcher" || m.accessLevel === "pitcher"; }).map(function (level) {
                                       var LvlIcon = accessLevelIcons[level];
                                       return (
                                         <SelectItem key={level} value={level} className="text-2xs">

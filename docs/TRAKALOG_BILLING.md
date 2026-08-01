@@ -95,7 +95,7 @@ Tous les prix en **USD**. Rabais annuel **25 %**.
 **Everything in Starter, plus —**
 
 - **Scale** — 1,000 tracks · 400 GB storage cap (tracks + stems + documents) · 50 Smart A&R queries / month
-- **Team & workspaces** — up to 5 workspaces · 5 active seats included (owner + 4) — editors, admins, pitchers · unlimited free viewers · add active seats anytime — $10/seat/month
+- **Team & workspaces** — up to 5 workspaces · 5 active seats included (owner + 4) — editors, admins · unlimited free viewers · add active seats anytime — $10/seat/month
 - **Collaboration & business** — cross-workspace catalog sharing · Trakalog Access — the marketplace: put your tracks in front of execs, and browse other creators' catalogs to find the song you need · contact export (CSV / XLSX / PDF)
 
 **Not included — available in Business :** more tracks, workspaces & active seats · higher Smart A&R limits · priority support
@@ -109,7 +109,7 @@ Tous les prix en **USD**. Rabais annuel **25 %**.
 **Everything in Pro, plus —**
 
 - **Scale** — 5,000 tracks · 2 TB storage cap (tracks + stems + documents) · 500 Smart A&R queries / month
-- **Team & workspaces** — up to 15 workspaces · 10 active seats included (owner + 9) — editors, admins, pitchers · unlimited free viewers · add active seats anytime — $10/seat/month
+- **Team & workspaces** — up to 15 workspaces · 10 active seats included (owner + 9) — editors, admins · unlimited free viewers · add active seats anytime — $10/seat/month
 - **Support** — priority support
 
 **Need more? → Enterprise (Contact us)** — SSO/SAML, custom limits, SLA, dedicated support

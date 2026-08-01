@@ -7,4 +7,8 @@
 export const FEATURES = {
   PITCH_ENABLED: false,
   APPROVALS_ENABLED: false,
+  // "pitcher" access level is no longer offered in role pickers (it only granted the
+  // right to create pitches). The level stays in the server hierarchy and in the display
+  // maps so any legacy 'pitcher' member still renders. Flip to restore the choice.
+  PITCHER_ROLE_ENABLED: false,
 } as const;
