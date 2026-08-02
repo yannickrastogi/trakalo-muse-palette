@@ -89,6 +89,31 @@ Diagnostic + validation SQL en conversation Cowork **avant** tout prompt Claude 
 
 ---
 
+## Migrations SQL — règle absolue
+
+Le repo décrit la production. Une baseline a été posée le 2 août 2026
+(`supabase/migrations/20260626144305_baseline_prod.sql`) après une dérive totale :
+65 migrations appliquées en prod sans aucun fichier correspondant dans le repo.
+Cette dérive a coûté 3 bugs bloquants (inscription cassée, page /invite en crash,
+rating impossible à enregistrer).
+
+RÈGLE : toute modification de la base de données produit un fichier de migration
+versionné dans `supabase/migrations/`, sans exception.
+
+- Nom de fichier obligatoire : `<timestamp 14 chiffres>_description.sql`
+  (ex. `20260802143000_add_deletion_scheduled_at.sql`).
+  Un préfixe à 8 chiffres ou absent = fichier ignoré par le CLI. 14 des 20 anciens
+  fichiers étaient dans ce cas et n'ont jamais rien appliqué.
+- Quand du SQL est appliqué via le MCP Supabase (`apply_migration`), le MÊME SQL doit être
+  déposé dans `supabase/migrations/` dans le même lot. Appliquer sans versionner reconstitue
+  la dette.
+- `supabase/migrations/_archive/` contient l'historique : les 20 anciens fichiers et les
+  65 migrations extraites de la production. C'est de la documentation, à ne jamais rejouer
+  et à ne pas modifier.
+- Ne jamais éditer la baseline. Toute évolution du schéma passe par une nouvelle migration.
+
+---
+
 ## Learnings critiques
 
 ### Watermarking (CORRIGÉ — l'ancien learning était faux)
