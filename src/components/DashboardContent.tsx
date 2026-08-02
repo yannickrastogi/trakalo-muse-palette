@@ -242,12 +242,12 @@ export function DashboardContent() {
     // Recent link events (plays/downloads)
     linkEvents.slice(0, 20).forEach(function(ev) {
       const track = ev.track_id ? allTracks.find(function(t) { return t.uuid === ev.track_id; }) : null;
-      const trackName = track ? '"' + track.title + '"' : "a track";
-      const who = ev.visitor_email || "Someone";
+      const trackTitle = track ? track.title : t("dashboard.activityUnknownTrack");
+      const who = ev.visitor_email || t("dashboard.activitySomeone");
       if (ev.event_type === "play") {
-        items.push({ icon: Headphones, text: who + " played " + trackName, time: timeAgo(ev.created_at), sortDate: new Date(ev.created_at) });
+        items.push({ icon: Headphones, text: t("dashboard.activityPlayed", { name: who, title: trackTitle }), time: timeAgo(ev.created_at), sortDate: new Date(ev.created_at) });
       } else if (ev.event_type === "download") {
-        items.push({ icon: Download, text: who + " downloaded " + trackName, time: timeAgo(ev.created_at), sortDate: new Date(ev.created_at) });
+        items.push({ icon: Download, text: t("dashboard.activityDownloaded", { name: who, title: trackTitle }), time: timeAgo(ev.created_at), sortDate: new Date(ev.created_at) });
       }
     });
 
@@ -268,7 +268,7 @@ export function DashboardContent() {
     // Recent pitches
     if (FEATURES.PITCH_ENABLED) {
       allPitches.slice(0, 5).forEach(function(p) {
-        items.push({ icon: Send, text: '"' + p.itemName + '" pitched to ' + p.recipientCompany + " — " + p.recipientName, time: timeAgo(p.date), sortDate: new Date(p.date) });
+        items.push({ icon: Send, text: t("dashboard.activityPitched", { title: p.itemName, company: p.recipientCompany, name: p.recipientName }), time: timeAgo(p.date), sortDate: new Date(p.date) });
       });
     }
 
@@ -276,9 +276,9 @@ export function DashboardContent() {
     comments.slice(0, 10).forEach(function(c) {
       if (!c.created_at) return;
       const track = c.track_id ? allTracks.find(function(t) { return t.uuid === c.track_id; }) : null;
-      const trackName = track ? '"' + track.title + '"' : "a track";
-      const who = c.author_name || "Someone";
-      items.push({ icon: MessageCircle, text: who + " commented on " + trackName, time: timeAgo(c.created_at), sortDate: new Date(c.created_at), trackUuid: c.track_id || undefined });
+      const trackTitle = track ? track.title : t("dashboard.activityUnknownTrack");
+      const who = c.author_name || t("dashboard.activitySomeone");
+      items.push({ icon: MessageCircle, text: t("dashboard.activityCommented", { name: who, title: trackTitle }), time: timeAgo(c.created_at), sortDate: new Date(c.created_at), trackUuid: c.track_id || undefined });
     });
 
     items.sort(function(a, b) { return b.sortDate.getTime() - a.sortDate.getTime(); });
