@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { useTeams, type TeamActivity, type ActivityType } from "@/contexts/TeamContext";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useTrack } from "@/contexts/TrackContext";
@@ -84,7 +85,7 @@ function getTimeThreshold(filter: TimeFilter): Date {
   }
 }
 
-function formatRelativeTime(dateStr: string): string {
+function formatRelativeTime(dateStr: string, t: TFunction, locale: string): string {
   const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -92,30 +93,30 @@ function formatRelativeTime(dateStr: string): string {
   const diffHr = Math.floor(diffMs / 3600000);
   const diffDay = Math.floor(diffMs / 86400000);
 
-  if (diffMin < 1) return "Just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDay < 7) return `${diffDay}d ago`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: diffDay > 365 ? "numeric" : undefined });
+  if (diffMin < 1) return t("notifications.justNow");
+  if (diffMin < 60) return t("notifications.minutesAgo", { count: diffMin });
+  if (diffHr < 24) return t("notifications.hoursAgo", { count: diffHr });
+  if (diffDay < 7) return t("notifications.daysAgo", { count: diffDay });
+  return date.toLocaleDateString(locale, { month: "short", day: "numeric", year: diffDay > 365 ? "numeric" : undefined });
 }
 
-function formatDateGroup(dateStr: string): string {
+function formatDateGroup(dateStr: string, t: TFunction, locale: string): string {
   const date = new Date(dateStr);
   const now = new Date();
   const diffDay = Math.floor((now.getTime() - date.getTime()) / 86400000);
 
-  if (diffDay === 0) return "Today";
-  if (diffDay === 1) return "Yesterday";
-  if (diffDay < 7) return "This Week";
-  if (diffDay < 30) return "This Month";
-  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  if (diffDay === 0) return t("notifications.today");
+  if (diffDay === 1) return t("notifications.yesterday");
+  if (diffDay < 7) return t("notifications.thisWeek");
+  if (diffDay < 30) return t("notifications.thisMonth");
+  return date.toLocaleDateString(locale, { month: "long", year: "numeric" });
 }
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.04 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
 export default function NotificationCenter() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const timeFilters = useTimeFilters();
   const { teams, loadTeamDetails } = useTeams();
   const { activeWorkspace } = useWorkspace();
@@ -162,19 +163,19 @@ export default function NotificationCenter() {
     var titleByUuid: Record<string, string> = {};
     tracks.forEach(function (tr) { if (tr.uuid) titleByUuid[tr.uuid] = tr.title; });
     return commentRows.map(function (c) {
-      var trackTitle = c.track_id && titleByUuid[c.track_id] ? "\"" + titleByUuid[c.track_id] + "\"" : "a track";
+      var trackTitle = c.track_id && titleByUuid[c.track_id] ? titleByUuid[c.track_id] : t("notifications.unknownTrack");
       return {
         id: "comment-" + c.id,
         type: "comment_added" as ActivityType,
-        user: c.author_name || "Someone",
-        message: "commented on " + trackTitle,
+        user: c.author_name || t("notifications.actorSomeone"),
+        message: t("notifications.msgCommented", { title: trackTitle }),
         date: c.created_at || "",
         teamName: activeWorkspace.name || "",
         teamId: activeWorkspace.id || "",
         trackId: c.track_id || undefined,
       };
     });
-  }, [commentRows, tracks, activeWorkspace]);
+  }, [commentRows, tracks, activeWorkspace, t]);
 
   // Fetch link_events and convert to activities
   useEffect(function() {
@@ -215,20 +216,21 @@ export default function NotificationCenter() {
           view: "recipient_opened",
           save: "recipient_saved" as ActivityType,
         };
-        var messageMap: Record<string, string> = {
-          play: "listened to your track",
-          download: "downloaded your track",
-          view: "viewed your shared link",
-          save: "saved your track to their Trakalog",
+        var msgKeys: Record<string, { base: string; named: string }> = {
+          play: { base: "notifications.msgListened", named: "notifications.msgListenedNamed" },
+          download: { base: "notifications.msgDownloadedTrack", named: "notifications.msgDownloadedTrackNamed" },
+          view: { base: "notifications.msgViewed", named: "notifications.msgViewedNamed" },
+          save: { base: "notifications.msgSaved", named: "notifications.msgSavedNamed" },
         };
         var linkName = linkNameMap[evt.link_id] || "";
+        var keys = msgKeys[evt.event_type] || msgKeys.view;
         return {
           id: evt.id,
-          user: evt.visitor_email || "Anonymous visitor",
-          message: messageMap[evt.event_type] + (linkName ? " \"" + linkName + "\"" : ""),
+          user: evt.visitor_email || t("notifications.actorAnonymous"),
+          message: linkName ? t(keys.named, { link: linkName }) : t(keys.base),
           type: typeMap[evt.event_type] || "recipient_opened",
           date: evt.created_at,
-          teamName: "Shared Links",
+          teamName: t("notifications.sharedLinksTeam"),
           teamId: "__link_events__",
         };
       });
@@ -287,17 +289,17 @@ export default function NotificationCenter() {
       // Build pitch activities (hidden while the Pitch section is behind its flag)
       if (FEATURES.PITCH_ENABLED) (pitches || []).forEach(function (p) {
         var creatorId = p.sent_by || null;
-        var creatorName = "Someone";
+        var creatorName = t("notifications.actorSomeone");
         if (creatorId && currentUserId && creatorId === currentUserId) {
-          creatorName = "You";
+          creatorName = t("notifications.actorYou");
         } else if (creatorId && profileMap[creatorId]) {
           creatorName = profileMap[creatorId];
         }
-        var recipientName = p.recipient_name || "a contact";
+        var recipientName = p.recipient_name || t("notifications.unknownContact");
         activities.push({
           id: "pitch-" + p.id,
           type: "pitch" as ActivityType,
-          message: "sent a pitch \"" + (p.subject || "") + "\" to " + recipientName,
+          message: t("notifications.msgSentPitch", { title: p.subject || "", recipient: recipientName }),
           user: creatorName,
           date: p.created_at || "",
           teamName: activeWorkspace!.name || "",
@@ -308,16 +310,16 @@ export default function NotificationCenter() {
       // Build shared link activities
       (links || []).forEach(function (l) {
         var creatorId = l.created_by || null;
-        var creatorName = "Someone";
+        var creatorName = t("notifications.actorSomeone");
         if (creatorId && currentUserId && creatorId === currentUserId) {
-          creatorName = "You";
+          creatorName = t("notifications.actorYou");
         } else if (creatorId && profileMap[creatorId]) {
           creatorName = profileMap[creatorId];
         }
         activities.push({
           id: "link-" + l.id,
           type: "link" as ActivityType,
-          message: "created a shared link \"" + (l.link_name || "") + "\"",
+          message: t("notifications.msgCreatedLink", { link: l.link_name || "" }),
           user: creatorName,
           date: l.created_at || "",
           teamName: activeWorkspace!.name || "",
@@ -360,12 +362,12 @@ export default function NotificationCenter() {
   const groupedActivities = useMemo(() => {
     const groups: Record<string, EnrichedActivity[]> = {};
     filteredActivities.forEach((a) => {
-      const group = formatDateGroup(a.date);
+      const group = formatDateGroup(a.date, t, i18n.language);
       if (!groups[group]) groups[group] = [];
       groups[group].push(a);
     });
     return groups;
-  }, [filteredActivities]);
+  }, [filteredActivities, t, i18n.language]);
 
   const uniqueTypes = useMemo(() => {
     const types = new Set(allActivities.map((a) => a.type));
@@ -562,7 +564,7 @@ export default function NotificationCenter() {
                           {activity.message}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-2xs text-muted-foreground font-medium">{formatRelativeTime(activity.date)}</span>
+                          <span className="text-2xs text-muted-foreground font-medium">{formatRelativeTime(activity.date, t, i18n.language)}</span>
                           <span className="text-muted-foreground/30">·</span>
                           <span className="text-2xs text-muted-foreground/70 font-medium">{activity.teamName}</span>
                         </div>
