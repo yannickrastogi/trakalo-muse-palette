@@ -135,7 +135,13 @@ export function VersionSelector({
         ? Math.max(...dedupedNumbers) + 1
         : 1;
       const ext = (file.name.split(".").pop() || "wav").toLowerCase();
-      const filePath = activeWorkspace.id + "/" + trackUuid + "_v" + nextVersionNumber + "." + ext;
+      // Each version MUST get its own storage key — never reuse the parent track's
+      // path (the trakalog-tracks bucket has a 90-day retention lock that rejects
+      // overwrites with HTTP 409, which would otherwise corrupt/lose the master).
+      // A random UUID guarantees a re-upload of the same file never collides. The
+      // first path segment must be the workspace UUID (get-upload-url rejects
+      // otherwise); no "..", "//", leading "/" or "\" — all satisfied here.
+      const filePath = activeWorkspace.id + "/versions/" + trackUuid + "/" + crypto.randomUUID() + "." + ext;
 
       // Upload directly to R2 (provider-agnostic) via signed PUT URL. Matches
       // the UploadTrackModal pipeline so reads through get-audio-url / get-storage-url
@@ -150,7 +156,7 @@ export function VersionSelector({
         return;
       }
 
-      const putError = await new Promise<string | null>((resolve) => {
+      const putError = await new Promise<number | string | null>((resolve) => {
         const xhr = new XMLHttpRequest();
         xhr.open(descriptor.method, descriptor.uploadUrl);
         for (const [name, value] of Object.entries(descriptor.headers)) {
@@ -161,16 +167,23 @@ export function VersionSelector({
             resolve(null);
             return;
           }
-          resolve("HTTP " + xhr.status);
+          resolve(xhr.status);
         });
         xhr.addEventListener("error", () => resolve("Network error during upload"));
         xhr.addEventListener("abort", () => resolve("Upload aborted"));
         xhr.addEventListener("timeout", () => resolve("Upload timed out"));
         xhr.send(file);
       });
-      if (putError) {
+      if (putError !== null) {
         console.error("Version upload failed:", putError);
-        toast.error(t("versionSelector.uploadFailed"));
+        // 409 (retention lock refuses overwrite) / 403 (denied): surface a clear
+        // message instead of a generic failure so the cause is understandable.
+        const isProtected = putError === 409 || putError === 403;
+        toast.error(
+          isProtected
+            ? t("versionSelector.overwriteProtected", "This file could not be uploaded because it would overwrite a protected master")
+            : t("versionSelector.uploadFailed"),
+        );
         return;
       }
 

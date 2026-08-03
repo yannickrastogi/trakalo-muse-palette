@@ -2092,6 +2092,7 @@
     "removed": "Video removed"
   },
   "versionSelector": {
+    "overwriteProtected": "This file could not be uploaded because it would overwrite a protected master",
     "mainVersion": "Main Version",
     "uploading": "Uploading…",
     "addVersion": "Add Version",

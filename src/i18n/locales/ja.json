@@ -2012,6 +2012,7 @@
     "removed": "動画を削除しました"
   },
   "versionSelector": {
+    "overwriteProtected": "このファイルは保護されたマスターを上書きしてしまうためアップロードできませんでした",
     "mainVersion": "メインバージョン",
     "uploading": "アップロード中…",
     "addVersion": "バージョンを追加",

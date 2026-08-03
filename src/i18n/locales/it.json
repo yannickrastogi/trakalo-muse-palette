@@ -2012,6 +2012,7 @@
     "removed": "Video rimosso"
   },
   "versionSelector": {
+    "overwriteProtected": "Questo file non è stato caricato perché sovrascriverebbe un master protetto",
     "mainVersion": "Versione principale",
     "uploading": "Caricamento…",
     "addVersion": "Aggiungi versione",

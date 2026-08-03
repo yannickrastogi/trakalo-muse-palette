@@ -2012,6 +2012,7 @@
     "removed": "Vídeo removido"
   },
   "versionSelector": {
+    "overwriteProtected": "Este arquivo não pôde ser enviado porque sobrescreveria um master protegido",
     "mainVersion": "Versão principal",
     "uploading": "Enviando…",
     "addVersion": "Adicionar versão",

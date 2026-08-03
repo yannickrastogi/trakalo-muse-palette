@@ -2012,6 +2012,7 @@
     "removed": "Video entfernt"
   },
   "versionSelector": {
+    "overwriteProtected": "Diese Datei konnte nicht hochgeladen werden, da sie einen geschützten Master überschreiben würde",
     "mainVersion": "Hauptversion",
     "uploading": "Wird hochgeladen…",
     "addVersion": "Version hinzufügen",

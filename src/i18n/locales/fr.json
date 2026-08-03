@@ -2092,6 +2092,7 @@
     "removed": "Vidéo supprimée"
   },
   "versionSelector": {
+    "overwriteProtected": "Ce fichier n’a pas pu être téléversé car il écraserait un master protégé",
     "mainVersion": "Version principale",
     "uploading": "Téléversement…",
     "addVersion": "Ajouter une version",

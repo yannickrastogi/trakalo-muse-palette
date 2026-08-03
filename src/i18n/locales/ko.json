@@ -2012,6 +2012,7 @@
     "removed": "비디오 제거됨"
   },
   "versionSelector": {
+    "overwriteProtected": "이 파일은 보호된 마스터를 덮어쓰게 되므로 업로드할 수 없습니다",
     "mainVersion": "기본 버전",
     "uploading": "업로드 중…",
     "addVersion": "버전 추가",
