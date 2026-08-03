@@ -688,6 +688,7 @@
     "daysAgo": "{{count}}g fa",
     "justNow": "Proprio ora",
     "aliasNameRequired": "Il nome dell'alias è obbligatorio",
+    "fromYourContacts": "dai tuoi contatti",
     "failedSaveAlias": "Impossibile salvare l'alias",
     "failedDeleteAlias": "Impossibile eliminare l'alias",
     "failedToDeleteContact": "Impossibile eliminare il contatto",

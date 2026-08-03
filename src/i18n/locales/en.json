@@ -768,6 +768,7 @@
     "daysAgo": "{{count}}d ago",
     "justNow": "Just now",
     "aliasNameRequired": "Alias name is required",
+    "fromYourContacts": "from your contacts",
     "failedSaveAlias": "Failed to save alias",
     "failedDeleteAlias": "Failed to delete alias",
     "failedToDeleteContact": "Failed to delete contact",

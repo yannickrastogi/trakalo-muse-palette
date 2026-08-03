@@ -688,6 +688,7 @@
     "daysAgo": "{{count}}日前",
     "justNow": "たった今",
     "aliasNameRequired": "エイリアス名は必須です",
+    "fromYourContacts": "あなたの連絡先から",
     "failedSaveAlias": "エイリアスの保存に失敗しました",
     "failedDeleteAlias": "エイリアスの削除に失敗しました",
     "failedToDeleteContact": "連絡先の削除に失敗しました",

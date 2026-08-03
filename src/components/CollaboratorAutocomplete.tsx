@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import type { Contact } from "@/contexts/ContactsContext";
+import { useContactSuggestions } from "@/hooks/useContactSuggestions";
 
 export interface CollaboratorSuggestion {
   firstName: string;
@@ -12,13 +14,16 @@ export interface CollaboratorSuggestion {
   ipi?: string;
   publisher?: string;
   source: "contact" | "split";
+  /** True when the contact comes from the caller's own cross-workspace pool. */
+  mine?: boolean;
 }
 
 interface CollaboratorAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   onSelect: (suggestion: CollaboratorSuggestion) => void;
-  contacts: Contact[];
+  /** @deprecated Suggestions now come from the cross-workspace RPC; kept for call-site compat. */
+  contacts?: Contact[];
   existingSplitNames?: string[];
   placeholder?: string;
   className?: string;
@@ -28,13 +33,16 @@ export function CollaboratorAutocomplete({
   value,
   onChange,
   onSelect,
-  contacts,
   existingSplitNames = [],
   placeholder,
   className,
 }: CollaboratorAutocompleteProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Cross-workspace suggestions: the caller's own contacts everywhere + this
+  // workspace's contacts, deduped server-side. Replaces the old workspace-only pool.
+  const { suggestions: contactSuggestions } = useContactSuggestions(value);
 
   // Close dropdown on outside click
   useEffect(function () {
@@ -55,33 +63,30 @@ export function CollaboratorAutocomplete({
     var results: CollaboratorSuggestion[] = [];
     var seen = new Set<string>();
 
-    // From contacts — match against full name OR stage_name (case-insensitive substring)
-    for (var i = 0; i < contacts.length; i++) {
-      var c = contacts[i];
-      var full = ((c.firstName || "") + " " + (c.lastName || "")).trim();
+    // From cross-workspace contacts (already query-filtered by the RPC).
+    for (var i = 0; i < contactSuggestions.length; i++) {
+      var c = contactSuggestions[i];
+      var full = c.fullName;
       if (!full) continue;
       var key = full.toLowerCase();
-      var stageLower = (c.stageName || "").toLowerCase();
-      var matchesName = key.indexOf(query) >= 0;
-      var matchesStage = stageLower && stageLower.indexOf(query) >= 0;
-      if ((matchesName || matchesStage) && !seen.has(key)) {
-        seen.add(key);
-        results.push({
-          firstName: c.firstName,
-          lastName: c.lastName,
-          fullName: full,
-          email: c.email || undefined,
-          stage_name: c.stageName || undefined,
-          role: c.role || undefined,
-          pro: c.pro || undefined,
-          ipi: c.ipi || undefined,
-          publisher: c.publisher || undefined,
-          source: "contact",
-        });
-      }
+      if (seen.has(key)) continue;
+      seen.add(key);
+      results.push({
+        firstName: c.firstName,
+        lastName: c.lastName,
+        fullName: full,
+        email: c.email || undefined,
+        stage_name: c.stageName || undefined,
+        role: c.role || undefined,
+        pro: c.pro.length ? c.pro.join(", ") : undefined,
+        ipi: c.ipi || undefined,
+        publisher: c.publisher || undefined,
+        source: "contact",
+        mine: c.source === "mine",
+      });
     }
 
-    // From existing split names
+    // From existing split names (session-local, instant — not a contacts read).
     for (var j = 0; j < existingSplitNames.length; j++) {
       var name = existingSplitNames[j];
       if (!name) continue;
@@ -99,7 +104,7 @@ export function CollaboratorAutocomplete({
     }
 
     return results.slice(0, 8);
-  }, [value, contacts, existingSplitNames]);
+  }, [value, contactSuggestions, existingSplitNames]);
 
   var handleSelect = useCallback(function (s: CollaboratorSuggestion) {
     onSelect(s);
@@ -131,7 +136,14 @@ export function CollaboratorAutocomplete({
                 onMouseDown={function (e) { e.preventDefault(); }}
                 onClick={function () { handleSelect(s); }}
               >
-                <div className="text-xs font-medium text-foreground">{s.fullName}{s.stage_name ? " (" + s.stage_name + ")" : ""}</div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-foreground truncate">{s.fullName}{s.stage_name ? " (" + s.stage_name + ")" : ""}</span>
+                  {s.mine && (
+                    <span className="shrink-0 text-[9px] font-medium text-muted-foreground rounded-full border border-border px-1.5 py-0.5">
+                      {t("contacts.fromYourContacts")}
+                    </span>
+                  )}
+                </div>
                 {(s.role || s.pro || s.ipi) && (
                   <div className="text-[10px] text-muted-foreground">
                     {[s.role, s.pro, s.ipi ? "IPI: " + s.ipi : ""].filter(Boolean).join(" · ")}

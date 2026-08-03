@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Link2, Lock, Copy, Check, Music, ListMusic, Download, ShieldOff, ShieldCheck, Bookmark, Layers, Upload, User, AlertTriangle, Mail, Send, Loader2 } from "lucide-react";
 import { useSharedLinks, type SharedLink, type ShareType } from "@/contexts/SharedLinksContext";
-import { useContacts } from "@/contexts/ContactsContext";
+import { useContactSuggestions } from "@/hooks/useContactSuggestions";
 import { supabase } from "@/integrations/supabase/client";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/constants";
 import { Switch } from "@/components/ui/switch";
@@ -46,7 +46,6 @@ export function ShareModal({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { createSharedLink } = useSharedLinks();
-  const { contacts } = useContacts();
   const hasNoStems = shareType === "stems" && (!stems || stems.length === 0);
 
   const [linkType, setLinkType] = useState<"public" | "secured">("public");
@@ -67,6 +66,10 @@ export function ShareModal({
   const [emailMessage, setEmailMessage] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  // Recipient autofill: suggest from the caller's own contacts across workspaces
+  // plus this workspace's contacts. Query the last comma-separated segment.
+  const emailQuery = (emailRecipients.split(",").pop() || "").trim();
+  const { suggestions: recipientSuggestions } = useContactSuggestions(emailQuery);
 
   const shareTypeLabels: Record<ShareType, string> = {
     stems: t("shareModal.shareStems"),
@@ -332,8 +335,8 @@ export function ShareModal({
                     className="w-full h-10 px-3 rounded-lg bg-card border border-border/50 text-xs text-foreground outline-none focus:border-primary/40 transition-colors placeholder:text-muted-foreground/40"
                   />
                   <datalist id="share-email-contacts">
-                    {contacts.filter((c) => c.email).map((c) => (
-                      <option key={c.id} value={c.email}>{[c.firstName, c.lastName].filter(Boolean).join(" ") || c.stageName || c.email}</option>
+                    {recipientSuggestions.filter((c) => c.email).map((c) => (
+                      <option key={c.id} value={c.email}>{c.fullName || c.stageName || c.email}</option>
                     ))}
                   </datalist>
                   <textarea

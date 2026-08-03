@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
+import { ContactSuggestInput } from "@/components/ContactSuggestInput";
+import type { ContactSuggestion } from "@/hooks/useContactSuggestions";
 import { UserPlus, Pencil, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -109,6 +111,24 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
     setPublishers([]);
     setIpi("");
     setPros([]);
+  }
+
+  // Autofill every field from a picked suggestion (which may be one of the
+  // caller's own contacts surfaced from another workspace). Saving still runs
+  // through the normal add/update flow below — this only pre-fills the form and
+  // never silently copies the source contact into this workspace.
+  function fillFromSuggestion(s: ContactSuggestion) {
+    if (s.fullName) setFullName(s.fullName);
+    setEmail(s.email || "");
+    setRoles(s.role ? s.role.split(",").map((x) => x.trim()).filter(Boolean) : []);
+    setCompany(s.company || "");
+    setPhone(s.phone || "");
+    setCity(s.city || "");
+    setCountry(s.country || "");
+    setStageName(s.stageName || "");
+    setPublishers(s.publisher ? s.publisher.split(",").map((x) => x.trim()).filter(Boolean) : []);
+    setIpi(s.ipi || "");
+    setPros(s.pro || []);
   }
 
   function isValidEmail(value: string): boolean {
@@ -244,10 +264,11 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
           {/* Full Name */}
           <div className="space-y-1.5">
             <Label htmlFor="ac-name">Full Name *</Label>
-            <Input
+            <ContactSuggestInput
               id="ac-name"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={setFullName}
+              onSelect={fillFromSuggestion}
               placeholder="John Doe"
               required
             />

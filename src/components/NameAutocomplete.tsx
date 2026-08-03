@@ -1,11 +1,15 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { useContacts, type Contact } from "@/contexts/ContactsContext";
+import { useContacts } from "@/contexts/ContactsContext";
+import { useContactSuggestions } from "@/hooks/useContactSuggestions";
 
 interface NameSuggestion {
   fullName: string;
   stageName?: string;
+  /** True when the contact comes from the caller's own cross-workspace pool. */
+  mine?: boolean;
 }
 
 interface NameAutocompleteProps {
@@ -35,7 +39,8 @@ export function NameAutocomplete({
   excludeContacts = false,
   allowCreate = false,
 }: NameAutocompleteProps) {
-  const { contacts, aliases, upsertAlias } = useContacts();
+  const { t } = useTranslation();
+  const { aliases, upsertAlias } = useContacts();
   const [open, setOpen] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(-1);
   const [creating, setCreating] = useState(false);
@@ -57,26 +62,27 @@ export function NameAutocomplete({
     return () => clearTimeout(debounceRef.current);
   }, [lastSegment]);
 
+  // Cross-workspace suggestions (own contacts everywhere + this workspace's),
+  // deduped server-side. Studio-only fields opt out so people aren't offered as venues.
+  const { suggestions: contactSuggestions } = useContactSuggestions(excludeContacts ? "" : lastSegment, {
+    enabled: !excludeContacts,
+  });
+
   const suggestions = useMemo(() => {
     if (!debouncedQuery || debouncedQuery.length < 2) return [];
     const query = debouncedQuery.toLowerCase();
     const results: NameSuggestion[] = [];
     const seen = new Set<string>();
 
-    // From contacts (skipped for studio fields so we never suggest people as venues)
+    // From cross-workspace contacts (skipped for studio fields so we never suggest people as venues)
     if (!excludeContacts) {
-      for (const c of contacts) {
-        const full = ((c.firstName || "") + " " + (c.lastName || "")).trim();
+      for (const c of contactSuggestions) {
+        const full = c.fullName;
         if (!full) continue;
         const key = full.toLowerCase();
         if (seen.has(key)) continue;
-        const firstName = (c.firstName || "").toLowerCase();
-        const lastName = (c.lastName || "").toLowerCase();
-        const stageLower = (c.stageName || "").toLowerCase();
-        if (firstName.startsWith(query) || lastName.startsWith(query) || key.indexOf(query) >= 0 || (stageLower && stageLower.indexOf(query) >= 0)) {
-          seen.add(key);
-          results.push({ fullName: full, stageName: c.stageName || undefined });
-        }
+        seen.add(key);
+        results.push({ fullName: full, stageName: c.stageName || undefined, mine: c.source === "mine" });
       }
     }
 
@@ -108,7 +114,7 @@ export function NameAutocomplete({
     }
 
     return results.slice(0, 8);
-  }, [debouncedQuery, contacts, aliases, extraSuggestions, excludeContacts, allowCreate]);
+  }, [debouncedQuery, contactSuggestions, aliases, extraSuggestions, excludeContacts, allowCreate]);
 
   // Show a "Create '<name>'" affordance when the typed name doesn't already
   // match a suggestion. This never blocks the credit — the value is already the
@@ -209,7 +215,14 @@ export function NameAutocomplete({
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => handleSelect(s)}
             >
-              <div className="text-sm text-white">{s.fullName}</div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm text-white truncate">{s.fullName}</span>
+                {s.mine && (
+                  <span className="shrink-0 text-[9px] font-medium text-muted-foreground rounded-full border border-white/15 px-1.5 py-0.5">
+                    {t("contacts.fromYourContacts")}
+                  </span>
+                )}
+              </div>
               {s.stageName && (
                 <div className="text-xs text-muted-foreground">{s.stageName}</div>
               )}

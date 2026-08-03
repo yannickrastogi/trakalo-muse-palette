@@ -13,6 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ContactSuggestInput } from "@/components/ContactSuggestInput";
+import type { ContactSuggestion } from "@/hooks/useContactSuggestions";
 import {
   Select,
   SelectContent,
@@ -344,11 +346,17 @@ export function InviteMemberModal({ open, onOpenChange, onInvite, preselectedTea
                 <User className="w-3.5 h-3.5 text-muted-foreground" />
                 {t("inviteMember.firstName")}
               </Label>
-              <Input
+              <ContactSuggestInput
                 id="invite-first"
                 placeholder={t("inviteMember.firstNamePlaceholder")}
                 value={firstName}
-                onChange={(e) => { setFirstName(e.target.value); if (error) setError(""); }}
+                onChange={(v) => { setFirstName(v); if (error) setError(""); }}
+                onSelect={(s: ContactSuggestion) => {
+                  setFirstName(s.firstName || s.fullName);
+                  setLastName(s.lastName || "");
+                  setEmail(s.email || "");
+                  if (error) setError("");
+                }}
                 className="bg-secondary border-border text-foreground placeholder:text-muted-foreground text-[13px] min-h-[44px]"
               />
             </div>

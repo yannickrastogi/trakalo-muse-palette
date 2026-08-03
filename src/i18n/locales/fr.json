@@ -768,6 +768,7 @@
     "daysAgo": "il y a {{count}}j",
     "justNow": "À l'instant",
     "aliasNameRequired": "Le nom de l'alias est requis",
+    "fromYourContacts": "de vos contacts",
     "failedSaveAlias": "Échec de l'enregistrement de l'alias",
     "failedDeleteAlias": "Échec de la suppression de l'alias",
     "failedToDeleteContact": "Échec de la suppression du contact",

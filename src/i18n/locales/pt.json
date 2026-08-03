@@ -688,6 +688,7 @@
     "daysAgo": "há {{count}}d",
     "justNow": "Agora mesmo",
     "aliasNameRequired": "O nome do alias é obrigatório",
+    "fromYourContacts": "dos seus contatos",
     "failedSaveAlias": "Falha ao salvar o alias",
     "failedDeleteAlias": "Falha ao excluir o alias",
     "failedToDeleteContact": "Falha ao excluir contato",

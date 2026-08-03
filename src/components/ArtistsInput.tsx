@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
-import { useContacts } from "@/contexts/ContactsContext";
 import { useTrack } from "@/contexts/TrackContext";
+import { useContactSuggestions } from "@/hooks/useContactSuggestions";
 
 interface ArtistsInputProps {
   value: string[];
@@ -16,7 +17,7 @@ interface ArtistsInputProps {
  * each entry as a chip so the parent state stays a clean `string[]`.
  */
 export function ArtistsInput({ value, onChange, placeholder, className }: ArtistsInputProps) {
-  const { contacts } = useContacts();
+  const { t } = useTranslation();
   const { tracks } = useTrack();
   const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);
@@ -54,10 +55,13 @@ export function ArtistsInput({ value, onChange, placeholder, className }: Artist
     return out;
   }, [tracks]);
 
+  // Cross-workspace contacts (own everywhere + this workspace), deduped server-side.
+  const { suggestions: contactSuggestions } = useContactSuggestions(debouncedQuery);
+
   const suggestions = useMemo(() => {
     if (!debouncedQuery || debouncedQuery.length < 2) return [];
     const q = debouncedQuery.toLowerCase();
-    const out: { fullName: string; stageName?: string }[] = [];
+    const out: { fullName: string; stageName?: string; mine?: boolean }[] = [];
     const seen = new Set<string>();
     // Workspace artists first — most relevant context for an artist field.
     for (const name of workspaceArtists) {
@@ -69,22 +73,17 @@ export function ArtistsInput({ value, onChange, placeholder, className }: Artist
       }
       if (out.length >= 8) break;
     }
-    for (const c of contacts) {
+    for (const c of contactSuggestions) {
       if (out.length >= 8) break;
-      const full = ((c.firstName || "") + " " + (c.lastName || "")).trim();
+      const full = c.fullName;
       if (!full) continue;
       const key = full.toLowerCase();
       if (seen.has(key) || existing.has(key)) continue;
-      const first = (c.firstName || "").toLowerCase();
-      const last = (c.lastName || "").toLowerCase();
-      const stage = (c.stageName || "").toLowerCase();
-      if (first.startsWith(q) || last.startsWith(q) || key.indexOf(q) >= 0 || (stage && stage.startsWith(q))) {
-        seen.add(key);
-        out.push({ fullName: full, stageName: c.stageName || undefined });
-      }
+      seen.add(key);
+      out.push({ fullName: full, stageName: c.stageName || undefined, mine: c.source === "mine" });
     }
     return out;
-  }, [debouncedQuery, contacts, workspaceArtists, existing]);
+  }, [debouncedQuery, contactSuggestions, workspaceArtists, existing]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -226,7 +225,14 @@ export function ArtistsInput({ value, onChange, placeholder, className }: Artist
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => commit(s.fullName)}
             >
-              <div className="text-sm text-foreground">{s.fullName}</div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm text-foreground truncate">{s.fullName}</span>
+                {s.mine && (
+                  <span className="shrink-0 text-[9px] font-medium text-muted-foreground rounded-full border border-white/15 px-1.5 py-0.5">
+                    {t("contacts.fromYourContacts")}
+                  </span>
+                )}
+              </div>
               {s.stageName && <div className="text-xs text-muted-foreground">{s.stageName}</div>}
             </button>
           ))}
