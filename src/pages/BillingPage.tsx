@@ -185,7 +185,7 @@ export default function BillingPage() {
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("billing.title")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{t("billing.subtitle")}</p>
           </div>
-          {hasBillingAccount && (
+          {!isFounder && hasBillingAccount && (
             <Button variant="outline" onClick={openPortal} disabled={pending !== null}>
               {pending === "portal" ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -209,7 +209,7 @@ export default function BillingPage() {
                   <p className="text-sm text-muted-foreground">{t("billing.currentPlan")}</p>
                   <p className="font-semibold capitalize">
                     {currentPlan ?? t("billing.noSubscription")}
-                    {sub?.billing_cycle ? (
+                    {!isFounder && sub?.billing_cycle ? (
                       <span className="ml-2 text-sm font-normal text-muted-foreground">
                         ({sub.billing_cycle === "yearly" ? t("billing.cycleYearlyLower") : t("billing.cycleMonthlyLower")})
                       </span>
