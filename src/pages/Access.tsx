@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 // Plan-based daily search quota. -1 = unlimited.
-const SEARCH_QUOTAS: Record<string, number> = { free: 10, starter: 25, pro: -1, business: -1 };
+const SEARCH_QUOTAS: Record<string, number> = { free: 10, starter: 25, pro: -1, business: -1, founder: -1 };
 const PAGE_SIZE = 20;
 
 interface MarketplaceTrack {

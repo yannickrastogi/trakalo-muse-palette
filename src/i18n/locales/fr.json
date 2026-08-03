@@ -9,13 +9,15 @@
   "billing": {
     "seats": {
       "title": "Sièges",
-      "subtitle": "Ajoutez ou retirez des sièges payants pour vos collaborateurs actifs. 10 $/siège/mois.",
+      "subtitle": "Chaque membre du workspace occupe un siège. Ajoutez des sièges à 10 $/mois chacun.",
       "includedInPlan": "Inclus dans le plan",
       "purchased": "Achetés en supplément",
       "total": "Total des sièges",
       "manage": "Gérer les sièges"
     },
     "discountBadge": "−25%",
+    "founderNotice": { "title": "Founder", "desc": "Vous avez un accès illimité — aucun abonnement requis." },
+    "workspaceLimitReached": "Vous avez atteint la limite d'espaces de travail de votre plan. Améliorez votre offre ou ajoutez un espace (5 $/mois). Au-delà de 15 espaces, contactez-nous pour une offre sur mesure.",
     "title": "Facturation",
     "subtitle": "Gérez votre abonnement, vos crédits et votre moyen de paiement.",
     "managePlan": "Gérer mon abonnement",
@@ -77,8 +79,9 @@
           "Tout Starter",
           "1 000 morceaux · 400 Go de stockage",
           "50 Smart A&R/mois",
-          "5 espaces de travail · 5 sièges inclus (+10 $/siège supplémentaire)",
-          "Spectateurs gratuits illimités",
+          "4 espaces de travail · 2 sièges inclus",
+          "Options : +10 $/siège · +5 $/espace de travail",
+          "Chaque membre occupe un siège — partage illimité et gratuit par liens",
           "Équipe et partage de catalogue inter-espaces",
           "Marketplace Trakalog Access"
         ]
@@ -88,7 +91,9 @@
           "Tout Pro",
           "5 000 morceaux · 2 To de stockage",
           "500 Smart A&R/mois",
-          "15 espaces de travail · 10 sièges inclus (+10 $/siège supplémentaire)",
+          "10 espaces de travail · 5 sièges inclus",
+          "Options : +10 $/siège · +5 $/espace de travail",
+          "Jusqu'à 15 espaces de travail — besoin de plus ? Contactez-nous",
           "Support prioritaire"
         ]
       }
@@ -445,7 +450,7 @@
   "team": {
     "seats": {
       "usage": "{{used}} sur {{total}} sièges utilisés",
-      "unlimitedViewers": "spectateurs gratuits illimités",
+      "linkSharing": "Partage par liens gratuit et illimité",
       "pending": "{{count}} en attente",
       "addSeat": "Ajouter un siège"
     },

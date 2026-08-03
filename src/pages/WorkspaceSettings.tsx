@@ -930,7 +930,7 @@ function MembersSection() {
               {seats.seats_pending > 0 && (
                 <span className="text-muted-foreground">· {t("team.seats.pending", { count: seats.seats_pending })}</span>
               )}
-              <span className="text-muted-foreground">· {t("team.seats.unlimitedViewers")}</span>
+              <span className="text-muted-foreground">· {t("team.seats.linkSharing")}</span>
               {!seats.can_invite_active && (
                 <Link to="/settings/billing" className="font-semibold text-brand-orange hover:underline">
                   {t("team.seats.addSeat")}

@@ -9,13 +9,15 @@
   "billing": {
     "seats": {
       "title": "Sitze",
-      "subtitle": "Füge bezahlte Sitze für aktive Mitarbeiter hinzu oder entferne sie. 10 $/Sitz/Monat.",
+      "subtitle": "Jedes Workspace-Mitglied belegt einen Sitz. Füge Sitze für je 10 $/Monat hinzu.",
       "includedInPlan": "Im Tarif enthalten",
       "purchased": "Zusätzlich gekauft",
       "total": "Sitze gesamt",
       "manage": "Sitze verwalten"
     },
     "discountBadge": "−25%",
+    "founderNotice": { "title": "Founder", "desc": "Du hast unbegrenzten Zugriff — kein Abo erforderlich." },
+    "workspaceLimitReached": "Du hast das Workspace-Limit deines Tarifs erreicht. Führe ein Upgrade durch oder füge einen Workspace hinzu (5 $/Monat). Ab 15 Workspaces kontaktiere uns für einen individuellen Tarif.",
     "title": "Abrechnung",
     "subtitle": "Verwalte dein Abo, deine Credits und deine Zahlungsmethode.",
     "managePlan": "Abo verwalten",
@@ -77,8 +79,9 @@
           "Alles aus Starter",
           "1.000 Tracks · 400 GB Speicher",
           "50 Smart A&R/Monat",
-          "5 Workspaces · 5 Sitze inklusive (+10 $/zusätzlicher Sitz)",
-          "Unbegrenzte kostenlose Zuschauer",
+          "4 Workspaces · 2 Sitze inklusive",
+          "Add-ons: +10 $/Sitz · +5 $/Workspace",
+          "Jedes Mitglied belegt einen Sitz — Teilen per Links, kostenlos und unbegrenzt",
           "Team und Workspace-übergreifendes Katalog-Sharing",
           "Trakalog Access Marketplace"
         ]
@@ -88,7 +91,9 @@
           "Alles aus Pro",
           "5.000 Tracks · 2 TB Speicher",
           "500 Smart A&R/Monat",
-          "15 Workspaces · 10 Sitze inklusive (+10 $/zusätzlicher Sitz)",
+          "10 Workspaces · 5 Sitze inklusive",
+          "Add-ons: +10 $/Sitz · +5 $/Workspace",
+          "Bis zu 15 Workspaces — mehr nötig? Kontaktiere uns",
           "Priorisierter Support"
         ]
       }
@@ -441,7 +446,7 @@
   "team": {
     "seats": {
       "usage": "{{used}} von {{total}} Sitzen belegt",
-      "unlimitedViewers": "unbegrenzte kostenlose Zuschauer",
+      "linkSharing": "Unbegrenztes kostenloses Teilen per Links",
       "pending": "{{count}} ausstehend",
       "addSeat": "Sitz hinzufügen"
     },

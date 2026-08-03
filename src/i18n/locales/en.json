@@ -9,13 +9,15 @@
   "billing": {
     "seats": {
       "title": "Seats",
-      "subtitle": "Add or remove paid seats for active collaborators. $10/seat/month.",
+      "subtitle": "Every workspace member takes a seat. Add seats at $10/month each.",
       "includedInPlan": "Included in plan",
       "purchased": "Additional purchased",
       "total": "Total seats",
       "manage": "Manage seats"
     },
     "discountBadge": "−25%",
+    "founderNotice": { "title": "Founder", "desc": "You have unlimited access — no subscription needed." },
+    "workspaceLimitReached": "You've reached your plan's workspace limit. Upgrade or add a workspace ($5/month). Past 15 workspaces, contact us for a custom plan.",
     "title": "Billing",
     "subtitle": "Manage your subscription, credits, and payment method.",
     "managePlan": "Manage subscription",
@@ -77,8 +79,9 @@
           "Everything in Starter",
           "1,000 tracks · 400 GB storage",
           "50 Smart A&R/mo",
-          "5 workspaces · 5 seats included (+$10/extra seat)",
-          "Unlimited free viewers",
+          "4 workspaces · 2 seats included",
+          "Add-ons: $10/extra seat · $5/extra workspace",
+          "Every member takes a seat — share via links, free & unlimited",
           "Team & cross-workspace catalog sharing",
           "Trakalog Access marketplace"
         ]
@@ -88,7 +91,9 @@
           "Everything in Pro",
           "5,000 tracks · 2 TB storage",
           "500 Smart A&R/mo",
-          "15 workspaces · 10 seats included (+$10/extra seat)",
+          "10 workspaces · 5 seats included",
+          "Add-ons: $10/extra seat · $5/extra workspace",
+          "Up to 15 workspaces total — need more? Contact us",
           "Priority support"
         ]
       }
@@ -445,7 +450,7 @@
   "team": {
     "seats": {
       "usage": "{{used}} of {{total}} seats used",
-      "unlimitedViewers": "unlimited free viewers",
+      "linkSharing": "Unlimited free link sharing",
       "pending": "{{count}} pending",
       "addSeat": "Add a seat"
     },

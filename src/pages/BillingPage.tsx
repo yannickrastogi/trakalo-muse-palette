@@ -19,7 +19,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 /* ─── Catalogue statique (les prix RÉELS sont résolus côté Stripe via stripe_prices) ─── */
-type PlanId = "free" | "starter" | "pro" | "business";
+/* "founder" = palier interne (accès illimité, attribué à la main). JAMAIS proposé à
+   l'achat : absent de PLANS et de PaidPlanId. Listé ici seulement pour que l'app sache
+   afficher proprement le plan courant d'un fondateur sans planter. */
+type PlanId = "free" | "starter" | "pro" | "business" | "founder";
 type PaidPlanId = "starter" | "pro" | "business";
 type BillingCycle = "monthly" | "yearly";
 
@@ -167,6 +170,9 @@ export default function BillingPage() {
   };
 
   const currentPlan = sub?.plan ?? null;
+  // Internal founder tier: unlimited access, never sold. Show a clean unlimited
+  // panel and hide every purchase/upgrade CTA.
+  const isFounder = currentPlan === "founder";
   const isActive = sub?.subscription_status === "active" || sub?.subscription_status === "trialing";
   const hasBillingAccount = !!sub && BILLABLE_STATUSES.has(sub.subscription_status ?? "");
 
@@ -222,8 +228,21 @@ export default function BillingPage() {
           </Card>
         )}
 
+        {/* Founder — internal unlimited tier. No pricing grid, no upgrade path. */}
+        {isFounder && (
+          <Card className="mb-8 border-primary">
+            <CardContent className="flex items-center gap-3 py-4">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <div>
+                <p className="font-semibold">{t("billing.founderNotice.title")}</p>
+                <p className="text-sm text-muted-foreground">{t("billing.founderNotice.desc")}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Seats — paid, active subscribers only. The Stripe portal manages qty. */}
-        {isActive && seats && seats.plan !== "free" && (
+        {!isFounder && isActive && seats && seats.plan !== "free" && (
           <Card className="mb-8">
             <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
               <div className="flex items-start gap-3">
@@ -259,6 +278,9 @@ export default function BillingPage() {
           </Card>
         )}
 
+        {/* Purchase UI (cycle toggle, plan grid, AI credits) — never shown to founders. */}
+        {!isFounder && (
+          <>
         {/* Toggle Mensuel / Annuel */}
         <div className="mb-6 flex items-center justify-center gap-3">
           <div className="inline-flex rounded-lg border bg-muted/40 p-1">
@@ -378,6 +400,8 @@ export default function BillingPage() {
             })}
           </div>
         </div>
+          </>
+        )}
       </div>
     </PageShell>
   );

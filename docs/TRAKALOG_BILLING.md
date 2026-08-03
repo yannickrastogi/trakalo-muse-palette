@@ -1,11 +1,13 @@
 # TRAKALOG — Billing & Payment System (Stripe)
 
-> **Version :** 4.0 · **Réécrit le :** 20 juillet 2026
+> **Version :** 4.1 · **Révisé le :** 2 août 2026 (modèle de sièges) · **Base :** 4.0 (20 juillet 2026)
 > **Remplace :** toutes les versions antérieures (l'ancien doc décrivait un pricing $14/$29/$59 workspace-based — **périmé**).
-> **Statut :** Spécification validée, prête à implémenter.
+> **Statut :** Spécification validée, enforcement serveur actif (triggers sièges + workspaces).
 > **Priorité :** Bloquant pré-launch.
 
-> ⚠️ **Source de vérité.** Ce document prime sur toute mémoire ou ancienne version. Les prix, limites et le modèle de sièges ci-dessous sont **définitifs** (décisions du 20 juillet 2026). Ne pas recoder d'ancienne logique.
+> ⚠️ **Source de vérité.** Ce document prime sur toute mémoire ou ancienne version. Les prix, limites et le modèle de sièges ci-dessous sont **définitifs**. Ne pas recoder d'ancienne logique.
+>
+> 🔴 **Changement 4.1 (2 août 2026) — modèle de sièges.** Les viewers ne sont **plus** gratuits ni illimités : **tout membre d'un workspace consomme un siège**, quel que soit son niveau (viewer, editor, admin). Le seul canal gratuit est le **lien partagé** (un destinataire consulte sans compte, sans être membre, sans limite, sans consommer de siège). Nouvelles limites : Pro = **2 sièges / 4 workspaces**, Business = **5 sièges / 10 workspaces**. Add-ons Pro/Business : **$10/siège/mois** et **$5/workspace/mois**. **Plafond dur : 15 workspaces** sur Pro/Business (au-delà → contact commercial / produit sur mesure ; le serveur bloque réellement à 15).
 
 ---
 
@@ -17,14 +19,13 @@
 - **Features workspace** (branding, watermarking, catalog sharing, sièges, nombre de workspaces) → suivent le **plan du owner** du workspace.
 - Conséquence : un user Free invité dans un workspace Pro accède au workspace, mais reste limité par *ses propres* quotas Free pour ses uploads/actions.
 
-**Modèle de sièges = « Figma pour catalogues musicaux ».** Le coût de Trakalog suit l'*action*, pas la présence (un viewer coûte ~0 ; un editor/admin qui upload + déclenche Sonic DNA/Smart A&R coûte du R2 + de l'AI). Donc le prix se calque sur les niveaux d'accès :
+**Modèle de sièges = « une place par membre ».** Toute personne ajoutée à un workspace occupe un siège, **quel que soit son niveau d'accès** (viewer inclus). Le partage externe gratuit passe exclusivement par les **liens partagés** — le destinataire n'est jamais membre. Barème :
 
 | Rôle d'accès | Facturation |
 |---|---|
-| **Viewer** | Gratuit, illimité (Pro/Business). Consulte, écoute. |
-| **Pitcher / Editor / Admin** | = **1 siège actif**. C'est ce qui compte contre la limite du plan. |
-| **Owner** | Compte comme 1 siège actif. |
-| **Destinataire d'un lien partagé** | Jamais membre, jamais compté. |
+| **Viewer / Pitcher / Editor / Admin** | = **1 siège**. Tout membre compte contre la limite du plan. |
+| **Owner** | Compte comme 1 siège (inclus dans les sièges du plan). |
+| **Destinataire d'un lien partagé** | Jamais membre, jamais compté, **illimité — le canal gratuit**. |
 
 > Le modèle « dual Personal + Team » à la GitHub a été **abandonné** (il ne colle pas à Trakalog — un collaborateur qui rejoint un label n'a pas de « vie perso » Trakalog parallèle). À ne pas ressortir.
 
@@ -44,10 +45,12 @@ Tous les prix en **USD**. Rabais annuel **25 %**.
 | **Shared links** | 1 (branding Trakalog) | ∞ | ∞ | ∞ | ∞ |
 | **Smart A&R** | 2 à vie | 15/mois | 50/mois | 500/mois | Custom |
 | **Lyrics** | Affichage seul | Transcription auto | Transcription auto | Transcription auto | ✅ |
-| **Workspaces** | 1 | 1 (solo) | 5 | 15 | Custom |
-| **Sièges actifs** | — | solo strict | 5 inclus (owner+4) | 10 inclus (owner+9) | Custom |
+| **Workspaces** | 1 | 1 (solo) | 4 | 10 | Custom |
+| **Sièges (tout membre)** | 1 | 1 (solo strict) | 2 inclus (owner+1) | 5 inclus (owner+4) | Custom |
 | **Siège additionnel** | — | — | $10/siège/mois | $10/siège/mois | Custom |
-| **Viewers gratuits** | — | — | ∞ | ∞ | ∞ |
+| **Workspace additionnel** | — | — | $5/workspace/mois | $5/workspace/mois | Custom |
+| **Plafond workspaces (dur)** | 1 | 1 | 15 (puis contact commercial) | 15 (puis contact commercial) | Custom |
+| **Partage par liens** | ∞ | ∞ | ∞ | ∞ | ∞ |
 | **Achat de crédits** | ❌ | ✅ | ✅ | ✅ | ✅ |
 
 ---
@@ -95,7 +98,8 @@ Tous les prix en **USD**. Rabais annuel **25 %**.
 **Everything in Starter, plus —**
 
 - **Scale** — 1,000 tracks · 400 GB storage cap (tracks + stems + documents) · 50 Smart A&R queries / month
-- **Team & workspaces** — up to 5 workspaces · 5 active seats included (owner + 4) — editors, admins · unlimited free viewers · add active seats anytime — $10/seat/month
+- **Team & workspaces** — up to 4 workspaces · 2 seats included (owner + 1) · every member takes a seat, whatever their access level · add seats anytime — $10/seat/month · add workspaces — $5/workspace/month (hard cap 15 workspaces, then contact us)
+- **Free external sharing** — share tracks & playlists with anyone through links: no account, not a member, unlimited, and never uses a seat
 - **Collaboration & business** — cross-workspace catalog sharing · Trakalog Access — the marketplace: put your tracks in front of execs, and browse other creators' catalogs to find the song you need · contact export (CSV / XLSX / PDF)
 
 **Not included — available in Business :** more tracks, workspaces & active seats · higher Smart A&R limits · priority support
@@ -109,7 +113,7 @@ Tous les prix en **USD**. Rabais annuel **25 %**.
 **Everything in Pro, plus —**
 
 - **Scale** — 5,000 tracks · 2 TB storage cap (tracks + stems + documents) · 500 Smart A&R queries / month
-- **Team & workspaces** — up to 15 workspaces · 10 active seats included (owner + 9) — editors, admins · unlimited free viewers · add active seats anytime — $10/seat/month
+- **Team & workspaces** — up to 10 workspaces · 5 seats included (owner + 4) · every member takes a seat, whatever their access level · add seats — $10/seat/month · add workspaces — $5/workspace/month (hard cap 15 workspaces, then contact us for a custom plan)
 - **Support** — priority support
 
 **Need more? → Enterprise (Contact us)** — SSO/SAML, custom limits, SLA, dedicated support
@@ -125,10 +129,12 @@ Réservé : SSO/SAML, limites custom, SLA, CSM dédié, facturation sur PO. **Au
 ## 4. Modèle de sièges (détail)
 
 - **Free & Starter = solo.** Owner uniquement, aucun autre membre dans le workspace.
-- **Pro & Business = équipe.** Owner + sièges actifs inclus + **viewers gratuits illimités**.
-- **1 siège actif** = un membre Pitcher, Editor ou Admin (mappé sur les access levels existants : Viewer / Pitcher / Editor / Admin).
-- **Owner** = 1 siège actif (compté dans les inclus).
-- **Sièges additionnels** au-delà des inclus : **$10/siège/mois**, prix unique sur toute la plateforme (= le prix d'une licence Starter). Prorata natif Stripe à l'ajout/retrait.
+- **Pro & Business = équipe.** Owner + sièges inclus. **Tout membre consomme un siège**, quel que soit son access level (viewer inclus).
+- **1 siège** = un membre du workspace, quel que soit son niveau (Viewer / Pitcher / Editor / Admin). Il n'y a plus de « viewer gratuit ».
+- **Owner** = 1 siège (compté dans les inclus).
+- **Sièges additionnels** au-delà des inclus : **$10/siège/mois** (Pro & Business), prix unique sur toute la plateforme. Prorata natif Stripe à l'ajout/retrait.
+- **Workspaces additionnels** au-delà des inclus : **$5/workspace/mois** (Pro & Business). **Plafond dur : 15 workspaces** — au-delà, contact commercial (produit sur mesure) ; le serveur bloque réellement à 15.
+- **Canal gratuit = liens partagés.** Un destinataire de lien consulte une track ou une playlist sans compte, sans être membre, sans limite, et ne consomme aucun siège.
 - **Les limites (tracks, storage, Smart A&R) restent par utilisateur/workspace, pas par siège.** Un siège en plus = une personne de plus qui agit dans le pool existant, ça n'augmente pas les quotas. Un workspace trop gros pour son pool → trigger d'upgrade vers le tier au-dessus.
 
 ---
@@ -200,7 +206,7 @@ Modèle volontairement **simple** :
 2. **Aucun enforcement de limites** dans les RPC (`insert_track`, `create_pitch`, `create_workspace_with_member`, EF `smart-ar`) → les plans sont cosmétiques tant que ce n'est pas codé.
 3. **Compteurs `pitches_sent_this_month` et `smart_ar_queries_this_month` jamais incrémentés** → triggers/RPC à ajouter.
 4. **Config des limites côté serveur** (source de vérité `plan → tracks_max/…`) à poser.
-5. **Modèle de sièges** (viewer gratuit / pitcher-editor-admin = siège / add-on) : pas encore reflété dans le schéma — à concevoir.
+5. **Modèle de sièges** — v4.1 : **tout membre = 1 siège** (plus de viewer gratuit), add-on siège $10 + workspace $5, plafond dur 15 workspaces. Enforcement serveur **actif** (triggers sièges + workspaces, ERRCODE `check_violation`).
 6. **Détail :** trigger `prevent_client_plan_change` est branché sur `workspaces` (colonne `plan` legacy), pas sur `subscriptions` — à déplacer (non bloquant, la RLS protège déjà).
 
 ---
@@ -234,7 +240,7 @@ Modèle volontairement **simple** :
 
 - Prix : ~~$14/$29/$59~~ → **$10/$25/$45** (révisé après analyse Postal.music, 20 mai ; reconfirmé).
 - Archi : ~~workspace-based~~ → **user-based**.
-- Modèle équipe : ~~5 membres à plat~~ → **sièges actifs (Figma) + viewers gratuits + add-on $10**.
+- Modèle équipe : ~~5 membres à plat~~ → ~~sièges actifs + viewers gratuits~~ → **tout membre = 1 siège** (v4.1, 2 août 2026 ; plus de viewer gratuit). Pro 2 sièges/4 workspaces, Business 5 sièges/10 workspaces ; add-on siège $10 + workspace $5 ; plafond dur 15 workspaces ; canal gratuit = liens partagés.
 - Free : **10 tracks / 1,5 GB / 1 playlist / 1 lien / 2 Smart A&R à vie** ; pas d'achat de crédits.
 - Starter : **solo strict** ; transcription lyrics ajoutée.
 - AI Credits : ~~3 packs, multi-actions~~ → **2 packs, 1 crédit = 1 Smart A&R** uniquement.

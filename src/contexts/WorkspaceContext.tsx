@@ -20,8 +20,12 @@ interface WorkspaceContextValue {
   switchWorkspace: (workspaceId: string) => void;
   /** Update settings on the active workspace */
   updateWorkspaceSettings: (updates: Partial<WorkspaceSettings>) => void;
-  /** Create a new workspace and switch to it */
-  createWorkspace: (name: string, description?: string) => Promise<string | null>;
+  /**
+   * Create a new workspace and switch to it. Returns the new id on success, or
+   * `{ id: null, errorCode }` on failure so callers can surface a clear message
+   * (e.g. `errorCode: "workspaces_limit"` when the plan's workspace cap is hit).
+   */
+  createWorkspace: (name: string, description?: string) => Promise<{ id: string | null; errorCode?: string }>;
   /** Re-fetch all workspaces from DB */
   refreshWorkspaces: () => Promise<void>;
 }
@@ -241,7 +245,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [isSwitchingWorkspace]);
 
-  const createWorkspace = useCallback(async (name: string, description?: string): Promise<string | null> => {
+  const createWorkspace = useCallback(async (name: string, description?: string): Promise<{ id: string | null; errorCode?: string }> => {
     try {
       const { data, error } = await supabase.rpc("create_workspace_with_member", {
         _name: name,
@@ -249,14 +253,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       });
       if (error) {
         console.error("Error creating workspace:", error);
-        return null;
+        // Server enforces the plan's workspace cap via a check_violation trigger
+        // raising 'plan_limit_reached: workspaces'. Surface it as a clean code.
+        const errorCode = error.message?.includes("plan_limit_reached: workspaces")
+          ? "workspaces_limit"
+          : undefined;
+        return { id: null, errorCode };
       }
       const newId = data as string;
       await fetchWorkspaces({ switchTo: newId });
-      return newId;
+      return { id: newId };
     } catch (err) {
       console.error("Unexpected error creating workspace:", err);
-      return null;
+      return { id: null };
     }
   }, [fetchWorkspaces]);
 

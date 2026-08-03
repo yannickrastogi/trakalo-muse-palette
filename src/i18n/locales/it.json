@@ -9,13 +9,15 @@
   "billing": {
     "seats": {
       "title": "Postazioni",
-      "subtitle": "Aggiungi o rimuovi postazioni a pagamento per i collaboratori attivi. 10 $/postazione/mese.",
+      "subtitle": "Ogni membro dello spazio occupa una postazione. Aggiungi postazioni a 10 $/mese ciascuna.",
       "includedInPlan": "Incluse nel piano",
       "purchased": "Acquistate in aggiunta",
       "total": "Totale postazioni",
       "manage": "Gestisci postazioni"
     },
     "discountBadge": "−25%",
+    "founderNotice": { "title": "Founder", "desc": "Hai accesso illimitato — nessun abbonamento necessario." },
+    "workspaceLimitReached": "Hai raggiunto il limite di spazi di lavoro del tuo piano. Esegui l'upgrade o aggiungi uno spazio (5 $/mese). Oltre i 15 spazi, contattaci per un piano su misura.",
     "title": "Fatturazione",
     "subtitle": "Gestisci il tuo abbonamento, i crediti e il metodo di pagamento.",
     "managePlan": "Gestisci abbonamento",
@@ -77,8 +79,9 @@
           "Tutto di Starter",
           "1.000 brani · 400 GB di spazio",
           "50 Smart A&R/mese",
-          "5 spazi di lavoro · 5 postazioni incluse (+10 $/postazione extra)",
-          "Spettatori gratuiti illimitati",
+          "4 spazi di lavoro · 2 postazioni incluse",
+          "Componenti aggiuntivi: +10 $/postazione · +5 $/spazio di lavoro",
+          "Ogni membro occupa una postazione — condivisione tramite link gratuita e illimitata",
           "Team e condivisione del catalogo tra spazi",
           "Marketplace Trakalog Access"
         ]
@@ -88,7 +91,9 @@
           "Tutto di Pro",
           "5.000 brani · 2 TB di spazio",
           "500 Smart A&R/mese",
-          "15 spazi di lavoro · 10 postazioni incluse (+10 $/postazione extra)",
+          "10 spazi di lavoro · 5 postazioni incluse",
+          "Componenti aggiuntivi: +10 $/postazione · +5 $/spazio di lavoro",
+          "Fino a 15 spazi di lavoro — ti serve di più? Contattaci",
           "Supporto prioritario"
         ]
       }
@@ -441,7 +446,7 @@
   "team": {
     "seats": {
       "usage": "{{used}} di {{total}} postazioni usate",
-      "unlimitedViewers": "spettatori gratuiti illimitati",
+      "linkSharing": "Condivisione tramite link gratuita e illimitata",
       "pending": "{{count}} in sospeso",
       "addSeat": "Aggiungi una postazione"
     },

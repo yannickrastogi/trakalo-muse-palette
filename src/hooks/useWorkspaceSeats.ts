@@ -4,8 +4,9 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 /**
  * Seat usage snapshot for a workspace, resolved server-side by the
- * `get_workspace_seats(_workspace_id)` RPC (jsonb). Viewers are always free;
- * only non-viewer members/invitations consume a seat.
+ * `get_workspace_seats(_workspace_id)` RPC (jsonb). Every workspace member
+ * consumes a seat, whatever their access level. The only free channel is
+ * shared links — recipients are never members and never count.
  */
 export interface WorkspaceSeats {
   plan: string;

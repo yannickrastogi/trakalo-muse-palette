@@ -9,13 +9,15 @@
   "billing": {
     "seats": {
       "title": "Asientos",
-      "subtitle": "Añade o quita asientos de pago para colaboradores activos. 10 $/asiento/mes.",
+      "subtitle": "Cada miembro del espacio ocupa un asiento. Añade asientos a 10 $/mes cada uno.",
       "includedInPlan": "Incluidos en el plan",
       "purchased": "Comprados adicionales",
       "total": "Total de asientos",
       "manage": "Gestionar asientos"
     },
     "discountBadge": "−25%",
+    "founderNotice": { "title": "Founder", "desc": "Tienes acceso ilimitado — no se requiere suscripción." },
+    "workspaceLimitReached": "Has alcanzado el límite de espacios de trabajo de tu plan. Mejora tu plan o añade un espacio (5 $/mes). A partir de 15 espacios, contáctanos para un plan personalizado.",
     "title": "Facturación",
     "subtitle": "Gestiona tu suscripción, tus créditos y tu método de pago.",
     "managePlan": "Gestionar suscripción",
@@ -77,8 +79,9 @@
           "Todo lo de Starter",
           "1000 pistas · 400 GB de almacenamiento",
           "50 Smart A&R/mes",
-          "5 espacios de trabajo · 5 asientos incluidos (+10 $/asiento adicional)",
-          "Espectadores gratuitos ilimitados",
+          "4 espacios de trabajo · 2 asientos incluidos",
+          "Complementos: +10 $/asiento · +5 $/espacio de trabajo",
+          "Cada miembro ocupa un asiento — comparte por enlaces, gratis e ilimitado",
           "Equipo y uso compartido de catálogo entre espacios",
           "Marketplace de Trakalog Access"
         ]
@@ -88,7 +91,9 @@
           "Todo lo de Pro",
           "5000 pistas · 2 TB de almacenamiento",
           "500 Smart A&R/mes",
-          "15 espacios de trabajo · 10 asientos incluidos (+10 $/asiento adicional)",
+          "10 espacios de trabajo · 5 asientos incluidos",
+          "Complementos: +10 $/asiento · +5 $/espacio de trabajo",
+          "Hasta 15 espacios de trabajo — ¿necesitas más? Contáctanos",
           "Soporte prioritario"
         ]
       }
@@ -441,7 +446,7 @@
   "team": {
     "seats": {
       "usage": "{{used}} de {{total}} asientos usados",
-      "unlimitedViewers": "espectadores gratuitos ilimitados",
+      "linkSharing": "Uso compartido por enlaces gratis e ilimitado",
       "pending": "{{count}} pendientes",
       "addSeat": "Añadir un asiento"
     },

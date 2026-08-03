@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 interface Props {
@@ -21,6 +22,7 @@ interface Props {
 
 export function CreateWorkspaceModal({ open, onOpenChange }: Props) {
   const { createWorkspace } = useWorkspace();
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
@@ -39,13 +41,17 @@ export function CreateWorkspaceModal({ open, onOpenChange }: Props) {
       return;
     }
     setCreating(true);
-    const id = await createWorkspace(name.trim(), description.trim() || undefined);
+    const { id, errorCode } = await createWorkspace(name.trim(), description.trim() || undefined);
     if (id) {
       toast.success("Workspace created!");
       reset();
       onOpenChange(false);
     } else {
-      setError("Failed to create workspace. Please try again.");
+      setError(
+        errorCode === "workspaces_limit"
+          ? t("billing.workspaceLimitReached")
+          : "Failed to create workspace. Please try again.",
+      );
       setCreating(false);
     }
   };

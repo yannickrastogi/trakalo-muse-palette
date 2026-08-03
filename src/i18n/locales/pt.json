@@ -9,13 +9,15 @@
   "billing": {
     "seats": {
       "title": "Assentos",
-      "subtitle": "Adicione ou remova assentos pagos para colaboradores ativos. US$ 10/assento/mês.",
+      "subtitle": "Cada membro do espaço ocupa um assento. Adicione assentos por US$ 10/mês cada.",
       "includedInPlan": "Incluídos no plano",
       "purchased": "Comprados adicionais",
       "total": "Total de assentos",
       "manage": "Gerenciar assentos"
     },
     "discountBadge": "−25%",
+    "founderNotice": { "title": "Founder", "desc": "Você tem acesso ilimitado — nenhuma assinatura necessária." },
+    "workspaceLimitReached": "Você atingiu o limite de espaços de trabalho do seu plano. Faça upgrade ou adicione um espaço (US$ 5/mês). Acima de 15 espaços, fale conosco para um plano personalizado.",
     "title": "Faturamento",
     "subtitle": "Gerencie sua assinatura, seus créditos e sua forma de pagamento.",
     "managePlan": "Gerenciar assinatura",
@@ -77,8 +79,9 @@
           "Tudo do Starter",
           "1.000 faixas · 400 GB de armazenamento",
           "50 Smart A&R/mês",
-          "5 espaços de trabalho · 5 assentos incluídos (+US$ 10/assento extra)",
-          "Espectadores gratuitos ilimitados",
+          "4 espaços de trabalho · 2 assentos incluídos",
+          "Complementos: +US$ 10/assento · +US$ 5/espaço de trabalho",
+          "Cada membro ocupa um assento — compartilhe por links, grátis e ilimitado",
           "Equipe e compartilhamento de catálogo entre espaços",
           "Marketplace Trakalog Access"
         ]
@@ -88,7 +91,9 @@
           "Tudo do Pro",
           "5.000 faixas · 2 TB de armazenamento",
           "500 Smart A&R/mês",
-          "15 espaços de trabalho · 10 assentos incluídos (+US$ 10/assento extra)",
+          "10 espaços de trabalho · 5 assentos incluídos",
+          "Complementos: +US$ 10/assento · +US$ 5/espaço de trabalho",
+          "Até 15 espaços de trabalho — precisa de mais? Fale conosco",
           "Suporte prioritário"
         ]
       }
@@ -441,7 +446,7 @@
   "team": {
     "seats": {
       "usage": "{{used}} de {{total}} assentos usados",
-      "unlimitedViewers": "espectadores gratuitos ilimitados",
+      "linkSharing": "Compartilhamento por links grátis e ilimitado",
       "pending": "{{count}} pendentes",
       "addSeat": "Adicionar um assento"
     },
