@@ -8,6 +8,7 @@ import { FirstUseTooltip } from "@/components/FirstUseTooltip";
 import { useTrack, type TrackData } from "@/contexts/TrackContext";
 import { toast } from "sonner";
 import { BulkEditBar } from "@/components/BulkEditBar";
+import { BulkEditModal } from "@/components/BulkEditModal";
 import { StarRating } from "@/components/StarRating";
 import { TrackCompletenessBar } from "@/components/TrackCompletenessBar";
 import { useTrackCompleteness } from "@/hooks/useTrackCompleteness";
@@ -119,7 +120,7 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 
 export default function Catalog() {
   const { t } = useTranslation();
-  const { tracks: allTracks, deleteTrack, submitRating, bulkUpdateTracks } = useTrack();
+  const { tracks: allTracks, deleteTrack, submitRating, bulkDeleteTracks } = useTrack();
   const { getTotalPlaysForTrack, getTotalDownloadsForTrack } = useEngagement();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
@@ -156,6 +157,9 @@ export default function Catalog() {
   // are selectable — the RPC would reject shared ones anyway.
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   // Force grid on mobile
   const effectiveViewMode = isMobile ? "grid" : viewMode;
 
@@ -311,15 +315,28 @@ export default function Catalog() {
   };
   const exitSelection = () => { setSelectionMode(false); setSelectedIds(new Set()); };
 
-  const handleBulkApply = async (updates: Partial<TrackData>): Promise<number> => {
-    const ids = Array.from(selectedIds);
-    if (ids.length === 0) return 0;
-    const n = await bulkUpdateTracks(ids, updates);
-    if (n > 0) {
-      toast.success(t("catalog.bulkUpdated", { count: n, defaultValue: "Updated " + n + " tracks" }));
-      exitSelection();
+  // UUIDs of the currently-selected, editable (non catalog-shared) tracks.
+  const selectedEditableUuids = useMemo(
+    () =>
+      Array.from(selectedIds)
+        .map((id) => allTracks.find((tr) => tr.id === id))
+        .filter((tr): tr is TrackData => !!tr && !!tr.uuid && !tr.isShared)
+        .map((tr) => tr.uuid),
+    [selectedIds, allTracks],
+  );
+
+  const handleBulkDelete = async () => {
+    if (selectedEditableUuids.length === 0) return;
+    setBulkDeleting(true);
+    const res = await bulkDeleteTracks(selectedEditableUuids);
+    setBulkDeleting(false);
+    setBulkDeleteOpen(false);
+    if (res.failed === 0) {
+      toast.success(t("bulkEdit.deletedCount", { count: res.succeeded, defaultValue: "Deleted " + res.succeeded + " tracks" }));
+    } else {
+      toast.warning(t("bulkEdit.deletePartial", { ok: res.succeeded, failed: res.failed, defaultValue: res.succeeded + " deleted, " + res.failed + " failed" }));
     }
-    return n;
+    exitSelection();
   };
 
   const clearFilters = () => {
@@ -617,7 +634,12 @@ export default function Catalog() {
           ) : effectiveViewMode === "table" ? (
           <>
           {selectionMode && selectedIds.size > 0 && (
-            <BulkEditBar count={selectedIds.size} onApply={handleBulkApply} onClear={exitSelection} />
+            <BulkEditBar
+              count={selectedIds.size}
+              onEditAll={() => setBulkEditOpen(true)}
+              onDelete={selectedEditableUuids.length > 0 ? () => setBulkDeleteOpen(true) : undefined}
+              onClear={exitSelection}
+            />
           )}
           <div className="card-premium overflow-hidden">
             <div className="overflow-x-auto">
@@ -1009,6 +1031,34 @@ export default function Catalog() {
               }}
             >
               {deleting ? t("catalog.deleteDialog.deleting") : t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <BulkEditModal
+        open={bulkEditOpen}
+        onClose={() => setBulkEditOpen(false)}
+        trackIds={Array.from(selectedIds)}
+        onDone={exitSelection}
+      />
+
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={(open) => { if (!open && !bulkDeleting) setBulkDeleteOpen(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("bulkEdit.deleteDialog.title", "Delete selected tracks?")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("bulkEdit.deleteDialog.description", { count: selectedEditableUuids.length, defaultValue: "This will permanently delete " + selectedEditableUuids.length + " tracks. This cannot be undone." })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={bulkDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => { e.preventDefault(); handleBulkDelete(); }}
+            >
+              {bulkDeleting ? t("catalog.deleteDialog.deleting") : t("bulkEdit.deleteConfirm", { count: selectedEditableUuids.length, defaultValue: "Delete " + selectedEditableUuids.length })}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

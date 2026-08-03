@@ -1,4 +1,30 @@
 {
+  "bulkEdit": {
+    "title": "Modifica tutto",
+    "subtitle": "{{count}} tracce selezionate",
+    "hint": "I campi su «Mantieni» non vengono mai toccati. Scegli «Sostituisci» per sovrascrivere, o «Aggiungi» per integrare i valori esistenti senza cancellarli.",
+    "mixed": "Vario",
+    "modeKeep": "Mantieni",
+    "modeReplace": "Sostituisci",
+    "modeAdd": "Aggiungi",
+    "mood": "Atmosfera",
+    "selectMood": "Scegli atmosfera",
+    "selectStatus": "Scegli stato",
+    "fieldsChosen": "{{count}} campi da modificare",
+    "applyToCount": "Applica a {{count}}",
+    "selectedCount": "{{count}} selezionate",
+    "editAll": "Modifica tutto",
+    "pickAtLeastOne": "Scegli almeno un campo da modificare",
+    "updatedCount": "{{count}} tracce aggiornate",
+    "partialResult": "{{ok}} aggiornate · {{failed}} non riuscite · {{skipped}} saltate",
+    "deletedCount": "{{count}} tracce eliminate",
+    "deletePartial": "{{ok}} eliminate · {{failed}} non riuscite",
+    "deleteConfirm": "Elimina {{count}}",
+    "deleteDialog": {
+      "title": "Eliminare le tracce selezionate?",
+      "description": "Questo eliminerà definitivamente {{count}} tracce. Non può essere annullato."
+    }
+  },
   "imageCropper": {
     "title": "Ritaglia immagine",
     "instruction": "Trascina per riposizionare · rotellina o cursore per lo zoom",
@@ -888,6 +914,9 @@
     "done": "Fatto"
   },
   "editTrack": {
+    "status": "Stato",
+    "album": "Album",
+    "tags": "Tag",
     "title": "Modifica brano",
     "trackTitle": "Titolo brano",
     "artist": "Artista",
@@ -1281,6 +1310,7 @@
     "verify": "Verifica"
   },
   "common": {
+    "clear": "Cancella",
     "pitch": "pitch",
     "pitches": "pitch",
     "all": "Tutti",

@@ -1,4 +1,30 @@
 {
+  "bulkEdit": {
+    "title": "Alle bearbeiten",
+    "subtitle": "{{count}} Titel ausgewählt",
+    "hint": "Auf „Behalten“ belassene Felder werden nie verändert. Wählen Sie „Ersetzen“ zum Überschreiben oder „Hinzufügen“, um bestehende Werte zu ergänzen, ohne sie zu löschen.",
+    "mixed": "Gemischt",
+    "modeKeep": "Behalten",
+    "modeReplace": "Ersetzen",
+    "modeAdd": "Hinzufügen",
+    "mood": "Stimmung",
+    "selectMood": "Stimmung wählen",
+    "selectStatus": "Status wählen",
+    "fieldsChosen": "{{count}} Felder zu ändern",
+    "applyToCount": "Auf {{count}} anwenden",
+    "selectedCount": "{{count}} ausgewählt",
+    "editAll": "Alle bearbeiten",
+    "pickAtLeastOne": "Wählen Sie mindestens ein Feld zum Bearbeiten",
+    "updatedCount": "{{count}} Titel aktualisiert",
+    "partialResult": "{{ok}} aktualisiert · {{failed}} fehlgeschlagen · {{skipped}} übersprungen",
+    "deletedCount": "{{count}} Titel gelöscht",
+    "deletePartial": "{{ok}} gelöscht · {{failed}} fehlgeschlagen",
+    "deleteConfirm": "{{count}} löschen",
+    "deleteDialog": {
+      "title": "Ausgewählte Titel löschen?",
+      "description": "Dadurch werden {{count}} Titel dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden."
+    }
+  },
   "imageCropper": {
     "title": "Bild zuschneiden",
     "instruction": "Zum Verschieben ziehen · scrollen oder Schieberegler zum Zoomen",
@@ -901,6 +927,9 @@
     "done": "Fertig"
   },
   "editTrack": {
+    "status": "Status",
+    "album": "Album",
+    "tags": "Tags",
     "title": "Titel bearbeiten",
     "trackTitle": "Titelname",
     "artist": "Künstler",
@@ -1294,6 +1323,7 @@
     "verify": "Bestätigen"
   },
   "common": {
+    "clear": "Löschen",
     "pitch": "Pitch",
     "pitches": "Pitches",
     "all": "Alle",

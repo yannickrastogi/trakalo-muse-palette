@@ -1,4 +1,30 @@
 {
+  "bulkEdit": {
+    "title": "모두 편집",
+    "subtitle": "{{count}}개 트랙 선택됨",
+    "hint": "‘유지’로 둔 필드는 변경되지 않습니다. ‘교체’를 선택하면 덮어쓰고, ‘추가’를 선택하면 기존 값을 지우지 않고 덧붙입니다.",
+    "mixed": "혼합",
+    "modeKeep": "유지",
+    "modeReplace": "교체",
+    "modeAdd": "추가",
+    "mood": "무드",
+    "selectMood": "무드 선택",
+    "selectStatus": "상태 선택",
+    "fieldsChosen": "변경할 필드 {{count}}개",
+    "applyToCount": "{{count}}개에 적용",
+    "selectedCount": "{{count}}개 선택됨",
+    "editAll": "모두 편집",
+    "pickAtLeastOne": "편집할 필드를 하나 이상 선택하세요",
+    "updatedCount": "{{count}}개 트랙 업데이트됨",
+    "partialResult": "{{ok}}개 업데이트 · {{failed}}개 실패 · {{skipped}}개 건너뜀",
+    "deletedCount": "{{count}}개 트랙 삭제됨",
+    "deletePartial": "{{ok}}개 삭제 · {{failed}}개 실패",
+    "deleteConfirm": "{{count}}개 삭제",
+    "deleteDialog": {
+      "title": "선택한 트랙을 삭제할까요?",
+      "description": "{{count}}개 트랙이 영구적으로 삭제됩니다. 되돌릴 수 없습니다."
+    }
+  },
   "imageCropper": {
     "title": "이미지 자르기",
     "instruction": "드래그하여 위치 조정 · 스크롤 또는 슬라이더로 확대/축소",
@@ -901,6 +927,9 @@
     "done": "완료"
   },
   "editTrack": {
+    "status": "상태",
+    "album": "앨범",
+    "tags": "태그",
     "title": "트랙 편집",
     "trackTitle": "트랙 제목",
     "artist": "아티스트",
@@ -1273,6 +1302,7 @@
     "sentOn": "전송일"
   },
   "common": {
+    "clear": "지우기",
     "pitch": "피칭",
     "pitches": "피칭",
     "all": "전체",

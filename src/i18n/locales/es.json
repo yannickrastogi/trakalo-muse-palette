@@ -1,4 +1,30 @@
 {
+  "bulkEdit": {
+    "title": "Editar todo",
+    "subtitle": "{{count}} pistas seleccionadas",
+    "hint": "Los campos en «Mantener» no se tocan. Elige «Reemplazar» para sobrescribir, o «Añadir» para agregar a los valores existentes sin borrarlos.",
+    "mixed": "Variado",
+    "modeKeep": "Mantener",
+    "modeReplace": "Reemplazar",
+    "modeAdd": "Añadir",
+    "mood": "Ambiente",
+    "selectMood": "Elegir ambiente",
+    "selectStatus": "Elegir estado",
+    "fieldsChosen": "{{count}} campos a cambiar",
+    "applyToCount": "Aplicar a {{count}}",
+    "selectedCount": "{{count}} seleccionadas",
+    "editAll": "Editar todo",
+    "pickAtLeastOne": "Elige al menos un campo para editar",
+    "updatedCount": "{{count}} pistas actualizadas",
+    "partialResult": "{{ok}} actualizadas · {{failed}} con error · {{skipped}} omitidas",
+    "deletedCount": "{{count}} pistas eliminadas",
+    "deletePartial": "{{ok}} eliminadas · {{failed}} con error",
+    "deleteConfirm": "Eliminar {{count}}",
+    "deleteDialog": {
+      "title": "¿Eliminar las pistas seleccionadas?",
+      "description": "Esto eliminará permanentemente {{count}} pistas. No se puede deshacer."
+    }
+  },
   "imageCropper": {
     "title": "Recortar imagen",
     "instruction": "Arrastra para reposicionar · rueda o control deslizante para hacer zoom",
@@ -888,6 +914,9 @@
     "done": "Listo"
   },
   "editTrack": {
+    "status": "Estado",
+    "album": "Álbum",
+    "tags": "Etiquetas",
     "title": "Editar pista",
     "trackTitle": "Título de la pista",
     "artist": "Artista",
@@ -1281,6 +1310,7 @@
     "verify": "Verificar"
   },
   "common": {
+    "clear": "Borrar",
     "pitch": "pitch",
     "pitches": "pitches",
     "all": "Todos",

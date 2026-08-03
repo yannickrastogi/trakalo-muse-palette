@@ -63,6 +63,7 @@ import { DEFAULT_COVER } from "@/lib/constants";
 import { statusColors } from "./Catalog";
 import { useTrack, mapRowToTrack, type TrackData } from "@/contexts/TrackContext";
 import { BulkEditBar } from "@/components/BulkEditBar";
+import { BulkEditModal } from "@/components/BulkEditModal";
 import { toast } from "sonner";
 import { useRole } from "@/contexts/RoleContext";
 import {
@@ -88,9 +89,10 @@ export default function PlaylistDetail() {
   const navigate = useNavigate();
   const { getPlaylist, updatePlaylist, deletePlaylist } = usePlaylists();
   const { permissions } = useRole();
-  const { tracks: allTracks, bulkUpdateTracks } = useTrack();
+  const { tracks: allTracks } = useTrack();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const { getTotalPlaysForTrack, getPlaylistEngagement } = useEngagement();
   const { playTrack, togglePlay, isTrackPlaying, isPlaying: audioIsPlaying, currentTrack, setQueue, progress } = useAudioPlayer();
   const { activeWorkspace } = useWorkspace();
@@ -310,13 +312,6 @@ export default function PlaylistDetail() {
     exitSelection();
   };
 
-  const bulkEditSelected = async (updates: Partial<TrackData>): Promise<number> => {
-    const ids = Array.from(selectedIds);
-    if (ids.length === 0) return 0;
-    const n = await bulkUpdateTracks(ids, updates);
-    if (n > 0) { toast.success(t("catalog.bulkUpdated", { count: n, defaultValue: "Updated " + n + " tracks" })); exitSelection(); }
-    return n;
-  };
 
   const availableToAdd = allTracks.filter((t) => !displayTracks.some((pt) => pt.id === t.id));
   const filteredAvailable = addSearch
@@ -599,7 +594,7 @@ export default function PlaylistDetail() {
           {selectionMode && selectedIds.size > 0 && (
             <BulkEditBar
               count={selectedIds.size}
-              onApply={bulkEditSelected}
+              onEditAll={() => setBulkEditOpen(true)}
               onClear={exitSelection}
               extra={
                 <button
@@ -611,6 +606,15 @@ export default function PlaylistDetail() {
               }
             />
           )}
+          <BulkEditModal
+            open={bulkEditOpen}
+            onClose={() => setBulkEditOpen(false)}
+            trackIds={Array.from(selectedIds).filter((id) => {
+              const tr = allTracks.find((x) => x.id === id);
+              return !!tr && !!tr.uuid && !tr.isShared;
+            })}
+            onDone={exitSelection}
+          />
           {(() => {
             const safeTracks = displayTracks.filter((t): t is Track => !!t && t.id != null);
             return (

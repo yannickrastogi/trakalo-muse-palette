@@ -288,6 +288,31 @@ function mapTrackTypeToDb(type: string): string {
   }
 }
 
+// Maps a TrackData patch to the tracks-table column payload for the fields exposed
+// by multi-edit. Mirrors the equivalent lines in updateTrack exactly (same columns,
+// same null/empty handling) so a bulk edit behaves identically to a single edit.
+// Only the multi-edit-safe fields are handled here — never title/isrc/splits/credits.
+function buildBulkEditPayload(updates: Partial<TrackData>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  if (updates.status !== undefined) payload.status = mapStatusToDb(updates.status);
+  if (updates.artist !== undefined) payload.artist = updates.artist;
+  if (updates.featuredArtists !== undefined) payload.featuring = updates.featuredArtists.join(", ");
+  if (updates.album !== undefined) payload.album = updates.album || null;
+  if (updates.upc !== undefined) payload.upc = updates.upc || null;
+  if (updates.label !== undefined) payload.labels = updates.label ? [updates.label] : [];
+  if (updates.publishers !== undefined) payload.publishers = updates.publishers;
+  if (updates.copyright !== undefined) payload.copyright = updates.copyright || null;
+  if (updates.explicit !== undefined) payload.explicit = updates.explicit || false;
+  if (updates.releaseDate !== undefined) payload.released_at = updates.releaseDate || null;
+  if (updates.bpm !== undefined) payload.bpm = updates.bpm || null;
+  if (updates.key !== undefined) payload.key = updates.key || null;
+  if (updates.notes !== undefined) payload.notes = updates.notes || null;
+  if (updates.genre !== undefined) payload.genre = updates.genre && updates.genre.length > 0 ? updates.genre : null;
+  if (updates.mood !== undefined) payload.mood = updates.mood;
+  if (updates.tags !== undefined) payload.tags = updates.tags;
+  return payload;
+}
+
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
@@ -309,6 +334,15 @@ interface TrackContextValue {
   addTrack: (track: Partial<TrackData> & { title: string; artist: string }) => Promise<TrackData | null>;
   updateTrack: (id: number, updates: Partial<TrackData>) => Promise<boolean>;
   bulkUpdateTracks: (ids: number[], updates: Partial<TrackData>) => Promise<number>;
+  bulkEditTracks: (
+    ids: number[],
+    buildUpdates: (track: TrackData) => Partial<TrackData> | null,
+    onProgress?: (done: number, total: number) => void,
+  ) => Promise<{ succeeded: number; failed: number; skipped: number }>;
+  bulkDeleteTracks: (
+    uuids: string[],
+    onProgress?: (done: number, total: number) => void,
+  ) => Promise<{ succeeded: number; failed: number }>;
   updateTrackStatus: (id: number, newStatus: string, note: string) => void;
   updateTrackLyrics: (id: number, lyrics: string, lyricsSegments?: { start: number; end: number; text: string }[]) => void;
   updateTrackStems: (id: number, stems: TrackStem[]) => void;
@@ -1032,6 +1066,79 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     [tracks, resolveUserId, fetchTracks]
   );
 
+  // Per-track multi-edit: applies a caller-computed patch to each selected track
+  // individually via the single-track update_track RPC (NOT bulk_update_tracks) so
+  // that "add without overwrite" merges can be computed per track AND partial
+  // failures are reported honestly instead of rolling everything back. Runs with
+  // limited concurrency; one track failing never aborts the others.
+  const bulkEditTracks = useCallback(
+    async (
+      ids: number[],
+      buildUpdates: (track: TrackData) => Partial<TrackData> | null,
+      onProgress?: (done: number, total: number) => void,
+    ): Promise<{ succeeded: number; failed: number; skipped: number }> => {
+      // Only tracks that exist locally, have a uuid, and aren't catalog-shared.
+      const editable = ids
+        .map((id) => tracks.find((t) => t.id === id))
+        .filter((t): t is TrackData => !!t && !!t.uuid && !t.isShared);
+      const skipped = ids.length - editable.length;
+      if (editable.length === 0) return { succeeded: 0, failed: 0, skipped };
+
+      const userId = await resolveUserId();
+      if (!userId) {
+        toast.error(i18n.t("trackContext.failedSaveUpdate"));
+        return { succeeded: 0, failed: editable.length, skipped };
+      }
+
+      let succeeded = 0;
+      let failed = 0;
+      let done = 0;
+      const okUpdates: Array<{ id: number; updates: Partial<TrackData> }> = [];
+
+      const runOne = async (track: TrackData) => {
+        try {
+          const updates = buildUpdates(track);
+          if (!updates || Object.keys(updates).length === 0) { succeeded++; return; }
+          const payload = buildBulkEditPayload(updates);
+          if (Object.keys(payload).length === 0) { succeeded++; return; }
+          const { error } = await supabase.rpc("update_track", {
+            _user_id: userId,
+            _track_id: track.uuid,
+            _updates: payload,
+          });
+          if (error) { failed++; console.error("Bulk edit failed for", track.uuid, error); }
+          else { succeeded++; okUpdates.push({ id: track.id, updates }); }
+        } catch (e) {
+          failed++;
+          console.error("Bulk edit threw for", track.uuid, e);
+        } finally {
+          done++;
+          onProgress?.(done, editable.length);
+        }
+      };
+
+      // Limited concurrency (max 5) so we never flood the API.
+      const CONCURRENCY = 5;
+      let cursor = 0;
+      const workers = Array.from({ length: Math.min(CONCURRENCY, editable.length) }, async () => {
+        while (cursor < editable.length) {
+          const idx = cursor++;
+          await runOne(editable[idx]);
+        }
+      });
+      await Promise.all(workers);
+
+      // Optimistic local merge for successes, then an authoritative resync.
+      if (okUpdates.length > 0) {
+        const map = new Map(okUpdates.map((u) => [u.id, u.updates] as const));
+        setTracks((prev) => prev.map((t) => (map.has(t.id) ? { ...t, ...map.get(t.id) } : t)));
+      }
+      await fetchTracks();
+      return { succeeded, failed, skipped };
+    },
+    [tracks, resolveUserId, fetchTracks]
+  );
+
   const updateTrackStatus = useCallback(
     async (id: number, newStatus: string, note: string) => {
       const track = tracks.find((t) => t.id === id);
@@ -1226,6 +1333,40 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     [activeWorkspace, user]
   );
 
+  // Delete several tracks one by one via the single delete_track path (storage +
+  // DB row). Gentle concurrency because each deletion touches storage; a single
+  // failure never aborts the rest, and the caller gets an honest success/fail count.
+  const bulkDeleteTracks = useCallback(
+    async (uuids: string[], onProgress?: (done: number, total: number) => void): Promise<{ succeeded: number; failed: number }> => {
+      let succeeded = 0;
+      let failed = 0;
+      let done = 0;
+      const runOne = async (uuid: string) => {
+        try {
+          const ok = await deleteTrack(uuid);
+          if (ok) succeeded++; else failed++;
+        } catch (e) {
+          failed++;
+          console.error("Bulk delete threw for", uuid, e);
+        } finally {
+          done++;
+          onProgress?.(done, uuids.length);
+        }
+      };
+      const CONCURRENCY = 3;
+      let cursor = 0;
+      const workers = Array.from({ length: Math.min(CONCURRENCY, uuids.length) }, async () => {
+        while (cursor < uuids.length) {
+          const idx = cursor++;
+          await runOne(uuids[idx]);
+        }
+      });
+      await Promise.all(workers);
+      return { succeeded, failed };
+    },
+    [deleteTrack]
+  );
+
   const submitRating = useCallback(
     async (id: number, rating: number) => {
       const track = tracks.find((t) => t.id === id);
@@ -1289,6 +1430,8 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     addTrack,
     updateTrack,
     bulkUpdateTracks,
+    bulkEditTracks,
+    bulkDeleteTracks,
     updateTrackStatus,
     updateTrackLyrics,
     updateTrackStems,
@@ -1298,7 +1441,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
     submitRating,
     fetchTrackVersions,
     queueSonicDnaAnalysis,
-  }), [tracks, loading, getTrack, getTrackByUuid, addTrack, updateTrack, bulkUpdateTracks, updateTrackStatus, updateTrackLyrics, updateTrackStems, updateTrackSplits, deleteTrack, fetchTracks, submitRating, fetchTrackVersions, queueSonicDnaAnalysis]);
+  }), [tracks, loading, getTrack, getTrackByUuid, addTrack, updateTrack, bulkUpdateTracks, bulkEditTracks, bulkDeleteTracks, updateTrackStatus, updateTrackLyrics, updateTrackStems, updateTrackSplits, deleteTrack, fetchTracks, submitRating, fetchTrackVersions, queueSonicDnaAnalysis]);
 
   return (
     <TrackContext.Provider value={contextValue}>

@@ -19,6 +19,7 @@ import { toast } from "sonner";
 
 import { KEYS, LANGUAGES, PRODUCTION_STAGES, PROS, type ProductionStage } from "@/lib/constants";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
+import { FieldLabel, FieldInput, FieldSelect } from "@/components/TrackFields";
 import { GenreMultiSelect } from "@/components/GenreMultiSelect";
 import { equalSplit } from "@/lib/split-utils";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
@@ -37,35 +38,6 @@ interface EditTrackModalProps {
   open: boolean;
   onClose: () => void;
   trackId: number;
-}
-
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <label className="text-2xs font-semibold text-muted-foreground uppercase tracking-widest">{children}</label>;
-}
-
-function FieldInput({ value, onChange, placeholder, type = "text" }: { value: string; onChange: (v: string) => void; placeholder: string; type?: string }) {
-  return (
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40"
-    />
-  );
-}
-
-function FieldSelect({ value, onChange, options, placeholder }: { value: string; onChange: (v: string) => void; options: readonly string[]; placeholder: string }) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="h-9 w-full px-3 rounded-lg bg-secondary border border-border text-[13px] text-foreground outline-none focus:border-brand-orange/30 transition-all appearance-none font-medium"
-    >
-      <option value="">{placeholder}</option>
-      {options.map((o) => <option key={o} value={o}>{o}</option>)}
-    </select>
-  );
 }
 
 function LanguageMultiSelect({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {

@@ -1,4 +1,30 @@
 {
+  "bulkEdit": {
+    "title": "Tout modifier",
+    "subtitle": "{{count}} morceaux sélectionnés",
+    "hint": "Les champs laissés sur « Garder » ne sont jamais modifiés. Choisissez « Remplacer » pour écraser, ou « Ajouter » pour compléter les valeurs existantes sans les effacer.",
+    "mixed": "Mixte",
+    "modeKeep": "Garder",
+    "modeReplace": "Remplacer",
+    "modeAdd": "Ajouter",
+    "mood": "Ambiance",
+    "selectMood": "Choisir une ambiance",
+    "selectStatus": "Choisir un statut",
+    "fieldsChosen": "{{count}} champs à modifier",
+    "applyToCount": "Appliquer à {{count}}",
+    "selectedCount": "{{count}} sélectionnés",
+    "editAll": "Tout modifier",
+    "pickAtLeastOne": "Choisissez au moins un champ à modifier",
+    "updatedCount": "{{count}} morceaux mis à jour",
+    "partialResult": "{{ok}} mis à jour · {{failed}} en échec · {{skipped}} ignorés",
+    "deletedCount": "{{count}} morceaux supprimés",
+    "deletePartial": "{{ok}} supprimés · {{failed}} en échec",
+    "deleteConfirm": "Supprimer {{count}}",
+    "deleteDialog": {
+      "title": "Supprimer les morceaux sélectionnés ?",
+      "description": "Cela supprimera définitivement {{count}} morceaux. Cette action est irréversible."
+    }
+  },
   "imageCropper": {
     "title": "Recadrer l'image",
     "instruction": "Glissez pour repositionner · molette ou curseur pour zoomer",
@@ -959,6 +985,9 @@
     "done": "Terminé"
   },
   "editTrack": {
+    "status": "Statut",
+    "album": "Album",
+    "tags": "Tags",
     "title": "Modifier le morceau",
     "trackTitle": "Titre du morceau",
     "artist": "Artiste",
@@ -1361,6 +1390,7 @@
     "verify": "Vérifier"
   },
   "common": {
+    "clear": "Effacer",
     "pitch": "pitch",
     "pitches": "pitchs",
     "all": "Tous",

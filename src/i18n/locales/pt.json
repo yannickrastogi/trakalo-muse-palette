@@ -1,4 +1,30 @@
 {
+  "bulkEdit": {
+    "title": "Editar tudo",
+    "subtitle": "{{count}} faixas selecionadas",
+    "hint": "Os campos em «Manter» nunca são alterados. Escolha «Substituir» para sobrescrever, ou «Adicionar» para acrescentar aos valores existentes sem apagá-los.",
+    "mixed": "Variado",
+    "modeKeep": "Manter",
+    "modeReplace": "Substituir",
+    "modeAdd": "Adicionar",
+    "mood": "Clima",
+    "selectMood": "Escolher clima",
+    "selectStatus": "Escolher status",
+    "fieldsChosen": "{{count}} campos a alterar",
+    "applyToCount": "Aplicar a {{count}}",
+    "selectedCount": "{{count}} selecionadas",
+    "editAll": "Editar tudo",
+    "pickAtLeastOne": "Escolha pelo menos um campo para editar",
+    "updatedCount": "{{count}} faixas atualizadas",
+    "partialResult": "{{ok}} atualizadas · {{failed}} com falha · {{skipped}} ignoradas",
+    "deletedCount": "{{count}} faixas excluídas",
+    "deletePartial": "{{ok}} excluídas · {{failed}} com falha",
+    "deleteConfirm": "Excluir {{count}}",
+    "deleteDialog": {
+      "title": "Excluir as faixas selecionadas?",
+      "description": "Isto excluirá permanentemente {{count}} faixas. Não pode ser desfeito."
+    }
+  },
   "imageCropper": {
     "title": "Recortar imagem",
     "instruction": "Arraste para reposicionar · role ou use o controle deslizante para dar zoom",
@@ -888,6 +914,9 @@
     "done": "Concluído"
   },
   "editTrack": {
+    "status": "Status",
+    "album": "Álbum",
+    "tags": "Tags",
     "title": "Editar faixa",
     "trackTitle": "Título da faixa",
     "artist": "Artista",
@@ -1281,6 +1310,7 @@
     "verify": "Verificar"
   },
   "common": {
+    "clear": "Limpar",
     "pitch": "pitch",
     "pitches": "pitches",
     "all": "Todos",

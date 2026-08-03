@@ -1,4 +1,30 @@
 {
+  "bulkEdit": {
+    "title": "一括編集",
+    "subtitle": "{{count}}件のトラックを選択中",
+    "hint": "「保持」のままの項目は変更されません。「置換」で上書き、「追加」で既存の値を消さずに追記します。",
+    "mixed": "混在",
+    "modeKeep": "保持",
+    "modeReplace": "置換",
+    "modeAdd": "追加",
+    "mood": "ムード",
+    "selectMood": "ムードを選択",
+    "selectStatus": "ステータスを選択",
+    "fieldsChosen": "変更する項目：{{count}}件",
+    "applyToCount": "{{count}}件に適用",
+    "selectedCount": "{{count}}件選択中",
+    "editAll": "一括編集",
+    "pickAtLeastOne": "編集する項目を1つ以上選択してください",
+    "updatedCount": "{{count}}件のトラックを更新しました",
+    "partialResult": "{{ok}}件更新 · {{failed}}件失敗 · {{skipped}}件スキップ",
+    "deletedCount": "{{count}}件のトラックを削除しました",
+    "deletePartial": "{{ok}}件削除 · {{failed}}件失敗",
+    "deleteConfirm": "{{count}}件を削除",
+    "deleteDialog": {
+      "title": "選択したトラックを削除しますか？",
+      "description": "{{count}}件のトラックを完全に削除します。元に戻せません。"
+    }
+  },
   "imageCropper": {
     "title": "画像をトリミング",
     "instruction": "ドラッグで位置調整 · スクロールまたはスライダーでズーム",
@@ -888,6 +914,9 @@
     "done": "完了"
   },
   "editTrack": {
+    "status": "ステータス",
+    "album": "アルバム",
+    "tags": "タグ",
     "title": "トラックを編集",
     "trackTitle": "トラックタイトル",
     "artist": "アーティスト",
@@ -1281,6 +1310,7 @@
     "verify": "確認"
   },
   "common": {
+    "clear": "クリア",
     "pitch": "ピッチ",
     "pitches": "ピッチ",
     "all": "すべて",

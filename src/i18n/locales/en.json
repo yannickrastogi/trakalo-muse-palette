@@ -1,4 +1,30 @@
 {
+  "bulkEdit": {
+    "title": "Edit all",
+    "subtitle": "{{count}} tracks selected",
+    "hint": "Fields left on “Keep” are never touched. Choose “Replace” to overwrite, or “Add” to append to existing values without erasing them.",
+    "mixed": "Mixed",
+    "modeKeep": "Keep",
+    "modeReplace": "Replace",
+    "modeAdd": "Add",
+    "mood": "Mood",
+    "selectMood": "Select mood",
+    "selectStatus": "Select status",
+    "fieldsChosen": "{{count}} fields to change",
+    "applyToCount": "Apply to {{count}}",
+    "selectedCount": "{{count}} selected",
+    "editAll": "Edit all",
+    "pickAtLeastOne": "Choose at least one field to edit",
+    "updatedCount": "Updated {{count}} tracks",
+    "partialResult": "{{ok}} updated · {{failed}} failed · {{skipped}} skipped",
+    "deletedCount": "Deleted {{count}} tracks",
+    "deletePartial": "{{ok}} deleted · {{failed}} failed",
+    "deleteConfirm": "Delete {{count}}",
+    "deleteDialog": {
+      "title": "Delete selected tracks?",
+      "description": "This will permanently delete {{count}} tracks. This cannot be undone."
+    }
+  },
   "imageCropper": {
     "title": "Crop image",
     "instruction": "Drag to reposition · scroll or use the slider to zoom",
@@ -959,6 +985,9 @@
     "done": "Done"
   },
   "editTrack": {
+    "status": "Status",
+    "album": "Album",
+    "tags": "Tags",
     "title": "Edit Track",
     "trackTitle": "Track Title",
     "artist": "Artist",
@@ -1361,6 +1390,7 @@
     "verify": "Verify"
   },
   "common": {
+    "clear": "Clear",
     "pitch": "pitch",
     "pitches": "pitches",
     "all": "All",
