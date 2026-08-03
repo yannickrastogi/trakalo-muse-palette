@@ -3010,7 +3010,7 @@ function StepBulkUpload({
         />
       </div>
 
-      {/* Collapsible file-naming guide — describes exactly what parseFileName() supports. */}
+      {/* Collapsible file-naming hint — one format, one example. */}
       <div className="rounded-lg border border-border bg-secondary/30 overflow-hidden">
         <button
           type="button"
@@ -3022,16 +3022,15 @@ function StepBulkUpload({
           <ChevronDown className={`w-3.5 h-3.5 transition-transform ${namingGuideOpen ? "rotate-180" : ""}`} />
         </button>
         {namingGuideOpen && (
-          <div className="px-3 pb-3 pt-0.5 space-y-1.5 text-2xs text-muted-foreground leading-relaxed border-t border-border/60">
-            <p className="pt-2">{t("uploadTrack.namingGuideIntro", "Name files so Trakalog can auto-fill title and artist. This is only a best-effort guess — you can correct every field below.")}</p>
-            <p><span className="font-mono text-foreground/80 bg-card/60 px-1.5 py-0.5 rounded">Artist - Title</span></p>
-            <ul className="space-y-1 pl-3.5 list-disc marker:text-brand-orange/50">
-              <li>{t("uploadTrack.namingGuideSeparator", "Separate artist and title with a spaced dash: - , – or —.")}</li>
-              <li>{t("uploadTrack.namingGuideFeat", "Add featured artists at the end with feat., ft., featuring or with — e.g. \"Artist - Title (feat. Guest)\".")}</li>
-              <li>{t("uploadTrack.namingGuideMultiple", "Separate several artists with commas. “&” stays part of a name, so a duo like \"Banx & Ranx\" is kept whole.")}</li>
-              <li>{t("uploadTrack.namingGuideInvert", "Files named \"Title - Artist\" instead? Use the Invert Title ↔ Artist button.")}</li>
-              <li>{t("uploadTrack.namingGuideNoDash", "No dash in the name? The whole filename becomes the title.")}</li>
-            </ul>
+          <div className="px-3 pb-3 pt-2 space-y-1.5 text-2xs text-muted-foreground leading-relaxed border-t border-border/60">
+            <p>
+              <span className="font-semibold text-foreground/80">{t("uploadTrack.namingGuideFormatLabel", "Format")}: </span>
+              <span className="font-mono text-foreground/80 bg-card/60 px-1.5 py-0.5 rounded">Artist, Collaborator1, Collaborator2 - Title</span>
+            </p>
+            <p>
+              <span className="font-semibold text-foreground/80">{t("uploadTrack.namingGuideExampleLabel", "Example")}: </span>
+              <span className="font-mono text-foreground/80 bg-card/60 px-1.5 py-0.5 rounded">Justin, Tate, James - Life is good</span>
+            </p>
           </div>
         )}
       </div>
