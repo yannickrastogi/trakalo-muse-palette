@@ -40,7 +40,6 @@ import {
   Layers,
   ListMusic,
   Info,
-  ChevronDown,
 } from "lucide-react";
 import { CollaboratorAutocomplete, type CollaboratorSuggestion } from "@/components/CollaboratorAutocomplete";
 import { ImageCropperModal } from "@/components/ImageCropperModal";
@@ -2956,7 +2955,6 @@ function StepBulkUpload({
   onToggleInvert: () => void;
 }) {
   const { t } = useTranslation();
-  const [namingGuideOpen, setNamingGuideOpen] = useState(false);
   return (
     <div className="space-y-5">
       <div>
@@ -3010,29 +3008,24 @@ function StepBulkUpload({
         />
       </div>
 
-      {/* Collapsible file-naming hint — one format, one example. */}
-      <div className="rounded-lg border border-border bg-secondary/30 overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setNamingGuideOpen((v) => !v)}
-          className="w-full flex items-center gap-2 px-3 py-2 text-2xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
-        >
+      {/* Always-visible file-naming hint — glanceable, no click needed. */}
+      <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2.5">
+        <div className="flex items-center gap-1.5 mb-2">
           <Info className="w-3 h-3 text-brand-orange shrink-0" />
-          <span className="flex-1 text-left">{t("uploadTrack.namingGuideTitle", "How to name your files")}</span>
-          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${namingGuideOpen ? "rotate-180" : ""}`} />
-        </button>
-        {namingGuideOpen && (
-          <div className="px-3 pb-3 pt-2 space-y-1.5 text-2xs text-muted-foreground leading-relaxed border-t border-border/60">
-            <p>
-              <span className="font-semibold text-foreground/80">{t("uploadTrack.namingGuideFormatLabel", "Format")}: </span>
-              <span className="font-mono text-foreground/80 bg-card/60 px-1.5 py-0.5 rounded">Artist, Collaborator1, Collaborator2 - Title</span>
-            </p>
-            <p>
-              <span className="font-semibold text-foreground/80">{t("uploadTrack.namingGuideExampleLabel", "Example")}: </span>
-              <span className="font-mono text-foreground/80 bg-card/60 px-1.5 py-0.5 rounded">Justin, Tate, James - Life is good</span>
-            </p>
+          <span className="text-2xs font-semibold uppercase tracking-widest text-muted-foreground">
+            {t("uploadTrack.namingGuideTitle", "How to name your files")}
+          </span>
+        </div>
+        <dl className="space-y-1">
+          <div className="flex items-baseline gap-2.5">
+            <dt className="w-14 shrink-0 text-2xs font-medium uppercase tracking-wider text-muted-foreground/60">{t("uploadTrack.namingGuideFormatLabel", "Format")}</dt>
+            <dd className="font-mono text-2xs text-foreground/80 leading-relaxed">Artist, Collaborator 1, Collaborator 2 <span className="text-muted-foreground/40">-</span> Title</dd>
           </div>
-        )}
+          <div className="flex items-baseline gap-2.5">
+            <dt className="w-14 shrink-0 text-2xs font-medium uppercase tracking-wider text-muted-foreground/60">{t("uploadTrack.namingGuideExampleLabel", "Example")}</dt>
+            <dd className="font-mono text-2xs text-foreground/80 leading-relaxed">Justin, Tate, James <span className="text-muted-foreground/40">-</span> Life is good</dd>
+          </div>
+        </dl>
       </div>
 
       {/* Queue — with a confirmable per-track Title / Artist / Featured preview.
