@@ -199,7 +199,7 @@ export default function NotificationCenter() {
 
       var { data: events } = await supabase
         .from("link_events")
-        .select("id, event_type, visitor_email, created_at, link_id")
+        .select("id, event_type, visitor_email, created_at, link_id, track_id, tracks(title)")
         .in("link_id", linkIds)
         .order("created_at", { ascending: false })
         .limit(100);
@@ -216,18 +216,34 @@ export default function NotificationCenter() {
           view: "recipient_opened",
           save: "recipient_saved" as ActivityType,
         };
-        var msgKeys: Record<string, { base: string; named: string }> = {
-          play: { base: "notifications.msgListened", named: "notifications.msgListenedNamed" },
-          download: { base: "notifications.msgDownloadedTrack", named: "notifications.msgDownloadedTrackNamed" },
+        var msgKeys: Record<string, { base: string; named: string; track?: string; trackOnly?: string }> = {
+          play: { base: "notifications.msgListened", named: "notifications.msgListenedNamed", track: "notifications.msgListenedTrack", trackOnly: "notifications.msgListenedTrackOnly" },
+          download: { base: "notifications.msgDownloadedTrack", named: "notifications.msgDownloadedTrackNamed", track: "notifications.msgDownloadedTrackTitle", trackOnly: "notifications.msgDownloadedTrackOnly" },
           view: { base: "notifications.msgViewed", named: "notifications.msgViewedNamed" },
-          save: { base: "notifications.msgSaved", named: "notifications.msgSavedNamed" },
+          save: { base: "notifications.msgSaved", named: "notifications.msgSavedNamed", track: "notifications.msgSavedTrackTitle", trackOnly: "notifications.msgSavedTrackOnly" },
         };
         var linkName = linkNameMap[evt.link_id] || "";
         var keys = msgKeys[evt.event_type] || msgKeys.view;
+        // Events tied to a specific track (play/download/save) show the TRACK title,
+        // with the shared link only as context ("via …"). view events have track_id
+        // NULL and keep the link-name message. A deleted/orphaned track falls back to
+        // a translated placeholder, never an empty string or "undefined".
+        var trackRel = (evt as { track_id?: string | null; tracks?: { title?: string | null } | null });
+        var trackTitle = trackRel.track_id
+          ? ((trackRel.tracks && trackRel.tracks.title) || t("notifications.activityUnknownTrack"))
+          : "";
+        var message: string;
+        if (trackRel.track_id && keys.track && keys.trackOnly) {
+          message = linkName
+            ? t(keys.track, { track: trackTitle, link: linkName })
+            : t(keys.trackOnly, { track: trackTitle });
+        } else {
+          message = linkName ? t(keys.named, { link: linkName }) : t(keys.base);
+        }
         return {
           id: evt.id,
           user: evt.visitor_email || t("notifications.actorAnonymous"),
-          message: linkName ? t(keys.named, { link: linkName }) : t(keys.base),
+          message: message,
           type: typeMap[evt.event_type] || "recipient_opened",
           date: evt.created_at,
           teamName: t("notifications.sharedLinksTeam"),
