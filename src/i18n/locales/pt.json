@@ -1096,6 +1096,13 @@
     "unknownDevice": "Dispositivo Desconhecido"
   },
   "uploadTrack": {
+    "namingGuideTitle": "Como nomear seus arquivos",
+    "namingGuideIntro": "Nomeie os arquivos para que o Trakalog preencha automaticamente o título e o artista. É apenas uma estimativa — você pode corrigir cada campo abaixo.",
+    "namingGuideSeparator": "Separe o artista e o título com um traço entre espaços: - , – ou —.",
+    "namingGuideFeat": "Adicione os artistas convidados no final com feat., ft., featuring ou with — ex. \"Artista - Título (feat. Convidado)\".",
+    "namingGuideMultiple": "Liste vários artistas com , & x ou +.",
+    "namingGuideInvert": "Arquivos nomeados \"Título - Artista\"? Use o botão Inverter Título ↔ Artista.",
+    "namingGuideNoDash": "Sem traço no nome? O nome inteiro vira o título.",
     "accessPublic": "Público no Trakalog Access",
     "accessPublicDesc": "Permita que supervisores musicais, editoras e A&R descubram esta faixa no catálogo global Trakalog.",
     "accessPublicDescShort": "Tornar todas as faixas visíveis no Trakalog Access",

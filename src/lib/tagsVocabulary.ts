@@ -1,5 +1,5 @@
 export const INSTRUMENTS = [
-  "Bass", "Synth", "Drums", "Acoustic Guitar", "Electric Guitar", "Piano",
+  "Bass", "Synth", "Drums", "Acoustic Guitar", "Guitar", "Piano",
   "Keys", "Strings", "Brass", "Woodwinds", "Percussion", "Vocals",
   "Pad", "Lead Synth", "808", "Sub Bass", "Hi-Hat", "Snare", "Kick",
   "Cymbals", "Bell", "Choir", "Organ", "Harp",

@@ -39,6 +39,8 @@ import {
   Sparkles,
   Layers,
   ListMusic,
+  Info,
+  ChevronDown,
 } from "lucide-react";
 import { CollaboratorAutocomplete, type CollaboratorSuggestion } from "@/components/CollaboratorAutocomplete";
 import { ImageCropperModal } from "@/components/ImageCropperModal";
@@ -2950,6 +2952,7 @@ function StepBulkUpload({
   onToggleInvert: () => void;
 }) {
   const { t } = useTranslation();
+  const [namingGuideOpen, setNamingGuideOpen] = useState(false);
   return (
     <div className="space-y-5">
       <div>
@@ -3001,6 +3004,32 @@ function StepBulkUpload({
             e.target.value = "";
           }}
         />
+      </div>
+
+      {/* Collapsible file-naming guide — describes exactly what parseFileName() supports. */}
+      <div className="rounded-lg border border-border bg-secondary/30 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setNamingGuideOpen((v) => !v)}
+          className="w-full flex items-center gap-2 px-3 py-2 text-2xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Info className="w-3 h-3 text-brand-orange shrink-0" />
+          <span className="flex-1 text-left">{t("uploadTrack.namingGuideTitle", "How to name your files")}</span>
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${namingGuideOpen ? "rotate-180" : ""}`} />
+        </button>
+        {namingGuideOpen && (
+          <div className="px-3 pb-3 pt-0.5 space-y-1.5 text-2xs text-muted-foreground leading-relaxed border-t border-border/60">
+            <p className="pt-2">{t("uploadTrack.namingGuideIntro", "Name files so Trakalog can auto-fill title and artist. This is only a best-effort guess — you can correct every field below.")}</p>
+            <p><span className="font-mono text-foreground/80 bg-card/60 px-1.5 py-0.5 rounded">Artist - Title</span></p>
+            <ul className="space-y-1 pl-3.5 list-disc marker:text-brand-orange/50">
+              <li>{t("uploadTrack.namingGuideSeparator", "Separate artist and title with a spaced dash: - , – or —.")}</li>
+              <li>{t("uploadTrack.namingGuideFeat", "Add featured artists at the end with feat., ft., featuring or with — e.g. \"Artist - Title (feat. Guest)\".")}</li>
+              <li>{t("uploadTrack.namingGuideMultiple", "List several artists with , & x or +.")}</li>
+              <li>{t("uploadTrack.namingGuideInvert", "Files named \"Title - Artist\" instead? Use the Invert Title ↔ Artist button.")}</li>
+              <li>{t("uploadTrack.namingGuideNoDash", "No dash in the name? The whole filename becomes the title.")}</li>
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Queue — with a confirmable per-track Title / Artist / Featured preview.
@@ -3067,7 +3096,7 @@ function StepBulkUpload({
                   </button>
                 </div>
                 {/* Editable parse preview */}
-                <div className="grid grid-cols-3 gap-1.5 mt-2">
+                <div className="grid grid-cols-2 gap-1.5 mt-2">
                   <input
                     value={entry.title}
                     onChange={(e) => onUpdateEntry(entry.id, { title: e.target.value })}
@@ -3078,12 +3107,6 @@ function StepBulkUpload({
                     value={entry.artist}
                     onChange={(e) => onUpdateEntry(entry.id, { artist: e.target.value })}
                     placeholder={t("uploadTrack.artist", "Artist")}
-                    className="h-8 px-2 rounded-md bg-card/60 border border-border/50 text-2xs text-foreground outline-none focus:border-primary/40 transition-colors placeholder:text-muted-foreground/40"
-                  />
-                  <input
-                    value={entry.featuring}
-                    onChange={(e) => onUpdateEntry(entry.id, { featuring: e.target.value })}
-                    placeholder={t("uploadTrack.featured", "Featured")}
                     className="h-8 px-2 rounded-md bg-card/60 border border-border/50 text-2xs text-foreground outline-none focus:border-primary/40 transition-colors placeholder:text-muted-foreground/40"
                   />
                 </div>
@@ -3291,21 +3314,15 @@ function StepCommonInfo({
         <p className="text-[10px] text-muted-foreground/50">JPG, PNG or WebP · max 5 MB</p>
       </div>
 
-      {/* Artist + Featuring */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <FieldLabel>{t("uploadTrack.artist")}</FieldLabel>
-          <ArtistsInput
-            value={commonInfo.artist ? commonInfo.artist.split(",").map((s) => s.trim()).filter(Boolean) : []}
-            onChange={(arr) => onUpdate({ artist: arr.join(", ") })}
-            placeholder={t("uploadTrack.artistPlaceholder")}
-            className="w-full rounded-lg bg-secondary border border-border focus-within:border-brand-orange/30 transition-all"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <FieldLabel>{t("editTrack.featuredArtists", "Featuring")}</FieldLabel>
-          <FieldInput value={commonInfo.featuring} onChange={(v) => onUpdate({ featuring: v })} placeholder={t("editTrack.commaSeparated", "Comma separated")} />
-        </div>
+      {/* Artist */}
+      <div className="space-y-1.5">
+        <FieldLabel>{t("uploadTrack.artist")}</FieldLabel>
+        <ArtistsInput
+          value={commonInfo.artist ? commonInfo.artist.split(",").map((s) => s.trim()).filter(Boolean) : []}
+          onChange={(arr) => onUpdate({ artist: arr.join(", ") })}
+          placeholder={t("uploadTrack.artistPlaceholder")}
+          className="w-full rounded-lg bg-secondary border border-border focus-within:border-brand-orange/30 transition-all"
+        />
       </div>
 
       {/* Genre */}

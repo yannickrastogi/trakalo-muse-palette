@@ -17,7 +17,8 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-import { KEYS, LANGUAGES, PRODUCTION_STAGES, type ProductionStage } from "@/lib/constants";
+import { KEYS, LANGUAGES, PRODUCTION_STAGES, PROS, type ProductionStage } from "@/lib/constants";
+import { MultiSelectChips } from "@/components/MultiSelectChips";
 import { GenreMultiSelect } from "@/components/GenreMultiSelect";
 import { equalSplit } from "@/lib/split-utils";
 import { CollaboratorAutocomplete } from "@/components/CollaboratorAutocomplete";
@@ -464,12 +465,6 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                 </div>
               </div>
 
-              {/* Featured Artists */}
-              <div className="space-y-1.5">
-                <FieldLabel>{t("editTrack.featuredArtists")}</FieldLabel>
-                <FieldInput value={featuredArtists} onChange={setFeaturedArtists} placeholder={t("editTrack.commaSeparated")} />
-              </div>
-
               {/* BPM, Key, Genre */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
@@ -668,7 +663,7 @@ export function EditTrackModal({ open, onClose, trackId }: EditTrackModalProps) 
                         </div>
                         <div className="space-y-1">
                           <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.pro")}</label>
-                          <input value={split.pro} onChange={(e) => updateSplit(split.id, "pro", e.target.value)} placeholder={t("editTrack.proPlaceholder")} className="h-8 w-full px-2.5 rounded-lg bg-secondary border border-border text-xs text-foreground outline-none focus:border-brand-orange/30 transition-all font-medium placeholder:text-muted-foreground/40" />
+                          <MultiSelectChips options={PROS} selected={split.pro ? split.pro.split(", ").filter(Boolean) : []} onChange={function (vals) { updateSplit(split.id, "pro", vals.join(", ")); }} placeholder={t("editTrack.proPlaceholder")} maxItems={3} filterable />
                         </div>
                         <div className="space-y-1">
                           <label className="text-2xs text-muted-foreground font-medium">{t("editTrack.ipi")}</label>

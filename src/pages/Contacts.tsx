@@ -477,6 +477,11 @@ export default function Contacts() {
       const cq = cityFilter.toLowerCase().trim();
       result = result.filter((c) => (c.city || "").toLowerCase().includes(cq));
     }
+    // Alphabetical order: last name → stage name → first name → email.
+    // Case- and accent-insensitive via localeCompare(sensitivity: "base").
+    const sortKey = (c: (typeof result)[number]) =>
+      (c.lastName || "").trim() || (c.stageName || "").trim() || (c.firstName || "").trim() || (c.email || "");
+    result = result.slice().sort((a, b) => sortKey(a).localeCompare(sortKey(b), undefined, { sensitivity: "base" }));
     return result;
   }, [contacts, search, roleFilter, orgFilter, countryFilter, cityFilter, getDisplayRoles]);
 

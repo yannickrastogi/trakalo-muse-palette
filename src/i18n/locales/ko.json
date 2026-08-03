@@ -1109,6 +1109,13 @@
     "unknownDevice": "알 수 없는 기기"
   },
   "uploadTrack": {
+    "namingGuideTitle": "파일 이름 지정 방법",
+    "namingGuideIntro": "Trakalog가 제목과 아티스트를 자동으로 채울 수 있도록 파일 이름을 지정하세요. 최선의 추측일 뿐이며 아래에서 각 항목을 수정할 수 있습니다.",
+    "namingGuideSeparator": "아티스트와 제목을 공백으로 둘러싼 대시로 구분하세요: - , – 또는 —.",
+    "namingGuideFeat": "피처링 아티스트는 끝에 feat., ft., featuring 또는 with로 추가하세요 — 예: \"아티스트 - 제목 (feat. 게스트)\".",
+    "namingGuideMultiple": "여러 아티스트는 , & x 또는 +로 나열하세요.",
+    "namingGuideInvert": "\"제목 - 아티스트\" 형식의 파일인가요? 제목 ↔ 아티스트 반전 버튼을 사용하세요.",
+    "namingGuideNoDash": "이름에 대시가 없나요? 전체 파일 이름이 제목이 됩니다.",
     "accessPublic": "Trakalog Access에 공개",
     "accessPublicDesc": "음악 슈퍼바이저, 레이블, A&R이 글로벌 Trakalog 카탈로그에서 이 트랙을 발견할 수 있도록 허용합니다.",
     "accessPublicDescShort": "모든 트랙을 Trakalog Access에서 발견되도록 설정",
