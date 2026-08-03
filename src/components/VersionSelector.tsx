@@ -127,9 +127,47 @@ export function VersionSelector({
     setUploading(true);
 
     try {
-      // Compute the next version number from the deduped list so a stale
-      // duplicate row doesn't push the client display name out of sync with
-      // what the server RPC will assign (server recomputes MAX+1 anyway).
+      // If this track has no versions yet, first materialise V1 from the ORIGINAL
+      // master (tracks.audio_url + its preview / waveform / sonic_dna / duration)
+      // BEFORE registering the uploaded file — otherwise the new file would take the
+      // V1 slot and the master would no longer be reachable by any version. The
+      // server assigns the number itself (add_track_version does MAX+1 under an
+      // advisory lock), so we just call the RPC twice and never number on the client.
+      const hadNoVersions = versions.length === 0;
+      if (hadNoVersions) {
+        const { data: master, error: masterErr } = await supabase
+          .from("tracks")
+          .select("audio_url, audio_preview_url, waveform_data, sonic_dna, duration_sec")
+          .eq("id", trackUuid)
+          .maybeSingle();
+        if (masterErr) {
+          // Can't confirm whether a master exists → abort rather than risk making
+          // the new upload V1 and silently orphaning the original master.
+          console.error("Fetch master for V1 backfill failed:", masterErr);
+          toast.error(t("versionSelector.failedRegister"));
+          return;
+        } else if (master?.audio_url) {
+          const { error: backfillErr } = await supabase.rpc("add_track_version", {
+            _user_id: user.id,
+            _track_id: trackUuid,
+            _workspace_id: activeWorkspace.id,
+            _audio_url: master.audio_url,
+            _audio_preview_url: master.audio_preview_url ?? null,
+            _waveform_data: master.waveform_data ?? null,
+            _sonic_dna: master.sonic_dna ?? null,
+            _duration_sec: master.duration_sec ?? null,
+          });
+          if (backfillErr) {
+            // Abort rather than let the fresh upload become V1 and strand the master.
+            console.error("V1 master backfill failed:", backfillErr);
+            toast.error(t("versionSelector.failedRegister"));
+            return;
+          }
+        }
+      }
+
+      // Display number for the toast only — the stored version_number and name are
+      // assigned authoritatively by the RPC (we pass _version_name: null below).
       const dedupedNumbers = Array.from(new Set(versions.map((v) => v.version_number)));
       const nextVersionNumber = dedupedNumbers.length > 0
         ? Math.max(...dedupedNumbers) + 1
@@ -192,7 +230,9 @@ export function VersionSelector({
         _track_id: trackUuid,
         _workspace_id: activeWorkspace.id,
         _audio_url: filePath,
-        _version_name: "V" + nextVersionNumber,
+        // Let the server name it (V{MAX+1}) so it always matches the number it
+        // assigns — after a V1 backfill this correctly becomes V2.
+        _version_name: null,
       });
       if (rpcError) {
         console.error("add_track_version failed:", rpcError);
@@ -216,7 +256,7 @@ export function VersionSelector({
         console.error("Lookup new version row failed:", e);
       }
 
-      toast.success(t("versionSelector.uploadedAnalyzing", { n: nextVersionNumber }));
+      toast.success(t("versionSelector.uploadedAnalyzing", { n: hadNoVersions ? nextVersionNumber + 1 : nextVersionNumber }));
       await onVersionsChanged();
 
       // Generate waveform client-side from the in-memory File (no extra fetch),
