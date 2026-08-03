@@ -229,7 +229,7 @@ export default function BillingPage() {
         )}
 
         {/* Founder — internal unlimited tier. No pricing grid, no upgrade path. */}
-        {isFounder && (
+        {!loading && isFounder && (
           <Card className="mb-8 border-primary">
             <CardContent className="flex items-center gap-3 py-4">
               <Sparkles className="h-5 w-5 text-primary" />
@@ -242,7 +242,7 @@ export default function BillingPage() {
         )}
 
         {/* Seats — paid, active subscribers only. The Stripe portal manages qty. */}
-        {!isFounder && isActive && seats && seats.plan !== "free" && (
+        {!loading && !isFounder && isActive && seats && seats.plan !== "free" && (
           <Card className="mb-8">
             <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
               <div className="flex items-start gap-3">
@@ -279,7 +279,7 @@ export default function BillingPage() {
         )}
 
         {/* Purchase UI (cycle toggle, plan grid, AI credits) — never shown to founders. */}
-        {!isFounder && (
+        {!loading && !isFounder && (
           <>
         {/* Toggle Mensuel / Annuel */}
         <div className="mb-6 flex items-center justify-center gap-3">
