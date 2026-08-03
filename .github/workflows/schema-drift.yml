@@ -1,0 +1,157 @@
+name: Schema Drift Detection
+
+# Détecte la dérive entre le schéma appliqué en production et les migrations
+# versionnées du repo. En cas de dérive, extrait le SQL manquant et OUVRE UNE PR.
+#
+# Ce workflow ne pousse JAMAIS directement sur main (toujours une PR) et
+# n'exécute JAMAIS de SQL sur la production (uniquement des SELECT en lecture).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Sérialise les exécutions : deux pushs rapprochés sur main ne peuvent pas
+# écraser mutuellement la branche de dérive.
+concurrency:
+  group: schema-drift
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Garde-fou secret
+        id: guard
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          if [ -z "${SUPABASE_DB_PASSWORD}" ]; then
+            echo "SKIP : secret SUPABASE_DB_PASSWORD absent — vérification de dérive ignorée."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Installer le client postgresql
+        if: steps.guard.outputs.skip == 'false'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Vérifier la dérive
+        id: check
+        if: steps.guard.outputs.skip == 'false'
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGHOST: aws-1-us-east-1.pooler.supabase.com
+          PGPORT: "5432"
+          PGUSER: postgres.xhmeitivkclbeziqavxw
+          PGDATABASE: postgres
+        run: |
+          set +e
+          bash scripts/check-schema-drift.sh
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+          elif [ "$code" -eq 1 ]; then
+            echo "drift=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "check-schema-drift.sh a échoué (code $code)"
+            exit "$code"
+          fi
+
+      - name: Extraire les migrations manquantes
+        if: steps.check.outputs.drift == 'true'
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGHOST: aws-1-us-east-1.pooler.supabase.com
+          PGPORT: "5432"
+          PGUSER: postgres.xhmeitivkclbeziqavxw
+          PGDATABASE: postgres
+        run: bash scripts/extract-missing-migrations.sh
+
+      - name: Ouvrir ou mettre à jour la PR de dérive
+        if: steps.check.outputs.drift == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add supabase/migrations/*.sql
+          if git diff --cached --quiet; then
+            echo "Dérive détectée mais aucun fichier extrait (rien à committer). Arrêt propre."
+            exit 0
+          fi
+
+          files="$(git diff --cached --name-only)"
+          count="$(printf '%s\n' "$files" | grep -c . || true)"
+
+          # Réutiliser une PR de dérive déjà ouverte plutôt que d'en créer une seconde.
+          existing_branch="$(gh pr list --state open \
+            --json headRefName \
+            --jq '.[] | select(.headRefName | startswith("chore/schema-drift-")) | .headRefName' \
+            | head -n1)"
+
+          if [ -n "$existing_branch" ]; then
+            branch="$existing_branch"
+          else
+            branch="chore/schema-drift-$(date -u +%Y%m%d-%H%M%S)"
+          fi
+
+          git checkout -B "$branch"
+          git commit -m "chore(db): version ${count} migration(s) manquante(s) détectée(s) en prod" \
+                     -m "Fichiers récupérés depuis supabase_migrations.schema_migrations :" \
+                     -m "${files}"
+
+          # Push sur une branche dédiée (bot) — JAMAIS sur main.
+          git push --force origin "$branch"
+
+          body_file="$(mktemp)"
+          {
+            echo "## Dérive de schéma détectée automatiquement"
+            echo
+            echo "La CI a trouvé **${count} migration(s)** appliquée(s) en **production** sans"
+            echo "fichier correspondant dans \`supabase/migrations/\`."
+            echo
+            echo "Le SQL a été extrait depuis \`supabase_migrations.schema_migrations\` et déposé"
+            echo "dans cette branche."
+            echo
+            echo "### Important"
+            echo "Ces migrations sont **DÉJÀ appliquées en production**. Merger cette PR ne fait"
+            echo "que **les versionner** dans le repo — **aucun SQL n'est exécuté** au merge."
+            echo
+            echo "### Fichiers ajoutés"
+            echo '```'
+            printf '%s\n' "$files"
+            echo '```'
+            echo
+            echo "_PR générée par le workflow \`schema-drift.yml\`._"
+          } > "$body_file"
+
+          title="chore(db): ${count} migration(s) manquante(s)"
+
+          if [ -z "$existing_branch" ]; then
+            gh pr create \
+              --base main \
+              --head "$branch" \
+              --title "$title" \
+              --body-file "$body_file"
+          else
+            echo "PR de dérive déjà ouverte sur '$branch' — mise à jour via push (pas de seconde PR)."
+            pr_number="$(gh pr list --state open --head "$branch" --json number --jq '.[0].number')"
+            if [ -n "$pr_number" ]; then
+              gh pr edit "$pr_number" --title "$title" --body-file "$body_file" || true
+            fi
+          fi

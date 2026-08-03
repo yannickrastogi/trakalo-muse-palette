@@ -112,6 +112,20 @@ versionné dans `supabase/migrations/`, sans exception.
   et à ne pas modifier.
 - Ne jamais éditer la baseline. Toute évolution du schéma passe par une nouvelle migration.
 
+### Détection automatique de la dérive (CI)
+
+Un garde-fou CI (`.github/workflows/schema-drift.yml`) tourne à chaque push sur `main`
+(et en manuel via `workflow_dispatch`). Il compare les versions présentes en production
+(`supabase_migrations.schema_migrations`) aux fichiers de `supabase/migrations/`. Toute
+version appliquée en prod sans fichier local = dérive : la CI extrait alors le SQL manquant
+depuis la production (lecture seule, uniquement des `SELECT`) et **ouvre automatiquement une
+PR** `chore(db): N migration(s) manquante(s)`. Ces migrations sont déjà appliquées en prod —
+merger la PR ne fait que les versionner, **aucun SQL n'est exécuté**. Le workflow ne pousse
+jamais sur `main` (toujours une PR) et met à jour la PR existante au lieu d'en créer une seconde.
+
+Vérification en local : `npm run db:check` (nécessite `PGPASSWORD` = mot de passe DB ;
+absent → SKIP propre, jamais d'erreur).
+
 ---
 
 ## Learnings critiques
