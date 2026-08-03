@@ -58,6 +58,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
@@ -393,6 +394,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   const [commonInfoApplied, setCommonInfoApplied] = useState(false);
   const [appliedFieldsCount, setAppliedFieldsCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dialogContentRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const stemsInputRef = useRef<HTMLInputElement>(null);
@@ -2203,9 +2205,18 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       }}
     >
       <DialogContent
+        ref={dialogContentRef}
         className="md:max-w-2xl overflow-hidden flex flex-col p-0 gap-0 bg-card border-border"
         onInteractOutside={(e) => { if (isSaving || hasUnsavedWork) e.preventDefault(); }}
         onEscapeKeyDown={(e) => { if (isSaving || hasUnsavedWork) e.preventDefault(); }}
+        onOpenAutoFocus={(e) => {
+          // Move focus into the dialog explicitly on open. Otherwise the button
+          // that opened the modal can retain focus while the rest of the app is
+          // set aria-hidden, which triggers a WCAG/console accessibility warning.
+          // Radix restores focus to the opener on close via its default onCloseAutoFocus.
+          e.preventDefault();
+          dialogContentRef.current?.focus();
+        }}
       >
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border space-y-3">
@@ -2217,6 +2228,9 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               : t("uploadTrack.trackOf", { current: currentIdx + 1, total: queue.length })
             }
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {t("a11y.uploadDialogDesc")}
+          </DialogDescription>
 
           {phase === "edit" && (
             <>

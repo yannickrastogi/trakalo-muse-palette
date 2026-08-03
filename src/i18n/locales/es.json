@@ -1,4 +1,10 @@
 {
+  "a11y": {
+    "uploadDialogDesc": "Añade pistas a tu catálogo y completa sus detalles.",
+    "addContactDialogDesc": "Añade un nuevo contacto o edita los detalles de uno existente.",
+    "editPlaylistDialogDesc": "Edita el nombre y la descripción de tu lista de reproducción.",
+    "traceDetailDialogDesc": "Resultados detallados de este análisis de filtración por marca de agua."
+  },
   "bulkEdit": {
     "title": "Editar todo",
     "subtitle": "{{count}} pistas seleccionadas",

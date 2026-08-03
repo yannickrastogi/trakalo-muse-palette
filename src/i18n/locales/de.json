@@ -1,4 +1,10 @@
 {
+  "a11y": {
+    "uploadDialogDesc": "Füge Tracks zu deinem Katalog hinzu und ergänze ihre Details.",
+    "addContactDialogDesc": "Füge einen neuen Kontakt hinzu oder bearbeite die Details eines bestehenden.",
+    "editPlaylistDialogDesc": "Bearbeite den Namen und die Beschreibung deiner Playlist.",
+    "traceDetailDialogDesc": "Detaillierte Ergebnisse dieser Wasserzeichen-Leak-Analyse."
+  },
   "bulkEdit": {
     "title": "Alle bearbeiten",
     "subtitle": "{{count}} Titel ausgewählt",

@@ -1,4 +1,10 @@
 {
+  "a11y": {
+    "uploadDialogDesc": "카탈로그에 트랙을 추가하고 세부 정보를 입력하세요.",
+    "addContactDialogDesc": "새 연락처를 추가하거나 기존 연락처의 세부 정보를 편집하세요.",
+    "editPlaylistDialogDesc": "플레이리스트의 이름과 설명을 편집하세요.",
+    "traceDetailDialogDesc": "이 워터마크 유출 분석의 상세 결과입니다."
+  },
   "bulkEdit": {
     "title": "모두 편집",
     "subtitle": "{{count}}개 트랙 선택됨",

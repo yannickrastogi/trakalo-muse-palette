@@ -1,4 +1,10 @@
 {
+  "a11y": {
+    "uploadDialogDesc": "Add tracks to your catalog and fill in their details.",
+    "addContactDialogDesc": "Add a new contact or edit an existing one's details.",
+    "editPlaylistDialogDesc": "Edit your playlist's name and description.",
+    "traceDetailDialogDesc": "Detailed results of this watermark leak analysis."
+  },
   "bulkEdit": {
     "title": "Edit all",
     "subtitle": "{{count}} tracks selected",

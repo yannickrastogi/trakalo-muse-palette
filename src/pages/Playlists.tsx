@@ -48,6 +48,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 
@@ -668,6 +669,7 @@ export default function Playlists() {
         <DialogContent className="sm:max-w-md bg-card border-border">
           <DialogHeader>
             <DialogTitle className="text-foreground">{t("playlists.editPlaylist")}</DialogTitle>
+            <DialogDescription className="sr-only">{t("a11y.editPlaylistDialogDesc")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>

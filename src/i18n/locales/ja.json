@@ -1,4 +1,10 @@
 {
+  "a11y": {
+    "uploadDialogDesc": "カタログにトラックを追加し、詳細を入力します。",
+    "addContactDialogDesc": "新しい連絡先を追加するか、既存の連絡先の詳細を編集します。",
+    "editPlaylistDialogDesc": "プレイリストの名前と説明を編集します。",
+    "traceDetailDialogDesc": "このウォーターマーク漏洩分析の詳細な結果です。"
+  },
   "bulkEdit": {
     "title": "一括編集",
     "subtitle": "{{count}}件のトラックを選択中",

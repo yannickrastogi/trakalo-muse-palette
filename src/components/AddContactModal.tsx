@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -60,6 +61,7 @@ interface AddContactModalProps {
 }
 
 export function AddContactModal({ open, onOpenChange, editingContact }: AddContactModalProps) {
+  const { t } = useTranslation();
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
   const { contacts, refreshContacts, refreshAliases } = useContacts();
@@ -259,6 +261,9 @@ export function AddContactModal({ open, onOpenChange, editingContact }: AddConta
             {isEditMode ? <Pencil className="w-5 h-5 text-brand-orange" /> : <UserPlus className="w-5 h-5 text-brand-orange" />}
             {isEditMode ? "Edit Contact" : "Add Contact"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {t("a11y.addContactDialogDesc")}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2 max-h-[75vh] overflow-y-auto pr-1">
           {/* Full Name */}

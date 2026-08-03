@@ -1,4 +1,10 @@
 {
+  "a11y": {
+    "uploadDialogDesc": "Aggiungi tracce al tuo catalogo e compila i loro dettagli.",
+    "addContactDialogDesc": "Aggiungi un nuovo contatto o modifica i dettagli di uno esistente.",
+    "editPlaylistDialogDesc": "Modifica il nome e la descrizione della tua playlist.",
+    "traceDetailDialogDesc": "Risultati dettagliati di questa analisi di fuga tramite watermark."
+  },
   "bulkEdit": {
     "title": "Modifica tutto",
     "subtitle": "{{count}} tracce selezionate",

@@ -1,4 +1,10 @@
 {
+  "a11y": {
+    "uploadDialogDesc": "Adicione faixas ao seu catálogo e preencha os seus detalhes.",
+    "addContactDialogDesc": "Adicione um novo contato ou edite os detalhes de um existente.",
+    "editPlaylistDialogDesc": "Edite o nome e a descrição da sua playlist.",
+    "traceDetailDialogDesc": "Resultados detalhados desta análise de vazamento por marca d'água."
+  },
   "bulkEdit": {
     "title": "Editar tudo",
     "subtitle": "{{count}} faixas selecionadas",

@@ -46,6 +46,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1454,6 +1455,7 @@ function LeakTracingSection() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{t("workspaceSettings.traceDetail")}</DialogTitle>
+              <DialogDescription className="sr-only">{t("a11y.traceDetailDialogDesc")}</DialogDescription>
             </DialogHeader>
             {selectedTrace && (
               <div className="space-y-3">
