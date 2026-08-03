@@ -16,7 +16,9 @@
       "manage": "Manage seats"
     },
     "discountBadge": "−25%",
-    "founderNotice": { "title": "Founder", "desc": "You have unlimited access — no subscription needed." },
+    "founderNotice": { "title": "Founder", "desc": "You have unlimited access — no subscription needed.", "viewPlans": "View plans", "hidePlans": "Hide plans" },
+    "founderPreviewNotice": "Preview only — founder accounts have unlimited access and are never charged.",
+    "viewOnly": "View only",
     "workspaceLimitReached": "You've reached your plan's workspace limit. Upgrade or add a workspace ($5/month). Past 15 workspaces, contact us for a custom plan.",
     "title": "Billing",
     "subtitle": "Manage your subscription, credits, and payment method.",

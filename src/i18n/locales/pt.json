@@ -16,7 +16,9 @@
       "manage": "Gerenciar assentos"
     },
     "discountBadge": "−25%",
-    "founderNotice": { "title": "Founder", "desc": "Você tem acesso ilimitado — nenhuma assinatura necessária." },
+    "founderNotice": { "title": "Founder", "desc": "Você tem acesso ilimitado — nenhuma assinatura necessária.", "viewPlans": "Ver planos", "hidePlans": "Ocultar planos" },
+    "founderPreviewNotice": "Apenas visualização — contas founder têm acesso ilimitado e nunca são cobradas.",
+    "viewOnly": "Somente leitura",
     "workspaceLimitReached": "Você atingiu o limite de espaços de trabalho do seu plano. Faça upgrade ou adicione um espaço (US$ 5/mês). Acima de 15 espaços, fale conosco para um plano personalizado.",
     "title": "Faturamento",
     "subtitle": "Gerencie sua assinatura, seus créditos e sua forma de pagamento.",

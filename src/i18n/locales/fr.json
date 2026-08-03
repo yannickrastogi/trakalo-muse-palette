@@ -16,7 +16,9 @@
       "manage": "Gérer les sièges"
     },
     "discountBadge": "−25%",
-    "founderNotice": { "title": "Founder", "desc": "Vous avez un accès illimité — aucun abonnement requis." },
+    "founderNotice": { "title": "Founder", "desc": "Vous avez un accès illimité — aucun abonnement requis.", "viewPlans": "Voir les offres", "hidePlans": "Masquer les offres" },
+    "founderPreviewNotice": "Aperçu en lecture seule — les comptes founder ont un accès illimité et ne sont jamais facturés.",
+    "viewOnly": "Consultation",
     "workspaceLimitReached": "Vous avez atteint la limite d'espaces de travail de votre plan. Améliorez votre offre ou ajoutez un espace (5 $/mois). Au-delà de 15 espaces, contactez-nous pour une offre sur mesure.",
     "title": "Facturation",
     "subtitle": "Gérez votre abonnement, vos crédits et votre moyen de paiement.",

@@ -90,6 +90,8 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [pending, setPending] = useState<string | null>(null);
+  // Founder-only: read-only preview of the paid plans grid (no active checkout).
+  const [showPlansPreview, setShowPlansPreview] = useState(false);
   // Seat usage for the active workspace (plan seats + purchased add-ons).
   const { seats } = useWorkspaceSeats();
 
@@ -228,17 +230,31 @@ export default function BillingPage() {
           </Card>
         )}
 
-        {/* Founder — internal unlimited tier. No pricing grid, no upgrade path. */}
+        {/* Founder — internal unlimited tier. No pricing grid, no upgrade path.
+            A discreet toggle reveals the paid plans grid read-only (no checkout). */}
         {!loading && isFounder && (
-          <Card className="mb-8 border-primary">
-            <CardContent className="flex items-center gap-3 py-4">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <div>
-                <p className="font-semibold">{t("billing.founderNotice.title")}</p>
-                <p className="text-sm text-muted-foreground">{t("billing.founderNotice.desc")}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="mb-8">
+            <Card className="border-primary">
+              <CardContent className="flex items-center gap-3 py-4">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-semibold">{t("billing.founderNotice.title")}</p>
+                  <p className="text-sm text-muted-foreground">{t("billing.founderNotice.desc")}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <div className="mt-3 flex justify-center">
+              <Button
+                variant="link"
+                size="sm"
+                className="text-muted-foreground"
+                aria-expanded={showPlansPreview}
+                onClick={() => setShowPlansPreview((v) => !v)}
+              >
+                {showPlansPreview ? t("billing.founderNotice.hidePlans") : t("billing.founderNotice.viewPlans")}
+              </Button>
+            </div>
+          </div>
         )}
 
         {/* Seats — paid, active subscribers only. The Stripe portal manages qty. */}
@@ -278,9 +294,16 @@ export default function BillingPage() {
           </Card>
         )}
 
-        {/* Purchase UI (cycle toggle, plan grid, AI credits) — never shown to founders. */}
-        {!loading && !isFounder && (
+        {/* Purchase UI (cycle toggle, plan grid, AI credits). Founders open it read-only
+            via the preview toggle — every checkout CTA is inert (isFounder guards below). */}
+        {!loading && (!isFounder || showPlansPreview) && (
           <>
+        {/* Founder read-only banner — clarifies no purchase is possible here. */}
+        {isFounder && (
+          <div className="mb-6 rounded-lg border border-dashed bg-muted/30 px-4 py-3 text-center text-sm text-muted-foreground">
+            {t("billing.founderPreviewNotice")}
+          </div>
+        )}
         {/* Toggle Mensuel / Annuel */}
         <div className="mb-6 flex items-center justify-center gap-3">
           <div className="inline-flex rounded-lg border bg-muted/40 p-1">
@@ -350,9 +373,9 @@ export default function BillingPage() {
                   <Button
                     className="w-full"
                     variant={plan.highlighted ? "default" : "outline"}
-                    disabled={pending !== null || isCurrent || isFree}
+                    disabled={pending !== null || isCurrent || isFree || isFounder}
                     onClick={
-                      isFree
+                      isFree || isFounder
                         ? undefined
                         : () => redirectToStripe(key, { plan: plan.id as PaidPlanId, billing_cycle: cycle })
                     }
@@ -360,7 +383,13 @@ export default function BillingPage() {
                     {pending === key ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {isFree ? t("billing.free") : isCurrent ? t("billing.currentPlan") : t("billing.subscribe")}
+                    {isFree
+                      ? t("billing.free")
+                      : isFounder
+                        ? t("billing.viewOnly")
+                        : isCurrent
+                          ? t("billing.currentPlan")
+                          : t("billing.subscribe")}
                   </Button>
                 </CardFooter>
               </Card>
@@ -388,11 +417,11 @@ export default function BillingPage() {
                     <span className="text-xl font-bold">${pack.price}</span>
                     <Button
                       variant="outline"
-                      disabled={pending !== null}
-                      onClick={() => redirectToStripe(key, { credits_pack: pack.credits })}
+                      disabled={pending !== null || isFounder}
+                      onClick={isFounder ? undefined : () => redirectToStripe(key, { credits_pack: pack.credits })}
                     >
                       {pending === key ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {t("billing.buy")}
+                      {isFounder ? t("billing.viewOnly") : t("billing.buy")}
                     </Button>
                   </div>
                 </Card>

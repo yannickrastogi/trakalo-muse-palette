@@ -16,7 +16,9 @@
       "manage": "Sitze verwalten"
     },
     "discountBadge": "−25%",
-    "founderNotice": { "title": "Founder", "desc": "Du hast unbegrenzten Zugriff — kein Abo erforderlich." },
+    "founderNotice": { "title": "Founder", "desc": "Du hast unbegrenzten Zugriff — kein Abo erforderlich.", "viewPlans": "Tarife ansehen", "hidePlans": "Tarife ausblenden" },
+    "founderPreviewNotice": "Nur Vorschau — Founder-Konten haben unbegrenzten Zugriff und werden nie belastet.",
+    "viewOnly": "Nur ansehen",
     "workspaceLimitReached": "Du hast das Workspace-Limit deines Tarifs erreicht. Führe ein Upgrade durch oder füge einen Workspace hinzu (5 $/Monat). Ab 15 Workspaces kontaktiere uns für einen individuellen Tarif.",
     "title": "Abrechnung",
     "subtitle": "Verwalte dein Abo, deine Credits und deine Zahlungsmethode.",

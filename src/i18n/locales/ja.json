@@ -16,7 +16,9 @@
       "manage": "シートを管理"
     },
     "discountBadge": "−25%",
-    "founderNotice": { "title": "Founder", "desc": "無制限にアクセスできます — サブスクリプションは不要です。" },
+    "founderNotice": { "title": "Founder", "desc": "無制限にアクセスできます — サブスクリプションは不要です。", "viewPlans": "プランを見る", "hidePlans": "プランを隠す" },
+    "founderPreviewNotice": "プレビューのみ — Founder アカウントは無制限に利用でき、料金は発生しません。",
+    "viewOnly": "閲覧のみ",
     "workspaceLimitReached": "プランのワークスペース上限に達しました。アップグレードするか、ワークスペースを追加してください（月$5）。15を超える場合は、カスタムプランについてお問い合わせください。",
     "title": "お支払い",
     "subtitle": "サブスクリプション、クレジット、お支払い方法を管理します。",
