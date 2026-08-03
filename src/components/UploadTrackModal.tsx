@@ -43,7 +43,7 @@ import {
 import { CollaboratorAutocomplete, type CollaboratorSuggestion } from "@/components/CollaboratorAutocomplete";
 import { ImageCropperModal } from "@/components/ImageCropperModal";
 import { useContacts, type Contact } from "@/contexts/ContactsContext";
-import { detectCollaboratorsFromText } from "@/lib/detectCollaboratorsFromText";
+import { useResolveArtistNames, type ResolvedArtistContact } from "@/hooks/useResolveArtistNames";
 import { useTrack as useTrackContext } from "@/contexts/TrackContext";
 import { PerformerCreditsSection, type CustomCreditEntry } from "@/components/PerformerCreditsSection";
 import { ProductionCreditsSection } from "@/components/ProductionCreditsSection";
@@ -66,7 +66,7 @@ const MAX_TRACKS = 50;
 const STEPS_SINGLE = ["Audio", "Info", "Stems", "Splits", "Review"];
 
 import { KEYS, LANGUAGES, PROS, SPLIT_ROLES, PRODUCTION_STAGES, STATUSES, type ProductionStage } from "@/lib/constants";
-import { equalSplit, parseArtistsToCollaborators, type ParsedCollaborator } from "@/lib/split-utils";
+import { equalSplit, extractArtistNameCandidates } from "@/lib/split-utils";
 import { extractTextFromPdf } from "@/lib/pdf-text-extract";
 import { MultiSelectChips } from "@/components/MultiSelectChips";
 import { NameAutocomplete } from "@/components/NameAutocomplete";
@@ -338,16 +338,39 @@ function createTrackEntry(file: File): TrackEntry {
   };
 }
 
+// Atomic name split (comma + &/x/+/feat) used to surface unknown, name-only
+// collaborators in the auto-detect banner. Known names are resolved to contacts
+// separately via `resolve_artist_names`.
+const ARTIST_SEP_RE = /\s*,\s*|\s*&\s*|\s+x\s+|\s+×\s+|\s+\+\s+|\s+ft\.?\s+|\s+feat\.?\s+|\s+featuring\s+/i;
+function atomicArtistNames(value: string): string[] {
+  return (value || "")
+    .split(ARTIST_SEP_RE)
+    .map((n) => n.trim().replace(/^[([{]+|[)\]}]+$/g, "").trim())
+    .filter((n) => n.replace(/[^\p{L}\p{N}]/gu, "").length >= 3);
+}
+
+// A collaborator surfaced by the auto-detect banner: either resolved to a real
+// contact (cross-workspace) or an unknown name-only entry.
+interface AutoDetectedSuggestion {
+  name: string;
+  sources: string[];
+  contact?: ResolvedArtistContact;
+}
+
 export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) {
   const { t } = useTranslation();
   const { tracks, addTrack, updateTrack, refreshTracks } = useTrack();
   const { tracks: allTracks } = useTrackContext();
-  const { contacts, refreshContacts, aliases } = useContacts();
+  const { contacts, refreshContacts } = useContacts();
   // Dismissed auto-split banners (keyed by track entry id) — persists for the modal session.
   const [dismissedAutoSplit, setDismissedAutoSplit] = useState<Record<string, true>>({});
+  // Auto-detected collaborators for the current track's banner (resolved cross-workspace).
+  const [autoDetected, setAutoDetected] = useState<AutoDetectedSuggestion[]>([]);
   const { teams } = useTeams();
   const { activeWorkspace, workspaces } = useWorkspace();
   const { user } = useAuth();
+  // Cross-workspace artist-name → contact resolver (alias-first, contact fallback).
+  const resolveArtistNames = useResolveArtistNames();
   const [isSaving, setIsSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStage, setUploadStage] = useState("");
@@ -657,68 +680,165 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
   // Add a KNOWN collaborator detected in the title/artist as a new split, fully
   // prefilled but with share = 0 (the user sets the percentage). Never automatic —
   // only fired by an explicit chip click.
-  // Auto-fill splits from KNOWN workspace collaborators detected in the current track's
-  // title / artist / featuring and the Common Info artist. It ONLY ever adds a prefilled
-  // split (share 0 — never auto-assigned) for a contact/alias that already exists in this
-  // workspace; unknown names produce nothing. Each contact is handled at most once per
-  // track (autoFilledContactIds), so it never loops, never overwrites manual entries, and
-  // never re-adds a row the user deleted. A multi-contact alias adds one split per contact.
+  // Auto-fill splits from KNOWN collaborators resolved from the current track's
+  // artist / featuring and the Common Info artist, via the cross-workspace
+  // `resolve_artist_names` RPC (alias-first, then a contact fallback on
+  // stage_name / full name; a name that resolves to several people — e.g. a duo
+  // alias — adds one split per person). It ONLY ever ADDS a prefilled split
+  // (share 0 — never auto-assigned) for a resolved contact; unknown names produce
+  // nothing. Each contact is handled at most once per track (autoFilledContactIds),
+  // so it never loops, never overwrites manual entries, and never re-adds a row the
+  // user deleted. Results are applied against the freshest queue state by id.
   useEffect(() => {
     const tr = currentTrack;
     if (!tr) return;
-    if (contacts.length === 0 && aliases.length === 0) return;
+    const names = extractArtistNameCandidates(tr.artist, commonInfo.artist, tr.featuring);
+    if (names.length === 0) return;
 
-    const text = (tr.title || "") + " " + (tr.artist || "") + " " + (commonInfo.artist || "") + " " + (tr.featuring || "");
-    const detectContacts = contacts.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, stageName: c.stageName }));
-    const detectAliases = aliases.map((a) => ({ alias_name: a.alias_name, contact_ids: a.contact_ids }));
-    const detected = detectCollaboratorsFromText(text, detectContacts, detectAliases);
-    if (detected.length === 0) return;
+    const trackId = tr.id;
+    let cancelled = false;
+    // Small debounce so editing the artist field doesn't fire an RPC per keystroke.
+    const handle = setTimeout(() => {
+      resolveArtistNames(names)
+        .then((resolved) => {
+          if (cancelled || resolved.length === 0) return;
+          setQueue((prev) =>
+            prev.map((e) => {
+              if (e.id !== trackId) return e;
+              const alreadyHandled = new Set(e.autoFilledContactIds || []);
+              const presentNames = new Set(
+                e.splits.flatMap((s) => [s.name, s.stage_name]).map((x) => (x || "").trim().toLowerCase()).filter(Boolean),
+              );
+              const toAdd: Split[] = [];
+              const handledIds: string[] = [];
+              for (const r of resolved) {
+                if (alreadyHandled.has(r.contactId)) continue; // handled once — never re-add (incl. after manual delete)
+                handledIds.push(r.contactId);
+                const full = r.fullName;
+                const stage = (r.stageName || "").trim().toLowerCase();
+                // Skip if the contact is already present in the splits (never a duplicate).
+                if ((full && presentNames.has(full.toLowerCase())) || (stage && presentNames.has(stage))) continue;
+                toAdd.push({
+                  id: crypto.randomUUID(),
+                  name: full,
+                  email: r.email || "",
+                  stage_name: r.stageName || "",
+                  role: r.role || "",
+                  percentage: 0,
+                  pro: r.pro.length ? r.pro.join(", ") : "",
+                  ipi: r.ipi || "",
+                  publisher: r.publisher || "",
+                });
+              }
+              if (handledIds.length === 0) return e; // nothing new → no state change
+              const next: TrackEntry = {
+                ...e,
+                autoFilledContactIds: [...(e.autoFilledContactIds || []), ...handledIds],
+              };
+              if (toAdd.length > 0) {
+                // Replace the lone empty placeholder row; otherwise append (never touch existing rows).
+                const onlyEmpty = e.splits.length === 1 && !e.splits[0].name.trim();
+                next.splits = onlyEmpty ? [...toAdd] : [...e.splits, ...toAdd];
+              }
+              return next;
+            }),
+          );
+        })
+        .catch(() => { /* resolution is best-effort — never blocks the upload */ });
+    }, 250);
 
-    const alreadyHandled = new Set(tr.autoFilledContactIds || []);
-    const presentNames = new Set(
-      tr.splits.flatMap((s) => [s.name, s.stage_name]).map((x) => (x || "").trim().toLowerCase()).filter(Boolean),
-    );
+    return () => { cancelled = true; clearTimeout(handle); };
+    // Depend only on the identity inputs actually read + the stable resolver. The
+    // handled-ids guard makes this converge (no loop) so splits/autoFilledContactIds
+    // are intentionally omitted. Title is not scanned (input = artist/featuring).
+  }, [currentTrack?.id, currentTrack?.artist, currentTrack?.featuring, commonInfo.artist, resolveArtistNames]);
 
-    const toAdd: Split[] = [];
-    const handledIds: string[] = [];
-    for (const d of detected) {
-      if (alreadyHandled.has(d.contactId)) continue; // handled once — never re-add (incl. after manual delete)
-      const c = contacts.find((ct) => ct.id === d.contactId);
-      if (!c) continue;
-      handledIds.push(d.contactId);
-      const full = ((c.firstName || "") + " " + (c.lastName || "")).trim();
-      const stage = (c.stageName || "").trim().toLowerCase();
-      // Skip if the contact is already present in the splits (never a duplicate).
-      if ((full && presentNames.has(full.toLowerCase())) || (stage && presentNames.has(stage))) continue;
-      toAdd.push({
-        id: crypto.randomUUID(),
-        name: full,
-        email: c.email || "",
-        stage_name: c.stageName || "",
-        role: c.role || "",
-        percentage: 0,
-        pro: c.pro || "",
-        ipi: c.ipi || "",
-        publisher: c.publisher || "",
-      });
+  // Auto-detect banner: while splits are still empty, resolve names from every
+  // credit field (Artist, Featuring, Written/Produced/Mixed/Mastered by, details,
+  // custom performers/production) to contacts cross-workspace, and also surface
+  // unknown (name-only) collaborators — matching the previous banner behaviour but
+  // now alias-first + contact fallback across workspaces via `resolve_artist_names`.
+  const bannerDetailLabels: Record<string, string> = useMemo(() => ({
+    vocalsBy: "Vocals by", backgroundVocalsBy: "Background vocals by",
+    drumsBy: "Drums by", synthsBy: "Synths by", keysBy: "Keys by",
+    guitarsBy: "Guitars by", bassBy: "Bass by",
+    producers: "Producers", songwriters: "Songwriters",
+    mixingEngineer: "Mixing engineer", masteringEngineer: "Mastering engineer",
+    programmingBy: "Programming by",
+  }), []);
+
+  useEffect(() => {
+    const tr = currentTrack;
+    if (!tr) { setAutoDetected([]); return; }
+    const splitsAreEmpty = tr.splits.length === 1
+      && !tr.splits[0].name.trim()
+      && (Number(tr.splits[0].percentage) === 100 || Number(tr.splits[0].percentage) === 0);
+    const dismissed = !!dismissedAutoSplit[tr.id];
+    if (!splitsAreEmpty || dismissed) { setAutoDetected([]); return; }
+
+    const creditSources: Array<{ label: string; value: string }> = [
+      { label: "Artist", value: tr.artist },
+      { label: "Featuring", value: tr.featuring },
+      { label: "Written by", value: tr.writtenBy },
+      { label: "Produced by", value: tr.producedBy },
+      { label: "Mixed by", value: tr.mixedBy },
+      { label: "Mastered by", value: tr.masteredBy },
+    ];
+    for (const [key, arr] of Object.entries(tr.details || {})) {
+      if (Array.isArray(arr) && arr.length > 0) {
+        const joined = arr.filter((v) => typeof v === "string" && v.trim()).join(", ");
+        if (joined) creditSources.push({ label: bannerDetailLabels[key] || key, value: joined });
+      }
+    }
+    for (const entry of [...(tr.customPerformers || []), ...(tr.customProduction || [])]) {
+      if (entry?.role?.trim() && Array.isArray(entry.values) && entry.values.length > 0) {
+        const joined = entry.values.filter((v) => typeof v === "string" && v.trim()).join(", ");
+        if (joined) creditSources.push({ label: entry.role.trim(), value: joined });
+      }
     }
 
-    if (handledIds.length === 0) return; // nothing new → no state update → no render loop
+    const values = creditSources.map((s) => s.value);
+    const names = extractArtistNameCandidates(...values);
+    if (names.length === 0) { setAutoDetected([]); return; }
 
-    const updates: Partial<TrackEntry> = {
-      autoFilledContactIds: [...(tr.autoFilledContactIds || []), ...handledIds],
-    };
-    if (toAdd.length > 0) {
-      // Replace the lone empty placeholder row; otherwise append (never touch existing rows).
-      const onlyEmpty = tr.splits.length === 1 && !tr.splits[0].name.trim();
-      updates.splits = onlyEmpty ? [...toAdd] : [...tr.splits, ...toAdd];
-    }
-    updateCurrent(updates);
-    // Deliberately NOT depending on currentTrack.splits / autoFilledContactIds: the
-    // handled-ids guard makes this converge (no loop). Re-run only when the identity /
-    // detection inputs change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrack?.id, currentTrack?.title, currentTrack?.artist, currentTrack?.featuring, commonInfo.artist, contacts, aliases, updateCurrent]);
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      resolveArtistNames(names)
+        .then((resolved) => {
+          if (cancelled) return;
+          const labelsFor = (needle: string): string[] => {
+            const n = (needle || "").toLowerCase();
+            if (!n) return [];
+            return creditSources.filter((s) => (s.value || "").toLowerCase().includes(n)).map((s) => s.label);
+          };
+          const out: AutoDetectedSuggestion[] = [];
+          const seenContact = new Set<string>();
+          const resolvedKeys = new Set<string>();
+          for (const r of resolved) {
+            if (seenContact.has(r.contactId)) continue;
+            seenContact.add(r.contactId);
+            if (r.matchedName) resolvedKeys.add(r.matchedName.toLowerCase());
+            if (r.fullName) resolvedKeys.add(r.fullName.toLowerCase());
+            const sources = Array.from(new Set([...labelsFor(r.matchedName), ...labelsFor(r.fullName)]));
+            out.push({ name: r.fullName || r.matchedName, sources, contact: r });
+          }
+          // Unknown, name-only collaborators — preserved from the prior banner.
+          const seenName = new Set<string>();
+          for (const value of values) {
+            for (const atom of atomicArtistNames(value)) {
+              const key = atom.toLowerCase();
+              if (resolvedKeys.has(key) || seenName.has(key)) continue;
+              seenName.add(key);
+              out.push({ name: atom, sources: labelsFor(atom) });
+            }
+          }
+          setAutoDetected(out);
+        })
+        .catch(() => { if (!cancelled) setAutoDetected([]); });
+    }, 250);
+
+    return () => { cancelled = true; clearTimeout(handle); };
+  }, [currentTrack?.id, currentTrack?.artist, currentTrack?.featuring, currentTrack?.writtenBy, currentTrack?.producedBy, currentTrack?.mixedBy, currentTrack?.masteredBy, currentTrack?.details, currentTrack?.customPerformers, currentTrack?.customProduction, currentTrack?.splits, dismissedAutoSplit, bannerDetailLabels, resolveArtistNames]);
 
   const totalSplit = currentTrack ? currentTrack.splits.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0) : 0;
 
@@ -2254,93 +2374,34 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               )}
               {phase === "edit" && currentTrack && editStep === 3 && (() => {
                 // Auto-detection — surfaces a banner when splits are still empty
-                // and any credit field maps to >=1 known collaborator (alias or
-                // contact). Sources scanned: Artist, Featuring, Written/Produced/
-                // Mixed/Mastered by, and every entry in `details` (vocals, bass,
-                // guitars, etc.) plus customPerformers / customProduction.
+                // and any credit field resolves to >=1 collaborator (alias or
+                // contact, cross-workspace) or an unknown name. Resolution + unknown-
+                // name collection run in an effect above and are stored in
+                // `autoDetected`; here we only build the apply/dismiss handlers.
                 const splitsAreEmpty = currentTrack.splits.length === 1
                   && !currentTrack.splits[0].name.trim()
                   && (Number(currentTrack.splits[0].percentage) === 100 || Number(currentTrack.splits[0].percentage) === 0);
                 const dismissed = !!dismissedAutoSplit[currentTrack.id];
 
-                // detail keys → human labels mirror the production/performer
-                // sections so the banner reads like the form the user sees.
-                const detailLabels: Record<string, string> = {
-                  vocalsBy: "Vocals by", backgroundVocalsBy: "Background vocals by",
-                  drumsBy: "Drums by", synthsBy: "Synths by", keysBy: "Keys by",
-                  guitarsBy: "Guitars by", bassBy: "Bass by",
-                  producers: "Producers", songwriters: "Songwriters",
-                  mixingEngineer: "Mixing engineer", masteringEngineer: "Mastering engineer",
-                  programmingBy: "Programming by",
-                };
-                const creditSources: Array<{ label: string; value: string }> = [
-                  { label: "Artist", value: currentTrack.artist },
-                  { label: "Featuring", value: currentTrack.featuring },
-                  { label: "Written by", value: currentTrack.writtenBy },
-                  { label: "Produced by", value: currentTrack.producedBy },
-                  { label: "Mixed by", value: currentTrack.mixedBy },
-                  { label: "Mastered by", value: currentTrack.masteredBy },
-                ];
-                for (const [key, arr] of Object.entries(currentTrack.details || {})) {
-                  if (Array.isArray(arr) && arr.length > 0) {
-                    const joined = arr.filter((v) => typeof v === "string" && v.trim()).join(", ");
-                    if (joined) creditSources.push({ label: detailLabels[key] || key, value: joined });
-                  }
-                }
-                for (const entry of [...(currentTrack.customPerformers || []), ...(currentTrack.customProduction || [])]) {
-                  if (entry?.role?.trim() && Array.isArray(entry.values) && entry.values.length > 0) {
-                    const joined = entry.values.filter((v) => typeof v === "string" && v.trim()).join(", ");
-                    if (joined) creditSources.push({ label: entry.role.trim(), value: joined });
-                  }
-                }
-
-                const contactInputs = contacts.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, email: c.email, stageName: c.stageName }));
-
-                type DetectedSuggestion = ParsedCollaborator & { sources: string[] };
-                const detectionMap = new Map<string, DetectedSuggestion>();
-                const shouldCompute = splitsAreEmpty && !dismissed;
-                if (shouldCompute) {
-                  for (const src of creditSources) {
-                    if (!src.value || !src.value.trim()) continue;
-                    const parsed = parseArtistsToCollaborators(src.value, aliases, contactInputs);
-                    for (const c of parsed) {
-                      // Include unknown names too (name-only splits), not just resolved contacts/aliases.
-                      const key = c.contact?.id || c.name.toLowerCase();
-                      const existing = detectionMap.get(key);
-                      if (existing) {
-                        if (!existing.sources.includes(src.label)) existing.sources.push(src.label);
-                      } else {
-                        detectionMap.set(key, { ...c, sources: [src.label] });
-                      }
-                    }
-                  }
-                }
-                const suggested: DetectedSuggestion[] = Array.from(detectionMap.values());
-
                 const applyAutoSplit = () => {
                   if (!currentTrack) return;
-                  const newSplits = suggested.map((c) => {
-                    // ContactInput only carries id/name/email/stage; pull the rest
-                    // (role/pro/ipi/publisher) from the full Contact by id.
-                    const full = c.contact ? contacts.find((ct) => ct.id === c.contact!.id) : undefined;
-                    return {
-                      id: crypto.randomUUID(),
-                      name: c.name,
-                      email: c.contact?.email || "",
-                      stage_name: c.contact?.stageName || "",
-                      role: full?.role || "",
-                      percentage: 0,
-                      pro: full?.pro || "",
-                      ipi: full?.ipi || "",
-                      publisher: full?.publisher || "",
-                    };
-                  });
+                  const newSplits = autoDetected.map((c) => ({
+                    id: crypto.randomUUID(),
+                    name: c.name,
+                    email: c.contact?.email || "",
+                    stage_name: c.contact?.stageName || "",
+                    role: c.contact?.role || "",
+                    percentage: 0,
+                    pro: c.contact ? (c.contact.pro.length ? c.contact.pro.join(", ") : "") : "",
+                    ipi: c.contact?.ipi || "",
+                    publisher: c.contact?.publisher || "",
+                  }));
                   updateCurrent({ splits: equalSplit(newSplits, "percentage") });
                 };
                 const dismissBanner = () => {
                   setDismissedAutoSplit((prev) => ({ ...prev, [currentTrack.id]: true }));
                 };
-                const showBanner = splitsAreEmpty && !dismissed && suggested.length > 0;
+                const showBanner = splitsAreEmpty && !dismissed && autoDetected.length > 0;
                 return (
                   <>
                     {showBanner && (
@@ -2348,11 +2409,11 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                         <div className="min-w-0 flex-1">
                           <p className="text-sm text-sky-300 font-semibold">Auto-detected collaborators</p>
                           <p className="text-xs text-sky-200/80 mt-0.5 truncate">
-                            {suggested
+                            {autoDetected
                               .map((c) => c.sources.length > 0 ? c.name + " (" + c.sources.join(", ") + ")" : c.name)
                               .join(", ")}
                             {" — ~"}
-                            {parseFloat((100 / suggested.length).toFixed(2))}% each
+                            {parseFloat((100 / autoDetected.length).toFixed(2))}% each
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">

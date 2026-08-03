@@ -17,6 +17,37 @@ export function equalSplit<T extends { id: string }>(
   }));
 }
 
+/**
+ * Extract candidate artist names from one or more free-text fields (artist,
+ * featuring, credit fields…) for name resolution. Emits BOTH the top-level
+ * comma segments (so a multi-name alias like "Banx & Ranx" stays intact and can
+ * match an alias) AND the individual fragments split on "&"/"x"/"+"/"feat" (so
+ * each person can match a contact directly). Surrounding brackets are stripped
+ * and candidates with fewer than 3 alphanumerics are dropped as noise.
+ *
+ * Pure & framework-agnostic — the caller feeds the returned list to the
+ * `resolve_artist_names` RPC, which does the alias/contact matching + dedup.
+ */
+export function extractArtistNameCandidates(...texts: Array<string | null | undefined>): string[] {
+  const out = new Set<string>();
+  const add = (raw: string) => {
+    const cleaned = (raw || "").trim().replace(/^[([{]+|[)\]}]+$/g, "").trim();
+    if (cleaned.replace(/[^\p{L}\p{N}]/gu, "").length >= 3) out.add(cleaned);
+  };
+  for (const text of texts) {
+    if (!text) continue;
+    for (const seg of text.split(",")) {
+      const s = seg.trim();
+      if (!s) continue;
+      add(s);
+      for (const frag of s.split(/\s*&\s*|\s+x\s+|\s+×\s+|\s+\+\s+|\s+ft\.?\s+|\s+feat\.?\s+|\s+featuring\s+/i)) {
+        add(frag);
+      }
+    }
+  }
+  return Array.from(out);
+}
+
 // ─── Artist string → collaborator parsing ────────────────────────────
 //
 // Used at upload time to pre-fill splits when the artist field is something
