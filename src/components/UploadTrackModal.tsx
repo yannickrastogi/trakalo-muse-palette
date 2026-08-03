@@ -240,8 +240,9 @@ function extractFeatClause(raw: string): { base: string; featured: string[] } {
 
 // Parse "Artist - Title"-style filenames. Does NOT hard-assume the order — the
 // caller passes `invert` to swap which side is the artist (the upload UI exposes
-// a global toggle, since naming conventions differ). Commas / & / x and feat./ft.
-// clauses on either side are pulled out as featured artists.
+// a global toggle, since naming conventions differ). The whole artist side is kept
+// intact (co-artists separated by "," or "&" are never dropped); only an explicit
+// trailing feat./ft. clause is split off into the featuring field.
 function parseFileName(fileName: string, invert = false): { artist: string; title: string; featuring: string } {
   const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "").trim();
   const separators = [" - ", " – ", " — "];
@@ -261,11 +262,14 @@ function parseFileName(fileName: string, invert = false): { artist: string; titl
   const titleParsed = extractFeatClause(titleSide);
   featured.push(...titleParsed.featured);
   const artistFeat = extractFeatClause(artistSide);
-  const artistParts = splitCollaborators(artistFeat.base);
-  const primaryArtist = artistParts.shift() || "";
-  featured.push(...artistParts, ...artistFeat.featured);
+  // Keep the ENTIRE artist side (e.g. "Banx & Ranx, lucatheproducer, Olivia Lunny,
+  // Stefi") in the artist field — never split it on "," or "&", which would silently
+  // drop co-artists. Only an explicit trailing "feat." clause is pulled out into the
+  // featuring field. Structuring into individual splits is done later via alias
+  // resolution, not by throwing away names here.
+  featured.push(...artistFeat.featured);
   const uniqFeatured = Array.from(new Set(featured.map((f) => f.trim()).filter(Boolean)));
-  return { artist: primaryArtist, title: titleParsed.base, featuring: uniqFeatured.join(", ") };
+  return { artist: artistFeat.base, title: titleParsed.base, featuring: uniqFeatured.join(", ") };
 }
 
 // Detect metadata the selected tracks genuinely share (identical non-empty value
@@ -340,13 +344,13 @@ function createTrackEntry(file: File): TrackEntry {
   };
 }
 
-// Atomic name split (comma + &/x/+/feat) used to surface unknown, name-only
-// collaborators in the auto-detect banner. Known names are resolved to contacts
-// separately via `resolve_artist_names`.
-const ARTIST_SEP_RE = /\s*,\s*|\s*&\s*|\s+x\s+|\s+×\s+|\s+\+\s+|\s+ft\.?\s+|\s+feat\.?\s+|\s+featuring\s+/i;
+// Split a free-text field into name-only collaborators to surface in the auto-detect
+// banner. Splits on COMMAS ONLY — never on "&"/"x"/"+", which belong to a name too
+// often (a duo like "Banx & Ranx" must stay one suggestion, not two). Known names are
+// resolved to contacts separately via `resolve_artist_names`.
 function atomicArtistNames(value: string): string[] {
   return (value || "")
-    .split(ARTIST_SEP_RE)
+    .split(",")
     .map((n) => n.trim().replace(/^[([{]+|[)\]}]+$/g, "").trim())
     .filter((n) => n.replace(/[^\p{L}\p{N}]/gu, "").length >= 3);
 }
@@ -3024,7 +3028,7 @@ function StepBulkUpload({
             <ul className="space-y-1 pl-3.5 list-disc marker:text-brand-orange/50">
               <li>{t("uploadTrack.namingGuideSeparator", "Separate artist and title with a spaced dash: - , – or —.")}</li>
               <li>{t("uploadTrack.namingGuideFeat", "Add featured artists at the end with feat., ft., featuring or with — e.g. \"Artist - Title (feat. Guest)\".")}</li>
-              <li>{t("uploadTrack.namingGuideMultiple", "List several artists with , & or x.")}</li>
+              <li>{t("uploadTrack.namingGuideMultiple", "Separate several artists with commas. “&” stays part of a name, so a duo like \"Banx & Ranx\" is kept whole.")}</li>
               <li>{t("uploadTrack.namingGuideInvert", "Files named \"Title - Artist\" instead? Use the Invert Title ↔ Artist button.")}</li>
               <li>{t("uploadTrack.namingGuideNoDash", "No dash in the name? The whole filename becomes the title.")}</li>
             </ul>

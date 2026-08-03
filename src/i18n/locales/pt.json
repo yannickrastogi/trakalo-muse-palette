@@ -1129,7 +1129,7 @@
     "namingGuideIntro": "Nomeie os arquivos para que o Trakalog preencha automaticamente o título e o artista. É apenas uma estimativa — você pode corrigir cada campo abaixo.",
     "namingGuideSeparator": "Separe o artista e o título com um traço entre espaços: - , – ou —.",
     "namingGuideFeat": "Adicione os artistas convidados no final com feat., ft., featuring ou with — ex. \"Artista - Título (feat. Convidado)\".",
-    "namingGuideMultiple": "Liste vários artistas com , & ou x.",
+    "namingGuideMultiple": "Separe vários artistas com vírgulas. O «&» faz parte do nome, então uma dupla como \"Banx & Ranx\" permanece inteira.",
     "namingGuideInvert": "Arquivos nomeados \"Título - Artista\"? Use o botão Inverter Título ↔ Artista.",
     "namingGuideNoDash": "Sem traço no nome? O nome inteiro vira o título.",
     "accessPublic": "Público no Trakalog Access",

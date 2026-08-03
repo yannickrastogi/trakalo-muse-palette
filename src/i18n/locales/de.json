@@ -1142,7 +1142,7 @@
     "namingGuideIntro": "Benennen Sie Dateien so, dass Trakalog Titel und Künstler automatisch ausfüllt. Das ist nur eine Schätzung — Sie können jedes Feld unten korrigieren.",
     "namingGuideSeparator": "Trennen Sie Künstler und Titel mit einem von Leerzeichen umgebenen Bindestrich: - , – oder —.",
     "namingGuideFeat": "Fügen Sie Gastkünstler am Ende mit feat., ft., featuring oder with hinzu — z. B. „Künstler - Titel (feat. Gast)\".",
-    "namingGuideMultiple": "Mehrere Künstler mit , & oder x angeben.",
+    "namingGuideMultiple": "Trennen Sie mehrere Künstler mit Kommas. Das „&“ gehört zum Namen – ein Duo wie „Banx & Ranx“ bleibt zusammen.",
     "namingGuideInvert": "Dateien mit „Titel - Künstler\"? Verwenden Sie die Schaltfläche Titel ↔ Künstler umkehren.",
     "namingGuideNoDash": "Kein Bindestrich im Namen? Der gesamte Dateiname wird zum Titel.",
     "accessPublic": "Öffentlich in Trakalog Access",

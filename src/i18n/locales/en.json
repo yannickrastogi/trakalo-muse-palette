@@ -1209,7 +1209,7 @@
     "namingGuideIntro": "Name files so Trakalog can auto-fill title and artist. This is only a best-effort guess — you can correct every field below.",
     "namingGuideSeparator": "Separate artist and title with a spaced dash: - , – or —.",
     "namingGuideFeat": "Add featured artists at the end with feat., ft., featuring or with — e.g. \"Artist - Title (feat. Guest)\".",
-    "namingGuideMultiple": "List several artists with , & or x.",
+    "namingGuideMultiple": "Separate several artists with commas. “&” stays part of a name, so a duo like \"Banx & Ranx\" is kept whole.",
     "namingGuideInvert": "Files named \"Title - Artist\" instead? Use the Invert Title ↔ Artist button.",
     "namingGuideNoDash": "No dash in the name? The whole filename becomes the title.",
     "accessPublic": "Public in Trakalog Access",
