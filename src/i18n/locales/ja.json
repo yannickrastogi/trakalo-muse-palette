@@ -1100,7 +1100,7 @@
     "namingGuideIntro": "Trakalog がタイトルとアーティストを自動入力できるようにファイルに名前を付けてください。これはあくまで推測です。下の各項目は修正できます。",
     "namingGuideSeparator": "アーティストとタイトルは前後にスペースを入れたダッシュで区切ります: - , – または —。",
     "namingGuideFeat": "フィーチャリングアーティストは末尾に feat.、ft.、featuring、with で追加します — 例: 「アーティスト - タイトル (feat. ゲスト)」。",
-    "namingGuideMultiple": "複数のアーティストは , & x または + で並べます。",
+    "namingGuideMultiple": "複数のアーティストは , & または x で並べます。",
     "namingGuideInvert": "「タイトル - アーティスト」形式のファイルですか？ タイトル ↔ アーティストを反転ボタンを使用してください。",
     "namingGuideNoDash": "名前にダッシュがない場合は、ファイル名全体がタイトルになります。",
     "accessPublic": "Trakalog Accessで公開",

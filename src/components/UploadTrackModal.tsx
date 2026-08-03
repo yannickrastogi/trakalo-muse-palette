@@ -3024,7 +3024,7 @@ function StepBulkUpload({
             <ul className="space-y-1 pl-3.5 list-disc marker:text-brand-orange/50">
               <li>{t("uploadTrack.namingGuideSeparator", "Separate artist and title with a spaced dash: - , – or —.")}</li>
               <li>{t("uploadTrack.namingGuideFeat", "Add featured artists at the end with feat., ft., featuring or with — e.g. \"Artist - Title (feat. Guest)\".")}</li>
-              <li>{t("uploadTrack.namingGuideMultiple", "List several artists with , & x or +.")}</li>
+              <li>{t("uploadTrack.namingGuideMultiple", "List several artists with , & or x.")}</li>
               <li>{t("uploadTrack.namingGuideInvert", "Files named \"Title - Artist\" instead? Use the Invert Title ↔ Artist button.")}</li>
               <li>{t("uploadTrack.namingGuideNoDash", "No dash in the name? The whole filename becomes the title.")}</li>
             </ul>

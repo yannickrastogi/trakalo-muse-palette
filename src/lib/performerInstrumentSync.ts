@@ -11,7 +11,7 @@ import type { TrackTags } from "@/lib/tagsVocabulary";
  */
 export const PERFORMER_TO_INSTRUMENT: Record<string, string> = {
   bassBy: "bass",
-  guitarsBy: "electric guitar",
+  guitarsBy: "guitar",
   keysBy: "keys",
   drumsBy: "drums",
   synthsBy: "synth",
