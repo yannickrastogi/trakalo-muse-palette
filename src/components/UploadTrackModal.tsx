@@ -3012,18 +3012,18 @@ function StepBulkUpload({
       <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2.5">
         <div className="flex items-center gap-1.5 mb-2">
           <Info className="w-3 h-3 text-brand-orange shrink-0" />
-          <span className="text-2xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <span className="text-sm font-semibold text-foreground">
             {t("uploadTrack.namingGuideTitle", "How to name your files")}
           </span>
         </div>
         <dl className="space-y-1">
           <div className="flex items-baseline gap-2.5">
-            <dt className="w-14 shrink-0 text-2xs font-medium uppercase tracking-wider text-muted-foreground/60">{t("uploadTrack.namingGuideFormatLabel", "Format")}</dt>
-            <dd className="font-mono text-2xs text-foreground/80 leading-relaxed">Artist, Collaborator 1, Collaborator 2 <span className="text-muted-foreground/40">-</span> Title</dd>
+            <dt className="w-14 shrink-0 text-2xs text-muted-foreground">{t("uploadTrack.namingGuideFormatLabel", "Format")}</dt>
+            <dd className="text-2xs text-muted-foreground">Artist, Collaborator 1, Collaborator 2 - Title</dd>
           </div>
           <div className="flex items-baseline gap-2.5">
-            <dt className="w-14 shrink-0 text-2xs font-medium uppercase tracking-wider text-muted-foreground/60">{t("uploadTrack.namingGuideExampleLabel", "Example")}</dt>
-            <dd className="font-mono text-2xs text-foreground/80 leading-relaxed">Justin, Tate, James <span className="text-muted-foreground/40">-</span> Life is good</dd>
+            <dt className="w-14 shrink-0 text-2xs text-muted-foreground">{t("uploadTrack.namingGuideExampleLabel", "Example")}</dt>
+            <dd className="text-2xs text-muted-foreground">Justin, Tate, James - Life is good</dd>
           </div>
         </dl>
       </div>
