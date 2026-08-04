@@ -110,12 +110,40 @@ fi
 compared_count="$(grep -cE '.' "$remote_compared" || true)"
 covered_count=$(( remote_total - compared_count ))
 
+# --- Ensemble « connu » = fichiers versionnés OÙ QU'ILS SOIENT ----------------
+# Le vrai signal qu'une migration est déjà prise en compte n'est PAS un seuil
+# numérique : le n° de version de la baseline (20260626144305) n'est PAS son
+# high-water mark — la baseline (posée le 2 août, horodatée au 26 juin) subsume
+# des migrations aux versions SUPÉRIEURES, archivées dans _archive/from_remote/.
+# Le signal fiable est l'EXISTENCE d'un fichier. On inclut donc AUSSI les
+# migrations archivées dans _archive/ (récursif). LECTURE SEULE : on ne lit que
+# des noms de fichiers, on ne rejoue ni ne modifie jamais _archive/.
+archive_versions="$work_dir/archive_versions"
+: > "$archive_versions"
+if [ -d "$MIGRATIONS_DIR/_archive" ]; then
+  find "$MIGRATIONS_DIR/_archive" -type f -name '*.sql' | while IFS= read -r af; do
+    abase="$(basename "$af")"
+    if [[ "$abase" =~ ^([0-9]{14})_ ]]; then
+      echo "${BASH_REMATCH[1]}"
+    fi
+  done >> "$archive_versions"
+fi
+sort -u -o "$archive_versions" "$archive_versions"
+archive_total="$(grep -cE '.' "$archive_versions" || true)"
+
+# connu = fichiers actifs (top-level) UNION fichiers archivés
+known_versions="$work_dir/known_versions"
+cat "$local_versions" "$archive_versions" | grep -E '.' | sort -u > "$known_versions"
+
 # --- Comparaison via comm (portable) -----------------------------------------
-# On ne compare QUE le périmètre post-baseline (remote_compared).
-# -23 : présent en prod (> baseline), absent en local -> DÉRIVE
-# -13 : présent en local, absent en prod                -> avance légitime
-drift_list="$(comm -23 "$remote_compared" "$local_versions")"
+# DÉRIVE = version en prod (> baseline) SANS aucun fichier connu, ni actif ni
+# archivé. C'est le mode de défaillance réel : appliquée en prod, aucune trace.
+# ahead (-13) reste calculé sur les fichiers ACTIFS seuls (top-level) : une
+# migration écrite localement mais pas encore appliquée en prod.
+drift_list="$(comm -23 "$remote_compared" "$known_versions")"
 ahead_list="$(comm -13 "$remote_versions" "$local_versions")"
+drift_count_pre="$(printf '%s\n' "$drift_list" | grep -cE '.' || true)"
+documented_count=$(( compared_count - drift_count_pre ))
 
 # --- Rapport ------------------------------------------------------------------
 echo "== Vérification de la dérive de schéma =="
@@ -126,7 +154,9 @@ else
   echo "  Couvertes par la baseline               : 0 (aucune baseline détectée)"
 fi
 echo "  Comparées réellement (> baseline)       : $compared_count"
-echo "  Fichiers locaux (14 chiffres)           : $local_total"
+echo "  Fichiers locaux actifs (14 chiffres)    : $local_total"
+echo "  Fichiers archivés _archive (14 chiffres) : $archive_total"
+echo "  Dont déjà versionnées (actif + archive) : $documented_count / $compared_count"
 echo
 
 if [ -n "$ahead_list" ]; then

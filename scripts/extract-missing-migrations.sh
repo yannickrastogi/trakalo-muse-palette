@@ -90,8 +90,29 @@ else
   cp "$remote_versions" "$remote_compared"
 fi
 
-# --- Versions manquantes = en prod (> baseline), pas en local ----------------
-missing="$(comm -23 "$remote_compared" "$local_versions")"
+# --- Ensemble « connu » = fichiers versionnés OÙ QU'ILS SOIENT ----------------
+# Une migration déjà versionnée n'importe où (fichier actif OU archivé dans
+# _archive/, récursif) ne doit JAMAIS être extraite : elle dupliquerait un
+# fichier existant. Le n° de version de la baseline n'est pas un seuil fiable ;
+# le signal fiable est l'existence d'un fichier. LECTURE SEULE : on ne lit que
+# des noms de fichiers, on ne modifie jamais _archive/.
+archive_versions="$work_dir/archive_versions"
+: > "$archive_versions"
+if [ -d "$MIGRATIONS_DIR/_archive" ]; then
+  find "$MIGRATIONS_DIR/_archive" -type f -name '*.sql' | while IFS= read -r af; do
+    abase="$(basename "$af")"
+    if [[ "$abase" =~ ^([0-9]{14})_ ]]; then
+      echo "${BASH_REMATCH[1]}"
+    fi
+  done >> "$archive_versions"
+fi
+sort -u -o "$archive_versions" "$archive_versions"
+
+known_versions="$work_dir/known_versions"
+cat "$local_versions" "$archive_versions" | grep -E '.' | sort -u > "$known_versions"
+
+# --- Versions manquantes = en prod (> baseline), SANS aucun fichier connu -----
+missing="$(comm -23 "$remote_compared" "$known_versions")"
 
 created=0
 skipped=0
