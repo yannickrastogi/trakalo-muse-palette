@@ -76,16 +76,57 @@ sort -u -o "$local_versions" "$local_versions"
 remote_total="$(grep -cE '.' "$remote_versions" || true)"
 local_total="$(grep -cE '.' "$local_versions" || true)"
 
+# --- Baseline : point de départ du repo --------------------------------------
+# La baseline (supabase/migrations/*_baseline_prod.sql) est un dump complet du
+# schéma de prod : elle contient déjà le résultat final de toutes les migrations
+# ANTÉRIEURES. Celles-ci ont été archivées dans _archive/ et sorties du chemin
+# d'exécution. Elles ne doivent JAMAIS être signalées comme dérive.
+# On détecte la version de la baseline dynamiquement (jamais codée en dur) et on
+# ne compare que les versions distantes STRICTEMENT SUPÉRIEURES à cette version.
+baseline_version=""
+shopt -s nullglob
+for f in "$MIGRATIONS_DIR"/*baseline_prod*.sql; do
+  bname="$(basename "$f")"
+  if [[ "$bname" =~ ^([0-9]{14})_ ]]; then
+    baseline_version="${BASH_REMATCH[1]}"
+    break
+  fi
+done
+shopt -u nullglob
+
+remote_compared="$work_dir/remote_compared"
+if [ -n "$baseline_version" ]; then
+  # ne garder que les versions > baseline (14 chiffres, comparaison numérique)
+  awk -v b="$baseline_version" \
+    '$0 ~ /^[0-9]+$/ && length($0)==14 && ($0+0) > (b+0)' \
+    "$remote_versions" > "$remote_compared"
+else
+  echo "AVERTISSEMENT : aucun fichier *_baseline_prod.sql trouvé dans supabase/migrations/."
+  echo "                Comparaison SANS filtre baseline (comportement historique)."
+  echo
+  cp "$remote_versions" "$remote_compared"
+fi
+
+compared_count="$(grep -cE '.' "$remote_compared" || true)"
+covered_count=$(( remote_total - compared_count ))
+
 # --- Comparaison via comm (portable) -----------------------------------------
-# -23 : présent en prod, absent en local -> DÉRIVE
-# -13 : présent en local, absent en prod -> avance légitime
-drift_list="$(comm -23 "$remote_versions" "$local_versions")"
+# On ne compare QUE le périmètre post-baseline (remote_compared).
+# -23 : présent en prod (> baseline), absent en local -> DÉRIVE
+# -13 : présent en local, absent en prod                -> avance légitime
+drift_list="$(comm -23 "$remote_compared" "$local_versions")"
 ahead_list="$(comm -13 "$remote_versions" "$local_versions")"
 
 # --- Rapport ------------------------------------------------------------------
 echo "== Vérification de la dérive de schéma =="
-echo "  Migrations en production : $remote_total"
-echo "  Fichiers locaux (14 chiffres) : $local_total"
+echo "  Migrations en production (total)        : $remote_total"
+if [ -n "$baseline_version" ]; then
+  echo "  Couvertes par la baseline (<= $baseline_version) : $covered_count"
+else
+  echo "  Couvertes par la baseline               : 0 (aucune baseline détectée)"
+fi
+echo "  Comparées réellement (> baseline)       : $compared_count"
+echo "  Fichiers locaux (14 chiffres)           : $local_total"
 echo
 
 if [ -n "$ahead_list" ]; then

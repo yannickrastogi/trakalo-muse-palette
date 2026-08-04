@@ -64,8 +64,34 @@ done
 shopt -u nullglob
 sort -u -o "$local_versions" "$local_versions"
 
-# --- Versions manquantes = en prod, pas en local -----------------------------
-missing="$(comm -23 "$remote_versions" "$local_versions")"
+# --- Baseline : ne jamais extraire une migration antérieure à la baseline -----
+# La baseline (*_baseline_prod.sql) contient déjà le résultat des migrations
+# antérieures (archivées dans _archive/). Extraire une version <= baseline
+# dupliquerait des fichiers déjà présents. On détecte la version de la baseline
+# dynamiquement et on ne considère que les versions STRICTEMENT SUPÉRIEURES.
+baseline_version=""
+shopt -s nullglob
+for f in "$MIGRATIONS_DIR"/*baseline_prod*.sql; do
+  bname="$(basename "$f")"
+  if [[ "$bname" =~ ^([0-9]{14})_ ]]; then
+    baseline_version="${BASH_REMATCH[1]}"
+    break
+  fi
+done
+shopt -u nullglob
+
+remote_compared="$work_dir/remote_compared"
+if [ -n "$baseline_version" ]; then
+  awk -v b="$baseline_version" \
+    '$0 ~ /^[0-9]+$/ && length($0)==14 && ($0+0) > (b+0)' \
+    "$remote_versions" > "$remote_compared"
+else
+  echo "AVERTISSEMENT : aucun fichier *_baseline_prod.sql trouvé — extraction sans filtre baseline."
+  cp "$remote_versions" "$remote_compared"
+fi
+
+# --- Versions manquantes = en prod (> baseline), pas en local ----------------
+missing="$(comm -23 "$remote_compared" "$local_versions")"
 
 created=0
 skipped=0
