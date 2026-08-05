@@ -1020,10 +1020,14 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
         if (uploadError) {
           console.error("Error uploading audio:", uploadError);
-          toast.error("Upload failed, please try again");
-        } else {
-          audioUrl = filePath;
+          // Abort: a track must never be created without its audio_url. Throw with the
+          // cause so the catch surfaces it instead of inserting an audioless track.
+          const detail = (uploadError as { message?: string }).message;
+          throw new Error(
+            t("uploadTrack.reasonAudioUploadFailed", "Audio upload failed") + (detail ? ": " + detail : ""),
+          );
         }
+        audioUrl = filePath;
       }
       setUploadProgress(95);
 
@@ -1095,6 +1099,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         },
         tags: currentTrack.tags,
       });
+      // addTrack throws on a genuine insert failure; a null return means no active
+      // workspace/user (e.g. a dead session). Either way the track was NOT created —
+      // raise the failure so the catch surfaces the cause, instead of falling through
+      // to the false "success" screen below.
+      if (!savedTrack) {
+        throw new Error(t("uploadTrack.reasonTrackCreateFailed", "Track could not be created"));
+      }
       setUploadProgress(98);
 
       // Persist extended metadata that insert_track doesn't accept natively
@@ -1715,10 +1726,16 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
 
           if (uploadError) {
             console.error("Error uploading audio:", uploadError);
-            toast.error("Upload failed, please try again");
-          } else {
-            audioUrl = filePath;
+            // Skip this track: never create a track without its audio_url. Surface the
+            // cause and move on to the next queued track (the audio block sits before
+            // the per-track try/catch, so a throw would abort the whole batch — hence
+            // continue). Tracks with no file at all fall through unchanged.
+            const detail = (uploadError as { message?: string }).message;
+            const reason = t("uploadTrack.reasonAudioUploadFailed", "Audio upload failed") + (detail ? ": " + detail : "");
+            toast.error(t("uploadTrack.reasonTrackFailedNamed", { fileName: entry.fileName, reason, defaultValue: entry.fileName + " — " + reason }));
+            continue;
           }
+          audioUrl = filePath;
         }
         setUploadProgress(95);
 
@@ -1763,6 +1780,13 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             customProduction: entry.customProduction?.filter((e) => e.role.trim() && e.values.some((v) => v.trim())) || [],
           },
         });
+        // Mirror the single/skip-review paths: addTrack throws on a genuine insert
+        // failure, and returns null only when there's no active workspace/user. A null
+        // here means the track was NOT created — raise it so the per-track catch surfaces
+        // the cause and continues, instead of silently skipping an uncreated track.
+        if (!savedTrack) {
+          throw new Error(t("uploadTrack.reasonTrackCreateFailed", "Track could not be created"));
+        }
         setUploadProgress(100);
 
         // Register the uploaded audio as V1 in track_versions so the version
