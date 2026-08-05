@@ -180,9 +180,15 @@ Edge Functions = redéploiement manuel après push : `supabase functions deploy 
 
 ## Suivi / follow-ups connus
 
-- **Trakalog Pack ZIP download sert encore l'audio brut non-watermarké** → trou de traçabilité, à fixer (même logique que le download single).
-- **Lifecycle policy R2** : purge des copies `watermarked` non-accédées > 90j, à activer quand le bucket dépasse ~10 Go. Pas urgent (coût négligeable). Safe : une copie est reconstructible à l'identique, le leak tracing dépend de `watermark_payloads`, pas du fichier caché.
-- **Billing** : `docs/TRAKALOG_BILLING.md` à resync — nouveau modèle **user-based** ($10/$25/$45), seats différenciés par access level (viewers gratuits dès Pro), Trakalog Access browse = Business / opt-in = Pro. En cours.
+- **Règle watermark = share_type, jamais format de livraison** (vérifié le 2 août 2026, comportement VOULU). Les liens `track` et `playlist` passent toujours par `get-watermarked-audio` — y compris le « Download all », qui livre des fichiers individuels, pas un ZIP. Seul `pack` produit un ZIP, avec l'audio propre : c'est intentionnel, il sert à livrer des masters finaux. RESTE À FAIRE : badge d'avertissement à la création d'un lien `pack`, `README.txt` dans le ZIP, et corriger l'onboarding étape 16 dont la copie promet à tort que **tous** les liens sont watermarkés.
+- **Billing v5.0** (2-5 août 2026) — `docs/TRAKALOG_BILLING.md` à resync :
+  - Free 1 siège / 1 workspace · Starter 1/1 · Pro 2 sièges / 4 workspaces · Business 5 sièges / 10 workspaces.
+  - ⚠️ Les viewers ne sont PLUS gratuits : TOUT membre consomme un siège quel que soit son niveau, owner inclus. Le canal gratuit est le **lien partagé** (destinataire sans compte, illimité, jamais compté).
+  - Add-ons Pro et Business : 10 $/siège/mois, 5 $/workspace/mois. Plafond dur à 15 workspaces au total ; au-delà → contact commercial.
+  - Stockage : Free 2 Go · Starter 40 Go · Pro 400 Go · Business 1 To.
+  - Plan interne `founder` : illimité, hors Stripe, attribué manuellement, jamais exposé à l'achat.
+  - RESTE À FAIRE : produits Stripe `trakalog_seat_addon` (10 $) et workspace add-on (5 $) à créer, webhook à câbler sur `subscriptions.purchased_seats` / `purchased_workspaces` (colonnes déjà en base), UI d'achat à construire (aucune n'existe).
+- **Suivi du stockage** : opérationnel depuis le 5 août 2026. `tracks` / `track_versions` / `stems` / `track_documents` portent leur taille ; `insert_track` et `add_track_version` acceptent `_file_size_bytes` ; RPC `compute_user_storage_bytes` + `recompute_all_storage_usage` ; Edge Function `backfill-storage-sizes` (service_role only) pour les fichiers R2. RESTE À FAIRE : trigger de quota BEFORE INSERT, et affichage du quota dans l'UI.
 
 ---
 
