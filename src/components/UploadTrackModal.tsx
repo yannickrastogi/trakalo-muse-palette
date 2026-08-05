@@ -1354,6 +1354,10 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
       }
     } catch (err) {
       console.error("Error saving track:", err);
+      // Surface the real cause instead of failing silently (which previously let the
+      // flow fall through to a false "success" screen on a genuine insert failure).
+      const reason = err instanceof Error ? err.message : "Unknown error";
+      toast.error(t("uploadTrack.uploadFailedWithReason", { reason, defaultValue: "Upload failed: " + reason }));
     } finally {
       setIsSaving(false);
       setUploadProgress(0);
@@ -1728,6 +1732,10 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
         setUploadProgress(97);
 
         // ── Save to DB ──
+        // Per-track guard: addTrack throws on a genuine insert failure. Without this
+        // catch a single failed track would abort the whole quick-upload batch. Log,
+        // notify, and continue with the remaining tracks (unchanged batch resilience).
+        try {
         const savedTrack = await addTrack({
           title: entry.title.trim() || "Untitled",
           artist: entry.artist.trim() || "",
@@ -1841,6 +1849,11 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             }
           })();
         }
+        } catch (perTrackErr) {
+          const reason = perTrackErr instanceof Error ? perTrackErr.message : "Unknown error";
+          console.error("[QUICK-UPLOAD] Track failed:", entry.fileName, reason);
+          toast.error(t("uploadTrack.reasonTrackFailedNamed", { fileName: entry.fileName, reason, defaultValue: entry.fileName + " — " + reason }));
+        }
       }
 
       // Show success screen
@@ -1896,7 +1909,10 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               (pct) => setUploadProgress(Math.round(pct * 0.95)),
             );
             if (uploadError) {
-              throw new Error("Audio upload failed");
+              const detail = (uploadError as { message?: string }).message;
+              throw new Error(
+                t("uploadTrack.reasonAudioUploadFailed", "Audio upload failed") + (detail ? ": " + detail : ""),
+              );
             }
             audioUrl = filePath;
           }
@@ -1962,6 +1978,12 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             },
             tags: entry.tags,
           });
+          // addTrack throws on a genuine insert failure; a null return means no active
+          // workspace/user. Either way the track was NOT created — record it as a real
+          // failure instead of falling through and counting it as a success.
+          if (!savedTrack) {
+            throw new Error(t("uploadTrack.reasonTrackCreateFailed", "Track could not be created"));
+          }
           setUploadProgress(98);
 
           // ── Stage 4: Extended metadata update_track (mirrors saveCurrentTrack BUG-03 path) ──
@@ -2036,15 +2058,21 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           }
 
           // ── Stage 6: Catalog shares (if any) ──
+          // Post-creation enrichment: a share failure must NEVER fail the upload —
+          // the track already exists. Log and continue.
           if (savedTrack && entry.sharedWorkspaces.length > 0 && user && activeWorkspace) {
             for (let si = 0; si < entry.sharedWorkspaces.length; si++) {
-              await supabase.rpc("insert_catalog_share", {
-                _user_id: user.id,
-                _track_id: savedTrack.uuid,
-                _source_workspace_id: activeWorkspace.id,
-                _target_workspace_id: entry.sharedWorkspaces[si],
-                _access_level: "pitcher",
-              });
+              try {
+                await supabase.rpc("insert_catalog_share", {
+                  _user_id: user.id,
+                  _track_id: savedTrack.uuid,
+                  _source_workspace_id: activeWorkspace.id,
+                  _target_workspace_id: entry.sharedWorkspaces[si],
+                  _access_level: "pitcher",
+                });
+              } catch (shareErr) {
+                console.error("Catalog share failed for", entry.fileName, ":", shareErr);
+              }
             }
           }
 
@@ -2264,7 +2292,12 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   ))}
                 </div>
               )}
-              {/* Step indicator */}
+              {/* Step indicator — hidden during the Skip Review fast path (upload +
+                  success screen). That path uploads the whole queue from Review and
+                  never advances to the Workspaces step, so showing the 6-step bar there
+                  would promise a step the flow never reaches. The Workspaces step is
+                  real and IS reached in the manual per-track review flow. */}
+              {!(skipReviewIdx >= 0 || skipReviewDone) && (
               <div className="flex items-center gap-1">
                 {EDIT_STEPS.map((s, i) => (
                   <div key={s} className="flex items-center gap-1 flex-1">
@@ -2297,6 +2330,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                   </div>
                 ))}
               </div>
+              )}
             </>
           )}
         </DialogHeader>
@@ -2542,7 +2576,20 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
                       {t("uploadTrack.uploadMore", "Upload more")}
                     </button>
                     <button
-                      onClick={() => { onOpenChange(false); handleReset(); navigate("/tracks"); }}
+                      onClick={async () => {
+                        // Force a fresh read so the catalog reflects EVERY track just
+                        // inserted. The context state can be partial/stale here (per-track
+                        // + background Sonic DNA fetches race; the latest write may predate
+                        // the last insert), and the catalog has no refetch-on-mount — it
+                        // renders context state as-is. Awaiting the freshest fetch (highest
+                        // seq, all inserts done) guarantees the true count before we leave.
+                        onOpenChange(false);
+                        handleReset();
+                        // Refresh BEFORE navigating so the catalog paints the true count
+                        // on first render (no stale-then-update flash).
+                        try { await refreshTracks(); } catch (e) { console.error("Catalog refresh on navigation failed:", e); }
+                        navigate("/tracks");
+                      }}
                       className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-[13px] font-semibold btn-brand"
                     >
                       <ListMusic className="w-4 h-4" />

@@ -1138,6 +1138,10 @@
     "unknownDevice": "不明なデバイス"
   },
   "uploadTrack": {
+    "reasonAudioUploadFailed": "オーディオのアップロードに失敗しました",
+    "reasonTrackCreateFailed": "トラックを作成できませんでした",
+    "reasonTrackFailedNamed": "{{fileName}} — {{reason}}",
+    "uploadFailedWithReason": "アップロードに失敗しました: {{reason}}",
     "namingGuideTitle": "ファイルの命名方法",
     "namingGuideFormatLabel": "形式",
     "namingGuideExampleLabel": "例",

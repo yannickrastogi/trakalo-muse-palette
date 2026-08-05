@@ -1218,6 +1218,10 @@
     "unknownDevice": "Appareil inconnu"
   },
   "uploadTrack": {
+    "reasonAudioUploadFailed": "Échec de l'envoi du fichier audio",
+    "reasonTrackCreateFailed": "Impossible de créer la piste",
+    "reasonTrackFailedNamed": "{{fileName}} — {{reason}}",
+    "uploadFailedWithReason": "Échec de l'upload : {{reason}}",
     "namingGuideTitle": "Comment nommer vos fichiers",
     "namingGuideFormatLabel": "Format",
     "namingGuideExampleLabel": "Exemple",

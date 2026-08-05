@@ -821,12 +821,25 @@ export function TrackProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error("Error adding track:", error);
-        return null;
+        // Genuine insertion failure — the track was NOT created. Throw with the server
+        // cause (message + code) so callers can report the real reason instead of
+        // silently mis-counting a failed insert as a success. Post-insertion steps
+        // below are wrapped separately so they can NEVER turn a created track into a
+        // thrown failure.
+        const code = (error as { code?: string }).code;
+        const detail = (error as { message?: string }).message || "insert_track failed";
+        throw new Error(code ? detail + " (" + code + ")" : detail);
       }
 
       // RPC returns uuid directly — wrap in object for downstream compat
       const trackUuid = data as unknown as string;
 
+      // Post-insertion enrichment (extended metadata, marketplace opt-in, owner
+      // notification, catalog refresh, Sonic DNA queue). insert_track already
+      // succeeded, so NONE of these may throw out of addTrack: a transient failure
+      // here (e.g. a slow/failed fetchTracks during a bulk upload) must not make a
+      // caller count a genuinely-created track as a failed upload. Errors are logged.
+      try {
       // Save metadata fields via update_track after creation (not in insert_track signature)
       if (trackUuid) {
         const metaPayload: Record<string, unknown> = {};
@@ -893,6 +906,11 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         sonicDnaQueueRef.current.push({ track_id: trackUuid, storage_path: trackInput.originalFileUrl });
         toast.info(i18n.t("trackContext.analyzingAudio"), { duration: 5000 });
         processSonicDnaQueue();
+      }
+      } catch (postErr) {
+        // Track was created; only enrichment/refresh failed. Log and continue so the
+        // caller still receives the track and counts it as the success that it is.
+        console.error("Post-insert enrichment failed (track was created):", postErr);
       }
 
       // Return the newly created track from the refreshed list

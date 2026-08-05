@@ -1218,6 +1218,10 @@
     "unknownDevice": "Unknown Device"
   },
   "uploadTrack": {
+    "reasonAudioUploadFailed": "Audio upload failed",
+    "reasonTrackCreateFailed": "Track could not be created",
+    "reasonTrackFailedNamed": "{{fileName}} — {{reason}}",
+    "uploadFailedWithReason": "Upload failed: {{reason}}",
     "namingGuideTitle": "How to name your files",
     "namingGuideFormatLabel": "Format",
     "namingGuideExampleLabel": "Example",

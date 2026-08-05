@@ -1151,6 +1151,10 @@
     "unknownDevice": "Unbekanntes Gerät"
   },
   "uploadTrack": {
+    "reasonAudioUploadFailed": "Audio-Upload fehlgeschlagen",
+    "reasonTrackCreateFailed": "Track konnte nicht erstellt werden",
+    "reasonTrackFailedNamed": "{{fileName}} — {{reason}}",
+    "uploadFailedWithReason": "Upload fehlgeschlagen: {{reason}}",
     "namingGuideTitle": "So benennen Sie Ihre Dateien",
     "namingGuideFormatLabel": "Format",
     "namingGuideExampleLabel": "Beispiel",

@@ -1138,6 +1138,10 @@
     "unknownDevice": "Dispositivo desconocido"
   },
   "uploadTrack": {
+    "reasonAudioUploadFailed": "Error al subir el audio",
+    "reasonTrackCreateFailed": "No se pudo crear la pista",
+    "reasonTrackFailedNamed": "{{fileName}} — {{reason}}",
+    "uploadFailedWithReason": "Error al subir: {{reason}}",
     "namingGuideTitle": "Cómo nombrar tus archivos",
     "namingGuideFormatLabel": "Formato",
     "namingGuideExampleLabel": "Ejemplo",

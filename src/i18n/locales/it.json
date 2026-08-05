@@ -1138,6 +1138,10 @@
     "unknownDevice": "Dispositivo sconosciuto"
   },
   "uploadTrack": {
+    "reasonAudioUploadFailed": "Caricamento audio non riuscito",
+    "reasonTrackCreateFailed": "Impossibile creare la traccia",
+    "reasonTrackFailedNamed": "{{fileName}} — {{reason}}",
+    "uploadFailedWithReason": "Caricamento non riuscito: {{reason}}",
     "namingGuideTitle": "Come nominare i file",
     "namingGuideFormatLabel": "Formato",
     "namingGuideExampleLabel": "Esempio",
