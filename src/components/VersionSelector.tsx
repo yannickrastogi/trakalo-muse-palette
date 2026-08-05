@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useMemo } from "react";
 import { Star, Plus, MoreHorizontal, Loader2, StickyNote, Trash2, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getStorageUploadUrl } from "@/lib/audio";
+import { sanitizeFileSizeBytes } from "@/lib/utils";
 import { generateWaveform } from "@/lib/waveformGenerator";
 import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { useAuth } from "@/contexts/AuthContext";
@@ -137,7 +138,7 @@ export function VersionSelector({
       if (hadNoVersions) {
         const { data: master, error: masterErr } = await supabase
           .from("tracks")
-          .select("audio_url, audio_preview_url, waveform_data, sonic_dna, duration_sec")
+          .select("audio_url, audio_preview_url, waveform_data, sonic_dna, duration_sec, file_size_bytes")
           .eq("id", trackUuid)
           .maybeSingle();
         if (masterErr) {
@@ -156,6 +157,9 @@ export function VersionSelector({
             _waveform_data: master.waveform_data ?? null,
             _sonic_dna: master.sonic_dna ?? null,
             _duration_sec: master.duration_sec ?? null,
+            // V1 = le master existant : sa taille est celle stockée sur la track,
+            // pas celle du nouveau fichier uploadé (enregistré dans l'appel suivant).
+            _file_size_bytes: sanitizeFileSizeBytes(master.file_size_bytes),
           });
           if (backfillErr) {
             // Abort rather than let the fresh upload become V1 and strand the master.
@@ -233,6 +237,9 @@ export function VersionSelector({
         // Let the server name it (V{MAX+1}) so it always matches the number it
         // assigns — after a V1 backfill this correctly becomes V2.
         _version_name: null,
+        // Taille du fichier audio réel (File.size), pour le suivi de stockage.
+        // Même flux pour l'ajout et le remplacement de version.
+        _file_size_bytes: sanitizeFileSizeBytes(file.size),
       });
       if (rpcError) {
         console.error("add_track_version failed:", rpcError);

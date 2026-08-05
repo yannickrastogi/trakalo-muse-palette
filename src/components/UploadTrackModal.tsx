@@ -9,6 +9,7 @@ import { encodeToMp3 } from "@/lib/mp3Encoder";
 import { getStorageUploadUrl, type UploadBucket } from "@/lib/audio";
 import { autoPopulateAliasesFromSplits } from "@/lib/aliasAutoPopulate";
 import { safeLocalStorage } from "@/lib/safeStorage";
+import { sanitizeFileSizeBytes } from "@/lib/utils";
 import { toast } from "sonner";
 import { useTeams } from "@/contexts/TeamContext";
 import { analyzeAudio, type AudioAnalysisResult } from "@/lib/audio-analysis";
@@ -1157,6 +1158,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
           _workspace_id: activeWorkspace.id,
           _audio_url: audioUrl,
           _version_name: "V1",
+          _file_size_bytes: sanitizeFileSizeBytes(currentTrack.file.size),
         });
         if (v1Err) console.error("Failed to register V1 track version:", v1Err);
       }
@@ -1764,6 +1766,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
             _workspace_id: activeWorkspace.id,
             _audio_url: audioUrl,
             _version_name: "V1",
+            _file_size_bytes: sanitizeFileSizeBytes(entry.file.size),
           });
           if (v1Err) console.error("Failed to register V1 track version (quick upload):", v1Err);
         }
@@ -2010,6 +2013,7 @@ export function UploadTrackModal({ open, onOpenChange }: UploadTrackModalProps) 
               _workspace_id: activeWorkspace.id,
               _audio_url: audioUrl,
               _version_name: "V1",
+              _file_size_bytes: sanitizeFileSizeBytes(entry.file.size),
             });
             if (v1Err) console.error("Failed to register V1 track version for", entry.fileName, ":", v1Err);
           }

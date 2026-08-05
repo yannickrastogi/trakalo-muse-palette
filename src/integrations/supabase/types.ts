@@ -2056,6 +2056,7 @@ export type Database = {
           _audio_preview_url: string
           _audio_url: string
           _duration_sec: number
+          _file_size_bytes?: number
           _notes: string
           _sonic_dna: Json
           _track_id: string
@@ -2739,6 +2740,7 @@ export type Database = {
           _cover_art_url?: string
           _duration_sec?: number
           _featuring?: string
+          _file_size_bytes?: number
           _gender?: string
           _genre?: string[]
           _isrc?: string

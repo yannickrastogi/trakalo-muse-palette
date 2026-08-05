@@ -8,6 +8,7 @@ import type { ProductionStage } from "@/lib/constants";
 import { toast } from "sonner";
 import i18n from "@/i18n";
 import { safeLocalStorage } from "@/lib/safeStorage";
+import { sanitizeFileSizeBytes } from "@/lib/utils";
 
 export interface TrackStem {
   id: string;
@@ -813,6 +814,9 @@ export function TrackProvider({ children }: { children: ReactNode }) {
         _isrc: trackInput.isrc || null,
         _waveform_data: trackInput.waveformData || null,
         _released_at: null,
+        // Taille du fichier audio réel (File.size), pour le suivi de stockage.
+        // Couvre l'upload simple ET le bulk (les deux passent par addTrack).
+        _file_size_bytes: sanitizeFileSizeBytes(trackInput.originalFileSize),
       });
 
       if (error) {
