@@ -182,3 +182,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/stripe-webhook/deno.json"
 entrypoint = "./functions/stripe-webhook/index.ts"
+
+[functions.backfill-storage-sizes]
+enabled = true
+verify_jwt = true
+import_map = "./functions/backfill-storage-sizes/deno.json"
+entrypoint = "./functions/backfill-storage-sizes/index.ts"

@@ -313,7 +313,10 @@ const SIGV4_ALGO = "AWS4-HMAC-SHA256";
 const R2_REGION = "auto";
 const R2_SERVICE = "s3";
 
-async function presignR2Url(
+// Exported so admin-only maintenance functions (e.g. backfill-storage-sizes)
+// can issue a signed HEAD against R2 to read Content-Length WITHOUT recreating
+// the SigV4 signer or the credentials. Read-only reuse; behaviour unchanged.
+export async function presignR2Url(
   method: "GET" | "PUT" | "DELETE" | "HEAD",
   bucket: BucketName,
   key: string,
