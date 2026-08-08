@@ -1,6 +1,6 @@
 # SQL migration — Artist Aliases
 
-> **À copier-coller dans Supabase SQL Editor (jamais auto-exécuté côté Claude).**
+> **Copy-paste into Supabase SQL Editor (never auto-execute from Claude).**
 
 ```sql
 -- ─── Table ────────────────────────────────────────────────

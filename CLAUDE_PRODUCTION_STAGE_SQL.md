@@ -1,9 +1,9 @@
 # SQL migration — Add `production_stage` to tracks
 
-> **À copier-coller dans Supabase SQL Editor (jamais auto-exécuté côté Claude).**
-> Deux blocs : colonne + whitelist du RPC `update_track`. Idempotent.
+> **Copy-paste into Supabase SQL Editor (never auto-execute from Claude).**
+> Two blocks: column + RPC `update_track` whitelist. Idempotent.
 
-## 1. Colonne sur `tracks`
+## 1. Column on `tracks`
 
 ```sql
 ALTER TABLE public.tracks
@@ -11,15 +11,15 @@ ALTER TABLE public.tracks
   DEFAULT 'work_in_progress'
   CHECK (production_stage IN ('work_in_progress', 'finished'));
 
--- Index optionnel si on filtre souvent (≤2 valeurs, gain marginal — laisser de côté pour l'instant).
+-- Optional index if frequently filtered (≤2 values, marginal gain — skip for now).
 ```
 
-## 2. Mettre à jour le RPC `update_track` (whitelist)
+## 2. Update the `update_track` RPC (whitelist)
 
-Le RPC actuel utilise une whitelist de colonnes autorisées (cf. `pg_get_functiondef`). Sans ce patch, `production_stage` est silencieusement ignoré.
+The current RPC uses a whitelist of authorized columns (cf. `pg_get_functiondef`). Without this patch, `production_stage` is silently ignored.
 
 ```sql
--- DROP-and-recreate (la signature est identique, mais on remplace v_allowed_columns).
+-- DROP-and-recreate (signature is identical, but we replace v_allowed_columns).
 DROP FUNCTION IF EXISTS public.update_track(uuid, uuid, jsonb);
 
 CREATE OR REPLACE FUNCTION public.update_track(_user_id uuid, _track_id uuid, _updates jsonb)
@@ -112,24 +112,24 @@ $func$;
 ## 3. Smoke test
 
 ```sql
--- Vérifier que la colonne existe et que le default fonctionne
+-- Verify that the column exists and that the default works
 SELECT column_name, data_type, column_default
 FROM information_schema.columns
 WHERE table_name='tracks' AND column_name='production_stage';
 
--- Vérifier que le RPC accepte production_stage
--- (Remplacer les uuids par les tiens en local)
+-- Verify that the RPC accepts production_stage
+-- (Replace the uuids with yours locally)
 -- SELECT public.update_track('<user_uuid>', '<track_uuid>', '{"production_stage":"finished"}'::jsonb);
 
--- Vérifier la valeur écrite
+-- Verify the written value
 -- SELECT id, production_stage FROM public.tracks WHERE id = '<track_uuid>';
 ```
 
 ## 4. Rollback
 
 ```sql
--- Désactiver la colonne (les valeurs restent)
+-- Disable the column (values remain)
 ALTER TABLE public.tracks ALTER COLUMN production_stage DROP DEFAULT;
--- Retirer la colonne (destructif — efface les valeurs)
+-- Remove the column (destructive — clears values)
 -- ALTER TABLE public.tracks DROP COLUMN production_stage;
 ```

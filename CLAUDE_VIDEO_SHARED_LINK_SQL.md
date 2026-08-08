@@ -1,9 +1,9 @@
 # SQL migration — Expose video fields on shared-link RPCs
 
-> **À copier-coller dans Supabase SQL Editor (jamais auto-exécuté côté Claude).**
-> Met à jour les deux RPCs SECURITY DEFINER pour renvoyer `video_url` (storage path) et
-> `video_visible_on_share` (flag d'opt-in). Sans ce patch, SharedLinkPage ne verra jamais
-> la vidéo (même si `video_visible_on_share = true`).
+> **Copy-paste into Supabase SQL Editor (never auto-execute on Claude).**
+> Updates both SECURITY DEFINER RPCs to return `video_url` (storage path) and
+> `video_visible_on_share` (opt-in flag). Without this patch, SharedLinkPage will never
+> see the video (even if `video_visible_on_share = true`).
 
 ```sql
 -- ─── Single-track shared link ──────────────────────────────
@@ -91,5 +91,5 @@ GRANT EXECUTE ON FUNCTION public.get_playlist_tracks_for_shared_link(text) TO an
 SELECT pg_get_function_result(oid)
 FROM pg_proc
 WHERE proname IN ('get_track_for_shared_link', 'get_playlist_tracks_for_shared_link');
--- Doit contenir 'video_url text' et 'video_visible_on_share boolean' dans les deux signatures.
+-- Must contain 'video_url text' and 'video_visible_on_share boolean' in both signatures.
 ```

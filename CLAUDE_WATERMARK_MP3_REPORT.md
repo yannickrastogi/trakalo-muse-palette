@@ -1,29 +1,29 @@
 # Watermark MP3 Encoding — Report
 
-## Objectif
-Réduire la taille du fichier watermarké (WAV non compressé → MP3 192 kbps) pour :
-- ~10x moins de stockage R2
-- "Preparing your secure copy" : 30-60 s → 5-10 s
-- Moins de RAM mobile, playback plus rapide
+## Objective
+Reduce the watermarked file size (uncompressed WAV → MP3 192 kbps) to:
+- ~10x less R2 storage
+- "Preparing your secure copy": 30-60 s → 5-10 s
+- Less mobile RAM, faster playback
 
-**Critique** : la robustesse du watermark audiowmark doit être validée après MP3 via `audiowmark get` (sinon leak tracing cassé).
+**Critical:** the robustness of the audiowmark watermark must be validated after MP3 via `audiowmark get` (otherwise leak tracing breaks).
 
 ---
 
-## 1. Code Railway localisé
+## 1. Localized Railway code
 
-- `services/watermark/Dockerfile` — image Ubuntu 24.04 + audiowmark compilé from source
+- `services/watermark/Dockerfile` — Ubuntu 24.04 image + audiowmark compiled from source
 - `services/watermark/index.js` — Express server (POST /encode, POST /decode, GET /health)
-- `services/watermark/package.json` — deps : express, cors, multer, uuid
-- `services/watermark/README.md` — doc deploy Railway
+- `services/watermark/package.json` — deps: express, cors, multer, uuid
+- `services/watermark/README.md` — Railway deploy doc
 
-Edge Function consommatrice : `supabase/functions/get-watermarked-audio/index.ts`
+Consuming Edge Function: `supabase/functions/get-watermarked-audio/index.ts`
 
 ---
 
 ## 2. Dockerfile — diff
 
-Ajout de **`ffmpeg`** à la liste apt-get install :
+Added **`ffmpeg`** to the apt-get install list:
 
 ```diff
      libmpg123-dev \
@@ -31,17 +31,17 @@ Ajout de **`ffmpeg`** à la liste apt-get install :
      git \
 ```
 
-`libmp3lame` est livré nativement par le paquet ffmpeg Ubuntu 24.04.
+`libmp3lame` is delivered natively by the ffmpeg Ubuntu 24.04 package.
 
 ---
 
-## 3. Code Node — diff (POST /encode)
+## 3. Node code — diff (POST /encode)
 
-### a. Helpers ajoutés
-- `execFileP(cmd, args, options)` — promise wrapper sur `execFile`
-- `parseAudiowmarkPayload(stdout)` — extrait le payload détecté depuis la sortie `audiowmark get`
+### a. Helpers added
+- `execFileP(cmd, args, options)` — promise wrapper on `execFile`
+- `parseAudiowmarkPayload(stdout)` — extracts the detected payload from the `audiowmark get` output
 
-### b. CORS modifié
+### b. CORS modified
 ```diff
    cors({
      origin: (origin, callback) => { ... },
@@ -49,27 +49,27 @@ Ajout de **`ffmpeg`** à la liste apt-get install :
    })
 ```
 
-### c. /encode — pipeline réécrit
+### c. /encode — rewritten pipeline
 
 ```
 1. audiowmark add inputPath wavOutputPath payload   (timeout 80s)
-   → fallback si fail : 500 error
+   → fallback if fail: 500 error
 2. cleanup inputPath
 3. ffmpeg -i wav -c:a libmp3lame -b:a 192k mp3      (timeout 40s)
 4. audiowmark get mp3OutputPath                     (timeout 30s)
-   → parse payload détecté
-   → si !match ou !payload : log + fallback WAV
+   → parse detected payload
+   → if !match or !payload: log + fallback WAV
 5. if useMp3: res.download(mp3, "watermarked.mp3") + X-Watermark-Format: mp3
    else: res.download(wav, "watermarked.wav") + X-Watermark-Format: wav
 ```
 
-Le payload est comparé `toLowerCase()` (hex insensitive). Cleanup couvre les 4 chemins (success-mp3, fallback-wav, timeout, error).
+The payload is compared `toLowerCase()` (hex insensitive). Cleanup covers all 4 paths (success-mp3, fallback-wav, timeout, error).
 
 ---
 
 ## 4. EF get-watermarked-audio — diff
 
-### a. Cache lookup — cohabitation .mp3 / .wav
+### a. Cache lookup — .mp3 / .wav cohabitation
 
 ```diff
 - const watermarkedPath = `${cacheKey}.wav`;
@@ -83,9 +83,9 @@ Le payload est comparé `toLowerCase()` (hex insensitive). Cleanup couvre les 4 
 + }
 ```
 
-Aucun `.wav` legacy n'est supprimé. Préférence au `.mp3` (plus rapide à servir).
+No legacy `.wav` is removed. Preference for `.mp3` (faster to serve).
 
-### b. Upload — choix extension via X-Watermark-Format
+### b. Upload — extension choice via X-Watermark-Format
 
 ```diff
 + const wmFormat = (wmResponse.headers.get("X-Watermark-Format") || "").toLowerCase();
@@ -97,7 +97,7 @@ Aucun `.wav` legacy n'est supprimé. Préférence au `.mp3` (plus rapide à serv
 
 ---
 
-## 5. Validation locale
+## 5. Local validation
 
 ### Syntax checks
 ```bash
@@ -106,13 +106,13 @@ deno check supabase/functions/get-watermarked-audio/index.ts  # ✅ OK
 npm run build                                              # ✅ OK (4.18s)
 ```
 
-### Test manuel Docker (recommandé avant deploy)
+### Manual Docker test (recommended before deploy)
 ```bash
 cd services/watermark
 docker build -t watermark-mp3 .
 docker run -p 3000:3000 -e WATERMARK_API_KEY=test -e ALLOWED_ORIGINS=http://localhost watermark-mp3
 
-# Dans un autre terminal, avec un .wav test
+# In another terminal, with a test .wav
 curl -X POST http://localhost:3000/encode \
   -H "x-api-key: test" \
   -H "Content-Type: application/json" \
@@ -121,64 +121,64 @@ curl -X POST http://localhost:3000/encode \
 
 cat headers.txt | grep -i x-watermark-format   # → expect "X-Watermark-Format: mp3"
 file out.bin                                    # → expect "MPEG ADTS, layer III, v1, 192 kbps"
-ls -lh out.bin                                  # → expect ~3-6 MB pour un fichier 3 min
+ls -lh out.bin                                  # → expect ~3-6 MB for a 3 min file
 ```
 
 ---
 
-## 6. Procédure de deploy Railway
+## 6. Railway deploy procedure
 
-Le service Railway est déployé via **GitHub auto-deploy**.
+The Railway service is deployed via **GitHub auto-deploy**.
 
-Trois étapes :
-1. **Merge sur main** → Railway détecte le push et rebuild l'image Docker
-2. **Build Docker** prend ~3-5 min (compilation audiowmark from source + install ffmpeg)
-3. **Promote** : Railway swap le service après health check `GET /health` OK
+Three steps:
+1. **Merge to main** → Railway detects the push and rebuilds the Docker image
+2. **Docker build** takes ~3-5 min (compiling audiowmark from source + installing ffmpeg)
+3. **Promote** : Railway swaps the service after health check `GET /health` OK
 
-URL : `https://trakalo-muse-palette-production.up.railway.app`
+URL: `https://trakalo-muse-palette-production.up.railway.app`
 
-Si Railway n'est PAS connecté à GitHub :
+If Railway is NOT connected to GitHub:
 ```bash
 cd services/watermark
-railway up    # depuis le dossier services/watermark
+railway up    # from the services/watermark folder
 ```
 
-L'EF Supabase `get-watermarked-audio` doit aussi être redéployée :
+The Supabase EF `get-watermarked-audio` must also be redeployed:
 ```bash
 supabase functions deploy get-watermarked-audio
 ```
 
 ---
 
-## 7. Test post-deploy
+## 7. Post-deploy test
 
-### Smoke test côté Railway
+### Smoke test from Railway
 ```bash
 curl https://trakalo-muse-palette-production.up.railway.app/health
 # → {"status":"ok","version":"1.0.0"}
 ```
 
-### Smoke test pipeline complet
-1. Ouvrir un shared link dans un navigateur fresh (cookie effacé)
-2. Saisir email/nom au gate screen
-3. Observer le "Preparing your secure copy"
-   - **Avant** : 30-60 s, fichier ~40 MB
-   - **Après** : 5-10 s, fichier ~3-6 MB
-4. Vérifier playback browser
+### Full pipeline smoke test
+1. Open a shared link in a fresh browser (cookies cleared)
+2. Enter email/name at the gate screen
+3. Observe "Preparing your secure copy"
+   - **Before** : 30-60 s, ~40 MB file
+   - **After** : 5-10 s, ~3-6 MB file
+4. Verify browser playback
 
-### Validation leak tracing (CRITIQUE)
-1. Download le fichier MP3 watermarké depuis le shared link
-2. Upload-le sur `/decode` de Railway :
+### Leak tracing validation (CRITICAL)
+1. Download the watermarked MP3 from the shared link
+2. Upload it to Railway's `/decode` :
    ```bash
    curl -X POST https://trakalo-muse-palette-production.up.railway.app/decode \
      -H "x-api-key: $WATERMARK_API_KEY" \
      -F "audio=@watermarked.mp3"
    ```
-3. **Le payload détecté doit matcher** celui stocké dans `watermark_payloads.hash_hex`
-4. Si ça ne matche pas → la robustesse MP3 est en cause → désactiver MP3 (rollback)
+3. **The detected payload must match** the one stored in `watermark_payloads.hash_hex`
+4. If it doesn't match → MP3 robustness is at issue → disable MP3 (rollback)
 
-### Logs à surveiller
-- `[watermark] MP3 validation FAILED — expected=..., detected=...` → fréquence ?
+### Logs to monitor
+- `[watermark] MP3 validation FAILED — expected=..., detected=...` → frequency?
 - Cache hit ratio (R2 hits .mp3 vs miss)
 
 ---
@@ -196,35 +196,35 @@ git revert <merge-commit>
 git push origin main   # triggers Railway redeploy
 ```
 
-### Cohabitation safe
-- Les `.wav` legacy dans R2 restent servis tant qu'ils existent
-- Les nouveaux uploads sont `.mp3`
-- Pas de migration nécessaire — soak progressif
+### Safe cohabitation
+- Legacy `.wav` in R2 remain served as long as they exist
+- New uploads are `.mp3`
+- No migration needed — gradual soak
 
 ---
 
-## 9. Security review — findings (pré-existants, hors scope)
+## 9. Security review — findings (pre-existing, out of scope)
 
-La security review a identifié des problèmes **pré-existants** non introduits par ces changements MP3. À traiter dans des PR séparés :
+The security review identified **pre-existing** issues not introduced by these MP3 changes. To be addressed in separate PRs:
 
-| Sévérité | Fichier | Issue |
+| Severity | File | Issue |
 |---|---|---|
-| HIGH | `services/watermark/index.js` | `downloadToFile` suit les redirects sans whitelist SSRF |
-| HIGH | EF `get-watermarked-audio` | `visitor_email` non validé (format + length) |
-| MEDIUM | EF `get-watermarked-audio` | `storage_path` pas passé à `isValidStoragePath()` |
-| MEDIUM | EF `get-watermarked-audio` | Pas de timeout AbortSignal sur le fetch Railway |
+| HIGH | `services/watermark/index.js` | `downloadToFile` follows redirects without SSRF whitelist |
+| HIGH | EF `get-watermarked-audio` | `visitor_email` not validated (format + length) |
+| MEDIUM | EF `get-watermarked-audio` | `storage_path` not passed to `isValidStoragePath()` |
+| MEDIUM | EF `get-watermarked-audio` | No timeout AbortSignal on the Railway fetch |
 | LOW | EF `get-watermarked-audio` | Double `createClient(service_role)` |
 
-Les changements MP3 eux-mêmes sont propres : payload validé hex strict, paths via uuid, ffmpeg args sans user input, cleanup exhaustif sur tous les chemins, fallback WAV garanti.
+The MP3 changes themselves are clean: payload validated strict hex, paths via uuid, ffmpeg args without user input, exhaustive cleanup on all paths, WAV fallback guaranteed.
 
 ---
 
-## 10. Gain attendu
+## 10. Expected gain
 
-| Métrique | Avant (WAV) | Après (MP3 192k) | Gain |
+| Metric | Before (WAV) | After (MP3 192k) | Gain |
 |---|---|---|---|
-| Taille fichier (track 3 min) | ~37-62 MB | ~3-6 MB | **10x** |
-| Temps "Preparing" | 30-60 s | 5-10 s | **~6x** |
-| Storage R2 watermarked | 100% | ~10% | **90% économisé** |
-| Bandwidth R2 → fan | idem | -90% | **idem** |
-| Leak tracing | OK | OK (validé) | **préservé** |
+| File size (3 min track) | ~37-62 MB | ~3-6 MB | **10x** |
+| "Preparing" time | 30-60 s | 5-10 s | **~6x** |
+| R2 watermarked storage | 100% | ~10% | **90% saved** |
+| Bandwidth R2 → fan | same | -90% | **same** |
+| Leak tracing | OK | OK (validated) | **preserved** |

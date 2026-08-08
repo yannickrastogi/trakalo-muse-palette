@@ -1,7 +1,7 @@
-# SQL migration — Track ratings (1–5 étoiles par membre)
+# SQL migration — Track ratings (1–5 stars per member)
 
-> **À copier-coller dans Supabase SQL Editor (jamais auto-exécuté côté Claude).**
-> Bloc unique, idempotent. Les `DROP FUNCTION` sont obligatoires (signatures peuvent changer).
+> **Copy-paste into Supabase SQL Editor (never auto-execute on Claude).**
+> Single block, idempotent. `DROP FUNCTION` are mandatory (signatures may change).
 
 ```sql
 -- ─── Table ────────────────────────────────────────────────
@@ -130,7 +130,7 @@ SELECT public.get_track_rating_stats(
 );
 -- → { "average": 4.0, "count": 1, "my_rating": 4 }
 
--- Vérifie aussi un SELECT direct (RLS doit autoriser les membres du workspace)
+-- Also verify a direct SELECT (RLS must allow workspace members)
 SELECT track_id, rating FROM public.track_ratings WHERE workspace_id = '<workspace_uuid>'::uuid;
 ```
 

@@ -1,14 +1,14 @@
-# SQL — Fermer la fuite PII `signature_requests`
+# SQL — Close the PII leak on `signature_requests`
 
-> ⚠️ **NE PAS auto-exécuter.** À copier-coller dans **Supabase SQL Editor** (projet `xhmeitivkclbeziqavxw`) **APRÈS** le déploiement du code (push + `supabase functions deploy get-shared-link-asset`).
+> ⚠️ **DO NOT auto-execute.** Copy-paste into **Supabase SQL Editor** (project `xhmeitivkclbeziqavxw`) **AFTER** deploying the code (push + `supabase functions deploy get-shared-link-asset`).
 >
-> Exécuter dans l'ordre : **Bloc 1** (créer la RPC) → **Bloc 2** (fermer la policy). La RPC doit exister avant de fermer la policy, sinon `SignAgreement.tsx` casse entre les deux étapes.
+> Execute in order: **Block 1** (create the RPC) → **Block 2** (close the policy). The RPC must exist before closing the policy, otherwise `SignAgreement.tsx` breaks between the two steps.
 
 ---
 
-## Contexte
+## Context
 
-La table `signature_requests` avait une policy anon ouverte :
+The `signature_requests` table had an open anon policy:
 
 ```sql
 CREATE POLICY "signature_requests_anon_select"
@@ -16,27 +16,27 @@ CREATE POLICY "signature_requests_anon_select"
   USING (token IS NOT NULL);
 ```
 
-Comme **toutes** les lignes ont un `token`, le prédicat `token IS NOT NULL` est vrai pour tout le monde → n'importe quel anon pouvait lire **tous les emails de collaborateurs + images de signature de tous les workspaces** (`/rest/v1/signature_requests?select=collaborator_email`). RLS ne peut pas forcer un filtre `WHERE token=...`, donc la seule vraie correction est de **retirer le SELECT anon** et de router toutes les lectures anon par des fonctions validées par token/slug.
+Since **all** rows have a `token`, the predicate `token IS NOT NULL` is true for everyone → anyone anonymous could read **all collaborators' emails + signature images from all workspaces** (`/rest/v1/signature_requests?select=collaborator_email`). RLS cannot force a `WHERE token=...` filter, so the only real fix is to **remove anon SELECT** and route all anonymous reads through token/slug-validated functions.
 
-**Deux chemins anon lisaient cette table — les deux sont maintenant migrés côté code :**
+**Two anonymous paths read this table — both are now migrated on the code side:**
 
-| Chemin | Avant | Après |
+| Path | Before | After |
 |--------|-------|-------|
-| `SharedLinkPage.tsx` (pack download) | `fetch` REST anon direct | EF `get-shared-link-asset` (`action=signatures`, service role, validé par slug) |
-| `SignAgreement.tsx` (page signature publique) | `anonClient.from("signature_requests").select(...)` ×2 | RPC `get_signature_agreement_by_token` (SECURITY DEFINER, validé par token, masque la PII des autres) |
+| `SharedLinkPage.tsx` (pack download) | `fetch` direct anon REST | EF `get-shared-link-asset` (`action=signatures`, service role, validated by slug) |
+| `SignAgreement.tsx` (public signature page) | `anonClient.from("signature_requests").select(...)` ×2 | RPC `get_signature_agreement_by_token` (SECURITY DEFINER, validated by token, masks PII from others) |
 
-Les lecteurs **authentifiés** (`TrackDetail.tsx`, `DownloadTrackModal.tsx`) utilisent le rôle `authenticated`, pas `anon` → **non affectés** par le retrait de la policy `TO anon`.
+**Authenticated** readers (`TrackDetail.tsx`, `DownloadTrackModal.tsx`) use the `authenticated` role, not `anon` → **unaffected** by removing the `TO anon` policy.
 
-La policy anon **UPDATE** (`signature_requests_anon_update_signing`) reste **intacte** — hors scope de cette fuite (lecture). Le write de signature passe déjà par `sign_agreement_via_token`.
+The anon **UPDATE** policy (`signature_requests_anon_update_signing`) remains **intact** — out of scope of this leak (read-only). The signature write already goes through `sign_agreement_via_token`.
 
 ---
 
-## Bloc 1 — Créer la RPC `get_signature_agreement_by_token`
+## Block 1 — Create the RPC `get_signature_agreement_by_token`
 
 ```sql
--- RPC validée par token : retourne la ligne du signataire + les splits du track
--- avec PRO/IPI/publisher/email des AUTRES collaborateurs masqués.
--- SECURITY DEFINER → bypasse RLS ; la sécurité repose sur l'unguessability du token.
+-- Token-validated RPC: returns the signer's row + the track's splits
+-- with PRO/IPI/publisher/email of OTHER collaborators masked.
+-- SECURITY DEFINER → bypasses RLS; security relies on the token's unguessability.
 DROP FUNCTION IF EXISTS public.get_signature_agreement_by_token(text);
 
 CREATE FUNCTION public.get_signature_agreement_by_token(_token text)
@@ -62,8 +62,8 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  -- Splits du même track : données complètes uniquement pour la ligne du
-  -- signataire courant (même email) ; masquées pour les autres.
+  -- Splits from the same track: full data only for the current
+  -- signer's row (same email); masked for others.
   SELECT jsonb_agg(row_obj ORDER BY share DESC) INTO _splits
   FROM (
     SELECT
@@ -104,50 +104,50 @@ $func$;
 GRANT EXECUTE ON FUNCTION public.get_signature_agreement_by_token(text) TO anon, authenticated;
 ```
 
-### Vérification Bloc 1 (remplacer `<UN_TOKEN_VALIDE>`)
+### Block 1 verification (replace `<A_VALID_TOKEN>`)
 
 ```sql
-SELECT public.get_signature_agreement_by_token('<UN_TOKEN_VALIDE>');
--- Attendu : { "request": {...}, "splits": [...] }
-SELECT public.get_signature_agreement_by_token('inexistant');
--- Attendu : NULL
+SELECT public.get_signature_agreement_by_token('<A_VALID_TOKEN>');
+-- Expected: { "request": {...}, "splits": [...] }
+SELECT public.get_signature_agreement_by_token('nonexistent');
+-- Expected: NULL
 ```
 
 ---
 
-## Bloc 2 — Fermer la policy anon SELECT (À EXÉCUTER APRÈS validation du Bloc 1 + déploiement code)
+## Block 2 — Close the anon SELECT policy (TO BE EXECUTED AFTER Block 1 validation + code deploy)
 
 ```sql
--- Inspecter d'abord les policies existantes :
+-- First inspect existing policies:
 SELECT policyname, cmd, roles
 FROM pg_policies
 WHERE schemaname = 'public' AND tablename = 'signature_requests';
 
--- Retirer le SELECT anon (couvre le nom actuel + les noms historiques) :
+-- Remove the anon SELECT (covers current + historical names):
 DROP POLICY IF EXISTS "signature_requests_anon_select" ON public.signature_requests;
 DROP POLICY IF EXISTS "anon_select_signature_requests" ON public.signature_requests;
-DROP POLICY IF EXISTS "anon_select_by_token"           ON public.signature_requests; -- nom mentionné dans le plan (probablement inexistant)
+DROP POLICY IF EXISTS "anon_select_by_token"           ON public.signature_requests; -- name mentioned in the plan (probably nonexistent)
 
--- NE PAS toucher à "signature_requests_anon_update_signing" (UPDATE anon, requis pour le flux de signature).
--- Plus aucune policy anon SELECT : la lecture passe désormais par
---   • EF get-shared-link-asset (service role, validé par slug)  → SharedLinkPage
---   • RPC get_signature_agreement_by_token (validé par token)   → SignAgreement
--- Les policies authentifiées existantes restent intactes.
+-- DO NOT touch "signature_requests_anon_update_signing" (anon UPDATE, required for the signing flow).
+-- No more anon SELECT policies: reads now go through
+--   • EF get-shared-link-asset (service role, validated by slug)  → SharedLinkPage
+--   • RPC get_signature_agreement_by_token (validated by token)   → SignAgreement
+-- Existing authenticated policies remain intact.
 ```
 
-### Vérification Bloc 2
+### Block 2 verification
 
 ```sql
--- Doit ne plus retourner AUCUNE ligne avec cmd='SELECT' et roles contenant 'anon' :
+-- Should return NO rows with cmd='SELECT' and roles containing 'anon':
 SELECT policyname, cmd, roles
 FROM pg_policies
 WHERE schemaname = 'public' AND tablename = 'signature_requests';
 ```
 
-Test côté anon (doit échouer / retourner 0 ligne maintenant) :
+Test from anonymous (should fail / return 0 rows now):
 
 ```
 GET https://xhmeitivkclbeziqavxw.supabase.co/rest/v1/signature_requests?select=collaborator_email
 Headers: apikey: <ANON_KEY>
-→ Attendu : [] (RLS bloque) au lieu de la liste de tous les emails.
+→ Expected: [] (RLS blocks) instead of the list of all emails.
 ```

@@ -1,17 +1,17 @@
-# Fix — `production_stage` ne persistait pas via `update_track`
+# Fix — `production_stage` was not persisting via `update_track`
 
-**Cause** : la whitelist du RPC `update_track` (migration `20260607_update_track_whitelist_v2.sql`) omet la colonne `production_stage`. Le RPC `CONTINUE` silencieusement la clé non-whitelistée, l'UI rafraîchit en local, mais la valeur n'est jamais écrite en DB → à refresh, la valeur précédente revient.
+**Cause**: the whitelist of the `update_track` RPC (migration `20260607_update_track_whitelist_v2.sql`) omits the `production_stage` column. The RPC silently CONTINUES on the non-whitelisted key, the UI refreshes locally, but the value is never written to DB → on refresh, the previous value returns.
 
-**Fix** : ajouter `'production_stage'` à `v_allowed_columns`. La colonne est de type `text` (check `IN ('work_in_progress', 'finished')` côté DDL) — pas besoin de cast spécial, elle passe par la branche string générique du builder.
+**Fix**: add `'production_stage'` to `v_allowed_columns`. The column is of type `text` (check `IN ('work_in_progress', 'finished')` at DDL level) — no special cast needed, it goes through the generic string branch of the builder.
 
-## SQL à exécuter dans Supabase SQL Editor
+## SQL to execute in Supabase SQL Editor
 
 ```sql
--- Trakalog — Ajout de production_stage à la whitelist update_track
--- Bug: production_stage était droppé par le builder dynamique (whitelist incomplète)
--- depuis la migration 20260607_update_track_whitelist_v2.sql. Toute UI qui set
--- productionStage rafraîchissait en optimiste mais ne persistait jamais en DB.
--- Le reste du corps de la fonction est identique à la v2 — seule la whitelist change.
+-- Trakalog — Adding production_stage to update_track whitelist
+-- Bug: production_stage was dropped by the dynamic builder (incomplete whitelist)
+-- since migration 20260607_update_track_whitelist_v2.sql. Any UI that sets
+-- productionStage would refresh optimistically but never persist in DB.
+-- The rest of the function body is identical to v2 — only the whitelist changes.
 
 CREATE OR REPLACE FUNCTION public.update_track(_user_id uuid, _track_id uuid, _updates jsonb)
 RETURNS void
@@ -100,16 +100,16 @@ END;
 $func$;
 ```
 
-## Vérification
+## Verification
 
 ```sql
--- Confirme que production_stage est bien dans la whitelist
+-- Confirm that production_stage is in the whitelist
 SELECT prosrc FROM pg_proc WHERE proname = 'update_track';
--- → la string `'production_stage'` doit apparaître dans v_allowed_columns.
+-- → the string 'production_stage' should appear in v_allowed_columns.
 ```
 
-Côté frontend, le mapping est déjà correct :
-- `TrackContext.tsx:840` envoie `payload.production_stage = updates.productionStage`
-- `TrackDetail.tsx:667` appelle `updateTrack(track.id, { productionStage: ... })`
+On the frontend, the mapping is already correct:
+- `TrackContext.tsx:840` sends `payload.production_stage = updates.productionStage`
+- `TrackDetail.tsx:667` calls `updateTrack(track.id, { productionStage: ... })`
 
-Une fois ce SQL exécuté, les changements de WIP/Finished persisteront après refresh.
+Once this SQL is executed, WIP/Finished changes will persist after refresh.

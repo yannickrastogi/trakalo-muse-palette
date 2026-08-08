@@ -1,14 +1,14 @@
-# CONTACTS — Dédup + verrouillage + bulk delete (SQL manuel)
+# CONTACTS — Dedup + locking + bulk delete (manual SQL)
 
-> ⚠️ **À exécuter MANUELLEMENT dans Supabase SQL Editor, dans l'ordre.**
-> Ne rien auto-exécuter. Valider chaque étape avant la suivante.
-> Projet : `xhmeitivkclbeziqavxw`
+> ⚠️ **Execute MANUALLY in Supabase SQL Editor, in order.**
+> Do not auto-execute. Validate each step before proceeding.
+> Project: `xhmeitivkclbeziqavxw`
 
 ---
 
-## ÉTAPE 1 — Prévisualisation (SELECT only — rien supprimé)
+## STEP 1 — Preview (SELECT only — nothing deleted)
 
-Compte les doublons **sans email** (même first/last name, insensible casse) par workspace.
+Counts duplicates **without email** (same first/last name, case-insensitive) per workspace.
 
 ```sql
 WITH grp AS (
@@ -26,10 +26,10 @@ WITH grp AS (
 ),
 losers AS (SELECT id AS loser_id FROM grp WHERE rn > 1)
 SELECT COUNT(*) AS rows_to_delete FROM losers;
--- Attendu : ~111
+-- Expected: ~111
 ```
 
-> ℹ️ Optionnel — prévisualiser aussi les doublons **avec email** (même workspace + même email lowercased) :
+> ℹ️ Optional — also preview duplicates **with email** (same workspace + same email lowercased):
 > ```sql
 > SELECT workspace_id, lower(btrim(email)) AS email_key, COUNT(*) AS n
 > FROM contacts
@@ -38,13 +38,13 @@ SELECT COUNT(*) AS rows_to_delete FROM losers;
 > HAVING COUNT(*) > 1
 > ORDER BY n DESC;
 > ```
-> Si des doublons email existent, dédupliquer aussi avant ÉTAPE 4 (sinon l'index unique email échoue). Adapter le pattern des étapes 2/3 avec `name_key` → `lower(btrim(email))` et `WHERE coalesce(btrim(email),'') <> ''`.
+> If email duplicates exist, deduplicate before STEP 4 (otherwise the unique email index fails). Adapt the pattern from steps 2/3 with `name_key` → `lower(btrim(email))` and `WHERE coalesce(btrim(email),'') <> ''`.
 
 ---
 
-## ÉTAPE 2 — Remap `artist_aliases.contact_ids` (loser → survivor)
+## STEP 2 — Remap `artist_aliases.contact_ids` (loser → survivor)
 
-Avant suppression, repointer les références des doublons vers le contact conservé (le plus ancien).
+Before deletion, repoint references from duplicates to the contact kept (the oldest).
 
 ```sql
 WITH grp AS (
@@ -79,7 +79,7 @@ WHERE l.loser_id = ANY(aa.contact_ids);
 
 ---
 
-## ÉTAPE 3 — Supprimer les doublons
+## STEP 3 — Delete duplicates
 
 ```sql
 WITH grp AS (
@@ -100,35 +100,35 @@ DELETE FROM contacts WHERE id IN (SELECT id FROM grp WHERE rn > 1);
 
 ---
 
-## ÉTAPE 4 — Index uniques (après nettoyage)
+## STEP 4 — Unique indexes (after cleanup)
 
 ```sql
--- Unicité par email (insensible casse), uniquement quand email non vide
+-- Uniqueness by email (case-insensitive), only when email is not empty
 CREATE UNIQUE INDEX IF NOT EXISTS uq_contacts_ws_email
   ON public.contacts (workspace_id, lower(email))
   WHERE email IS NOT NULL AND btrim(email) <> '';
 
--- Unicité par nom (insensible casse), uniquement quand email vide
+-- Uniqueness by name (case-insensitive), only when email is empty
 CREATE UNIQUE INDEX IF NOT EXISTS uq_contacts_ws_name_noemail
   ON public.contacts (workspace_id, lower(first_name), lower(coalesce(last_name,'')))
   WHERE email IS NULL OR btrim(email) = '';
 ```
 
-> Si l'une des deux créations échoue → c'est qu'il reste des doublons. Revenir à l'ÉTAPE 1 (et la variante email) pour les nettoyer, puis relancer.
+> If either creation fails → there are still duplicates. Go back to STEP 1 (and the email variant) to clean them, then retry.
 
 ---
 
-## ÉTAPE 5 — `upsert_contact` atomique (INSERT ... ON CONFLICT)
+## STEP 5 — `upsert_contact` atomic (INSERT ... ON CONFLICT)
 
-> ⚠️ `CREATE OR REPLACE` avec une signature différente crée un **doublon** de fonction.
-> On DROP d'abord toutes les surcharges connues, puis on recrée.
+> ⚠️ `CREATE OR REPLACE` with a different signature creates a **duplicate** function.
+> We DROP first all known overloads, then recreate.
 
 ```sql
--- Drop des surcharges existantes (ajouter/retirer selon ce que `\df upsert_contact` retourne)
+-- Drop existing overloads (add/remove based on what `\df upsert_contact` returns)
 DROP FUNCTION IF EXISTS public.upsert_contact(uuid, uuid, text, text, text, text, text, text, text[], text, text);
 DROP FUNCTION IF EXISTS public.upsert_contact(uuid, uuid, text, text, text, text, text, text, text, text, text[], text, text);
 DROP FUNCTION IF EXISTS public.upsert_contact(uuid, uuid, text, text, text, text, text, text, text, text, text, text[], text, text);
--- Vérifier qu'il ne reste aucune surcharge avant de recréer :
+-- Verify no overloads remain before recreating:
 --   SELECT oid::regprocedure FROM pg_proc WHERE proname = 'upsert_contact';
 
 CREATE OR REPLACE FUNCTION upsert_contact(
@@ -153,7 +153,7 @@ DECLARE
   _id uuid;
   _norm_email text := NULLIF(lower(btrim(coalesce(_email,''))), '');
 BEGIN
-  -- Autorisation : membre du workspace
+  -- Authorization: workspace member
   IF NOT EXISTS (
     SELECT 1 FROM workspace_members
     WHERE workspace_id = _workspace_id AND user_id = _user_id
@@ -162,7 +162,7 @@ BEGIN
   END IF;
 
   IF _norm_email IS NOT NULL THEN
-    -- Upsert par email (atomique)
+    -- Upsert by email (atomic)
     INSERT INTO contacts (
       workspace_id, first_name, last_name, email, stage_name,
       role, company, phone, city, country, pro, ipi, publisher, created_by
@@ -187,7 +187,7 @@ BEGIN
       updated_at = now()
     RETURNING id INTO _id;
   ELSE
-    -- Upsert par nom (sans email, atomique)
+    -- Upsert by name (no email, atomic)
     INSERT INTO contacts (
       workspace_id, first_name, last_name, stage_name,
       role, company, phone, city, country, pro, ipi, publisher, created_by
@@ -216,13 +216,13 @@ END;
 $func$;
 ```
 
-> ⚠️ Le front (`ContactsContext.tsx`) appelle `upsert_contact` avec les paramètres **nommés** :
+> ⚠️ The frontend (`ContactsContext.tsx`) calls `upsert_contact` with **named** parameters:
 > `_user_id, _workspace_id, _first_name, _last_name, _email, _role, _company, _phone, _pro, _ipi, _publisher`.
-> Tous les autres (`_stage_name, _city, _country`) ont un DEFAULT → l'appel reste compatible.
+> All others (`_stage_name, _city, _country`) have a DEFAULT → the call remains compatible.
 
 ---
 
-## ÉTAPE 6 — RPC `delete_contacts` (bulk delete)
+## STEP 6 — RPC `delete_contacts` (bulk delete)
 
 ```sql
 CREATE OR REPLACE FUNCTION delete_contacts(
@@ -233,7 +233,7 @@ CREATE OR REPLACE FUNCTION delete_contacts(
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public AS $func$
 BEGIN
-  -- Autorisation : editor ou admin du workspace
+  -- Authorization: editor or admin of the workspace
   IF NOT EXISTS (
     SELECT 1 FROM workspace_members
     WHERE workspace_id = _workspace_id
@@ -250,20 +250,20 @@ END;
 $func$;
 ```
 
-> Le front (`Contacts.tsx`) appelle :
+> The frontend (`Contacts.tsx`) calls:
 > ```
 > supabase.rpc('delete_contacts', { _user_id, _workspace_id, _ids })
 > ```
 
 ---
 
-## Récapitulatif d'exécution
+## Execution Summary
 
-1. **ÉTAPE 1** — preview (vérifier ~111) ✅
-2. **ÉTAPE 2** — remap artist_aliases ✅
-3. **ÉTAPE 3** — DELETE doublons ✅
-4. **ÉTAPE 4** — index uniques ✅
-5. **ÉTAPE 5** — `upsert_contact` atomique (DROP puis CREATE) ✅
-6. **ÉTAPE 6** — `delete_contacts` bulk ✅
+1. **STEP 1** — preview (verify ~111) ✅
+2. **STEP 2** — remap artist_aliases ✅
+3. **STEP 3** — DELETE duplicates ✅
+4. **STEP 4** — unique indexes ✅
+5. **STEP 5** — `upsert_contact` atomic (DROP then CREATE) ✅
+6. **STEP 6** — `delete_contacts` bulk ✅
 
-Après SQL → l'UI multi-select et la dédup atomique sont opérationnelles.
+After SQL → the UI multi-select and atomic dedup are operational.

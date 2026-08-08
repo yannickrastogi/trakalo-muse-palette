@@ -1,15 +1,15 @@
-# Versioning chapters — SQL à exécuter dans Supabase SQL Editor
+# Versioning chapters — SQL to execute in Supabase SQL Editor
 
-> **À COPIER TEL QUEL** dans Supabase → SQL Editor.
-> Le frontend `TrackDetail.tsx` + `VersionSelector.tsx` dépend de cette mise à jour pour que :
-> - les chapters édités sur la version active soient mirrorés dans `tracks.chapters`
-> - le passage "Set as Active" d'une version V2 copie ses chapters vers `tracks.chapters`
+> **COPY AS IS** into Supabase → SQL Editor.
+> The frontend `TrackDetail.tsx` + `VersionSelector.tsx` depends on this update so that:
+> - edited chapters on the active version are mirrored in `tracks.chapters`
+> - the "Set as Active" passage of a V2 version copies its chapters to `tracks.chapters`
 
 ```sql
--- 1) Drop explicite (CREATE OR REPLACE avec signature différente créerait des doublons)
+-- 1) Explicit drop (CREATE OR REPLACE with different signature would create duplicates)
 DROP FUNCTION IF EXISTS public.set_track_version_active(uuid, uuid, uuid, uuid);
 
--- 2) Recréer avec sync chapters
+-- 2) Recreate with chapter sync
 CREATE OR REPLACE FUNCTION public.set_track_version_active(
   _user_id uuid,
   _track_id uuid,
@@ -63,20 +63,20 @@ END;
 $func$;
 ```
 
-## Sanity check après exécution
+## Sanity check after execution
 
 ```sql
--- Vérifier que la fonction prend bien les chapters en compte
+-- Verify the function properly accounts for chapters
 SELECT pg_get_functiondef('public.set_track_version_active(uuid, uuid, uuid, uuid)'::regprocedure);
 
--- Sur un track avec V1 active + chapters, basculer sur V2 :
--- 1) avant : SELECT chapters FROM tracks WHERE id = '<track_uuid>';
+-- On a track with active V1 + chapters, switch to V2:
+-- 1) before: SELECT chapters FROM tracks WHERE id = '<track_uuid>';
 -- 2) SELECT set_track_version_active('<user_uuid>', '<track_uuid>', '<workspace_uuid>', '<v2_id>');
--- 3) après : SELECT chapters FROM tracks WHERE id = '<track_uuid>';  -- doit refléter V2
+-- 3) after: SELECT chapters FROM tracks WHERE id = '<track_uuid>';  -- must reflect V2
 ```
 
 ## Notes
 
-- `COALESCE(tv.chapters, t.chapters)` : si la version cible n'a pas encore de chapters (NULL), on garde ceux du track parent — évite d'effacer accidentellement le travail existant lors d'une bascule rapide post-upload.
-- Si `track_versions.chapters` est un `[]` explicite (utilisateur a vidé les sections), il écrase bien — `COALESCE` ne court-circuite qu'en cas de NULL.
-- Cette fonction doit rester `SECURITY DEFINER` et n'utiliser que des paramètres `_user_id` explicites (jamais `auth.uid()`).
+- `COALESCE(tv.chapters, t.chapters)` : if the target version has no chapters yet (NULL), we keep those from the parent track — avoids accidentally erasing existing work during a quick post-upload switch.
+- If `track_versions.chapters` is an explicit `[]` (user cleared sections), it overwrites correctly — `COALESCE` only short-circuits on NULL.
+- This function must remain `SECURITY DEFINER` and use only explicit `_user_id` parameters (never `auth.uid()`).

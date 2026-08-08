@@ -1,7 +1,7 @@
 # SQL migration — Add `chapters` to shared-link RPCs
 
-> **À copier-coller dans Supabase SQL Editor (jamais auto-exécuté côté Claude).**
-> Bloc unique, idempotent. Les `DROP FUNCTION` sont obligatoires car on change la signature `RETURNS TABLE`.
+> **Copy-paste into Supabase SQL Editor (never auto-execute from Claude).**
+> Single block, idempotent. The `DROP FUNCTION` calls are mandatory since we're changing the `RETURNS TABLE` signature.
 
 ```sql
 -- 1. Single-track shared link RPC
@@ -82,18 +82,18 @@ GRANT EXECUTE ON FUNCTION public.get_playlist_tracks_for_shared_link(text) TO an
 ## Smoke test post-migration
 
 ```sql
--- Vérifie la signature mise à jour
+-- Verify the updated signature
 SELECT pg_get_function_result(oid)
 FROM pg_proc
 WHERE proname IN ('get_track_for_shared_link', 'get_playlist_tracks_for_shared_link');
--- Doit contenir 'chapters jsonb' dans les deux.
+-- Should contain 'chapters jsonb' in both.
 
--- Test fonctionnel : si tu as un track avec chapters défini, prends son slug
+-- Functional test: if you have a track with chapters defined, grab its slug
 SELECT chapters FROM public.get_track_for_shared_link('<slug>') LIMIT 1;
 ```
 
-## Comportement attendu côté UI
+## Expected UI behavior
 
-- Si `tracks.chapters` est NULL → l'EF retourne NULL → pas de pills affichées (frontend court-circuit).
-- Si `tracks.chapters = '[]'::jsonb` → idem (tableau vide).
-- Si chapters contient des items → pills horizontales scrollables affichées sous la waveform, cliquables → seek à `startPercent`.
+- If `tracks.chapters` is NULL → the EF returns NULL → no pills displayed (frontend short-circuits).
+- If `tracks.chapters = '[]'::jsonb` → same (empty array).
+- If chapters contains items → horizontally scrollable pills displayed below the waveform, clickable → seek to `startPercent`.

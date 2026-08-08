@@ -1,11 +1,11 @@
 # CLAUDE — Pitch Fix SQL
 
-> **À exécuter manuellement dans Supabase SQL Editor** (un seul bloc copyable).
-> Crée la RPC `update_pitch_share_link` qui relie un pitch à son shared link + contact.
-> Les colonnes `pitches.share_link_id` (uuid) et `pitches.contact_id` (uuid) existent déjà.
+> **Execute manually in Supabase SQL Editor (single copyable block).**
+> Creates the RPC `update_pitch_share_link` that links a pitch to its shared link + contact.
+> The columns `pitches.share_link_id` (uuid) and `pitches.contact_id` (uuid) already exist.
 
 ```sql
--- DROP explicite d'abord (évite les doublons si la signature change)
+-- Explicit DROP first (avoids duplicates if signature changes)
 DROP FUNCTION IF EXISTS public.update_pitch_share_link(uuid, uuid, uuid, uuid, uuid);
 
 CREATE OR REPLACE FUNCTION public.update_pitch_share_link(
@@ -20,10 +20,10 @@ SECURITY DEFINER
 SET search_path TO 'public'
 AS $func$
 BEGIN
-  -- Même gate que create_pitch / create_shared_link : niveau 'pitcher' minimum (pas juste membre)
+  -- Same gate as create_pitch / create_shared_link: 'pitcher' level minimum (not just member)
   PERFORM public.require_workspace_access_level(_user_id, _workspace_id, 'pitcher');
 
-  -- Empêcher de pointer un pitch vers un lien d'un autre workspace (même si l'UUID est connu)
+  -- Prevent pointing a pitch to a link from another workspace (even if the UUID is known)
   IF _share_link_id IS NOT NULL AND NOT EXISTS (
     SELECT 1 FROM shared_links
     WHERE id = _share_link_id AND workspace_id = _workspace_id
@@ -31,7 +31,7 @@ BEGIN
     RAISE EXCEPTION 'Invalid share link';
   END IF;
 
-  -- Idem pour le contact
+  -- Same for the contact
   IF _contact_id IS NOT NULL AND NOT EXISTS (
     SELECT 1 FROM contacts
     WHERE id = _contact_id AND workspace_id = _workspace_id
@@ -53,7 +53,7 @@ GRANT EXECUTE ON FUNCTION public.update_pitch_share_link(uuid, uuid, uuid, uuid,
 ```
 
 ## Notes
-- `COALESCE(...)` : on ne réécrit pas une valeur existante avec NULL si l'un des deux (lien / contact) est absent.
-- `_share_link_id` provient du `json` retourné par `create_shared_link` (champ `id`).
-- `_contact_id` provient du `uuid` retourné par `upsert_contact`.
-- Appelée depuis `src/contexts/PitchContext.tsx` → `addPitch`, après `create_pitch` + `create_shared_link` + `upsert_contact`.
+- `COALESCE(...)` : we don't overwrite an existing value with NULL if either (link / contact) is absent.
+- `_share_link_id` comes from the `json` returned by `create_shared_link` (field `id`).
+- `_contact_id` comes from the `uuid` returned by `upsert_contact`.
+- Called from `src/contexts/PitchContext.tsx` → `addPitch`, after `create_pitch` + `create_shared_link` + `upsert_contact`.
