@@ -1,17 +1,17 @@
-# COWORK SESSION REPORT — Trakalog
+# COWOK — TRAKALOG SESSION REPORT
 
-> Session démarrée : 2026-06-04 23:49 (heure locale)
-> Opérateur : Claude (Cowork mode) · Fondateur : Yannick Rastogi
-> Workspace de test : **Banx & Ranx Test** (`38007e8a-605b-4852-8c5a-73f3bc5c827c`)
+> Session started: 2026-06-04 23:49 (local time)
+> Operator: Claude (Cowork mode) · Founder: Yannick Rastogi
+> Test workspace: **Banx & Ranx Test** (`38007e8a-605b-4852-8c5a-73f3bc5c827c`)
 
 ---
 
-## 🔴 INSTRUCTIONS ROLLBACK (à lire en premier)
+## 🔴 ROLLBACK INSTRUCTIONS (read first)
 
-**Tag de sécurité pré-session :** `pre-cowork-20260604-234913` (pointe sur `d20cee6`)
+**Pre-session safety tag:** `pre-cowork-20260604-234913` (points to `d20cee6`)
 
-### Rollback complet de la session (option nucléaire)
-Annule TOUS les commits de la session et restaure l'état pré-session. Vercel redéploie automatiquement en 1-2 min.
+### Full session rollback (nuclear option)
+Undoes ALL commits of the session and restores pre-session state. Vercel auto-redeploys in 1-2 min.
 
 ```bash
 cd ~/Desktop/DEV/trakalog-app
@@ -19,139 +19,138 @@ git reset --hard pre-cowork-20260604-234913
 git push --force origin main
 ```
 
-### Rollback chirurgical d'un seul fix
-Si un commit précis casse quelque chose mais que les autres sont bons :
+### Surgical rollback of a single fix
+If a specific commit breaks something but others are good:
 
 ```bash
 git revert <commit_hash>
 git push origin main
 ```
 
-### Vérifier l'état
+### Check state
 ```bash
-git log --oneline pre-cowork-20260604-234913..HEAD   # liste les commits de la session
-git diff pre-cowork-20260604-234913..HEAD --stat       # fichiers touchés
+git log --oneline pre-cowork-20260604-234913..HEAD   # list session commits
+git diff pre-cowork-20260604-234913..HEAD --stat       # touched files
 ```
 
 ---
 
-## ÉTAT SETUP
+## SETUP STATE
 
-| Élément | État |
+| Item | Status |
 |---|---|
-| Dossier repo connecté | ✅ `~/Desktop/DEV/trakalog-app` |
-| Branche | `main` (clean, sync origin) |
-| HEAD au démarrage | `d20cee6` (fix PDF contacts) |
-| Tag rollback | ✅ `pre-cowork-20260604-234913` |
+| Connected repo folder | ✅ `~/Desktop/DEV/trakalog-app` |
+| Branch | `main` (clean, sync origin) |
+| HEAD at start | `d20cee6` (fix PDF contacts) |
+| Rollback tag | ✅ `pre-cowork-20260604-234913` |
 | Chrome connector | ✅ Browser 1 (macOS, local) |
 | Node / npm | v22.22.0 / 10.9.4 |
-| Workspace actif vérifié | ✅ ID `38007e8a-605b-4852-8c5a-73f3bc5c827c` (= "Banx & Ranx Test", affiché "Banx & Ranx", 17 tracks) |
+| Active workspace verified | ✅ ID `38007e8a-605b-4852-8c5a-73f3bc5c827c` (= "Banx & Ranx Test", displayed "Banx & Ranx", 17 tracks) |
 
-> ⚠️ Note : le workspace de test est **affiché "Banx & Ranx"** dans l'UI (sans suffixe "Test"), mais l'ID `trakalog_active_workspace` en localStorage confirme `38007e8a-…` = le workspace de test mandaté. Aucun autre "Banx & Ranx" n'existe dans le compte. ✅ Safe.
+> ⚠️ Note: the test workspace is **displayed "Banx & Ranx"** in the UI (without "Test" suffix), but the ID `trakalog_active_workspace` in localStorage confirms `38007e8a-…` = the mandated test workspace. No other "Banx & Ranx" exists in the account. ✅ Safe.
 
 ---
 
-## PHASE 1 — SCAN BUGS
+## PHASE 1 — BUG SCAN
 
-### 1A — Validation fix PDF contacts (commit d20cee6)
+### 1A — Validate PDF contacts fix (commit d20cee6)
 
-**Méthode :** export PDF réel intercepté en live (blob capturé sans download disque), re-rendu via PDF.js sur canvas pour inspection visuelle. Workspace "Banx & Ranx", 11 contacts.
+**Method:** real PDF export intercepted live (blob captured without disk download), re-rendered via PDF.js on canvas for visual inspection. Workspace "Banx & Ranx", 11 contacts.
 
-| Check | Résultat |
+| Check | Result |
 |---|---|
-| Titre "Banx & Ranx — Contacts" (em-dash `—`) | ✅ OK |
-| Phone complet sur 1 ligne (`+447891981491`) | ✅ OK |
-| Locations longues entières ("London, United Kingdom of Great Britain and Northern Ireland (the)" = 5 lignes) | ✅ OK |
-| Roles longs entiers ("Songwriter, Producer, Musician, Recording Engineer, Mix Engineer") | ✅ OK |
-| Pagination (2 pages) + header de table redessiné p.2 + footer | ✅ OK |
-| **IPI complet sur 1 ligne** | ⚠️ **PARTIEL** |
+| Title "Banx & Ranx — Contacts" (em-dash `—`) | ✅ OK |
+| Full phone on 1 line (`+447891981491`) | ✅ OK |
+| Long locations entirely ("London, United Kingdom of Great Britain and Northern Ireland (the)" = 5 lines) | ✅ OK |
+| Long roles entirely ("Songwriter, Producer, Musician, Recording Engineer, Mix Engineer") | ✅ OK |
+| Pagination (2 pages) + table header redrawn p.2 + footer | ✅ OK |
+| **IPI fully on 1 line** | ⚠️ **PARTIAL** |
 
-**🐛 BUG-01 (mineur) — IPI 10+ chiffres wrap sur 2 lignes.**
-La colonne IPI (largeur `contentW * 0.07` ≈ 45pt utiles à fontSize 8.5) tient un IPI 9 chiffres (`577018827` ✅) mais déborde un IPI 10 chiffres (`1202732896` → "120273289" + "6"). Le contenu est **complet** (plus de troncature ellipsis, le fix principal marche) mais pas sur **1 ligne** comme visé par d20cee6. Les IPI Name Number standards font jusqu'à 11 chiffres → la colonne doit être élargie à ~0.085 (en reprenant la largeur sur PRO/ORGANIZATION qui ont du contenu court).
-- Fichier : `src/lib/pdf-generators.ts` (~ligne 692, `cols[] IPI width`)
-- Priorité : basse. Fix candidat Phase 2.
+**🐛 BUG-01 (minor) — IPI 10+ digits wraps on 2 lines.**
+The IPI column (width `contentW * 0.07` ≈ 45pt useful at fontSize 8.5) fits a 9-digit IPI (`577018827` ✅) but overflows a 10-digit IPI (`1202732896` → "120273289" + "6"). The content is **complete** (no truncation ellipsis, the main fix works) but not on **1 line** as aimed by d20cee6. Standard IPI Name Numbers go up to 11 digits → the column should be widened to ~0.085 (taking width from PRO/ORGANIZATION which have short content).
+- File: `src/lib/pdf-generators.ts` (~line 692, `cols[] IPI width`)
+- Priority: low. Candidate fix Phase 2.
 
-**Observation (pas un bug PDF) :** doublons de contacts dans le workspace test — "Chukwuma Chinaza Ferdinand (Shine TTW)" ×2 et "Yannick Rastogi (KNY Factory)" ×2. À investiguer côté dedupe `upsert_contact` en Phase 1E (peut être de la vraie donnée dupliquée).
+**Observation (not a PDF bug):** duplicate contacts in the test workspace — "Chukwuma Chinaza Ferdinand (Shine TTW)" ×2 and "Yannick Rastogi (KNY Factory)" ×2. To investigate dedupe side `upsert_contact` in Phase 1E (may be real duplicated data).
 
+### 1B — Login loop (invitees Quentin Mosimann / Maud Brooke) — HIGH PRIORITY
 
-### 1B — Login loop (invités Quentin Mosimann / Maud Brooke) — PRIORITÉ HAUTE
+**Method:** code analysis (AuthContext, ProtectedRoute, Auth.tsx, AcceptInvitation.tsx, Edge Functions create-invitation/accept-invitation) + **read-only** diagnostic on prod (SELECT, no writes).
 
-**Méthode :** analyse code (AuthContext, ProtectedRoute, Auth.tsx, AcceptInvitation.tsx, Edge Functions create-invitation/accept-invitation) + diagnostic **read-only** sur la prod (SELECT, aucun write).
-
-#### Données prod réelles (read-only)
-| Email invité | Statut invit. | Whitelisté | Compte auth existe ? | Memberships |
+#### Real prod data (read-only)
+| Invitee email | Invite status | Whitelisted | Auth account exists? | Memberships |
 |---|---|---|---|---|
-| `quentin@quentinmosimann.com` | **pending** | ✅ oui | ❌ **non** | 0 |
-| `maudbrooke@quentinmosimann.com` | **pending** | ✅ oui | ❌ **non** | 0 |
+| `quentin@quentinmosimann.com` | **pending** | ✅ yes | ❌ **no** | 0 |
+| `maudbrooke@quentinmosimann.com` | **pending** | ✅ yes | ❌ **no** | 0 |
 
-- `whitelisted_emails` contient 10 emails (la RPC `is_email_whitelisted` lit cette table — la doc RPCS.md dit `whitelist`, **faux nom**, à corriger).
-- Aucun compte `auth.users` n'existe pour ces 2 personnes sous AUCUN email (`%mosimann%`, `%maud%`, `%quentin%` → 0 résultat). Seuls comptes récents : yannick + pro.eliots (tous deux OK).
-- Donc : **ils ne sont jamais parvenus à créer un compte**, leurs invitations restent `pending`.
+- `whitelisted_emails` contains 10 emails (the RPC `is_email_whitelisted` reads this table — the RPCS.md doc says `whitelist`, **wrong name**, to fix).
+- No `auth.users` account exists for these 2 people under ANY email (`%mosimann%`, `%maud%`, `%quentin%` → 0 result). Only recent accounts: yannick + pro.eliots (both OK).
+- So: **they never managed to create an account**, their invites remain `pending`.
 
-#### 🐛 BUG-02 — Login/invite loop (root cause identifiée, fix NON appliqué)
+#### 🐛 BUG-02 — Login/invite loop (root cause identified, fix NOT applied)
 
-Le flux invité est fragile sur **plusieurs points** qui produisent une boucle de redirection vers `/auth` :
+The invitee flow is fragile on **multiple points** that produce a redirect loop to `/auth`:
 
-**Mécanisme A — boucle de redirection `/auth` ↔ `/invite/{token}` (cause la plus probable du symptôme rapporté) :**
-`AcceptInvitation.tsx` détecte la session **uniquement** via `localStorage.trakalog_session_backup` (ligne 63), alors que `Auth.tsx` se base sur la session live d'`AuthContext`. Quand les deux divergent (session Supabase valide mais backup absent/périmé) :
-`/invite/{token}` (pas de backup → "Sign up to accept") → `/auth?invite={token}` → Auth voit une session → `Navigate to /invite/{token}` (Auth.tsx L34-35) → … **boucle infinie**.
+**Mechanism A — `/auth` ↔ `/invite/{token}` redirect loop (most likely cause of the reported symptom):**
+`AcceptInvitation.tsx` detects the session **only** via `localStorage.trakalog_session_backup` (line 63), while `Auth.tsx` is based on the live session of `AuthContext`. When the two diverge (valid Supabase session but backup absent/expired):
+`/invite/{token}` (no backup → "Sign up to accept") → `/auth?invite={token}` → Auth sees a session → `Navigate to /invite/{token}` (Auth.tsx L34-35) → … **infinite loop**.
 
-**Mécanisme B — `checkWhitelist` force `signOut()` à chaque `onAuthStateChange` (AuthContext L50-59, L68) :**
-Le gate whitelist s'applique à l'email **d'authentification**, pas à l'email **invité**. Google OAuth n'a aucun gate au pré-signup → un invité qui se connecte avec un email différent de celui invité (ex. Gmail perso non whitelisté) est immédiatement `signOut` → renvoyé à `/auth`. L'invité ne peut jamais atteindre la page d'accept. (Les emails de Quentin/Maud sont sur domaine custom `@quentinmosimann.com` — probablement pas l'email avec lequel ils se loguent réellement.)
+**Mechanism B — `checkWhitelist` forces `signOut()` on every `onAuthStateChange` (AuthContext L50-59, L68):**
+The whitelist gate applies to the **auth email**, not the **invitee email**. Google OAuth has no gate pre-signup → an invitee logging in with an email different from the invited one (e.g. personal Gmail not whitelisted) is immediately `signOut` → sent back to `/auth`. The invitee can never reach the acceptance page. (Quentin/Maud's emails are on a custom domain `@quentinmosimann.com` — probably not the email they actually log in with.)
 
-#### Pourquoi je n'ai PAS fixé (et stoppé) — conforme aux règles non-négociables
-1. Le vrai fix correct vit côté **Edge Function** (`accept-invitation`/`create-invitation` doivent réconcilier l'email d'auth ↔ invitation, ou whitelister) → **deploy Edge Function interdit** par tes règles.
-2. Débloquer Quentin/Maud = **ajouter un email à `whitelisted_emails`** = modification d'accès/whitelist (write DB) → interdit sans ton aval.
-3. Un patch purement front (`AcceptInvitation` + `checkWhitelist`) toucherait l'**auth** (CLAUDE.md exige `/security-review`) et **ne peut pas être vérifié en live** sans reproduire un flux multi-comptes OAuth réel. Push d'un changement auth non vérifiable sur prod = risque non acceptable.
+#### Why I did NOT fix (and stopped) — conforming to non-negotiable rules
+1. The real correct fix lives at the **Edge Function** level (`accept-invitation`/`create-invitation` must reconcile the auth email ↔ invitation, or whitelist) → **Edge Function deploy forbidden** by your rules.
+2. Unblocking Quentin/Maud = **adding an email to `whitelisted_emails`** = access/whitelist modification (DB write) → forbidden without your approval.
+3. A pure front-end patch (`AcceptInvitation` + `checkWhitelist`) would touch **auth** (CLAUDE.md requires `/security-review`) and **cannot be verified live** without reproducing a real multi-account OAuth flow. Pushing an unverified auth change on prod = unacceptable risk.
 
-#### Fix recommandé (à faire par toi, hors session YOLO)
-- **Front (AcceptInvitation.tsx) :** détecter la session via la même source qu'`AuthContext` (live Supabase session) au lieu du seul `localStorage.trakalog_session_backup` → tue le Mécanisme A. + garde anti-boucle dans `Auth.tsx` (ne pas `Navigate` vers `/invite` si on en vient déjà).
-- **Edge Function (accept-invitation) :** permettre d'accepter une invitation quel que soit l'email d'auth, et whitelister l'email d'auth réel à l'acceptation → tue le Mécanisme B.
-- **Doc :** corriger RPCS.md (`whitelist` → `whitelisted_emails`).
-- **Unblock immédiat Quentin/Maud :** identifier l'email réel avec lequel ils se loguent, l'ajouter à `whitelisted_emails`, et leur renvoyer l'invitation. (À faire par toi.)
+#### Recommended fix (to do by you, outside YOLO session)
+- **Front (AcceptInvitation.tsx):** detect session via the same source as `AuthContext` (live Supabase session) instead of only `localStorage.trakalog_session_backup` → kills Mechanism A. + anti-loop guard in `Auth.tsx` (don't `Navigate` to `/invite` if already coming from it).
+- **Edge Function (accept-invitation):** allow accepting an invitation regardless of auth email, and whitelist the real auth email at acceptance → kills Mechanism B.
+- **Doc:** fix RPCS.md (`whitelist` → `whitelisted_emails`).
+- **Immediate unblock Quentin/Maud:** identify the real email they log in with, add it to `whitelisted_emails`, and re-send the invitation. (To do by you.)
 
 ---
 
-### 1C — Upload metadata ne persiste pas (commit 839b2de) — PRIORITÉ HAUTE
+### 1C — Upload metadata does not persist (commit 839b2de) — HIGH PRIORITY
 
-**Méthode :** analyse code (UploadTrackModal, TrackContext) + inspection read-only de la RPC `update_track` et du schéma `tracks` sur la prod.
+**Method:** code analysis (UploadTrackModal, TrackContext) + read-only inspection of the `update_track` RPC and `tracks` schema on prod.
 
-#### 🐛 BUG-03 — Root cause : 4 clés de payload ne correspondent à aucune colonne → rollback total
+#### 🐛 BUG-03 — Root cause: 4 payload keys don't match any column → total rollback
 
-`update_track(_user_id, _track_id, _updates jsonb)` est **générique** : elle construit un `UPDATE tracks SET %I = …` pour **chaque** clé de `_updates`, via `EXECUTE format(...)`. Pas de whitelist.
+`update_track(_user_id, _track_id, _updates jsonb)` is **generic**: it builds an `UPDATE tracks SET %I = …` for **each** key of `_updates`, via `EXECUTE format(...)`. No whitelist.
 
-Le schéma réel de `tracks` ne contient **PAS** les colonnes : `written_by`, `produced_by`, `mixed_by`, `mastered_by` (vérifié via `information_schema`). Ces credits doivent vivre dans le jsonb `credits`.
+The real `tracks` schema does **NOT** contain the columns: `written_by`, `produced_by`, `mixed_by`, `mastered_by` (verified via `information_schema`). These credits should live in the jsonb `credits`.
 
-Or **3 endroits** envoient ces 4 clés en top-level dans `_updates` :
-1. `src/components/UploadTrackModal.tsx` — `extendedPayload` (L~795-820, le bulk détaillé = bug rapporté)
-2. `src/contexts/TrackContext.tsx` `addTrack` — `metaPayload` (L663-666, upload simple)
-3. `src/contexts/TrackContext.tsx` `updateTrack` — `payload` (L756-759, édition track)
+But **3 places** send these 4 keys at top-level in `_updates`:
+1. `src/components/UploadTrackModal.tsx` — `extendedPayload` (L~795-820, the detailed bulk = reported bug)
+2. `src/contexts/TrackContext.tsx` `addTrack` — `metaPayload` (L663-666, simple upload)
+3. `src/contexts/TrackContext.tsx` `updateTrack` — `payload` (L756-759, track edit)
 
-Résultat : `UPDATE tracks SET written_by = …` → **`ERROR: column "written_by" does not exist`** → exception → **tout l'UPDATE rollback** → AUCUN des 16 champs ne persiste (album, upc, tags, credits, featuring, labels, publishers, isrc, copyright, explicit, notes, released_at…). Le user voit le toast "Some metadata could not be saved".
-→ Bug déclenché dès qu'un des 4 champs writer/producer/mixer/masterer est présent dans le payload.
+Result: `UPDATE tracks SET written_by = …` → **`ERROR: column "written_by" does not exist`** → exception → **entire UPDATE rollback** → NONE of the 16 fields persist (album, upc, tags, credits, featuring, labels, publishers, isrc, copyright, explicit, notes, released_at…). The user sees the toast "Some metadata could not be saved".
+→ Bug triggered as soon as one of the 4 writer/producer/mixer/masterer fields is present in the payload.
 
-**Read path mort :** `mapRowToTrack` L171-174 lit `row.written_by` etc. (colonnes inexistantes → toujours vide). Ces 4 champs n'ont donc **jamais** persisté/affiché nulle part.
+**Dead read path:** `mapRowToTrack` L171-174 reads `row.written_by` etc. (non-existent columns → always empty). These 4 fields have therefore **never** persisted/displayed anywhere.
 
-#### ⚠️ Mise à jour importante après audit du HEAD déployé
-Le path **bulk détaillé reporté (UploadTrackModal) est DÉJÀ corrigé et déployé** (commit `965a323`) : son `extendedPayload` ne met plus les 4 clés en top-level, il les nest désormais dans `credits` jsonb, et tous ses top-level mappent à des colonnes réelles. → Le bug rapporté sur l'upload détaillé devrait déjà être résolu en prod ; le report initial précède probablement ce déploiement.
+#### ⚠️ Important update after auditing the deployed HEAD
+The **detailed bulk deferred path (UploadTrackModal) is ALREADY fixed and deployed** (commit `965a323`): its `extendedPayload` no longer puts the 4 keys at top-level, it now nests them in `credits` jsonb, and all its top-level map to real columns. → The reported bug on detailed upload should already be resolved in prod; the initial report likely predates this deployment.
 
-**Défauts résiduels confirmés dans le code (NON auto-fixés — voir décision) :**
-1. `TrackContext.addTrack` L662-666 et `updateTrack` L756-759 envoient encore `written_by/produced_by/mixed_by/mastered_by` en **top-level** → rollback total de `update_track` dès qu'un champ writer est présent (impacte l'upload simple/quick path L1374 et l'édition de track via EditTrackModal/TrackDetail).
-2. **Read path incohérent :** `mapRowToTrack` L171-174 lit ces credits depuis `row.written_by` (colonnes inexistantes) alors qu'UploadTrackModal les écrit maintenant dans `credits` jsonb → les credits writer/producer/mixer/masterer ne s'affichent **jamais**, même pour les tracks uploadés via le path corrigé.
+**Remaining defects confirmed in the code (NOT auto-fixed — see decision):**
+1. `TrackContext.addTrack` L662-666 and `updateTrack` L756-759 still send `written_by/produced_by/mixed_by/mastered_by` at **top-level** → total rollback of `update_track` as soon as a writer field is present (affects simple/quick upload path L1374 and track editing via EditTrackModal/TrackDetail).
+2. **Inconsistent read path:** `mapRowToTrack` L171-174 reads these credits from `row.written_by` (non-existent columns) while UploadTrackModal now writes them in `credits` jsonb → writer/producer/mixer/masterer credits never display, even for tracks uploaded via the fixed path.
 
-#### Décision : NON auto-fixé en YOLO (documenté) — raisons
-- Le fix correct de `updateTrack` doit **merger** dans le `credits` existant (update partiel) sinon il **écrase tout le jsonb credits** (perte de customPerformers/customProduction) → risque de perte de données.
-- Impossible de vérifier en live sans **compléter de vrais uploads/éditions** (pollue le workspace test, et "pas de delete" m'interdit de nettoyer).
-- Le headline bug étant déjà corrigé+déployé, le risque d'un push auth-adjacent non vérifié sur prod n'est pas justifié.
+#### Decision: NOT auto-fixed in YOLO (documented) — reasons
+- The correct fix of `updateTrack` must **merge** into the existing `credits` (partial update) otherwise it **overwrites all jsonb credits** (loss of customPerformers/customProduction) → risk of data loss.
+- Impossible to verify live without **completing real uploads/edits** (pollutes the test workspace, and "no delete" prevents cleaning).
+- The headline bug is already fixed+deployed, the risk of an unverified auth-adjacent push on prod is not justified.
 
-#### Fix recommandé (à appliquer par toi, avec test réel)
-- `addTrack`/`updateTrack` : nest `writtenBy/producedBy/mixedBy/masteredBy` dans `credits` (mirror du pattern UploadTrackModal déjà déployé). Pour `updateTrack`, **merger** avec `track.credits` existant, ne pas remplacer.
-- `mapRowToTrack` : lire ces 4 credits depuis `row.credits` (avec fallback) au lieu des colonnes inexistantes.
-- Alternative propre : migration ajoutant les 4 colonnes `text` (SQL Option A ci-dessous) + garder les écritures top-level. Cohérent avec le read path actuel, mais nécessite de réécrire UploadTrackModal pour repasser en top-level.
+#### Recommended fix (to apply by you, with real test)
+- `addTrack`/`updateTrack`: nest `writtenBy/producedBy/mixedBy/masteredBy` in `credits` (mirror of the already-deployed UploadTrackModal pattern). For `updateTrack`, **merge** with existing `track.credits`, don't replace.
+- `mapRowToTrack`: read these 4 credits from `row.credits` (with fallback) instead of non-existent columns.
+- Clean alternative: migration adding 4 `text` columns (SQL Option A below) + keep top-level writes. Consistent with the current read path, but requires rewriting UploadTrackModal to go back to top-level.
 
-#### Décision schéma (à toi) pour réactiver les credits writer/producer/mixer/masterer
-Deux options — **ton choix d'architecture** :
-- **Option A (migration, recommandée si tu veux ces colonnes) :** ajouter 4 colonnes `text` à `tracks` puis ré-ajouter les 4 lignes d'écriture. SQL à coller manuellement (je ne lance pas de migration) :
+#### Schema decision (up to you) to reactivate writer/producer/mixer/masterer credits
+Two options — **your architecture choice**:
+- **Option A (migration, recommended if you want these columns):** add 4 `text` columns to `tracks` then re-add the 4 write lines. SQL to paste manually (I don't run migrations):
   ```sql
   ALTER TABLE public.tracks
     ADD COLUMN IF NOT EXISTS written_by  text,
@@ -159,75 +158,75 @@ Deux options — **ton choix d'architecture** :
     ADD COLUMN IF NOT EXISTS mixed_by    text,
     ADD COLUMN IF NOT EXISTS mastered_by text;
   ```
-- **Option B (jsonb) :** stocker ces 4 dans `credits` + adapter le read path (`mapRowToTrack`) + auditer les consommateurs de `credits`. Plus de surface, je ne l'applique pas en YOLO.
+- **Option B (jsonb):** store these 4 in `credits` + adapt the read path (`mapRowToTrack`) + audit `credits` consumers. Larger surface, I don't apply it in YOLO.
 
-### 1E — Sweep pages (partiel)
-Couvert : Contacts (Phase 1A), Dashboard/Tracks/Playlists (navigation + workspace switch OK, aucune erreur bloquante observée). **Non complété** : sweep console systématique des pages restantes (Track Detail, Stems, Pitch, Shared Links, Approvals, Workspace Settings, Smart A&R, Radio, Notifications, Settings) — l'extension Chrome s'est déconnectée en fin de session. À reprendre. Comme le push est de toute façon impossible depuis cet environnement (voir Phase 2), aucun fix issu d'un sweep n'aurait pu être déployé dans cette session.
+### 1E — Pages sweep (partial)
+Covered: Contacts (Phase 1A), Dashboard/Tracks/Playlists (navigation + workspace switch OK, no blocking errors observed). **Not completed**: systematic console sweep of remaining pages (Track Detail, Stems, Pitch, Shared Links, Approvals, Workspace Settings, Smart A&R, Radio, Notifications, Settings) — the Chrome extension disconnected at end of session. To resume. Since the push is impossible from this environment anyway (see Phase 2), no fix from a sweep could have been deployed in this session.
 
-**Observation data (Phase 1A) :** doublons de contacts dans le workspace test (Chukwuma Chinaza Ferdinand ×2, Yannick Rastogi ×2) → vérifier le dédoublonnage `upsert_contact`.
+**Data observation (Phase 1A):** duplicate contacts in the test workspace (Chukwuma Chinaza Ferdinand ×2, Yannick Rastogi ×2) → verify the dedupe `upsert_contact`.
 
 ---
 
 ## PHASE 2 — FIXES
 
-### 🚧 Blocages d'infrastructure (critiques)
-1. **Push GitHub impossible depuis l'environnement Cowork** : `git push` → `could not read Username for 'https://github.com'`. Le sandbox n'a pas tes credentials GitHub. → le loop *fix → push → Vercel deploy → retest prod* ne peut pas être exécuté ici. Tout fix doit être poussé par toi depuis ta machine.
-2. **Lock files git résiduels** : les commits sandbox laissent des `.git/*.lock` non supprimables (permission). Ils bloqueront tes prochaines opérations git tant que tu ne les retires pas (commande plus bas).
+### 🚧 Infrastructure blocks (critical)
+1. **GitHub push impossible from Cowork environment**: `git push` → `could not read Username for 'https://github.com'`. The sandbox doesn't have your GitHub credentials. → the *fix → push → Vercel deploy → retest prod* loop cannot be executed here. All fixes must be pushed by you from your machine.
+2. **Residual git lock files**: sandbox commits leave `.git/*.lock` non-removable (permission). They will block your next git operations until you remove them (command below).
 
-### BUG-01 — Fix appliqué (commité localement, NON poussé)
-- **Fichier :** `src/lib/pdf-generators.ts` — colonne IPI `contentW*0.07 → 0.085`, ORGANIZATION `0.10 → 0.085` (somme des largeurs inchangée = 1.00).
-- **Effet :** un IPI de 10-11 chiffres tient désormais sur 1 ligne (largeur utile ~56.8pt vs ~45.3pt avant, à fontSize 8.5).
-- **TypeScript :** `npx tsc --noEmit` → **EXIT 0** ✅
-- **Commit :** `423181c` sur `main` (local, ahead origin/main de 1).
-- **Statut :** ⏳ **non poussé / non vérifié en prod** (blocage push). Vérif géométrique + tsc OK ; vérif visuelle prod à faire après ton push.
+### BUG-01 — Fix applied (committed locally, NOT pushed)
+- **File:** `src/lib/pdf-generators.ts` — IPI column `contentW*0.07 → 0.085`, ORGANIZATION `0.10 → 0.085` (sum of widths unchanged = 1.00).
+- **Effect:** a 10-11 digit IPI now fits on 1 line (useful width ~56.8pt vs ~45.3pt before, at fontSize 8.5).
+- **TypeScript:** `npx tsc --noEmit` → **EXIT 0** ✅
+- **Commit:** `423181c` on `main` (local, ahead origin/main by 1).
+- **Status:** ⏳ **not pushed / not verified in prod** (push block). Geometric verification + tsc OK; prod visual check to do after your push.
 
-### BUG-02 (login loop) — NON fixé (documenté, voir section 1B)
-Nécessite deploy Edge Function et/ou modification whitelist (accès) → interdits par tes règles. Fix recommandé fourni.
+### BUG-02 (login loop) — NOT fixed (documented, see section 1B)
+Requires Edge Function deploy and/or whitelist modification (access) → forbidden by your rules. Recommended fix provided.
 
-### BUG-03 (upload metadata) — headline déjà déployé ; résiduels NON fixés (voir section 1C)
-Path bulk détaillé déjà corrigé (commit `965a323`). Défauts résiduels (`addTrack`/`updateTrack` top-level keys + read path) non fixés : risque de perte de données sur merge `credits` partiel + impossible à vérifier en live sans polluer le workspace test. Fix recommandé fourni.
-
----
-
-## PHASE 3 — VÉRIFICATION FINALE
-
-**Non exécutée comme prévu** : le retest prod après déploiement est impossible sans push (voir Phase 2). 
-- BUG-01 : vérifié au niveau code (tsc EXIT 0) + raisonnement géométrique. Vérif prod en attente de ton push.
-- Aucune régression introduite : un seul fichier touché (`pdf-generators.ts`), changement purement cosmétique de largeurs de colonnes PDF, sommes préservées.
-- Le tag `pre-cowork-20260604-234913` permet un rollback complet si besoin.
+### BUG-03 (upload metadata) — headline already deployed; residuals NOT fixed (see section 1C)
+Detailed bulk path already fixed (commit `965a323`). Remaining defects (`addTrack`/`updateTrack` top-level keys + read path) not fixed: risk of data loss on partial `credits` merge + impossible to verify live without polluting the test workspace. Recommended fix provided.
 
 ---
 
-## PHASE 4 — BILAN
+## PHASE 3 — FINAL VERIFICATION
 
-### Résumé
-| Bug | Sévérité | Statut | Commit |
+**Not executed as planned**: the post-deployment retest on prod is impossible without push (see Phase 2).
+- BUG-01: verified at code level (tsc EXIT 0) + geometric reasoning. Prod verification pending your push.
+- No regressions introduced: single file touched (`pdf-generators.ts`), purely cosmetic change of PDF column widths, sums preserved.
+- The tag `pre-cowork-20260604-234913` allows a full rollback if needed.
+
+---
+
+## PHASE 4 — SUMMARY
+
+### Summary
+| Bug | Severity | Status | Commit |
 |---|---|---|---|
-| BUG-01 — IPI PDF wrap 2 lignes | Mineur | ✅ Fix commité local, ⏳ à pousser | `423181c` |
-| BUG-02 — Login/invite loop | **Haute** | 📋 Root-cause documentée, fix à faire par toi (Edge/whitelist) | — |
-| BUG-03 — Upload metadata persistence | **Haute** | ✅ Headline déjà déployé (`965a323`) ; 📋 résiduels documentés | — |
+| BUG-01 — IPI PDF wrap 2 lines | Minor | ✅ Fix committed local, ⏳ to push | `423181c` |
+| BUG-02 — Login/invite loop | **High** | 📋 Root-cause documented, fix to do by you (Edge/whitelist) | — |
+| BUG-03 — Upload metadata persistence | **High** | ✅ Headline already deployed (`965a323`) ; 📋 residuals documented | — |
 
-### Comptage
-- **Bugs trouvés : 3** (+ observations : doublons contacts, doc RPCS.md erronée `whitelist`→`whitelisted_emails`).
-- **Fixés (commité) : 1** (BUG-01, en attente de push).
-- **Non fixés : 2** (BUG-02 bloqué par règles ; BUG-03 résiduels = risque/vérif).
+### Counting
+- **Bugs found: 3** (+ observations: duplicate contacts, RPCS.md doc wrong `whitelist`→`whitelisted_emails`).
+- **Fixed (committed): 1** (BUG-01, pending push).
+- **Not fixed: 2** (BUG-02 blocked by rules; BUG-03 residuals = risk/verify).
 
-### ⚠️ ACTIONS MANUELLES REQUISES DE TON CÔTÉ
+### ⚠️ MANUAL ACTIONS REQUIRED FROM YOU
 ```bash
 cd ~/Desktop/DEV/trakalog-app
-# 1. Retirer les lock files résiduels laissés par le sandbox
+# 1. Remove residual lock files left by the sandbox
 rm -f .git/HEAD.lock .git/index.lock .git/objects/maintenance.lock
-# 2. Vérifier le commit du fix BUG-01
+# 2. Check the BUG-01 fix commit
 git log --oneline pre-cowork-20260604-234913..HEAD   # -> 423181c
-# 3. Pousser (déclenche le deploy Vercel)
+# 3. Push (triggers Vercel deploy)
 git push origin main
-# 4. (optionnel) Commiter ce rapport
-git add COWORK_REPORT.md && git commit -m "Cowork session report 2026-06-04" && git push origin main
+# 4. (optional) Commit this report
+git add COWOK_REPORT.md && git commit -m "Cowork session report 2026-06-04" && git push origin main
 ```
-Puis vérifier sur app.trakalog.com : Contacts → Export → PDF → IPI 10+ chiffres sur 1 ligne.
+Then verify on app.trakalog.com: Contacts → Export → PDF → 10+ digit IPI on 1 line.
 
 ### Range commits
-`pre-cowork-20260604-234913 .. 423181c` (1 commit fix).
+`pre-cowork-20260604-234913 .. 423181c` (1 fix commit).
 
 ### Rollback
-Voir section en haut. Tag : `pre-cowork-20260604-234913`.
+See section at top. Tag: `pre-cowork-20260604-234913`.

@@ -1,79 +1,79 @@
 # TRAKALOG — Artist Seeker (Future Feature)
 
-> **Document créé le :** 13 avril 2026
-> **Objectif :** Scanner internet et réseaux sociaux pour trouver des artistes actifs, matcher avec le catalogue de l'utilisateur, maximiser les placements de chansons.
-> **Statut :** Planifié — après Smart Brief Matching
+> **Document created on:** April 13, 2026
+> **Objective:** Scan internet and social networks to find active artists, match with user's catalog, maximize track placements.
+> **Status:** Planned — after Smart Brief Matching
 
 ---
 
 ## Vision
 
-Le problème : les producteurs et songwriters envoient des beats et des chansons à l'aveugle via Instagram DM, sans savoir si l'artiste cherche ce type de son. C'est inefficace et frustrant.
+The problem: producers and songwriters send beats and songs blindly via Instagram DM, not knowing if the artist is looking for that kind of sound. It's inefficient and frustrating.
 
-**Artist Seeker** inverse le flow : au lieu d'attendre un brief, Trakalog va chercher proactivement les artistes qui correspondent au catalogue de l'utilisateur.
+**Artist Seeker** reverses the flow: instead of waiting for a brief, Trakalog proactively finds artists that match the user's catalog.
 
-### Pipeline complet
+### Complete pipeline
 
 ```
-User définit critères (genre, followers min/max, région, monthly listeners)
-  → Agent scanne les APIs (Spotify, YouTube, socials)
-    → Résultats filtrés et enrichis
-      → Claude résume le profil de chaque artiste (style, tendances, besoins probables)
-        → Smart Brief Matching compare le style de l'artiste avec le catalogue
-          → Suggestions de tracks à pitcher à chaque artiste
-            → L'utilisateur pitch directement depuis Trakalog
+User sets criteria (genre, followers min/max, region, monthly listeners)
+  → Agent scans APIs (Spotify, YouTube, socials)
+    → Filtered and enriched results
+      → Claude summarizes each artist's profile (style, trends, likely needs)
+        → Smart Brief Matching compares artist style with catalog
+          → Track suggestions to pitch to each artist
+            → User pitches directly from Trakalog
 ```
 
 ---
 
-## Sources de données
+## Data sources
 
-### Spotify API (gratuite, rate limited)
+### Spotify API (free, rate limited)
 - Monthly listeners
-- Genres / sous-genres
-- Popularité (score 0-100)
-- Artistes similaires
-- Dernières sorties (analyse du style récent)
-- Top tracks (analyse des tempos, keys, ambiances)
-- Marchés principaux (pays d'écoute)
-- **Accès :** Gratuit avec Spotify Developer Account
-- **Rate limit :** ~180 req/min avec token
+- Genres / sub-genres
+- Popularity (score 0-100)
+- Similar artists
+- Recent releases (style analysis)
+- Top tracks (tempo, key, mood analysis)
+- Main markets (listening countries)
+- **Access:** Free with Spotify Developer Account
+- **Rate limit:** ~180 req/min with token
 
-### YouTube Data API (gratuite, quota 10 000/jour)
+### YouTube Data API (free, 10,000 quota/day)
 - Subscribers
-- Vues totales et par vidéo
-- Vidéos récentes (fréquence de sortie)
-- Engagement (likes, commentaires)
-- **Accès :** Gratuit avec Google Cloud API key
+- Total views and per video
+- Recent videos (release frequency)
+- Engagement (likes, comments)
+- **Access:** Free with Google Cloud API key
 
 ### Instagram Graph API
 - Followers
-- Posts récents
+- Recent posts
 - Engagement rate
-- Bio (contact email parfois)
-- **Accès :** Nécessite Meta Business Account
-- **Limite :** Comptes privés inaccessibles
+- Bio (contact email sometimes)
+- **Access:** Requires Meta Business Account
+- **Limit:** Private accounts inaccessible
 
 ### TikTok API
 - Followers
-- Vidéos récentes
-- Sons utilisés (insight sur le style)
-- **Accès :** Restrictif, nécessite approbation développeur
-- **Alternative :** Scraping léger des profils publics
+- Recent videos
+- Sounds used (style insight)
+- **Access:** Restrictive, requires developer approval
+- **Alternative:** Lightweight scraping of public profiles
 
-### Chartmetric / Songstats / Soundcharts (APIs payantes)
-- Agrégation de toutes les sources ci-dessus
-- Données historiques et tendances
-- Contact emails parfois inclus
+### Chartmetric / Songstats / Soundcharts (paid APIs)
+- Aggregation of all sources above
+- Historical data and trends
+- Contact emails sometimes included
 - Playlist tracking
-- **Coût :** 500-2000$/mois selon le plan
-- **Avantage :** Données fiables, pré-nettoyées, API stable
+- **Cost:** $500-2000/month depending on plan
+- **Advantage:** Reliable, pre-cleaned data, stable API
 
 ---
 
-## Architecture technique
+## Technical architecture
 
-### Service Agent (Railway ou Edge Function)
+### Agent Service (Railway or Edge Function)
 
 ```
 POST /search-artists
@@ -96,7 +96,7 @@ Response: {
       recent_releases: [...],
       social_links: { instagram: "...", youtube: "...", tiktok: "..." },
       followers: { spotify: 80000, instagram: 45000, youtube: 12000 },
-      summary: "Artiste dancehall en pleine montée, basé à Toronto...",
+      summary: "Dancehall artist on the rise, based in Toronto...",
       style_analysis: {
         avg_bpm: 105,
         common_keys: ["C Min", "G Min"],
@@ -104,116 +104,116 @@ Response: {
         vocal_style: "female"
       },
       matching_tracks: [
-        { track_id: "uuid", title: "Track Name", match_score: 87, reason: "BPM et mood alignés..." }
+        { track_id: "uuid", title: "Track Name", match_score: 87, reason: "BPM and mood aligned..." }
       ]
     }
   ]
 }
 ```
 
-### Flow de données
+### Data flow
 
-1. **Recherche Spotify** : `GET /v1/search?type=artist&genre=dancehall` → liste d'artistes
-2. **Enrichissement** : pour chaque artiste → `GET /v1/artists/{id}` (stats) + `GET /v1/artists/{id}/top-tracks` (style)
-3. **Analyse style** : extraire BPM moyen, keys fréquentes, mood des top tracks via les Audio Features Spotify
-4. **Résumé Claude** : envoyer le profil à Claude pour un résumé humain du style et des besoins probables
-5. **Smart Brief Matching** : comparer le style_analysis avec les sonic_dna du catalogue → scorer les tracks
-6. **Résultat** : liste d'artistes avec tracks recommandées à pitcher
+1. **Spotify search:** `GET /v1/search?type=artist&genre=dancehall` → list of artists
+2. **Enrichment:** for each artist → `GET /v1/artists/{id}` (stats) + `GET /v1/artists/{id}/top-tracks` (style)
+3. **Style analysis:** extract average BPM, frequent keys, mood of top tracks via Spotify Audio Features
+4. **Claude summary:** send profile to Claude for a human-style summary of style and likely needs
+5. **Smart Brief Matching:** compare style_analysis with catalog's sonic_dna → score tracks
+6. **Result:** list of artists with recommended tracks to pitch
 
-### Intégration Trakalog
+### Trakalog integration
 
-- **Nouveau menu** : "Artist Seeker" dans le header (à côté de Smart A&R)
-- **Interface** : filtres (genre, listeners, région) + résultats en cards
-- **Chaque card artiste** : photo, nom, stats, résumé, bouton "View matching tracks"
-- **Click sur artiste** : ouvre le détail avec les tracks recommandées du catalogue
-- **Action** : "Pitch this track to [Artist]" → crée un pitch ou ouvre le flow de pitch
-
----
-
-## Phases d'implémentation
-
-### Phase 1 — MVP (Spotify seul) — ~2-3 semaines
-- Recherche artistes via Spotify API
-- Filtres : genre, monthly listeners min/max, popularité
-- Stats de base : monthly listeners, genres, popularité, dernières sorties
-- Résumé artiste via Claude API
-- Analyse style basique (BPM moyen, keys des top tracks via Spotify Audio Features)
-- Matching avec le catalogue via sonic_dna
-- **Coût : ~5-20$/mois** (Claude API pour les résumés)
-
-### Phase 2 — Enrichissement — ~2 semaines
-- Ajouter YouTube stats (subscribers, vues)
-- Scraper emails de contact depuis bios (Instagram, YouTube, site web)
-- Historique de recherche (sauvegarder les artistes intéressants)
-- "Watchlist" : suivre un artiste et être notifié de ses nouvelles sorties
-- **Coût additionnel : quasi nul**
-
-### Phase 3 — Scaling — si Trakalog décolle
-- Intégration Chartmetric ou Songstats (données complètes, historiques)
-- Scan automatique périodique (cron) : "Nouveaux artistes qui matchent votre catalogue"
-- Notifications push : "Un artiste qui correspond à 3 de vos tracks vient de sortir un single"
-- **Coût : 500-2000$/mois** (justifiable avec revenus Trakalog)
+- **New menu:** "Artist Seeker" in header (next to Smart A&R)
+- **Interface:** filters (genre, listeners, region) + results in cards
+- **Each artist card:** photo, name, stats, summary, "View matching tracks" button
+- **Click on artist:** opens detail with recommended tracks from catalog
+- **Action:** "Pitch this track to [Artist]" → creates a pitch or opens pitch flow
 
 ---
 
-## Coûts estimés
+## Implementation phases
+
+### Phase 1 — MVP (Spotify only) — ~2-3 weeks
+- Search artists via Spotify API
+- Filters: genre, monthly listeners min/max, popularity
+- Basic stats: monthly listeners, genres, popularity, recent releases
+- Artist summary via Claude API
+- Basic style analysis (average BPM, keys of top tracks via Spotify Audio Features)
+- Matching with catalog via sonic_dna
+- **Cost: ~$5-20/month** (Claude API for summaries)
+
+### Phase 2 — Enrichment — ~2 weeks
+- Add YouTube stats (subscribers, views)
+- Scrape contact emails from bios (Instagram, YouTube, website)
+- Search history (save interesting artists)
+- "Watchlist": follow an artist and be notified of their new releases
+- **Additional cost: negligible**
+
+### Phase 3 — Scaling — if Trakalog takes off
+- Chartmetric or Songstats integration (complete, historical data)
+- Periodic automatic scan (cron): "New artists matching your catalog"
+- Push notifications: "An artist matching 3 of your tracks just released a single"
+- **Cost: $500-2000/month** (justifiable with Trakalog revenue)
+
+---
+
+## Estimated costs
 
 ### Phase 1 (MVP)
 
-| Poste | Coût mensuel |
+| Item | Monthly cost |
 |-------|-------------|
-| Spotify API | Gratuit |
-| Claude API (résumés artistes) | ~5-20$ (selon volume) |
-| Railway (service Agent) | Déjà payé (~5$/mois) |
-| **Total Phase 1** | **~5-20$/mois** |
+| Spotify API | Free |
+| Claude API (artist summaries) | ~$5-20 (depending on volume) |
+| Railway (Agent service) | Already paid (~$5/month) |
+| **Total Phase 1** | **~$5-20/month** |
 
 ### Phase 2
 
-| Poste | Coût mensuel |
+| Item | Monthly cost |
 |-------|-------------|
-| YouTube Data API | Gratuit |
-| Proxies (scraping léger) | ~10-20$ |
-| **Total Phase 2** | **~15-40$/mois** |
+| YouTube Data API | Free |
+| Proxies (lightweight scraping) | ~$10-20 |
+| **Total Phase 2** | **~$15-40/month** |
 
 ### Phase 3
 
-| Poste | Coût mensuel |
+| Item | Monthly cost |
 |-------|-------------|
-| Chartmetric API | 500-2000$ |
-| Infrastructure scaling | ~20-50$ |
-| **Total Phase 3** | **~520-2050$/mois** |
+| Chartmetric API | $500-2000 |
+| Infrastructure scaling | ~$20-50 |
+| **Total Phase 3** | **~$520-2050/month** |
 
 ---
 
-## Le vrai avantage compétitif
+## The real competitive advantage
 
-Ce n'est pas la recherche d'artistes (n'importe qui peut chercher sur Spotify). C'est le **matching intelligent** entre le profil de l'artiste et le catalogue.
+It's not artist search (anyone can search on Spotify). It's the **intelligent matching** between artist profile and catalog.
 
-Savoir que "cet artiste fait du 105 BPM dancehall en mineur avec des hooks féminins, et tu as 3 tracks dans ton catalogue qui correspondent parfaitement" — ça, personne ne le fait.
+Knowing that "this artist makes 105 BPM dancehall in minor with female hooks, and you have 3 tracks in your catalog that match perfectly" — nobody else does that.
 
-C'est la combinaison **Sonic DNA + Smart Brief Matching + Artist Seeker** qui crée le moat. Chaque composant seul est utile, ensemble ils sont imbattables.
-
----
-
-## Dépendances
-
-- **Sonic DNA Profiler** ✅ (déjà implémenté)
-- **Smart Brief Matching** ⏳ (prochaine priorité)
-- **Spotify Developer Account** (à créer)
-- **YouTube API Key** (à créer via Google Cloud)
+It's the combination **Sonic DNA + Smart Brief Matching + Artist Seeker** that creates the moat. Each component alone is useful, together they're unbeatable.
 
 ---
 
-## Risques et mitigations
+## Dependencies
 
-| Risque | Mitigation |
+- **Sonic DNA Profiler** ✅ (already implemented)
+- **Smart Brief Matching** ⏳ (next priority)
+- **Spotify Developer Account** (to be created)
+- **YouTube API Key** (to be created via Google Cloud)
+
+---
+
+## Risks and mitigations
+
+| Risk | Mitigation |
 |--------|-----------|
-| Spotify rate limits | Cache agressif (24h), requêtes par batch |
-| Spotify TOS (scraping interdit) | Utiliser uniquement l'API officielle |
-| Données sociales incomplètes | Commencer avec Spotify seul, enrichir progressivement |
-| Qualité du matching | Le Sonic DNA + user metadata rendent le matching fiable |
-| Coût Chartmetric élevé | Phase 3 seulement si revenus justifient |
+| Spotify rate limits | Aggressive caching (24h), batch requests |
+| Spotify TOS (scraping forbidden) | Use only official API |
+| Incomplete social data | Start with Spotify only, enrich progressively |
+| Matching quality | Sonic DNA + user metadata make matching reliable |
+| High Chartmetric cost | Phase 3 only if revenue justifies it |
 
 ---
 
-*Ce document est vivant. Il sera mis à jour au fur et à mesure du développement.*
+*This document is living. It will be updated as development progresses.*

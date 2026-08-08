@@ -1,54 +1,54 @@
-# COWORK_VALIDATION_REPORT — Validation P1-07 (invitations) + P0-05 (waitlist)
+# COWOK_VALIDATION_REPORT — Validation P1-07 (invitations) + P0-05 (waitlist)
 
-**Date** : 2026-06-07 · **Main** : `4af495d` · **Projet** : `xhmeitivkclbeziqavxw` · **Mode** : test + diagnostic, aucun fix appliqué
+**Date:** 2026-06-07 · **Main:** `4af495d` · **Project:** `xhmeitivkclbeziqavxw` · **Mode:** test + diagnostic, no fix applied
 
 ---
 
 ## Verdicts
 
-| Fix | Verdict | Résumé |
+| Fix | Verdict | Summary |
 |---|---|---|
-| **P0-05 waitlist** | ❌ **KO — P0 cassé en prod** | Tout signup retourne 500 : la fonction insère une colonne `source` qui n'existe pas dans la table `waitlist`. |
-| **P1-07 invitations** | 🟡 **Code validé, e2e non testé** | Revue code + Edge Function : logique correcte (auto-whitelist auth email + session live). Test e2e bloqué : nécessite login Yannick. |
+| **P0-05 waitlist** | ❌ **KO — P0 broken in prod** | Every signup returns 500: the function inserts a `source` column that doesn't exist in the `waitlist` table. |
+| **P1-07 invitations** | 🟡 **Code validated, e2e not tested** | Code review + Edge Function: logic correct (auto-whitelist auth email + live session). e2e test blocked: requires Yannick login. |
 
 ---
 
-## P0-05 — Waitlist signup ❌ CASSÉ
+## P0-05 — Waitlist signup ❌ BROKEN
 
-### Cause racine
-La table `waitlist` a pour colonnes : `id, email, created_at, invited_at, invitation_sent_by`. **Il n'y a pas de colonne `source`.**
-La Edge Function `add-to-waitlist` fait toujours :
+### Root cause
+The `waitlist` table has columns: `id, email, created_at, invited_at, invitation_sent_by`. **There is no `source` column.**
+The Edge Function `add-to-waitlist` always does:
 ```js
 const source = typeof body.source === "string" ? body.source.slice(0, 64) : "landing";
 const insertPayload = { email };
-if (source) insertPayload.source = source;   // ← source vaut TOUJOURS "landing"
+if (source) insertPayload.source = source;   // ← source is ALWAYS "landing"
 await supabaseAdmin.from("waitlist").insert(insertPayload);
 ```
-`source` est toujours truthy (défaut `"landing"`) → l'insert porte une colonne inexistante → PostgREST rejette → catché et masqué en `500 {"error":"Could not save your email"}`. Côté front, `LandingPage.tsx` affiche le toast "Something went wrong". **Aucun visiteur ne peut s'inscrire à la waitlist.**
+`source` is always truthy (default `"landing"`) → the insert carries a non-existent column → PostgREST rejects → caught and hidden in `500 {"error":"Could not save your email"}`. On the front, `LandingPage.tsx` displays the toast "Something went wrong". **No visitor can sign up for the waitlist.**
 
-### Preuves (test end-to-end, IP Cowork, depuis www.trakalog.com)
+### Evidence (end-to-end test, IP Cowork, from www.trakalog.com)
 
-Requête identique à `LandingPage.tsx` (POST `/functions/v1/add-to-waitlist`, apikey + Bearer anon) :
+Identical request to `LandingPage.tsx` (POST `/functions/v1/add-to-waitlist`, apikey + Bearer anon):
 
 | Test | Payload | Status | Body |
 |---|---|---|---|
-| Email valide | `cowork-test-002@trakalog.com` | **500** | `{"error":"Could not save your email"}` |
-| Même email (devrait être doublon→200) | idem | **500** | `{"error":"Could not save your email"}` (jamais inséré, donc jamais "doublon") |
-| Email invalide | `not-an-email` | 400 | `{"error":"Invalid email"}` ✅ validation OK |
+| Valid email | `cowork-test-002@trakalog.com` | **500** | `{"error":"Could not save your email"}` |
+| Same email (should be duplicate→200) | same | **500** | `{"error":"Could not save your email"}` (never inserted, therefore never "duplicate") |
+| Invalid email | `not-an-email` | 400 | `{"error":"Invalid email"}` ✅ validation OK |
 
-Edge Function logs (verbatim) confirment : `POST | 500 | .../add-to-waitlist` (×2) + `POST | 400` + `OPTIONS | 200`.
-Vérif DB : `SELECT count(*) FROM waitlist WHERE email LIKE 'cowork-%'` → **0** (rien inséré, aucune donnée de test à nettoyer).
+Edge Function logs (verbatim) confirm: `POST | 500 | .../add-to-waitlist` (×2) + `POST | 400` + `OPTIONS | 200`.
+DB check: `SELECT count(*) FROM waitlist WHERE email LIKE 'cowork-%'` → **0** (nothing inserted, no test data to clean).
 
-### Ce qui marche dans P0-05
-- ✅ **CORS** : `OPTIONS` → 200, origins allowlistés (`getCorsHeaders` / `rejectInvalidOrigin`).
-- ✅ **Validation email** : email malformé → 400.
-- ✅ **Rate limit** : burst de 6 requêtes depuis la même IP → 5 passent la barrière puis **429** (`check_rate_limit` `add-to-waitlist:<ip>`, 5/900s). Observé : `[500,500,500,429,429,429]` (3 requêtes antérieures dans la fenêtre + 3 nouvelles = bascule au 6e).
-- ❌ **Insert** : c'est la seule étape cassée — mais elle casse 100 % des signups réels.
+### What works in P0-05
+- ✅ **CORS:** `OPTIONS` → 200, origins allowlisted (`getCorsHeaders` / `rejectInvalidOrigin`).
+- ✅ **Email validation:** malformed email → 400.
+- ✅ **Rate limit:** burst of 6 requests from the same IP → 5 pass the barrier then **429** (`check_rate_limit` `add-to-waitlist:<ip>`, 5/900s). Observed: `[500,500,500,429,429,429]` (3 previous requests in the window + 3 new = switch at the 6th).
+- ❌ **Insert:** the only broken step — but it breaks 100% of real signups.
 
-### Fix recommandé (NON appliqué — à valider avec toi)
-Deux options, **option A recommandée** (la moins risquée, pas de DDL) :
+### Recommended fix (NOT applied — to validate with you)
+Two options, **Option A recommended** (least risky, no DDL):
 
-- **Option A — retirer `source` du payload Edge Function** (`add-to-waitlist/index.ts`). `source` n'est de toute façon stocké nulle part :
+- **Option A — remove `source` from the Edge Function payload** (`add-to-waitlist/index.ts`). `source` is stored nowhere anyway:
   ```diff
   -    const source = typeof body.source === "string" ? body.source.slice(0, 64) : "landing";
        ...
@@ -57,29 +57,29 @@ Deux options, **option A recommandée** (la moins risquée, pas de DDL) :
   +    const insertPayload: Record<string, unknown> = { email };
        const { error: insertErr } = await supabaseAdmin.from("waitlist").insert(insertPayload);
   ```
-  Redéploiement Edge Function uniquement, zéro migration.
+  Edge Function redeploy only, zero migration.
 
-- **Option B — ajouter la colonne** si tu veux tracer la provenance :
+- **Option B — add the column** if you want to track provenance:
   ```sql
   ALTER TABLE public.waitlist ADD COLUMN IF NOT EXISTS source text DEFAULT 'landing';
   ```
-  (à exécuter dans le SQL Editor ; le code actuel marcherait tel quel ensuite).
+  (to execute in the SQL Editor; the current code would work as-is after that).
 
-Recommandation : **Option A** maintenant pour débloquer le launch, Option B plus tard si l'analytics de provenance devient utile.
+Recommendation: **Option A** now to unblock the launch, Option B later if provenance analytics becomes useful.
 
 ---
 
-## P1-07 — Invitation login loop 🟡 Code validé, e2e à finir
+## P1-07 — Invitation login loop 🟡 Code validated, e2e to finish
 
-### État DB (avant test)
-- `whitelisted_emails` : 10 entrées (comptes test + beta connus).
-- `invitations` workspace Banx & Ranx Test : 0 (table globale : 3 invitations, toutes anciennes).
+### DB state (before test)
+- `whitelisted_emails`: 10 entries (test accounts + known betas).
+- `invitations` workspace Banx & Ranx Test: 0 (global table: 3 invitations, all old).
 
-### Revue code + Edge Function (déployée v19)
-La logique du fix est **correcte** :
+### Code review + Edge Function (deployed v19)
+The fix logic is **correct**:
 
-1. **`AcceptInvitation.tsx`** utilise `useAuth().session` live (l.55, `var { session: authSession } = useAuth()`) — plus de parsing manuel de `localStorage.trakalog_session_backup` (source de l'ancienne loop). `handleAccept` envoie `{ token, user_id: session.user.id }` à la fonction. "Sign up" redirige vers `/auth?invite=<token>`.
-2. **Edge Function `accept-invitation`** (étape 6, le cœur du fix P1-07/BUG-02) :
+1. **`AcceptInvitation.tsx`** uses `useAuth().session` live (l.55, `var { session: authSession } = useAuth()`) — no more manual parsing of `localStorage.trakalog_session_backup` (source of the old loop). `handleAccept` sends `{ token, user_id: session.user.id }` to the function. "Sign up" redirects to `/auth?invite=<token>`.
+2. **Edge Function `accept-invitation`** (step 6, the core of fix P1-07/BUG-02):
    ```js
    const { data: authUser } = await supabase.auth.admin.getUserById(userId);
    const authEmail = authUser?.user?.email?.toLowerCase().trim();
@@ -87,27 +87,27 @@ La logique du fix est **correcte** :
      await supabase.from("whitelisted_emails").upsert({ email: authEmail }, { onConflict: "email" });
    }
    ```
-   → whitelist l'email **réel** du compte auth (et non `invitation.email`), ce qui casse la loop quand l'utilisateur s'inscrit avec un email différent de celui invité. Plus : checks status `pending`, expiration, upsert `workspace_members`, marquage `accepted`, rate limit 10/h, CORS/origin.
+   → whitelists the **real** auth email (not `invitation.email`), which breaks the loop when the user signs up with an email different from the invited one. Plus: checks status `pending`, expiration, upsert `workspace_members`, marking `accepted`, rate limit 10/h, CORS/origin.
 
-### Pourquoi e2e non complété
-Le test bout-en-bout (inviter → accepter avec un 2e compte Google → vérifier pas de loop) **nécessite ton login** sur app.trakalog.com et un 2e compte Google de test. Conformément aux règles (aucun credential côté Cowork), je n'ai pas pu le jouer. La revue statique ne révèle aucun défaut, mais ne remplace pas la validation runtime de l'absence de loop.
+### Why e2e not completed
+The end-to-end test (invite → accept with a 2nd Google account → verify no loop) **requires your login** on app.trakalog.com and a 2nd test Google account. Conforming to the rules (no credentials at Cowork), I couldn't run it. The static review reveals no defect, but doesn't replace runtime validation of the absence of a loop.
 
-### Pour finaliser (toi, 5 min)
-1. Login app.trakalog.com → Settings → Members → inviter un email de test.
-2. Récupérer le token : `SELECT token, email, status FROM invitations WHERE workspace_id='38007e8a-605b-4852-8c5a-73f3bc5c827c' ORDER BY created_at DESC LIMIT 1;`
-3. Ouvrir `/invite/<token>` en navigation privée, "Accept", login avec un compte différent.
-4. Vérifier : `SELECT * FROM whitelisted_emails WHERE email='<email_du_compte_auth>'` (doit apparaître) ; invitation `status='accepted'` ; logout/login du même compte → pas de loop.
+### To finish (you, 5 min)
+1. Login app.trakalog.com → Settings → Members → invite a test email.
+2. Retrieve the token: `SELECT token, email, status FROM invitations WHERE workspace_id='38007e8a-605b-4852-8c5a-73f3bc5c827c' ORDER BY created_at DESC LIMIT 1;`
+3. Open `/invite/<token>` in private browsing, "Accept", login with a different account.
+4. Verify: `SELECT * FROM whitelisted_emails WHERE email='<email_of_auth_account>'` (should appear) ; invitation `status='accepted'` ; logout/login of the same account → no loop.
 
 ---
 
-## Bugs trouvés
+## Bugs found
 
-| # | Sévérité | Bug | Statut |
+| # | Severity | Bug | Status |
 |---|---|---|---|
-| 1 | **P0** | `add-to-waitlist` insère `source` (colonne inexistante) → tous les signups waitlist échouent en 500 | Documenté, **fix proposé non appliqué** (Option A) |
+| 1 | **P0** | `add-to-waitlist` inserts `source` (non-existent column) → all waitlist signups fail in 500 | Documented, **fix proposed not applied** (Option A) |
 
-## Recommandations
-1. **Appliquer le fix waitlist (Option A) en priorité** — c'est bloquant pour le pré-launch : la landing publique ne capture aucun lead actuellement.
-2. **Smoke test post-déploiement Edge Functions** : un simple POST valide + assert 200 aurait attrapé ce bug (3e incident du même type : RPC/fonction qui passe le déploiement mais casse à l'exécution). À ajouter au workflow de déploiement.
-3. **Démasquer partiellement les erreurs en staging** : le `console.error("[add-to-waitlist] insert failed:", insertErr)` est bien présent côté serveur — vérifier que ces logs sont surveillés (ils auraient montré l'erreur colonne `source`).
-4. **Finaliser le test e2e P1-07** côté Yannick (procédure ci-dessus) avant de cocher le fix comme validé.
+## Recommendations
+1. **Apply the waitlist fix (Option A) as priority** — it's blocking for the pre-launch: the public landing captures no leads currently.
+2. **Post-deployment smoke test Edge Functions:** a simple POST validates + assert 200 would have caught this bug (3rd incident of the same type: RPC/function that passes deployment but breaks at execution). To add to the deployment workflow.
+3. **Partially unmask errors in staging:** the `console.error("[add-to-waitlist] insert failed:", insertErr)` is well present server-side — verify that these logs are monitored (they would have shown the `source` column error).
+4. **Finalize the e2e test P1-07** on Yannick's side (procedure above) before checking the fix as validated.

@@ -11,7 +11,7 @@ Your music catalog, organized & pitch-ready.
 
 ## Getting Started
 
-Le projet vit dans `~/Desktop/DEV/trakalog-app`.
+The project lives in `~/Desktop/DEV/trakalog-app`.
 
 ```sh
 git clone <YOUR_GIT_URL> ~/Desktop/DEV/trakalog-app
@@ -24,6 +24,6 @@ npm run dev
 
 Deployed via Vercel. Push to `main` to trigger a deploy.
 
-## Dernières mises à jour
+## Latest updates
 
-- **2026-04-26** — Réorganisation du projet : renommage de `trakalo-muse-palette` vers `trakalog-app` et déplacement du dossier vers `~/Desktop/DEV/trakalog-app`. Les chemins internes ont été nettoyés et le `package.json` reflète le nouveau nom.
+- **2026-04-26** — Project reorganization: renamed `trakalo-muse-palette` to `trakalog-app` and moved the folder to `~/Desktop/DEV/trakalog-app`. Internal paths were cleaned up and `package.json` reflects the new name.

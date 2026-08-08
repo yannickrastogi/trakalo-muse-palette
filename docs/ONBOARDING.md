@@ -1,150 +1,150 @@
 # TRAKALOG — Onboarding (Feature Spec)
 
-> **Document créé le :** 16 avril 2026
-> **Basé sur :** Audit complet — 28 routes, 16 pages protégées, 15 modales, 13 contexts
-> **Objectif :** Guider chaque nouvel utilisateur à travers TOUTES les fonctionnalités de Trakalog.
-> **Statut :** Prochaine priorité
+> **Document created:** April 16, 2026
+> **Based on:** Full audit — 28 routes, 16 protected pages, 15 modals, 13 contexts
+> **Objective:** Guide each new user through ALL of Trakalog's features.
+> **Status:** Next priority
 
 ---
 
-## Philosophie
+## Philosophy
 
-L'utilisateur doit comprendre dès le premier login que Trakalog n'est pas un simple cloud musical — c'est un système nerveux intelligent pour son catalogue. Plus il remplit les détails, plus Trakalog travaille pour lui.
+The user should understand from the first login that Trakalog is not a simple music cloud — it's an intelligent nervous system for their catalog. The more they fill in details, the more Trakalog works for them.
 
-**Quatre couches d'onboarding :**
-1. **Welcome + Setup** — premier contact, profil, workspace
-2. **Guided Tour** — tour interactif step-by-step de toute l'interface
-3. **Checklist Dashboard** — progress bar avec actions clés
-4. **Guide permanent** — accessible à tout moment pour revoir les explications
+**Four onboarding layers:**
+1. **Welcome + Setup** — first contact, profile, workspace
+2. **Guided Tour** — interactive step-by-step tour of the entire interface
+3. **Checklist Dashboard** — progress bar with key actions
+4. **Permanent guide** — accessible at any time to review explanations
 
 ---
 
-## Couche 1 — Welcome + Setup (premier login)
+## Layer 1 — Welcome + Setup (first login)
 
-### Welcome Screen (modal plein écran)
+### Welcome Screen (full-screen modal)
 
-- Logo Trakalog gradient animé
+- Animated gradient Trakalog logo
 - "Welcome to Trakalog"
 - "Your intelligent catalog manager — manage, protect, pitch and connect your music."
 - "Let us show you around — it takes 2 minutes."
-- Deux boutons : **"Start Tour"** (primary gradient) et **"Skip for now"** (ghost)
-- Si skip → Dashboard direct, tour disponible plus tard via "?"
+- Two buttons: **"Start Tour"** (primary gradient) and **"Skip for now"** (ghost)
+- If skip → direct to Dashboard, tour available later via "?"
 
 ### Step 1 — Profile Setup
 
 - "Let's set up your profile"
-- Champs : Full Name, Profile Photo (drag & drop ou click)
+- Fields: Full Name, Profile Photo (drag & drop or click)
 - "This is how your collaborators and contacts will see you."
-- Bouton "Next →"
+- Button "Next →"
 
 ### Step 2 — Workspace Setup
 
 - "Name your workspace"
-- Explication : "A workspace is your creative space — your artist name, label, studio, or project."
-- Input pré-rempli avec le nom auto-généré
+- Explanation: "A workspace is your creative space — your artist name, label, studio, or project."
+- Pre-filled input with auto-generated name
 - "You can create multiple workspaces later for different projects or clients."
-- Bouton "Let's go! →"
+- Button "Let's go! →"
 
 ---
 
-## Couche 2 — Guided Tour (18 steps)
+## Layer 2 — Guided Tour (18 steps)
 
-Chaque step = spotlight sur un élément + message box avec flèche + "Next" / "Skip Tour"
-Progress bar : "Step X of 18"
+Each step = spotlight on an element + message box with arrow + "Next" / "Skip Tour"
+Progress bar: "Step X of 18"
 
 ### Sidebar Navigation (Steps 3-9)
 
 **Step 3 — Dashboard**
-- Highlight : icône Dashboard dans sidebar
+- Highlight: Dashboard icon in sidebar
 - "📊 Dashboard — Your command center. See your catalog stats, recent activity, and quick actions at a glance."
 
 **Step 4 — Tracks (Catalog)**
-- Highlight : icône Tracks
+- Highlight: Tracks icon
 - "📀 Your Catalog — Upload and manage all your tracks here. Each track is automatically analyzed by Sonic DNA to detect BPM, key, and audio characteristics. Search, filter by genre/key/status/BPM, switch between list and grid view."
 
 **Step 5 — Playlists**
-- Highlight : icône Playlists
+- Highlight: Playlists icon
 - "🎵 Playlists — Organize your tracks into themed playlists for pitching. Customize with gradient colors and mood tags. Share entire playlists with one branded link."
 
 **Step 6 — Pitch**
-- Highlight : icône Pitch
+- Highlight: Pitch icon
 - "🎯 Pitch — Send your tracks to A&R, labels, supervisors, and publishers. Trakalog tracks every interaction: when they open, listen, and how long they engage. Build a pipeline: Draft → Sent → Opened → Responded."
 
 **Step 7 — Contacts**
-- Highlight : icône Contacts
+- Highlight: Contacts icon
 - "👥 Contacts — Your industry network, built automatically. When someone listens to your shared link, their info is captured through the gate screen. When collaborators scan your studio QR code, they're added too. You can also add contacts manually. Export to PDF, CSV or Excel anytime."
 
 **Step 8 — Shared Links**
-- Highlight : icône Shared Links
+- Highlight: Shared Links icon
 - "🔗 Shared Links — Create secure links to share individual tracks, playlists, or full packs (track + cover + stems + credits PDF). Password-protect them, set expiration dates, and track engagement in real-time. Every listener is audio-watermarked for leak protection."
 
 **Step 9 — Workspace Settings**
-- Highlight : icône Workspace (si visible)
+- Highlight: Workspace icon (if visible)
 - "🏢 Workspace Settings — Your workspace, your brand. This is where the magic happens behind the scenes."
 
 ### Header Tools (Steps 10-12)
 
 **Step 10 — Smart A&R**
-- Highlight : icône Smart A&R dans le header
+- Highlight: Smart A&R icon in header
 - "🤖 Smart A&R — Your AI-powered music matchmaker. Paste any brief and Trakalog's AI analyzes your ENTIRE catalog using Sonic DNA data (BPM, key, energy, mood, structure) to find the perfect tracks. The more metadata you add to your tracks, the smarter the matching becomes."
 
 **Step 11 — Trakalog Radio**
-- Highlight : icône Radio dans le header
+- Highlight: Radio icon in header
 - "📻 Trakalog Radio — Shuffle through your catalog with crossfade. Filter by genre and mood. Rediscover forgotten gems in your catalog."
 
 **Step 12 — Notifications**
-- Highlight : icône cloche
+- Highlight: Bell icon
 - "🔔 Notifications — Stay informed. Get notified when someone listens to your shared links, leaves comments, signs splits, joins your workspace, or uploads tracks. Filter by time period."
 
 ### Workspace Features (Steps 13-16)
 
 **Step 13 — Branding**
-- Highlight : onglet Branding (si dans workspace settings) ou skip si pas visible
+- Highlight: Branding tab (if in workspace settings) or skip if not visible
 - "🎨 Branding — Make every shared link and pitch look professional. Upload a hero image, logo, set your brand color, and add your social media links (Instagram, TikTok, YouTube, etc.). Your recipients see YOUR brand, not Trakalog."
 
 **Step 14 — Team & Permissions**
-- Highlight : onglet Members (si visible)
+- Highlight: Members tab (if visible)
 - "👥 Team — Invite collaborators with 4 permission levels: Viewer (listen only), Pitcher (create playlists & pitch), Editor (modify metadata & stems), Admin (full control including splits & branding). Each member gets a professional title displayed on credits."
 
 **Step 15 — Catalog Sharing**
-- Highlight : onglet Catalog Sharing (si visible)
+- Highlight: Catalog Sharing tab (if visible)
 - "🔄 Catalog Sharing — Share your entire catalog with other workspaces (labels, managers, publishers). They can pitch your tracks under their own branding while you keep full control. Revoke access anytime."
 
 **Step 16 — Leak Tracing**
-- Highlight : onglet Leak Tracing (si visible)
+- Highlight: Leak Tracing tab (if visible)
 - "🛡️ Leak Tracing — Every shared link is invisibly audio-watermarked. If your music leaks, upload the leaked file and Trakalog identifies exactly who received that version. Enterprise-grade protection built in."
 
 ### Track Features (Steps 17-18)
 
 **Step 17 — Track Details**
-- Highlight : bouton Upload Track
+- Highlight: Upload Track button
 - "📝 Track Details — Each track has: lyrics (auto-transcribed or manual), stems management, splits with digital signatures, timecoded comments from recipients, and a full activity history. Everything in one place."
 
-**Step 18 — Sonic DNA & Upload (CTA final)**
-- Highlight : bouton Upload Track
+**Step 18 — Sonic DNA & Upload (Final CTA)**
+- Highlight: Upload Track button
 - "🧬 Sonic DNA — When you upload a track, Trakalog automatically analyzes it: BPM, key, energy curves, spectral characteristics, and more. This powers the Smart A&R matching. Pro tip: the more you fill in (genre, mood tags, lyrics, language, type), the better the AI understands your music and finds opportunities."
-- Bouton : **"Upload my first track →"** (ouvre le modal d'upload)
-- Sous le bouton : "You can also use Quick Upload to skip the details and add them later."
+- Button: **"Upload my first track →"** (opens upload modal)
+- Below button: "You can also use Quick Upload to skip the details and add them later."
 
-### Comportement du tour
+### Tour behavior
 
-- Overlay semi-transparent avec spotlight (trou) autour de l'élément
-- Message box positionnée intelligemment (ne masque pas l'élément)
-- Flèche pointant vers l'élément
-- Progress : "Step X of 18"
+- Semi-transparent overlay with spotlight (hole) around the element
+- Message box intelligently positioned (does not obscure the element)
+- Arrow pointing to the element
+- Progress: "Step X of 18"
 - "← Back" / "Next →" / "Skip Tour"
-- Si refresh : reprend au même step (localStorage)
-- Si skip : tout est marqué comme vu
-- Quand terminé : confetti animation + "You're all set! 🎉"
+- If refresh: resumes at the same step (localStorage)
+- If skip: everything marked as seen
+- When complete: confetti animation + "You're all set! 🎉"
 
 ---
 
-## Couche 3 — Checklist Dashboard
+## Layer 3 — Checklist Dashboard
 
-### Emplacement
-Bloc en haut du Dashboard, avec progress bar animée.
+### Location
+Block at the top of the Dashboard, with animated progress bar.
 
-### Items (se cochent automatiquement)
+### Items (auto-check when action is performed)
 
 1. ☐ Complete your profile (name & photo)
 2. ☐ Name your workspace
@@ -156,26 +156,26 @@ Bloc en haut du Dashboard, avec progress bar animée.
 8. ☐ Create a shared link
 9. ☐ Send your first pitch
 10. ☐ Add a contact
-11. ☐ Invite a team member (optionnel, marqué "bonus")
+11. ☐ Invite a team member (optional, marked "bonus")
 
-### Comportement
-- Chaque item se coche automatiquement quand l'action est effectuée (pas de clic manuel)
-- Progress bar : "4 of 11 completed"
-- Message motivant à chaque milestone : "Great start!" / "You're getting the hang of it!" / "Power user! 🔥"
-- Quand 10/11 (tout sauf invite) : "🎉 You've mastered Trakalog! You can dismiss this checklist."
-- Bouton "Dismiss" pour masquer
-- Peut être ré-affiché depuis le Guide
+### Behavior
+- Each item checks itself automatically when the action is performed (no manual click)
+- Progress bar: "4 of 11 completed"
+- Encouraging message at each milestone: "Great start!" / "You're getting the hang of it!" / "Power user! 🔥"
+- When 10/11 (everything except invite): "🎉 You've mastered Trakalog! You can dismiss this checklist."
+- "Dismiss" button to hide
+- Can be re-shown from the Guide
 
 ---
 
-## Couche 4 — Guide permanent
+## Layer 4 — Permanent Guide
 
-### Accès
-- Icône "?" dans le header (à côté de la cloche)
-- Dans le dropdown profil : "Help & Guide"
-- Option dans la checklist : "Replay Tour"
+### Access
+- "?" icon in the header (next to the bell)
+- In the profile dropdown: "Help & Guide"
+- Option in the checklist: "Replay Tour"
 
-### Contenu du Guide (page ou modal avec accordion)
+### Guide content (page or modal with accordion)
 
 **🚀 Getting Started**
 - What is Trakalog?
@@ -269,11 +269,11 @@ Bloc en haut du Dashboard, avec progress bar animée.
 - "Check your Shared Links dashboard regularly — see who's listening."
 - "Use the Studio QR code during recording sessions to capture splits in real-time."
 
-### Feature Spotlights (contextuel)
+### Feature Spotlights (contextual)
 
-Petit icône "?" discret sur chaque page qui ouvre une explication contextuelle :
+Small "?" icon on each page that opens a contextual explanation:
 
-| Page | Explication |
+| Page | Explanation |
 |------|------------|
 | Tracks | "Upload tracks, manage metadata. Sonic DNA auto-detects BPM & key." |
 | Track Detail | "Edit all metadata, manage stems, splits, lyrics. Add sections on the waveform." |
@@ -287,89 +287,89 @@ Petit icône "?" discret sur chaque page qui ouvre une explication contextuelle 
 
 ---
 
-## Couche 5 — Empty States
+## Layer 5 — Empty States
 
-Chaque page vide a un message engageant avec CTA clair + illustration/icône :
+Each empty page has an engaging message with clear CTA + illustration/icon:
 
-**Dashboard (nouveau compte)**
-- Illustration Trakalog
+**Dashboard (new account)**
+- Trakalog illustration
 - "Welcome to your Dashboard"
 - "This is where you'll see your catalog stats, recent activity, and getting started checklist."
 - "Let's begin by uploading your first track."
-- Bouton : "Upload Track"
+- Button: "Upload Track"
 
-**Tracks (vide)**
-- Icône musique
+**Tracks (empty)**
+- Music icon
 - "Your catalog is empty"
 - "Upload your first track — Sonic DNA will automatically detect BPM, key, and audio characteristics."
-- Bouton : "Upload Track"
-- Lien : "Or try Quick Upload for instant bulk import"
+- Button: "Upload Track"
+- Link: "Or try Quick Upload for instant bulk import"
 
-**Playlists (vide)**
-- Icône playlist
+**Playlists (empty)**
+- Playlist icon
 - "No playlists yet"
 - "Create a playlist to organize and pitch your tracks."
-- Bouton : "Create Playlist"
-- Note : "Upload at least one track first to create a playlist."
+- Button: "Create Playlist"
+- Note: "Upload at least one track first to create a playlist."
 
-**Pitch (vide)**
-- Icône cible
+**Pitch (empty)**
+- Target icon
 - "No pitches sent yet"
 - "Start pitching your tracks to A&R, labels, and music supervisors."
-- Bouton : "Create Pitch"
-- Note : "Contacts are collected automatically when people listen to your shared links."
+- Button: "Create Pitch"
+- Note: "Contacts are collected automatically when people listen to your shared links."
 
-**Contacts (vide)**
-- Icône personnes
+**Contacts (empty)**
+- People icon
 - "No contacts yet"
 - "Your contacts are built automatically:"
 - "• When someone listens to your shared links (gate screen)"
 - "• When collaborators scan your studio QR code"
 - "• When you add them manually"
-- Bouton : "Add Contact"
+- Button: "Add Contact"
 
-**Shared Links (vide)**
-- Icône lien
+**Shared Links (empty)**
+- Link icon
 - "No shared links yet"
 - "Share your tracks with secure, branded links. Track who listens."
-- Bouton : "Go to Tracks to share"
+- Button: "Go to Tracks to share"
 
-**Notes tab (vide)**
-- Icône crayon
+**Notes tab (empty)**
+- Pencil icon
 - "No notes or feedback yet"
 - "Notes you add during upload or editing appear here."
 - "Recipient feedback from shared links will also show up."
 
-**Approvals (vide)**
-- Icône check
+**Approvals (empty)**
+- Check icon
 - "No pending approvals"
 - "When team members submit changes, they'll appear here for review."
 
 ---
 
-## Implémentation technique
+## Technical implementation
 
-### Librairie recommandée
-**react-joyride** (~15KB gzipped) ou **custom avec Framer Motion** (déjà dans le projet)
+### Recommended library
+**react-joyride** (~15KB gzipped) or **custom with Framer Motion** (already in the project)
 
-### Stockage
+### Storage
 
 ```typescript
-// localStorage (rapide, pas de réseau)
+// localStorage (fast, no network)
 trakalog_onboarding_complete: "true" | null
 trakalog_onboarding_step: number | null
 trakalog_checklist_dismissed: "true" | null
 
-// DB (persistence cross-device)
+// DB (cross-device persistence)
 profiles.onboarding_complete: boolean DEFAULT false
 ```
 
-### Checklist — détection automatique
+### Checklist — automatic detection
 
 ```typescript
-// Chaque item se vérifie via les données existantes :
+// Each item checks itself via existing data:
 profile_complete: profiles.full_name !== null && profiles.avatar_url !== null
-workspace_named: workspace.name !== "USER's Workspace" (pattern auto-généré)
+workspace_named: workspace.name !== "USER's Workspace" (auto-generated pattern)
 branding_set: workspace.hero_image || workspace.logo
 track_uploaded: tracks.length > 0
 mood_added: tracks.some(t => t.mood?.length > 0)
@@ -383,47 +383,47 @@ member_invited: workspaceMembers.length > 1
 
 ---
 
-## Phases d'implémentation
+## Implementation phases
 
-### Phase 1 — Empty States (~3-4 jours)
-- Messages engageants sur toutes les pages vides
-- CTA clairs vers l'action suivante
-- Le plus rapide et immédiatement utile
+### Phase 1 — Empty States (~3-4 days)
+- Engaging messages on all empty pages
+- Clear CTAs to the next action
+- The fastest and immediately useful
 
-### Phase 2 — Welcome + Setup (~2-3 jours)
+### Phase 2 — Welcome + Setup (~2-3 days)
 - Welcome screen modal
-- Profile setup (nom, photo)
+- Profile setup (name, photo)
 - Workspace naming
-- Redirection vers le tour ou le dashboard
+- Redirect to tour or dashboard
 
-### Phase 3 — Guided Tour (~1-2 semaines)
-- 18 steps avec spotlight
-- react-joyride ou custom Framer Motion
+### Phase 3 — Guided Tour (~1-2 weeks)
+- 18 steps with spotlight
+- react-joyride or custom Framer Motion
 - Progress bar, Back/Next/Skip
 - Persistence localStorage
-- CTA final : Upload first track
+- Final CTA: Upload first track
 
-### Phase 4 — Checklist Dashboard (~3-4 jours)
-- Bloc en haut du dashboard
-- 11 items auto-détectés
-- Progress bar animée
-- Messages motivants
+### Phase 4 — Checklist Dashboard (~3-4 days)
+- Block at the top of the dashboard
+- 11 auto-detected items
+- Animated progress bar
+- Encouraging messages
 - Dismiss/re-show
 
-### Phase 5 — Guide permanent (~1 semaine)
-- Icône "?" dans le header
-- Page Guide avec accordion
-- Feature spotlights contextuels
+### Phase 5 — Permanent Guide (~1 week)
+- "?" icon in the header
+- Guide page with accordion
+- Contextual feature spotlights
 - "Replay Tour" option
 
 ---
 
-## Dépendances
+## Dependencies
 
-- **Framer Motion** ✅ (déjà dans le projet)
-- **react-joyride** ⏳ (à installer si choisi, npm install react-joyride)
-- **Toutes les pages et features** ✅ (déjà implémentées)
+- **Framer Motion** ✅ (already in the project)
+- **react-joyride** ⏳ (to install if chosen, npm install react-joyride)
+- **All pages and features** ✅ (already implemented)
 
 ---
 
-*Ce document est vivant. Il sera mis à jour au fur et à mesure du développement.*
+*This document is live. It will be updated as development progresses.*

@@ -1,210 +1,210 @@
-# COWORK — AUDIT COMPLET TRAKALOG
+# COWORK — FULL TRAKALOG AUDIT
 
-> Mode **read-only** — aucun fix, aucun write DB, aucun push. Audit actionnable.
-> Démarré : 2026-06-05 · Branche `main` @ `aff9c1e` · Workspace test `38007e8a-…` (Banx & Ranx Test)
-> Baseline : COWORK_REPORT.md (BUG-01/02/03 déjà diagnostiqués — non re-diagnostiqués)
+> **Read-only mode** — no fixes, no DB writes, no pushes. Actionable audit.
+> Started: 2026-06-05 · Branch `main` @ `aff9c1e` · Test workspace `38007e8a-…` (Banx & Ranx Test)
+> Baseline: COWOK_REPORT.md (BUG-01/02/03 already diagnosed — not re-diagnosed)
 
 ---
 
 ## 🚨 CRITICAL SECURITY
 
-### 🔴 CRIT-01 — `shared_links` lisible par TOUT anon/authed (fuite cross-workspace + password_hash)
-**Policies RLS** sur `public.shared_links` :
+### 🔴 CRIT-01 — `shared_links` readable by ANY anon/authed (cross-workspace leak + password_hash)
+**RLS Policies** on `public.shared_links`:
 - `anon_read_shared_links` → role **`anon`**, `USING (status = 'active')`
 - `Authenticated users can view active shared links` → role **`authenticated`**, `USING (status = 'active')`
 
-Aucune restriction de workspace/ownership. La clé publishable (`anon`) est **embarquée dans le JS frontend** → n'importe qui peut faire `SELECT * FROM shared_links WHERE status='active'` et **dumper TOUS les liens partagés actifs de la plateforme**, tous workspaces/clients confondus.
+No workspace/ownership restriction. The publishable key (`anon`) is **embedded in the JS frontend** → anyone can do `SELECT * FROM shared_links WHERE status='active'` and **dump ALL active shared links on the platform**, all workspaces/clients combined.
 
-Colonnes exposées : `link_slug` (→ ouvrir n'importe quel lien partagé directement), **`password_hash`** (bcrypt → crackable offline + révèle quels liens sont protégés), `track_id`, `playlist_id`, `workspace_id`, `message`, `allow_download`, `expires_at`, `watermarking_enabled`, `gate_screen_enabled`.
+Exposed columns: `link_slug` (→ open any shared link directly), **`password_hash`** (bcrypt → offline crackable + reveals which links are password-protected), `track_id`, `playlist_id`, `workspace_id`, `message`, `allow_download`, `expires_at`, `watermarking_enabled`, `gate_screen_enabled`.
 
-**Impact :** rupture du modèle de confidentialité des liens partagés (catalogue pré-release = cœur de valeur Trakalog). Énumération de tous les slugs → accès à tout le contenu partagé non protégé par mot de passe ; exposition des hash pour brute-force offline des liens protégés ; leak métadonnées cross-client.
+**Impact:** breach of the shared links confidentiality model (pre-release catalog = core Trakalog value). Enumeration of all slugs → access to all unprotected shared content; exposure of hashes for offline brute-force of password-protected links; cross-client metadata leak.
 
-**Atténuation existante (limite le blast radius) :** les buckets `tracks/stems/documents/watermarked` sont **privés** et n'ont **aucune policy SELECT `anon`** → l'audio brut n'est PAS téléchargeable en masse via l'API storage (servi via Edge Functions + signed URLs). Donc fuite = **métadonnées + énumération d'accès**, pas dump audio direct. Reste **P0** vu la nature pré-release.
+**Existing mitigation (limits blast radius):** the `tracks/stems/documents/watermarked` buckets are **private** and have **no SELECT policy `anon`** → raw audio is NOT mass-downloadable via the storage API (served via Edge Functions + signed URLs). So the leak is **metadata + access enumeration**, not direct audio dump. Still **P0** given the pre-release nature.
 
-**Fix recommandé :** supprimer les policies anon/authenticated « read all active ». Servir la page publique via une **RPC SECURITY DEFINER `get_shared_link_by_slug(_slug)`** qui (a) filtre sur le slug exact, (b) ne renvoie JAMAIS `password_hash`, (c) délègue la vérif mot de passe à l'Edge Function `verify-link-password` déjà existante. Idem restreindre `authenticated` aux membres du workspace.
+**Recommended fix:** remove the anon/authenticated policies "read all active". Serve the public page via a **RPC SECURITY DEFINER `get_shared_link_by_slug(_slug)`** which (a) filters on the exact slug, (b) NEVER returns `password_hash`, (c) delegates password verification to the already-existing Edge Function `verify-link-password`. Also restrict `authenticated` to workspace members.
 
-### 🟠 CRIT-02 — `signature_requests` : UPDATE anon non scopé par token (risque de forge de signature)
-Policy `signature_requests_anon_update_signing` → role `anon`, `USING ((token IS NOT NULL) AND (status='pending'))`, `WITH CHECK (token IS NOT NULL AND status IN ('signed','pending'))`. Le `token IS NOT NULL` est vrai pour **toutes** les lignes → un anon (clé publique) peut PATCH n'importe quelle `signature_request` en `pending` **sans connaître le token** (il suffit de cibler la ligne par id via REST) → **signer des accords à la place d'autrui**. À vérifier en exploitation (non testé), mais la policy ne lie pas le token fourni à la ligne. **Fix :** vérifier l'égalité du token via une RPC SECURITY DEFINER, ou `USING (token = current_setting(...))`.
+### 🟠 CRIT-02 — `signature_requests`: UPDATE anon not scoped by token (risk of forged signatures)
+Policy `signature_requests_anon_update_signing` → role `anon`, `USING ((token IS NOT NULL) AND (status='pending'))`, `WITH CHECK (token IS NOT NULL AND status IN ('signed','pending'))`. The `token IS NOT NULL` is true for **all** rows → an anon (public key) can PATCH any `signature_request` in `pending` **without knowing the token** (just target the row by id via REST) → **sign agreements on behalf of others**. To verify in production (not tested), but the policy doesn't tie the provided token to the row. **Fix:** verify token equality via a RPC SECURITY DEFINER, or `USING (token = current_setting(...))`.
 
-### 🟠 CRIT-03 — `track_comments` : UPDATE/DELETE anon cross-lien
-Policy `track_comments_anon_update` → role `anon`, `USING (shared_link_id IN (SELECT id FROM shared_links WHERE status='active'))`. Non scopé au lien réellement consulté ni à l'auteur → un anon sur le lien X peut éditer/soft-delete les commentaires de **n'importe quel lien actif Y**. (L'INSERT est correctement scopé via EXISTS, seul UPDATE/DELETE est trop large.) **Fix :** scoper au `shared_link_id` du token courant + author.
+### 🟠 CRIT-03 — `track_comments`: UPDATE/DELETE anon cross-link
+Policy `track_comments_anon_update` → role `anon`, `USING (shared_link_id IN (SELECT id FROM shared_links WHERE status='active'))`. Not scoped to the actually consulted link nor to the author → an anon on link X can edit/soft-delete comments from **any active link Y**. (The INSERT is correctly scoped via EXISTS, only UPDATE/DELETE is too broad.) **Fix:** scope to the `shared_link_id` of the current token + author.
 
 ---
 
-## Résumé exécutif
+## Executive Summary
 
-Légende sévérité : 🔴 P0 (bloquant beta) · 🟠 P1 (important) · 🟡 P2 (mineur) · ⚪ Nice-to-have
+Severity legend: 🔴 P0 (blocking beta) · 🟠 P1 (important) · 🟡 P2 (minor) · ⚪ Nice-to-have
 
-> ⚠️ **Audit PARTIEL.** Axes couverts cette session : **3 (DB/RLS), 4 (storage/code-sécu), 6 (code), 8 (specs)** + section CRITICAL. **Non couverts : Axes 1 (UI/UX), 2 (flows), 5 (perf), 7 (console/network)** — l'extension Chrome est restée déconnectée toute la session malgré plusieurs tentatives. Point de reprise : reconnecter Chrome → login → workspace Banx & Ranx Test → dérouler Axes 1/2/5/7.
+> ⚠️ **PARTIAL AUDIT.** Axes covered this session: **3 (DB/RLS), 4 (storage/security), 6 (code), 8 (specs)** + CRITICAL section. **Not covered: Axes 1 (UI/UX), 2 (flows), 5 (perf), 7 (console/network)** — the Chrome extension remained disconnected throughout the session despite several attempts. Next restart point: reconnect Chrome → login → Banx & Ranx Test workspace → run Axes 1/2/5/7.
 
-### Score global de santé : **6 / 10**
-Ingénierie backend solide (RLS activé partout, storage privé scopé par membership, signed URLs, hygiène Edge Functions correcte, dette RLS legacy `user_roles` **résolue**, onboarding complet). **MAIS** : une **fuite RLS critique** (`shared_links` lisible par anon, `password_hash` exposé) qui casse le cœur de valeur (confidentialité pré-release), 2 policies anon-write trop larges (forge de signature, tampering commentaires), et plusieurs features **bloquantes beta non démarrées** (Billing #1, DDEX/PRO, ISRC génération). À ne pas lancer en beta publique avant fix CRIT-01/02 + Billing.
+### Overall health score: **6 / 10**
+Solid backend engineering (RLS enabled everywhere, storage scoped by membership, signed URLs, decent Edge Function hygiene, legacy RLS `user_roles` **resolved**, complete onboarding). **BUT**: a **critical RLS leak** (`shared_links` readable by anon, `password_hash` exposed) that breaks the core value (pre-release confidentiality), 2 overly-broad anon-write policies (signature forgery, comment tampering), and several **blocking beta features not started** (Billing #1, DDEX/PRO, ISRC generation). Should not launch in public beta before fixing CRIT-01/02 + Billing.
 
-### Top 5 P0 (à régler avant beta publique)
-1. 🔴 **CRIT-01** — `shared_links` lisible par tout anon (clé publique) → énumération de tous les liens partagés + exposition `password_hash`. Fuite cross-workspace du catalogue pré-release.
-2. 🔴 **CRIT-02** — `signature_requests` : UPDATE anon non lié au token → risque de **forge de signature** sur les accords de splits.
-3. 🔴 **Billing non démarré** (TRAKALOG_BILLING.md) — déclaré #1 bloquant beta, zéro code Stripe (tables `subscriptions`/`credit_purchases` existent mais inutilisées).
-4. 🔴 **BUG-02 login loop** (baseline COWORK_REPORT.md) — les invités ne peuvent pas se connecter (whitelist sur email d'auth ≠ email invité).
-5. 🔴 **`tracks` policy cross-workspace** — tout authentifié peut lire la metadata de toute track ayant un lien actif, hors membership.
+### Top 5 P0 (to resolve before public beta)
+1. 🔴 **CRIT-01** — `shared_links` readable by any anon (public key) → enumeration of all shared links + exposure of `password_hash`. Cross-workspace leak of the pre-release catalog.
+2. 🔴 **CRIT-02** — `signature_requests`: UPDATE anon not tied to token → risk of **signature forgery** on split agreements.
+3. 🔴 **Billing not started** (TRAKALOG_BILLING.md) — declared #1 beta blocker, zero Stripe code (tables `subscriptions`/`credit_purchases` exist but unused).
+4. 🔴 **BUG-02 login loop** (baseline COWOK_REPORT.md) — invitees cannot log in (whitelist on auth email ≠ invitee email).
+5. 🔴 **`tracks` policy cross-workspace** — any authenticated user can read metadata of any track with an active link, outside membership.
 
 ### Top 10 P1
-1. 🟠 CRIT-03 — `track_comments` UPDATE/DELETE anon cross-lien (tampering).
-2. 🟠 `update_track` RPC générique sans whitelist de colonnes (classe BUG-03 — fragilité persistance).
-3. 🟠 `LandingPage.tsx:104` — write `waitlist` via le **client authed natif** sur page publique (viole le pattern).
-4. 🟠 Fichiers géants : `TrackDetail.tsx` (4200), `UploadTrackModal.tsx` (3890) → risque React-#310/stale-closure.
-5. 🟠 18 fichiers en `localStorage` brut au lieu de `safeLocalStorage`.
-6. 🟠 Admin Dashboard partiel (4/9 pages) — manque KPIs/impersonation/digest.
-7. 🟠 ISRC = champ manuel only (génération/validation/bulk absents).
-8. 🟠 DDEX/PRO Exports + Track Versioning non démarrés (chaîne ISRC→DDEX entièrement vide).
-9. 🟡 `covers` bucket public → cover art pré-release exposé à anon.
-10. 🟡 `user_roles` legacy orphelin + tables billing sans code → nettoyer/réconcilier ; Edge Functions sensibles (`trace-leak`, `verify-link-password`) sans `console.error`.
+1. 🟠 CRIT-03 — `track_comments` UPDATE/DELETE anon cross-link (tampering).
+2. 🟠 `update_track` RPC generic without column whitelist (BUG-03 pattern — persistence fragility).
+3. 🟠 `LandingPage.tsx:104` — write `waitlist` via the **native client auth** on public page (violates the pattern).
+4. 🟠 Giant files: `TrackDetail.tsx` (4200), `UploadTrackModal.tsx` (3890) → React-#310/stale-closure risk.
+5. 🟠 18 files using raw `localStorage` instead of `safeLocalStorage`.
+6. 🟠 Admin Dashboard partial (4/9 pages) — missing KPIs/impersonation/digest.
+7. 🟠 ISRC = manual field only (generation/validation/bulk absent).
+8. 🟠 DDEX/PRO Exports + Track Versioning not started (ISRC→DDEX chain entirely empty).
+9. 🟡 `covers` bucket public → pre-release cover art exposed to anon.
+10. 🟡 Legacy `user_roles` + billing tables without code → clean/reconcile; sensitive Edge Functions (`trace-leak`, `verify-link-password`) without `console.error`.
 
-### Inventaire (session partielle)
-- **Pages auditées via browser : 0** (Chrome down) — Axes 1/2/5/7 à faire.
-- **Tables auditées : 31** (RLS) + **7 buckets** storage + **20 Edge Functions** + **9 specs**.
-- **Issues trouvées : ~25** — dont **3 CRITICAL sécurité**, ~6 P0, ~10 P1, reste P2/⚪.
-- **Issues sécu : 5+** (CRIT-01/02/03, tracks cross-ws, covers public). **Perf : non mesuré** (browser).
+### Inventory (partial session)
+- **Pages audited via browser: 0** (Chrome down) — Axes 1/2/5/7 to do.
+- **Tables audited: 31** (RLS) + **7 buckets** storage + **20 Edge Functions** + **9 specs**.
+- **Issues found: ~25** — including **3 CRITICAL security**, ~6 P0, ~10 P1, rest P2/⚪.
+- **Security issues: 5+** (CRIT-01/02/03, tracks cross-ws, covers public). **Perf: not measured** (browser).
 
 ---
 
-## 1. UI/UX cohérence
-🚫 **NON COUVERT cette session** — extension Chrome déconnectée (plusieurs retries échoués). À reprendre : reconnecter Chrome, login manuel, switch Banx & Ranx Test, puis dérouler les 28 pages listées (empty/loading/error states, responsive 375px, cohérence brand, modals, sidebar permissions) avec screenshots.
+## 1. UI/UX consistency
+🚫 **NOT COVERED this session** — Chrome extension disconnected (several retries failed). To resume: reconnect Chrome, manual login, switch Banx & Ranx Test, then run the 28 pages listed (empty/loading/error states, responsive 375px, brand consistency, modals, sidebar permissions) with screenshots.
 
-## 2. Flows utilisateur
-🚫 **NON COUVERT cette session** (Chrome down). Flows A→I à reproduire en sandbox (Quick/Bulk upload + bouton « Skip Review » récent, shared link + gate screen, pitch cancel-avant-send, playlist reorder, splits/signatures, Smart A&R matching, workspace switch, branding→shared link). NB : le bug Skip Review et le workflow review individuel sont à valider en priorité (commit récent `aff9c1e`).
+## 2. User flows
+🚫 **NOT COVERED this session** (Chrome down). Flows A→I to reproduce in sandbox (Quick/Bulk upload + "Skip Review" button recent, shared link + gate screen, pitch cancel-before-send, playlist reorder, splits/signatures, Smart A&R matching, workspace switch, branding→shared link). NB: the Skip Review bug and the individual review workflow are to validate first (recent commit `aff9c1e`).
 
 ## 3. Backend / DB / RLS
-_(Axe 3 — Supabase SELECT, read-only)_
+_(Axis 3 — Supabase SELECT, read-only)_
 
-### 3.1 RLS — état global ✅ bon
-- **Toutes les 31 tables `public` ont RLS activé.** Aucune table exposée sans RLS.
-- 5 tables ont RLS **sans aucune policy** = deny-all aux clients (`audit_logs`, `beta_passes`, `rate_limits`, `watermark_payloads`, `whitelisted_emails`). ⚪ Sécurisé tant que l'accès se fait via RPC SECURITY DEFINER uniquement (confirmer qu'aucun code front ne les lit en direct → renverrait vide).
+### 3.1 RLS — global state ✅ good
+- **All 31 `public` tables have RLS enabled.** No table exposed without RLS.
+- 5 tables have RLS **without any policy** = deny-all to clients (`audit_logs`, `beta_passes`, `rate_limits`, `watermark_payloads`, `whitelisted_emails`). ⚪ Secured as long as access is via RPC SECURITY DEFINER only (confirm no front-end code reads them directly → would return empty).
 
-### 3.2 ✅ Dette « legacy user_roles » — RÉSOLUE pour les tables critiques
-La mémoire signalait une incohérence RLS legacy `user_roles` (11 rôles) vs `workspace_members.access_level`. **Vérifié : aucune policy des 14 tables critiques (tracks, playlists, pitches, shared_links, contacts, stems, approvals, …) ne référence `user_roles`.** Tous les writes passent par `workspace_members` / `has_workspace_access_level(...,'editor'|'pitcher'|'admin')`. 
-- 🟡 La table `user_roles` **existe encore** (5 policies propres) mais semble **orpheline** → candidat nettoyage (confirmer qu'aucun code ne la lit).
+### 3.2 ✅ "Legacy user_roles" debt — **RESOLVED** for critical tables
+The memory flagged a legacy RLS `user_roles` (11 roles) vs `workspace_members.access_level` inconsistency. **Verified: no policy from the 14 critical tables (tracks, playlists, pitches, shared_links, contacts, stems, approvals, …) references `user_roles`.** All writes go through `workspace_members` / `has_workspace_access_level(...,'editor'|'pitcher'|'admin')`.
+- 🟡 The `user_roles` table **still exists** (5 clean policies) but seems **orphaned** → cleanup candidate (confirm no code reads it).
 
-### 3.3 Policies anon/larges à risque
-Voir 🚨 CRITICAL ci-dessus : CRIT-01 (`shared_links` read-all), CRIT-02 (`signature_requests` anon update), CRIT-03 (`track_comments` anon update cross-lien).
-- 🟠 `tracks` policy `Authenticated users can view tracks via shared links` : `USING (id IN (SELECT track_id FROM shared_links WHERE active))` → **tout utilisateur authentifié peut lire n'importe quelle track ayant un lien actif, sans être membre du workspace** (leak catalogue cross-workspace : metadata + `audio_url`). L'audio reste gated par storage privé, mais la metadata fuit.
+### 3.3 Risky broad anon policies
+See 🚨 CRITICAL above: CRIT-01 (`shared_links` read-all), CRIT-02 (`signature_requests` anon update), CRIT-03 (`track_comments` anon update cross-link).
+- 🟠 `tracks` policy `Authenticated users can view tracks via shared links`: `USING (id IN (SELECT track_id FROM shared_links WHERE active))` → **any authenticated user can read any track with an active link, without being a workspace member** (cross-workspace catalog leak: metadata + `audio_url`). Audio remains gated by private storage, but metadata leaks.
 
 ### 3.4 RPCs SECURITY DEFINER
-- 🟠 **`update_track(_user_id, _track_id, _updates jsonb)` = générique sans whitelist de colonnes** (cf. BUG-03, COWORK_REPORT.md). Construit un `UPDATE … SET %I` pour chaque clé du jsonb → une clé ne correspondant pas à une colonne fait rollback tout l'UPDATE. Robustesse fragile : toute évolution du payload front peut casser silencieusement la persistance. **Recommandation :** whitelister les colonnes autorisées dans la RPC (ignorer les clés inconnues au lieu de throw).
-- Pattern `_user_id` explicite : globalement respecté (cf. RPCS.md). À auditer exhaustivement : RPCs sans vérif membership workspace (non complété cette session — voir « non couvert »).
+- 🟠 **`update_track(_user_id, _track_id, _updates jsonb)` = generic without column whitelist** (cf. BUG-03, COWOK_REPORT.md). Builds an `UPDATE … SET %I` for each key of the jsonb → a key not matching a column causes rollback of the entire UPDATE. Fragile robustness: any front-end payload evolution could silently break persistence. **Recommendation:** whitelist authorized columns in the RPC (ignore unknown keys instead of throwing).
+- Pattern `_user_id` explicit: globally respected (cf. RPCS.md). To audit exhaustively: RPCs without workspace membership check (not completed this session — see "not covered").
 
-### 3.5 Tables billing présentes sans code
-🟡 Les tables **`subscriptions` et `credit_purchases` existent** (RLS + 1 policy chacune) alors que l'Axe 8 confirme **zéro code Stripe**. Schéma en avance sur le code (groundwork billing) — à réconcilier avec TRAKALOG_BILLING.md.
+### 3.5 Billing tables present without code
+🟡 The **`subscriptions` and `credit_purchases` tables exist** (RLS + 1 policy each) while Axis 8 confirms **zero Stripe code**. Schema ahead of code (billing groundwork) — to reconcile with TRAKALOG_BILLING.md.
 
-## 4. Sécurité
-_(Axe 4)_
+## 4. Security
+_(Axis 4)_
 
-### 4.1 Storage buckets — ✅ globalement sain
+### 4.1 Storage buckets — ✅ generally healthy
 | Bucket | Public | Policies |
 |---|---|---|
-| `avatars` | 🌐 public | anon read (OK, non sensible) |
+| `avatars` | 🌐 public | anon read (OK, non-sensitive) |
 | `branding` | 🌐 public | anon read (OK, logos) |
-| `covers` | 🌐 public | 🟡 anon read **toutes** les covers (cover art pré-release exposé — mineur, souvent partagé) |
-| `tracks` | 🔒 privé | SELECT = `authenticated` + `is_workspace_member` ✅ ; write = editor+ ✅ |
-| `stems` | 🔒 privé | idem ✅ |
-| `documents` | 🔒 privé | idem ✅ |
-| `watermarked` | 🔒 privé | (à confirmer — pas de policy listée pour ce bucket → deny-all clients, servi via Edge Function) |
+| `covers` | 🌐 public | 🟡 anon read **all** covers (pre-release cover art exposed — minor, often shared) |
+| `tracks` | 🔒 private | SELECT = `authenticated` + `is_workspace_member` ✅ ; write = editor+ ✅ |
+| `stems` | 🔒 private | same ✅ |
+| `documents` | 🔒 private | same ✅ |
+| `watermarked` | 🔒 private | (to confirm — no policy listed for this bucket → deny-all clients, served via Edge Function) |
 
-✅ **Aucune policy `anon` sur tracks/stems/documents** → l'audio brut n'est pas téléchargeable directement par anon (bonne défense en profondeur). Les writes storage sont correctement scopés `editor`/`uploader` via `has_workspace_access_level`.
+✅ **No `anon` policy on tracks/stems/documents** → raw audio is not directly downloadable by anon (good defense in depth). Storage writes correctly scoped `editor`/`uploader` via `has_workspace_access_level`.
 
-### 4.2 Signed URLs / getPublicUrl — à finir (browser/code)
-- ✅ **Vérifié (grep) : tous les `getPublicUrl` sont sur des buckets publics** (`covers`, `avatars`, `branding`). Aucun `getPublicUrl` sur `tracks/stems/documents/watermarked`.
-- ✅ **Audio = `createSignedUrl`** : `TrackDetail.tsx:322` (tracks, **300s** = 5 min ✅), `crossfadePlayer.ts:155` (tracks, 3600s), `Stems.tsx:162/207` (stems, 3600s). Le pattern signed-URL est en place. 🟡 Note : 3600s (1h) sur crossfade/stems vs 300s annoncé — durée plus longue, à confirmer si voulu.
-- Confirmer côté runtime que les liens partagés servent bien des signed URLs (Network tab) → **non couvert** (browser).
+### 4.2 Signed URLs / getPublicUrl — to finish (browser/code)
+- ✅ **Verified (grep): all `getPublicUrl` are on public buckets** (`covers`, `avatars`, `branding`). No `getPublicUrl` on `tracks/stems/documents/watermarked`.
+- ✅ **Audio = `createSignedUrl`**: `TrackDetail.tsx:322` (tracks, **300s** = 5 min ✅), `crossfadePlayer.ts:155` (tracks, 3600s), `Stems.tsx:162/207` (stems, 3600s). The signed-URL pattern is in place. 🟡 Note: 3600s (1h) on crossfade/stems vs 300s announced — longer duration, to confirm if intended.
+- Confirm at runtime that shared links serve signed URLs (Network tab) → **not covered** (browser).
 
-### 4.3 Watermarking — non vérifié (browser)
-Badge « Protected », appel `get-watermarked-audio` sur les liens partagés, absence de fallback non-watermarked silencieux → **nécessite test runtime** sur un lien partagé. **Non couvert cette session** (Chrome instable).
+### 4.3 Watermarking — not verified (browser)
+"Protected" badge, `get-watermarked-audio` call on shared links, absence of silent non-watermarked fallback → **requires runtime test** on a shared link. **Not covered this session** (Chrome unstable).
 
-### 4.4 Auth flows — partiellement couvert (cf. COWORK_REPORT.md BUG-02)
-Le login loop (BUG-02) reste documenté dans le rapport précédent (whitelist sur email d'auth ≠ email invité, double mécanisme de boucle). Tests runtime (session persistence, logout cleanup, ProtectedRoute redirect) → **non couverts cette session** (browser).
+### 4.4 Auth flows — partially covered (cf. COWOK_REPORT.md BUG-02)
+The login loop (BUG-02) remains documented in the previous report (whitelist on auth email ≠ invitee email, double loop mechanism). Runtime tests (session persistence, logout cleanup, ProtectedRoute redirect) → **not covered this session** (browser).
 
 ### 4.5 Input validation / XSS
-Pattern Trakalog : `htmlEscape()` côté Edge Functions (confirmé présent dans plusieurs functions), React échappe nativement côté front. ⚪ Pas de `dangerouslySetInnerHTML` audité cette session → **à vérifier** : `grep dangerouslySetInnerHTML src/`.
+Trakalog pattern: `htmlEscape()` at Edge Functions level (confirmed present in several functions), React natively escapes at frontend. ⚪ No `dangerouslySetInnerHTML` audited this session → **to check**: `grep dangerouslySetInnerHTML src/`.
 
 ## 5. Performance
-🚫 **NON COUVERT cette session** (Chrome down — DevTools requis). À mesurer : TTI Dashboard/Tracks/TrackDetail, taille des chunks JS au login, candidats lazy-load connus (`pdfjs-dist`, `pdf-lib`, `lamejs`, `jspdf`, `jszip`), N+1 queries sur Tracks/TrackDetail (Network tab), memory leak après navigation répétée.
-> 🟡 Indice statique (Axe 6) : `TrackDetail.tsx` (4200 lignes) et `UploadTrackModal.tsx` (3890) sont des candidats forts à problème de rendu/mémoire — à confirmer au profiling.
+🚫 **NOT COVERED this session** (Chrome down — DevTools required). To measure: TTI Dashboard/Tracks/TrackDetail, JS chunk sizes at login, lazy-load candidates (`pdfjs-dist`, `pdf-lib`, `lamejs`, `jspdf`, `jszip`), N+1 queries on Tracks/TrackDetail (Network tab), memory leak after repeated navigation.
+> 🟡 Static indicator (Axis 6): `TrackDetail.tsx` (4200 lines) and `UploadTrackModal.tsx` (3890) are strong rendering/memory issue candidates — to confirm via profiling.
 
-## 6. Cohérence code
-_(Axe 6 — lecture repo)_
+## 6. Code consistency
+_(Axis 6 — repo read)_
 
-### 6.1 Writes DB directs depuis le frontend (anti-pattern RPC SECURITY DEFINER)
-🟠 **P1 — 6 writes directs trouvés** (devraient passer par RPC) :
-- 🔴 `src/pages/LandingPage.tsx:104` — `insert` dans `waitlist` via le **client authed natif** (`@/integrations/supabase/client`), pas un anonClient REST. Page publique qui touche le client natif = viole la règle pages publiques. **À corriger.**
-- 🟠 `src/pages/StudioSession.tsx:104` — insert `studio_submissions` (anonClient isolé, acceptable infra mais pas RPC).
-- 🟠 `src/pages/SignAgreement.tsx:169` — update `signature_requests` (anonClient, table de signature sensible).
-- 🟠 `src/pages/SharedStemAccess.tsx:881/905/923` — insert + 2 update sur `track_comments` (anonClient).
+### 6.1 Direct DB writes from frontend (anti-pattern RPC SECURITY DEFINER)
+🟠 **P1 — 6 direct writes found** (should go through RPC):
+- 🔴 `src/pages/LandingPage.tsx:104` — `insert` into `waitlist` via the **native client auth** (`@/integrations/supabase/client`), not an anonClient REST. Public page touching native client = violates public pages rule. **To fix.**
+- 🟠 `src/pages/StudioSession.tsx:104` — insert `studio_submissions` (isolated anonClient, acceptable infra but not RPC).
+- 🟠 `src/pages/SignAgreement.tsx:169` — update `signature_requests` (anonClient, sensitive signature table).
+- 🟠 `src/pages/SharedStemAccess.tsx:881/905/923` — insert + 2 update on `track_comments` (anonClient).
 
-Ces writes anon dépendent à 100% de RLS airtight sur ces tables → à corréler avec l'Axe 3 (RLS).
+These anon writes depend 100% on airtight RLS on these tables → to correlate with Axis 3 (RLS).
 
-### 6.2 localStorage direct vs safeLocalStorage
-🟠 **P1 — 19 fichiers** utilisent `localStorage` brut malgré le wrapper `src/lib/safeStorage.ts`. Pires : `DashboardContent.tsx` (13), `lib/theme.ts` (10), `SharedLinkPage.tsx` (6). ⚪ `integrations/supabase/client.ts` (5) = **légitime** (couche session-backup). Les 18 autres devraient migrer vers `safeLocalStorage` (sécurité private-mode/SSR).
+### 6.2 Raw localStorage vs safeLocalStorage
+🟠 **P1 — 19 files** use raw `localStorage` despite the `src/lib/safeStorage.ts` wrapper. Worst: `DashboardContent.tsx` (13), `lib/theme.ts` (10), `SharedLinkPage.tsx` (6). ⚪ `integrations/supabase/client.ts` (5) = **legitimate** (session-backup layer). The other 18 should migrate to `safeLocalStorage` (private-mode/SSR safety).
 
 ### 6.3 TypeScript escape hatches
-🟡 **P2** — `as any` = **46**, `: any` = **38**, `@ts-ignore` = **0** ✅, `@ts-expect-error` = **0** ✅, `eslint-disable` = 7. Concentration : `TrackContext.tsx` (19 — pire), `WorkspaceSwitcher.tsx` (10).
+🟡 **P2** — `as any` = **46**, `: any` = **38**, `@ts-ignore` = **0** ✅, `@ts-expect-error` = **0** ✅, `eslint-disable` = 7. Concentration: `TrackContext.tsx` (19 — worst), `WorkspaceSwitcher.tsx` (10).
 
-### 6.4 Fichiers géants (refactor candidates)
-🔴/🟠 **P1** — risque React-#310 / stale-closure (vos propres anti-patterns) :
-1. `pages/TrackDetail.tsx` — **4200 lignes** 🔴
-2. `components/UploadTrackModal.tsx` — **3890** 🔴 (gonflé par Skip Review)
-3. `pages/SharedLinkPage.tsx` — 2160 · 4. `DashboardContent.tsx` — 1308 · 5. `WorkspaceSettings.tsx` — 1252 · 6. `lib/pdf-generators.ts` — 1181 · 7. `SharedStemAccess.tsx` — 1173 · 8. `SettingsPage.tsx` — 1133 · 9. `Contacts.tsx` — 1052. (`types.ts` 1026 = généré, ignorer.)
+### 6.4 Giant files (refactor candidates)
+🔴/🟠 **P1** — React-#310 / stale-closure risk (your own anti-patterns):
+1. `pages/TrackDetail.tsx` — **4200 lines** 🔴
+2. `components/UploadTrackModal.tsx` — **3890** 🔴 (swollen by Skip Review)
+3. `pages/SharedLinkPage.tsx` — 2160 · 4. `DashboardContent.tsx` — 1308 · 5. `WorkspaceSettings.tsx` — 1252 · 6. `lib/pdf-generators.ts` — 1181 · 7. `SharedStemAccess.tsx` — 1173 · 8. `SettingsPage.tsx` — 1133 · 9. `Contacts.tsx` — 1052. (`types.ts` 1026 = generated, ignore.)
 
 ### 6.5 Dead code
-⚪ Aucun dead code réel. Seuls non-importés = primitives shadcn/ui stock (à garder).
+⚪ No real dead code. Only non-imported = stock shadcn/ui primitives (to keep).
 
-### 6.6 Edge Functions — hygiène
-⚪ **Plutôt sain** — 20 functions, **toutes ont CORS + rate limiting** (`create-invitation` = throttling inline custom L65, pas la RPC mais fonctionnel). `verify-link-password` rate-limité (5 req/300s/IP). 
-- 🟡 `console.error` (logging serveur) absent dans : `create-invitation`, `get-audio-url`, `send-invitation-email`, `send-pitch-email`, `trace-leak`, `verify-link-password`. **`trace-leak` et `verify-link-password` sont sensibles** → vérifier que les échecs sont loggés serveur et pas leakés au client.
-- 🟡 `isValidUUID` absent de `hash-link-password`, `log-link-access`, `send-waitlist-invite`, `verify-link-password` (clés slug/IP/email → possiblement N/A, mais confirmer la validation d'input).
+### 6.6 Edge Functions — hygiene
+⚪ **Rather healthy** — 20 functions, **all have CORS + rate limiting** (`create-invitation` = throttling inline custom L65, not the RPC but functional). `verify-link-password` rate-limited (5 req/300s/IP).
+- 🟡 `console.error` (server logging) absent in: `create-invitation`, `get-audio-url`, `send-invitation-email`, `send-pitch-email`, `trace-leak`, `verify-link-password`. **`trace-leak` and `verify-link-password` are sensitive** → verify that failures are server-logged and not leaked to the client.
+- 🟡 `isValidUUID` absent from `hash-link-password`, `log-link-access`, `send-waitlist-invite`, `verify-link-password` (slug/IP/email keys → possibly N/A, but confirm input validation).
 
 ## 7. Console / Network errors
-🚫 **NON COUVERT cette session** (Chrome down). À faire : DevTools Console + Network pendant la navigation de toutes les pages (Axe 1), lister erreurs/warnings (page, message, sévérité) + 4xx/5xx/timeouts.
+🚫 **NOT COVERED this session** (Chrome down). To do: DevTools Console + Network during navigation of all pages (Axis 1), list errors/warnings (page, message, severity) + 4xx/5xx/timeouts.
 
-## 8. Specs vs implémentation
-_(Axe 8 — docs/)_
+## 8. Specs vs implementation
+_(Axis 8 — docs/)_
 
-| Spec | État | Évidence / Gap |
+| Spec | Status | Evidence / Gap |
 |---|---|---|
-| **ONBOARDING.md** | ✅ Implémenté | 4 couches présentes : `Onboarding.tsx`, `onboarding/GuidedTour.tsx`, `OnboardingChecklist.tsx`, `OnboardingContext.tsx`, `Guide.tsx`. Checklist = 6 steps. Fonctionnellement complet. |
-| **TRAKALOG_ADMIN_DASHBOARD.md** | 🟡 Partiel (4/9 pages) | `admin/AdminDashboard.tsx` + RPC `is_platform_admin`. Tabs : Overview/Waitlist/Contacts/Users. **Manque** : KPIs MRR/churn, impersonation, email digest, audit-log/billing/storage. KPIs revenus bloqués par Billing. |
-| **ISRC_GENERATION.md** | 🟡 Partiel (champ manuel) | ISRC = simple input texte libre (`TrackDetail.tsx:1484`), colonne `isrc` existante. **Manque** : génération 1-clic, registrant code, compteur séquentiel, validation format ISO 3901, bulk. |
-| **TRAKALOG_BILLING.md** | ❌ Non démarré | **Zéro code Stripe** dans `src/`, aucune edge function billing, aucune table plan/subscription. ⚠️ C'est pourtant le **#1 bloquant beta** déclaré. |
-| **DDEX_PRO_EXPORTS.md** | ❌ Non démarré | Aucun export BMI/ASCAP/SOCAN/SoundExchange/MLC ni DDEX XML. Dépend d'ISRC (non fait) + ISWC par track (champ absent). |
-| **TRACK_VERSIONING.md** | ❌ Non démarré | Table `track_versions` **absente des migrations SQL** (uniquement dans prose docs/architecture). Pas d'UI versioning. 1 track = 1 audio. |
-| **ARTIST_SEEKER.md** | ❌ Non démarré (Phase 4, attendu) | Aucun code. Correctement différé. Dépend du Smart Brief Matching. |
-| **BRIEF_SEEKER.md** | ❌ Non démarré (Phase 4, attendu) | Pas de scan auto. NB : `smart-ar` edge function existe (Smart A&R manuel = précurseur MVP). Correctement différé. |
-| **TRAKALOG_MAESTRO.md** | ⚠️ **Doc introuvable** | Aucun fichier `docs/TRAKALOG_MAESTRO.md`, aucune ref `maestro` dans le repo. Renommé ou jamais créé → la mission le liste pourtant. |
+| **ONBOARDING.md** | ✅ Implemented | 4 layers present: `Onboarding.tsx`, `onboarding/GuidedTour.tsx`, `OnboardingChecklist.tsx`, `OnboardingContext.tsx`, `Guide.tsx`. Checklist = 6 steps. Functionally complete. |
+| **TRAKALOG_ADMIN_DASHBOARD.md** | 🟡 Partial (4/9 pages) | `admin/AdminDashboard.tsx` + RPC `is_platform_admin`. Tabs: Overview/Waitlist/Contacts/Users. **Missing**: KPIs MRR/churn, impersonation, email digest, audit-log/billing/storage. Revenue KPIs blocked by Billing. |
+| **ISRC_GENERATION.md** | 🟡 Partial (manual field) | ISRC = simple free text input (`TrackDetail.tsx:1484`), `isrc` column exists. **Missing**: 1-click generation, registrant code, sequential counter, ISO 3901 format validation, bulk. |
+| **TRAKALOG_BILLING.md** | ❌ Not started | **Zero Stripe code** in `src/`, no billing edge function, no plan/subscription table. ⚠️ Yet this is the **#1 beta blocker** declared. |
+| **DDEX_PRO_EXPORTS.md** | ❌ Not started | No BMI/ASCAP/SOCAN/SoundExchange/MLC nor DDEX XML exports. Depends on ISRC (not done) + ISWC per track (field absent). |
+| **TRACK_VERSIONING.md** | ❌ Not started | `track_versions` table **absent from SQL migrations** (only in prose docs/architecture). No versioning UI. 1 track = 1 audio. |
+| **ARTIST_SEEKER.md** | ❌ Not started (Phase 4, expected) | No code. Correctly deferred. Depends on Smart Brief Matching. |
+| **BRIEF_SEEKER.md** | ❌ Not started (Phase 4, expected) | No auto scan. NB: `smart-ar` edge function exists (Manual Smart A&R = MVP precursor). Correctly deferred. |
+| **TRAKALOG_MAESTRO.md** | ⚠️ **Doc not found** | No file `docs/TRAKALOG_MAESTRO.md`, no `maestro` ref in repo. Renamed or never created → the mission lists it anyway. |
 
-**Dépendances critiques :** Billing (non fait) gate les KPIs revenus de l'Admin Dashboard. Chaîne ISRC → DDEX entièrement non démarrée. Track Versioning référencé en archi mais sans migration DB.
+**Critical dependencies:** Billing (not done) gates Admin Dashboard revenue KPIs. ISRC → DDEX chain entirely not started. Track Versioning referenced in architecture but without DB migration.
 
 ---
 
 ## Annexes
 
-### SQL queries exécutées (read-only, aucune écriture)
-1. Liste tables + `relrowsecurity` + count policies (`pg_class`/`pg_policies`).
-2. Policies des 14 tables critiques + flags refs `user_roles` / `workspace_members`.
-3. `qual`/`with_check` détaillés des policies suspectes (`shared_links`, `signature_requests`, `track_comments`, `tracks` anon/authenticated).
-4. Colonnes de `shared_links` (`information_schema.columns`).
+### SQL queries executed (read-only, no writes)
+1. Tables list + `relrowsecurity` + policy count (`pg_class`/`pg_policies`).
+2. Policies of the 14 critical tables + flags refs `user_roles` / `workspace_members`.
+3. `qual`/`with_check` detailed on suspect policies (`shared_links`, `signature_requests`, `track_comments`, `tracks` anon/authenticated).
+4. Columns of `shared_links` (`information_schema.columns`).
 5. `storage.buckets` (public flag) + `storage.objects` policies.
-6. (sessions précédentes, baseline) schéma `tracks`, def `update_track`, `is_email_whitelisted`, invitations/whitelist.
+6. (Previous sessions, baseline) schema `tracks`, def `update_track`, `is_email_whitelisted`, invitations/whitelist.
 
-### Commandes terminal (read-only)
-- `git status/log/pull` (setup), `grep` : writes DB directs, `localStorage`, `as any`, `getPublicUrl`+bucket, `dangerouslySetInnerHTML`, line counts.
+### Terminal commands (read-only)
+- `git status/log/pull` (setup), `grep` : direct DB writes, `localStorage`, `as any`, `getPublicUrl`+bucket, `dangerouslySetInnerHTML`, line counts.
 
 ### Screenshots
-- Aucun (Axes browser non couverts — Chrome déconnecté).
+- None (Browser axes not covered — Chrome disconnected).
 
-### Méthode
-- 2 sous-agents read-only (Axe 6 code, Axe 8 specs), Supabase MCP (SELECT only), lecture repo. Aucun write DB, aucun fix, aucun push.
+### Method
+- 2 read-only sub-agents (Axis 6 code, Axis 8 specs), Supabase MCP (SELECT only), repo read. No DB writes, no fixes, no pushes.
 
 ---
-## ⏭️ Pour reprendre l'audit (session suivante)
-1. Reconnecter l'extension Chrome (cause du blocage des axes browser).
-2. Login manuel + switch « Banx & Ranx Test ».
-3. Dérouler Axes 1, 2, 5, 7 (UI/UX, flows, perf, console) — tout le backend (3/4/6/8) est déjà fait ici.
-4. Compléter Axe 3.4 : audit exhaustif des RPCs SECURITY DEFINER sans vérif membership.
+## ⏭️ To resume the audit (next session)
+1. Reconnect the Chrome extension (cause of the axis blocks).
+2. Manual login + switch "Banx & Ranx Test".
+3. Run Axes 1, 2, 5, 7 (UI/UX, flows, perf, console) — all backend (3/4/6/8) is already done here.
+4. Complete Axis 3.4: exhaustive audit of RPCs SECURITY DEFINER without membership check.

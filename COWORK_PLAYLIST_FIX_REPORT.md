@@ -1,42 +1,42 @@
-# COWORK_PLAYLIST_FIX_REPORT — Playlist share "No track data available"
+# COWOK_PLAYLIST_FIX_REPORT — Playlist share "No track data available"
 
-**Date** : 2026-06-07 · **Projet Supabase** : `xhmeitivkclbeziqavxw` · **Slug testé** : `5ug9slpkgdsw` (workspace Banx & Ranx Test)
+**Date:** 2026-06-07 · **Supabase project:** `xhmeitivkclbeziqavxw` · **Tested slug:** `5ug9slpkgdsw` (Banx & Ranx Test workspace)
 
 ---
 
-## 1. Cas identifié : **CAS C** — type mismatch caché restant
+## 1. Case identified: **CASE C** — hidden type mismatch still present
 
-## 2. Cause racine
+## 2. Root cause
 
-Le fix de types appliqué via SQL Editor a corrigé `bpm`, `duration_sec` et `genre` dans `get_playlist_tracks_for_shared_link`, mais a déclaré **`"position" integer`** alors que `playlist_tracks.position` est **`smallint` (int2)**. PL/pgSQL valide les types de `RETURN QUERY` à l'exécution → chaque appel plante en `42804` → PostgREST 400 → le front affiche "No track data available".
+The type fix applied via SQL Editor corrected `bpm`, `duration_sec` and `genre` in `get_playlist_tracks_for_shared_link`, but declared **`"position" integer`** while `playlist_tracks.position` is **`smallint` (int2)**. PL/pgSQL validates `RETURN QUERY` types at execution time → each call fails with `42804` → PostgREST 400 → the frontend displays "No track data available".
 
-## 3. Preuves
+## 3. Evidence
 
-**SQL direct :**
+**Direct SQL:**
 ```
 SELECT * FROM get_playlist_tracks_for_shared_link('5ug9slpkgdsw');
 → ERROR 42804: Returned type smallint does not match expected type integer in column 15 (pt.position)
 ```
 
-**Depuis le browser (page publique, clé anon, mêmes headers que le front) :**
+**From the browser (public page, anon key, same headers as the frontend):**
 
 | Call | Status | Body |
 |---|---|---|
-| `POST /rpc/get_shared_link_by_slug` `{_slug:"5ug9slpkgdsw"}` | **200** | row playlist OK (share_type=playlist, playlist_id non null, has_password=true) |
-| `GET /rest/v1/playlist_tracks?...` | **200** | rows OK (RLS anon `anon_read_playlist_tracks_via_shared_link` présente) |
+| `POST /rpc/get_shared_link_by_slug` `{_slug:"5ug9slpkgdsw"}` | **200** | playlist row OK (share_type=playlist, playlist_id not null, has_password=true) |
+| `GET /rest/v1/playlist_tracks?...` | **200** | rows OK (RLS anon `anon_read_playlist_tracks_via_shared_link` present) |
 | `POST /rpc/get_playlist_tracks_for_shared_link` `{_slug:"5ug9slpkgdsw"}` | **400** | `{"code":"42804","details":"Returned type smallint does not match expected type integer in column 15."}` |
 
-**Frontend (SharedLinkPage.tsx, l.389-416)** : flow correct — détecte `share_type === "playlist"`, fetch `playlist_tracks` (200, non vide) puis appelle la RPC ; `tracksRes.ok` est false → `playlistTracks` reste `[]` → "No track data available". Parsing sans bug. **Aucun changement de code requis** (donc pas de branche feature ni de tsc).
+**Frontend (SharedLinkPage.tsx, l.389-416):** flow is correct — detects `share_type === "playlist"`, fetches `playlist_tracks` (200, non-empty) then calls the RPC; `tracksRes.ok` is false → `playlistTracks` remains `[]` → "No track data available". No parsing bug. **No code changes required** (so no feature branch or tsc needed).
 
-**Validation read-only du corps corrigé** : le SELECT avec `pt.position::integer` retourne **14 tracks** (MWA, Gucci 2026 v2, SWOOP, …) dans le bon ordre.
+**Validation of the corrected body:** the SELECT with `pt.position::integer` returns **14 tracks** (MWA, Gucci 2026 v2, SWOOP, ...) in the right order.
 
-## 4. SQL fix (à exécuter dans Supabase SQL Editor)
+## 4. SQL fix (to execute in Supabase SQL Editor)
 
-`CREATE OR REPLACE` suffit (le type de retour ne change pas — on caste dans le SELECT). Pas de DROP → les GRANT existants sont préservés (re-déclarés quand même par sécurité).
+`CREATE OR REPLACE` is sufficient (the return type doesn't change — we cast in the SELECT). No DROP → existing GRANTs are preserved (re-declared anyway for safety).
 
 ```sql
--- Fix 42804: playlist_tracks.position est smallint, la RPC déclare integer.
--- On garde la signature (integer) et on caste dans le SELECT.
+-- Fix 42804: playlist_tracks.position is smallint, the RPC declares integer.
+-- Keep the signature (integer) and cast in the SELECT.
 CREATE OR REPLACE FUNCTION public.get_playlist_tracks_for_shared_link(_slug text)
 RETURNS TABLE (
   id uuid, title text, artist text, featuring text,
@@ -64,23 +64,23 @@ $func$;
 GRANT EXECUTE ON FUNCTION public.get_playlist_tracks_for_shared_link(text) TO anon, authenticated;
 ```
 
-## 5. Tests effectués
+## 5. Tests performed
 
-| Test | Résultat |
+| Test | Result |
 |---|---|
 | `get_shared_link_by_slug('5ug9slpkgdsw')` | ✅ 1 row, share_type=playlist |
-| Corps corrigé (cast `::integer`) en SELECT direct | ✅ 14 tracks, ordre OK |
-| Non-régression `get_track_for_shared_link('e4ak2kdwtdjd')` | ✅ 1 row (SOS- NCT v2) |
-| `get_shared_link_by_id(...)` (route stems `/shared/:linkId`) | ✅ exécute sans erreur (fix types déjà appliqué) |
-| Share stems end-to-end | ⚠️ non testable — aucun lien `stems`/`pack` actif dans le workspace test |
+| Corrected body (cast `::integer`) in direct SELECT | ✅ 14 tracks, order OK |
+| Non-regression `get_track_for_shared_link('e4ak2kdwtdjd')` | ✅ 1 row (SOS- NCT v2) |
+| `get_shared_link_by_id(...)` (stems route `/shared/:linkId`) | ✅ executes without error (types fix already applied) |
+| Share stems end-to-end | ⚠️ not testable — no active `stems`/`pack` link in the test workspace |
 
-**À refaire après exécution du SQL** :
-1. `SELECT * FROM get_playlist_tracks_for_shared_link('5ug9slpkgdsw');` → doit retourner 14 rows
-2. Reload `app.trakalog.com/share/5ug9slpkgdsw` (+ mot de passe) → tracks visibles
+**To re-run after SQL execution:**
+1. `SELECT * FROM get_playlist_tracks_for_shared_link('5ug9slpkgdsw');` → should return 14 rows
+2. Reload `app.trakalog.com/share/5ug9slpkgdsw` (+ password) → tracks visible
 
-## 6. Risques résiduels / observations (non fixées, hors scope)
+## 6. Residual risks / observations (unfixed, out of scope)
 
-1. **Branding cassé pour les visiteurs anon** : `GET /rest/v1/workspaces?...&id=eq.{workspace_id}` → **406** sur les pages partagées (aucune policy SELECT anon sur `workspaces`). Le hero/logo/brand color ne s'affichent pas pour les fans/pros non connectés. À traiter via une RPC `get_workspace_branding_for_shared_link(_slug)` ou une policy anon scopée.
-2. Le SQL des RPCs partagées ne vit que dans `CLAUDE_FIX_REPORT.md` — toujours pas de fichier committé dans `supabase/migrations/`. Recommandé : committer ce fix + les précédents en migration.
-3. Pattern récurrent : 3 incidents 42804 sur ces RPCs. Recommandé : ajouter un smoke test post-migration (`SELECT * FROM <rpc>('<slug actif>')` pour chaque RPC publique).
-4. Lien playlist testé protégé par mot de passe → la validation visuelle finale (tracks affichées) reste à faire par Yannick après le fix.
+1. **Branding broken for anonymous visitors:** `GET /rest/v1/workspaces?...&id=eq.{workspace_id}` → **406** on shared pages (no SELECT policy for anon on `workspaces`). The hero/logo/brand color don't display for non-logged-in fans/pros. Fix via an RPC `get_workspace_branding_for_shared_link(_slug)` or a scoped anon policy.
+2. The RPC SQL for shared links only lives in `CLAUK_FIX_REPORT.md` — still no file committed in `supabase/migrations/`. Recommended: commit this fix + previous ones as a migration.
+3. Recurring pattern: 3 incidents of 42804 on these RPCs. Recommended: add a smoke test post-migration (`SELECT * FROM <rpc>('<active slug>')` for each public RPC).
+4. The tested playlist link is password-protected → the final visual validation (tracks displayed) remains to be done by Yannick after the fix.
