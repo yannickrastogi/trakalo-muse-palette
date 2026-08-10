@@ -30,3 +30,4 @@ dist-ssr
 *.sln
 *.sw?
 supabase/.temp/
+supabase/.branches/_current_branch

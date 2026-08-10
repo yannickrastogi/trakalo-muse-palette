@@ -11,7 +11,10 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:check": "bash scripts/check-schema-drift.sh"
+    "db:check": "bash scripts/check-schema-drift.sh",
+    "db:start": "bash scripts/start-supabase-cli.sh",
+    "db:stop": "bash scripts/stop-supabase-cli.sh",
+    "db:reset": "npx supabase db reset"
   },
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",
@@ -88,6 +91,7 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
+    "supabase": "^2.113.0",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
     "@types/node": "^22.16.5",
