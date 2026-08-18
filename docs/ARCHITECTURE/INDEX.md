@@ -38,12 +38,12 @@ This is the **single source of truth** for Trakalog's technical architecture, de
 | # | Document | Description | Status | Last Updated |
 |---|----------|-------------|--------|--------------|
 | 01 | [Vision & Overview](01-VISION_AND_OVERVIEW.md) | Product vision, dual audience model, core features | 🟢 Stable | August 11, 2026 |
-| 02 | [System Architecture](02-SYSTEM_ARCHITECTURE.md) | Technical layers, technology stack, data flows | 🟡 Draft | August 11, 2026 |
-| 03 | [Data Architecture](03-DATA_ARCHITECTURE.md) | Database schema, entity relationships, RLS | 🟡 Draft | August 11, 2026 |
-| 04 | [Component Architecture](04-COMPONENT_ARCHITECTURE.md) | React components, state management, routing | 🟡 Draft | August 11, 2026 |
-| 05 | [Service Architecture](05-SERVICE_ARCHITECTURE.md) | External integrations (R2, Railway, Groq, etc.) | 🟡 Draft | August 11, 2026 |
-| 06 | [Security Architecture](06-SECURITY_ARCHITECTURE.md) | Authentication, RLS policies, data protection | 🟡 Draft | August 11, 2026 |
-| 07 | [Deployment Architecture](07-DEPLOYMENT_ARCHITECTURE.md) | Infrastructure, Vercel, Supabase, monitoring | 🟡 Draft | August 11, 2026 |
+| 02 | [System Architecture](02-SYSTEM_ARCHITECTURE.md) | Technical layers, technology stack, data flows | 🟢 Stable | August 11, 2026 |
+| 03 | [Data Architecture](03-DATA_ARCHITECTURE.md) | Database schema, entity relationships, RLS | 🟢 Stable | August 11, 2026 |
+| 04 | [Component Architecture](04-COMPONENT_ARCHITECTURE.md) | React components, state management, routing | 🟢 Stable | August 11, 2026 |
+| 05 | [Service Architecture](05-SERVICE_ARCHITECTURE.md) | External integrations (R2, Railway, Groq, etc.) | 🟢 Stable | August 11, 2026 |
+| 06 | [Security Architecture](06-SECURITY_ARCHITECTURE.md) | Authentication, RLS policies, data protection | 🟢 Stable | August 11, 2026 |
+| 07 | [Deployment Architecture](07-DEPLOYMENT_ARCHITECTURE.md) | Infrastructure, Vercel, Supabase, monitoring | 🟢 Stable | August 11, 2026 |
 
 ### 📝 Architecture Decision Records (ADRs)
 
@@ -51,12 +51,12 @@ Architectural decisions that shaped Trakalog's design:
 
 | ADR # | Title | Status | Date |
 |-------|-------|--------|------|
-| ADR-0001 | [Multi-Workspace Model](DECISIONS/ADR-0001-MULTI-WORKSPACE-MODEL.md) | 🟡 Draft | August 11, 2026 |
-| ADR-0002 | [Seat-Based Billing](DECISIONS/ADR-0002-SEAT-BASED-BILLING.md) | 🟡 Draft | August 18, 2026 |
-| ADR-0003 | [Supabase Over Custom Backend](DECISIONS/ADR-0003-SUPABASE-CHOICE.md) | 🟡 Draft | August 18, 2026 |
-| ADR-0004 | [React Query Over Redux](DECISIONS/ADR-0004-STATE-MANAGEMENT.md) | 🟡 Draft | August 18, 2026 |
-| ADR-0005 | [R2 Cloud Storage Over S3](DECISIONS/ADR-0005-R2-STORAGE.md) | 🟡 Draft | August 18, 2026 |
-| ADR-0006 | [Groq for AI Inference](DECISIONS/ADR-0006-GROQ-AI.md) | 🟡 Draft | August 18, 2026 |
+| ADR-0001 | [Multi-Workspace Model](DECISIONS/ADR-0001-MULTI-WORKSPACE-MODEL.md) | 🟢 Stable | August 11, 2026 |
+| ADR-0002 | [Seat-Based Billing](DECISIONS/ADR-0002-SEAT-BASED-BILLING.md) | 🟢 Stable | August 18, 2026 |
+| ADR-0003 | [Supabase Over Custom Backend](DECISIONS/ADR-0003-SUPABASE-CHOICE.md) | 🟢 Stable | August 18, 2026 |
+| ADR-0004 | [React Query Over Redux](DECISIONS/ADR-0004-STATE-MANAGEMENT.md) | 🟢 Stable | August 18, 2026 |
+| ADR-0005 | [R2 Cloud Storage Over S3](DECISIONS/ADR-0005-R2-STORAGE.md) | 🟢 Stable | August 18, 2026 |
+| ADR-0006 | [Groq for AI Inference](DECISIONS/ADR-0006-GROQ-AI.md) | 🟢 Stable | August 18, 2026 |
 
 *See [DECISIONS/INDEX.md](DECISIONS/INDEX.md) for complete ADR list*
 
@@ -67,8 +67,8 @@ Architectural decisions that shaped Trakalog's design:
 | Document | Description | Status |
 |----------|-------------|--------|
 | [Getting Started](../DEVELOPMENT/GETTING_STARTED.md) | Local development setup, prerequisites, first run | 🟢 Stable |
-| [Coding Standards](../DEVELOPMENT/CODING_STANDARDS.md) | TypeScript, React, Tailwind conventions, best practices | 🟡 Draft |
-| [Testing Strategy](../DEVELOPMENT/TESTING_STRATEGY.md) | Vitest, React Testing Library patterns, test organization | 🟡 Draft |
+| [Coding Standards](../DEVELOPMENT/CODING_STANDARDS.md) | TypeScript, React, Tailwind conventions, best practices | 🟢 Stable |
+| [Testing Strategy](../DEVELOPMENT/TESTING_STRATEGY.md) | Vitest, React Testing Library patterns, test organization | 🟢 Stable |
 | [API Reference](../DEVELOPMENT/API_REFERENCE.md) | Supabase RPC functions, REST endpoints, GraphQL | 🟡 Planned |
 
 ---
@@ -79,11 +79,11 @@ Detailed documentation for major Trakalog features:
 
 | Feature | Document | Description | Status |
 |---------|----------|-------------|--------|
-| Track Management | [Track Management](../FEATURES/TRACK_MANAGEMENT.md) | Upload pipeline, audio processing, metadata, versioning | 🟡 Draft |
-| Sharing System | [Sharing System](../FEATURES/SHARING_SYSTEM.md) | Shared links, catalog sharing, permissions, branding | 🟡 Draft |
-| Smart A&R | [Smart A&R](../FEATURES/SMART_AR.md) | AI matching, Groq integration, brief processing | 🟡 Draft |
-| Watermarking | [Watermarking](../FEATURES/WATERMARKING.md) | Audio watermarking, leak tracing, payload encoding | 🟡 Draft |
-| Splits & Signatures | [Splits & Signatures](../FEATURES/SPLITS_AND_SIGNATURES.md) | Split calculation, digital signatures, agreement flow | 🟡 Draft |
+| Track Management | [Track Management](../FEATURES/TRACK_MANAGEMENT.md) | Upload pipeline, audio processing, metadata, versioning | 🟢 Stable |
+| Sharing System | [Sharing System](../FEATURES/SHARING_SYSTEM.md) | Shared links, catalog sharing, permissions, branding | 🟢 Stable |
+| Smart A&R | [Smart A&R](../FEATURES/SMART_AR.md) | AI matching, Groq integration, brief processing | 🟢 Stable |
+| Watermarking | [Watermarking](../FEATURES/WATERMARKING.md) | Audio watermarking, leak tracing, payload encoding | 🟢 Stable |
+| Splits & Signatures | [Splits & Signatures](../FEATURES/SPLITS_AND_SIGNATURES.md) | Split calculation, digital signatures, agreement flow | 🟢 Stable |
 
 ---
 
@@ -91,9 +91,9 @@ Detailed documentation for major Trakalog features:
 
 | Document | Description | Status |
 |----------|-------------|--------|
-| [Monitoring](../OPERATIONS/MONITORING.md) | Logging setup, error tracking, metrics, alerting | 🟡 Draft |
+| [Monitoring](../OPERATIONS/MONITORING.md) | Logging setup, error tracking, metrics, alerting | 🟢 Stable |
 | [Performance](../OPERATIONS/PERFORMANCE.md) | Performance optimization, benchmarks, bottlenecks | 🟡 Planned |
-| [Cost Optimization](../OPERATIONS/COST_OPTIMIZATION.md) | Cloud costs, usage tracking, optimization strategies | 🟡 Draft |
+| [Cost Optimization](../OPERATIONS/COST_OPTIMIZATION.md) | Cloud costs, usage tracking, optimization strategies | 🟢 Stable |
 
 ---
 

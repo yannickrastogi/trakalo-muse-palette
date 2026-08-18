@@ -3,7 +3,7 @@
 > **Status:** Stable  
 > **Version:** 1.0.0  
 > **Created:** August 11, 2026  
-> **Last Updated:** August 11, 2026  
+> **Last Updated:** August 19, 2026  
 > **Owner:** Ishan  
 
 ---
@@ -42,31 +42,31 @@ Create an ADR for decisions that:
 
 | ADR # | Title | Status | Date | Owner |
 |-------|-------|--------|------|-------|
-| [ADR-0001](ADR-0001-MULTI-WORKSPACE-MODEL.md) | Multi-Workspace Model | 🟡 Draft | August 11, 2026 | Ishan |
-| [ADR-0002](ADR-0002-SEAT-BASED-BILLING.md) | Seat-Based Billing Model | 🟡 Draft | August 18, 2026 | Ishan |
-| [ADR-0003](ADR-0003-SUPABASE-CHOICE.md) | Supabase Over Custom Backend | 🟡 Draft | August 18, 2026 | Ishan |
+| [ADR-0001](ADR-0001-MULTI-WORKSPACE-MODEL.md) | Multi-Workspace Model | 🟢 Stable | August 11, 2026 | Ishan |
+| [ADR-0002](ADR-0002-SEAT-BASED-BILLING.md) | Seat-Based Billing Model | 🟢 Stable | August 18, 2026 | Ishan |
+| [ADR-0003](ADR-0003-SUPABASE-CHOICE.md) | Supabase Over Custom Backend | 🟢 Stable | August 18, 2026 | Ishan |
 
 ### 🎯 Technical Stack Decisions
 
 | ADR # | Title | Status | Date | Owner |
 |-------|-------|--------|------|-------|
-| [ADR-0004](ADR-0004-STATE-MANAGEMENT.md) | React Query Over Redux | 🟡 Draft | August 18, 2026 | Ishan |
-| [ADR-0005](ADR-0005-R2-STORAGE.md) | R2 Cloud Storage Over S3 | 🟡 Draft | August 18, 2026 | Ishan |
-| [ADR-0006](ADR-0006-GROQ-AI.md) | Groq for AI Inference | 🟡 Draft | August 18, 2026 | Ishan |
+| [ADR-0004](ADR-0004-STATE-MANAGEMENT.md) | React Query Over Redux | 🟢 Stable | August 18, 2026 | Ishan |
+| [ADR-0005](ADR-0005-R2-STORAGE.md) | R2 Cloud Storage Over S3 | 🟢 Stable | August 18, 2026 | Ishan |
+| [ADR-0006](ADR-0006-GROQ-AI.md) | Groq for AI Inference | 🟢 Stable | August 18, 2026 | Ishan |
 
 ### 🎨 User Experience Decisions
 
 | ADR # | Title | Status | Date | Owner |
 |-------|-------|--------|------|-------|
-| [ADR-0007](ADR-0007-INVISIBLE-WATERMARKING.md) | Invisible Audio Watermarking | 🟡 Draft | August 18, 2026 | Ishan |
-| [ADR-0008](ADR-0008-DUAL-AUDIENCE.md) | Dual Audience Architecture | 🟡 Draft | August 18, 2026 | Ishan |
+| [ADR-0007](ADR-0007-INVISIBLE-WATERMARKING.md) | Invisible Audio Watermarking | 🟢 Stable | August 18, 2026 | Ishan |
+| [ADR-0008](ADR-0008-DUAL-AUDIENCE.md) | Dual Audience Architecture | 🟢 Stable | August 18, 2026 | Ishan |
 
 ### ⚡ Feature Implementation Decisions
 
 | ADR # | Title | Status | Date | Owner |
 |-------|-------|--------|------|-------|
-| [ADR-0009](ADR-0009-FEATURE-FLAGS.md) | Feature Flags Approach | 🟡 Draft | August 18, 2026 | Ishan |
-| [ADR-0010](ADR-0010-SHADCN-UI.md) | shadcn/ui Component Library | 🟡 Draft | August 18, 2026 | Ishan |
+| [ADR-0009](ADR-0009-FEATURE-FLAGS.md) | Feature Flags Approach | 🟢 Stable | August 18, 2026 | Ishan |
+| [ADR-0010](ADR-0010-SHADCN-UI.md) | shadcn/ui Component Library | 🟢 Stable | August 18, 2026 | Ishan |
 
 ---
 
