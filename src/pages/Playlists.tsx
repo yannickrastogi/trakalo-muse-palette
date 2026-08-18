@@ -17,11 +17,14 @@ import {
   SlidersHorizontal,
   ChevronDown,
   Sparkles,
+  AlertCircle,
+  RotateCw,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CreatePlaylistModal } from "@/components/CreatePlaylistModal";
 import { EmptyState } from "@/components/EmptyState";
+import { PlaylistGridSkeleton } from "@/components/PlaylistGridSkeleton";
 import { usePlaylists } from "@/contexts/PlaylistContext";
 import { DEFAULT_COVER } from "@/lib/constants";
 import { useTrack } from "@/contexts/TrackContext";
@@ -198,7 +201,7 @@ export default function Playlists() {
   const [editDesc, setEditDesc] = useState("");
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { playlists, addPlaylist, deletePlaylist, updatePlaylist, sharedPlaylists } = usePlaylists();
+  const { playlists, loading, error, refetchPlaylists, addPlaylist, deletePlaylist, updatePlaylist, sharedPlaylists } = usePlaylists();
   const incomingSharedPlaylists = sharedPlaylists.filter((s) => s.direction === "incoming" && s.status === "active");
   const { tracks: allTracks } = useTrack();
   const { playTrack, togglePlay, setQueue, isPlaying: audioIsPlaying, currentTrack, queue } = useAudioPlayer();
@@ -457,18 +460,43 @@ export default function Playlists() {
           </motion.div>
         )}
 
-        {/* Playlist Grid */}
+        {/* Playlist Grid.
+            The list itself is NEVER gated on `loading` — cached playlists render
+            instantly and a background refetch never blanks them. Only the empty
+            slot (shown when there are no playlists to display) distinguishes
+            loading → skeleton, error → retry, otherwise → the real empty state. */}
         {playlists.length === 0 ? (
-          <motion.div variants={item}>
-            <EmptyState
-              icon={ListMusic}
-              title={t("playlists.noPlaylistsYet")}
-              description={t("playlists.noPlaylistsDesc")}
-              actionLabel={t("playlists.createPlaylist")}
-              onAction={() => setCreateOpen(true)}
-              note={allTracks.length === 0 ? t("playlists.noTracksNote") : undefined}
-            />
-          </motion.div>
+          loading ? (
+            <PlaylistGridSkeleton />
+          ) : error ? (
+            <motion.div variants={item} className="card-premium py-20 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-7 h-7 text-destructive" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">{t("playlists.loadErrorTitle")}</p>
+              <p className="text-xs mt-1.5 text-muted-foreground/70 max-w-sm mx-auto">
+                {t("playlists.loadErrorDesc")}
+              </p>
+              <button
+                onClick={() => refetchPlaylists()}
+                className="btn-brand mt-5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold"
+              >
+                <RotateCw className="w-4 h-4" />
+                {t("playlists.retry")}
+              </button>
+            </motion.div>
+          ) : (
+            <motion.div variants={item}>
+              <EmptyState
+                icon={ListMusic}
+                title={t("playlists.noPlaylistsYet")}
+                description={t("playlists.noPlaylistsDesc")}
+                actionLabel={t("playlists.createPlaylist")}
+                onAction={() => setCreateOpen(true)}
+                note={allTracks.length === 0 ? t("playlists.noTracksNote") : undefined}
+              />
+            </motion.div>
+          )
         ) : filtered.length === 0 ? (
           <motion.div variants={item} className="card-premium py-20 text-center">
             <div className="w-14 h-14 rounded-2xl icon-brand flex items-center justify-center mx-auto mb-4">

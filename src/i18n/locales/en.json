@@ -311,6 +311,9 @@
     }
   },
   "playlists": {
+    "loadErrorTitle": "Couldn't load playlists",
+    "loadErrorDesc": "Something went wrong while loading. Your playlists are safe — try again.",
+    "retry": "Retry",
     "title": "Playlists",
     "subtitle": "{{count}} curated collections · {{tracks}} total tracks",
     "createPlaylist": "Create Playlist",

@@ -307,6 +307,9 @@
     }
   },
   "playlists": {
+    "loadErrorTitle": "Impossibile caricare le playlist",
+    "loadErrorDesc": "Qualcosa è andato storto durante il caricamento. Le tue playlist sono al sicuro — riprova.",
+    "retry": "Riprova",
     "title": "Playlist",
     "subtitle": "{{count}} raccolte curate · {{tracks}} brani totali",
     "createPlaylist": "Crea playlist",

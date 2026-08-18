@@ -311,6 +311,9 @@
     }
   },
   "playlists": {
+    "loadErrorTitle": "Impossible de charger les playlists",
+    "loadErrorDesc": "Une erreur est survenue au chargement. Vos playlists sont intactes — réessayez.",
+    "retry": "Réessayer",
     "title": "Playlists",
     "subtitle": "{{count}} collections curatées · {{tracks}} morceaux au total",
     "createPlaylist": "Créer une playlist",

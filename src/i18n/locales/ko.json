@@ -307,6 +307,9 @@
     }
   },
   "playlists": {
+    "loadErrorTitle": "재생목록을 불러오지 못했습니다",
+    "loadErrorDesc": "불러오는 중 문제가 발생했습니다. 재생목록은 안전합니다 — 다시 시도하세요.",
+    "retry": "다시 시도",
     "title": "플레이리스트",
     "subtitle": "{{count}}개 큐레이션 컬렉션 · 총 {{tracks}}개 트랙",
     "createPlaylist": "플레이리스트 만들기",

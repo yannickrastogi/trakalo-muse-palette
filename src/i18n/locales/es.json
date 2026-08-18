@@ -307,6 +307,9 @@
     }
   },
   "playlists": {
+    "loadErrorTitle": "No se pudieron cargar las playlists",
+    "loadErrorDesc": "Algo salió mal al cargar. Tus playlists están a salvo: inténtalo de nuevo.",
+    "retry": "Reintentar",
     "title": "Playlists",
     "subtitle": "{{count}} colecciones curadas · {{tracks}} pistas en total",
     "createPlaylist": "Crear playlist",

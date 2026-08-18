@@ -83,6 +83,9 @@ export interface SharedPlaylistShare {
 
 interface PlaylistContextType {
   playlists: PlaylistItem[];
+  loading: boolean;
+  error: boolean;
+  refetchPlaylists: () => void;
   addPlaylist: (pl: NewPlaylistData) => Promise<string | undefined>;
   getPlaylist: (id: string) => PlaylistItem | undefined;
   updatePlaylist: (id: string, updates: Partial<PlaylistItem>) => void;
@@ -100,72 +103,112 @@ const PlaylistContext = createContext<PlaylistContextType | null>(null);
 export function PlaylistProvider({ children }: { children: ReactNode }) {
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
-  const { tracks } = useTrack();
+  const { tracks, loading: tracksLoading } = useTrack();
   const [playlists, setPlaylists] = useState<PlaylistItem[]>([]);
   const [sharedPlaylists, setSharedPlaylists] = useState<SharedPlaylistShare[]>([]);
+  // Loading/error mirror TrackContext's semantics so pages can tell "empty" apart
+  // from "still loading" / "load failed" and never flash an empty state on reload.
+  // Initialised true (before the first fetch) so the very first render is a loading
+  // state, not an empty one.
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const fetchPlaylists = useCallback(async () => {
     if (!activeWorkspace || !user) {
       setPlaylists([]);
+      setError(false);
+      setLoading(false);
       return;
     }
 
-    const { data: rows, error } = await supabase
-      .from("playlists")
-      .select("*")
-      .eq("workspace_id", activeWorkspace.id)
-      .order("created_at", { ascending: false });
+    // Each fetch (initial load, workspace change, post-mutation refresh) restarts
+    // the loading state. The list keeps rendering its cache meanwhile — only the
+    // empty state is gated on loading downstream — so this never blanks content.
+    setLoading(true);
+    setError(false);
+    try {
+      const { data: rows, error: fetchErr } = await supabase
+        .from("playlists")
+        .select("*")
+        .eq("workspace_id", activeWorkspace.id)
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching playlists:", error);
-      setPlaylists([]);
-      return;
+      if (fetchErr) {
+        // A failed fetch must NEVER read as "no playlists": keep any cached list,
+        // flag the error so the page can offer a retry, and stop loading.
+        console.error("Error fetching playlists:", fetchErr);
+        setError(true);
+        setLoading(false);
+        return;
+      }
+
+      if (!rows || rows.length === 0) {
+        setPlaylists([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch track associations for all playlists in one query
+      const playlistIds = rows.map((r) => r.id);
+      const { data: ptRows, error: ptError } = await supabase
+        .from("playlist_tracks")
+        .select("playlist_id, track_id, position")
+        .in("playlist_id", playlistIds)
+        .order("position", { ascending: true });
+
+      // Non-fatal: playlists still render (with 0 track counts) if associations fail.
+      if (ptError) {
+        console.error("Error fetching playlist_tracks:", ptError);
+      }
+
+      // Group track UUIDs by playlist, then map to numeric IDs
+      const trackUuidsByPlaylist: Record<string, string[]> = {};
+      for (const pt of ptRows || []) {
+        const pid = pt.playlist_id as string;
+        if (!trackUuidsByPlaylist[pid]) trackUuidsByPlaylist[pid] = [];
+        trackUuidsByPlaylist[pid].push(pt.track_id as string);
+      }
+
+      const mapped = rows.map((row) => {
+        const r = row as unknown as Record<string, unknown>;
+        const uuids = trackUuidsByPlaylist[r.id as string] || [];
+        const numericIds = uuids
+          .map((uuid) => {
+            const t = tracks.find((tr) => tr.uuid === uuid);
+            return t ? t.id : null;
+          })
+          .filter((id): id is number => id !== null);
+        return mapRowToPlaylist(r, uuids.length, numericIds);
+      });
+
+      setPlaylists(mapped);
+      setLoading(false);
+    } catch (e) {
+      console.error("Unexpected error fetching playlists:", e);
+      setError(true);
+      setLoading(false);
     }
-
-    if (!rows || rows.length === 0) {
-      setPlaylists([]);
-      return;
-    }
-
-    // Fetch track associations for all playlists in one query
-    const playlistIds = rows.map((r) => r.id);
-    const { data: ptRows, error: ptError } = await supabase
-      .from("playlist_tracks")
-      .select("playlist_id, track_id, position")
-      .in("playlist_id", playlistIds)
-      .order("position", { ascending: true });
-
-    if (ptError) {
-      console.error("Error fetching playlist_tracks:", ptError);
-    }
-
-    // Group track UUIDs by playlist, then map to numeric IDs
-    const trackUuidsByPlaylist: Record<string, string[]> = {};
-    for (const pt of ptRows || []) {
-      const pid = pt.playlist_id as string;
-      if (!trackUuidsByPlaylist[pid]) trackUuidsByPlaylist[pid] = [];
-      trackUuidsByPlaylist[pid].push(pt.track_id as string);
-    }
-
-    const mapped = rows.map((row) => {
-      const r = row as unknown as Record<string, unknown>;
-      const uuids = trackUuidsByPlaylist[r.id as string] || [];
-      const numericIds = uuids
-        .map((uuid) => {
-          const t = tracks.find((tr) => tr.uuid === uuid);
-          return t ? t.id : null;
-        })
-        .filter((id): id is number => id !== null);
-      return mapRowToPlaylist(r, uuids.length, numericIds);
-    });
-
-    setPlaylists(mapped);
   }, [activeWorkspace, user, tracks]);
 
+  // On a genuine workspace switch (id change), drop the previous workspace's
+  // playlists and re-enter loading so the list never shows another workspace's data
+  // after PageShell's overlay lifts (that overlay ends when TRACKS finish, but our
+  // fetch only starts afterwards). Keyed on the id ALONE — a same-workspace refetch
+  // (add playlist, tracks change) does NOT run this, so the cache is never blanked.
   useEffect(() => {
-    if (tracks.length === 0 && activeWorkspace) return;
+    setPlaylists([]);
+    setError(false);
+    setLoading(true);
+  }, [activeWorkspace?.id]);
+
+  useEffect(() => {
+    // Playlists map track UUIDs → numeric IDs, so wait until TrackContext has
+    // finished loading before fetching. Gate on tracksLoading (not tracks.length):
+    // a workspace with zero tracks still needs its playlists fetched, and gating on
+    // length would leave loading pinned true forever there (endless skeleton).
+    if (tracksLoading) { setLoading(true); return; }
     fetchPlaylists();
-  }, [fetchPlaylists, tracks, activeWorkspace]);
+  }, [fetchPlaylists, tracksLoading, activeWorkspace]);
 
   const addPlaylist = useCallback(
     async (pl: NewPlaylistData): Promise<string | undefined> => {
@@ -351,9 +394,10 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
 
   return (
     <PlaylistContext.Provider value={useMemo(() => ({
-      playlists, addPlaylist, getPlaylist, updatePlaylist, deletePlaylist,
+      playlists, loading, error, refetchPlaylists: fetchPlaylists,
+      addPlaylist, getPlaylist, updatePlaylist, deletePlaylist,
       sharedPlaylists, sharePlaylistWithWorkspace, revokePlaylistShare, getSharedPlaylistTracks, refreshSharedPlaylists: fetchSharedPlaylists,
-    }), [playlists, addPlaylist, getPlaylist, updatePlaylist, deletePlaylist, sharedPlaylists, sharePlaylistWithWorkspace, revokePlaylistShare, getSharedPlaylistTracks, fetchSharedPlaylists])}>
+    }), [playlists, loading, error, fetchPlaylists, addPlaylist, getPlaylist, updatePlaylist, deletePlaylist, sharedPlaylists, sharePlaylistWithWorkspace, revokePlaylistShare, getSharedPlaylistTracks, fetchSharedPlaylists])}>
       {children}
     </PlaylistContext.Provider>
   );

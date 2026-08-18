@@ -307,6 +307,9 @@
     }
   },
   "playlists": {
+    "loadErrorTitle": "Playlists konnten nicht geladen werden",
+    "loadErrorDesc": "Beim Laden ist ein Fehler aufgetreten. Deine Playlists sind sicher – versuch es erneut.",
+    "retry": "Erneut versuchen",
     "title": "Playlists",
     "subtitle": "{{count}} kuratierte Sammlungen · {{tracks}} Titel gesamt",
     "createPlaylist": "Playlist erstellen",
