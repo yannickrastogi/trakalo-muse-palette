@@ -37,7 +37,6 @@ export interface NewPlaylistData {
   tracks: number;
   duration: string;
   updated: string;
-  mood: string;
   coverIdxs: number[];
   color: string;
   trackIds: number[];
@@ -681,7 +680,6 @@ export function CreatePlaylistModal({ open, onOpenChange, onCreate }: CreatePlay
                     tracks: selectedTracks.length,
                     duration: `${selectedTracks.length * 4} min`,
                     updated: "Just now",
-                    mood: moods.length > 0 ? moods[0].charAt(0).toUpperCase() + moods[0].slice(1) : "Custom",
                     coverIdxs,
                     color: gradientColors[Math.floor(Math.random() * gradientColors.length)],
                     trackIds: selectedTracks.map((t) => t.id),

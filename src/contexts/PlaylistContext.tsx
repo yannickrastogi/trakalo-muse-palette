@@ -23,7 +23,6 @@ export interface PlaylistItem extends WorkspaceScoped {
   tracks: number;
   duration: string;
   updated: string;
-  mood: string;
   coverIdxs: number[];
   color: string;
   trackIds?: number[];
@@ -59,7 +58,6 @@ function mapRowToPlaylist(
     tracks: trackCount,
     duration: trackCount * 4 + " min",
     updated: formatUpdated((row.updated_at as string) || (row.created_at as string) || ""),
-    mood: "",
     coverIdxs: [0, 1, 2, 3],
     color: "from-brand-purple/20 to-brand-pink/10",
     trackIds,

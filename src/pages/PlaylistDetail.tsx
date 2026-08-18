@@ -123,7 +123,6 @@ export default function PlaylistDetail() {
         tracks: 0,
         duration: "",
         updated: row.updated_at ? new Date(row.updated_at).toLocaleDateString() : "",
-        mood: row.mood || "",
         coverIdxs: [0, 1, 2, 3],
         color: "from-brand-purple/20 to-brand-orange/20",
         coverImage: row.cover_url || undefined,
@@ -442,9 +441,6 @@ export default function PlaylistDetail() {
 
           <div className="flex-1 min-w-0 space-y-3 sm:space-y-4">
             <div>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-accent/12 text-accent/80 mb-2">
-                #{playlist.mood}
-              </span>
               {editingName ? (
                 <input
                   autoFocus

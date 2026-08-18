@@ -311,7 +311,6 @@ export default function Playlists() {
         var q = search.toLowerCase();
         if (
           !pl.name.toLowerCase().includes(q) &&
-          !pl.mood.toLowerCase().includes(q) &&
           !pl.description.toLowerCase().includes(q)
         ) return false;
       }
