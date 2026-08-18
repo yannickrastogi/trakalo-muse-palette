@@ -52,9 +52,11 @@ Architectural decisions that shaped Trakalog's design:
 | ADR # | Title | Status | Date |
 |-------|-------|--------|------|
 | ADR-0001 | [Multi-Workspace Model](DECISIONS/ADR-0001-MULTI-WORKSPACE-MODEL.md) | 🟡 Draft | August 11, 2026 |
-| ADR-0002 | [Seat-Based Billing](DECISIONS/ADR-0002-SEAT-BASED-BILLING.md) | 🟡 Planned | - |
-| ADR-0003 | [Supabase Over Custom Backend](DECISIONS/ADR-0003-SUPABASE-CHOICE.md) | 🟡 Planned | - |
-| ADR-0004 | [React Query Over Redux](DECISIONS/ADR-0004-STATE-MANAGEMENT.md) | 🟡 Planned | - |
+| ADR-0002 | [Seat-Based Billing](DECISIONS/ADR-0002-SEAT-BASED-BILLING.md) | 🟡 Draft | August 18, 2026 |
+| ADR-0003 | [Supabase Over Custom Backend](DECISIONS/ADR-0003-SUPABASE-CHOICE.md) | 🟡 Draft | August 18, 2026 |
+| ADR-0004 | [React Query Over Redux](DECISIONS/ADR-0004-STATE-MANAGEMENT.md) | 🟡 Draft | August 18, 2026 |
+| ADR-0005 | [R2 Cloud Storage Over S3](DECISIONS/ADR-0005-R2-STORAGE.md) | 🟡 Draft | August 18, 2026 |
+| ADR-0006 | [Groq for AI Inference](DECISIONS/ADR-0006-GROQ-AI.md) | 🟡 Draft | August 18, 2026 |
 
 *See [DECISIONS/INDEX.md](DECISIONS/INDEX.md) for complete ADR list*
 
@@ -65,8 +67,8 @@ Architectural decisions that shaped Trakalog's design:
 | Document | Description | Status |
 |----------|-------------|--------|
 | [Getting Started](../DEVELOPMENT/GETTING_STARTED.md) | Local development setup, prerequisites, first run | 🟢 Stable |
-| [Coding Standards](../DEVELOPMENT/CODING_STANDARDS.md) | TypeScript, React, Tailwind conventions, best practices | 🟡 Planned |
-| [Testing Strategy](../DEVELOPMENT/TESTING_STRATEGY.md) | Vitest, React Testing Library patterns, test organization | 🟡 Planned |
+| [Coding Standards](../DEVELOPMENT/CODING_STANDARDS.md) | TypeScript, React, Tailwind conventions, best practices | 🟡 Draft |
+| [Testing Strategy](../DEVELOPMENT/TESTING_STRATEGY.md) | Vitest, React Testing Library patterns, test organization | 🟡 Draft |
 | [API Reference](../DEVELOPMENT/API_REFERENCE.md) | Supabase RPC functions, REST endpoints, GraphQL | 🟡 Planned |
 
 ---
@@ -79,9 +81,9 @@ Detailed documentation for major Trakalog features:
 |---------|----------|-------------|--------|
 | Track Management | [Track Management](../FEATURES/TRACK_MANAGEMENT.md) | Upload pipeline, audio processing, metadata, versioning | 🟡 Draft |
 | Sharing System | [Sharing System](../FEATURES/SHARING_SYSTEM.md) | Shared links, catalog sharing, permissions, branding | 🟡 Draft |
-| Smart A&R | [Smart A&R](../FEATURES/SMART_AR.md) | AI matching, Groq integration, brief processing | 🟡 Planned |
-| Watermarking | [Watermarking](../FEATURES/WATERMARKING.md) | Audio watermarking, leak tracing, payload encoding | 🟡 Planned |
-| Splits & Signatures | [Splits & Signatures](../FEATURES/SPLITS_AND_SIGNATURES.md) | Split calculation, digital signatures, agreement flow | 🟡 Planned |
+| Smart A&R | [Smart A&R](../FEATURES/SMART_AR.md) | AI matching, Groq integration, brief processing | 🟡 Draft |
+| Watermarking | [Watermarking](../FEATURES/WATERMARKING.md) | Audio watermarking, leak tracing, payload encoding | 🟡 Draft |
+| Splits & Signatures | [Splits & Signatures](../FEATURES/SPLITS_AND_SIGNATURES.md) | Split calculation, digital signatures, agreement flow | 🟡 Draft |
 
 ---
 
@@ -89,9 +91,9 @@ Detailed documentation for major Trakalog features:
 
 | Document | Description | Status |
 |----------|-------------|--------|
-| [Monitoring](../OPERATIONS/MONITORING.md) | Logging setup, error tracking, metrics, alerting | 🟡 Planned |
+| [Monitoring](../OPERATIONS/MONITORING.md) | Logging setup, error tracking, metrics, alerting | 🟡 Draft |
 | [Performance](../OPERATIONS/PERFORMANCE.md) | Performance optimization, benchmarks, bottlenecks | 🟡 Planned |
-| [Cost Optimization](../OPERATIONS/COST_OPTIMIZATION.md) | Cloud costs, usage tracking, optimization strategies | 🟡 Planned |
+| [Cost Optimization](../OPERATIONS/COST_OPTIMIZATION.md) | Cloud costs, usage tracking, optimization strategies | 🟡 Draft |
 
 ---
 
