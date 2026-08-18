@@ -25,6 +25,8 @@ This is the **single source of truth** for Trakalog's technical architecture, de
 3. **[03 - Data Architecture](03-DATA_ARCHITECTURE.md)** - Database schema and relationships
 4. **[04 - Component Architecture](04-COMPONENT_ARCHITECTURE.md)** - Frontend structure and state management
 5. **[05 - Service Architecture](05-SERVICE_ARCHITECTURE.md)** - External service integrations
+6. **[06 - Security Architecture](06-SECURITY_ARCHITECTURE.md)** - Authentication, authorization, and data protection
+7. **[07 - Deployment Architecture](07-DEPLOYMENT_ARCHITECTURE.md)** - Infrastructure, CI/CD, monitoring, scaling
 
 **Need to set up your environment?**
 - [Development Getting Started](../DEVELOPMENT/GETTING_STARTED.md)
@@ -40,8 +42,8 @@ This is the **single source of truth** for Trakalog's technical architecture, de
 | 03 | [Data Architecture](03-DATA_ARCHITECTURE.md) | Database schema, entity relationships, RLS | 🟡 Draft | August 11, 2026 |
 | 04 | [Component Architecture](04-COMPONENT_ARCHITECTURE.md) | React components, state management, routing | 🟡 Draft | August 11, 2026 |
 | 05 | [Service Architecture](05-SERVICE_ARCHITECTURE.md) | External integrations (R2, Railway, Groq, etc.) | 🟡 Draft | August 11, 2026 |
-| 06 | [Security Architecture](06-SECURITY_ARCHITECTURE.md) | Authentication, RLS policies, data protection | 🟡 Planned | - |
-| 07 | [Deployment Architecture](07-DEPLOYMENT_ARCHITECTURE.md) | Infrastructure, Vercel, Supabase, monitoring | 🟡 Planned | - |
+| 06 | [Security Architecture](06-SECURITY_ARCHITECTURE.md) | Authentication, RLS policies, data protection | 🟡 Draft | August 11, 2026 |
+| 07 | [Deployment Architecture](07-DEPLOYMENT_ARCHITECTURE.md) | Infrastructure, Vercel, Supabase, monitoring | 🟡 Draft | August 11, 2026 |
 
 ### 📝 Architecture Decision Records (ADRs)
 
