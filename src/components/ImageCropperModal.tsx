@@ -33,7 +33,7 @@ export function ImageCropperModal({ open, onOpenChange, imageFile, onCropped }: 
 
   const [src, setSrc] = useState<string | null>(null);
   const [nat, setNat] = useState<{ w: number; h: number } | null>(null);
-  const [viewport, setViewport] = useState(288); // measured square size (px)
+  const [viewport, setViewport] = useState(0); // measured square size (px); 0 = not measured yet
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
@@ -49,13 +49,31 @@ export function ImageCropperModal({ open, onOpenChange, imageFile, onCropped }: 
     return () => { URL.revokeObjectURL(url); };
   }, [imageFile, onOpenChange]);
 
-  // Measure the actual square size when opening / after the image is known.
+  // Measure the actual square frame reliably. A one-shot clientWidth read fired while
+  // Radix's DialogContent was still animating open → clientWidth was 0 → viewport kept a
+  // wrong default → clamp()/coverScale were computed on a fake size and drag/zoom looked
+  // frozen. A ResizeObserver delivers an initial notification on observe() AND fires again
+  // when the width goes 0 → final (and on window resize), so we always get the true size.
   useLayoutEffect(() => {
-    if (open && viewportRef.current) {
-      const w = viewportRef.current.clientWidth;
-      if (w > 0) setViewport(w);
-    }
-  }, [open, nat]);
+    if (!open) { setViewport(0); return; }
+    let ro: ResizeObserver | null = null;
+    let raf = 0;
+    // Radix mounts DialogContent synchronously so the ref is normally set here, but if
+    // it isn't yet, retry next frame rather than leaving the modal frozen with viewport 0.
+    const attach = () => {
+      const el = viewportRef.current;
+      if (!el) { raf = requestAnimationFrame(attach); return; }
+      ro = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const w = entry.contentRect.width;
+          if (w > 0) setViewport((prev) => (prev === w ? prev : w));
+        }
+      });
+      ro.observe(el);
+    };
+    attach();
+    return () => { if (raf) cancelAnimationFrame(raf); if (ro) ro.disconnect(); };
+  }, [open]);
 
   const coverScale = nat ? Math.max(viewport / nat.w, viewport / nat.h) : 1;
   const dispW = nat ? nat.w * coverScale * zoom : viewport;
@@ -108,6 +126,9 @@ export function ImageCropperModal({ open, onOpenChange, imageFile, onCropped }: 
   }, [open, applyZoom, zoom]);
 
   const onPointerDown = (e: React.PointerEvent) => {
+    // Don't start a drag before the frame is measured (viewport 0) or the image is
+    // decoded — clamp()'s range would be wrong and the drag would appear frozen.
+    if (!nat || viewport <= 0) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     dragRef.current = { sx: e.clientX, sy: e.clientY, ox: offset.x, oy: offset.y };
   };
@@ -169,7 +190,7 @@ export function ImageCropperModal({ open, onOpenChange, imageFile, onCropped }: 
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
           >
-            {src && nat && (
+            {src && nat && viewport > 0 && (
               <img
                 src={src}
                 alt=""
