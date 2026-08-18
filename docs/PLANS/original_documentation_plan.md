@@ -52,6 +52,7 @@ Trakalog is a pre-release music catalog management platform that protects, analy
 
 ```
 docs/
+├── INDEX.md                        # Global documentation landing page
 ├── ARCHITECTURE/                    # Core architecture documentation
 │   ├── INDEX.md                    # Architecture documentation landing page
 │   ├── 01-VISION_AND_OVERVIEW.md    # High-level product vision & architecture
@@ -94,7 +95,8 @@ docs/
 
 | # | Document | Description | Effort | Status |
 |---|----------|-------------|--------|--------|
-| 1 | ARCHITECTURE/INDEX.md | Architecture docs landing page | 2h | Pending |
+| 1 | INDEX.md | Global documentation landing page | 2h | Pending |
+| 1b | ARCHITECTURE/INDEX.md | Architecture docs landing page | 2h | Pending |
 | 2 | ARCHITECTURE/01-VISION_AND_OVERVIEW.md | Unified vision (merge existing) | 4h | Pending |
 | 3 | ARCHITECTURE/02-SYSTEM_ARCHITECTURE.md | Technical architecture layers | 8h | Pending |
 | 4 | ARCHITECTURE/03-DATA_ARCHITECTURE.md | Database schema & relationships | 6h | Pending |

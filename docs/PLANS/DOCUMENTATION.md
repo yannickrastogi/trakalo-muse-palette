@@ -53,6 +53,7 @@ Trakalog is a pre-release music catalog management platform that protects, analy
 
 ```
 docs/
+├── INDEX.md                        # Global documentation landing page
 ├── ARCHITECTURE/                    # Core architecture documentation
 │   ├── INDEX.md                    # Architecture documentation landing page
 │   ├── 01-VISION_AND_OVERVIEW.md    # High-level product vision & architecture
@@ -95,7 +96,8 @@ docs/
 
 | # | Document | Description | Effort | Status |
 |---|----------|-------------|--------|--------|
-| 1 | ARCHITECTURE/INDEX.md | Architecture docs landing page | 2h | ✅ Done |
+| 1 | INDEX.md | Global documentation landing page | 2h | ✅ Done |
+| 1b | ARCHITECTURE/INDEX.md | Architecture docs landing page | 2h | ✅ Done |
 | 2 | ARCHITECTURE/01-VISION_AND_OVERVIEW.md | Unified vision (merge existing) | 4h | ✅ Done |
 | 3 | ARCHITECTURE/02-SYSTEM_ARCHITECTURE.md | Technical architecture layers | 8h | ✅ Done |
 | 4 | ARCHITECTURE/03-DATA_ARCHITECTURE.md | Database schema & relationships | 6h | ✅ Done |
@@ -370,11 +372,12 @@ Each feature document includes:
 
 ## 12. Execution Progress Tracking
 
-### Completed Documents (7/19)
+### Completed Documents (20/20)
 
 | Document | Created | Size | Lines | Status |
 |----------|---------|------|-------|--------|
-| ARCHITECTURE/INDEX.md | Aug 11, 2026 | 22KB | 220 | ✅ Stable |
+| INDEX.md | Aug 19, 2026 | 11KB | 223 | ✅ Stable |
+| ARCHITECTURE/INDEX.md | Aug 19, 2026 | 6KB | 160 | ✅ Stable |
 | ARCHITECTURE/01-VISION_AND_OVERVIEW.md | Aug 11, 2026 | 21KB | ~500 | ✅ Stable |
 | ARCHITECTURE/02-SYSTEM_ARCHITECTURE.md | Aug 11, 2026 | 25KB | ~700 | ✅ Draft |
 | ARCHITECTURE/03-DATA_ARCHITECTURE.md | Aug 11, 2026 | 44KB | ~1200 | ✅ Draft |

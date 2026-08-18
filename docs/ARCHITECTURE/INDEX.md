@@ -2,7 +2,7 @@
 
 > **Status:** Stable  
 > **Version:** 1.0.0  
-> **Last Updated:** August 11, 2026  
+> **Last Updated:** August 19, 2026  
 > **Owner:** Ishan  
 > **Audience:** Developers, Architects, DevOps, Product Managers
 
@@ -10,7 +10,7 @@
 
 ## Welcome to Trakalog's Architecture Documentation
 
-This is the **single source of truth** for Trakalog's technical architecture, design decisions, and system organization. Whether you're a new developer onboarding or an experienced engineer looking for implementation details, start here.
+This is the **single source of truth** for Trakalog's technical architecture and system design. For the complete documentation index including features, development guides, and operations, see the [main documentation index](../INDEX.md).
 
 ---
 
@@ -28,12 +28,9 @@ This is the **single source of truth** for Trakalog's technical architecture, de
 6. **[06 - Security Architecture](06-SECURITY_ARCHITECTURE.md)** - Authentication, authorization, and data protection
 7. **[07 - Deployment Architecture](07-DEPLOYMENT_ARCHITECTURE.md)** - Infrastructure, CI/CD, monitoring, scaling
 
-**Need to set up your environment?**
-- [Development Getting Started](../DEVELOPMENT/GETTING_STARTED.md)
-
 ---
 
-## 🏗️ Architecture Documents
+## 🏗️ Core Architecture Documents
 
 | # | Document | Description | Status | Last Updated |
 |---|----------|-------------|--------|--------------|
@@ -45,9 +42,11 @@ This is the **single source of truth** for Trakalog's technical architecture, de
 | 06 | [Security Architecture](06-SECURITY_ARCHITECTURE.md) | Authentication, RLS policies, data protection | 🟢 Stable | August 11, 2026 |
 | 07 | [Deployment Architecture](07-DEPLOYMENT_ARCHITECTURE.md) | Infrastructure, Vercel, Supabase, monitoring | 🟢 Stable | August 11, 2026 |
 
-### 📝 Architecture Decision Records (ADRs)
+---
 
-Architectural decisions that shaped Trakalog's design:
+## 📝 Architecture Decision Records (ADRs)
+
+Architectural decisions that shaped Trakalog's design. See [DECISIONS/INDEX.md](DECISIONS/INDEX.md) for the complete list.
 
 | ADR # | Title | Status | Date |
 |-------|-------|--------|------|
@@ -57,72 +56,21 @@ Architectural decisions that shaped Trakalog's design:
 | ADR-0004 | [React Query Over Redux](DECISIONS/ADR-0004-STATE-MANAGEMENT.md) | 🟢 Stable | August 18, 2026 |
 | ADR-0005 | [R2 Cloud Storage Over S3](DECISIONS/ADR-0005-R2-STORAGE.md) | 🟢 Stable | August 18, 2026 |
 | ADR-0006 | [Groq for AI Inference](DECISIONS/ADR-0006-GROQ-AI.md) | 🟢 Stable | August 18, 2026 |
-
-*See [DECISIONS/INDEX.md](DECISIONS/INDEX.md) for complete ADR list*
-
----
-
-## 🔧 Development Guides
-
-| Document | Description | Status |
-|----------|-------------|--------|
-| [Getting Started](../DEVELOPMENT/GETTING_STARTED.md) | Local development setup, prerequisites, first run | 🟢 Stable |
-| [Coding Standards](../DEVELOPMENT/CODING_STANDARDS.md) | TypeScript, React, Tailwind conventions, best practices | 🟢 Stable |
-| [Testing Strategy](../DEVELOPMENT/TESTING_STRATEGY.md) | Vitest, React Testing Library patterns, test organization | 🟢 Stable |
-| [API Reference](../DEVELOPMENT/API_REFERENCE.md) | Supabase RPC functions, REST endpoints, GraphQL | 🟡 Planned |
+| ADR-0007 | [Invisible Audio Watermarking](DECISIONS/ADR-0007-INVISIBLE-WATERMARKING.md) | 🟢 Stable | August 18, 2026 |
+| ADR-0008 | [Dual Audience Architecture](DECISIONS/ADR-0008-DUAL-AUDIENCE.md) | 🟢 Stable | August 18, 2026 |
+| ADR-0009 | [Feature Flags Approach](DECISIONS/ADR-0009-FEATURE-FLAGS.md) | 🟢 Stable | August 18, 2026 |
+| ADR-0010 | [shadcn/ui Component Library](DECISIONS/ADR-0010-SHADCN-UI.md) | 🟢 Stable | August 18, 2026 |
 
 ---
 
-## 🎯 Feature Deep-Dives
+## 📚 Related Documentation
 
-Detailed documentation for major Trakalog features:
+For other documentation categories, see the [main index](../INDEX.md):
 
-| Feature | Document | Description | Status |
-|---------|----------|-------------|--------|
-| Track Management | [Track Management](../FEATURES/TRACK_MANAGEMENT.md) | Upload pipeline, audio processing, metadata, versioning | 🟢 Stable |
-| Sharing System | [Sharing System](../FEATURES/SHARING_SYSTEM.md) | Shared links, catalog sharing, permissions, branding | 🟢 Stable |
-| Smart A&R | [Smart A&R](../FEATURES/SMART_AR.md) | AI matching, Groq integration, brief processing | 🟢 Stable |
-| Watermarking | [Watermarking](../FEATURES/WATERMARKING.md) | Audio watermarking, leak tracing, payload encoding | 🟢 Stable |
-| Splits & Signatures | [Splits & Signatures](../FEATURES/SPLITS_AND_SIGNATURES.md) | Split calculation, digital signatures, agreement flow | 🟢 Stable |
-
----
-
-## ⚙️ Operations
-
-| Document | Description | Status |
-|----------|-------------|--------|
-| [Monitoring](../OPERATIONS/MONITORING.md) | Logging setup, error tracking, metrics, alerting | 🟢 Stable |
-| [Performance](../OPERATIONS/PERFORMANCE.md) | Performance optimization, benchmarks, bottlenecks | 🟡 Planned |
-| [Cost Optimization](../OPERATIONS/COST_OPTIMIZATION.md) | Cloud costs, usage tracking, optimization strategies | 🟢 Stable |
-
----
-
-## 📚 Existing Documentation
-
-Trakalog has existing documentation that complements this architecture set:
-
-### Architecture & System
-- **[PRODUCT_AND_UX_OVERVIEW.md](PRODUCT_AND_UX_OVERVIEW.md)** - Comprehensive product and UX overview (existing)
-- **[GROQ_USAGE_AND_COSTS.md](GROQ_USAGE_AND_COSTS.md)** - AI usage patterns and cost analysis (existing)
-- **[TRAKALOG_BILLING.md](../TRAKALOG_BILLING.md)** - Complete billing system documentation (existing)
-
-### Technical References
-- **[RPCS.md](../RPCS.md)** - Supabase RPC function reference
-- **[AUTH_PATTERNS.md](../AUTH_PATTERNS.md)** - Authentication patterns and flows
-- **[TRACK_VERSIONING.md](../TRACK_VERSIONING.md)** - Track versioning specification
-- **[ISRC_GENERATION.md](../ISRC_GENERATION.md)** - ISRC generation implementation
-- **[DDEX_PRO_EXPORTS.md](../DDEX_PRO_EXPORTS.md)** - DDEX export functionality
-
-### Security
-- **[RLS_PHASE1_GUIDE.md](../RLS_PHASE1_GUIDE.md)** - Row-Level Security implementation (Phase 1)
-- **[RLS_PHASE2_GUIDE.md](../RLS_PHASE2_GUIDE.md)** - RLS implementation (Phase 2)
-- **[RLS_PHASE3_GUIDE.md](../RLS_PHASE3_GUIDE.md)** - RLS implementation (Phase 3)
-- **[RLS_AUDIT_2026-05-10.md](../RLS_AUDIT_2026-05-10.md)** - Security audit findings
-
-### Operational & Setup
-- **[Running the App Locally.md](../Running%20the%20App%20Locally.md)** - Local development guide
-- **[PLANS/TRAKALOG_DEV_STAGING_SETUP.md](../PLANS/TRAKALOG_DEV_STAGING_SETUP.md)** - Dev/staging environment setup
-- **[REPORTS/FRONTEND_FETCHING_AUDIT.md](../REPORTS/FRONTEND_FETCHING_AUDIT.md)** - Frontend data fetching analysis
+- **🔧 Development Guides** - Setup, coding standards, testing strategy
+- **🎯 Feature Deep-Dives** - Track management, sharing system, Smart A&R, watermarking, splits & signatures
+- **⚙️ Operations** - Monitoring, performance, cost optimization
+- **📚 Existing Documentation** - Legacy docs, technical references, security guides
 
 ---
 
@@ -137,23 +85,19 @@ Architecture diagrams are embedded throughout the documentation using Mermaid sy
 
 ---
 
-## 🔍 How to Use This Documentation
+## 🔍 How to Use This Architecture Documentation
 
 ### For New Developers
 1. Start with **[01 - Vision & Overview](01-VISION_AND_OVERVIEW.md)**
 2. Read **[02 - System Architecture](02-SYSTEM_ARCHITECTURE.md)** for technical context
-3. Set up your environment with **[Getting Started](../DEVELOPMENT/GETTING_STARTED.md)**
-4. Dive into specific areas as needed
 
 ### For Feature Development
-1. Review relevant **[Feature Deep-Dive](../FEATURES/)** documentation
-2. Check **[ADRs](DECISIONS/)** for historical context
-3. Reference **[API Reference](../DEVELOPMENT/API_REFERENCE.md)** for integration details
+1. Review relevant architecture docs based on the feature area
+2. Check **[ADRs](DECISIONS/)** for historical context and design rationale
 
 ### For Debugging
-1. Check **[Monitoring](../OPERATIONS/MONITORING.md)** for observability tools
-2. Review **[System Architecture](02-SYSTEM_ARCHITECTURE.md)** for component boundaries
-3. Look at **[Data Architecture](03-DATA_ARCHITECTURE.md)** for database relationships
+1. Review **[System Architecture](02-SYSTEM_ARCHITECTURE.md)** for component boundaries
+2. Look at **[Data Architecture](03-DATA_ARCHITECTURE.md)** for database relationships
 
 ---
 
@@ -175,36 +119,6 @@ All documents follow semantic versioning (MAJOR.MINOR.PATCH):
 - **MINOR:** Significant additions, new sections
 - **PATCH:** Clarifications, typo fixes, minor updates
 
-### Contribution
-
-To contribute to this documentation:
-
-1. **For typos/clarifications:** Submit a PR with the fix
-2. **For new features:** Add documentation as part of the feature PR
-3. **For architectural changes:** Create an ADR first, then update relevant docs
-4. **For outdated docs:** Update with `[!NOTE]` or `[!WARNING]` callouts
-
----
-
-## 📞 Support & Questions
-
-### Common Questions
-
-**Q: Where do I start?**  
-A: Begin with [01 - Vision & Overview](01-VISION_AND_OVERVIEW.md) and [02 - System Architecture](02-SYSTEM_ARCHITECTURE.md)
-
-**Q: How do I set up my local environment?**  
-A: Follow [Getting Started](../DEVELOPMENT/GETTING_STARTED.md)
-
-**Q: Where can I find API documentation?**  
-A: See [API Reference](../DEVELOPMENT/API_REFERENCE.md) (planned) and [RPCS.md](../RPCS.md) (current)
-
-**Q: How does authentication work?**  
-A: See [06 - Security Architecture](06-SECURITY_ARCHITECTURE.md) (planned) and [AUTH_PATTERNS.md](../AUTH_PATTERNS.md) (current)
-
-**Q: What's the database schema?**  
-A: Detailed in [03 - Data Architecture](03-DATA_ARCHITECTURE.md)
-
 ---
 
 ## 🏷️ Document Metadata
@@ -216,7 +130,6 @@ A: Detailed in [03 - Data Architecture](03-DATA_ARCHITECTURE.md)
 | **Owner** | Ishan |
 | **Review Cycle** | Monthly |
 | **Next Review** | September 11, 2026 |
-| **Related Plans** | [Documentation Plan](../../.vibe/plans/1786215515-crisp-daring-mesa.md) |
 
 ---
 
