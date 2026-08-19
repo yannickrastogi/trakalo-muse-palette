@@ -101,8 +101,8 @@ interface PlaylistContextType {
 const PlaylistContext = createContext<PlaylistContextType | null>(null);
 
 export function PlaylistProvider({ children }: { children: ReactNode }) {
-  const { activeWorkspace } = useWorkspace();
-  const { user } = useAuth();
+  const { activeWorkspace, loading: workspaceLoading } = useWorkspace();
+  const { user, loading: authLoading } = useAuth();
   const { tracks, loading: tracksLoading } = useTrack();
   const [playlists, setPlaylists] = useState<PlaylistItem[]>([]);
   const [sharedPlaylists, setSharedPlaylists] = useState<SharedPlaylistShare[]>([]);
@@ -202,13 +202,16 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   }, [activeWorkspace?.id]);
 
   useEffect(() => {
-    // Playlists map track UUIDs → numeric IDs, so wait until TrackContext has
-    // finished loading before fetching. Gate on tracksLoading (not tracks.length):
-    // a workspace with zero tracks still needs its playlists fetched, and gating on
-    // length would leave loading pinned true forever there (endless skeleton).
-    if (tracksLoading) { setLoading(true); return; }
+    // Stay in the loading state — and DON'T fetch yet — while anything we depend on is
+    // still resolving: auth (user), then workspaces (activeWorkspace), then tracks (for
+    // the UUID→numeric-id mapping). On reload these resolve in sequence, and a transient
+    // "no workspace/user yet" must read as loading, never as "no playlists" (fetchPlaylists'
+    // own no-workspace guard would otherwise flip loading→false and flash the empty state).
+    // Gate on the upstream loading flags (not on tracks.length): a workspace with zero
+    // tracks must still fetch its playlists, and length-gating would pin loading forever.
+    if (authLoading || workspaceLoading || tracksLoading) { setLoading(true); return; }
     fetchPlaylists();
-  }, [fetchPlaylists, tracksLoading, activeWorkspace]);
+  }, [fetchPlaylists, authLoading, workspaceLoading, tracksLoading, activeWorkspace]);
 
   const addPlaylist = useCallback(
     async (pl: NewPlaylistData): Promise<string | undefined> => {
