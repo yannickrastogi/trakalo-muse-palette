@@ -122,20 +122,20 @@ Trakalog has existing documentation that complements this architecture set:
 ### Architecture & System
 - **[PRODUCT_AND_UX_OVERVIEW.md](ARCHITECTURE/PRODUCT_AND_UX_OVERVIEW.md)** - Comprehensive product and UX overview (existing)
 - **[GROQ_USAGE_AND_COSTS.md](ARCHITECTURE/GROQ_USAGE_AND_COSTS.md)** - AI usage patterns and cost analysis (existing)
-- **[TRAKALOG_BILLING.md](TRAKALOG_BILLING.md)** - Complete billing system documentation (existing)
+- **[TRAKALOG_BILLING.md](FEATURES/TRAKALOG_BILLING.md)** - Complete billing system documentation (existing)
 
 ### Technical References
-- **[RPCS.md](RPCS.md)** - Supabase RPC function reference
-- **[AUTH_PATTERNS.md](AUTH_PATTERNS.md)** - Authentication patterns and flows
-- **[TRACK_VERSIONING.md](TRACK_VERSIONING.md)** - Track versioning specification
-- **[ISRC_GENERATION.md](ISRC_GENERATION.md)** - ISRC generation implementation
-- **[DDEX_PRO_EXPORTS.md](DDEX_PRO_EXPORTS.md)** - DDEX export functionality
+- **[RPCS.md](DEVELOPMENT/RPCS.md)** - Supabase RPC function reference
+- **[AUTH_PATTERNS.md](ARCHITECTURE/AUTH_PATTERNS.md)** - Authentication patterns and flows
+- **[TRACK_VERSIONING.md](FEATURES/TRACK_VERSIONING.md)** - Track versioning specification
+- **[ISRC_GENERATION.md](FEATURES/ISRC_GENERATION.md)** - ISRC generation implementation
+- **[DDEX_PRO_EXPORTS.md](FEATURES/DDEX_PRO_EXPORTS.md)** - DDEX export functionality
 
 ### Security
-- **[RLS_PHASE1_GUIDE.md](RLS_PHASE1_GUIDE.md)** - Row-Level Security implementation (Phase 1)
-- **[RLS_PHASE2_GUIDE.md](RLS_PHASE2_GUIDE.md)** - RLS implementation (Phase 2)
-- **[RLS_PHASE3_GUIDE.md](RLS_PHASE3_GUIDE.md)** - RLS implementation (Phase 3)
-- **[RLS_AUDIT_2026-05-10.md](RLS_AUDIT_2026-05-10.md)** - Security audit findings
+- **[RLS_PHASE1_GUIDE.md](_archive/rls-phases/RLS_PHASE1_GUIDE.md)** - Row-Level Security implementation (Phase 1)
+- **[RLS_PHASE2_GUIDE.md](_archive/rls-phases/RLS_PHASE2_GUIDE.md)** - RLS implementation (Phase 2)
+- **[RLS_PHASE3_GUIDE.md](_archive/rls-phases/RLS_PHASE3_GUIDE.md)** - RLS implementation (Phase 3)
+- **[RLS_AUDIT_2026-05-10.md](_archive/rls-phases/RLS_AUDIT_2026-05-10.md)** - Security audit findings
 
 ### Operational & Setup
 - **[Running the App Locally.md](Running%20the%20App%20Locally.md)** - Local development guide
@@ -215,10 +215,10 @@ A: Begin with [01 - Vision & Overview](ARCHITECTURE/01-VISION_AND_OVERVIEW.md) a
 A: Follow [Getting Started](DEVELOPMENT/GETTING_STARTED.md)
 
 **Q: Where can I find API documentation?**  
-A: See [API Reference](DEVELOPMENT/API_REFERENCE.md) (planned) and [RPCS.md](RPCS.md) (current)
+A: See [API Reference](DEVELOPMENT/API_REFERENCE.md) (planned) and [RPCS.md](DEVELOPMENT/RPCS.md) (current)
 
 **Q: How does authentication work?**  
-A: See [06 - Security Architecture](ARCHITECTURE/06-SECURITY_ARCHITECTURE.md) and [AUTH_PATTERNS.md](AUTH_PATTERNS.md) (current)
+A: See [06 - Security Architecture](ARCHITECTURE/06-SECURITY_ARCHITECTURE.md) and [AUTH_PATTERNS.md](ARCHITECTURE/AUTH_PATTERNS.md) (current)
 
 **Q: What's the database schema?**  
 A: Detailed in [03 - Data Architecture](ARCHITECTURE/03-DATA_ARCHITECTURE.md)

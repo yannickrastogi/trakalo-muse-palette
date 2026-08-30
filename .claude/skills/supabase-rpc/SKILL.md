@@ -40,4 +40,4 @@ const { data, error } = await supabase.rpc('ma_nouvelle_rpc', {
 4. ✅ Le SQL est fourni séparément pour exécution manuelle dans le Supabase SQL Editor
 5. ✅ Soft delete (pas de DELETE, utiliser un champ status/deleted_at)
 
-## RPCs existantes — voir docs/RPCS.md
+## RPCs existantes — voir docs/DEVELOPMENT/RPCS.md

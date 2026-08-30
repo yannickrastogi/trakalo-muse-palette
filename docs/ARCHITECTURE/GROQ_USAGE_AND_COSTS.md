@@ -272,7 +272,7 @@ behind env vars. Low effort now, high value the day pricing or availability chan
 | Supabase project | `xhmeitivkclbeziqavxw` |
 | Functions | `supabase/functions/smart-ar/index.ts`, `supabase/functions/transcribe-lyrics/index.ts` |
 | Secret | `GROQ_API_KEY` (single key, both functions) |
-| Related | `docs/TRAKALOG_BILLING.md` (quotas, AI Credits), `docs/TRAKALOG_ARCHITECTURE.md` |
+| Related | `docs/FEATURES/TRAKALOG_BILLING.md` (quotas, AI Credits), `docs/TRAKALOG_ARCHITECTURE.md` |
 | Not Groq | Sonic DNA (Railway/Essentia), watermarking (Railway/audiowmark) |
 
 > Edge Functions require a manual `supabase functions deploy <name>` after every push. A

@@ -5,7 +5,7 @@
 > **Created:** August 11, 2026  
 > **Last Updated:** August 11, 2026  
 > **Owner:** Ishan  
-> **Related:** [02 - System Architecture](02-SYSTEM_ARCHITECTURE.md), [PRODUCT_AND_UX_OVERVIEW.md](PRODUCT_AND_UX_OVERVIEW.md), [TRAKALOG_ARCHITECTURE.md](../../TRAKALOG_ARCHITECTURE.md)
+> **Related:** [02 - System Architecture](02-SYSTEM_ARCHITECTURE.md), [PRODUCT_AND_UX_OVERVIEW.md](PRODUCT_AND_UX_OVERVIEW.md), [TRAKALOG_ARCHITECTURE.md](../TRAKALOG_ARCHITECTURE.md)
 
 ---
 
@@ -535,8 +535,8 @@ For deeper understanding of specific areas, see:
 
 - **[PRODUCT_AND_UX_OVERVIEW.md](PRODUCT_AND_UX_OVERVIEW.md)** - Comprehensive product and UX deep-dive
 - **[GROQ_USAGE_AND_COSTS.md](GROQ_USAGE_AND_COSTS.md)** - Detailed AI usage and cost analysis
-- **[TRAKALOG_BILLING.md](../TRAKALOG_BILLING.md)** - Complete billing and pricing model
-- **[TRAKALOG_ARCHITECTURE.md](../../TRAKALOG_ARCHITECTURE.md)** - Original French architecture document
+- **[TRAKALOG_BILLING.md](../FEATURES/TRAKALOG_BILLING.md)** - Complete billing and pricing model
+- **[TRAKALOG_ARCHITECTURE.md](../TRAKALOG_ARCHITECTURE.md)** - Original French architecture document
 
 ---
 
@@ -553,4 +553,4 @@ For deeper understanding of specific areas, see:
 
 ---
 
-*This document synthesizes the vision from [TRAKALOG_ARCHITECTURE.md](../../TRAKALOG_ARCHITECTURE.md) and [PRODUCT_AND_UX_OVERVIEW.md](PRODUCT_AND_UX_OVERVIEW.md) with additional insights from codebase analysis.*
+*This document synthesizes the vision from [TRAKALOG_ARCHITECTURE.md](../TRAKALOG_ARCHITECTURE.md) and [PRODUCT_AND_UX_OVERVIEW.md](PRODUCT_AND_UX_OVERVIEW.md) with additional insights from codebase analysis.*

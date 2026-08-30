@@ -322,7 +322,7 @@ At scale, consider:
 
 ## References
 
-- [TRAKALOG_ARCHITECTURE.md](../../../TRAKALOG_ARCHITECTURE.md) - Original French architecture document
+- [TRAKALOG_ARCHITECTURE.md](../../TRAKALOG_ARCHITECTURE.md) - Original French architecture document
 - [PRODUCT_AND_UX_OVERVIEW.md](../PRODUCT_AND_UX_OVERVIEW.md) - Product and UX overview
 - [Supabase Row-Level Security](https://supabase.com/docs/guides/auth/row-level-security) - RLS implementation
 - [Multi-tenant SaaS patterns](https://martinfowler.com/articles/saas-ubiquity.html) - Industry patterns

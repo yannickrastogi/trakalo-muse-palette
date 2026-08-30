@@ -5,7 +5,7 @@
 > **Created:** August 11, 2026  
 > **Last Updated:** August 11, 2026  
 > **Owner:** Ishan  
-> **Related:** [01 - Vision & Overview](01-VISION_AND_OVERVIEW.md), [02 - System Architecture](02-SYSTEM_ARCHITECTURE.md), [06 - Security Architecture](06-SECURITY_ARCHITECTURE.md), [RPCS.md](../RPCS.md)
+> **Related:** [01 - Vision & Overview](01-VISION_AND_OVERVIEW.md), [02 - System Architecture](02-SYSTEM_ARCHITECTURE.md), [06 - Security Architecture](06-SECURITY_ARCHITECTURE.md), [RPCS.md](../DEVELOPMENT/RPCS.md)
 
 ---
 
@@ -1279,7 +1279,7 @@ const { data, error } = await supabase.rpc('complex_operation', {
 | **Status** | Draft |
 | **Next Review** | September 11, 2026 |
 | **Related Documents** | [01 - Vision & Overview](01-VISION_AND_OVERVIEW.md), [02 - System Architecture](02-SYSTEM_ARCHITECTURE.md), [06 - Security Architecture](06-SECURITY_ARCHITECTURE.md) |
-| **Source Files** | [RPCS.md](../RPCS.md), [supabase/migrations/](../../supabase/migrations/) |
+| **Source Files** | [RPCS.md](../DEVELOPMENT/RPCS.md), [supabase/migrations/](../../supabase/migrations/) |
 
 ---
 

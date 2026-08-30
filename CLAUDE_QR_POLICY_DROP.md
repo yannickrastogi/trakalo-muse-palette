@@ -12,7 +12,7 @@
 
 The name `anon_read_track_by_qr` is an **assumption**. The actual policy that
 allowed anon to read `tracks.eq(qr_token)` does not exist under this name in the
-repo (cf. `docs/RLS_AUDIT_2026-05-10.md` — several anon policies are not
+repo (cf. `docs/_archive/rls-phases/RLS_AUDIT_2026-05-10.md` — several anon policies are not
 versioned). **List the actual policies BEFORE dropping.**
 
 ### 1. List anon SELECT policies on `tracks`

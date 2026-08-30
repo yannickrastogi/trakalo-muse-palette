@@ -702,8 +702,8 @@ git push origin main
 
 ### Trakalog-Specific
 
-- **[RPCS.md](../RPCS.md)** - Database functions reference
-- **[TRAKALOG_BILLING.md](../TRAKALOG_BILLING.md)** - Billing system
+- **[RPCS.md](RPCS.md)** - Database functions reference
+- **[TRAKALOG_BILLING.md](../FEATURES/TRAKALOG_BILLING.md)** - Billing system
 - **[PRODUCT_AND_UX_OVERVIEW.md](../ARCHITECTURE/PRODUCT_AND_UX_OVERVIEW.md)** - Product details
 - **[GROQ_USAGE_AND_COSTS.md](../ARCHITECTURE/GROQ_USAGE_AND_COSTS.md)** - AI usage
 

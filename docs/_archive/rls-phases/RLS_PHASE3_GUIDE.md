@@ -23,7 +23,7 @@ Aucun code applicatif modifié.
 
 ## Contexte
 
-L'audit `docs/RLS_AUDIT_2026-05-10.md` listait 5 P0. Phase 1 + Phase 2 ont traité :
+L'audit `docs/_archive/rls-phases/RLS_AUDIT_2026-05-10.md` listait 5 P0. Phase 1 + Phase 2 ont traité :
 
 - ✅ P0 #1 — Drift `user_roles` → `access_level` (Phase 1)
 - ✅ P0 #2 — `track_documents` permissions (Phase 1)

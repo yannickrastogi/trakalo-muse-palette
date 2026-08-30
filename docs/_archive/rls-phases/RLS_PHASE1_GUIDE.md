@@ -2,7 +2,7 @@
 
 > **Date** : 2026-05-10
 > **Script** : `supabase/migrations/rls_phase1_drift_fix.sql`
-> **Audit source** : `docs/RLS_AUDIT_2026-05-10.md`
+> **Audit source** : `docs/_archive/rls-phases/RLS_AUDIT_2026-05-10.md`
 > **Objectif** : éliminer le drift entre les RLS policies (`user_roles` legacy) et le frontend (`workspace_members.access_level`) sur 11 tables, plus le hardening P0 de `track_documents` et `notifications`.
 
 ---

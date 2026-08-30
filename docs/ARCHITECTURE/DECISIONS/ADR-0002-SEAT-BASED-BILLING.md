@@ -150,7 +150,7 @@ The music industry operates with teams of varying sizes. A solo artist might nee
 
 ## References
 
-- [TRAKALOG_BILLING.md](../TRAKALOG_BILLING.md) - Complete billing system documentation
+- [TRAKALOG_BILLING.md](../../FEATURES/TRAKALOG_BILLING.md) - Complete billing system documentation
 - [07 - Deployment Architecture](../07-DEPLOYMENT_ARCHITECTURE.md) - Infrastructure supporting billing
 - [Stripe Documentation](https://stripe.com/docs/billing) - Payment processing integration
 

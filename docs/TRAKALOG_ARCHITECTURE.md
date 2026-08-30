@@ -147,7 +147,7 @@ Chaque workspace peut configurer :
 - Audio watermarkés per-visitor → bucket "watermarked" (cache)
 
 ### Track Versioning
-Spec dans `docs/TRACK_VERSIONING.md`. Plusieurs versions audio sous un même track (V1, V2, Radio Edit), A/B switching au même timecode, version active pour pitches/shared links, Sonic DNA et Genesis Print par version.
+Spec dans `docs/FEATURES/TRACK_VERSIONING.md`. Plusieurs versions audio sous un même track (V1, V2, Radio Edit), A/B switching au même timecode, version active pour pitches/shared links, Sonic DNA et Genesis Print par version.
 
 ---
 
@@ -201,7 +201,7 @@ Les splits et signatures sont liés au **track**, pas au workspace. Si un track 
 
 ## 8. GENESIS — Infrastructure de provenance créative
 
-> **Référence détaillée :** `docs/TRAKALOG_GENESIS.md`
+> **Référence détaillée :** `docs/PLANS/TRAKALOG_GENESIS.md`
 >
 > Genesis n'est pas un agent IA parmi d'autres. C'est **la couche d'infrastructure transverse** sur laquelle s'appuient à terme tous les agents et toutes les features touchant à la création, la signature, et la distribution de tracks.
 
@@ -279,8 +279,8 @@ EN ARRIÈRE-PLAN
 Ordre d'implémentation :
 1. Sonic DNA Profiler ✅ (déjà implémenté)
 2. Smart Brief Matching (en cours)
-3. Brief Seeker — spec `docs/BRIEF_SEEKER.md`
-4. Artist Seeker — spec `docs/ARTIST_SEEKER.md`
+3. Brief Seeker — spec `docs/FEATURES/BRIEF_SEEKER.md`
+4. Artist Seeker — spec `docs/FEATURES/ARTIST_SEEKER.md`
 5. Sync Matchmaker
 6. Session Replay Analyst
 7. Ghost Revenue Hunter
@@ -320,7 +320,7 @@ Supabase (PostgreSQL + Auth + Storage + Edge Functions) — project ref `xhmeiti
 **Resend** (noreply@trakalog.com, reply-to routing)
 
 ### Payments
-**Stripe** (en cours d'intégration — voir `docs/TRAKALOG_BILLING.md`)
+**Stripe** (en cours d'intégration — voir `docs/FEATURES/TRAKALOG_BILLING.md`)
 **Stripe Connect** (futur — pour Genesis royalties)
 
 ### Hébergement
@@ -354,22 +354,22 @@ Supabase (PostgreSQL + Auth + Storage + Edge Functions) — project ref `xhmeiti
 - Audit code et fixes
 
 ### Phase suivante — Pré-launch
-1. Onboarding complet (spec `docs/ONBOARDING.md`)
-2. Billing / Stripe (spec `docs/TRAKALOG_BILLING.md`)
+1. Onboarding complet (spec `docs/FEATURES/ONBOARDING.md`)
+2. Billing / Stripe (spec `docs/FEATURES/TRAKALOG_BILLING.md`)
 3. Google OAuth production
 4. Tests end-to-end avec beta testers
 5. **Audit légal initial Genesis** (avocat spécialisé IA + propriété intellectuelle)
 
 ### Phase 3 — Launch + Genesis MVP (12 semaines après pré-launch)
-1. Genesis Phase 1 — Origin Print + Public Registry + AI Training License (voir `docs/TRAKALOG_GENESIS.md`)
+1. Genesis Phase 1 — Origin Print + Public Registry + AI Training License (voir `docs/PLANS/TRAKALOG_GENESIS.md`)
 2. Smart Brief Matching Phase 1
-3. Admin Dashboard Phase 1 (spec `docs/TRAKALOG_ADMIN_DASHBOARD.md`)
+3. Admin Dashboard Phase 1 (spec `docs/FEATURES/TRAKALOG_ADMIN_DASHBOARD.md`)
 
 ### Phase 4 — Adoption et différenciation
 1. Genesis Phase 2 — Badge "Human-Made", livre blanc, EU AI Office, US Copyright Office
-2. Track Versioning (spec `docs/TRACK_VERSIONING.md`)
-3. Brief Seeker Phase 1 (spec `docs/BRIEF_SEEKER.md`)
-4. Artist Seeker Phase 1 (spec `docs/ARTIST_SEEKER.md`)
+2. Track Versioning (spec `docs/FEATURES/TRACK_VERSIONING.md`)
+3. Brief Seeker Phase 1 (spec `docs/FEATURES/BRIEF_SEEKER.md`)
+4. Artist Seeker Phase 1 (spec `docs/FEATURES/ARTIST_SEEKER.md`)
 
 ### Phase 5 — Standard de l'industrie
 1. Genesis Phase 3 — Style Licensing + Derivation Detection + API Enterprise

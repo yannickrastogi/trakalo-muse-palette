@@ -5,7 +5,7 @@
 > **Created:** August 11, 2026  
 > **Last Updated:** August 11, 2026  
 > **Owner:** Ishan  
-> **Related:** [02 - System Architecture](02-SYSTEM_ARCHITECTURE.md), [05 - Service Architecture](05-SERVICE_ARCHITECTURE.md), [RLS_PHASE1_GUIDE.md](../RLS_PHASE1_GUIDE.md)
+> **Related:** [02 - System Architecture](02-SYSTEM_ARCHITECTURE.md), [05 - Service Architecture](05-SERVICE_ARCHITECTURE.md), [RLS_PHASE1_GUIDE.md](../_archive/rls-phases/RLS_PHASE1_GUIDE.md)
 
 ---
 
@@ -1722,8 +1722,8 @@ if (session?.valid) {
 | **Owner** | Ishan |
 | **Status** | Draft |
 | **Next Review** | September 11, 2026 |
-| **Related Documents** | [02 - System Architecture](02-SYSTEM_ARCHITECTURE.md), [05 - Service Architecture](05-SERVICE_ARCHITECTURE.md), [RLS_PHASE1_GUIDE.md](../RLS_PHASE1_GUIDE.md), [AUTH_PATTERNS.md](../AUTH_PATTERNS.md) |
+| **Related Documents** | [02 - System Architecture](02-SYSTEM_ARCHITECTURE.md), [05 - Service Architecture](05-SERVICE_ARCHITECTURE.md), [RLS_PHASE1_GUIDE.md](../_archive/rls-phases/RLS_PHASE1_GUIDE.md), [AUTH_PATTERNS.md](AUTH_PATTERNS.md) |
 
 ---
 
-*This document provides comprehensive documentation of Trakalog's security architecture. For implementation details, see the corresponding source code in `/src/contexts/`, `/supabase/functions/`, and `/docs/RLS_*.md` files.*
+*This document provides comprehensive documentation of Trakalog's security architecture. For implementation details, see the corresponding source code in `/src/contexts/`, `/supabase/functions/`, and `/docs/_archive/rls-phases/RLS_*.md` files.*

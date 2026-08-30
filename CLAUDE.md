@@ -181,7 +181,7 @@ Edge Functions = manual redeploy after push: `supabase functions deploy <name>`.
 ## Known follow-ups
 
 - **Watermark rule = share_type, never delivery format** (verified August 2, 2026, INTENDED behavior). `track` and `playlist` links always go through `get-watermarked-audio` — including "Download all", which delivers individual files, not a ZIP. Only `pack` produces a ZIP, with clean audio: this is intentional, it serves to deliver final masters. TO DO: warning badge when creating a `pack` link, `README.txt` in the ZIP, and fix onboarding step 16 whose copy wrongly promises that **all** links are watermarked.
-- **Billing v5.0** (August 2-5, 2026) — `docs/TRAKALOG_BILLING.md` to resync:
+- **Billing v5.0** (August 2-5, 2026) — `docs/FEATURES/TRAKALOG_BILLING.md` to resync:
   - Free 1 seat / 1 workspace · Starter 1/1 · Pro 2 seats / 4 workspaces · Business 5 seats / 10 workspaces.
   - ⚠️ Viewers are NO LONGER free: EVERY member consumes a seat regardless of level, owner included. The free channel is the **shared link** (recipient without account, unlimited, never counted).
   - Pro and Business add-ons: $10/seat/month, $5/workspace/month. Hard cap at 15 total workspaces; beyond that → sales contact.
@@ -194,7 +194,9 @@ Edge Functions = manual redeploy after push: `supabase functions deploy <name>`.
 
 ## Reference docs (repo)
 
-`docs/TRAKALOG_BILLING.md`, `TRAKALOG_MAESTRO.md`, `TRAKALOG_DROP.md`, `TRACK_VERSIONING.md`, `ISRC_GENERATION.md`, `DDEX_PRO_EXPORTS.md`, `TRAKALOG_ADMIN_DASHBOARD.md`, `ARTIST_SEEKER.md`, `BRIEF_SEEKER.md`, `ONBOARDING.md`, `TRAKALOG_AI_AGENTS_VISION.md`, `TRAKALOG_ARCHITECTURE.md`.
+`docs/FEATURES/TRAKALOG_BILLING.md`, `docs/PLANS/TRAKALOG_DROP.md`, `docs/FEATURES/TRACK_VERSIONING.md`, `docs/FEATURES/ISRC_GENERATION.md`, `docs/FEATURES/DDEX_PRO_EXPORTS.md`, `docs/FEATURES/TRAKALOG_ADMIN_DASHBOARD.md`, `docs/FEATURES/ARTIST_SEEKER.md`, `docs/FEATURES/BRIEF_SEEKER.md`, `docs/FEATURES/ONBOARDING.md`, `docs/TRAKALOG_ARCHITECTURE.md`, `docs/PLANS/TRAKALOG_GENESIS.md`, `docs/PLANS/TRAKALOG_SIGNAL.md`.
+
+Note: `TRAKALOG_MAESTRO.md` and `TRAKALOG_AI_AGENTS_VISION.md` are referenced elsewhere in this file and in `docs/TRAKALOG_ARCHITECTURE.md` but do not exist in the repo — either write them or remove the references.
 
 ---
 

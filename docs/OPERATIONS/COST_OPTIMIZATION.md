@@ -5,7 +5,7 @@
 > **Created:** August 18, 2026  
 > **Last Updated:** August 18, 2026  
 > **Owner:** Ishan  
-> **Related:** [02 - System Architecture](../ARCHITECTURE/02-SYSTEM_ARCHITECTURE.md), [05 - Service Architecture](../ARCHITECTURE/05-SERVICE_ARCHITECTURE.md), [07 - Deployment Architecture](../ARCHITECTURE/07-DEPLOYMENT_ARCHITECTURE.md), [TRAKALOG_BILLING.md](../TRAKALOG_BILLING.md), [GROQ_USAGE_AND_COSTS.md](../GROQ_USAGE_AND_COSTS.md)
+> **Related:** [02 - System Architecture](../ARCHITECTURE/02-SYSTEM_ARCHITECTURE.md), [05 - Service Architecture](../ARCHITECTURE/05-SERVICE_ARCHITECTURE.md), [07 - Deployment Architecture](../ARCHITECTURE/07-DEPLOYMENT_ARCHITECTURE.md), [TRAKALOG_BILLING.md](../FEATURES/TRAKALOG_BILLING.md), [GROQ_USAGE_AND_COSTS.md](../GROQ_USAGE_AND_COSTS.md)
 
 ---
 
