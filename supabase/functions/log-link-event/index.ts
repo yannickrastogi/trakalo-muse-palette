@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { getClientIp } from "../_shared/ip.ts";
 import { isValidUUID, boundStr, LIMITS, readJsonBounded, InputError } from "../_shared/validation.ts";
 
 serve(async (req) => {
@@ -8,7 +9,7 @@ serve(async (req) => {
   if (corsRes) return corsRes;
   const corsHeaders = getCorsHeaders(req);
 
-  const visitor_ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const visitor_ip = getClientIp(req);
   const supabaseRl = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const { data: rateLimitOk } = await supabaseRl.rpc("check_rate_limit", { _key: "log-event:" + visitor_ip, _max_requests: 120, _window_seconds: 60 });
   if (rateLimitOk === false) {

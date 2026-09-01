@@ -29,6 +29,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
+import { getClientIp } from "../_shared/ip.ts";
 import { isValidUUID } from "../_shared/validation.ts";
 import { getStorageProvider, type BucketName } from "../_shared/storage.ts";
 
@@ -96,7 +97,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Unauthorized" }, 401, corsHeaders);
     }
 
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const ip = getClientIp(req);
     const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", {
       _key: "get-upload-url:" + ip,
       _max_requests: 60,

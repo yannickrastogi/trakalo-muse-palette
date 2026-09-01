@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
+import { getClientIp } from "../_shared/ip.ts";
 
 // Loose RFC-5322-ish email validation. We only need to reject obviously malformed
 // values — final uniqueness is enforced server-side by the waitlist UNIQUE index.
@@ -44,7 +45,7 @@ serve(async (req) => {
     );
 
     // Rate limit per IP: 5 requests per 15 minutes (per CLAUDE.md spec)
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const ip = getClientIp(req);
     const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", {
       _key: "add-to-waitlist:" + ip,
       _max_requests: 5,
