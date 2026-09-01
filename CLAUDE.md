@@ -1,6 +1,6 @@
 # CLAUDE.md — Trakalog (source of truth)
 
-> Last updated: June 30, 2026. This file is read at the start of every Claude Code session.
+> Last updated: September 2, 2026. This file is read at the start of every Claude Code session.
 > Update it after every major session.
 
 ---
@@ -44,7 +44,9 @@ Ishan Aditya, co-founder + CTO of **Trakalog**. I work **in English**. You are m
 | R2 buckets | `trakalog-tracks`, `trakalog-covers`, `trakalog-stems`, `trakalog-watermarked`, `trakalog-documents` |
 | Railway watermark | `services/watermark/` (Ubuntu 24.04 + audiowmark 0.6.5 + ffmpeg + Express) |
 | Railway sonic-dna | `sonic-dna-service/` (Python + Essentia/librosa) |
-| Frontend env vars | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` |
+| Frontend Supabase config | **Hardcoded** in `src/integrations/supabase/constants.ts` (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`) |
+
+⚠️ **`src/` reads no environment variables at all** — there is not a single `import.meta.env` in the frontend. `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` are read by nothing; setting them in `.env.local` has no effect. A default checkout therefore talks to **production Supabase**. To point the app at a local stack you must edit `constants.ts`.
 
 Railway auto-redeploys on GitHub push. Railway CLI not installed locally → confirm builds in the dashboard.
 
@@ -130,9 +132,11 @@ absent → clean SKIP, never an error).
 
 ## Critical learnings
 
-### Watermarking (CORRECTED — the old learning was wrong)
-- **audiowmark strength 10+ survives MP3/Opus/AAC compression from 128 kbps** (proven empirically on Ubuntu 24.04 = Railway's OS). Strength 12 gives margin for re-compression of a leaked file.
-- **Watermarked delivery copies are served in MP3 128k** (~10-15× lighter than WAV). The **WAV master stays intact** in `trakalog-tracks`; only copies from the `trakalog-watermarked` bucket are compressed.
+### Watermarking (verified against `services/watermark/index.js`, September 2, 2026)
+- **Current settings: `WM_STRENGTH = "10"`, `MP3_BITRATE = "320k"`** (`services/watermark/index.js:31-32`). Strength 10 is the audiowmark default and is inaudible; 320k CBR avoids the 128k pre-echo "ticks" that were degrading detection.
+- **The 128k / strength-12 pipeline is superseded.** The `-v2` suffix on cache keys exists precisely to invalidate objects left behind by it (`supabase/functions/get-watermarked-audio/index.ts:93`). Do not reintroduce those values.
+- Pipeline is `audiowmark add --strength 10` → ffmpeg MP3 320k → **`audiowmark get` verify on the MP3**; if the watermark no longer decodes, the service falls back to shipping the watermarked WAV so leak tracing is never silently lost (`index.js:314-380`).
+- **Watermarked delivery copies are MP3 320k** (~4× lighter than WAV). The **WAV master stays intact** in `trakalog-tracks`; only copies in the `trakalog-watermarked` bucket are compressed.
 - Railway's `/decode` parses audiowmark 0.6.5 output: the 2nd token is a **timestamp** (`0:00`) or `all`, **not** an integer. Regex: `/^pattern\s+\S+\s+([0-9a-f]{32})\s+([\d.]+)/i`. Detection threshold: score ≥ 1.0 (real watermark ~1.5, noise ~0.2).
 - Derivations: cache filename = `SHA-256(link_id_email_storage_path)`; audiowmark payload = `SHA-256("lid_{link_id}_v_{email}").substring(0,32)` = `watermark_payloads.hash_hex`.
 
@@ -166,7 +170,7 @@ absent → clean SKIP, never an error).
 
 | Function | Role |
 |---|---|
-| `get-watermarked-audio` | encodes the watermarked MP3 128k copy (player + download), cached per visitor |
+| `get-watermarked-audio` | encodes the watermarked MP3 320k copy (player + download), cached per visitor |
 | `get-audio-url` | non-watermarked preview/playback (tracks bucket) |
 | `trace-leak` | decodes the watermark, resolves the leaker's IP, inserts into `leak_traces` |
 | `analyze-sonic-dna` | audio analysis on upload |
@@ -185,7 +189,7 @@ Edge Functions = manual redeploy after push: `supabase functions deploy <name>`.
   - Free 1 seat / 1 workspace · Starter 1/1 · Pro 2 seats / 4 workspaces · Business 5 seats / 10 workspaces.
   - ⚠️ Viewers are NO LONGER free: EVERY member consumes a seat regardless of level, owner included. The free channel is the **shared link** (recipient without account, unlimited, never counted).
   - Pro and Business add-ons: $10/seat/month, $5/workspace/month. Hard cap at 15 total workspaces; beyond that → sales contact.
-  - Storage: Free 2 GB · Starter 40 GB · Pro 400 GB · Business 1 TB.
+  - Storage: Free 1.5 GB · Starter 40 GB · Pro 400 GB · Business 1 TB (`plan_limits.storage_bytes_max`; Business set by `20260805203027_business_storage_cap_1tb.sql`).
   - Internal `founder` plan: unlimited, off Stripe, manually assigned, never exposed for purchase.
   - TO DO: Stripe products `trakalog_seat_addon` ($10) and workspace add-on ($5) to create, webhook to wire on `subscriptions.purchased_seats` / `purchased_workspaces` (columns already in DB), purchase UI to build (none exists).
 - **Storage tracking**: operational since August 5, 2026. `tracks` / `track_versions` / `stems` / `track_documents` carry their size; `insert_track` and `add_track_version` accept `_file_size_bytes`; RPC `compute_user_storage_bytes` + `recompute_all_storage_usage`; Edge Function `backfill-storage-sizes` (service_role only) for R2 files. TO DO: BEFORE INSERT quota trigger, and quota display in the UI.
@@ -197,6 +201,8 @@ Edge Functions = manual redeploy after push: `supabase functions deploy <name>`.
 `docs/FEATURES/TRAKALOG_BILLING.md`, `docs/PLANS/TRAKALOG_DROP.md`, `docs/FEATURES/TRACK_VERSIONING.md`, `docs/FEATURES/ISRC_GENERATION.md`, `docs/FEATURES/DDEX_PRO_EXPORTS.md`, `docs/FEATURES/TRAKALOG_ADMIN_DASHBOARD.md`, `docs/FEATURES/ARTIST_SEEKER.md`, `docs/FEATURES/BRIEF_SEEKER.md`, `docs/FEATURES/ONBOARDING.md`, `docs/TRAKALOG_ARCHITECTURE.md`, `docs/PLANS/TRAKALOG_GENESIS.md`, `docs/PLANS/TRAKALOG_SIGNAL.md`.
 
 Note: `TRAKALOG_MAESTRO.md` and `TRAKALOG_AI_AGENTS_VISION.md` are referenced elsewhere in this file and in `docs/TRAKALOG_ARCHITECTURE.md` but do not exist in the repo — either write them or remove the references.
+
+⚠️ **The `docs/` tree is mid-remediation on branch `ishan/translated-docs`.** An audit found substantial fabricated detail in `docs/ARCHITECTURE/03-DATA_ARCHITECTURE.md`, `04-COMPONENT_ARCHITECTURE.md`, `FEATURES/SHARING_SYSTEM.md`, `FEATURES/TRACK_MANAGEMENT.md` and `ADR-0002` — invented tables, columns, RPCs and file paths. **Do not trust those files over the migrations and source.** Findings and the chunked fix plan live in `docs/PLANS/DOCS_REMEDIATION.md`; work the chunks in order and delete that file once complete.
 
 ---
 
