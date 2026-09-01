@@ -4,7 +4,7 @@
 > multiple future Claude Code sessions. Each chunk in §5 is sized for one session and ends with
 > a commit on `ishan/translated-docs`. Work them in order; tick them off as you go.
 >
-> **Status:** chunks 0 and 1 complete. Next up: **chunk 2** (`DEVELOPMENT/` corrections).
+> **Status:** chunks 0, 1 and 2 complete. Next up: **chunk 3** (ADR-0002 rewrite + ADR sweep).
 > **Audited:** September 1–2, 2026, against commit `fbc70f0`.
 
 ---
@@ -486,7 +486,7 @@ reachable from an index.
 
 ---
 
-### ☐ Chunk 2 — `DEVELOPMENT/` corrections
+### ☑ Chunk 2 — `DEVELOPMENT/` corrections — **DONE**
 
 Rewrite against `package.json`, `vite.config.ts`, `tsconfig*.json`, `eslint.config.js`,
 `vitest.config.ts`, `src/test/setup.ts`.
@@ -694,8 +694,8 @@ Leave `docs/_archive/rls-phases/*` in French — frozen history, per the decisio
 |---|---|---|---|
 | 1 | ~~Root `CLAUDE_*`/`COWORK_*` reports — move?~~ | **RESOLVED: moved** to `docs/_archive/reports/` (26 files) with a generated `INDEX.md` | done in chunk 1 |
 | 2 | ~~Delete `PLANS/original_documentation_plan.md`?~~ | **RESOLVED: deleted** | done in chunk 1 |
-| 3 | Add `db:start`/`db:stop`/`db:reset` to `package.json`, or document `npx supabase …`? | Document `npx supabase …` — docs-only | Chunk 2 |
-| 4 | Add `engines` + `.nvmrc` to pin Node, or soften the docs? | Soften the docs; pin separately if you want enforcement | Chunk 2 |
+| 3 | ~~Add db:* npm scripts, or document `npx supabase …`?~~ | **RESOLVED: document `npx supabase …`**, docs-only | done in chunk 2 |
+| 4 | ~~Pin Node via `engines`/`.nvmrc`, or soften the docs?~~ | **RESOLVED: softened the docs** to "Node 20+, developed on 24.x", noting nothing enforces it | done in chunk 2 |
 | 5 | Canonical production host — `app.trakalog.com` or `trakalog.app`? | Unknown from the repo; you decide | Chunk 8 |
 | 6 | Which Supabase project ref is current — `xhmeitivkclbeziqavxw` or `mdokdfljnruitfnnmkif`? | `constants.ts` + CSP + CLAUDE.md all say the former; `config.toml` looks stale | Chunk 8 |
 | 7 | Write `TRAKALOG_MAESTRO.md` / `TRAKALOG_AI_AGENTS_VISION.md`, or drop the references? | Drop the references for now | Chunk 8 |

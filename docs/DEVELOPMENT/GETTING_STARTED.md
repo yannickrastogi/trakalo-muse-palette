@@ -1,9 +1,9 @@
 # Getting Started with Trakalog Development
 
 > **Status:** Stable  
-> **Version:** 1.0.0  
+> **Version:** 1.1.0  
 > **Created:** August 11, 2026  
-> **Last Updated:** August 11, 2026  
+> **Last Updated:** September 2, 2026  
 > **Owner:** Ishan  
 > **Related:** [TRAKALOG_DEV_STAGING_SETUP.md](../PLANS/TRAKALOG_DEV_STAGING_SETUP.md)
 
@@ -18,20 +18,20 @@ Get Trakalog running on your local machine in minutes.
 ```bash
 # 1. Clone the repository
 git clone https://github.com/yannickrastogi/trakalo-muse-palette.git
-cd trakalog-muse-palette
+cd trakalo-muse-palette
 
-# 2. Install dependencies (includes Supabase CLI)
+# 2. Install dependencies
 npm install
 
-# 3. Start local Supabase stack
-npm run db:start
+# 3. Start the local Supabase stack (fetched on demand -- not a project dependency)
+npx supabase start
 
 # 4. In a new terminal, start the app
 npm run dev
 ```
 
 **That's it!** Your app will be available at:
-- **App:** `http://localhost:5173`
+- **App:** `http://localhost:8080`
 - **Supabase Studio:** `http://localhost:54323`
 
 ### Already Set Up?
@@ -39,8 +39,8 @@ npm run dev
 If you've done this before, just run:
 
 ```bash
-npm run db:start    # Terminal 1: Start Supabase
-npm run dev        # Terminal 2: Start development server
+npx supabase start   # Terminal 1: Start Supabase
+npm run dev          # Terminal 2: Start development server
 ```
 
 ---
@@ -51,8 +51,8 @@ npm run dev        # Terminal 2: Start development server
 
 | Software | Version | Purpose | Install Guide |
 |----------|---------|---------|--------------|
-| **Node.js** | 24.16.0+ | JavaScript runtime | [nodejs.org](https://nodejs.org/) |
-| **npm** | 11.13.0+ | Package manager | Included with Node.js |
+| **Node.js** | 20+ (developed on 24.x) | JavaScript runtime | [nodejs.org](https://nodejs.org/) |
+| **npm** | Bundled with Node | Package manager | Included with Node.js |
 | **Docker Desktop** | Latest | Supabase container runtime | [docker.com](https://www.docker.com/) |
 | **Git** | Latest | Version control | [git-scm.com](https://git-scm.com/) |
 
@@ -61,11 +61,12 @@ npm run dev        # Terminal 2: Start development server
 ```bash
 # Check Node.js version
 node --version
-# Expected: v24.16.0 or higher
+# Node 20 or newer. Nothing in the repo pins a version -- there is no
+# `engines` field in package.json and no .nvmrc -- so this is a convention,
+# not something the tooling enforces.
 
 # Check npm version
 npm --version
-# Expected: 11.13.0 or higher
 
 # Check Docker is running
 docker --version
@@ -93,8 +94,8 @@ sudo systemctl start docker
 Use [nvm](https://github.com/nvm-sh/nvm) to install the correct version:
 
 ```bash
-nvm install 24.16.0
-nvm use 24.16.0
+nvm install 24
+nvm use 24
 ```
 
 ---
@@ -106,11 +107,11 @@ nvm use 24.16.0
 ```bash
 # Clone via HTTPS
 git clone https://github.com/yannickrastogi/trakalo-muse-palette.git
-cd trakalog-muse-palette
+cd trakalo-muse-palette
 
 # Or via SSH (if you have SSH keys configured)
 git clone git@github.com:yannickrastogi/trakalo-muse-palette.git
-cd trakalog-muse-palette
+cd trakalo-muse-palette
 ```
 
 ### Step 2: Install Dependencies
@@ -121,14 +122,11 @@ npm install
 
 # This installs:
 # - React, TypeScript, Vite, Tailwind, and all UI dependencies
-# - Supabase CLI (as dev dependency)
 # - Testing frameworks (Vitest, React Testing Library)
 # - All other project dependencies
-```
-
-**Expected Output:**
-```
-added 150 packages in 2m
+#
+# Note: the Supabase CLI is NOT a project dependency. Every `npx supabase`
+# command below fetches it on demand, or uses a globally installed copy.
 ```
 
 ### Step 3: Initialize Supabase (One-Time Only)
@@ -151,7 +149,7 @@ npx supabase init
 ### Step 4: Start Supabase Services
 
 ```bash
-npm run db:start
+npx supabase start
 ```
 
 **This starts:**
@@ -172,36 +170,50 @@ DB URL: postgres://postgres:RandomPassword123@localhost:54322/postgres
 Studio URL: http://localhost:54323
 ```
 
-### Step 5: Configure Environment Variables
+### Step 5: Point the App at Your Local Supabase
+
+> ⚠️ **Read this before you assume `.env.local` works.** It does not. The frontend
+> reads **no environment variables at all** — there is not a single `import.meta.env`
+> anywhere in `src/`. Supabase credentials are two hardcoded string literals in
+> [`src/integrations/supabase/constants.ts`](../../src/integrations/supabase/constants.ts),
+> and they point at **production**.
+>
+> A fresh clone therefore talks to the production database. Setting
+> `VITE_SUPABASE_URL` or `VITE_SUPABASE_PUBLISHABLE_KEY` in a `.env.local` file has
+> no effect whatsoever — nothing reads them.
+
+To work against your local stack, edit `constants.ts` directly:
 
 ```bash
-# Copy the example file
-cp .env.local.example .env.local
+# Get your local credentials
+npx supabase status
+```
 
-# Get your local Supabase credentials
+```ts
+// src/integrations/supabase/constants.ts
+export const SUPABASE_URL = "http://localhost:54321";
+export const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...local anon key...";
+```
+
+**Do not commit that edit.** Before pushing, restore the production values:
+
+```bash
+git checkout src/integrations/supabase/constants.ts
+```
+
+**Find your local anon key:**
+```bash
+# Method 1: from supabase status
 npx supabase status
 
-# Edit .env.local with the actual values
-# The file should look like:
+# Method 2: from Studio
+# Open http://localhost:54323 -> Settings -> API -> Project API keys
 ```
 
-**Edit `.env.local`:**
-```bash
-VITE_SUPABASE_URL=http://localhost:54321
-VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...your-local-key...
-
-# Optional overrides for development
-NEXT_PUBLIC_R2_PUBLIC_URL=http://localhost:54321
-```
-
-**Find Your Anon Key:**
-```bash
-# Method 1: From supabase status
-npx supabase status
-
-# Method 2: From Studio
-# Open http://localhost:54323 → Settings → API → Project API keys
-```
+> **Worth fixing properly.** Reading these two values from `import.meta.env` with the
+> current constants as fallback would make local development safe by default and
+> remove the risk of committing a pointed-at-localhost build. Until that happens,
+> the manual edit above is the only way to develop against a local database.
 
 ### Step 6: Start the Development Server
 
@@ -214,13 +226,13 @@ npm run dev
 ```
   VITE v5.4.19  ready in 1200ms
 
-  ➜  Local:   http://localhost:5173/
-  ➜  Network: http://192.168.x.x:5173/
+  ➜  Local:   http://localhost:8080/
+  ➜  Network: http://192.168.x.x:8080/
   ➜  press h + enter to show help
 ```
 
 **Open in Browser:**
-- App: [http://localhost:5173](http://localhost:5173)
+- App: [http://localhost:8080](http://localhost:8080)
 - Supabase Studio: [http://localhost:54323](http://localhost:54323)
 
 ---
@@ -228,27 +240,31 @@ npm run dev
 ## 📁 Project Structure Overview
 
 ```
-trakalog-muse-palette/
+trakalo-muse-palette/
 ├── src/                          # Source code
 │   ├── App.tsx                   # Main app entry and routing
 │   ├── main.tsx                  # React entry point
-│   ├── /components/              # Reusable UI components
-│   │   └── /ui/                  # shadcn/ui primitives
+│   ├── /components/              # Reusable UI components (flat, ~60 files)
+│   │   ├── /ui/                  # shadcn/ui primitives
+│   │   ├── /admin/               # Admin console components
+│   │   ├── /onboarding/          # Onboarding flow components
+│   │   └── /visual/              # Decorative/animated components
 │   ├── /pages/                   # Page-level components (routes)
 │   ├── /contexts/                # React Context providers
 │   ├── /hooks/                   # Custom React hooks
 │   ├── /lib/                     # Utility libraries
 │   ├── /integrations/            # External service integrations
 │   │   └── /supabase/            # Supabase client setup
-│   ├── /config/                  # Application configuration
-│   ├── /types/                   # TypeScript types
-│   └── /i18n/                    # Internationalization files
+│   ├── /config/                  # Application configuration (features.ts)
+│   ├── /types/                   # TypeScript types (lamejs.d.ts, workspace.ts)
+│   ├── /test/                    # Vitest setup and tests
+│   └── /i18n/                    # index.ts + /locales/*.json (8 languages)
 │
 ├── supabase/                     # Supabase backend
 │   ├── config.toml               # Supabase project configuration
 │   ├── /functions/               # Edge Functions
 │   ├── /migrations/             # Database migrations
-│   └── /snippets/                # SQL snippets
+│   └── /snippets/                # SQL snippets (currently empty)
 │
 ├── docs/                         # Documentation
 │   └── ARCHITECTURE/             # Architecture documentation
@@ -277,14 +293,17 @@ trakalog-muse-palette/
 | `npm run build:dev` | Build in development mode | Non-minified for debugging |
 | `npm run preview` | Preview production build | Test built output locally |
 
-### Database Scripts
+### Database Commands
 
-| Script | Description | Usage |
+`db:check` is the only database-related **npm script**. Everything else goes through the
+Supabase CLI directly via `npx` — the CLI is not a project dependency.
+
+| Command | Description | Usage |
 |--------|-------------|-------|
-| `npm run db:start` | Start Supabase CLI services | Local database, API, Auth, Studio |
-| `npm run db:stop` | Stop Supabase CLI services | Stops containers, preserves data |
-| `npm run db:reset` | Reset local database | ⚠️ **Wipes all data** |
-| `npm run db:check` | Check for schema drift | Compare local vs remote |
+| `npx supabase start` | Start Supabase services | Local database, API, Auth, Studio |
+| `npx supabase stop` | Stop Supabase services | Stops containers, preserves data |
+| `npx supabase db reset` | Reset local database | ⚠️ **Wipes all local data** |
+| `npm run db:check` | Check for schema drift | Compares prod migrations against `supabase/migrations/` |
 
 ### Testing Scripts
 
@@ -303,9 +322,9 @@ trakalog-muse-palette/
 ```bash
 # Day 1: Initial setup
 git clone https://github.com/yannickrastogi/trakalo-muse-palette.git
-cd trakalog-muse-palette
+cd trakalo-muse-palette
 npm install
-npm run db:start
+npx supabase start
 npm run dev
 
 # Explore the codebase
@@ -319,7 +338,7 @@ npm run dev
 
 ```bash
 # Start your day
-npm run db:start    # If not already running
+npx supabase start    # If not already running
 npm run dev        # Start development server
 
 # Make changes, test locally
@@ -327,7 +346,7 @@ npm run dev        # Start development server
 
 # End of day
 # Supabase continues running for tomorrow
-# Or: npm run db:stop to save resources
+# Or: npx supabase stop to save resources
 ```
 
 ### Working with Database
@@ -355,20 +374,20 @@ npx eslint . --fix
 # Run tests
 npm test
 
-# Run specific test file
-npm test src/components/TrackCard.test.tsx
+# Run a specific test file
+npm test src/test/example.test.ts
 ```
 
 ### Resetting Your Environment
 
 ```bash
 # Soft reset (stop services, keep data)
-npm run db:stop
+npx supabase stop
 
 # Hard reset (wipe everything, start fresh)
-npm run db:stop
-npm run db:reset
-npm run db:start
+npx supabase stop
+npx supabase db reset
+npx supabase start
 
 # Reinstall dependencies (if package.json changed)
 rm -rf node_modules package-lock.json
@@ -383,7 +402,7 @@ npm install
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| **Trakalog App** | `http://localhost:5173` | Main application |
+| **Trakalog App** | `http://localhost:8080` | Main application |
 | **Supabase Studio** | `http://localhost:54323` | Database management UI |
 | **REST API** | `http://localhost:54321/rest/v1/` | Supabase REST API endpoint |
 | **Auth API** | `http://localhost:54321/auth/v1/` | Authentication endpoint |
@@ -391,7 +410,7 @@ npm install
 
 ### Creating Your First Account
 
-1. Open [http://localhost:5173](http://localhost:5173)
+1. Open [http://localhost:8080](http://localhost:8080)
 2. Click "Sign Up" or "Create Account"
 3. Use email/password or Google OAuth
 4. A personal workspace will be created automatically
@@ -401,44 +420,30 @@ npm install
 
 ## 🔧 Configuration Files
 
-### `.env.local`
+### `src/integrations/supabase/constants.ts` — the only Supabase config
 
-Local environment variables (gitignored).
-
-```bash
-# Supabase configuration (required for local development)
-VITE_SUPABASE_URL=http://localhost:54321
-VITE_SUPABASE_PUBLISHABLE_KEY=your-local-anon-key
-
-# Optional: R2 configuration for local development
-NEXT_PUBLIC_R2_PUBLIC_URL=http://localhost:54321
-
-# Optional: Feature flags override
-NEXT_PUBLIC_PITCH_ENABLED=false
-NEXT_PUBLIC_APPROVALS_ENABLED=false
-```
-
-### `.env.local.example`
-
-Template for `.env.local`. Copy this file to create your local configuration:
-
-```bash
-cp .env.local.example .env.local
-```
-
-### `src/integrations/supabase/constants.ts`
-
-Production fallback configuration. If no `.env.local` is provided, the app falls back to production URLs and keys.
+This file **is** the configuration. It is not a fallback; it is the single source, and it
+holds two plain string literals:
 
 ```typescript
-// Production Supabase configuration (fallback)
-export const SUPABASE_URL = 'https://xhmeitivkclbeziqavxw.supabase.co';
-export const SUPABASE_PUBLISHABLE_KEY = 'production-key';
-
-// Local development takes precedence from .env.local
-export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || SUPABASE_URL;
-export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY;
+export const SUPABASE_URL = "https://xhmeitivkclbeziqavxw.supabase.co";
+export const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
 ```
+
+`src/integrations/supabase/client.ts` imports them directly. To develop against a local
+stack, edit this file (see [Step 5](#step-5-point-the-app-at-your-local-supabase)) and
+revert before committing.
+
+### `.env.local` — not used by the frontend
+
+There is **no `.env.local.example`** in the repo, and no `.env.local` you create will be
+read: `src/` contains zero occurrences of `import.meta.env`. Variables such as
+`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, or anything prefixed `NEXT_PUBLIC_`
+(a Next.js convention that Vite would ignore anyway) have no effect on this app.
+
+Feature flags are likewise **compile-time constants**, not env vars — see
+`src/config/features.ts`, which exports exactly three: `PITCH_ENABLED`,
+`APPROVALS_ENABLED`, `PITCHER_ROLE_ENABLED`.
 
 ---
 
@@ -446,7 +451,7 @@ export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 
 
 ### Supabase CLI
 
-Installed automatically as a dev dependency. Use `npx supabase` to run commands.
+Not a project dependency. `npx supabase <cmd>` fetches the CLI on demand the first time you run it (or uses a globally installed copy if you have one).
 
 ```bash
 # Check status of local services
@@ -493,13 +498,16 @@ Fast, modern development server with:
 
 **Error:** `command not found: supabase`
 
-**Solution:**
-```bash
-# Supabase CLI is installed as a dev dependency
-npm install
+**Solution:** the CLI is not a project dependency, so there is no bare `supabase` binary
+unless you installed one globally. Always invoke it through `npx`:
 
-# Then use npx to run it
+```bash
 npx supabase status
+```
+
+Install it globally instead if you prefer a bare `supabase` command:
+```bash
+brew install supabase/tap/supabase
 ```
 
 ### Port Already in Use
@@ -518,7 +526,7 @@ lsof -i :54321
 kill <PID>
 
 # Restart Supabase
-npm run db:start
+npx supabase start
 ```
 
 ### Can't Connect to Supabase
@@ -580,7 +588,7 @@ rm -rf supabase
 npx supabase init
 
 # Start fresh
-npm run db:start
+npx supabase start
 ```
 
 ### Studio Login Issues
@@ -624,24 +632,19 @@ export const FEATURES = {
 ```
 
 **To enable a feature:**
-1. Edit `/src/config/features.ts`
+1. Edit `src/config/features.ts`
 2. Change the flag to `true`
-3. The feature will be available immediately (no restart needed)
+3. Vite's HMR picks the change up on save
+
+These are **compile-time constants**, not runtime configuration — the value is baked into
+the bundle at build time. There is no mechanism for toggling a flag in a deployed build;
+changing one requires a rebuild and redeploy.
 
 ### Environment-Specific Configuration
 
-Use different configurations for local, staging, and production:
-
-```typescript
-// In your code
-if (import.meta.env.DEV) {
-  // Local development
-  console.log('Running in development mode');
-} else {
-  // Production
-  console.log('Running in production mode');
-}
-```
+There isn't any. The app reads no environment variables (`src/` contains no
+`import.meta.env`), so local and production builds differ only in whatever you have edited
+in `src/integrations/supabase/constants.ts` at build time.
 
 ---
 

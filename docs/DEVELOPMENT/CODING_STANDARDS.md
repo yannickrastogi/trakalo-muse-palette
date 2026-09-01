@@ -3,7 +3,7 @@
 > **Status:** Draft  
 > **Version:** 1.0.0  
 > **Created:** August 18, 2026  
-> **Last Updated:** August 18, 2026  
+> **Last Updated:** September 2, 2026  
 > **Owner:** Ishan  
 > **Related:** [02 - System Architecture](../ARCHITECTURE/02-SYSTEM_ARCHITECTURE.md), [04 - Component Architecture](../ARCHITECTURE/04-COMPONENT_ARCHITECTURE.md)
 
@@ -93,18 +93,25 @@ export function TrackCard({ track, onPlay, className }: Props) {
 ```
 
 **Component Structure:**
+
+`src/components/` is largely **flat** — roughly 60 `.tsx` files at the top level — with four
+subdirectories:
+
 ```
 components/
-├── ui/           # shadcn/ui primitives (Button, Input, Dialog, etc.)
-├── audio/        # Audio-specific components (AudioPlayer, Waveform, etc.)
-├── sharing/     # Sharing-related components (ShareModal, etc.)
-├── layout/      # Layout components (Header, Sidebar, Footer)
-└── common/     # Shared utility components
+├── <~60 flat component files>   # ShareModal.tsx, TrackTable.tsx, ...
+├── ui/                          # shadcn/ui primitives (41 files)
+├── admin/                       # Admin console components
+├── onboarding/                  # Onboarding flow components
+└── visual/                      # Decorative/animated components
 ```
 
+Grouping the flat files into feature folders would be an improvement, but it is not the
+current layout — do not assume `audio/`, `sharing/`, `layout/` or `common/` exist.
+
 **Naming Conventions:**
-- PascalCase for component files (`TrackCard.tsx`)
-- PascalCase for component names (`TrackCard`)
+- PascalCase for component files (`ShareModal.tsx`)
+- PascalCase for component names (`ShareModal`)
 - kebab-case for CSS classes (`track-card`, `player-controls`)
 
 **Props:**
@@ -178,27 +185,14 @@ Trakalog uses **shadcn/ui** as the primary component library, built on Radix UI 
 - Separator, Slider, Slot, Switch, Tabs
 - Toast, Toggle, Toggle Group, Tooltip
 
-**Component Structure:**
+**Installed primitives** — `src/components/ui/` holds 41 files:
+
 ```
-components/
-└── ui/
-    ├── button.tsx
-    ├── card.tsx
-    ├── dialog.tsx
-    ├── dropdown-menu.tsx
-    ├── input.tsx
-    ├── label.tsx
-    ├── select.tsx
-    ├── separator.tsx
-    ├── sheet.tsx
-    ├── skeleton.tsx
-    ├── slider.tsx
-    ├── switch.tsx
-    ├── table.tsx
-    ├── tabs.tsx
-    ├── textarea.tsx
-    ├── toast.tsx
-    └── tooltip.tsx
+accordion  alert  alert-dialog  aspect-ratio  avatar  badge  breadcrumb  button
+calendar  card  checkbox  collapsible  command  dialog  drawer  dropdown-menu
+form  input  label  popover  progress  radio-group  resizable  scroll-area
+select  separator  sheet  sidebar  skeleton  slider  sonner  switch  table
+tabs  textarea  toast  toaster  toggle  toggle-group  tooltip  use-toast
 ```
 
 **Usage Pattern:**
@@ -216,28 +210,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 
 ```
 src/
+├── App.tsx           # Root component: providers + routing
+├── main.tsx          # React entry point
 ├── assets/           # Static assets (images, fonts)
-├── components/       # React components (UI and business logic)
-│   ├── ui/          # shadcn/ui primitives
-│   ├── audio/       # Audio-related components
-│   ├── sharing/     # Sharing functionality
-│   ├── layout/      # Layout components
-│   └── common/      # Shared utility components
+├── components/       # React components (~60 flat files + 4 subdirs)
+│   ├── ui/          # shadcn/ui primitives (41 files)
+│   ├── admin/       # Admin console components
+│   ├── onboarding/  # Onboarding flow components
+│   └── visual/      # Decorative/animated components
 ├── config/          # Application configuration
 │   └── features.ts  # Feature flags
-├── contexts/        # React Context providers
+├── contexts/        # React Context providers (15 files)
 │   ├── AuthContext.tsx
 │   ├── RoleContext.tsx
 │   ├── TrackContext.tsx
 │   ├── WorkspaceContext.tsx
+│   ├── SharedLinksContext.tsx
 │   └── ...
-├── hooks/           # Custom React hooks
-│   ├── useTrackUpload.ts
-│   ├── useSharedLink.ts
+├── hooks/           # Custom React hooks (9 files)
+│   ├── useWorkspaceSeats.ts
+│   ├── useContactSuggestions.ts
+│   ├── useTrackCompleteness.ts
+│   ├── use-toast.ts
 │   └── ...
 ├── i18n/           # Internationalization
-│   ├── locales/     # Translation files
-│   └── i18n.ts     # i18next configuration
+│   ├── locales/     # Translation files (8 languages)
+│   └── index.ts    # i18next configuration
 ├── integrations/    # External service integrations
 │   └── supabase/
 │       ├── client.ts
@@ -248,17 +246,18 @@ src/
 │   ├── analytics.ts
 │   ├── constants.ts
 │   └── ...
-├── pages/           # Page components (routes)
-│   ├── App.tsx
-│   ├── UploadTrack.tsx
+├── pages/           # Page components (routes, 32 files + admin/)
 │   ├── TrackDetail.tsx
 │   ├── SharedLinkPage.tsx
+│   ├── SharedLinks.tsx
+│   ├── Onboarding.tsx
 │   └── ...
 ├── test/           # Test utilities
 │   ├── setup.ts
 │   └── example.test.ts
 └── types/          # TypeScript type definitions
-    └── index.ts
+    ├── lamejs.d.ts
+    └── workspace.ts
 ```
 
 ### 2.2 File Naming Conventions
@@ -266,9 +265,9 @@ src/
 | Type | Convention | Example |
 |------|------------|---------|
 | Components | PascalCase | `TrackCard.tsx` |
-| Hooks | `use` prefix, camelCase | `useTrackUpload.ts` |
+| Hooks | `use` prefix, camelCase | `useWorkspaceSeats.ts` |
 | Utilities | kebab-case | `audio-analysis.ts` |
-| Types | PascalCase | `Track.ts` (or in `types/index.ts`) |
+| Types | PascalCase | `workspace.ts` in `src/types/` |
 | Pages | PascalCase | `TrackDetail.tsx` |
 | Constants | SCREAMING_SNAKE_CASE | `constants.ts` (exported as `MAX_FILE_SIZE`) |
 
@@ -516,8 +515,8 @@ chore(deps): update react-query to v5
 
 - **Never** commit secrets to version control
 - Use `.env.local` for local overrides
-- Use `.env.local.example` for documented environment variables
-- Access via `import.meta.env` in Vite
+- The frontend reads **no** environment variables — there is no `.env.local.example`, and `src/` contains no `import.meta.env`. Supabase config is hardcoded in `src/integrations/supabase/constants.ts`
+- Edge Function secrets are a separate matter: those are read with `Deno.env.get()` server-side and set via `supabase secrets set`
 
 ### 7.2 Sensitive Data
 

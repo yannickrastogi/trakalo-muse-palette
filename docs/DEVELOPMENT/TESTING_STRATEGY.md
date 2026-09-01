@@ -3,7 +3,7 @@
 > **Status:** Draft  
 > **Version:** 1.0.0  
 > **Created:** August 18, 2026  
-> **Last Updated:** August 18, 2026  
+> **Last Updated:** September 2, 2026  
 > **Owner:** Ishan  
 > **Related:** [CODING_STANDARDS.md](./CODING_STANDARDS.md), [04 - Component Architecture](../ARCHITECTURE/04-COMPONENT_ARCHITECTURE.md)
 
@@ -415,14 +415,19 @@ describe("AsyncComponent", () => {
 
 ---
 
+> ℹ️ **Current state of the suite.** The repository contains exactly one test file,
+> `src/test/example.test.ts`, which is a placeholder assertion. Everything below
+> describes the intended approach and conventions, not an existing body of tests.
+
 ## 5. Test Setup
 
 ### 5.1 Global Setup (`src/test/setup.ts`)
 
+The real file is 15 lines — a `jest-dom` import and a `matchMedia` stub:
+
 ```typescript
 import "@testing-library/jest-dom";
 
-// Mock browser APIs not available in jsdom
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: (query: string) => ({
@@ -436,49 +441,35 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: () => {},
   }),
 });
-
-// Mock localStorage
-const localStorageMock = (() => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: vi.fn((key: string) => store[key] || null),
-    setItem: vi.fn((key: string, value: string) => {
-      store[key] = value;
-    }),
-    removeItem: vi.fn((key: string) => {
-      delete store[key];
-    }),
-    clear: vi.fn(() => {
-      store = {};
-    }),
-  };
-})();
-
-Object.defineProperty(window, "localStorage", {
-  value: localStorageMock,
-});
-
-// Mock sessionStorage similarly
-const sessionStorageMock = (() => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: vi.fn((key: string) => store[key] || null),
-    setItem: vi.fn((key: string, value: string) => {
-      store[key] = value;
-    }),
-    removeItem: vi.fn((key: string) => {
-      delete store[key];
-    }),
-    clear: vi.fn(() => {
-      store = {};
-    }),
-  };
-})();
-
-Object.defineProperty(window, "sessionStorage", {
-  value: sessionStorageMock,
-});
 ```
+
+#### Recommended addition: storage mocks (not yet implemented)
+
+`src/integrations/supabase/client.ts` installs a **custom `localStorage`-backed auth
+store** — it mirrors the Supabase auth token into a `trakalog_session_backup` key and reads
+it back on miss. Any test that imports the Supabase client therefore touches real jsdom
+`localStorage`, which persists across tests in the same file and can leak auth state
+between them.
+
+Adding mocks to `setup.ts` would isolate that:
+
+```typescript
+const storageMock = () => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (k: string) => store[k] ?? null,
+    setItem: (k: string, v: string) => { store[k] = String(v); },
+    removeItem: (k: string) => { delete store[k]; },
+    clear: () => { store = {}; },
+  };
+};
+
+Object.defineProperty(window, "localStorage", { value: storageMock() });
+Object.defineProperty(window, "sessionStorage", { value: storageMock() });
+```
+
+Until that lands, tests that exercise auth should clear `localStorage` themselves in a
+`beforeEach`.
 
 ### 5.2 TypeScript Support
 
@@ -495,7 +486,7 @@ Vitest has built-in TypeScript support. No additional configuration needed for `
 | `npm run test` | Run all tests once |
 | `npm run test:watch` | Run tests in watch mode |
 | `npx vitest run` | Run all tests |
-| `npx vitest --ui` | Open Vitest UI (visual test explorer) |
+| `npx vitest --ui` | Visual test explorer — **`@vitest/ui` is not a dependency**; npx will prompt to install it ad hoc |
 | `npx vitest --coverage` | Run tests with coverage |
 
 ### 6.2 Coverage
