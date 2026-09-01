@@ -59,6 +59,10 @@ Architectural decisions that shaped Trakalog's design:
 | ADR-0004 | [React Query Over Redux](ARCHITECTURE/DECISIONS/ADR-0004-STATE-MANAGEMENT.md) | 🟢 Stable | August 18, 2026 |
 | ADR-0005 | [R2 Cloud Storage Over S3](ARCHITECTURE/DECISIONS/ADR-0005-R2-STORAGE.md) | 🟢 Stable | August 18, 2026 |
 | ADR-0006 | [Groq for AI Inference](ARCHITECTURE/DECISIONS/ADR-0006-GROQ-AI.md) | 🟢 Stable | August 18, 2026 |
+| ADR-0007 | [Invisible Watermarking](ARCHITECTURE/DECISIONS/ADR-0007-INVISIBLE-WATERMARKING.md) | 🟢 Stable | August 18, 2026 |
+| ADR-0008 | [Dual-Audience Model](ARCHITECTURE/DECISIONS/ADR-0008-DUAL-AUDIENCE.md) | 🟢 Stable | August 18, 2026 |
+| ADR-0009 | [Feature Flags](ARCHITECTURE/DECISIONS/ADR-0009-FEATURE-FLAGS.md) | 🟢 Stable | August 18, 2026 |
+| ADR-0010 | [shadcn/ui Component Library](ARCHITECTURE/DECISIONS/ADR-0010-SHADCN-UI.md) | 🟢 Stable | August 18, 2026 |
 
 
 
@@ -69,9 +73,9 @@ Architectural decisions that shaped Trakalog's design:
 | Document | Description | Status |
 |----------|-------------|--------|
 | [Getting Started](DEVELOPMENT/GETTING_STARTED.md) | Local development setup, prerequisites, first run | 🟢 Stable |
-| [Coding Standards](DEVELOPMENT/CODING_STANDARDS.md) | TypeScript, React, Tailwind conventions, best practices | 🟢 Stable |
-| [Testing Strategy](DEVELOPMENT/TESTING_STRATEGY.md) | Vitest, React Testing Library patterns, test organization | 🟢 Stable |
-| [API Reference](DEVELOPMENT/API_REFERENCE.md) | Supabase RPC functions, REST endpoints, GraphQL | 🟡 Planned |
+| [Coding Standards](DEVELOPMENT/CODING_STANDARDS.md) | TypeScript, React, Tailwind conventions, best practices | 🟡 Draft |
+| [Testing Strategy](DEVELOPMENT/TESTING_STRATEGY.md) | Vitest, React Testing Library patterns, test organization | 🟡 Draft |
+| API Reference *(not yet written)* | Supabase RPC functions, REST endpoints, GraphQL | 🟡 Planned |
 
 ---
 
@@ -81,11 +85,11 @@ Detailed documentation for major Trakalog features:
 
 | Feature | Document | Description | Status |
 |---------|----------|-------------|--------|
-| Track Management | [Track Management](FEATURES/TRACK_MANAGEMENT.md) | Upload pipeline, audio processing, metadata, versioning | 🟢 Stable |
-| Sharing System | [Sharing System](FEATURES/SHARING_SYSTEM.md) | Shared links, catalog sharing, permissions, branding | 🟢 Stable |
-| Smart A&R | [Smart A&R](FEATURES/SMART_AR.md) | AI matching, Groq integration, brief processing | 🟢 Stable |
-| Watermarking | [Watermarking](FEATURES/WATERMARKING.md) | Audio watermarking, leak tracing, payload encoding | 🟢 Stable |
-| Splits & Signatures | [Splits & Signatures](FEATURES/SPLITS_AND_SIGNATURES.md) | Split calculation, digital signatures, agreement flow | 🟢 Stable |
+| Track Management | [Track Management](FEATURES/TRACK_MANAGEMENT.md) | Upload pipeline, audio processing, metadata, versioning | 🟡 Draft |
+| Sharing System | [Sharing System](FEATURES/SHARING_SYSTEM.md) | Shared links, catalog sharing, permissions, branding | 🟡 Draft |
+| Smart A&R | [Smart A&R](FEATURES/SMART_AR.md) | AI matching, Groq integration, brief processing | 🟡 Draft |
+| Watermarking | [Watermarking](FEATURES/WATERMARKING.md) | Audio watermarking, leak tracing, payload encoding | 🟡 Draft |
+| Splits & Signatures | [Splits & Signatures](FEATURES/SPLITS_AND_SIGNATURES.md) | Split calculation, digital signatures, agreement flow | 🟡 Draft |
 
 ---
 
@@ -94,7 +98,7 @@ Detailed documentation for major Trakalog features:
 | Document | Description | Status |
 |----------|-------------|--------|
 | [Monitoring](OPERATIONS/MONITORING.md) | Logging setup, error tracking, metrics, alerting | 🟢 Stable |
-| [Performance](OPERATIONS/PERFORMANCE.md) | Performance optimization, benchmarks, bottlenecks | 🟡 Planned |
+| Performance *(not yet written)* | Performance optimization, benchmarks, bottlenecks | 🟡 Planned |
 | [Cost Optimization](OPERATIONS/COST_OPTIMIZATION.md) | Cloud costs, usage tracking, optimization strategies | 🟢 Stable |
 
 ---
@@ -112,6 +116,7 @@ Direct links to category-specific index files:
 | [Operations Index](OPERATIONS/INDEX.md) | Monitoring, performance, and cost optimization |
 | [Plans Index](PLANS/INDEX.md) | Strategic planning and setup documents |
 | [Reports Index](REPORTS/INDEX.md) | Analytical reports and system audits |
+| [Archived Reports](_archive/reports/INDEX.md) | Historical one-off fix and diagnostic reports (not maintained) |
 
 ---
 
@@ -138,7 +143,6 @@ Trakalog has existing documentation that complements this architecture set:
 - **[RLS_AUDIT_2026-05-10.md](_archive/rls-phases/RLS_AUDIT_2026-05-10.md)** - Security audit findings
 
 ### Operational & Setup
-- **[Running the App Locally.md](Running%20the%20App%20Locally.md)** - Local development guide
 - **[PLANS/TRAKALOG_DEV_STAGING_SETUP.md](PLANS/TRAKALOG_DEV_STAGING_SETUP.md)** - Dev/staging environment setup
 - **[REPORTS/FRONTEND_FETCHING_AUDIT.md](REPORTS/FRONTEND_FETCHING_AUDIT.md)** - Frontend data fetching analysis
 
@@ -166,7 +170,7 @@ Architecture diagrams are embedded throughout the documentation using Mermaid sy
 ### For Feature Development
 1. Review relevant **[Feature Deep-Dive](FEATURES/)** documentation
 2. Check **[ADRs](ARCHITECTURE/DECISIONS/)** for historical context
-3. Reference **[API Reference](DEVELOPMENT/API_REFERENCE.md)** for integration details
+3. Reference **[RPCS.md](DEVELOPMENT/RPCS.md)** for RPC signatures (a fuller API Reference is planned)
 
 ### For Debugging
 1. Check **[Monitoring](OPERATIONS/MONITORING.md)** for observability tools
@@ -215,7 +219,7 @@ A: Begin with [01 - Vision & Overview](ARCHITECTURE/01-VISION_AND_OVERVIEW.md) a
 A: Follow [Getting Started](DEVELOPMENT/GETTING_STARTED.md)
 
 **Q: Where can I find API documentation?**  
-A: See [API Reference](DEVELOPMENT/API_REFERENCE.md) (planned) and [RPCS.md](DEVELOPMENT/RPCS.md) (current)
+A: See [RPCS.md](DEVELOPMENT/RPCS.md). A broader API Reference is planned but not yet written.
 
 **Q: How does authentication work?**  
 A: See [06 - Security Architecture](ARCHITECTURE/06-SECURITY_ARCHITECTURE.md) and [AUTH_PATTERNS.md](ARCHITECTURE/AUTH_PATTERNS.md) (current)
@@ -234,7 +238,7 @@ A: Detailed in [03 - Data Architecture](ARCHITECTURE/03-DATA_ARCHITECTURE.md)
 | **Owner** | Ishan |
 | **Review Cycle** | Monthly |
 | **Next Review** | September 11, 2026 |
-| **Related Plans** | [Documentation Plan](.vibe/plans/1786215515-crisp-daring-mesa.md) |
+| **Related Plans** | [Documentation Plan](PLANS/DOCUMENTATION.md), [Docs Remediation](PLANS/DOCS_REMEDIATION.md) |
 
 ---
 

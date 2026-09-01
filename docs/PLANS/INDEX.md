@@ -31,7 +31,11 @@ This is the **central hub** for all planning and strategic documentation, includ
 |----------|-------------|--------|
 | [Documentation Plan](DOCUMENTATION.md) | Comprehensive documentation architecture and planning | 🟢 Stable |
 | [Dev/Staging Setup](TRAKALOG_DEV_STAGING_SETUP.md) | Development and staging environment configuration | 🟢 Stable |
-| [Original Documentation Plan](original_documentation_plan.md) | Initial documentation planning document | 🟢 Stable |
+| [Docs Remediation](DOCS_REMEDIATION.md) | Audit findings and the chunked plan to fix the docs tree | 🔴 In progress |
+| [Trakalog Genesis](TRAKALOG_GENESIS.md) | Creative-provenance infrastructure (Genesis Print) | 🟡 Planned · French |
+| [Trakalog Signal](TRAKALOG_SIGNAL.md) | Signal product direction | 🟡 Planned · French |
+| [Trakalog Drop](TRAKALOG_DROP.md) | Drop product direction | 🟡 Planned · French |
+| [Storage Migration](TRAKALOG_STORAGE_MIGRATION.md) | Supabase Storage → Cloudflare R2 migration | 🟡 Historical · French |
 
 ---
 

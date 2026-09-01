@@ -31,9 +31,9 @@ This is the **central hub** for all development-related documentation, including
 | Document | Description | Status |
 |----------|-------------|--------|
 | [Getting Started](GETTING_STARTED.md) | Local development setup, prerequisites, first run | 🟢 Stable |
-| [Coding Standards](CODING_STANDARDS.md) | TypeScript, React, Tailwind conventions, best practices | 🟢 Stable |
-| [Testing Strategy](TESTING_STRATEGY.md) | Vitest, React Testing Library patterns, test organization | 🟢 Stable |
-| [API Reference](API_REFERENCE.md) | Supabase RPC functions, REST endpoints, GraphQL | 🟡 Planned |
+| [Coding Standards](CODING_STANDARDS.md) | TypeScript, React, Tailwind conventions, best practices | 🟡 Draft |
+| [Testing Strategy](TESTING_STRATEGY.md) | Vitest, React Testing Library patterns, test organization | 🟡 Draft |
+| API Reference *(not yet written)* | Supabase RPC functions, REST endpoints, GraphQL | 🟡 Planned |
 
 ---
 
@@ -51,7 +51,7 @@ This is the **central hub** for all development-related documentation, including
 - Refer to [Testing Strategy](TESTING_STRATEGY.md) for patterns and organization
 
 **API integration:**
-- Check [API Reference](API_REFERENCE.md) (planned) for endpoint details
+- An API Reference is planned but not yet written; use [RPCS.md](RPCS.md) for now
 
 ---
 

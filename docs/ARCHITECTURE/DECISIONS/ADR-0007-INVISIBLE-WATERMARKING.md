@@ -206,9 +206,9 @@ Our requirements:
 
 - [audiowmark GitHub](https://github.com/swesterfeld/audiowmark)
 - [audiowmark Paper](https://arxiv.org/abs/2008.11664) - Technical details of the algorithm
-- [FEATURES/WATERMARKING.md](../FEATURES/WATERMARKING.md) - Complete watermarking feature documentation
-- [CLAUDE_WATERMARK_MP3_REPORT.md](../CLAUDE_WATERMARK_MP3_REPORT.md) - MP3 compression testing
-- [services/watermark/README.md](../services/watermark/README.md) - Watermark service documentation
+- [FEATURES/WATERMARKING.md](../../FEATURES/WATERMARKING.md) - Complete watermarking feature documentation
+- [CLAUDE_WATERMARK_MP3_REPORT.md](../../_archive/reports/CLAUDE_WATERMARK_MP3_REPORT.md) - MP3 compression testing
+- [services/watermark/README.md](../../../services/watermark/README.md) - Watermark service documentation
 
 ---
 

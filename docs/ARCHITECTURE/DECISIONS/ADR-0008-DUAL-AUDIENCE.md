@@ -206,8 +206,8 @@ The challenge was how to design the architecture to serve both audiences effecti
 
 - [04 - Component Architecture](../04-COMPONENT_ARCHITECTURE.md) - Frontend component organization
 - [06 - Security Architecture](../06-SECURITY_ARCHITECTURE.md) - Authentication and authorization details
-- [FEATURES/SHARING_SYSTEM.md](../FEATURES/SHARING_SYSTEM.md) - Link sharing implementation
-- [FEATURES/WATERMARKING.md](../FEATURES/WATERMARKING.md) - Watermarking for link recipients
+- [FEATURES/SHARING_SYSTEM.md](../../FEATURES/SHARING_SYSTEM.md) - Link sharing implementation
+- [FEATURES/WATERMARKING.md](../../FEATURES/WATERMARKING.md) - Watermarking for link recipients
 
 ---
 

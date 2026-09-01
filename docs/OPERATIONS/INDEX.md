@@ -30,7 +30,7 @@ This is the **central hub** for all operations-related documentation, covering m
 | Document | Description | Status |
 |----------|-------------|--------|
 | [Monitoring](MONITORING.md) | Logging setup, error tracking, metrics, alerting | 🟢 Stable |
-| [Performance](PERFORMANCE.md) | Performance optimization, benchmarks, bottlenecks | 🟡 Planned |
+| Performance *(not yet written)* | Performance optimization, benchmarks, bottlenecks | 🟡 Planned |
 | [Cost Optimization](COST_OPTIMIZATION.md) | Cloud costs, usage tracking, optimization strategies | 🟢 Stable |
 
 ---
@@ -43,7 +43,7 @@ This is the **central hub** for all operations-related documentation, covering m
 - See [Monitoring](MONITORING.md) for logging, error tracking, and alerting setup
 
 **Performance Issues:**
-- Check [Performance](PERFORMANCE.md) (planned) for optimization guides
+- A Performance guide is planned but not yet written
 
 **Cost Management:**
 - Review [Cost Optimization](COST_OPTIMIZATION.md) for cloud cost strategies

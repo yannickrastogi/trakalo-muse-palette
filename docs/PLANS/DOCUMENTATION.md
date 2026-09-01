@@ -337,7 +337,7 @@ Each feature document includes:
 ## 10. Existing Documentation Inventory
 
 ### Current Architecture Docs
-- `/TRAKALOG_ARCHITECTURE.md` - French high-level architecture (233 lines)
+- `docs/TRAKALOG_ARCHITECTURE.md` - high-level architecture (the stale 233-line root duplicate was deleted)
 - `/docs/ARCHITECTURE/PRODUCT_AND_UX_OVERVIEW.md` - English product overview (313 lines)
 - `/docs/ARCHITECTURE/GROQ_USAGE_AND_COSTS.md` - Groq usage deep-dive (280 lines)
 

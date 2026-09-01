@@ -5,7 +5,7 @@
 > **Created:** August 11, 2026  
 > **Last Updated:** August 11, 2026  
 > **Owner:** Ishan  
-> **Related:** [Running the App Locally](../Running%20the%20App%20Locally.md), [TRAKALOG_DEV_STAGING_SETUP.md](../PLANS/TRAKALOG_DEV_STAGING_SETUP.md)
+> **Related:** [TRAKALOG_DEV_STAGING_SETUP.md](../PLANS/TRAKALOG_DEV_STAGING_SETUP.md)
 
 ---
 
@@ -768,8 +768,8 @@ Found an error or missing information?
 | **Owner** | Ishan |
 | **Status** | Stable |
 | **Next Review** | September 11, 2026 |
-| **Related Documents** | [Running the App Locally](../Running%20the%20App%20Locally.md), [Dev/Staging Setup](../PLANS/TRAKALOG_DEV_STAGING_SETUP.md) |
+| **Related Documents** | [Dev/Staging Setup](../PLANS/TRAKALOG_DEV_STAGING_SETUP.md) |
 
 ---
 
-*This document synthesizes and updates the existing [Running the App Locally](../Running%20the%20App%20Locally.md) guide with additional information for new developers.*
+*This document supersedes the older "Running the App Locally" guide, which has been removed.*

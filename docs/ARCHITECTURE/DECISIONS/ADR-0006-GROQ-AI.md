@@ -193,9 +193,9 @@ Our requirements:
 
 - [Groq Documentation](https://console.groq.com/docs)
 - [Groq Pricing](https://console.groq.com/docs/pricing)
-- [ARCHITECTURE/GROQ_USAGE_AND_COSTS.md](../ARCHITECTURE/GROQ_USAGE_AND_COSTS.md) - Detailed usage and cost analysis
+- [ARCHITECTURE/GROQ_USAGE_AND_COSTS.md](../GROQ_USAGE_AND_COSTS.md) - Detailed usage and cost analysis
 - [05 - Service Architecture](../05-SERVICE_ARCHITECTURE.md) - AI service integration
-- [FEATURES/SMART_AR.md](../FEATURES/SMART_AR.md) - Smart A&R implementation
+- [FEATURES/SMART_AR.md](../../FEATURES/SMART_AR.md) - Smart A&R implementation
 
 ---
 

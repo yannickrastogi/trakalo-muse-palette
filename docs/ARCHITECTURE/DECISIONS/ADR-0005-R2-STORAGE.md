@@ -179,7 +179,7 @@ Our requirements:
 
 - [Cloudflare R2 Documentation](https://developers.cloudflare.com/r2/)
 - [R2 Pricing](https://developers.cloudflare.com/r2/platform/pricing/)
-- [CLAUDE_R2_PHASE2_REPORT.md](../CLAUDE_R2_PHASE2_REPORT.md) - R2 migration details
+- [CLAUDE_R2_PHASE2_REPORT.md](../../_archive/reports/CLAUDE_R2_PHASE2_REPORT.md) - R2 migration details
 - [05 - Service Architecture](../05-SERVICE_ARCHITECTURE.md) - Storage service details
 - [07 - Deployment Architecture](../07-DEPLOYMENT_ARCHITECTURE.md) - Infrastructure overview
 
@@ -273,7 +273,7 @@ The migration involved:
 4. Implementing edge functions for R2 signed URL generation
 5. Testing all upload/download paths
 
-See [CLAUDE_R2_PHASE2_REPORT.md](../CLAUDE_R2_PHASE2_REPORT.md) for detailed migration notes.
+See [CLAUDE_R2_PHASE2_REPORT.md](../../_archive/reports/CLAUDE_R2_PHASE2_REPORT.md) for detailed migration notes.
 
 ### Current Bucket Usage
 

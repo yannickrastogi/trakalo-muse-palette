@@ -5,7 +5,7 @@
 > **Created:** August 18, 2026  
 > **Last Updated:** August 18, 2026  
 > **Owner:** Ishan  
-> **Related:** [02 - System Architecture](../ARCHITECTURE/02-SYSTEM_ARCHITECTURE.md), [05 - Service Architecture](../ARCHITECTURE/05-SERVICE_ARCHITECTURE.md), [07 - Deployment Architecture](../ARCHITECTURE/07-DEPLOYMENT_ARCHITECTURE.md), [TRAKALOG_BILLING.md](../FEATURES/TRAKALOG_BILLING.md), [GROQ_USAGE_AND_COSTS.md](../GROQ_USAGE_AND_COSTS.md)
+> **Related:** [02 - System Architecture](../ARCHITECTURE/02-SYSTEM_ARCHITECTURE.md), [05 - Service Architecture](../ARCHITECTURE/05-SERVICE_ARCHITECTURE.md), [07 - Deployment Architecture](../ARCHITECTURE/07-DEPLOYMENT_ARCHITECTURE.md), [TRAKALOG_BILLING.md](../FEATURES/TRAKALOG_BILLING.md), [GROQ_USAGE_AND_COSTS.md](../ARCHITECTURE/GROQ_USAGE_AND_COSTS.md)
 
 ---
 
@@ -169,7 +169,7 @@ Edge Function Compute: ~2,000 seconds/month
 
 **Estimated Cost:** ~$1-5/month (varies by usage)
 
-*See [GROQ_USAGE_AND_COSTS.md](../GROQ_USAGE_AND_COSTS.md) for detailed analysis*
+*See [GROQ_USAGE_AND_COSTS.md](../ARCHITECTURE/GROQ_USAGE_AND_COSTS.md) for detailed analysis*
 
 ### 2.5 Resend (Email)
 
@@ -303,7 +303,7 @@ Edge Function Compute: ~2,000 seconds/month
 
 **Savings Potential:** 50-80% reduction in AI costs
 
-*See [GROQ_USAGE_AND_COSTS.md](../GROQ_USAGE_AND_COSTS.md) for implementation details*
+*See [GROQ_USAGE_AND_COSTS.md](../ARCHITECTURE/GROQ_USAGE_AND_COSTS.md) for implementation details*
 
 ### 3.5 Email Optimization
 

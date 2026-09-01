@@ -4,7 +4,7 @@
 > multiple future Claude Code sessions. Each chunk in §5 is sized for one session and ends with
 > a commit on `ishan/translated-docs`. Work them in order; tick them off as you go.
 >
-> **Status:** audit complete, no remediation started.
+> **Status:** chunks 0 and 1 complete. Next up: **chunk 2** (`DEVELOPMENT/` corrections).
 > **Audited:** September 1–2, 2026, against commit `fbc70f0`.
 
 ---
@@ -66,6 +66,7 @@ docs=[os.path.join(dp,f) for dp,_,fn in os.walk('docs') for f in fn if f.endswit
 L=re.compile(r'\[([^\]]*)\]\(([^)\s]+)\)');n=0
 for d in sorted(docs):
     t=re.sub(r'\`\`\`.*?\`\`\`','',open(d).read(),flags=re.S)
+    t=re.sub(r'\`[^\`\n]*\`','',t)   # strip inline code too
     for m in L.finditer(t):
         g=m.group(2)
         if g.startswith(('http','mailto','#')):continue
@@ -372,7 +373,7 @@ from ADRs, `../../` from `docs/FEATURES/`.
 ×3, `DEVELOPMENT/INDEX.md` ×2), `OPERATIONS/PERFORMANCE.md` (×3),
 `Running the App Locally.md` (from `docs/INDEX.md`, `GETTING_STARTED.md` ×3).
 
-**Plus:** `docs/INDEX.md` links `[Documentation Plan](.vibe/plans/1786215515-crisp-daring-mesa.md)`
+**Plus:** `docs/INDEX.md` links `[Documentation Plan](<.vibe path>)`
 — a local scratch path outside the repo. `docs/_archive/rls-phases/RLS_PHASE1_GUIDE.md` has a
 mangled link `['"](notifications)` — a SQL snippet that escaped its code fence.
 
@@ -436,7 +437,7 @@ Each chunk = one session, ending in a commit on `ishan/translated-docs`.
 
 ---
 
-### ☐ Chunk 0 — Correct `CLAUDE.md` *(small; do first)*
+### ☑ Chunk 0 — Correct `CLAUDE.md` — **DONE** (`5ea13ff`)
 
 **Why first:** every later session loads CLAUDE.md and will otherwise re-introduce these errors.
 
@@ -457,7 +458,7 @@ Each chunk = one session, ending in a commit on `ishan/translated-docs`.
 
 ---
 
-### ☐ Chunk 1 — Links, indexes, duplicates, status labels *(mechanical, no research)*
+### ☑ Chunk 1 — Links, indexes, duplicates, status labels — **DONE**
 
 1. **Fix the 12 depth-wrong links** and the **5 root-report links** per the tables in §4.9.
 2. **Dead targets:** `API_REFERENCE.md` and `PERFORMANCE.md` are marked "🟡 Planned" — convert
@@ -691,8 +692,8 @@ Leave `docs/_archive/rls-phases/*` in French — frozen history, per the decisio
 
 | # | Decision | Recommendation | Blocks |
 |---|---|---|---|
-| 1 | Root `CLAUDE_*`/`COWORK_*` reports — move to `docs/_archive/reports/`? | Out of scope for this branch; leave them | **Chunk 1** (link depths depend on it) |
-| 2 | Delete `PLANS/original_documentation_plan.md`? | Yes — near-duplicate of `DOCUMENTATION.md` | Chunk 1 |
+| 1 | ~~Root `CLAUDE_*`/`COWORK_*` reports — move?~~ | **RESOLVED: moved** to `docs/_archive/reports/` (26 files) with a generated `INDEX.md` | done in chunk 1 |
+| 2 | ~~Delete `PLANS/original_documentation_plan.md`?~~ | **RESOLVED: deleted** | done in chunk 1 |
 | 3 | Add `db:start`/`db:stop`/`db:reset` to `package.json`, or document `npx supabase …`? | Document `npx supabase …` — docs-only | Chunk 2 |
 | 4 | Add `engines` + `.nvmrc` to pin Node, or soften the docs? | Soften the docs; pin separately if you want enforcement | Chunk 2 |
 | 5 | Canonical production host — `app.trakalog.com` or `trakalog.app`? | Unknown from the repo; you decide | Chunk 8 |

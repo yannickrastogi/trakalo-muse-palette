@@ -34,11 +34,19 @@ Detailed documentation for major Trakalog features:
 
 | Feature | Document | Description | Status |
 |---------|----------|-------------|--------|
-| Track Management | [Track Management](TRACK_MANAGEMENT.md) | Upload pipeline, audio processing, metadata, versioning | 🟢 Stable |
-| Sharing System | [Sharing System](SHARING_SYSTEM.md) | Shared links, catalog sharing, permissions, branding | 🟢 Stable |
-| Smart A&R | [Smart A&R](SMART_AR.md) | AI matching, Groq integration, brief processing | 🟢 Stable |
-| Watermarking | [Watermarking](WATERMARKING.md) | Audio watermarking, leak tracing, payload encoding | 🟢 Stable |
-| Splits & Signatures | [Splits & Signatures](SPLITS_AND_SIGNATURES.md) | Split calculation, digital signatures, agreement flow | 🟢 Stable |
+| Track Management | [Track Management](TRACK_MANAGEMENT.md) | Upload pipeline, audio processing, metadata, versioning | 🟡 Draft |
+| Sharing System | [Sharing System](SHARING_SYSTEM.md) | Shared links, catalog sharing, permissions, branding | 🟡 Draft |
+| Smart A&R | [Smart A&R](SMART_AR.md) | AI matching, Groq integration, brief processing | 🟡 Draft |
+| Watermarking | [Watermarking](WATERMARKING.md) | Audio watermarking, leak tracing, payload encoding | 🟡 Draft |
+| Splits & Signatures | [Splits & Signatures](SPLITS_AND_SIGNATURES.md) | Split calculation, digital signatures, agreement flow | 🟡 Draft |
+| Billing | [Trakalog Billing](TRAKALOG_BILLING.md) | Plans, seats, workspaces, storage quotas, Stripe wiring | 🟡 Draft · French |
+| Track Versioning | [Track Versioning](TRACK_VERSIONING.md) | Multiple audio versions per track, A/B switching, active version | 🟡 Planned · French |
+| ISRC Generation | [ISRC Generation](ISRC_GENERATION.md) | ISRC format, registrant code, allocation and validation | 🟡 Planned · French |
+| DDEX & PRO Exports | [DDEX / PRO Exports](DDEX_PRO_EXPORTS.md) | DDEX ERN and PRO registration exports | 🟡 Planned · French |
+| Admin Dashboard | [Admin Dashboard](TRAKALOG_ADMIN_DASHBOARD.md) | Platform admin console metrics and tooling | 🟡 Planned · French |
+| Onboarding | [Onboarding](ONBOARDING.md) | First-run flow and activation steps | 🟡 Draft |
+| Artist Seeker | [Artist Seeker](ARTIST_SEEKER.md) | Artist discovery — planned, after Smart Brief Matching | 🟡 Planned |
+| Brief Seeker | [Brief Seeker](BRIEF_SEEKER.md) | Brief discovery and matching | 🟡 Planned · French |
 
 ---
 
