@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
+import { getClientIp } from "../_shared/ip.ts";
 import { buildEmail, isValidEmail } from "../_shared/email-template.ts";
 
 serve(async (req) => {
@@ -22,7 +23,7 @@ serve(async (req) => {
   );
 
   // Rate limit: 10 invites per hour per IP
-  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const ip = getClientIp(req);
   const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", {
     _key: "send-waitlist-invite:" + ip,
     _max_requests: 10,

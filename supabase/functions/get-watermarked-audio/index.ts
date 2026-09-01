@@ -17,6 +17,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { getClientIp } from "../_shared/ip.ts";
 import { isValidUUID, boundStr, LIMITS, readJsonBounded, InputError } from "../_shared/validation.ts";
 import { getStorageProvider } from "../_shared/storage.ts";
 
@@ -41,7 +42,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const ip = getClientIp(req);
   const supabaseRl = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const { data: rateLimitOk } = await supabaseRl.rpc("check_rate_limit", { _key: "watermark:" + ip, _max_requests: 60, _window_seconds: 60 });
   if (rateLimitOk === false) {

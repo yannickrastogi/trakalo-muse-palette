@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { getClientIp } from "../_shared/ip.ts";
 import { boundStr, LIMITS, readJsonBounded, InputError } from "../_shared/validation.ts";
 
 // PBKDF2 runs 100k iterations over the supplied password; an unbounded password
@@ -38,7 +39,7 @@ serve(async function(req) {
       return new Response(JSON.stringify({ valid: false, error: "Invalid request" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
-    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const ip = getClientIp(req);
     const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", { _key: "verify-link-password:" + ip, _max_requests: 5, _window_seconds: 300 });
     if (rateLimitOk === false) {
       return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });

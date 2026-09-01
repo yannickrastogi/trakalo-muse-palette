@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
+import { getClientIp } from "../_shared/ip.ts";
 import { getAuthedUser, HttpError } from "../_shared/auth.ts";
 
 serve(async (req) => {
@@ -20,7 +21,7 @@ serve(async (req) => {
     });
   }
 
-  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const ip = getClientIp(req);
   const supabaseRl = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const { data: rateLimitOk } = await supabaseRl.rpc("check_rate_limit", { _key: "accept-inv:" + ip, _max_requests: 10, _window_seconds: 3600 });
   if (rateLimitOk === false) {

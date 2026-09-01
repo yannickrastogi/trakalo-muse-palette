@@ -26,6 +26,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
+import { getClientIp } from "../_shared/ip.ts";
 import { getStorageProvider } from "../_shared/storage.ts";
 
 const ALLOWED_BUCKETS = ["stems", "documents"] as const;
@@ -57,7 +58,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const ip = getClientIp(req);
     const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", { _key: "get-shared-link-asset:" + ip, _max_requests: 60, _window_seconds: 60 });
     if (rateLimitOk === false) return json({ error: "Too many requests. Please try again later." }, 429);
 

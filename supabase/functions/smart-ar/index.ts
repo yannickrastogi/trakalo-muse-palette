@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCors, rejectInvalidOrigin } from "../_shared/cors.ts";
+import { getClientIp } from "../_shared/ip.ts";
 import { isValidUUID } from "../_shared/validation.ts";
 import { getAuthedUser, assertWorkspaceMember, HttpError } from "../_shared/auth.ts";
 
@@ -10,7 +11,7 @@ Deno.serve(async (req) => {
   if (originRes) return originRes;
   const corsHeaders = getCorsHeaders(req);
 
-  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const ip = getClientIp(req);
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!

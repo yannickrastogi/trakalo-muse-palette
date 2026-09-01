@@ -20,6 +20,25 @@ function sanitizeUrl(url: string): string {
   return '#';
 }
 
+// Valide l'URL d'un logo de workspace : https uniquement + host explicitement
+// autorisé (les logos sont servis depuis le storage Supabase). Retourne '' si non
+// autorisée. NB : cette allowlist empêche de pointer vers un domaine arbitraire,
+// mais ne protège PAS d'une injection d'attribut — le résultat DOIT encore passer
+// par htmlEscape() avant d'être inséré dans src="...".
+function sanitizeLogoUrl(url: string): string {
+  if (!url) return '';
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return '';
+  }
+  if (parsed.protocol !== 'https:') return '';
+  const allowedHosts = ['app.trakalog.com', 'trakalog.com', 'xhmeitivkclbeziqavxw.supabase.co'];
+  if (!allowedHosts.includes(parsed.hostname)) return '';
+  return url;
+}
+
 function sanitizeCssColor(color: string): string {
   if (!color) return '#f97316';
   if (/^#[0-9a-fA-F]{3,8}$/.test(color)) return color;
@@ -50,8 +69,10 @@ export function buildEmail(options: {
   } = options;
 
   const preheaderHtml = preheader
-    ? '<div style="display:none;font-size:1px;color:#0a0a0b;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">' + preheader + '</div>'
+    ? '<div style="display:none;font-size:1px;color:#0a0a0b;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">' + htmlEscape(preheader) + '</div>'
     : '';
+
+  const safeHeading = htmlEscape(heading);
 
   const safeBrandColor = brandColor ? sanitizeCssColor(brandColor) : null;
   const ctaBackground = safeBrandColor
@@ -68,15 +89,16 @@ export function buildEmail(options: {
 
   const trakalogLogoUrl = 'https://www.trakalog.com/brand/logo-full.png';
 
-  const footerLogo = workspaceLogoUrl
-    ? '<tr><td align="center" style="padding:0 0 8px 0;"><img src="' + workspaceLogoUrl + '" alt="" style="max-height:24px;display:block;margin:0 auto;" /></td></tr>'
+  const safeLogoUrl = workspaceLogoUrl ? sanitizeLogoUrl(workspaceLogoUrl) : '';
+  const footerLogo = safeLogoUrl
+    ? '<tr><td align="center" style="padding:0 0 8px 0;"><img src="' + htmlEscape(safeLogoUrl) + '" alt="" style="max-height:24px;display:block;margin:0 auto;" /></td></tr>'
     : '';
 
   const footerLine = footerText || 'Sent via Trakalog';
 
   return '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">'
     + '<html xmlns="http://www.w3.org/1999/xhtml"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" />'
-    + '<title>' + heading + '</title>'
+    + '<title>' + safeHeading + '</title>'
     + '<link href="https://fonts.googleapis.com/css2?family=Sora:wght@700&display=swap" rel="stylesheet" />'
     + '<!--[if mso]><style>table{border-collapse:collapse;}td{font-family:Arial,sans-serif;}</style><![endif]-->'
     + '</head>'
@@ -102,7 +124,7 @@ export function buildEmail(options: {
     + '</td></tr>'
     // Content
     + '<tr><td style="padding:28px 32px 0 32px;">'
-    + '<h1 style="margin:0 0 20px 0;font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#ffffff;">' + heading + '</h1>'
+    + '<h1 style="margin:0 0 20px 0;font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#ffffff;">' + safeHeading + '</h1>'
     + '<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.7;color:#a1a1aa;">' + body + '</div>'
     + ctaHtml
     + '</td></tr>'
