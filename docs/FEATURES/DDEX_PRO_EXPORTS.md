@@ -1,147 +1,163 @@
 # TRAKALOG — DDEX & PRO Exports (Feature Spec)
 
-> **Document créé le :** 17 mai 2026
-> **Objectif :** Exporter les metadata Trakalog vers les formats industriels (PROs, neighbouring rights, mechanical, DDEX) pour permettre la déclaration et la collecte des royalties.
-> **Statut :** URGENT — gap critique vs Sound Credit (28 formats supportés)
-> **Priorité :** Avant le launch public (au moins Priority 1)
-> **Dépendance :** ISRC Generation (cf. ISRC_GENERATION.md)
+> **Created:** May 17, 2026
+> **Last Updated:** September 2, 2026 (translated to English)
+> **Goal:** Export Trakalog metadata to industry-standard formats (PROs, neighbouring rights,
+> mechanical, DDEX) so royalties can be declared and collected.
+> **Status:** 📋 **Specification — not implemented.** Verified September 2, 2026: no
+> `export_history` or `iswc_counters` table, no `export-pro-format` Edge Function, and none of
+> the proposed `tracks` columns beyond `iswc` exist.
+> **Priority:** Before public launch — at minimum Priority 1.
+> **Depends on:** [ISRC_GENERATION.md](ISRC_GENERATION.md)
 
 ---
 
 ## Vision
 
-Sans capacité d'export industriel, Trakalog reste un outil de stockage et pitching. Pour devenir **le système nerveux du catalogue**, il faut que les données Trakalog alimentent directement les sociétés qui collectent l'argent :
+Without industry export, Trakalog stays a storage and pitching tool. To become **the nervous
+system of the catalog**, Trakalog's data has to feed the organisations that actually collect
+the money:
 
-- **PROs** (BMI, ASCAP, SOCAN, SACEM…) pour les droits de performance → **les songwriters et compositeurs**
-- **Neighbouring Rights** (SoundExchange, PPL, ADAMI…) pour les performers et master owners
-- **Mechanical** (The MLC, MRP…) pour les droits mécaniques (streaming, downloads)
-- **DDEX** pour les échanges techniques avec distributors/DSPs
+- **PROs** (BMI, ASCAP, SOCAN, SACEM…) for performance rights → **songwriters and composers**
+- **Neighbouring Rights** (SoundExchange, PPL, ADAMI…) for performers and master owners
+- **Mechanical** (The MLC, MRP…) for mechanical rights (streaming, downloads)
+- **DDEX** for technical exchange with distributors and DSPs
 
-Sound Credit a 28 formats. Trakalog doit au minimum couvrir les **5 formats prioritaires** pour ne pas perdre les labels et producteurs sérieux.
+Sound Credit supports 28 formats. Trakalog must cover at least the **5 priority formats** to
+avoid losing serious labels and producers.
 
 ---
 
-## Trois familles de droits (rappel)
+## The three rights families
 
-| Famille | Couvre | Identifiant | Sociétés clés |
-|---------|--------|-------------|---------------|
-| **Performing Rights** | Songwriters & compositeurs (la chanson) | ISWC | BMI, ASCAP, SOCAN, SACEM, PRS |
-| **Neighbouring Rights** | Performers & master owners (l'enregistrement) | ISRC | SoundExchange, PPL, ADAMI, SCPP |
+| Family | Covers | Identifier | Key societies |
+|---|---|---|---|
+| **Performing Rights** | Songwriters & composers (the song) | ISWC | BMI, ASCAP, SOCAN, SACEM, PRS |
+| **Neighbouring Rights** | Performers & master owners (the recording) | ISRC | SoundExchange, PPL, ADAMI, SCPP |
 | **Mechanical Rights** | Reproduction (streaming + downloads) | ISWC + ISRC | The MLC (US), MRP, MCPS |
 
-**Conséquence pour Trakalog :** chaque track doit avoir ISRC (recording) ET ISWC (composition) pour être complètement déclarable.
+**Consequence for Trakalog:** every track needs both an ISRC (recording) and an ISWC
+(composition) to be fully declarable.
 
 ---
 
-## Formats à supporter — Priorisation
+## Formats — prioritisation
 
-### Priority 1 — Launch (MUST HAVE)
+### Priority 1 — Launch (must have)
 
-| Format | Type | Couverture | Format de fichier |
-|--------|------|-----------|-------------------|
-| **BMI Works Registration** | Performing | USA | CSV ou XML |
+| Format | Type | Coverage | File format |
+|---|---|---|---|
+| **BMI Works Registration** | Performing | USA | CSV or XML |
 | **ASCAP Works Registration (ACE)** | Performing | USA | CSV |
 | **SOCAN Works Registration** | Performing | Canada | CSV |
 | **SoundExchange ISRC Repertoire** | Neighbouring | USA | CSV |
 | **The MLC Bulk Upload** | Mechanical | USA | CSV |
 
-Ces 5 formats couvrent **80% des besoins des users US/Canadiens** (la majorité du marché cible).
+These five cover **80% of US/Canadian users' needs** — the bulk of the target market.
 
-### Priority 2 — Post-launch (3 mois après)
+### Priority 2 — Post-launch (3 months later)
 
-| Format | Type | Couverture |
-|--------|------|-----------|
+| Format | Type | Coverage |
+|---|---|---|
 | **DDEX RIN** | Session data | International (DDEX standard) |
 | **PPL Repertoire** | Neighbouring | UK |
 | **SACEM Declaration** | Performing | France |
 | **SESAC Works** | Performing | USA |
 | **Generic Split Sheet PDF** | Legal | International |
 
-### Priority 3 — Enterprise (6 mois+, plan Business)
+### Priority 3 — Enterprise (6 months+, Business plan)
 
-| Format | Type | Couverture |
-|--------|------|-----------|
-| **DDEX ERN** | Distribution | International (Spotify/Apple livraisons) |
-| **GEMA** | Performing | Allemagne |
-| **JASRAC** | Performing | Japon |
-| **SUISA** | Performing | Suisse |
+| Format | Type | Coverage |
+|---|---|---|
+| **DDEX ERN** | Distribution | International (Spotify/Apple deliveries) |
+| **GEMA** | Performing | Germany |
+| **JASRAC** | Performing | Japan |
+| **SUISA** | Performing | Switzerland |
 | **Warner Music Label Copy** | Label | Custom |
 | **The Orchard Metadata** | Distribution | Custom |
 | **AllMusic Metadata** | Discovery | Custom |
 
 ---
 
-## Données nécessaires (et état actuel Trakalog)
+## Required data, and Trakalog's current state
 
-### Identifiants
+### Identifiers
 
-| Champ | Description | Statut Trakalog |
-|-------|-------------|----------------|
-| **ISRC** | Recording ID | ⏳ Spec rédigée (ISRC_GENERATION.md) |
-| **ISWC** | Composition ID | ❌ À implémenter |
-| **IPI/CAE** | Composer/Publisher ID | ✅ `splits.ipi` + `contacts.ipi` |
-| **IPN** | Performer ID | ❌ À ajouter (rare, optionnel) |
-| **ISNI** | Creator ID | ❌ À ajouter (futur, cf. Sound Credit) |
+| Field | Description | Trakalog status |
+|---|---|---|
+| **ISRC** | Recording ID | ⚠️ `tracks.isrc` exists but is **manual entry only** — generation is specified, not built ([ISRC_GENERATION.md](ISRC_GENERATION.md)) |
+| **ISWC** | Composition ID | ✅ `tracks.iswc` column **already exists** in the baseline — manual entry, no generation |
+| **IPI/CAE** | Composer/publisher ID | ✅ in the `splits` jsonb entries, and `contacts.ipi` |
+| **IPN** | Performer ID | ❌ to add (rare, optional) |
+| **ISNI** | Creator ID | ❌ to add (future) |
 
-### Métadonnées track (déjà en DB Trakalog)
+### Track metadata (already in the database)
 
-| Champ | Source Trakalog |
-|-------|-----------------|
+| Field | Trakalog source |
+|---|---|
 | Title | `tracks.title` |
 | Artist | `tracks.artist` |
 | Featured artists | `tracks.featuring` |
 | Duration | `tracks.duration_sec` |
-| Genre | `tracks.genre` |
+| Genre | `tracks.genre` (**`text[]`** — flatten before writing to a single CSV cell) |
 | Language | `tracks.language` |
-| Release date | `tracks.release_date` |
+| Release date | **`tracks.released_at`** (not `release_date`) |
 | Album | `tracks.album` |
 | Label | `tracks.labels[]` |
 | Publisher | `tracks.publishers[]` |
 | Explicit | `tracks.explicit` |
 | Copyright | `tracks.copyright` |
 
-### Crédits & splits (déjà en DB Trakalog)
+### Credits and splits (already in the database)
 
-| Champ | Source |
-|-------|--------|
-| Songwriter | `splits` avec role `Songwriter` |
-| Producer | `splits` avec role `Producer` |
-| Performer | `splits` avec role `Artist` |
-| Musician | `splits` avec role `Musician` |
-| PRO membership | `splits.pros[]` |
-| IPI | `splits.ipi` |
-| Publisher | `splits.publisher` |
-| Share % | `splits.share` |
-| Stage name | `splits.stage_name` |
+`tracks.splits` is a **jsonb array**, not a table. Each entry carries a `roles[]` array — with a
+retro-compatible `role` comma-string — and a `pros[]` array, likewise retro-compatible.
 
-### Ce qui manque
-- **ISWC** generation/storage
-- **Master ownership** (qui possède le master — souvent != songwriter)
-- **Release territory** (pour les exports geo-spécifiques)
-- **Recording date & studio** (pour DDEX RIN)
-- **Recording engineer** (pour DDEX RIN — déjà partial via splits Mix/Mastering Engineer)
+| Field | Source |
+|---|---|
+| Songwriter | a `splits` entry with role `Songwriter` |
+| Producer | a `splits` entry with role `Producer` |
+| Performer | a `splits` entry with role `Artist` |
+| Musician | a `splits` entry with role `Musician` |
+| PRO membership | `splits[].pros[]` |
+| IPI | `splits[].ipi` |
+| Publisher | `splits[].publisher` |
+| Share % | `splits[].share` |
+| Stage name | `splits[].stage_name` |
+
+> **Export builders must handle both shapes** — the `roles[]` array *and* the legacy `role`
+> comma-string, and within `roles`, both plain strings and `{ role: "..." }` objects. A builder
+> that reads only one shape will silently drop credits on older tracks.
+
+### What is missing
+
+- **Master ownership** — who owns the master, often not the songwriter
+- **Release territory** — for geo-specific exports
+- **Recording date & studio** — for DDEX RIN
+- **Recording engineer** — for DDEX RIN; partially available through Mix/Mastering Engineer
+  splits
 
 ---
 
-## DB Schema — Ajouts
+## Database additions
 
-### Colonnes tracks
+### Columns on `tracks`
 
 ```sql
-ALTER TABLE tracks ADD COLUMN IF NOT EXISTS iswc text;
+-- tracks.iswc ALREADY EXISTS in the baseline — do not re-add it.
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS recording_date date;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS recording_location text;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS master_owner text;
-ALTER TABLE tracks ADD COLUMN IF NOT EXISTS p_line text;  -- ℗ 2026 Yannick Rastogi Productions
-ALTER TABLE tracks ADD COLUMN IF NOT EXISTS c_line text;  -- © 2026 Yannick Rastogi Productions
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS p_line text;  -- ℗ 2026 …
+ALTER TABLE tracks ADD COLUMN IF NOT EXISTS c_line text;  -- © 2026 …
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS release_territory text DEFAULT 'WW';
 
 CREATE INDEX IF NOT EXISTS idx_tracks_iswc ON tracks(iswc) WHERE iswc IS NOT NULL;
 ```
 
-### Nouvelle table : `export_history`
+### New table: `export_history`
 
-Tracker tous les exports pour audit + éviter les doublons de soumissions :
+Tracks every export, for audit and to avoid duplicate submissions:
 
 ```sql
 CREATE TABLE IF NOT EXISTS export_history (
@@ -150,7 +166,7 @@ CREATE TABLE IF NOT EXISTS export_history (
   user_id uuid REFERENCES auth.users(id),
   export_type text NOT NULL,  -- 'bmi_works', 'ascap_ace', 'socan', 'soundexchange', 'mlc', 'ddex_rin'
   track_ids uuid[] NOT NULL,
-  file_path text,             -- path dans Storage si le fichier est conservé
+  file_path text,             -- storage path, if the file is retained
   file_format text,           -- 'csv', 'xml', 'xlsx'
   track_count integer NOT NULL,
   status text DEFAULT 'completed',  -- completed, failed
@@ -160,129 +176,120 @@ CREATE TABLE IF NOT EXISTS export_history (
 CREATE INDEX idx_export_history_workspace ON export_history(workspace_id, created_at DESC);
 ```
 
-### Nouvelle table : `iswc_counters` (similaire à ISRC)
+### New table: `iswc_counters`
 
-Si Trakalog génère aussi les ISWC :
+Only if Trakalog ever generates ISWCs:
 
 ```sql
--- Format ISWC : T-XXX.XXX.XXX-C
--- T = constant
+-- ISWC format: T-XXX.XXX.XXX-C
+-- T   = constant
 -- XXX.XXX.XXX = 9-digit sequence
--- C = check digit (modulo 10)
+-- C   = check digit (modulo 10)
 
 CREATE TABLE IF NOT EXISTS iswc_counters (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  agency_code text NOT NULL,  -- attribué par CISAC
+  agency_code text NOT NULL,  -- assigned by CISAC
   last_sequence bigint NOT NULL DEFAULT 0,
   updated_at timestamptz DEFAULT now()
 );
 ```
 
-**Note ISWC :** contrairement à l'ISRC, l'ISWC est attribué par les PROs (BMI, ASCAP, SOCAN) lors de la registration de l'œuvre, pas par le titulaire. **Trakalog ne peut pas générer d'ISWC en autonomie.** L'user devra l'entrer manuellement après registration, OU Trakalog facilite la registration et récupère l'ISWC.
+**ISWC note:** unlike the ISRC, an ISWC is assigned by the PRO (BMI, ASCAP, SOCAN) when the work
+is registered — not by the rights holder. **Trakalog cannot generate ISWCs on its own.** The
+user enters it after registration, or Trakalog facilitates registration and retrieves the ISWC.
 
-**Décision recommandée :** Phase 1 = stockage manuel de l'ISWC. Phase 2 (futur) = intégration API ASCAP/BMI pour récupération automatique.
+**Recommended decision:** Phase 1 = manual ISWC storage, using the `tracks.iswc` column that
+already exists. Phase 2 (future) = ASCAP/BMI API integration for automatic retrieval.
 
 ---
 
-## Format des exports — Spécifications détaillées (Priority 1)
+## Export format specifications (Priority 1)
 
 ### 1. BMI Works Registration
 
-**Format :** CSV
-**Encodage :** UTF-8
-**Délimiteur :** Virgule
-**Quoting :** Double-quotes pour les champs avec virgule
-
-**Colonnes (BMI standard) :**
+**Format:** CSV · **Encoding:** UTF-8 · **Delimiter:** comma · **Quoting:** double quotes for
+fields containing commas
 
 ```csv
 Work Title,Alternate Title,ISWC,Duration,Performer,Writer Name,Writer IPI,Writer Role,Writer Share %,Publisher Name,Publisher IPI,Publisher Share %,Recording Artist,ISRC,Release Date
 ```
 
-**Exemple :**
+Example:
+
 ```csv
-"Naughty Gyal","","",212,"Arjun K.","Yannick Rastogi","00123456789","Composer/Author",50.00,"YR Publishing","00987654321",50.00,"Arjun K. x Ayu Shy","CATRK2600042","2026-06-01"
+"Naughty Gyal","","",212,"Arjun K.","Writer Name","00123456789","Composer/Author",50.00,"Publishing Co","00987654321",50.00,"Arjun K. x Ayu Shy","CATRK2600042","2026-06-01"
 ```
 
-**Règles :**
-- Une ligne par writer (donc plusieurs lignes par track si plusieurs writers)
-- Le total des Writer Share % doit = 100 par track
-- ISWC optionnel à la première registration
-- IPI obligatoire pour chaque writer
-- Writer Role : "Composer/Author" pour songwriter, "Composer" pour compositeur instrumental
+**Rules:**
+- One row per writer — several rows per track when there are several writers
+- Writer Share % must total 100 per track
+- ISWC optional on first registration
+- IPI mandatory for each writer
+- Writer Role: "Composer/Author" for a songwriter, "Composer" for an instrumental composer
 
 ### 2. ASCAP Works Registration (ACE)
 
-**Format :** CSV
-**Encodage :** UTF-8
-
-**Colonnes (ASCAP ACE) :**
+**Format:** CSV · **Encoding:** UTF-8
 
 ```csv
 Title,Duration,Writers,Writer IPIs,Writer Shares,Publishers,Publisher IPIs,Publisher Shares,ISWC,ISRC,Performer,Album,Release Date
 ```
 
-**Différence avec BMI :** un seul ligne par track, writers séparés par pipe `|`.
+**Difference from BMI:** one row per track, with writers separated by a pipe `|`.
 
-**Exemple :**
 ```csv
-"Naughty Gyal",212,"Yannick Rastogi|Arjun K.","00123456789|00111222333",50.00|50.00,"YR Publishing","00987654321",100.00,,"CATRK2600042","Arjun K.","Album Name","2026-06-01"
+"Naughty Gyal",212,"Writer A|Writer B","00123456789|00111222333",50.00|50.00,"Publishing Co","00987654321",100.00,,"CATRK2600042","Arjun K.","Album Name","2026-06-01"
 ```
 
 ### 3. SOCAN Works Registration
 
-**Format :** CSV
-**Encodage :** UTF-8
-
-**Colonnes (SOCAN) :**
+**Format:** CSV · **Encoding:** UTF-8
 
 ```csv
 Title,Duration,Writer Name,Writer IPI,Writer Affiliation,Writer Share,Publisher Name,Publisher IPI,Publisher Affiliation,Publisher Share,ISWC,Performer
 ```
 
-**Règles :**
-- Affiliation = SOCAN, BMI, ASCAP, etc. (selon le membership de chaque writer)
-- Multi-writer = multiple lignes
-- Pour les Canadians : Affiliation = "SOCAN"
+**Rules:**
+- Affiliation = SOCAN, BMI, ASCAP, etc., per each writer's membership — read from
+  `splits[].pros[]`
+- Multi-writer = multiple rows
+- For Canadians: Affiliation = "SOCAN"
 
 ### 4. SoundExchange ISRC Repertoire
 
-**Format :** CSV
-**Encodage :** UTF-8
+**Format:** CSV · **Encoding:** UTF-8
 
-**Couvre :** les performers et master owners pour les revenus de digital performance (Pandora, SiriusXM, webcasts).
-
-**Colonnes (SoundExchange) :**
+Covers performers and master owners for digital performance revenue (Pandora, SiriusXM,
+webcasts).
 
 ```csv
 ISRC,Title,Featured Artist,Label,P-Line,Release Year,Master Owner,Master Owner IPN,Performer Name,Performer Role,Performer Share %
 ```
 
-**Règles :**
-- ISRC **obligatoire** (refusé sans ISRC)
-- Performer Role : "Featured Artist", "Non-Featured Artist" (background vocals, session musicians)
-- Featured artists : 45% du master par défaut
-- Non-featured : 5%
-- Master Owner : 50% (souvent le label ou l'artiste principal)
+**Rules:**
+- ISRC **mandatory** — submissions without one are rejected
+- Performer Role: "Featured Artist" or "Non-Featured Artist" (background vocals, session
+  musicians)
+- Featured artists: 45% of the master by default
+- Non-featured: 5%
+- Master Owner: 50%, usually the label or the lead artist
 
 ### 5. The MLC Bulk Upload
 
-**Format :** CSV (DDEX-aligned)
-**Encodage :** UTF-8
+**Format:** CSV (DDEX-aligned) · **Encoding:** UTF-8
 
-**Couvre :** mechanical royalties US (streaming + downloads).
-
-**Colonnes (The MLC) :**
+Covers US mechanical royalties (streaming + downloads).
 
 ```csv
 Musical Work Title,Alternative Title,ISWC,Songwriter Name,Songwriter IPI,Songwriter Role,Songwriter Share,Publisher Name,Publisher IPI,Publisher Share,Sound Recording Title,ISRC,Recording Artist,Duration,Album,Release Date,P-Line,Label
 ```
 
-**Note :** The MLC accepte aussi le format DDEX Musical Works Portfolio Notification (MWPN) - XML standard plus complet.
+**Note:** The MLC also accepts the DDEX Musical Works Portfolio Notification (MWPN) — a fuller
+XML standard.
 
 ---
 
-## Edge Function : `export-pro-format`
+## Edge Function: `export-pro-format`
 
 ```typescript
 // supabase/functions/export-pro-format/index.ts
@@ -298,36 +305,36 @@ interface ExportRequest {
 }
 
 serve(async (req) => {
-  // ... auth + rate limiting + UUID validation
-  
+  // ... CORS, origin check, auth, rate limiting, UUID validation
+
   const { workspace_id, track_ids, format, user_id } = await req.json();
-  
-  // 1. Fetch tracks + splits via RPC SECURITY DEFINER
+
+  // 1. Fetch tracks + splits through a SECURITY DEFINER RPC
   const tracks = await fetchTracksWithSplits(workspace_id, track_ids, user_id);
-  
-  // 2. Validate pre-export (ISRC, IPI, etc.)
+
+  // 2. Validate before export (ISRC, IPI, share totals…)
   const validation = validateForFormat(tracks, format);
   if (validation.errors.length > 0) {
-    return new Response(JSON.stringify({ 
-      success: false, 
-      errors: validation.errors 
+    return new Response(JSON.stringify({
+      success: false,
+      errors: validation.errors
     }), { status: 400 });
   }
-  
-  // 3. Build CSV/XML
+
+  // 3. Build the CSV/XML
   let content: string;
   switch (format) {
-    case 'bmi': content = buildBmiCsv(tracks); break;
-    case 'ascap': content = buildAscapCsv(tracks); break;
-    case 'socan': content = buildSocanCsv(tracks); break;
+    case 'bmi':           content = buildBmiCsv(tracks); break;
+    case 'ascap':         content = buildAscapCsv(tracks); break;
+    case 'socan':         content = buildSocanCsv(tracks); break;
     case 'soundexchange': content = buildSoundExchangeCsv(tracks); break;
-    case 'mlc': content = buildMlcCsv(tracks); break;
+    case 'mlc':           content = buildMlcCsv(tracks); break;
   }
-  
-  // 4. Log dans export_history
+
+  // 4. Record in export_history
   await logExport(workspace_id, user_id, format, track_ids, content);
-  
-  // 5. Return CSV as download
+
+  // 5. Return the CSV as a download
   return new Response(content, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
@@ -337,36 +344,39 @@ serve(async (req) => {
 });
 ```
 
+> **When implementing:** follow the existing Edge Function conventions — `handleCors`,
+> `rejectInvalidOrigin`, and a `check_rate_limit` call before doing any work. Export builds a
+> full catalog dump, so it deserves a tighter limit than the 60/min used for signing.
+
 ---
 
-## Validation pré-export
+## Pre-export validation
 
-Avant chaque export, vérifier :
-
-| Champ | BMI | ASCAP | SOCAN | SoundExchange | MLC |
-|-------|-----|-------|-------|---------------|-----|
+| Field | BMI | ASCAP | SOCAN | SoundExchange | MLC |
+|---|---|---|---|---|---|
 | Title | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Duration | ✅ | ✅ | ✅ | ✅ | ✅ |
 | ISRC | optional | optional | optional | **REQUIRED** | ✅ |
 | ISWC | optional | optional | optional | — | optional |
 | Writer + IPI | **REQUIRED** | **REQUIRED** | **REQUIRED** | — | **REQUIRED** |
-| Writer Shares total = 100% | ✅ | ✅ | ✅ | — | ✅ |
+| Writer shares total 100% | ✅ | ✅ | ✅ | — | ✅ |
 | Publisher info | optional | optional | optional | — | recommended |
 | Performer | recommended | recommended | — | **REQUIRED** | recommended |
 | Release date | recommended | recommended | — | **REQUIRED** | recommended |
 | P-Line | — | — | — | **REQUIRED** | **REQUIRED** |
 
-**Comportement UI :**
-- Tracks invalides affichés en rouge dans la liste avec icône ⚠️
-- Tooltip explicite : "Missing IPI for Yannick Rastogi"
-- Bouton "Fix missing fields" → ouvre une modal de complétion rapide
-- Bouton Export grisé tant qu'il reste des tracks invalides (ou autorise l'export partiel des tracks valides)
+**UI behaviour:**
+- Invalid tracks shown in red with a ⚠️ icon
+- Explicit tooltip: "Missing IPI for [name]"
+- "Fix missing fields" button → opens a quick-completion modal
+- The Export button stays disabled while invalid tracks remain — or offers partial export of
+  the valid ones
 
 ---
 
 ## UX
 
-### Nouvelle page : Workspace Settings → Exports
+### New page: Workspace Settings → Exports
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
@@ -397,7 +407,7 @@ Avant chaque export, vérifier :
 └────────────────────────────────────────────────────────────────┘
 ```
 
-### Modal Export (ex: BMI)
+### Export modal (e.g. BMI)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -421,91 +431,96 @@ Avant chaque export, vérifier :
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Bouton "Export" sur TrackDetail
+### "Export" button on TrackDetail
 
-Sur un track individuel, dropdown "Export → [Format]" pour exporter ce track seul.
+On an individual track, an "Export → [Format]" dropdown to export that track alone.
 
 ---
 
-## Permissions par plan
+## Permissions by plan
 
 | Feature | Free | Starter | Pro | Business |
-|---------|:----:|:-------:|:---:|:--------:|
-| ISRC Generation (1 clic) | ❌ | ✅ | ✅ | ✅ |
-| ISWC stockage | ❌ | ✅ | ✅ | ✅ |
-| Export BMI/ASCAP/SOCAN | ❌ | 5/mois | ✅ illimité | ✅ illimité |
-| Export SoundExchange | ❌ | 5/mois | ✅ illimité | ✅ illimité |
-| Export The MLC | ❌ | ❌ | ✅ | ✅ |
-| Export DDEX RIN/ERN | ❌ | ❌ | ❌ | ✅ |
-| Export PPL/SACEM/SESAC | ❌ | ❌ | ❌ | ✅ |
-| Custom Registrant Code | ❌ | ❌ | ✅ | ✅ |
-| Export History | — | 30 days | 1 year | Unlimited |
+|---|:---:|:---:|:---:|:---:|
+| ISRC generation (one click) | ❌ | ✅ | ✅ | ✅ |
+| ISWC storage | ❌ | ✅ | ✅ | ✅ |
+| BMI/ASCAP/SOCAN export | ❌ | 5/month | ✅ unlimited | ✅ unlimited |
+| SoundExchange export | ❌ | 5/month | ✅ unlimited | ✅ unlimited |
+| The MLC export | ❌ | ❌ | ✅ | ✅ |
+| DDEX RIN/ERN export | ❌ | ❌ | ❌ | ✅ |
+| PPL/SACEM/SESAC export | ❌ | ❌ | ❌ | ✅ |
+| Custom registrant code | ❌ | ❌ | ✅ | ✅ |
+| Export history | — | 30 days | 1 year | Unlimited |
+
+> Enforcing these needs new columns in `plan_limits` — it currently has no export-related
+> limits. See [TRAKALOG_BILLING.md](TRAKALOG_BILLING.md) §8.
 
 ---
 
-## Phases d'implémentation
+## Implementation phases
 
 ### Phase 1 — Foundations (~2 sessions)
-1. Colonnes DB : iswc, recording_date, master_owner, p_line, c_line, release_territory
-2. Table `export_history`
-3. UI dans Workspace Settings → Exports (vide pour l'instant, juste l'écran)
-4. Validation pre-export helper (TypeScript shared module)
-5. Modal "Fix missing fields" générique
+1. DB columns: `recording_date`, `master_owner`, `p_line`, `c_line`, `release_territory`
+   (`iswc` already exists)
+2. The `export_history` table
+3. Workspace Settings → Exports UI (empty shell first)
+4. Pre-export validation helper (shared TypeScript module)
+5. Generic "Fix missing fields" modal
 
-### Phase 2 — Performing Rights (~2 sessions)
-6. Edge Function `export-pro-format` (skeleton)
-7. CSV builder BMI
-8. CSV builder ASCAP
-9. CSV builder SOCAN
-10. Tests sur catalogue réel
+### Phase 2 — Performing rights (~2 sessions)
+6. `export-pro-format` Edge Function skeleton
+7. BMI CSV builder
+8. ASCAP CSV builder
+9. SOCAN CSV builder
+10. Test against a real catalog
 
-### Phase 3 — Neighbouring + Mechanical (~1-2 sessions)
-11. CSV builder SoundExchange
-12. CSV builder The MLC
-13. Validation ISRC required pour SoundExchange/MLC
+### Phase 3 — Neighbouring + mechanical (~1-2 sessions)
+11. SoundExchange CSV builder
+12. The MLC CSV builder
+13. ISRC-required validation for SoundExchange and MLC
 
-### Phase 4 — Polish + History (~1 session)
-14. Export History UI (liste + redownload)
-15. Audit logs sur chaque export
-16. Bouton Export rapide sur TrackDetail (track individuel)
-17. Documentation user
+### Phase 4 — Polish + history (~1 session)
+14. Export History UI (list + re-download)
+15. Audit logging on every export
+16. Quick export button on TrackDetail
+17. User documentation
 
-### Phase 5 — Post-launch (3-6 mois)
-18. DDEX RIN (XML, plus complexe — utiliser librairie xmlbuilder2 ou fast-xml-parser)
+### Phase 5 — Post-launch (3-6 months)
+18. DDEX RIN (XML, more complex — use xmlbuilder2 or fast-xml-parser)
 19. PPL, SACEM, SESAC
-20. DDEX ERN (Business plan uniquement)
+20. DDEX ERN (Business plan only)
 
-**Total Priority 1 : 6-8 sessions Claude Code**
-
----
-
-## Coûts
-
-| Poste | Coût |
-|-------|------|
-| Aucune API externe (génération locale) | Gratuit |
-| Storage des exports historiques (CSV ~10KB chacun) | Négligeable |
-| Compute Edge Function | Inclus dans plan Supabase |
-| **Total** | **0 $** |
-
-**Avantage compétitif :** Sound Credit fait payer ces exports dans des plans premium. Trakalog peut les offrir dès le Starter avec quota (5/mois) puis illimité en Pro — différenciateur fort.
+**Priority 1 total: 6-8 Claude Code sessions.**
 
 ---
 
-## Risques et mitigations
+## Costs
 
-| Risque | Mitigation |
-|--------|-----------|
-| Format CSV refusé par le PRO (mauvais headers) | Tester chaque format avec un compte BMI/ASCAP/SOCAN réel avant launch |
-| User soumet le même track 2 fois | Export history affiche les doublons + warning "Already exported on [date]" |
-| Splits invalides (total ≠ 100%) | Validation pré-export bloque, redirige vers la correction |
-| IPI manquant | Modal Fix Missing Fields propose l'auto-completion via Contacts |
-| Évolution des formats par les PROs | Versioning des templates + monitoring annuel |
-| Différences UK/Europe non couvertes Priority 1 | Documentation claire : "Priority 1 covers US + Canada. International coming soon." |
+| Item | Cost |
+|---|---|
+| No external API (generated locally) | Free |
+| Storing historical exports (~10 KB CSV each) | Negligible |
+| Edge Function compute | Included in the Supabase plan |
+| **Total** | **$0** |
+
+**Competitive advantage:** Sound Credit charges for these exports in premium plans. Trakalog can
+offer them from Starter with a quota (5/month), then unlimited on Pro — a strong differentiator.
 
 ---
 
-## Référence des formats
+## Risks and mitigations
+
+| Risk | Mitigation |
+|---|---|
+| CSV rejected by the PRO (wrong headers) | Test each format against a real BMI/ASCAP/SOCAN account before launch |
+| User submits the same track twice | Export history flags duplicates: "Already exported on [date]" |
+| Invalid splits (total ≠ 100%) | Pre-export validation blocks and routes to correction |
+| Missing IPI | The Fix Missing Fields modal offers auto-completion from Contacts |
+| PROs change their formats | Version the templates, review annually |
+| UK/Europe not covered in Priority 1 | Clear documentation: "Priority 1 covers US + Canada. International coming soon." |
+
+---
+
+## Format references
 
 - **BMI Works Registration Guide** — bmi.com/creators/registration
 - **ASCAP ACE Submission** — ascap.com/help/ace-title-search
@@ -516,26 +531,35 @@ Sur un track individuel, dropdown "Export → [Format]" pour exporter ce track s
 
 ---
 
-## Dépendances
+## Dependencies
 
-- **ISRC Generation** ⏳ (cf. ISRC_GENERATION.md — prérequis pour SoundExchange + MLC)
-- **Splits system multi-rôle, multi-PRO** ✅ (déjà implémenté)
-- **Contacts.ipi** ✅ (déjà implémenté)
-- **Edge Function infrastructure** ✅ (déjà en place)
-- **Plan-based enforcement** ⏳ (cf. TRAKALOG_BILLING.md)
-
----
-
-## Notes stratégiques
-
-1. **Cibler les indé d'abord :** la majorité des labels établis ont déjà leurs outils (Songspace, RoyaltyShare). Le marché de Trakalog = les producteurs/labels en croissance qui ne sont pas équipés. Pour eux, **avoir BMI/ASCAP/SOCAN + SoundExchange + MLC = couvrir 95% de leurs besoins** avec un seul outil.
-
-2. **Marketing :** "Send your catalog to BMI, ASCAP, SOCAN, SoundExchange, and The MLC — in one click. From the same place you manage your tracks." Message direct, killer feature pour le pricing.
-
-3. **Trust building :** afficher les logos BMI/ASCAP/SOCAN/SoundExchange/MLC sur la landing page (comme Sound Credit avec Warner/SoundExchange/MLC). Même sans partenariat officiel, ce sont des standards publics.
-
-4. **Future moat :** une fois les exports Priority 1 en place, le step suivant = **intégration API directe** (pas juste CSV export). ASCAP a une API ACE, BMI a un portal. Si Trakalog peut soumettre directement et récupérer les confirmations, c'est un step au-dessus de Sound Credit.
+- **ISRC Generation** ⏳ prerequisite for SoundExchange + MLC — see
+  [ISRC_GENERATION.md](ISRC_GENERATION.md)
+- **Multi-role, multi-PRO splits system** ✅ implemented (jsonb on `tracks.splits`)
+- **`contacts.ipi`** ✅ implemented
+- **Edge Function infrastructure** ✅ in place
+- **Plan-based enforcement** ⚠️ partially in place — tracks, pitches, seats and workspaces are
+  enforced, but `plan_limits` has no export-related columns yet
 
 ---
 
-*Ce document est vivant. Il sera mis à jour au fur et à mesure du développement.*
+## Strategic notes
+
+1. **Target independents first.** Most established labels already have their tooling
+   (Songspace, RoyaltyShare). Trakalog's market is growing producers and labels who are not
+   equipped. For them, **BMI/ASCAP/SOCAN + SoundExchange + MLC covers 95% of their needs** in a
+   single tool.
+
+2. **Marketing:** "Send your catalog to BMI, ASCAP, SOCAN, SoundExchange, and The MLC — in one
+   click. From the same place you manage your tracks." Direct, and a killer feature for pricing.
+
+3. **Trust building:** show the BMI/ASCAP/SOCAN/SoundExchange/MLC logos on the landing page, as
+   Sound Credit does. Even without an official partnership, these are public standards.
+
+4. **Future moat:** once Priority 1 exports exist, the next step is **direct API integration**
+   rather than CSV export. ASCAP has an ACE API; BMI has a portal. Submitting directly and
+   retrieving confirmations would be a step beyond Sound Credit.
+
+---
+
+*This document is living, and will be updated as development proceeds.*

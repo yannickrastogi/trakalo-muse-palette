@@ -1,363 +1,438 @@
 # TRAKALOG — Admin Dashboard (Feature Spec)
 
-> **Document créé le :** 25 avril 2026
-> **Objectif :** Dashboard administrateur complet pour gérer, monitorer et comprendre l'utilisation de Trakalog à l'échelle de dizaines de milliers d'utilisateurs.
-> **Statut :** Spec prête — À implémenter après Billing/Stripe
-> **Priorité :** Post-beta launch
+> **Created:** April 25, 2026
+> **Last Updated:** September 2, 2026 (translated to English; §0 added)
+> **Goal:** A complete administrator dashboard to manage, monitor and understand Trakalog usage
+> at a scale of tens of thousands of users.
+> **Status:** ⚠️ **Partially implemented** — see §0. The rest of this document remains the
+> specification for the work still outstanding.
+> **Priority:** Post-beta launch
+
+---
+
+## 0. What is actually built (verified September 2, 2026)
+
+A working admin console exists, but it is **architecturally different from the spec below**.
+Read this section before implementing anything from §2 onward.
+
+### It is a separate app, not an `/admin` route
+
+The spec describes a `/admin/*` route group inside the main app with an `AdminRoute` guard.
+The implementation is **hostname-based** — `src/lib/adminMode.ts`:
+
+```typescript
+const ADMIN_HOST = "admin.trakalog.com";
+export function isAdminMode(): boolean {
+  if (window.location.hostname === ADMIN_HOST) return true;
+  // dev override: ?admin=1 sets a localStorage flag, ?admin=0 clears it
+}
+```
+
+`App.tsx` then swaps the *entire* application:
+
+```typescript
+return <MotionConfig reducedMotion="user">{isAdminMode() ? <AdminApp /> : <MainApp />}</MotionConfig>;
+```
+
+`AdminApp` has its own two-route router — `/` → `AdminLogin`, `/dashboard` → `AdminDashboard` —
+and mounts none of the 14 user providers. This is stronger than the spec's lazy-loaded route
+group: the admin code and the user app never coexist in one bundle graph.
+
+### Admin identity is an email allowlist in a function body
+
+The spec proposes `profiles.is_platform_admin boolean`. Reality is a function with a hardcoded
+address:
+
+```sql
+CREATE FUNCTION public.is_platform_admin(_user_id uuid) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+AS $func$
+DECLARE _email text;
+BEGIN
+  IF _user_id IS NULL THEN RETURN false; END IF;
+  SELECT email INTO _email FROM auth.users WHERE id = _user_id;
+  RETURN _email IS NOT NULL AND lower(_email) IN ('yannick.rastogi@gmail.com');
+END;
+$func$;
+```
+
+> ⚠️ **This is worth changing.** Adding or removing an administrator currently requires a
+> database migration. Moving the allowlist to a table — or to the
+> `profiles.is_platform_admin` column this spec proposes — would make it an operational action
+> instead of a schema change. Flagged during the September 2026 data-architecture review.
+
+### Built: 4 tabs
+
+`src/pages/admin/AdminDashboard.tsx` renders a `Tabs` control over four components in
+`src/components/admin/`:
+
+| Tab | Component | Backing RPC |
+|---|---|---|
+| Overview | `OverviewTab.tsx` (+ `TrafficSection.tsx`) | `get_admin_overview`, `get_visit_stats` |
+| Waitlist | `WaitlistTab.tsx` | `list_waitlist_signups`, `get_waitlist_signups_` |
+| Contacts | `ContactsTab.tsx` | `list_all_contacts` |
+| Users | `UsersTab.tsx` | `list_all_users` |
+
+**The real RPC names are `get_admin_overview`, `list_all_users`, `list_all_contacts`,
+`list_waitlist_signups`, `get_visit_stats` and `delete_leak_trace`** — not the `admin_*` names
+proposed in §3. Traffic analytics read `site_visits`, populated by the public `log_site_visit`
+RPC.
+
+### Not built
+
+Everything else in this document: workspaces browser, tracks browser, engagement/analytics,
+billing/revenue, infrastructure health, audit-log viewer, admin notifications, impersonation,
+`admin_metrics_cache`, `admin_notifications`, and the `compute-admin-metrics` cron.
 
 ---
 
 ## Vision
 
-Le Admin Dashboard est le **centre de commande** de Trakalog pour le fondateur et l'équipe ops. Il doit répondre à 3 questions en moins de 5 secondes :
+The Admin Dashboard is Trakalog's **command centre** for the founder and the ops team. It has
+to answer three questions in under five seconds:
 
-1. **Comment va le business ?** (MRR, users, churn, growth)
-2. **Comment va le produit ?** (uploads, pitches, engagement, features utilisées)
-3. **Quelque chose est cassé ?** (erreurs, Edge Functions down, storage plein)
+1. **How is the business doing?** (MRR, users, churn, growth)
+2. **How is the product doing?** (uploads, pitches, engagement, features used)
+3. **Is anything broken?** (errors, Edge Functions down, storage full)
 
-Pensé pour scaler de 10 à 100 000 utilisateurs sans refactoring.
+Designed to scale from 10 to 100,000 users without refactoring.
 
 ---
 
-## 1. Accès & Sécurité
+## 1. Access & security
 
 ### Route
-- `/admin` — protégée, accessible uniquement aux admins Trakalog
-- Pas dans le sidebar utilisateur — accessible via URL directe ou menu profil (visible seulement si admin)
 
-### Authentification
-- Colonne `is_platform_admin boolean DEFAULT false` sur la table `profiles` ou `auth.users` metadata
-- Middleware côté frontend : si `!user.is_platform_admin` → redirect vers `/dashboard`
-- Double vérification côté RPC : toutes les RPCs admin vérifient `is_platform_admin` avant d'exécuter
+- `/admin` — protected, Trakalog admins only
+- Not in the user sidebar — reached by direct URL or the profile menu, visible only to admins
 
-### Impersonation (Se connecter en tant que)
-- Bouton "View as user" sur chaque fiche utilisateur
-- Crée une session read-only avec le contexte de l'utilisateur
-- Badge rouge "ADMIN VIEW — [User Name]" en haut de l'écran
-- Bouton "Exit Admin View" pour revenir
-- Aucune action destructive possible en mode impersonation
-- Log dans audit_logs : `admin.impersonate`
+> *As built:* a separate host, `admin.trakalog.com`, rather than a route. See §0.
+
+### Authentication
+
+- An `is_platform_admin boolean DEFAULT false` column on `profiles`, or in `auth.users`
+  metadata
+- Frontend middleware: if `!user.is_platform_admin` → redirect to `/dashboard`
+- Double-check server-side: every admin RPC verifies `is_platform_admin` before executing
+
+> *As built:* the check exists and is enforced RPC-side, but through a hardcoded email
+> allowlist rather than a column. See §0.
+
+### Impersonation ("view as user")
+
+- A "View as user" button on each user record
+- Creates a read-only session in the user's context
+- A red "ADMIN VIEW — [User Name]" badge at the top of the screen
+- An "Exit Admin View" button to return
+- No destructive action possible while impersonating
+- Logged to `audit_logs` as `admin.impersonate`
 
 ---
 
-## 2. Structure des pages
+## 2. Page structure
 
-### 2.1 — Overview (page d'accueil `/admin`)
+### 2.1 — Overview (`/admin` home)
 
-Le tableau de bord principal. Tout ce qui compte en un coup d'œil.
+The main dashboard. Everything that matters at a glance.
 
-#### KPIs en haut (cards)
+#### Top KPI cards
 
-| KPI | Calcul | Sous-texte |
+| KPI | Calculation | Sub-text |
 |---|---|---|
-| Total Users | COUNT(auth.users) | +X this week / +X this month |
-| Active Users (MAU) | Users avec au moins 1 action dans les 30 derniers jours | % du total |
-| Active Users (WAU) | Idem sur 7 jours | % du total |
-| Active Users (DAU) | Idem sur 24h | % du total |
-| Total Tracks | COUNT(tracks) | +X this week |
-| Total Storage Used | SUM(file sizes) across all buckets | X GB / limite plan |
-| MRR | SUM(plan prices actifs) | +X% vs mois précédent |
-| ARR | MRR × 12 | Projection annuelle |
-| Paying Users | COUNT(workspaces WHERE plan != 'free') | % conversion free→paid |
-| Churn Rate | Users qui ont downgrade/cancel ce mois / total paying début du mois | Tendance ↑↓ |
-| ARPU | MRR / Paying Users | Tendance ↑↓ |
-| LTV | ARPU / Churn Rate | Estimation |
+| Total Users | `COUNT(auth.users)` | +X this week / +X this month |
+| Active Users (MAU) | Users with ≥1 action in the last 30 days | % of total |
+| Active Users (WAU) | Same over 7 days | % of total |
+| Active Users (DAU) | Same over 24h | % of total |
+| Total Tracks | `COUNT(tracks)` | +X this week |
+| Total Storage Used | `SUM(file sizes)` across all buckets | X GB / plan limit |
+| MRR | `SUM(active plan prices)` | +X% vs previous month |
+| ARR | MRR × 12 | Annual projection |
+| Paying Users | `COUNT(subscriptions WHERE plan != 'free')` | free→paid conversion % |
+| Churn Rate | Users who downgraded/cancelled this month ÷ total paying at month start | Trend ↑↓ |
+| ARPU | MRR ÷ Paying Users | Trend ↑↓ |
+| LTV | ARPU ÷ Churn Rate | Estimate |
 
-#### Graphiques
+> **Note:** the plan lives on `subscriptions` (user-based), not on `workspaces`. The legacy
+> `workspaces.plan` column is not the source of truth — see
+> [TRAKALOG_BILLING.md](TRAKALOG_BILLING.md) §1.
 
-1. **User Growth** — Line chart : signups cumulés par jour/semaine/mois (toggle). Ligne séparée pour free vs paid.
-2. **MRR Growth** — Line chart : MRR par mois, avec breakdown par plan (Starter/Pro/Business)
-3. **Tracks Uploaded** — Bar chart : tracks uploadés par jour/semaine
-4. **Feature Usage** — Horizontal bar chart : % d'utilisateurs qui utilisent chaque feature (pitches, shared links, Smart A&R, splits, stems, playlists, radio, QR studio, branding)
-5. **Plan Distribution** — Donut chart : répartition Free / Starter / Pro / Business
-6. **Top 10 Workspaces** — Table : les 10 workspaces avec le plus de tracks, avec nom, plan, tracks count, dernière activité
+#### Charts
 
-#### Alertes (en haut, dismissable)
+1. **User Growth** — line chart: cumulative signups by day/week/month (toggle), with separate
+   lines for free and paid.
+2. **MRR Growth** — line chart: MRR by month, broken down by plan (Starter/Pro/Business).
+3. **Tracks Uploaded** — bar chart: tracks uploaded per day/week.
+4. **Feature Usage** — horizontal bar chart: % of users using each feature (pitches, shared
+   links, Smart A&R, splits, stems, playlists, radio, QR studio, branding).
+5. **Plan Distribution** — donut chart: Free / Starter / Pro / Business.
+6. **Top 10 Workspaces** — table: the 10 workspaces with the most tracks, showing name, plan,
+   track count, last activity.
+
+#### Alerts (top of page, dismissable)
 
 - "X users signed up but never uploaded a track" (onboarding drop-off)
-- "Edge Function X a un taux d'erreur > 5% dans les dernières 24h"
+- "Edge Function X has an error rate > 5% in the last 24h"
 - "Storage usage approaching plan limit for X workspaces"
 - "X paying users haven't logged in for 30+ days" (churn risk)
-- "X free trial expiring in 3 days"
+- "X free trials expiring in 3 days"
 
 ---
 
 ### 2.2 — Users (`/admin/users`)
 
-#### Liste de tous les utilisateurs
+#### User list
 
-Colonnes :
-- Avatar + Nom complet
-- Email
-- Date d'inscription
-- Dernière connexion
-- Plan actif (badge coloré)
-- Nombre de workspaces
-- Nombre total de tracks
-- Nombre de pitches envoyés
-- Statut : Active / Inactive (30 jours) / Churned
+Columns: avatar + full name · email · signup date · last login · active plan (coloured badge) ·
+workspace count · total track count · pitches sent · status (Active / Inactive after 30 days /
+Churned).
 
-Fonctionnalités :
-- **Recherche** par nom ou email
-- **Filtres** : plan (Free/Starter/Pro/Business), statut (Active/Inactive/Churned), date d'inscription (range)
-- **Tri** : par date d'inscription, dernière activité, nombre de tracks, plan
-- **Export** : CSV de la liste filtrée
-- **Pagination** : 50 users par page, lazy-load
+Features:
 
-#### Fiche utilisateur (clic sur un user)
+- **Search** by name or email
+- **Filters:** plan (Free/Starter/Pro/Business), status (Active/Inactive/Churned), signup date
+  range
+- **Sort:** by signup date, last activity, track count, plan
+- **Export:** CSV of the filtered list
+- **Pagination:** 50 users per page, lazy-loaded
 
-Page détail avec :
+#### User detail page
 
-**Infos générales**
-- Avatar, nom, email, date d'inscription, dernière connexion
+**General**
+- Avatar, name, email, signup date, last login
 - Auth provider (email/Google)
-- 2FA activé oui/non
-- IP de dernière connexion
+- 2FA enabled yes/no
+- Last login IP
 
 **Workspaces**
-- Liste de tous ses workspaces avec : nom, plan, tracks count, membres count, branding (thumbnail)
-- Clic sur un workspace → détail du workspace
+- Every workspace with name, plan, track count, member count, branding thumbnail
+- Click through to the workspace detail
 
-**Activité récente** (timeline)
-- Les 50 dernières actions : upload track, send pitch, create shared link, invite member, etc.
-- Avec timestamp et détails
+**Recent activity** (timeline)
+- The last 50 actions: track upload, pitch sent, shared link created, member invited, etc.,
+  with timestamps and detail
 
 **Engagement**
-- Graphique d'activité des 30 derniers jours (heatmap ou bar chart)
-- Sessions par semaine
-- Features les plus utilisées
+- 30-day activity chart (heatmap or bar chart)
+- Sessions per week
+- Most-used features
 
 **Billing**
-- Plan actuel, date de début, prochaine facturation
-- Historique des paiements (via Stripe)
-- AI Credits : solde, historique d'utilisation
-- Bouton "View in Stripe" → ouvre le Stripe Dashboard sur ce customer
+- Current plan, start date, next invoice
+- Payment history via Stripe
+- AI Credits: balance and usage history
+- "View in Stripe" button → opens the Stripe Dashboard for that customer
 
-**Actions admin**
+**Admin actions**
 - "View as user" (impersonation)
-- "Send email" (ouvre un composer)
-- "Upgrade/Downgrade plan" (override admin, avec log dans audit_logs)
-- "Disable account" (soft delete, pas de suppression définitive)
-- "Reset password" (envoie un email de reset)
+- "Send email" (opens a composer)
+- "Upgrade/Downgrade plan" (admin override, logged to `audit_logs`)
+- "Disable account" (soft delete, never a hard delete)
+- "Reset password" (sends a reset email)
 
 ---
 
 ### 2.3 — Workspaces (`/admin/workspaces`)
 
-#### Liste de tous les workspaces
+#### Workspace list
 
-Colonnes :
-- Logo (thumbnail) + Nom
-- Owner (nom + email)
-- Plan
-- Tracks count
-- Members count
-- Storage used
-- Dernière activité
-- Created at
+Columns: logo thumbnail + name · owner (name + email) · plan · track count · member count ·
+storage used · last activity · created at.
 
-Fonctionnalités : recherche, filtres (plan, tracks range, active/inactive), tri, export CSV
+Features: search, filters (plan, track-count range, active/inactive), sort, CSV export.
 
-#### Fiche workspace (clic)
+#### Workspace detail
 
-**Infos**
-- Nom, slug, owner, plan, date de création
-- Branding : hero image, logo, brand color (preview)
-- Social links
+**Info** — name, slug, owner, plan, creation date; branding (hero image, logo, brand colour
+preview); social links.
 
-**Catalogue**
-- Nombre total de tracks
-- Répartition par status (Available / On Hold / Released)
-- Répartition par genre (pie chart)
-- Top 10 tracks les plus écoutées (plays via shared links)
-- Storage utilisé (audio + covers + stems + documents)
+**Catalog** — total tracks; breakdown by status (Available / On Hold / Released); breakdown by
+genre (pie chart); top 10 most-played tracks (plays via shared links); storage used (audio +
+covers + stems + documents).
 
-**Membres**
-- Liste des membres avec : nom, email, rôle (access level), titre professionnel, date d'ajout
-- Invitations en attente
+**Members** — list with name, email, access level, professional title, date added; pending
+invitations.
 
-**Activité**
-- Pitches envoyés (count + derniers 10)
-- Shared links créés (count + derniers 10 avec stats de plays)
-- Catalog shares actifs (vers quels workspaces)
+**Activity** — pitches sent (count + last 10); shared links created (count + last 10 with play
+stats); active catalog shares and their target workspaces.
 
-**Contacts**
-- Nombre total de contacts
-- Top 10 contacts les plus engagés (qui ont le plus écouté)
-- Export CSV
+**Contacts** — total count; top 10 most-engaged contacts (who listened most); CSV export.
 
 ---
 
 ### 2.4 — Tracks (`/admin/tracks`)
 
-#### Vue globale
+#### Global view
 
-KPIs :
-- Total tracks sur la plateforme
-- Tracks uploadés aujourd'hui / cette semaine / ce mois
-- Taille moyenne par track
-- Répartition par format (WAV/MP3/FLAC/AIFF)
-- Répartition par genre
-- % avec Sonic DNA complété
-- % avec lyrics
-- % avec splits définis
-- % avec stems uploadés
+KPIs: total tracks on the platform · tracks uploaded today / this week / this month · average
+size per track · breakdown by format (WAV/MP3/FLAC/AIFF) · breakdown by genre · % with Sonic
+DNA complete · % with lyrics · % with splits defined · % with stems uploaded.
 
-#### Recherche de tracks
+#### Track search
 
-- Recherche par titre, artiste, ISRC
-- Filtres : genre, BPM range, key, status, has_lyrics, has_splits, has_stems
-- Clic sur un track → infos complètes (metadata, splits, sonic DNA, engagement)
+- Search by title, artist, ISRC
+- Filters: genre, BPM range, key, status, has_lyrics, has_splits, has_stems
+- Click a track → full detail (metadata, splits, Sonic DNA, engagement)
+
+> **Note:** `tracks.genre` is a `text[]`. Any genre breakdown must unnest the array, and any
+> genre filter must use array containment — not equality.
 
 ---
 
 ### 2.5 — Engagement & Analytics (`/admin/analytics`)
 
-#### Shared Links Analytics
+#### Shared links
 
-- Total shared links créés
+- Total shared links created
 - Total plays (all time)
-- Plays par jour (line chart)
-- Top 10 shared links les plus écoutés
-- Taux de complétion (% d'écoute moyenne)
-- Gate screen conversion : % de visitors qui remplissent le formulaire
-- Downloads : total, par type (original, preview, pack)
+- Plays per day (line chart)
+- Top 10 most-played shared links
+- Completion rate (average % listened)
+- Gate-screen conversion: % of visitors who complete the form
+- Downloads: total, by type (original, preview, pack)
 
-#### Pitch Analytics
+> **Data sources:** plays and downloads come from `link_events` (`event_type` is CHECK-limited
+> to `play` / `download` / `view`). Gate submissions come from `link_downloads` — note that
+> table records *every gate submission*, not only downloads, so conversion is
+> `link_downloads` ÷ `link_events WHERE event_type = 'view'`.
 
-- Total pitches envoyés
-- Taux d'ouverture (% de pitches ouverts par le recipient)
-- Taux d'écoute (% de pitches où le recipient a écouté au moins 1 track)
-- Pitches par jour/semaine (bar chart)
-- Top 10 pitchers (users qui envoient le plus de pitches)
+#### Pitches
 
-#### Smart A&R Analytics
+- Total pitches sent
+- Open rate (% opened by the recipient)
+- Listen rate (% where the recipient played at least one track)
+- Pitches per day/week (bar chart)
+- Top 10 pitchers
+
+#### Smart A&R
 
 - Total queries
-- Queries par jour
-- Coût Groq estimé
-- Temps de réponse moyen
-- % de queries avec résultats
+- Queries per day
+- Estimated Groq cost
+- Average response time
+- % of queries returning results
 
-#### Sonic DNA Analytics
+#### Sonic DNA
 
-- Total analyses complétées
-- Analyses par jour
-- Taux de succès (% sans erreur)
-- Temps de traitement moyen
-- Coût Railway estimé
+- Total analyses completed
+- Analyses per day
+- Success rate (% without error)
+- Average processing time
+- Estimated Railway cost
 
 ---
 
 ### 2.6 — Billing & Revenue (`/admin/billing`)
 
-#### Revenue Dashboard
+#### Revenue dashboard
 
-- **MRR actuel** avec breakdown par plan
-- **MRR Growth** : graphique mensuel
-- **New MRR** : revenus des nouveaux abonnés ce mois
-- **Expansion MRR** : upgrades (Starter→Pro, Pro→Business)
-- **Contraction MRR** : downgrades
-- **Churned MRR** : annulations
-- **Net MRR** : New + Expansion - Contraction - Churned
+- **Current MRR** with per-plan breakdown
+- **MRR growth** — monthly chart
+- **New MRR** — revenue from new subscribers this month
+- **Expansion MRR** — upgrades (Starter→Pro, Pro→Business)
+- **Contraction MRR** — downgrades
+- **Churned MRR** — cancellations
+- **Net MRR** — New + Expansion − Contraction − Churned
 
-#### Plan Distribution
+#### Plan distribution
 
-- Nombre d'users par plan (table + donut chart)
-- Conversion funnel : Free → Trial → Starter → Pro → Business
-- Churn par plan (quel plan a le plus de churn)
+- Users per plan (table + donut chart)
+- Conversion funnel: Free → Trial → Starter → Pro → Business
+- Churn by plan
 
 #### AI Credits
 
-- Total crédits achetés (revenus supplémentaires)
-- Crédits achetés par mois
-- Top acheteurs de crédits
-- Utilisation moyenne de crédits par user
+- Total credits purchased (incremental revenue)
+- Credits purchased per month
+- Top credit buyers
+- Average credit usage per user
 
-#### Stripe Integration
+#### Stripe integration
 
-- Lien direct vers le Stripe Dashboard
-- Webhook status : derniers events reçus, erreurs
-- Invoices récentes
+- Direct link to the Stripe Dashboard
+- Webhook status: recent events received, errors (the `stripe_webhook_events` table already
+  exists)
+- Recent invoices
 
 ---
 
 ### 2.7 — Infrastructure & Health (`/admin/health`)
 
-#### Edge Functions Status
+#### Edge Function status
 
-| Fonction | Status | Invocations/24h | Erreurs/24h | Taux erreur | Temps moyen | Rate limits hit |
+| Function | Status | Invocations/24h | Errors/24h | Error rate | Avg time | Rate limits hit |
 |---|---|---|---|---|---|---|
 | smart-ar | ✅ | 245 | 3 | 1.2% | 2.3s | 0 |
 | analyze-sonic-dna | ⚠️ | 89 | 12 | 13.5% | 8.1s | 2 |
-| ... | ... | ... | ... | ... | ... | ... |
+| … | … | … | … | … | … | … |
 
-Source : Supabase Edge Functions logs (API ou scraping du dashboard)
+Source: Supabase Edge Function logs (API, or scraped from the dashboard).
 
 #### Storage
 
-- Usage total par bucket (tracks, covers, stems, documents, watermarked, branding, avatars)
-- Croissance par mois
-- Top 10 workspaces par storage
+- Total usage per bucket. **The five logical buckets are `tracks`, `stems`, `watermarked`,
+  `covers`, `documents`** — there is no separate branding or avatars bucket.
+- Growth per month
+- Top 10 workspaces by storage
 
 #### Database
 
-- Nombre de rows par table principale
-- Croissance des tables par mois
-- Queries les plus lentes (si accessible via pg_stat_statements)
+- Row counts for the main tables
+- Table growth per month
+- Slowest queries, if `pg_stat_statements` is available
 
-#### External Services
+#### External services
 
-- Railway (Sonic DNA + Watermark) : status, uptime, coût mensuel
-- Groq : usage, coût estimé
-- Resend : emails envoyés, taux de delivery, bounces
-- Vercel : déploiements récents, build time
+- Railway (Sonic DNA + Watermark): status, uptime, monthly cost
+- Groq: usage, estimated cost
+- Resend: emails sent, delivery rate, bounces
+- Vercel: recent deployments, build time
 
 ---
 
 ### 2.8 — Audit Logs (`/admin/audit`)
 
-- Tous les events de la table `audit_logs`
-- Filtres : action type, user, resource, date range
-- Actions loggées : login, logout, track.upload, track.delete, pitch.send, shared_link.create, member.invite, plan.upgrade, plan.downgrade, admin.impersonate, etc.
-- Export CSV
+- Every event in `audit_logs`
+- Filters: action type, user, resource, date range
+- Logged actions: login, logout, `track.upload`, `track.delete`, `pitch.send`,
+  `shared_link.create`, `member.invite`, `plan.upgrade`, `plan.downgrade`,
+  `admin.impersonate`, etc.
+- CSV export
 
 ---
 
-### 2.9 — Notifications Admin (`/admin/notifications`)
+### 2.9 — Admin notifications (`/admin/notifications`)
 
-Notifications push/email pour l'admin quand :
+Push/email notifications to the admin when:
 
-- **Nouveau signup** : "New user: [Name] ([email])" — email digest quotidien
-- **Nouveau paying user** : "🎉 [Name] upgraded to [Plan]!" — notification immédiate
-- **Churn** : "[Name] cancelled [Plan]" — notification immédiate
-- **Milestone** : "🎯 100 users reached!" / "🎯 $1K MRR reached!"
-- **Erreur critique** : "⚠️ Edge Function [name] error rate > 10%"
-- **Storage alert** : "⚠️ Workspace [name] approaching storage limit"
+- **New signup** — "New user: [Name] ([email])" — daily digest
+- **New paying user** — "🎉 [Name] upgraded to [Plan]!" — immediate
+- **Churn** — "[Name] cancelled [Plan]" — immediate
+- **Milestone** — "🎯 100 users reached!" / "🎯 $1K MRR reached!"
+- **Critical error** — "⚠️ Edge Function [name] error rate > 10%"
+- **Storage alert** — "⚠️ Workspace [name] approaching storage limit"
 
-Canaux de notification :
-- In-app (badge sur l'icône admin dans le menu)
-- Email digest (quotidien, configurable)
-- Slack webhook (optionnel, futur)
+Channels: in-app (badge on the admin icon), daily configurable email digest, optional Slack
+webhook (future).
 
 ---
 
-## 3. Architecture Technique
+## 3. Technical architecture
 
-### Tables DB
+### Tables
 
 ```sql
--- Flag admin sur les profiles
+-- Admin flag on profiles
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_platform_admin boolean DEFAULT false;
 
--- Table pour les métriques agrégées (cache pour ne pas recalculer à chaque page load)
+-- Aggregated metrics cache, so heavy KPIs are not recomputed on every page load
 CREATE TABLE IF NOT EXISTS admin_metrics_cache (
   id text PRIMARY KEY,
   value jsonb NOT NULL,
   computed_at timestamptz DEFAULT now()
 );
 
--- Table pour les notifications admin
+-- Admin notifications
 CREATE TABLE IF NOT EXISTS admin_notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   type text NOT NULL, -- 'new_signup', 'new_paying', 'churn', 'milestone', 'error', 'storage_alert'
@@ -368,18 +443,20 @@ CREATE TABLE IF NOT EXISTS admin_notifications (
   created_at timestamptz DEFAULT now()
 );
 
--- Index pour les requêtes admin fréquentes
-CREATE INDEX IF NOT EXISTS idx_tracks_created_at ON tracks(created_at);
+-- Indexes for frequent admin queries
+CREATE INDEX IF NOT EXISTS idx_tracks_created_at   ON tracks(created_at);
 CREATE INDEX IF NOT EXISTS idx_tracks_workspace_id ON tracks(workspace_id);
-CREATE INDEX IF NOT EXISTS idx_workspaces_plan ON workspaces(plan);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
-CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action     ON audit_logs(action);
 ```
 
-### RPCs Admin (toutes SECURITY DEFINER + check is_platform_admin)
+> The spec's `idx_workspaces_plan` is omitted here: the plan lives on `subscriptions`, so that
+> index would point at the legacy column.
+
+### Admin RPCs (all `SECURITY DEFINER` + `is_platform_admin` check)
 
 ```sql
--- Métriques globales
+-- Metrics
 admin_get_overview_stats(_admin_id uuid) → jsonb
 admin_get_user_growth(_admin_id uuid, _period text) → jsonb
 admin_get_revenue_stats(_admin_id uuid) → jsonb
@@ -406,74 +483,85 @@ admin_disable_user(_admin_id uuid, _target_user_id uuid) → void
 admin_override_plan(_admin_id uuid, _workspace_id uuid, _plan text) → void
 ```
 
+> ⚠️ **These names are proposals and none of them exists.** The RPCs actually shipped are
+> `get_admin_overview`, `list_all_users`, `list_all_contacts`, `list_waitlist_signups`,
+> `get_visit_stats` and `delete_leak_trace`. Either extend those or rename deliberately —
+> do not assume the `admin_*` names above are callable.
+
 ### Frontend
 
-- Route group `/admin/*` dans App.tsx
-- Guard component `AdminRoute` qui vérifie `is_platform_admin`
-- Lazy-loaded (React.lazy) — ne charge PAS le code admin pour les users normaux
-- Composants charts : recharts (déjà dans package.json, pas encore utilisé — parfait)
-- Pagination côté serveur (pas de fetch de 10K users en mémoire)
-- Refresh automatique des KPIs toutes les 5 minutes
-- Cache local des métriques lourdes (admin_metrics_cache)
+- Route group `/admin/*` in `App.tsx`
+- An `AdminRoute` guard checking `is_platform_admin`
+- Lazy-loaded — normal users never download the admin code
+- Charts: recharts (already a dependency)
+- Server-side pagination — never fetch 10K users into memory
+- KPI auto-refresh every 5 minutes
+- Local cache of heavy metrics (`admin_metrics_cache`)
 
-### Cron Job — Métriques agrégées
+> *As built:* a separate hostname and a separate root component rather than a route group.
+> That already satisfies the isolation goal more strongly than lazy-loading would. See §0.
 
-Un Edge Function `compute-admin-metrics` qui tourne toutes les heures :
-- Calcule les KPIs lourds (MRR, churn, MAU, feature usage)
-- Stocke dans `admin_metrics_cache`
-- Le dashboard lit depuis le cache au lieu de calculer en live
-- Les métriques légères (count users, count tracks) restent en live
+### Cron — aggregated metrics
+
+An Edge Function `compute-admin-metrics` running hourly:
+
+- Computes the heavy KPIs (MRR, churn, MAU, feature usage)
+- Stores them in `admin_metrics_cache`
+- The dashboard reads the cache instead of computing live
+- Light metrics (user count, track count) stay live
 
 ---
 
-## 4. Phases d'implémentation
+## 4. Implementation phases
 
 ### Phase 1 — MVP (~2-3 sessions)
-1. Colonne `is_platform_admin` + guard route
-2. Page Overview avec KPIs basiques (counts en live, pas de cache)
-3. Liste Users avec recherche + filtres
-4. Fiche User basique (infos + workspaces + tracks count)
-5. recharts pour 2-3 graphiques (user growth, tracks uploaded)
+1. `is_platform_admin` column + route guard
+2. Overview page with basic live KPIs (no cache)
+3. Users list with search + filters
+4. Basic user detail (info + workspaces + track count)
+5. recharts for 2-3 charts (user growth, tracks uploaded)
 
-### Phase 2 — Billing & Analytics (~2 sessions)
-6. Intégration Stripe Dashboard (MRR, plan distribution)
-7. Page Engagement (shared links plays, pitch stats)
-8. Page Workspaces avec détails
-9. Notifications admin (new signup, new paying, churn)
+> Largely done, by a different route. See §0.
+
+### Phase 2 — Billing & analytics (~2 sessions)
+6. Stripe Dashboard integration (MRR, plan distribution)
+7. Engagement page (shared-link plays, pitch stats)
+8. Workspaces page with detail
+9. Admin notifications (new signup, new paying, churn)
 
 ### Phase 3 — Intelligence (~2 sessions)
-10. Feature usage analytics (quelles features sont utilisées)
-11. Churn prediction (users inactifs depuis X jours)
-12. Onboarding funnel (où les users drop off)
-13. Cron job métriques agrégées
-14. Export CSV sur toutes les listes
+10. Feature-usage analytics
+11. Churn prediction (users inactive for X days)
+12. Onboarding funnel (where users drop off)
+13. Aggregated-metrics cron
+14. CSV export on every list
 
 ### Phase 4 — Ops (~1-2 sessions)
-15. Edge Functions health dashboard
+15. Edge Function health dashboard
 16. Storage monitoring
-17. Audit logs viewer
+17. Audit log viewer
 18. Impersonation
 19. Admin actions (disable user, override plan)
 
 ---
 
-## 5. Notifications Admin — Détail
+## 5. Admin notifications in detail
 
-### Triggers automatiques
+### Automatic triggers
 
-| Event | Notification | Canal |
+| Event | Notification | Channel |
 |---|---|---|
-| Nouveau signup | "[Name] just signed up" | Email digest |
-| Upload first track | "[Name] uploaded their first track" | Email digest |
-| Upgrade plan | "🎉 [Name] upgraded to [Plan]! MRR +$X" | Email immédiat |
-| Downgrade/cancel | "⚠️ [Name] cancelled [Plan]. MRR -$X" | Email immédiat |
-| 7 jours inactif (paying) | "[Name] ([Plan]) hasn't logged in for 7 days" | Email digest |
-| 30 jours inactif (paying) | "🚨 [Name] ([Plan]) inactive for 30 days — churn risk" | Email immédiat |
-| Milestone | "🎯 [X] users reached!" | Email immédiat |
-| Edge Function erreur > 10% | "⚠️ [Function] error rate: [X]% in last hour" | Email immédiat |
-| Storage > 80% d'un workspace | "Storage warning: [Workspace] at [X]% capacity" | Email digest |
+| New signup | "[Name] just signed up" | Daily digest |
+| First track uploaded | "[Name] uploaded their first track" | Daily digest |
+| Plan upgrade | "🎉 [Name] upgraded to [Plan]! MRR +$X" | Immediate email |
+| Downgrade/cancel | "⚠️ [Name] cancelled [Plan]. MRR −$X" | Immediate email |
+| 7 days inactive (paying) | "[Name] ([Plan]) hasn't logged in for 7 days" | Daily digest |
+| 30 days inactive (paying) | "🚨 [Name] ([Plan]) inactive for 30 days — churn risk" | Immediate email |
+| Milestone | "🎯 [X] users reached!" | Immediate email |
+| Edge Function error rate > 10% | "⚠️ [Function] error rate: [X]% in last hour" | Immediate email |
+| Workspace storage > 80% | "Storage warning: [Workspace] at [X]% capacity" | Daily digest |
 
-### Email digest quotidien (6h du matin)
+### Daily email digest (06:00)
 
 ```
 📊 Trakalog Daily Report — April 25, 2026
@@ -500,54 +588,57 @@ ALERTS
 
 ---
 
-## 6. Scalabilité
+## 6. Scalability
 
 ### 10-100 users (beta)
-- Toutes les queries en live (COUNT, SELECT)
-- Pas besoin de cache
-- Recharts côté client suffit
+- Every query live (`COUNT`, `SELECT`)
+- No cache needed
+- Client-side recharts is enough
 
 ### 100-1,000 users
-- Ajouter `admin_metrics_cache` pour les KPIs lourds
-- Pagination serveur sur toutes les listes
-- Index DB sur les colonnes fréquemment filtrées
+- Add `admin_metrics_cache` for heavy KPIs
+- Server-side pagination on every list
+- DB indexes on frequently filtered columns
 
 ### 1,000-10,000 users
-- Cron job hourly pour les métriques
-- Matérialized views pour les agrégations lourdes (tracks par genre, plays par jour)
-- Pagination curseur au lieu d'offset
-- Considérer un data warehouse séparé (BigQuery, ClickHouse) pour les analytics lourdes
+- Hourly cron for metrics
+- Materialized views for heavy aggregations (tracks by genre, plays per day)
+- Cursor pagination instead of offset
+- Consider a separate data warehouse (BigQuery, ClickHouse) for heavy analytics
 
 ### 10,000-100,000 users
-- Data warehouse obligatoire
-- Event streaming (Kafka ou équivalent) pour les métriques temps réel
-- Dashboard admin séparé du frontend principal (sous-domaine admin.trakalog.com)
-- Rate limiting côté admin (même les admins ne doivent pas pouvoir lancer 100 exports CSV simultanés)
+- Data warehouse mandatory
+- Event streaming (Kafka or equivalent) for real-time metrics
+- Admin dashboard separated from the main frontend, on the `admin.trakalog.com` subdomain
+  — **already the case**, see §0
+- Rate limiting on the admin side too: even admins should not be able to launch 100 concurrent
+  CSV exports
 
 ---
 
-## 7. Stack recommandé
+## 7. Recommended stack
 
-| Composant | Outil | Raison |
+| Component | Tool | Why |
 |---|---|---|
-| Charts | recharts (déjà installé) | Léger, React natif |
-| Tables | @tanstack/react-table | Pagination, tri, filtres, virtualisation |
-| Date range picker | react-day-picker (déjà dans shadcn) | Cohérent avec le design system |
-| Export CSV | csv-stringify ou natif | Léger |
-| Email digest | Resend (déjà configuré) | Même infra |
-| Cron | Supabase pg_cron ou Edge Function scheduled | Pas de serveur supplémentaire |
-| Impersonation | JWT custom claim ou session swap | Sécurisé |
+| Charts | recharts (already installed) | Lightweight, React-native |
+| Tables | @tanstack/react-table | Pagination, sorting, filtering, virtualisation |
+| Date range picker | react-day-picker (already in shadcn) | Consistent with the design system |
+| CSV export | csv-stringify, or hand-rolled | Lightweight |
+| Email digest | Resend (already configured) | Same infrastructure |
+| Cron | Supabase pg_cron or a scheduled Edge Function | No extra server |
+| Impersonation | Custom JWT claim or session swap | Secure |
 
 ---
 
-## Dépendances
+## Dependencies
 
-- **Billing/Stripe** ⏳ (nécessaire pour les métriques revenue)
-- **audit_logs** ✅ (table déjà créée)
-- **recharts** ✅ (déjà dans package.json)
-- **Resend** ✅ (déjà configuré pour les emails)
-- **Edge Functions** ✅ (infrastructure déjà en place)
+- **Billing/Stripe** ✅ plumbing now exists (3 Edge Functions, `stripe_customer_id`,
+  `stripe_webhook_events`) — revenue metrics are unblocked
+- **`audit_logs`** ✅ table exists
+- **recharts** ✅ in `package.json`
+- **Resend** ✅ configured
+- **Edge Functions** ✅ infrastructure in place
 
 ---
 
-*Ce document est la source de vérité pour l'implémentation du Admin Dashboard Trakalog.*
+*This document is the source of truth for implementing the Trakalog Admin Dashboard.*

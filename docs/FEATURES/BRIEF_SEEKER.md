@@ -1,121 +1,135 @@
 # TRAKALOG — Brief Seeker (Future Feature)
 
-> **Document créé le :** 13 avril 2026
-> **Objectif :** Scanner automatiquement les briefs ouverts (sync, placements, labels), matcher avec le catalogue, préparer des pitches personnalisés prêts à envoyer.
-> **Statut :** Planifié — après Smart Brief Matching + Artist Seeker
-> **Vision :** L'utilisateur dort, Trakalog travaille. Le matin, une inbox de pitches prêts à approuver.
+> **Created:** April 13, 2026
+> **Last Updated:** September 2, 2026 (translated to English)
+> **Goal:** Automatically scan open briefs (sync, placements, labels), match them against the
+> catalog, and prepare personalised, ready-to-send pitches.
+> **Status:** 📋 **Planned — nothing implemented.** Sequenced after Smart Brief Matching and
+> Artist Seeker. Verified September 2, 2026: no `briefs` or `brief_matches` table exists, and
+> there is no Brief Hunter service.
+> **Vision:** the user sleeps, Trakalog works. In the morning, an inbox of pitches to approve.
 
 ---
 
-## Résumé logique — Faisabilité & ROI
+## Executive summary — feasibility and ROI
 
-### Pourquoi c'est viable
+### Why this is viable
 
-Un seul placement sync obtenu grâce au Brief Seeker (typiquement 2 000$ à 50 000$) rembourse des années de coûts d'infrastructure. C'est le ratio effort/reward le plus élevé de tout Trakalog.
+A single sync placement won through Brief Seeker — typically $2,000 to $50,000 — pays for years
+of infrastructure. It is the highest effort-to-reward ratio anywhere in Trakalog.
 
-### Les 4 niveaux d'automatisation
+### The four levels of automation
 
-**Phase 1 — MVP (5-10$/mois)** — Faisable immédiatement
-L'utilisateur colle lui-même un brief dans Trakalog. Trakalog fait le matching + écrit l'email. Pas de scan auto. Économise 30-60 minutes par brief. Coût : ~0.05$ par brief en tokens Claude.
+**Phase 1 — MVP ($5-10/month)** — feasible immediately.
+The user pastes a brief into Trakalog themselves. Trakalog does the matching and writes the
+email. No automatic scanning. Saves 30-60 minutes per brief. Cost: ~$0.05 per brief in Claude
+tokens.
 
-**Phase 2 — Semi-auto (30-40$/mois)** — Faisable sous 2 mois
-Un cron scanne 2x/jour Twitter + 2-3 sites de briefs. Claude parse, extrait les critères, lance le matching. L'utilisateur voit les résultats le matin.
+**Phase 2 — Semi-automatic ($30-40/month)** — feasible within two months.
+A cron scans Twitter and 2-3 brief sites twice a day. Claude parses them, extracts the
+criteria, runs the matching. The user sees results in the morning.
 
-**Phase 3 — Full auto (70-100$/mois)** — Quand Trakalog a des users payants
-Toutes les sources connectées, Gmail MCP pour les briefs par email, feedback loop. Volume de briefs élevé.
+**Phase 3 — Fully automatic ($70-100/month)** — once Trakalog has paying users.
+Every source connected, Gmail MCP for briefs arriving by email, a feedback loop. High brief
+volume.
 
-**Phase 4 — Premium (300-500$/mois)** — Quand Trakalog génère du revenu
-Abonnements aux plateformes payantes (Taxi.com, Music Gateway). Briefs exclusifs.
+**Phase 4 — Premium ($300-500/month)** — once Trakalog generates revenue.
+Subscriptions to paid platforms (Taxi.com, Music Gateway). Exclusive briefs.
 
-### Risque principal
-Le scraping peut casser quand les sites changent. C'est pour ça que la Phase 1 (copié-collé manuel) est essentielle — elle marche toujours et valide le concept avant d'investir dans l'automatisation.
+### Principal risk
 
-### ROI attendu
-- Un placement sync moyen : 2 000$ - 50 000$
-- Coût annuel Phase 1 : ~60-120$
-- **Un seul placement rembourse 10+ années de coûts Phase 1**
-- Même en Phase 4 (~2 400$/an), un seul placement moyen est rentable
+Scraping breaks when sites change. That is exactly why Phase 1 — manual copy-paste — is
+essential: it always works, and it validates the concept before any investment in automation.
+
+### Expected ROI
+
+- An average sync placement: $2,000-$50,000
+- Phase 1 annual cost: ~$60-120
+- **A single placement repays 10+ years of Phase 1 costs**
+- Even at Phase 4 (~$2,400/year), one average placement is profitable
 
 ---
 
 ## Vision
 
-Le problème : les opportunités de placement (sync briefs, label briefs, who's looking lists) sont dispersées sur des dizaines de plateformes. Les producteurs passent des heures à chercher, matcher manuellement leurs tracks, écrire des emails personnalisés. La plupart des briefs expirent avant qu'ils aient eu le temps de répondre.
+The problem: placement opportunities — sync briefs, label briefs, "who's looking" lists — are
+scattered across dozens of platforms. Producers spend hours searching, manually matching their
+tracks, and writing personalised emails. Most briefs expire before they get round to replying.
 
-**Brief Seeker** automatise tout le pipeline : veille → matching → rédaction → approbation.
+**Brief Seeker** automates the whole pipeline: monitoring → matching → drafting → approval.
 
 ---
 
-## Pipeline complet — Les 4 agents en chaîne
+## Full pipeline — four agents in a chain
 
 ```
-AGENT 1 — Brief Hunter (veille automatique)
-  Scanne les sources de briefs toutes les 12h
-  Extrait : description du brief, genre/mood/tempo demandé, deadline, contact, budget estimé
+AGENT 1 — Brief Hunter (automatic monitoring)
+  Scans brief sources every 12h
+  Extracts: brief description, requested genre/mood/tempo, deadline, contact, estimated budget
     ↓
-AGENT 2 — Smart Brief Matching (déjà planifié)
-  Compare chaque brief avec le sonic_dna + user_metadata du catalogue
-  Score de matching 0-100% pour chaque track
-  Sélectionne les 1-3 meilleurs tracks par brief
+AGENT 2 — Smart Brief Matching (already planned)
+  Compares each brief against the catalog's sonic_dna + user_metadata
+  Scores each track 0-100%
+  Selects the best 1-3 tracks per brief
     ↓
 AGENT 3 — Pitch Writer
-  Écrit un email personnalisé pour chaque match
-  Utilise : nom du contact, contexte du brief, pourquoi CE track est parfait
-  Tone professionnel mais humain, pas générique
-  Inclut : lien Trakalog shared link vers le track
+  Writes a personalised email for each match
+  Uses: contact name, brief context, why THIS track fits
+  Professional but human tone, never generic
+  Includes: a Trakalog shared link to the track
     ↓
-AGENT 4 — Pitch Inbox (interface utilisateur)
-  Le matin, l'utilisateur ouvre Trakalog
-  Il voit une liste de pitches prêts : brief → track → email → contact
-  Pour chaque pitch : Approve (envoie) / Edit (modifier l'email) / Dismiss
+AGENT 4 — Pitch Inbox (user interface)
+  In the morning the user opens Trakalog
+  They see a list of ready pitches: brief → track → email → contact
+  For each: Approve (send) / Edit (adjust the email) / Dismiss
 ```
 
 ---
 
-## Sources de briefs
+## Brief sources
 
-### Plateformes de sync (priorité haute)
-- **Musicbed** — briefs ouverts pour pub, film, TV
-- **Songtradr** — marketplace sync avec briefs publics
-- **Music Gateway** — briefs sync + placements
-- **Marmoset** — briefs curatés (plus exclusif)
-- **Disco.ac** — briefs partagés (concurrent direct → avantage compétitif)
-- **Taxi.com** — listings A&R et briefs industrie
-- **BroadJam** — opportunités de placement
+### Sync platforms (high priority)
+- **Musicbed** — open briefs for advertising, film, TV
+- **Songtradr** — sync marketplace with public briefs
+- **Music Gateway** — sync briefs and placements
+- **Marmoset** — curated briefs, more exclusive
+- **Disco.ac** — shared briefs (a direct competitor → competitive advantage)
+- **Taxi.com** — A&R listings and industry briefs
+- **BroadJam** — placement opportunities
 
-### Who's Looking Lists (labels & publishers)
-- **Music Connection Magazine** — publisher/label briefs mensuels
-- **SongLink / Tunefind** — placements recherchés pour séries/films
-- **Film Music Network** — briefs superviseurs musicaux
+### "Who's looking" lists (labels and publishers)
+- **Music Connection Magazine** — monthly publisher/label briefs
+- **SongLink / Tunefind** — placements sought for series and films
+- **Film Music Network** — music supervisor briefs
 
-### Réseaux sociaux & forums
+### Social networks and forums
 - **Twitter/X** — hashtags #SyncBrief #MusicBrief #LookingForMusic #MusicSupervisor
-- **Reddit** — r/musicindustry, r/WeAreTheMusicMakers (briefs communautaires)
-- **LinkedIn** — posts de music supervisors et A&R
+- **Reddit** — r/musicindustry, r/WeAreTheMusicMakers (community briefs)
+- **LinkedIn** — posts from music supervisors and A&R
 
-### Emails & newsletters
-- **Sync newsletters** (à s'abonner) : briefs envoyés directement
-- **Possibilité d'intégrer Gmail** via MCP pour parser les briefs reçus par email
+### Emails and newsletters
+- **Sync newsletters** (to subscribe to): briefs delivered directly
+- **Possible Gmail integration** via MCP, to parse briefs received by email
 
-### API vs Scraping
+### API vs scraping
 
-| Source | Méthode | Fiabilité | Coût |
-|--------|---------|-----------|------|
-| Songtradr | API (si disponible) ou scraping | Haute | Gratuit |
-| Musicbed | Scraping page briefs | Moyenne | Gratuit |
-| Music Gateway | API | Haute | Abonnement (~20$/mois) |
-| Twitter/X | API v2 | Haute | Gratuit (basic) |
-| Taxi.com | Scraping membre | Haute | Abonnement (~300$/an) |
-| Gmail newsletters | MCP Gmail | Haute | Gratuit |
+| Source | Method | Reliability | Cost |
+|---|---|---|---|
+| Songtradr | API if available, else scraping | High | Free |
+| Musicbed | Scrape the briefs page | Medium | Free |
+| Music Gateway | API | High | Subscription (~$20/month) |
+| Twitter/X | API v2 | High | Free (basic) |
+| Taxi.com | Member-area scraping | High | Subscription (~$300/year) |
+| Gmail newsletters | Gmail MCP | High | Free |
 
 ---
 
-## Architecture technique
+## Technical architecture
 
 ### Agent 1 — Brief Hunter
 
 ```
-Service Railway ou Supabase Edge Function (cron toutes les 12h)
+Railway service or Supabase Edge Function (cron every 12h)
 
 POST /scan-briefs
 Response: {
@@ -150,29 +164,29 @@ Response: {
 }
 ```
 
-### Agent 2 — Smart Brief Matching (existant, à connecter)
+### Agent 2 — Smart Brief Matching (exists, to be connected)
 
 ```
-Pour chaque brief, l'agent :
-1. Convertit les requirements en critères de recherche sonic_dna
-2. Cherche dans le catalogue : BPM range, mood match, genre match, vocal/instrumental
-3. Score chaque track de 0-100%
-4. Retourne les top 1-3 tracks avec raison du match
+For each brief the agent:
+1. Converts the requirements into sonic_dna search criteria
+2. Searches the catalog: BPM range, mood match, genre match, vocal/instrumental
+3. Scores each track 0-100%
+4. Returns the top 1-3 tracks with the reason for the match
 
-Input: brief.requirements + catalogue sonic_dna
+Input:  brief.requirements + catalog sonic_dna
 Output: [{ track_id, score, match_reasons, gap_analysis }]
 ```
 
 ### Agent 3 — Pitch Writer
 
 ```
-Pour chaque match brief→track, Claude écrit un email personnalisé :
+For each brief→track match, Claude writes a personalised email:
 
 Input: {
   contact: { name, role, company },
-  brief: { title, description, requirements },
-  track: { title, artist, sonic_dna, shared_link_url },
-  match: { score, reasons }
+  brief:   { title, description, requirements },
+  track:   { title, artist, sonic_dna, shared_link_url },
+  match:   { score, reasons }
 }
 
 Output: {
@@ -181,21 +195,20 @@ Output: {
   tone: "professional_warm"
 }
 
-Règles de rédaction :
-- Jamais générique ("I think this would be a great fit")
-- Toujours spécifique ("The 8-second instrumental intro is ideal for the brand reveal")
-- Mentionner un détail du brief pour montrer qu'on l'a lu
-- Court (max 150 mots)
-- Inclure le shared link Trakalog
-- Sign off avec le nom du workspace owner
+Drafting rules:
+- Never generic ("I think this would be a great fit")
+- Always specific ("The 8-second instrumental intro is ideal for the brand reveal")
+- Mention a detail from the brief to prove it was read
+- Short — 150 words maximum
+- Include the Trakalog shared link
+- Sign off with the workspace owner's name
 ```
 
-### Agent 4 — Pitch Inbox (Frontend)
+### Agent 4 — Pitch Inbox (frontend)
 
 ```
-Nouvelle page dans Trakalog : "Pitch Inbox" ou "Opportunities"
+New page in Trakalog: "Pitch Inbox" or "Opportunities"
 
-Interface :
 ┌─────────────────────────────────────────────────────┐
 │ 🎯 3 new opportunities found this morning           │
 ├─────────────────────────────────────────────────────┤
@@ -217,16 +230,18 @@ Interface :
 └─────────────────────────────────────────────────────┘
 ```
 
-### Actions utilisateur sur chaque opportunité :
-- **Preview Email** : voir l'email rédigé par l'agent dans un modal
-- **Approve & Send** : envoie l'email via Resend (noreply@trakalog.com, reply-to workspace owner)
-- **Edit** : ouvrir l'email dans un éditeur, modifier, puis envoyer
-- **Dismiss** : marquer comme non pertinent (feedback pour améliorer le matching)
-- **Snooze** : remettre à plus tard
+### User actions on each opportunity
+
+- **Preview Email** — view the agent's draft in a modal
+- **Approve & Send** — send via Resend (from `noreply@trakalog.com`, reply-to the workspace
+  owner)
+- **Edit** — open the email in an editor, adjust, then send
+- **Dismiss** — mark as irrelevant (feedback that improves matching)
+- **Snooze** — defer
 
 ---
 
-## Table DB — briefs
+## Database tables
 
 ```sql
 briefs (
@@ -265,78 +280,78 @@ brief_matches (
 
 ---
 
-## Phases d'implémentation détaillées
+## Implementation phases
 
-### Phase 1 — MVP manuel (~3-4 semaines) — 5-10$/mois
-- L'utilisateur colle un brief (texte) dans Trakalog
-- Smart Brief Matching trouve les tracks
-- Pitch Writer rédige l'email
-- L'utilisateur approuve et envoie
-- Pas de scan automatique — input manuel uniquement
-- **Valeur immédiate :** économise 30-60 minutes par brief
+### Phase 1 — Manual MVP (~3-4 weeks) — $5-10/month
+- The user pastes a brief (as text) into Trakalog
+- Smart Brief Matching finds the tracks
+- Pitch Writer drafts the email
+- The user approves and sends
+- No automatic scanning — manual input only
+- **Immediate value:** saves 30-60 minutes per brief
 
-### Phase 2 — Scan semi-auto (~3-4 semaines) — 30-40$/mois
-- Scanner 2-3 sources (Songtradr, Twitter #SyncBrief)
-- Cron toutes les 12h
-- Pitch Inbox avec les résultats
-- Notifications : "3 new briefs match your catalog"
-- **Valeur :** l'utilisateur ne rate plus de briefs
+### Phase 2 — Semi-automatic scanning (~3-4 weeks) — $30-40/month
+- Scan 2-3 sources (Songtradr, Twitter #SyncBrief)
+- Cron every 12h
+- Pitch Inbox with the results
+- Notifications: "3 new briefs match your catalog"
+- **Value:** the user stops missing briefs
 
-### Phase 3 — Full auto (~4-6 semaines) — 70-100$/mois
-- Toutes les sources de briefs connectées
-- Gmail MCP pour parser les briefs reçus par email
-- Learning : les dismiss améliorent le matching (feedback loop)
-- Stats : taux d'acceptation, revenus générés par les pitches
-- **Valeur :** machine à placements autonome
+### Phase 3 — Full automation (~4-6 weeks) — $70-100/month
+- Every brief source connected
+- Gmail MCP to parse briefs received by email
+- Learning: dismissals improve matching (feedback loop)
+- Stats: acceptance rate, revenue generated by pitches
+- **Value:** an autonomous placement machine
 
-### Phase 4 — Premium — 300-500$/mois
-- Intégration Taxi.com, Music Gateway (abonnements)
-- Briefs exclusifs via partenariats
-- "Priority pitching" — être le premier à répondre à un brief
-- **Valeur :** accès à des opportunités invisibles au public
+### Phase 4 — Premium — $300-500/month
+- Taxi.com and Music Gateway integrations (subscriptions)
+- Exclusive briefs through partnerships
+- "Priority pitching" — being first to answer a brief
+- **Value:** access to opportunities invisible to the public
 
 ---
 
-## Coûts estimés détaillés
+## Estimated costs
 
 ### Phase 1 (MVP)
 
-| Poste | Coût mensuel |
-|-------|-------------|
-| Claude API (matching + rédaction email) | ~5-10$ |
-| Resend (envoi emails) | Déjà payé |
-| **Total Phase 1** | **~5-10$/mois** |
+| Item | Monthly cost |
+|---|---|
+| Claude API (matching + email drafting) | ~$5-10 |
+| Resend (sending) | Already paid |
+| **Phase 1 total** | **~$5-10/month** |
 
-### Phase 2 (Semi-auto)
+### Phase 2 (semi-automatic)
 
-| Poste | Coût mensuel |
-|-------|-------------|
-| Claude API (scan + matching + emails) | ~20-30$ |
-| Proxies (scraping léger) | ~10$ |
-| Railway (cron agent) | Déjà payé |
-| **Total Phase 2** | **~30-40$/mois** |
+| Item | Monthly cost |
+|---|---|
+| Claude API (scan + matching + emails) | ~$20-30 |
+| Proxies (light scraping) | ~$10 |
+| Railway (cron agent) | Already paid |
+| **Phase 2 total** | **~$30-40/month** |
 
-### Phase 3 (Full auto)
+### Phase 3 (full automation)
 
-| Poste | Coût mensuel |
-|-------|-------------|
-| Claude API (volume élevé) | ~50-80$ |
-| Proxies | ~20$ |
-| **Total Phase 3** | **~70-100$/mois** |
+| Item | Monthly cost |
+|---|---|
+| Claude API (high volume) | ~$50-80 |
+| Proxies | ~$20 |
+| **Phase 3 total** | **~$70-100/month** |
 
-### Phase 4 (Premium)
+### Phase 4 (premium)
 
-| Poste | Coût mensuel |
-|-------|-------------|
-| Taxi.com | ~25$ (300$/an) |
-| Music Gateway | ~20$ |
-| Claude API | ~80$ |
-| Proxies | ~20$ |
-| **Total Phase 4** | **~145-200$/mois** |
+| Item | Monthly cost |
+|---|---|
+| Taxi.com | ~$25 ($300/year) |
+| Music Gateway | ~$20 |
+| Claude API | ~$80 |
+| Proxies | ~$20 |
+| **Phase 4 total** | **~$145-200/month** |
 
 ---
 
-## Intégration avec les autres agents
+## Integration with the other agents
 
 ```
 Brief Seeker ←→ Smart Brief Matching ←→ Sonic DNA Profiler
@@ -345,56 +360,62 @@ Artist Seeker ──────────────────────
       ↓
 Pitch Writer → Pitch Inbox → Send via Resend
       ↓
-Session Replay Analyst (feedback: le contact a écouté ? combien de temps ?)
+Session Replay Analyst (feedback: did the contact listen? for how long?)
       ↓
-Catalog Awakener (un vieux track matche un nouveau brief → alerte)
+Catalog Awakener (an old track matches a new brief → alert)
 ```
 
-**Le cercle vertueux :**
-1. Brief Seeker trouve un brief
-2. Smart Brief Matching trouve le track parfait grâce au Sonic DNA
-3. Pitch Writer écrit l'email parfait
-4. L'email contient un shared link Trakalog (watermarké, trackable)
-5. Session Replay Analyst voit que le contact a écouté 3 fois le chorus
-6. Si le track est placé → revenus → Ghost Revenue Hunter s'assure que tout est collecté
-7. Le succès améliore le scoring pour les futurs briefs
+**The virtuous circle:**
+
+1. Brief Seeker finds a brief
+2. Smart Brief Matching finds the perfect track through Sonic DNA
+3. Pitch Writer writes the perfect email
+4. The email carries a Trakalog shared link — watermarked and trackable
+5. Session Replay Analyst sees the contact replayed the chorus three times
+6. If the track is placed → revenue → Ghost Revenue Hunter ensures it is all collected
+7. Success improves scoring for future briefs
 
 ---
 
-## Le vrai avantage compétitif
+## The real competitive advantage
 
-Personne ne fait ça end-to-end. Les outils existants font UNE partie :
-- Songtradr/Musicbed : listing de briefs (pas de matching intelligent)
-- Taxi.com : briefs + soumission (pas d'analyse audio)
-- DISCO : catalogue + partage (pas de pitch automatique)
+Nobody does this end to end. Existing tools each do one part:
 
-**Trakalog serait le premier à faire : veille → matching → rédaction → envoi → tracking → collecte.** C'est un full-stack pitch automation.
+- Songtradr/Musicbed: brief listings, no intelligent matching
+- Taxi.com: briefs and submission, no audio analysis
+- DISCO: catalog and sharing, no automatic pitching
 
----
-
-## Risques et mitigations
-
-| Risque | Mitigation |
-|--------|-----------|
-| Scraping bloqué par les plateformes | Commencer par Phase 1 (manuel), valider le concept d'abord |
-| Qualité des emails générés | Human-in-the-loop (approve/edit), jamais d'envoi auto sans approbation |
-| Spam perception | Max 3-5 pitches/jour par contact, respect des deadlines |
-| Briefs expirés | Vérifier deadline avant matching, priorité aux urgents |
-| Contact emails invalides | Vérification email (MX check) avant envoi |
-| Trop de briefs non pertinents | Feedback dismiss améliore le filtre progressivement |
-| Sites changent leur structure | Phase 1 (manuel) fonctionne toujours comme fallback |
+**Trakalog would be the first to run monitoring → matching → drafting → sending → tracking →
+collection.** Full-stack pitch automation.
 
 ---
 
-## Dépendances
+## Risks and mitigations
 
-- **Smart Brief Matching** ⏳ (prochaine priorité — nécessaire avant Brief Seeker)
-- **Sonic DNA Profiler** ✅ (déjà implémenté)
-- **Pitch system Trakalog** ✅ (déjà implémenté — send-pitch-email Edge Function)
-- **Shared Links** ✅ (déjà implémenté — watermarked, trackable)
-- **Resend** ✅ (déjà configuré)
-- **Session Replay / Engagement tracking** ✅ (heatmaps en cours)
+| Risk | Mitigation |
+|---|---|
+| Scraping blocked by the platforms | Start with Phase 1 (manual) and validate the concept first |
+| Quality of generated emails | Human in the loop (approve/edit); never auto-send without approval |
+| Perceived as spam | Maximum 3-5 pitches/day per contact, respect deadlines |
+| Expired briefs | Check the deadline before matching, prioritise the urgent ones |
+| Invalid contact emails | Email verification (MX check) before sending |
+| Too many irrelevant briefs | Dismiss feedback progressively sharpens the filter |
+| Sites change structure | Phase 1 (manual) always works as a fallback |
 
 ---
 
-*Ce document est vivant. Il sera mis à jour au fur et à mesure du développement.*
+## Dependencies
+
+- **Smart Brief Matching** ⏳ next priority — required before Brief Seeker
+- **Sonic DNA Profiler** ✅ implemented
+- **Trakalog pitch system** ⚠️ built (`send-pitch-email` Edge Function, `create_pitch` RPC,
+  `pitches` table) but **currently hidden** behind `FEATURES.PITCH_ENABLED`, which is `false`.
+  The flag has to be flipped before Brief Seeker can deliver anything.
+- **Shared Links** ✅ implemented — watermarked and trackable
+- **Resend** ✅ configured
+- **Session Replay / engagement tracking** ✅ `link_events` records view/play/download per
+  visitor
+
+---
+
+*This document is living, and will be updated as development proceeds.*

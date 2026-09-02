@@ -4,9 +4,10 @@
 > multiple future Claude Code sessions. Each chunk in §5 is sized for one session and ends with
 > a commit on `ishan/translated-docs`. Work them in order; tick them off as you go.
 >
-> **Status:** chunks 0-8 complete. All S1 and S2 findings are resolved; every open
-> decision in §6 is now settled. Next up: **chunk 9** (translate 6 FEATURES docs +
-> AUTH_PATTERNS + RPCS).
+> **Status:** chunks 0-9 complete. All S1/S2 findings resolved, every §6 decision
+> settled, and the FEATURES/ARCHITECTURE/DEVELOPMENT translation done.
+> Next up: **chunk 10** (translate `docs/TRAKALOG_ARCHITECTURE.md` + the 4 PLANS docs).
+> After chunk 10 the French checker should list only `docs/_archive/`.
 > **Audited:** September 1–2, 2026, against commit `fbc70f0`.
 
 ---
@@ -818,7 +819,86 @@ All the S2 items in §4.8 — smaller, surgical edits across six files. Also fro
 
 ---
 
-### ☐ Chunk 9 — Translate FEATURES + ARCHITECTURE + DEVELOPMENT *(6 files)*
+### ☑ Chunk 9 — Translate FEATURES + ARCHITECTURE + DEVELOPMENT — **DONE**
+
+> All 8 files translated (2,931 → 3,196 lines). French checker now lists only
+> chunk-10 targets and `_archive`. Broken links **0**; missing paths **0** across
+> live docs.
+>
+> Translation was not mechanical: each file was checked against the code as it
+> was rewritten, and several were describing a world that no longer exists.
+>
+> **`RPCS.md` (the priority — was half-translated, English headings over French
+> descriptions).** Rewritten and verified signature-by-signature against the
+> baseline. Every one of the 47 documented RPCs exists, but the details were
+> substantially wrong:
+> - **`update_user_profile` writes to `auth.users.raw_user_meta_data`, not
+>   `public.profiles`** — `profiles` has no `first_name`/`last_name`/`bio`/`phone`
+>   columns at all. Anything reading those must read session user metadata.
+> - **Three RPCs documented as "soft delete" are hard deletes:** `delete_track`
+>   (admin-only), `delete_workspace` (owner-only, blocks personal workspaces),
+>   `delete_track_comment` (editor+).
+> - `is_email_whitelisted` reads **`whitelisted_emails`**, not `whitelist`.
+> - `insert_track_document` writes **`track_documents`** and takes `_file_path`,
+>   not `_file_url`.
+> - Wrong return types on 7 RPCs (`uuid` documented as `void`/`json`).
+> - `create_pitch` has no `_playlist_ids` and no `_link_type` parameter.
+> - `delete_track_comment` takes `(_comment_id, _user_id)`, not `(_comment_id)`.
+> - `update_workspace_branding._hero_position` is **numeric**, not text.
+> - **Coverage corrected:** the header claimed "46 frontend RPCs + 1 = 47 total",
+>   implying completeness. Reality: **158 functions in migrations, 94 distinct
+>   RPCs called from `src/`, 47 documented.** The other 47 are now listed by name
+>   in a new §14 so they are at least discoverable.
+>
+> **`AUTH_PATTERNS.md`** — the ProtectedRoute section described a
+> `useRef(hasEverRendered)` + `trakalog_was_auth` double-guard that **no longer
+> exists**; the real component uses `needsMfaVerification` and a 5-second
+> timeout. Documented the two-layer session backup properly (the `customStorage`
+> adapter in `client.ts` mirrors the auth token; `AuthContext` handles recovery),
+> and noted that `SharedLinkPage` creates **no client at all** — direct REST only.
+> The `window.location.href` pitfall now records why `ProtectedRoute` itself is a
+> deliberate exception. Google client ID retained with provenance: it appears
+> nowhere in the repo, so this doc is its only record.
+>
+> **`TRACK_VERSIONING.md`** — was marked "Planned"; it is **fully implemented**.
+> Replaced the proposed DDL with the shipped table, and noted that the spec's
+> `UNIQUE (track_id, is_active)` constraint was never created **and would have
+> been wrong** — it permits only one *inactive* version per track. Single-active
+> is enforced in `set_track_version_active` instead. Documented all 6 version
+> RPCs, and why the copy-up to the parent `tracks` row must stay inside one
+> function.
+>
+> **`TRAKALOG_BILLING.md`** — §7-8 claimed "no Stripe plumbing (0 Edge
+> Functions)" and "no limit enforcement anywhere". **Both false since the
+> August 2-5 migrations:** 3 Stripe Edge Functions are deployed, and
+> `plan_limit_reached` is enforced for tracks, pitches, seats and workspaces.
+> Rewrote both sections against reality, kept the genuinely-missing items
+> (add-on purchase, storage-quota trigger, quota UI). **Also fixed a formatting
+> bug I introduced in chunk 8** — the founder section had landed mid-table,
+> orphaning four pricing rows. Business storage corrected to 1 TB in the card
+> copy as well as the table.
+>
+> **`TRAKALOG_ADMIN_DASHBOARD.md`** — was "to implement"; a console **exists**
+> but is architecturally different from the spec. Added a §0 recording that it is
+> a separate app on `admin.trakalog.com` (hostname-based `isAdminMode()` swapping
+> the whole root component, stronger isolation than the spec's lazy route group),
+> with 4 built tabs, and that **the real RPCs are `get_admin_overview` /
+> `list_all_users` / `list_all_contacts` / `list_waitlist_signups` /
+> `get_visit_stats`** — none of the `admin_*` names in §3 exist.
+>
+> **`ISRC_GENERATION.md`, `DDEX_PRO_EXPORTS.md`, `BRIEF_SEEKER.md`** — genuine
+> unbuilt specs; status lines made explicit after verifying nothing ships.
+> Corrections where the spec contradicted the schema: `tracks.iswc`
+> **already exists** (DDEX said "to implement"); `tracks.released_at`, not
+> `release_date`; `splits` is a jsonb column whose entries carry both `roles[]`
+> and legacy `role` shapes, which export builders must handle or silently drop
+> credits. ISRC's no-reuse guarantee re-framed — tracks are **hard-deleted**, so
+> `isrc_counters` is the only thing preventing reuse and must never be reset.
+> Brief Seeker's "pitch system ✅ implemented" now notes it is flag-disabled.
+>
+> **Noted for follow-up:** `is_platform_admin` matches a hardcoded email in the
+> function body, so adding an admin needs a migration. Worth moving to a table.
+
 
 `FEATURES/TRAKALOG_BILLING.md`, `FEATURES/TRACK_VERSIONING.md`, `FEATURES/ISRC_GENERATION.md`,
 `FEATURES/DDEX_PRO_EXPORTS.md`, `FEATURES/TRAKALOG_ADMIN_DASHBOARD.md`,

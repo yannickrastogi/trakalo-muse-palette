@@ -1,73 +1,103 @@
-# TRAKALOG — Track Versioning (Feature Spec)
+# TRAKALOG — Track Versioning
 
-> **Document créé le :** 13 avril 2026
-> **Objectif :** Permettre aux utilisateurs d'uploader et comparer plusieurs versions d'un même morceau.
-> **Statut :** Planifié
+> **Created:** April 13, 2026
+> **Last Updated:** September 2, 2026
+> **Status:** ✅ **Implemented** (this document began life as a spec while the feature was
+> planned; it has been reconciled against the shipped implementation)
+> **Owner:** Ishan
+> **Related:** [TRACK_MANAGEMENT.md](TRACK_MANAGEMENT.md), [SHARING_SYSTEM.md](SHARING_SYSTEM.md), [RPCS.md](../DEVELOPMENT/RPCS.md)
 
 ---
 
 ## Vision
 
-Un morceau passe par plusieurs versions : demo → V1 → V2 → radio edit → clean → master final. L'utilisateur doit pouvoir uploader ces versions sous le même track, les comparer en A/B au même timecode, et choisir laquelle est la version "active" utilisée pour les pitches et shared links.
+A track passes through several versions: demo → V1 → V2 → radio edit → clean → final master.
+A user should be able to upload those versions under the same track, compare them A/B at the
+same timecode, and choose which one is the "active" version used for pitches and shared links.
 
 ---
 
-## Principes clés
+## Key principles
 
-1. **Un track = une œuvre.** Les métadonnées partagées (titre, artiste, splits, lyrics, cover, mood, genre) restent sur le track parent.
-2. **Chaque version a ses propres données audio** : fichier audio, waveform, Sonic DNA, durée, notes.
-3. **Auto-naming** : la première version s'appelle "V1" (ou "Original"), les suivantes "V2", "V3", etc. L'utilisateur peut renommer.
-4. **Une version active** : c'est celle utilisée dans les pitches, shared links et le player par défaut. N'importe quelle version peut devenir active.
-5. **A/B switching** : dans TrackDetail, l'utilisateur peut basculer entre les versions au même timecode pour comparer instantanément.
+1. **One track = one work.** Shared metadata (title, artist, splits, lyrics, cover, mood,
+   genre) stays on the parent track.
+2. **Each version owns its audio data:** audio file, waveform, Sonic DNA, duration, notes.
+3. **Auto-naming:** the first version is "V1", subsequent ones "V2", "V3"… The user can rename.
+4. **One active version:** the one used in pitches, shared links and the default player. Any
+   version can become active.
+5. **A/B switching:** in TrackDetail, the user can flip between versions at the same timecode
+   for instant comparison.
 
 ---
 
-## Structure DB
+## Database
 
-### Nouvelle table : track_versions
+### `public.track_versions` — as shipped
 
 ```sql
-CREATE TABLE track_versions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  track_id uuid NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
-  version_number integer NOT NULL DEFAULT 1,
-  version_name text NOT NULL DEFAULT 'V1',
-  audio_url text,                     -- fichier audio original (storage path)
-  audio_preview_url text,             -- MP3 preview compressé
-  waveform_data jsonb,                -- waveform propre à cette version
-  sonic_dna jsonb,                    -- Sonic DNA propre à cette version
-  duration_sec numeric,
-  is_active boolean DEFAULT false,    -- la version utilisée pour pitches/shared links
-  notes text,                         -- notes spécifiques ("ajouté guitare", "mix V2", etc.)
-  created_at timestamptz DEFAULT now(),
-  created_by uuid REFERENCES auth.users(id),
-  
-  CONSTRAINT unique_active_per_track UNIQUE (track_id, is_active) 
-    -- Note: cette contrainte ne marche que si on gère le toggle côté app
+CREATE TABLE public.track_versions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    track_id uuid NOT NULL,
+    version_number integer DEFAULT 1 NOT NULL,
+    version_name text DEFAULT 'V1'::text NOT NULL,
+    audio_url text,               -- original audio (storage path)
+    audio_preview_url text,       -- compressed MP3 preview
+    waveform_data jsonb,          -- waveform for this version
+    sonic_dna jsonb,              -- Sonic DNA for this version
+    duration_sec numeric,
+    is_active boolean DEFAULT false,
+    notes text,
+    created_at timestamp with time zone DEFAULT now(),
+    created_by uuid,
+    chapters jsonb DEFAULT '[]'::jsonb
 );
-
--- Index pour chercher la version active rapidement
-CREATE INDEX idx_track_versions_active ON track_versions(track_id) WHERE is_active = true;
-
--- Contrainte : un seul is_active = true par track (géré côté application)
 ```
 
-### Colonnes ajoutées sur tracks (optionnel)
+Constraints and indexes actually present:
+
+```sql
+ALTER TABLE ONLY public.track_versions
+    ADD CONSTRAINT track_versions_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.track_versions
+    ADD CONSTRAINT track_versions_track_id_fkey
+    FOREIGN KEY (track_id) REFERENCES public.tracks(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.track_versions
+    ADD CONSTRAINT track_versions_created_by_fkey
+    FOREIGN KEY (created_by) REFERENCES auth.users(id);
+
+CREATE INDEX idx_track_versions_active
+    ON public.track_versions USING btree (track_id) WHERE (is_active = true);
+CREATE INDEX idx_track_versions_created_by
+    ON public.track_versions USING btree (created_by);
+```
+
+Two differences from the original spec, both deliberate:
+
+- **The spec's `UNIQUE (track_id, is_active)` constraint was never created — and it was wrong.**
+  A unique constraint on that pair would permit only *one inactive* version per track, which is
+  the opposite of what is needed. Single-active is enforced in
+  `set_track_version_active` instead, and the partial index
+  `WHERE is_active = true` makes looking up the active version cheap.
+- **`chapters jsonb` was added** and is not in the spec. Chapter markers are per-version,
+  because a radio edit's structure differs from the original's.
+
+### Columns on `tracks`
 
 ```sql
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS has_versions boolean DEFAULT false;
 ALTER TABLE tracks ADD COLUMN IF NOT EXISTS version_count integer DEFAULT 1;
 ```
 
----
+Both shipped.
 
-## Migration des tracks existants
-
-Quand la feature est activée, migrer chaque track existant :
+### Backfilling existing tracks
 
 ```sql
-INSERT INTO track_versions (track_id, version_number, version_name, audio_url, audio_preview_url, waveform_data, sonic_dna, duration_sec, is_active, created_by)
-SELECT id, 1, 'V1', audio_url, audio_preview_url, waveform_data, sonic_dna, duration_sec, true, uploaded_by
+INSERT INTO track_versions (track_id, version_number, version_name, audio_url,
+                            audio_preview_url, waveform_data, sonic_dna, duration_sec,
+                            is_active, created_by)
+SELECT id, 1, 'V1', audio_url, audio_preview_url, waveform_data, sonic_dna, duration_sec,
+       true, uploaded_by
 FROM tracks
 WHERE audio_url IS NOT NULL;
 
@@ -76,177 +106,190 @@ UPDATE tracks SET has_versions = true, version_count = 1 WHERE audio_url IS NOT 
 
 ---
 
+## RPCs
+
+All are `SECURITY DEFINER` and take `_user_id` first. Note that every one of them also takes
+`_workspace_id` — the authorization check needs it, and passing the track id alone is not
+enough.
+
+| RPC | Signature | Returns |
+|---|---|---|
+| `add_track_version` | `(_user_id, _track_id, _workspace_id, _version_name, _audio_url, _audio_preview_url, _waveform_data, _sonic_dna, _duration_sec, _notes)` — plus a trailing `_file_size_bytes bigint DEFAULT NULL` | `uuid` |
+| `set_track_version_active` | `(_user_id, _track_id, _workspace_id, _version_id)` | `void` |
+| `delete_track_version` | `(_user_id, _version_id, _track_id, _workspace_id)` | `void` |
+| `update_track_version_notes` | `(_user_id, _version_id, _track_id, _workspace_id, _notes)` | `void` |
+| `update_track_version_chapters` | `(_user_id, _version_id, _track_id, _workspace_id, _chapters)` | `void` |
+| `update_track_version_waveform` | `(_user_id, _version_id, _track_id, _workspace_id, _waveform_data, _duration_sec)` | `void` |
+
+---
+
 ## UX — TrackDetail
 
-### Sélecteur de versions (sous le titre, au-dessus du player)
+### Version selector (under the title, above the player)
 
 ```
 ┌──────────────────────────────────────────────────┐
 │  Naughty Gyal                                     │
-│  Arjun K. x Ayu Shy x Banx & Ranx               │
+│  Arjun K. x Ayu Shy x Banx & Ranx                │
 │                                                   │
 │  ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐  ┌───────┐ │
 │  │ V1  │  │ V2  │  │ V3  │  │ V4★ │  │  + ▲  │ │
 │  └─────┘  └─────┘  └─────┘  └─────┘  └───────┘ │
 │                                                   │
-│  ★ = version active (utilisée pour pitches)      │
+│  ★ = active version (used for pitches)           │
 │  + = Upload New Version                           │
-│  ▲ = Set as Active (sur la version sélectionnée) │
+│  ▲ = Set as Active (on the selected version)     │
 └──────────────────────────────────────────────────┘
 ```
 
-### Comportement des tabs de version :
-- **Clic sur une version** : charge sa waveform et son audio dans le player. Si le track était en lecture, continue au même timecode (A/B switch).
-- **★ (étoile)** sur la version active : indique visuellement quelle version est utilisée pour les pitches/shared links.
-- **Double-clic sur le nom** : renommer la version (texte libre).
-- **Bouton "+"** : ouvre un file picker pour uploader une nouvelle version. Auto-nommée "V[N+1]".
-- **Clic droit ou menu "..."** sur une version :
-  - "Set as Active" → cette version devient la version par défaut
-  - "Download" → télécharger ce fichier audio
-  - "Delete Version" → supprimer (pas possible sur la dernière version restante)
-  - "View Notes" → ouvrir/éditer les notes de cette version
+Implemented by `src/components/VersionSelector.tsx`.
 
-### A/B Comparison
+### Version tab behaviour
 
-Quand l'utilisateur switch de version pendant la lecture :
-1. Le player note le timecode actuel (ex: 1:34)
-2. Charge le fichier audio de la nouvelle version
-3. Seek au même timecode (1:34)
-4. Continue la lecture immédiatement
-5. La waveform se met à jour avec celle de la nouvelle version
-6. Transition seamless — comme un A/B dans un DAW
+- **Click a version:** loads its waveform and audio into the player. If the track was playing,
+  playback continues at the same timecode (A/B switch).
+- **★** on the active version: shows which one feeds pitches and shared links.
+- **Double-click the name:** rename the version (free text).
+- **"+" button:** opens a file picker to upload a new version. Auto-named "V[N+1]".
+- **Right-click or the "…" menu** on a version:
+  - "Set as Active" → this version becomes the default
+  - "Download" → download this audio file
+  - "Delete Version" → not permitted on the last remaining version
+  - "View Notes" → open/edit this version's notes
 
-### Notes par version
+### A/B comparison
 
-Chaque version a un petit champ "notes" accessible :
-- Via un icône 📝 à côté du nom de la version
-- Au clic, un petit input inline s'ouvre pour écrire/éditer
-- Exemples : "Mix par Jean", "Ajouté bridge guitare", "Version clean sans explicit", "Master final"
+Switching version during playback:
+
+1. The player records the current timecode (e.g. 1:34)
+2. Loads the new version's audio
+3. Seeks to the same timecode (1:34)
+4. Resumes immediately
+5. The waveform updates to the new version's
+6. Seamless — like an A/B in a DAW
+
+The audio swap is `swapAudioSource(rawStoragePath, { playWhenReady })` on
+`AudioPlayerContext`. It preserves the current timecode and play state, and takes a raw storage
+path inside the `tracks` bucket. **The caller is responsible for ensuring the swap targets the
+same logical track** — `currentTrack` deliberately stays unchanged, so pointing it at an
+unrelated file would silently desynchronise the UI from the audio.
+
+### Per-version notes
+
+Each version has a small notes field, reachable via a 📝 icon beside the version name. Clicking
+opens an inline input. Examples: "Mixed by Jean", "Added guitar bridge", "Clean version, no
+explicit", "Final master".
 
 ---
 
-## UX — Liste des tracks (catalogue)
+## UX — Catalog list
 
-### Indicateur de versions multiples
-
-Dans la ligne du catalogue (TrackRow), si un track a plus d'une version :
-- Afficher un petit badge ou indicateur : "V4" ou "4 versions" en text-2xs à côté du titre
-- Discret mais informatif
-- Au hover : tooltip "4 versions — V4 is active"
+If a track has more than one version, the catalog row shows a discreet badge — "V4" or
+"4 versions" in `text-2xs` beside the title. On hover: "4 versions — V4 is active".
 
 ---
 
 ## UX — Upload
 
-### Upload initial
-- Le track est créé normalement
-- Une entrée track_versions est créée automatiquement avec version_name "V1", is_active = true
-- L'audio_url est stocké dans track_versions ET dans tracks (pour rétrocompatibilité)
+### Initial upload
 
-### Upload nouvelle version (depuis TrackDetail)
-1. Clic sur "+" dans le sélecteur de versions
-2. File picker s'ouvre (WAV, MP3, FLAC, AIFF)
-3. Le fichier est uploadé vers Storage dans le même dossier que le track, avec suffixe : `{workspace_id}/{track_id}_v{N}.{ext}`
-4. Nouvelle entrée track_versions créée :
-   - version_number = max(version_number) + 1
-   - version_name = "V" + version_number
-   - is_active = false (ne pas changer la version active automatiquement)
-5. Sonic DNA se lance automatiquement sur la nouvelle version
-6. Compression MP3 preview en fire-and-forget
-7. Toast : "Version V3 uploaded — Sonic DNA analysis in progress..."
-8. La nouvelle version apparaît dans les tabs
+- The track is created normally
+- A `track_versions` row is created automatically with `version_name = 'V1'`,
+  `is_active = true`
+- `audio_url` is stored **both** in `track_versions` and on `tracks`, for backward
+  compatibility
+
+### Uploading a new version from TrackDetail
+
+1. Click "+" in the version selector
+2. File picker opens (WAV, MP3, FLAC, AIFF)
+3. The file uploads to storage alongside the track, suffixed:
+   `{workspace_id}/{track_id}_v{N}.{ext}`
+4. A new `track_versions` row is created:
+   - `version_number = max(version_number) + 1`
+   - `version_name = 'V' || version_number`
+   - `is_active = false` — uploading never silently changes which version ships
+5. Sonic DNA runs automatically on the new version
+6. MP3 preview compression, fire-and-forget
+7. Toast: "Version V3 uploaded — Sonic DNA analysis in progress…"
+8. The new version appears in the tabs
 
 ---
 
-## Shared Links & Pitches
+## Shared links and pitches
 
-### Comportement
-- Les shared links et pitches utilisent TOUJOURS la version active (is_active = true)
-- Quand l'utilisateur change la version active, les shared links existants pointent vers la nouvelle version active
-- Le recipient du shared link ne voit pas les autres versions — il écoute la version active uniquement
-- Si l'utilisateur veut partager une version spécifique (pas l'active), il peut créer un shared link depuis le menu "..." de cette version
+- Shared links and pitches **always** use the active version (`is_active = true`)
+- Changing the active version repoints existing shared links at the new one
+- The shared-link recipient sees only the active version — never the others
+- To share a specific non-active version, create a shared link from that version's "…" menu
 
-### SharedLinkPage
-- Le player charge l'audio de la version active par défaut
-- Le watermarking s'applique sur la version active
+On `SharedLinkPage` the player loads the active version's audio, and watermarking applies to
+it — the watermark is per *(link, visitor)*, so switching the active version produces a new
+cache entry but the same payload for that visitor.
 
 ---
 
 ## Sonic DNA
 
-Chaque version a son propre Sonic DNA :
-- BPM peut différer entre versions (remix plus rapide, radio edit raccourci)
-- Structure peut différer (radio edit sans bridge)
-- Energy curve différente
-- Le Sonic DNA du track parent (tracks.sonic_dna) = celui de la version active
-- Quand on change la version active, tracks.sonic_dna est mis à jour avec le sonic_dna de la nouvelle version active
+Each version carries its own Sonic DNA, because analysis genuinely differs:
+
+- BPM can differ (a faster remix)
+- Structure can differ (a radio edit without the bridge)
+- The energy curve differs
+
+`tracks.sonic_dna` mirrors the **active** version's. When the active version changes,
+`set_track_version_active` copies the new version's `sonic_dna` — along with `audio_url`,
+`audio_preview_url`, `waveform_data` and `duration_sec` — up onto the parent track. That
+denormalisation is what lets the catalog, Smart A&R and shared links read a single row without
+joining `track_versions`.
 
 ---
 
-## Smart Brief Matching
+## Smart A&R matching
 
-Le matching utilise le Sonic DNA de la version active. Mais il peut aussi scanner les autres versions :
-- "V2 de ce track matche mieux ce brief que V1 (score 92% vs 78%)"
-- Suggestion : "Switch to V2 as active for better brief matching"
+Matching uses the active version's Sonic DNA, but can also scan the others:
 
----
-
-## Flow technique — Set as Active
-
-1. L'utilisateur clique "Set as Active" sur une version
-2. Frontend :
-   - `UPDATE track_versions SET is_active = false WHERE track_id = X` (toutes les versions)
-   - `UPDATE track_versions SET is_active = true WHERE id = version_id`
-   - `UPDATE tracks SET audio_url = version.audio_url, audio_preview_url = version.audio_preview_url, waveform_data = version.waveform_data, sonic_dna = version.sonic_dna, duration_sec = version.duration_sec WHERE id = track_id`
-3. Toast : "V3 is now the active version"
-4. Les shared links existants pointent automatiquement vers la nouvelle version
+- "V2 of this track matches this brief better than V1 (92% vs 78%)"
+- Suggestion: "Switch to V2 as active for better brief matching"
 
 ---
 
-## Phases d'implémentation
+## Set-as-active flow
 
-### Phase 1 — MVP (~2-3 semaines)
-- Table track_versions + migration tracks existants
-- Upload nouvelle version depuis TrackDetail
-- Tabs de version dans TrackDetail
-- Switch de version dans le player (chargement du bon fichier)
-- Set as Active
-- Sonic DNA par version
-- Indicateur dans la liste du catalogue
+1. The user clicks "Set as Active" on a version
+2. `set_track_version_active(_user_id, _track_id, _workspace_id, _version_id)`:
+   - clears `is_active` on every version of the track
+   - sets `is_active = true` on the chosen one
+   - copies `audio_url`, `audio_preview_url`, `waveform_data`, `sonic_dna` and `duration_sec`
+     up onto `tracks`
+3. Toast: "V3 is now the active version"
+4. Existing shared links follow automatically
 
-### Phase 2 — Polish (~1-2 semaines)
-- A/B switch seamless au même timecode
-- Notes par version (inline edit)
-- Renommer les versions (double-clic)
-- Supprimer une version
-- Shared link pour une version spécifique
-
-### Phase 3 — Intelligence (~1 semaine)
-- Smart Brief Matching scanne toutes les versions
-- Suggestion de version optimale pour chaque brief
-- Comparaison Sonic DNA entre versions (overlay des energy curves)
+Doing all three steps inside one `SECURITY DEFINER` function is what keeps them atomic — done
+from the client as three separate statements, a failure between them would leave a track with
+no active version, or with the parent row describing a different version than the active one.
 
 ---
 
-## Risques et mitigations
+## Risks and mitigations
 
-| Risque | Mitigation |
-|--------|-----------|
-| Rétrocompatibilité | Migration automatique des tracks existants + garder audio_url sur le track parent |
-| Storage space | Même pricing Supabase, pas de changement |
-| Shared links cassés | La version active est toujours la source des shared links |
-| Confusion utilisateur | L'étoile ★ indique clairement la version active |
-| Performance player A/B | Preload la version suivante en background quand l'utilisateur hover |
-
----
-
-## Dépendances
-
-- **Sonic DNA Profiler** ✅ (déjà implémenté — tourne par version)
-- **Shared Links** ✅ (déjà implémenté — pointe vers version active)
-- **Storage Supabase** ✅ (déjà configuré)
-- **Smart Brief Matching** ⏳ (bonus Phase 3)
+| Risk | Mitigation |
+|---|---|
+| Backward compatibility | Automatic backfill of existing tracks + `audio_url` retained on the parent track |
+| Storage cost | Each version is a full audio file — versions multiply storage against `plan_limits.storage_bytes_max` |
+| Broken shared links | The active version is always the source of truth for shared links |
+| User confusion | The ★ marks the active version unambiguously |
+| A/B player performance | Preload the next version in the background on hover |
 
 ---
 
-*Ce document est vivant. Il sera mis à jour au fur et à mesure du développement.*
+## Dependencies
+
+- **Sonic DNA Profiler** ✅ implemented — runs per version
+- **Shared Links** ✅ implemented — points at the active version
+- **Storage** ✅ configured
+- **Smart A&R matching** ⏳ cross-version scanning still outstanding
+
+---
+
+*This document is living, and will be updated as the feature evolves.*
