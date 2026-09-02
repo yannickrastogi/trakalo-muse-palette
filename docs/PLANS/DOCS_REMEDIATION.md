@@ -4,8 +4,9 @@
 > multiple future Claude Code sessions. Each chunk in §5 is sized for one session and ends with
 > a commit on `ishan/translated-docs`. Work them in order; tick them off as you go.
 >
-> **Status:** chunks 0-5 complete. `03-DATA_ARCHITECTURE.md` is fully verified.
-> Next up: **chunk 6** (`04-COMPONENT_ARCHITECTURE.md` rewrite).
+> **Status:** chunks 0-6 complete. `03-DATA_ARCHITECTURE.md` and
+> `04-COMPONENT_ARCHITECTURE.md` are fully verified.
+> Next up: **chunk 7** (`FEATURES/SHARING_SYSTEM.md` + `FEATURES/TRACK_MANAGEMENT.md`).
 > **Audited:** September 1–2, 2026, against commit `fbc70f0`.
 
 ---
@@ -609,7 +610,25 @@ The largest job — split across chunks 4 and 5.
 
 ---
 
-### ☐ Chunk 6 — `04-COMPONENT_ARCHITECTURE.md` rewrite
+### ☑ Chunk 6 — `04-COMPONENT_ARCHITECTURE.md` rewrite — **DONE**
+
+> Full rewrite (1075 → 1219 lines). Missing-paths checker: **0** for this file.
+> Replaced the `TrackCard.tsx` walkthrough and test example with
+> `TrackCompletenessBar` + `useTrackCompleteness` — a real pure component/hook
+> pair. Deleted §8's six fictional hooks; documented the nine real ones plus a
+> "looking for X, use Y instead" table. Corrected `main.tsx` (no StrictMode, no
+> MotionConfig — it holds `vite:preloadError` chunk recovery), `lib/adminMode.ts`
+> (hostname `admin.trakalog.com` + `?admin=1` dev override), `tailwind.config.ts`
+> (all `hsl(var(--…))`, Sora-first), `ProtectedRoute` (hard redirect, 5s timeout,
+> MFA gate), and the i18n setup (two namespaces, `landing.json`).
+> Route list completed to 6 public + 4 auth + 22 protected; pages 32; components
+> 60 flat + 4 subdirectories; `ui/` 41 files.
+> **Newly documented, worth knowing:** §7.2 — React Query is installed and its
+> provider mounted but there are **zero** `useQuery`/`useMutation` call sites, so
+> the single-mount provider stack (§3.3) is doing the query cache's job.
+> `src/App.css` is dead (imported by nothing). `src/lib/visualFlags.ts` is a
+> second, separate flag mechanism from `src/config/features.ts`.
+
 
 1. Replace the `TrackCard.tsx` walkthrough (L727-791) and the test example (L1356-1403) with a
    component that exists — pick a real one from `src/components/`.
