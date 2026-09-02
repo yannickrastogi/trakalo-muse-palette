@@ -4,7 +4,8 @@
 > multiple future Claude Code sessions. Each chunk in §5 is sized for one session and ends with
 > a commit on `ishan/translated-docs`. Work them in order; tick them off as you go.
 >
-> **Status:** chunks 0-4 complete. Next up: **chunk 5** (`03-DATA_ARCHITECTURE.md` part 2: remaining tables + RLS).
+> **Status:** chunks 0-5 complete. `03-DATA_ARCHITECTURE.md` is fully verified.
+> Next up: **chunk 6** (`04-COMPONENT_ARCHITECTURE.md` rewrite).
 > **Audited:** September 1–2, 2026, against commit `fbc70f0`.
 
 ---
@@ -580,7 +581,13 @@ The largest job — split across chunks 4 and 5.
 
 ---
 
-### ☐ Chunk 5 — `03-DATA_ARCHITECTURE.md`, part 2: remaining tables & RLS
+### ☑ Chunk 5 — `03-DATA_ARCHITECTURE.md`, part 2 — **DONE**
+
+> All 45 table sections now verified: **428 documented columns, 0 ghosts.**
+> §5 rebuilt on the six helpers that exist; all 20 cited policy names verified
+> present in the baseline. §4.1 ownership tree redrawn (23 entities, all real).
+> Noted for follow-up: `is_platform_admin` matches a hardcoded email allowlist
+> in the function body — worth moving to a table.
 
 1. Re-derive the remaining tables: `shared_links`, `watermark_payloads`, `link_events`,
    `link_downloads`, `shared_link_sessions`, `catalog_shares`, `contacts`, `artist_aliases`,

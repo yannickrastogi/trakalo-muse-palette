@@ -1,7 +1,7 @@
 # 03 - Data Architecture
 
-> **Status:** Draft  
-> **Version:** 1.0.0  
+> **Status:** Stable  
+> **Version:** 2.0.0  
 > **Created:** August 11, 2026  
 > **Last Updated:** September 2, 2026  
 > **Owner:** Ishan  
@@ -469,43 +469,28 @@ Multiple audio versions under one track (V1, V2, Radio Edit).
 
 #### `playlists`
 
-Ordered collections of tracks.
-
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `workspace_id` | uuid | NO | | Owning workspace ID |
-| `created_by` | uuid | NO | | User who created the playlist |
-| `name` | text | NO | | Playlist name |
-| `description` | text | YES | | Playlist description |
-| `cover_url` | text | YES | | Playlist cover image URL |
-| `is_public` | boolean | NO | false | Whether playlist is publicly shareable |
-| `position` | integer | YES | | Sort order |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
-| `is_deleted` | boolean | NO | false | Soft delete flag |
-
-**Indexes:**
-- `playlists_workspace_id_idx` (workspace_id)
-- `playlists_created_by_idx` (created_by)
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `workspace_id` | uuid | NO | | |
+| `created_by` | uuid | YES | | |
+| `name` | text | NO | | |
+| `description` | text | YES | | |
+| `cover_url` | text | YES | | |
+| `is_public` | boolean | NO | `false` | |
+| `created_at` | timestamptz | NO | `now()` | |
+| `updated_at` | timestamptz | NO | `now()` | |
 
 #### `playlist_tracks`
 
-Many-to-many relationship between playlists and tracks with ordering.
-
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `playlist_id` | uuid | NO | | References playlists.id |
-| `track_id` | uuid | NO | | References tracks.id |
-| `position` | integer | NO | | Position in playlist (0-based) |
-| `added_by` | uuid | YES | | User who added the track |
-| `added_at` | timestamptz | NO | now() | When track was added |
-
-**Indexes:**
-- `playlist_tracks_playlist_id_position_idx` (playlist_id, position) - For ordered queries
-- `playlist_tracks_playlist_id_idx` (playlist_id)
-- `playlist_tracks_track_id_idx` (track_id)
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `playlist_id` | uuid | NO | | |
+| `track_id` | uuid | NO | | |
+| `position` | **smallint** | NO | `0` | Ordering. A **reserved word** — quote it as `"position"` in raw SQL |
+| `added_at` | timestamptz | NO | `now()` | |
+| `added_by` | uuid | YES | | |
 
 ---
 
@@ -513,61 +498,133 @@ Many-to-many relationship between playlists and tracks with ordering.
 
 #### `shared_links`
 
-URLs for sharing tracks, playlists, stems, or packs externally.
+The delivery surface. One row per link created.
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `workspace_id` | uuid | NO | | Creating workspace ID |
-| `created_by` | uuid | NO | | User who created the link |
-| `share_type` | share_type | NO | | Type: track, playlist, stems, pack |
-| `link_name` | text | YES | | Human-readable link name |
-| `link_slug` | text | NO | | URL slug (unique) |
-| `link_type` | text | YES | | Link classification |
-| `track_id` | uuid | YES | | Shared track ID (for track/stems shares) |
-| `playlist_id` | uuid | YES | | Shared playlist ID |
-| `password_hash` | text | YES | | PBKDF2 hashed password |
-| `message` | text | YES | | Custom message for recipients |
-| `allow_download` | boolean | NO | true | Whether downloads are enabled |
-| `allow_save` | boolean | NO | true | Whether recipients can save to their Trakalog |
-| `download_quality` | text | YES | 'high' | Download quality: low, medium, high |
-| `expires_at` | timestamptz | YES | | Expiration timestamp |
-| `disabled` | boolean | NO | false | Whether link is disabled |
-| `disabled_at` | timestamptz | YES | | When link was disabled |
-| `pack_items` | jsonb | YES | | Items included in pack shares |
-| `branding_overrides` | jsonb | YES | | Custom branding for this link |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `workspace_id` | uuid | NO | | |
+| `created_by` | uuid | YES | | |
+| `share_type` | `share_type` | NO | | `stems \| track \| playlist \| pack` — **drives the watermark rule** |
+| `track_id` | uuid | YES | | Set for `track` links |
+| `playlist_id` | uuid | YES | | Set for `playlist` links |
+| `pack_items` | jsonb | YES | `'[]'` | Contents of a `pack` link |
+| `link_name` | text | NO | | Display name — **not** `title` |
+| `link_slug` | text | NO | | The public URL segment |
+| `link_type` | text | NO | `'public'` | CHECK: `public \| secured` |
+| `password_hash` | text | YES | | PBKDF2-SHA256, stored `saltHex:hashHex` — **not** bcrypt |
+| `message` | text | YES | | Note shown to the recipient |
+| `allow_download` | boolean | NO | **`false`** | Default is off |
+| `download_quality` | text | YES | | CHECK: **`hi-res \| low-res`** only |
+| `allow_save` | boolean | NO | `true` | "Save to Trakalog" |
+| `watermarking_enabled` | boolean | NO | `true` | |
+| `gate_screen_enabled` | boolean | NO | `true` | Ask for name/email before playback |
+| `expires_at` | timestamptz | YES | | |
+| `status` | `link_status` | NO | `'active'` | `active \| expired \| disabled` |
+| `created_at` | timestamptz | NO | `now()` | |
+| `updated_at` | timestamptz | NO | `now()` | |
 
-**Indexes:**
-- `shared_links_link_slug_idx` (link_slug) - Unique
-- `shared_links_workspace_id_idx` (workspace_id)
-- `shared_links_created_by_idx` (created_by)
-- `shared_links_share_type_idx` (share_type)
-- `shared_links_track_id_idx` (track_id)
-- `shared_links_playlist_id_idx` (playlist_id)
+> There is **no** `is_active`, `disabled`, `disabled_at`, `max_accesses`, `access_count`,
+> `branding_override` or `notification_email` column. Enable/disable is the `status` enum;
+> branding is read from the owning workspace.
 
-#### `shared_links_access`
+> ⚠️ **`download_quality` accepts only `hi-res` and `low-res`.** Not `low`/`medium`/`high`,
+> and not bitrates.
 
-Logs of who accessed shared links.
+> ⚠️ **The watermark rule keys on `share_type`, not on delivery format.** `track` and
+> `playlist` links always route through `get-watermarked-audio`, including "Download all",
+> which delivers individual files. Only `pack` produces a ZIP, and it carries **clean**
+> audio by design — packs are for delivering final masters.
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | uuid | NO | Primary key |
-| `link_id` | uuid | NO | References shared_links.id |
-| `name` | text | YES | Recipient name |
-| `email` | text | YES | Recipient email |
-| `role` | text | YES | Recipient role |
-| `company` | text | YES | Recipient company |
-| `ip_address` | text | YES | Recipient IP address |
-| `user_agent` | text | YES | Recipient browser/device |
-| `accessed_at` | timestamptz | NO | now() | Access timestamp |
-| `has_opted_in` | boolean | NO | false | Whether recipient opted into contact list |
+#### `shared_link_sessions`
 
-**Indexes:**
-- `shared_links_access_link_id_idx` (link_id)
-- `shared_links_access_email_idx` (email)
-- `shared_links_access_accessed_at_idx` (accessed_at)
+A visitor's session against a link, after the gate screen.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `link_id` | uuid | NO | | |
+| `token_hash` | text | NO | | Hashed session token — the raw token is never stored |
+| `created_at` | timestamptz | NO | `now()` | |
+| `expires_at` | timestamptz | NO | | |
+
+#### `link_events`
+
+Play / download / view telemetry.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `link_id` | uuid | YES | | |
+| `track_id` | uuid | YES | | |
+| `visitor_email` | text | YES | | |
+| `visitor_ip` | text | YES | | |
+| `event_type` | text | NO | | CHECK: `play \| download \| view` |
+| `created_at` | timestamptz | YES | `now()` | |
+
+#### `link_downloads`
+
+Richer record captured at download time, including the gate-screen identity.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `link_id` | uuid | NO | | |
+| `downloader_name` | text | YES | | |
+| `downloader_email` | text | YES | | |
+| `organization` | text | YES | | |
+| `role` | text | YES | | |
+| `track_name` | text | YES | | |
+| `stems_downloaded` | text[] | YES | `'{}'` | |
+| `ip_address` | **inet** | YES | | Note: `inet`, while `link_events.visitor_ip` is `text` |
+| `visitor_ip` | text | YES | | |
+| `user_agent` | text | YES | | |
+| `downloaded_at` | timestamptz | NO | `now()` | |
+
+> These three tables are what the pre-September 2026 version of this document called
+> `shared_links_access`. **No such table exists.** Access analytics are assembled from
+> `shared_link_sessions` (who opened a session), `link_events` (what they played or viewed)
+> and `link_downloads` (what they took).
+
+#### `watermark_payloads`
+
+Maps an embedded watermark back to the visitor who received the file.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `hash_hex` | text | NO | | **Primary key.** The 32-hex audiowmark payload. There is no `id` column |
+| `raw_payload` | text | NO | | The pre-hash string, `lid_{link_id}_v_{email}` |
+| `link_id` | uuid | YES | | |
+| `visitor_email` | text | YES | | |
+| `visitor_name` | text | YES | | |
+| `created_at` | timestamptz | YES | `now()` | |
+
+> There is no `track_id` on this table — the link plus the storage path identify the audio.
+> Derivation: `hash_hex = SHA-256("lid_{link_id}_v_{email}").substring(0, 32)`.
+> The **cache filename** is a *different* hash: `SHA-256(link_id_email_storage_path)`.
+
+#### `leak_traces`
+
+Result of decoding a suspect file uploaded to `trace-leak`.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `workspace_id` | uuid | NO | | |
+| `user_id` | uuid | NO | | Who ran the trace |
+| `file_name` | text | NO | | The suspect file |
+| `hash_hex` | text | YES | | Decoded payload, joins to `watermark_payloads` |
+| `confidence` | **real** | YES | `0` | Detection score — threshold is `1.0` |
+| `match` | boolean | YES | `false` | |
+| `visitor_email` / `visitor_name` | text | YES | | Resolved leaker identity |
+| `link_id` | uuid | YES | | |
+| `raw_payload` | text | YES | | |
+| `leaker_ip` | text | YES | | |
+| `ip_source` | text | YES | | Which table the IP came from |
+| `created_at` | timestamptz | YES | `now()` | |
+
+> Deleting leak traces is **admin-only**, gated inside the RPC by
+> `require_workspace_access_level(..., 'admin')`.
 
 ---
 
@@ -575,26 +632,23 @@ Logs of who accessed shared links.
 
 #### `catalog_shares`
 
-Workspace-to-workspace sharing of tracks.
+Cross-workspace sharing: workspace A exposes a track or playlist to workspace B.
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `track_id` | uuid | YES | | Specific track being shared (NULL = entire catalog) |
-| `source_workspace_id` | uuid | NO | | Workspace sharing the track/catalog |
-| `target_workspace_id` | uuid | NO | | Workspace receiving the share |
-| `shared_by` | uuid | NO | | User who created the share |
-| `access_level` | text | NO | 'pitcher' | Access level: viewer, pitcher, editor, admin |
-| `status` | text | NO | 'active' | Status: active, revoked |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
-| `revoked_at` | timestamptz | YES | | When share was revoked |
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `track_id` | uuid | YES | | Track-level share |
+| `playlist_id` | uuid | YES | | Playlist-level share |
+| `source_workspace_id` | uuid | NO | | Owner |
+| `target_workspace_id` | uuid | NO | | Recipient |
+| `shared_by` | uuid | NO | | **Not** `created_by` |
+| `access_level` | text | NO | `'pitcher'` | A plain text level — **not** a `permissions` jsonb |
+| `status` | text | NO | `'active'` | Plain text, no CHECK; revocation sets `revoked_at` |
+| `revoked_at` | timestamptz | YES | | |
+| `created_at` | timestamptz | YES | `now()` | |
 
-**Indexes:**
-- `catalog_shares_source_workspace_id_idx` (source_workspace_id)
-- `catalog_shares_target_workspace_id_idx` (target_workspace_id)
-- `catalog_shares_track_id_idx` (track_id)
-- `catalog_shares_status_idx` (status)
-- `catalog_shares_source_target_idx` (source_workspace_id, target_workspace_id)
+> Splits stay with the **source** workspace: if a track is shared through `catalog_shares`,
+> the artist's workspace still owns and manages its splits.
 
 ---
 
@@ -602,26 +656,38 @@ Workspace-to-workspace sharing of tracks.
 
 #### `track_comments`
 
-Timecoded comments on tracks from recipients and team members.
+Timestamped comments. Authors may be **anonymous link recipients**, which shapes the schema.
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `track_id` | uuid | NO | | Commented track ID |
-| `author_name` | text | NO | | Comment author name |
-| `author_email` | text | YES | | Comment author email |
-| `author_type` | text | YES | | Author type: team, recipient, guest |
-| `timestamp_sec` | numeric | NO | | Timestamp in seconds (for waveform positioning) |
-| `content` | text | NO | | Comment text content |
-| `rating` | integer | YES | | Star rating (1-5) |
-| `is_public` | boolean | NO | true | Whether comment is visible to recipient |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
-| `is_deleted` | boolean | NO | false | Soft delete flag |
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `track_id` | uuid | NO | | |
+| `workspace_id` | uuid | YES | | Denormalized for RLS |
+| `shared_link_id` | uuid | YES | | Set when the comment came in through a link |
+| `author_name` | text | NO | | |
+| `author_email` | text | YES | | |
+| `author_type` | text | NO | `'guest_recipient'` | CHECK: `owner \| team_member \| recipient \| guest_recipient` |
+| `author_secret_hash` | text | YES | | Lets an anonymous author edit their own comment without an account |
+| `timestamp_sec` | numeric | NO | `0` | Position in the track |
+| `content` | text | NO | | |
+| `is_edited` | boolean | NO | `false` | |
+| `created_at` | timestamptz | NO | `now()` | |
+| `updated_at` | timestamptz | YES | | |
 
-**Indexes:**
-- `track_comments_track_id_timestamp_idx` (track_id, timestamp_sec)
-- `track_comments_track_id_idx` (track_id)
+> No `rating`, `is_public` or `is_deleted` column. The `author_type` values are the four
+> above — not `team`/`recipient`/`guest`.
+
+#### `track_ratings`
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `track_id` | uuid | NO | | |
+| `workspace_id` | uuid | NO | | |
+| `user_id` | uuid | NO | | Ratings require an account |
+| `rating` | integer | NO | | CHECK: `>= 1 AND <= 5` |
+| `created_at` | timestamptz | YES | `now()` | |
+| `updated_at` | timestamptz | YES | `now()` | |
 
 ---
 
@@ -629,147 +695,187 @@ Timecoded comments on tracks from recipients and team members.
 
 #### `contacts`
 
-Address book entries for workspaces.
+Workspace CRM. Doubles as the autofill source for splits.
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `workspace_id` | uuid | NO | | Owning workspace ID |
-| `created_by` | uuid | NO | | User who created the contact |
-| `first_name` | text | NO | | First name |
-| `last_name` | text | YES | | Last name |
-| `email` | text | YES | | Email address |
-| `role` | text | YES | | Professional role |
-| `stage_name` | text | YES | | Stage/artist name |
-| `company` | text | YES | | Company/organization |
-| `phone` | text | YES | | Phone number |
-| `pro` | text[] | YES | | Professional specialties |
-| `ipi` | text | YES | | Interested Parties Information code |
-| `publisher` | text | YES | | Publisher name |
-| `notes` | text | YES | | Internal notes |
-| `is_verified` | boolean | NO | false | Whether contact has verified their identity |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
-| `is_deleted` | boolean | NO | false | Soft delete flag |
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `workspace_id` | uuid | NO | | |
+| `created_by` | uuid | YES | | |
+| `first_name` | text | NO | | |
+| `last_name` | text | YES | | |
+| `stage_name` | text | YES | | Artist/professional name |
+| `email` | text | YES | | |
+| `phone` | text | YES | | |
+| `company` | text | YES | | |
+| `role` | text | YES | | |
+| `pro` | **text[]** | YES | | Performing-rights organisations — an **array** |
+| `ipi` | text | YES | `''` | |
+| `publisher` | text | YES | `''` | |
+| `tags` | text[] | YES | `'{}'` | |
+| `city` | text | YES | | |
+| `country` | text | YES | | |
+| `favorite` | boolean | NO | `false` | |
+| `notes` | text | YES | | |
+| `created_at` | timestamptz | NO | `now()` | |
+| `updated_at` | timestamptz | NO | `now()` | |
 
-**Indexes:**
-- `contacts_workspace_id_idx` (workspace_id)
-- `contacts_workspace_id_email_idx` (workspace_id, LOWER(email)) - Unique per workspace
-- `contacts_created_by_idx` (created_by)
+> ⚠️ **`contacts.pro` is `text[]`, not text** — same class of gotcha as `tracks.genre`.
+> No `is_verified` and no `is_deleted` column.
 
-#### `contact_aliases`
+#### `artist_aliases`
 
-Alternative names for contacts (e.g., artist names, stage names).
+Alternate names mapping to one or more contacts. **This is the table sometimes called
+`contact_aliases` — that name does not exist.**
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | uuid | NO | Primary key |
-| `contact_id` | uuid | NO | References contacts.id |
-| `name` | text | NO | Alias name |
-| `is_primary` | boolean | NO | Whether this is the primary display name |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `workspace_id` | uuid | NO | | |
+| `alias_name` | text | NO | | |
+| `contact_ids` | **uuid[]** | NO | `'{}'` | An alias can resolve to several contacts |
+| `created_by` | uuid | YES | | |
+| `created_at` | timestamptz | YES | `now()` | |
+| `updated_at` | timestamptz | YES | `now()` | |
+
+> The relationship is an array column, not a join table — one alias row covers N contacts.
 
 ---
 
 ### 3.11 Split and Signature Tables
 
-#### `splits`
+#### Splits are a column, not a table
 
-Ownership percentages for tracks.
+**There is no `splits` table.** Ownership splits live in `tracks.splits`, a `jsonb` array,
+so they travel with the track and are versioned with it.
+
+Each entry carries:
+
+```jsonc
+{
+  "name": "Jane Doe",
+  "stage_name": "JD",
+  "email": "jane@example.com",
+  "share": 25,
+  "roles":  ["Songwriter", "Producer"],   // array, max 4
+  "pros":   ["ASCAP"],                    // array, max 3 of 68 worldwide PROs
+  "ipi": "00000000000",
+  "publisher": "Some Publishing"
+}
+```
+
+> **Retro-compatibility:** older rows may carry scalar `role` and `pro` keys instead of the
+> `roles[]` / `pros[]` arrays. Readers must tolerate both.
+
+Splits autofill from `contacts` and save back to it, so editing a split can create or
+update a contact.
+
+#### `signature_requests`
+
+Signature requests against a track's splits. **The table is not called `signatures`.**
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `track_id` | uuid | NO | | Track ID |
-| `collaborator_name` | text | NO | | Collaborator name |
-| `collaborator_email` | text | YES | | Collaborator email |
-| `role` | text | YES | | Role in collaboration |
-| `percentage` | numeric | NO | | Ownership percentage (0-100) |
-| `ipi_code` | text | YES | | IPI code for rights management |
-| `publisher` | text | YES | | Publisher name |
-| `status` | text | NO | 'pending' | Status: pending, approved, rejected |
-| `notes` | text | YES | | Internal notes |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `track_id` | uuid | NO | | Signatures attach to the **track**, not to a split row |
+| `collaborator_name` | text | NO | | |
+| `collaborator_email` | text | NO | | |
+| `role` | text | NO | `''` | |
+| `split_share` | numeric | NO | `0` | The share being signed for |
+| `pro` | text | YES | `''` | |
+| `ipi` | text | YES | `''` | |
+| `publisher` | text | YES | `''` | |
+| `token` | text | NO | | Bearer token for the public `/sign/:token` page |
+| `status` | text | NO | `'pending'` | CHECK: `pending \| signed \| declined` |
+| `signature_data` | text | YES | | Captured signature |
+| `signed_at` | timestamptz | YES | | |
+| `signed_externally` | boolean | NO | `false` | Signed on paper, recorded manually |
+| `created_at` | timestamptz | NO | `now()` | |
 
-**Constraint:** Sum of percentages for a track must equal 100.
-
-#### `signatures`
-
-Digital signatures on split agreements.
-
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | uuid | NO | Primary key |
-| `split_id` | uuid | NO | References splits.id |
-| `signer_name` | text | NO | Signer name |
-| `signer_email` | text | NO | Signer email |
-| `signature_data` | text | YES | Base64-encoded signature image |
-| `signed_at` | timestamptz | NO | now() | Signature timestamp |
-| `ip_address` | text | YES | Signer IP address |
-| `user_agent` | text | YES | Signer browser/device |
+> There is **no `updated_at`** and no `split_id` — the link to a split is by
+> `track_id` plus the collaborator's identity.
 
 #### `studio_submissions`
 
-Collaborator submissions captured via QR code in studio sessions.
+Self-service split claims captured through the public Studio page.
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `track_id` | uuid | NO | | Track being worked on |
-| `name` | text | NO | | Collaborator name |
-| `email` | text | NO | | Collaborator email |
-| `role` | text | YES | | Professional role |
-| `submitted_at` | timestamptz | NO | now() | Submission timestamp |
-| `status` | text | NO | 'pending' | Status: pending, accepted, rejected |
-| `accepted_by` | uuid | YES | | Admin who accepted/rejected |
-| `accepted_at` | timestamptz | YES | | Acceptance timestamp |
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `track_id` | uuid | NO | | |
+| `email` | text | NO | | |
+| `full_name` | text | NO | | **Not** `name` |
+| `artist_name` | text | YES | | |
+| `roles` | text[] | YES | `'{}'` | |
+| `pro_name` | text | YES | | |
+| `ipi_number` | text | YES | | |
+| `publisher_name` | text | YES | | |
+| `proposed_split` | numeric | NO | `0` | |
+| `justification` | text | YES | | |
+| `status` | text | NO | `'pending'` | CHECK: `pending \| accepted \| rejected` |
+| `created_at` | timestamptz | NO | `now()` | |
+
+> No `submitted_at`, `accepted_by` or `accepted_at` — `created_at` and `status` are all
+> that is tracked.
 
 ---
 
 ### 3.12 Pitch and Approval Tables
 
-#### `pitches`
+> Both surfaces are currently **hidden in the UI** behind `PITCH_ENABLED` and
+> `APPROVALS_ENABLED` (see [ADR-0009](DECISIONS/ADR-0009-FEATURE-FLAGS.md)). The tables,
+> RPCs and Edge Functions remain deployed.
 
-Pitches sent to external recipients (currently flagged off in UI).
+#### `pitches`
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `workspace_id` | uuid | NO | | Sending workspace ID |
-| `created_by` | uuid | NO | | User who created the pitch |
-| `recipient_name` | text | NO | | Recipient name |
-| `recipient_email` | text | NO | | Recipient email |
-| `recipient_company` | text | YES | | Recipient company |
-| `subject` | text | NO | | Pitch email subject |
-| `message` | text | NO | | Pitch message content |
-| `track_ids` | uuid[] | YES | | Array of track IDs included |
-| `playlist_ids` | uuid[] | YES | | Array of playlist IDs included |
-| `link_type` | text | YES | | Type of shared link created |
-| `status` | pitch_status | NO | 'draft' | Status: draft, sent, opened, declined, accepted |
-| `sent_at` | timestamptz | YES | | When pitch was sent |
-| `opened_at` | timestamptz | YES | | When recipient opened pitch |
-| `branding` | jsonb | YES | | Custom branding for pitch |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `workspace_id` | uuid | NO | | |
+| `sent_by` | uuid | YES | | |
+| `contact_id` | uuid | YES | | |
+| `recipient_name` | text | NO | | |
+| `recipient_email` | text | YES | | |
+| `recipient_company` | text | YES | | |
+| `subject` | text | NO | | |
+| `message` | text | YES | | |
+| `track_ids` | **uuid[]** | NO | `'{}'` | The tracks pitched — **an array, not a `pitch_tracks` join table** |
+| `share_link_id` | uuid | YES | | The shared link generated for this pitch |
+| `status` | `pitch_status` | NO | `'draft'` | `draft \| sent \| opened \| declined \| accepted` |
+| `sent_at` / `opened_at` / `responded_at` | timestamptz | YES | | |
+| `response_note` | text | YES | | |
+| `created_at` / `updated_at` | timestamptz | NO | `now()` | |
 
 #### `approvals`
 
-Approval requests for track sends (currently flagged off in UI).
-
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `workspace_id` | uuid | NO | | Workspace ID |
-| `track_id` | uuid | NO | | Track needing approval |
-| `created_by` | uuid | NO | | User requesting approval |
-| `send_type` | text | NO | | Type of send (pitch, share, etc.) |
-| `team_id` | uuid | YES | | Team member to approve |
-| `status` | approval_status | NO | 'pending' | Status: pending, approved, rejected |
-| `note` | text | YES | | Approval/rejection note |
-| `resolved_by` | uuid | YES | | User who resolved approval |
-| `resolved_at` | timestamptz | YES | | Resolution timestamp |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `workspace_id` | uuid | NO | | |
+| `track_id` | uuid | NO | | |
+| `requested_by` | uuid | YES | | |
+| `reviewed_by` | uuid | YES | | |
+| `status` | `approval_status` | NO | `'pending'` | `pending \| approved \| rejected` |
+| `changes` | jsonb | NO | `'{}'` | The proposed edit, held until approved |
+| `review_note` | text | YES | | |
+| `requested_at` | timestamptz | NO | `now()` | |
+| `reviewed_at` | timestamptz | YES | | |
+
+#### `marketplace_requests`
+
+Access requests against tracks published to Trakalog Access
+(`tracks.is_marketplace_public`).
+
+| Column | Type | Nullable | Description |
+|--------|------|----------|-------------|
+| `id` | uuid | NO | Primary key |
+| `track_id` | uuid | | |
+| `requester_user_id` / `requester_workspace_id` | uuid | | Who is asking |
+| `owner_workspace_id` | uuid | | Who owns the track |
+| `requester_name` / `requester_company` / `requester_email` | text | | |
+| `status` | text | | |
+| `message` | text | | |
+| `created_at` / `resolved_at` | timestamptz | | |
 
 ---
 
@@ -894,108 +1000,177 @@ Pre-launch access grants. `plan_granted` is CHECK-constrained to `starter | pro 
 
 #### `audit_logs`
 
-Audit trail for important actions.
-
 | Column | Type | Nullable | Description |
 |--------|------|----------|-------------|
 | `id` | uuid | NO | Primary key |
-| `user_id` | uuid | NO | References auth.users.id |
-| `workspace_id` | uuid | YES | Related workspace (if applicable) |
-| `action` | text | NO | Action performed |
-| `entity_type` | text | YES | Type of entity affected |
-| `entity_id` | uuid | YES | ID of affected entity |
-| `metadata` | jsonb | YES | Additional action metadata |
-| `ip_address` | text | YES | User IP address |
-| `user_agent` | text | YES | User browser/device |
-| `created_at` | timestamptz | NO | now() | Log entry timestamp |
+| `user_id` | uuid | | Actor |
+| `action` | text | NO | What happened |
+| `resource_type` | text | | **Not** `entity_type` |
+| `resource_id` | uuid | | **Not** `entity_id` |
+| `metadata` | jsonb | | |
+| `ip_address` | text | | |
+| `created_at` | timestamptz | | |
 
-**Indexes:**
-- `audit_logs_user_id_idx` (user_id)
-- `audit_logs_workspace_id_idx` (workspace_id)
-- `audit_logs_created_at_idx` (created_at)
-- `audit_logs_action_idx` (action)
+> No `workspace_id` and no `user_agent` column. Deleting audit rows is **admin-only**, via
+> an RPC gated on `require_workspace_access_level(..., 'admin')`.
 
 #### `rate_limits`
 
-Rate limiting tracking.
+Deliberately tiny — a counter per key per window.
 
 | Column | Type | Nullable | Description |
 |--------|------|----------|-------------|
 | `id` | uuid | NO | Primary key |
-| `key` | text | NO | Rate limit key (IP, user ID, etc.) |
-| `endpoint` | text | YES | API endpoint being rate limited |
-| `request_count` | integer | NO | Number of requests in current window |
-| `window_start` | timestamptz | NO | Start of current window |
-| `max_requests` | integer | NO | Maximum requests per window |
+| `key` | text | NO | Composite key, e.g. `watermark:<ip>` or `smart_ar:<user_id>` |
+| `window_start` | timestamptz | NO | Start of the current window |
+| `request_count` | integer | NO | Requests so far in the window |
+
+> **No `endpoint` and no `max_requests` column.** The endpoint is encoded in the `key`
+> prefix, and the limit lives in each Edge Function's own constants — not in the database.
+> Enforcement is the `check_rate_limit` RPC. There is **no Redis** in this stack.
+
+#### `jobs`
+
+Generic async work queue — used for watermark encoding and Sonic DNA analysis.
+
+| Column | Type | Nullable | Description |
+|--------|------|----------|-------------|
+| `id` | uuid | NO | Primary key |
+| `job_type` | text | NO | |
+| `status` | `job_status` | NO | `pending \| processing \| done \| failed \| cancelled` |
+| `priority` | integer | | |
+| `workspace_id` / `created_by` | uuid | | |
+| `dedupe_key` | text | | Prevents duplicate enqueues |
+| `payload` / `result` | jsonb | | |
+| `error` | text | | |
+| `attempts` / `max_attempts` | integer | | |
+| `locked_by` / `locked_at` | | | Worker lease |
+| `run_after` | timestamptz | | Delayed execution |
+| `created_at` / `started_at` / `finished_at` | timestamptz | | |
+
+> This — not `tracks.status` — is where upload and processing progress is tracked.
+> Enqueue via the `enqueue_job` RPC.
 
 #### `notifications`
-
-In-app notifications.
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
 | `id` | uuid | NO | | Primary key |
-| `user_id` | uuid | NO | | Recipient user ID |
-| `type` | notification_type | NO | | Notification type |
-| `title` | text | NO | | Notification title |
-| `message` | text | YES | | Notification message |
-| `data` | jsonb | YES | | Additional notification data |
-| `is_read` | boolean | NO | false | Whether notification has been read |
-| `link` | text | YES | | Deep link for notification |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
+| `workspace_id` | uuid | | | |
+| `user_id` | uuid | NO | | Recipient |
+| `type` | `notification_type` | NO | | 14 values — see §1.4 |
+| `title` | text | NO | | |
+| `message` | text | | | |
+| `is_read` | boolean | NO | `false` | |
+| `track_id` / `pitch_id` / `link_id` / `approval_id` | uuid | | | **Typed FK columns**, one per subject |
+| `created_at` | timestamptz | | `now()` | |
 
-**Indexes:**
-- `notifications_user_id_idx` (user_id)
-- `notifications_user_id_is_read_idx` (user_id, is_read)
-- `notifications_created_at_idx` (created_at)
+> There is no generic `data` jsonb and no `link` text column. The subject is carried by
+> whichever of the four typed FK columns applies.
 
 #### `notification_preferences`
 
-User notification preferences.
-
 | Column | Type | Nullable | Description |
 |--------|------|----------|-------------|
-| `id` | uuid | NO | Primary key |
-| `user_id` | uuid | NO | References auth.users.id |
-| `preferences` | jsonb | NO | Notification preferences object |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
+| `user_id` | uuid | NO | **Primary key** — there is no separate `id` |
+| `link_activity` | boolean | | |
+| `comments` | boolean | | |
+| `signatures` | boolean | | |
+| `new_member_joined` | boolean | | |
+| `track_uploads` | boolean | | |
+| `updated_at` | timestamptz | | |
+
+> Preferences are **five boolean columns**, not a `preferences` jsonb blob.
+
+#### `site_visits`
+
+Anonymous marketing analytics, written by the `log_site_visit` RPC from
+`src/lib/analytics.ts`.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `visitor_id` / `session_id` | | Anonymous identifiers |
+| `path` / `referrer` / `referrer_domain` / `source` | text | |
+| `utm_source` / `utm_medium` / `utm_campaign` | text | |
+| `created_at` | timestamptz | |
+
+> Admin paths and signed-in users are excluded client-side before the call is made.
+> There is no `engagement` or `analytics` table.
 
 ---
 
 ### 3.15 Document Tables
 
-#### `documents`
+#### `track_documents`
 
-Files attached to tracks (contracts, agreements, riders, etc.).
+Contracts and paperwork attached to a track. **The table is not called `documents`.**
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `track_id` | uuid | NO | | Parent track ID |
-| `name` | text | NO | | Document name |
-| `file_url` | text | NO | | R2 storage URL |
-| `file_path` | text | YES | | File path in R2 bucket |
-| `file_size` | bigint | YES | | File size in bytes |
-| `doc_type` | text | YES | | Document type/category |
-| `status` | document_status | NO | 'draft' | Status: draft, pending, signed |
-| `uploaded_by` | uuid | YES | | User who uploaded |
-| `created_at` | timestamptz | NO | now() | Upload timestamp |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `track_id` | uuid | NO | | |
+| `workspace_id` | uuid | NO | | |
+| `uploaded_by` | uuid | **NO** | | Required |
+| `name` | text | NO | | Display name |
+| `file_name` | text | NO | | Original filename |
+| `file_path` | text | NO | | Key in the `documents` bucket |
+| `file_size` | bigint | NO | `0` | Counts toward the storage quota |
+| `mime_type` | text | NO | `'application/pdf'` | |
+| `status` | `document_status` | NO | `'draft'` | `draft \| pending \| signed` |
+| `created_at` / `updated_at` | timestamptz | | `now()` | |
+
+> No `file_url` and no `doc_type` column. Note the naming collision: the **bucket** is
+> called `documents`, the **table** is `track_documents`.
 
 ---
 
 ### 3.16 Other Reference Tables
 
-#### `whitelist`
+#### `whitelisted_emails`
 
-Beta access whitelist.
+Pre-launch access allowlist. **Not called `whitelist`.**
 
 | Column | Type | Nullable | Description |
 |--------|------|----------|-------------|
 | `id` | uuid | NO | Primary key |
-| `email` | text | NO | Email address |
-| `reason` | text | YES | Reason for whitelisting |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
+| `email` | text | NO | |
+| `created_at` | timestamptz | | |
+
+> Three columns only — there is no `reason`.
+
+#### `waitlist`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `email` / `name` | text | |
+| `created_at` | timestamptz | |
+| `invited_at` | timestamptz | Set when an invitation goes out |
+| `invitation_sent_by` | uuid | |
+
+#### `invitations`
+
+Pending workspace invitations. **Seat counting reads this table as well as
+`workspace_members`** — an unexpired pending invitation holds a seat.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | uuid | Primary key |
+| `workspace_id` | uuid | |
+| `invited_by` | uuid | |
+| `email` / `first_name` / `last_name` | text | |
+| `access_level` | text | The level granted on acceptance |
+| `professional_title` | text | Display only |
+| `role` | text | |
+| `token` | text | Bearer token for the accept link |
+| `status` | text | `pending` until accepted or expired |
+| `expires_at` / `created_at` | timestamptz | |
+
+#### `beta_passes`
+
+Pre-launch plan grants. `plan_granted` is CHECK-constrained to `starter | pro | business`.
+Referenced by `subscriptions.beta_pass_id`.
 
 ---
 
@@ -1005,23 +1180,35 @@ Beta access whitelist.
 
 ```
 Account (auth.users)
-└── Workspaces (workspaces)
+├── Subscription (subscriptions) ──constrained by──> plan_limits
+└── Workspaces (workspaces, via owner_id)
     ├── Tracks (tracks)
+    │   ├── Versions (track_versions)
     │   ├── Stems (stems)
-    │   ├── Documents (documents)
+    │   ├── Documents (track_documents)
     │   ├── Comments (track_comments)
-    │   ├── Splits (splits)
-    │   │   └── Signatures (signatures)
+    │   ├── Ratings (track_ratings)
+    │   ├── Splits ── tracks.splits, a jsonb column, not a table
+    │   │   └── Signature Requests (signature_requests, by track_id)
     │   └── Studio Submissions (studio_submissions)
     ├── Playlists (playlists)
-    │   └── Playlist Tracks (playlist_tracks) → Tracks
+    │   └── Playlist Tracks (playlist_tracks) -> Tracks
     ├── Contacts (contacts)
-    │   └── Contact Aliases (contact_aliases)
+    │   └── Artist Aliases (artist_aliases, contact_ids uuid[])
     ├── Shared Links (shared_links)
-    │   └── Shared Links Access (shared_links_access)
-    ├── Catalog Shares (catalog_shares) → Target Workspace
+    │   ├── Sessions (shared_link_sessions)
+    │   ├── Events (link_events)
+    │   ├── Downloads (link_downloads)
+    │   └── Watermark Payloads (watermark_payloads)
+    │       └── Leak Traces (leak_traces)
+    ├── Catalog Shares (catalog_shares) -> Target Workspace
+    ├── Invitations (invitations)
     └── Team Members (workspace_members)
 ```
+
+> Ownership runs through `workspaces.owner_id`, and **billing attaches to the owner**, not
+> to the workspace — `subscriptions` is keyed on `user_id`. Quotas are therefore the
+> owner's totals across every workspace they own.
 
 ### 4.2 Cross-Workspace Relationships
 
@@ -1062,215 +1249,167 @@ All tables have **Row-Level Security** policies that automatically filter data b
 
 ### 5.2 RLS Policy Structure
 
+**103 policies** are defined in the baseline. They are built from five
+`SECURITY DEFINER` helper functions — never from an inline subquery, and never from a
+session variable.
+
+Two conventions run through all of them:
+
+1. **`auth.uid()` is wrapped in a scalar subquery** — `( SELECT auth.uid() )` — so Postgres
+   evaluates it once per statement instead of once per row. Every policy in the baseline
+   does this.
+2. **Access is checked by helper, not by join.** This keeps the hierarchy in one place and
+   lets the owner short-circuit.
+
 ```sql
--- Standard RLS policy pattern
-CREATE POLICY "policy_name ON table FOR operation"
-USING (
-  -- Condition that must be true for row to be accessible
-  workspace_id = current_workspace_id()
-  OR exists (
-    select 1 from workspace_members
-    where workspace_id = table.workspace_id
-    and user_id = auth.uid()
-  )
-);
+-- The canonical read policy
+CREATE POLICY "Members can view tracks" ON public.tracks
+  FOR SELECT TO authenticated
+  USING (public.is_workspace_member(( SELECT auth.uid() ), workspace_id));
+
+-- The canonical write policy: minimum level, plus ownership where relevant
+CREATE POLICY tracks_insert_pitcher ON public.tracks
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_workspace_access_level(( SELECT auth.uid() ), workspace_id, 'pitcher')
+    AND uploaded_by = ( SELECT auth.uid() )
+  );
 ```
+
+> ⚠️ **`current_workspace_id()` and `is_workspace_admin()` do not exist.** Earlier versions
+> of this document built every example on them. `is_workspace_admin` appears only in
+> `supabase/migrations/_archive/rls_audit_fixes.sql`, which is history and must never be
+> replayed. Use the helpers in §5.4.
 
 ### 5.3 Key RLS Policies by Table
 
-#### Workspaces
+#### `workspaces`
 
 ```sql
--- Users can see workspaces they belong to
-CREATE POLICY "Users can view workspaces they belong to"
-ON workspaces FOR SELECT
-USING (
-  exists (
-    select 1 from workspace_members
-    where workspace_id = workspaces.id
-    and user_id = auth.uid()
-  )
-);
+CREATE POLICY "Members can view their workspace" ON public.workspaces
+  FOR SELECT TO authenticated
+  USING (public.is_workspace_member(( SELECT auth.uid() ), id));
 
--- Users can insert their own workspaces
-CREATE POLICY "Users can create workspaces"
-ON workspaces FOR INSERT
-WITH CHECK (
-  created_by = auth.uid()
-);
+CREATE POLICY "Authenticated users can create workspaces" ON public.workspaces
+  FOR INSERT TO authenticated
+  WITH CHECK (owner_id = ( SELECT auth.uid() ));
 
--- Users can update workspaces they own
-CREATE POLICY "Users can update workspaces they own"
-ON workspaces FOR UPDATE
-USING (
-  created_by = auth.uid()
-) WITH CHECK (
-  created_by = auth.uid()
-);
+CREATE POLICY workspaces_update_admin ON public.workspaces
+  FOR UPDATE TO authenticated
+  USING      (public.has_workspace_access_level(( SELECT auth.uid() ), id, 'admin'))
+  WITH CHECK (public.has_workspace_access_level(( SELECT auth.uid() ), id, 'admin'));
 
--- Users can delete workspaces they own
-CREATE POLICY "Users can delete workspaces they own"
-ON workspaces FOR DELETE
-USING (
-  created_by = auth.uid()
-);
+CREATE POLICY "Owner can delete workspace" ON public.workspaces
+  FOR DELETE TO authenticated
+  USING (owner_id = ( SELECT auth.uid() ));
 ```
 
-#### Tracks
+Note the asymmetry: **update** is delegated to any admin, but **delete** is reserved to the
+`owner_id` alone.
+
+#### `tracks`
+
+| Policy | Operation | Rule |
+|---|---|---|
+| `Members can view tracks` | SELECT | any member of the workspace |
+| `tracks_insert_pitcher` | INSERT | ≥ `pitcher` **and** `uploaded_by = auth.uid()` |
+| `tracks_update_editor_all` | UPDATE | ≥ `editor`, any track |
+| `tracks_update_pitcher_own` | UPDATE | ≥ `pitcher`, but only their own uploads |
+| `tracks_delete_admin` | DELETE | ≥ `admin` |
+
+The two UPDATE policies are permissive and OR together: an editor may edit anything, a
+pitcher only their own uploads.
+
+#### `shared_links` and `contacts`
+
+Both follow the same shape — read for any member, write from `pitcher` up, delete at
+`admin`, plus an "own row" escape hatch:
 
 ```sql
--- Users can see tracks in workspaces they belong to
-CREATE POLICY "Users can view tracks in their workspaces"
-ON tracks FOR SELECT
-USING (
-  is_deleted = false AND (
-    workspace_id = current_workspace_id() OR
-    exists (
-      select 1 from catalog_shares
-      where track_id = tracks.id
-      and target_workspace_id = current_workspace_id()
-      and status = 'active'
-    )
-  )
-);
+CREATE POLICY shared_links_insert_pitcher ON public.shared_links
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_workspace_access_level(( SELECT auth.uid() ), workspace_id, 'pitcher')
+    AND created_by = ( SELECT auth.uid() )
+  );
 
--- Users can insert tracks in their workspaces
-CREATE POLICY "Users can create tracks in their workspaces"
-ON tracks FOR INSERT
-WITH CHECK (
-  workspace_id = current_workspace_id() AND
-  created_by = auth.uid()
-);
+CREATE POLICY shared_links_delete_pitcher_own ON public.shared_links
+  FOR DELETE TO authenticated
+  USING (created_by = ( SELECT auth.uid() )
+         AND public.has_workspace_access_level(( SELECT auth.uid() ), workspace_id, 'pitcher'));
 
--- Users can update tracks they own or have edit access to
-CREATE POLICY "Users can update tracks in their workspaces"
-ON tracks FOR UPDATE
-USING (
-  workspace_id = current_workspace_id() AND
-  exists (
-    select 1 from workspace_members
-    where workspace_id = current_workspace_id()
-    and user_id = auth.uid()
-    and access_level IN ('editor', 'admin')
-  )
-) WITH CHECK (
-  workspace_id = current_workspace_id()
-);
-
--- Users can delete tracks they own
-CREATE POLICY "Users can delete tracks they own"
-ON tracks FOR DELETE
-USING (
-  workspace_id = current_workspace_id() AND
-  exists (
-    select 1 from workspace_members
-    where workspace_id = current_workspace_id()
-    and user_id = auth.uid()
-    and access_level = 'admin'
-  )
-);
+CREATE POLICY shared_links_delete_admin ON public.shared_links
+  FOR DELETE TO authenticated
+  USING (public.has_workspace_access_level(( SELECT auth.uid() ), workspace_id, 'admin'));
 ```
 
-#### Shared Links
+#### Anonymous access (`TO anon`)
 
-```sql
--- Anyone with the link can view it (public access)
-CREATE POLICY "Public access to shared links"
-ON shared_links FOR SELECT
-USING (
-  disabled = false AND (
-    expires_at IS NULL OR expires_at > now()
-  )
-);
+Link recipients have no `auth.uid()`, so a handful of narrowly-scoped `anon` policies exist
+alongside the RPC path:
 
--- Only workspace members can create shared links
-CREATE POLICY "Users can create shared links in their workspaces"
-ON shared_links FOR INSERT
-WITH CHECK (
-  workspace_id = current_workspace_id() AND
-  created_by = auth.uid()
-);
+| Policy | Table | Scope |
+|---|---|---|
+| `anon_read_workspace_branding` | `workspaces` | only workspaces reachable from a shared link |
+| `anon_read_playlists_via_shared_link` | `playlists` | gated by `playlist_has_active_shared_link(id)` |
+| `anon_read_playlist_tracks_via_shared_link` | `playlist_tracks` | playlists exposed by a link |
+| `anon_read_invitations` | `invitations` | `status = 'pending' AND expires_at > now()` |
+| `Anonymous users can insert link events` | `link_events` | insert-only telemetry |
+| `studio_submissions_anon_insert` | `studio_submissions` | insert-only, track must exist |
+| `Allow anon insert` | `waitlist` | insert-only |
+| `anon_sign` | `signature_requests` | **`USING (false) WITH CHECK (false)`** — deliberately closed |
 
--- Only link creators or workspace admins can manage links
-CREATE POLICY "Users can manage their own shared links"
-ON shared_links FOR UPDATE, DELETE
-USING (
-  workspace_id = current_workspace_id() AND (
-    created_by = auth.uid() OR
-    exists (
-      select 1 from workspace_members
-      where workspace_id = current_workspace_id()
-      and user_id = auth.uid()
-      and access_level = 'admin'
-    )
-  )
-);
-```
-
-#### Catalog Shares
-
-```sql
--- Source workspace can see shares they created
-CREATE POLICY "Source workspace can view their outgoing shares"
-ON catalog_shares FOR SELECT
-USING (
-  source_workspace_id = current_workspace_id()
-);
-
--- Target workspace can see shares coming to them
-CREATE POLICY "Target workspace can view incoming shares"
-ON catalog_shares FOR SELECT
-USING (
-  target_workspace_id = current_workspace_id() AND
-  status = 'active'
-);
-
--- Only source workspace can create shares
-CREATE POLICY "Source workspace can create shares"
-ON catalog_shares FOR INSERT
-WITH CHECK (
-  source_workspace_id = current_workspace_id() AND
-  shared_by = auth.uid()
-);
-
--- Only source workspace can revoke shares
-CREATE POLICY "Source workspace can revoke their shares"
-ON catalog_shares FOR UPDATE
-USING (
-  source_workspace_id = current_workspace_id() AND
-  shared_by = auth.uid()
-) WITH CHECK (
-  source_workspace_id = current_workspace_id()
-);
-```
+> `anon_sign` denies everything on purpose. Signing goes through a `SECURITY DEFINER` RPC
+> that validates the bearer token, so the table itself stays sealed to anonymous writes.
+> The bulk of recipient-side reading is not RLS at all — it is
+> `assert_shared_link_access_by_slug` plus the `get_*_for_shared_link` RPCs
+> (see [ADR-0008](DECISIONS/ADR-0008-DUAL-AUDIENCE.md)).
 
 ### 5.4 RLS Helper Functions
 
-```sql
--- Get current workspace ID from JWT
-CREATE OR REPLACE FUNCTION current_workspace_id()
-RETURNS uuid AS $$
-BEGIN
-  RETURN (select workspace_id from workspace_members
-         where user_id = auth.uid()
-         order by is_personal desc, created_at asc
-         limit 1);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+These exist. Nothing else does.
 
--- Check if user is admin in current workspace
-CREATE OR REPLACE FUNCTION is_workspace_admin()
-RETURNS boolean AS $$
-BEGIN
-  RETURN exists (
-    select 1 from workspace_members
-    where workspace_id = current_workspace_id()
-    and user_id = auth.uid()
-    and access_level = 'admin'
-  );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+| Function | Returns | Purpose |
+|---|---|---|
+| `is_workspace_member(_user_id, _workspace_id)` | boolean | Membership only, no level |
+| `has_workspace_access_level(_user_id, _workspace_id, _min_level)` | boolean | Level comparison; **the workspace owner always passes** |
+| `require_workspace_access_level(_user_id, _workspace_id, _min_level)` | void | Same test, but **raises** — for use inside RPCs |
+| `has_workspace_role(_user_id, _workspace_id, _role)` | boolean | Checks `user_roles.role` (an `app_role` *title*, not a permission) |
+| `is_platform_admin(_user_id)` | boolean | Platform staff, matched by email allowlist |
+| `assert_caller(_user_id)` | void | Anti-impersonation guard for RPCs |
+
+**The access-level hierarchy**, as implemented in `has_workspace_access_level`:
+
 ```
+viewer (1)  <  pitcher (2)  <  editor (3)  <  admin (4)
+```
+
+Anything unrecognised maps to `0` and therefore fails every check. The owner is short-circuited
+to `true` before the hierarchy is consulted, so **an owner never needs a `workspace_members`
+row** to pass.
+
+> `pitcher` is retired from the UI but still occupies level 2 in the hierarchy and appears
+> in live policy names (`tracks_insert_pitcher`, `contacts_update_pitcher`). Legacy members
+> at that level continue to work; the level is simply no longer offered in role pickers.
+
+**`assert_caller` — why RPCs take an explicit `_user_id`:**
+
+```sql
+-- Edge Functions call as service_role: no user identity to verify.
+IF coalesce(auth.role(), '') = 'service_role' THEN RETURN; END IF;
+IF auth.uid() IS NULL THEN
+  RAISE EXCEPTION 'not_authenticated' USING ERRCODE = 'insufficient_privilege';
+END IF;
+IF _user_id IS DISTINCT FROM auth.uid() THEN
+  RAISE EXCEPTION 'forbidden: caller identity mismatch' ...
+END IF;
+```
+
+The client passes `_user_id` so the function has a stable identity even when `auth.uid()`
+is briefly unreliable, and `assert_caller` makes passing someone else's id impossible.
+
+> `is_platform_admin` currently matches a **hardcoded email allowlist** in the function
+> body. Moving that to a table would be an improvement; note it before relying on it.
 
 ---
 
