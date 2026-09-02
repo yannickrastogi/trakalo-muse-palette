@@ -3,7 +3,7 @@
 > **Status:** Draft  
 > **Version:** 1.0.0  
 > **Created:** August 11, 2026  
-> **Last Updated:** August 11, 2026  
+> **Last Updated:** September 2, 2026  
 > **Owner:** Ishan  
 > **Related:** [01 - Vision & Overview](01-VISION_AND_OVERVIEW.md), [02 - System Architecture](02-SYSTEM_ARCHITECTURE.md), [06 - Security Architecture](06-SECURITY_ARCHITECTURE.md), [RPCS.md](../DEVELOPMENT/RPCS.md)
 
@@ -21,20 +21,24 @@ This document provides a comprehensive overview of Trakalog's data architecture,
 
 | Property | Value |
 |----------|-------|
-| **Database** | PostgreSQL 17.6 |
+| **Database** | PostgreSQL (managed by Supabase; version not pinned in this repo) |
 | **Provider** | Supabase |
-| **Project ID** | `mdokdfljnruitfnnmkif` |
+| **Project ref** | `xhmeitivkclbeziqavxw` — the value used by `src/integrations/supabase/constants.ts` and the CSP in `vercel.json`. Note `supabase/config.toml` carries a different `project_id`; that entry appears stale. |
 | **Deployment** | Managed cloud database |
 | **Backup** | Automated daily backups |
+
+> **Source of truth for everything in this document:**
+> `supabase/migrations/20260626144305_baseline_prod.sql` plus the migrations that follow it.
+> The baseline was laid down after total drift between repo and production; it mirrors prod.
+> `supabase/migrations/_archive/` is history and **must not** be read as live schema.
 
 ### 1.2 Schema Organization
 
 **Primary Schema:** `public`
 
-All application tables and functions reside in the public schema. Supabase extensions (auth, storage) use their own schemas (`auth`, `storage`).
+All application tables and functions reside in the public schema. Supabase extensions use their own schemas (`auth`, `storage`).
 
 ```sql
--- Schema structure
 public               -- Application tables and functions
 auth                 -- Supabase Auth tables (users, providers)
 storage              -- Supabase Storage metadata
@@ -42,59 +46,120 @@ pg_catalog           -- PostgreSQL system catalog
 information_schema   -- Database metadata
 ```
 
+### 1.3 Table Inventory
+
+**41 tables** in `public`, grouped by concern. Every name below is verifiable with
+`grep "CREATE TABLE public.<name> " supabase/migrations/20260626144305_baseline_prod.sql`.
+
+| Area | Tables |
+|---|---|
+| **Identity & access** | `profiles` · `user_roles` · `workspaces` · `workspace_members` · `invitations` |
+| **Catalog** | `tracks` · `track_versions` · `stems` · `track_documents` · `track_comments` · `track_ratings` · `artist_aliases` |
+| **Playlists** | `playlists` · `playlist_tracks` |
+| **Sharing & delivery** | `shared_links` · `shared_link_sessions` · `link_events` · `link_downloads` · `catalog_shares` · `watermark_payloads` · `leak_traces` |
+| **Business & CRM** | `contacts` · `pitches` · `approvals` · `signature_requests` · `studio_submissions` · `marketplace_requests` |
+| **Billing** | `subscriptions` · `plan_limits` · `stripe_prices` · `stripe_webhook_events` · `credit_purchases` · `beta_passes` |
+| **Platform & ops** | `jobs` · `notifications` · `notification_preferences` · `rate_limits` · `audit_logs` · `site_visits` · `waitlist` · `whitelisted_emails` |
+
+**Things that are *not* tables**, and are commonly assumed to be:
+
+| Assumed table | Reality |
+|---|---|
+| `splits` | `tracks.splits` — a `jsonb` array on the track |
+| `tags` | `tracks.tags` — `jsonb` |
+| `documents` | the table is `track_documents` |
+| `signatures` | the table is `signature_requests` |
+| `shared_links_access` | split across `shared_link_sessions`, `link_events`, `link_downloads` |
+| `contact_aliases` | the table is `artist_aliases` |
+| `whitelist` | the table is `whitelisted_emails` |
+| `usage_tracking` / `storage_usage` | counter columns on `subscriptions` (`tracks_uploaded_count`, `storage_bytes_used`, `pitches_sent_this_month`, `smart_ar_queries_this_month`) |
+| `pitch_tracks` | `pitches.track_ids` — a `uuid[]` |
+| `plans` | the table is `plan_limits`, keyed on `plan` (text), not a surrogate id |
+
+### 1.4 Enum Types
+
+Twelve enums are defined in `public`. Getting these wrong is a common source of bugs, and
+RPCs require an **explicit cast** (`_status::track_status`, `'active'::link_status`).
+
+| Enum | Values |
+|---|---|
+| `track_status` | `available` · `on_hold` · `released` |
+| `track_type` | `instrumental` · `sample` · `acapella` · `song` |
+| `track_gender` | `male` · `female` · `duet` · `n_a` |
+| `link_status` | `active` · `expired` · `disabled` |
+| `share_type` | `stems` · `track` · `playlist` · `pack` |
+| `stem_type` | `kick` · `snare` · `bass` · `guitar` · `vocal` · `synth` · `drums` · `background_vocal` · `fx` · `other` |
+| `document_status` | `draft` · `pending` · `signed` |
+| `approval_status` | `pending` · `approved` · `rejected` |
+| `pitch_status` | `draft` · `sent` · `opened` · `declined` · `accepted` |
+| `job_status` | `pending` · `processing` · `done` · `failed` · `cancelled` |
+| `app_role` | `admin` · `manager` · `a_r` · `assistant` · `producer` · `songwriter` · `musician` · `mix_engineer` · `mastering_engineer` · `publisher` · `viewer` |
+| `notification_type` | `pitch_opened` · `pitch_accepted` · `pitch_declined` · `track_uploaded` · `track_status_changed` · `link_opened` · `link_downloaded` · `approval_requested` · `approval_resolved` · `member_invited` · `member_joined` · `comment_added` · `access_requested` · `access_granted` · `access_declined` |
+
+> ⚠️ `track_status` is **not** a processing lifecycle. There is no `draft`, `ready`,
+> `processing` or `error` value — it describes commercial availability. Upload progress is
+> tracked by the `jobs` table (`job_status`), not on the track.
+
 ---
 
 ## 2. Entity Relationship Diagram
 
+Only real tables appear below. Where a relationship is carried by a `jsonb` column or an
+array rather than a join table (`tracks.splits`, `pitches.track_ids`), that is noted.
+
 ```mermaid
 erDiagram
-    %% Users and Authentication
-    auth.users ||--o{ profiles : has
-    auth.users ||--o{ workspace_members : belongs_to
-    auth.users ||--o{ user_roles : has
-    
-    %% Workspaces
+    users ||--o{ profiles : has
+    users ||--o{ workspace_members : belongs_to
+    users ||--o{ user_roles : has
+    users ||--|| subscriptions : pays
+
     workspaces ||--o{ workspace_members : contains
+    workspaces ||--o{ invitations : issues
     workspaces ||--o{ tracks : owns
     workspaces ||--o{ playlists : owns
     workspaces ||--o{ contacts : owns
     workspaces ||--o{ shared_links : creates
-    workspaces ||--o{ catalog_shares : source
-    workspaces ||--o{ catalog_shares : target
-    
-    %% Tracks
+    workspaces ||--o{ catalog_shares : shares
+
+    tracks ||--o{ track_versions : has
     tracks ||--o{ stems : has
-    tracks ||--o{ documents : has
+    tracks ||--o{ track_documents : has
     tracks ||--o{ track_comments : has
-    tracks ||--o{ splits : has
+    tracks ||--o{ track_ratings : rated_by
     tracks ||--o{ playlist_tracks : in
-    tracks ||--o{ catalog_shares : shared
+    tracks ||--o{ signature_requests : splits_signed_by
     tracks ||--o{ studio_submissions : captures
-    
-    %% Playlists
+
     playlists ||--o{ playlist_tracks : contains
-    
-    %% Sharing
-    shared_links ||--o{ shared_links_access : accessed_by
-    
-    %% Catalog Sharing
-    catalog_shares ||--|| workspaces : source_workspace
-    catalog_shares ||--|| workspaces : target_workspace
-    catalog_shares ||--|| tracks : track
-    
-    %% Team
-    workspace_members ||--|| auth.users : user
-    workspace_members ||--|| workspaces : workspace
-    user_roles ||--|| workspace_members : member
-    
-    %% Other
-    contacts ||--o{ contact_aliases : has
-    pitches ||--o{ pitch_tracks : contains
-    approvals ||--|| tracks : track
-    notifications ||--|| auth.users : recipient
-    audit_logs ||--|| auth.users : user
-    rate_limits ||--o{ } : tracks_by_key
+
+    shared_links ||--o{ shared_link_sessions : visited_in
+    shared_links ||--o{ link_events : logs
+    shared_links ||--o{ link_downloads : logs
+    shared_links ||--o{ watermark_payloads : embeds
+    watermark_payloads ||--o{ leak_traces : identifies
+
+    contacts ||--o{ artist_aliases : aka
+    contacts ||--o{ pitches : addressed_to
+    approvals ||--|| tracks : concerns
+
+    subscriptions }o--|| plan_limits : constrained_by
+    subscriptions ||--o{ credit_purchases : tops_up
+    subscriptions }o--o| beta_passes : granted_by
+
+    users ||--o{ notifications : receives
+    users ||--|| notification_preferences : configures
+    users ||--o{ audit_logs : acted_in
 ```
+
+**Carried by columns, not join tables:**
+
+| Relationship | How it is actually stored |
+|---|---|
+| track → splits | `tracks.splits` (jsonb array) |
+| track → tags / mood / genre | `tracks.tags` (jsonb), `tracks.mood` / `tracks.genre` (`text[]`) |
+| pitch → tracks | `pitches.track_ids` (`uuid[]`) |
+| track → sonic analysis | `tracks.sonic_dna` (jsonb), and per version on `track_versions.sonic_dna` |
 
 ---
 
@@ -146,21 +211,20 @@ Active user sessions.
 
 #### `profiles`
 
-Extended user profile information.
+Extended user profile. Deliberately minimal — this is **not** where personal detail lives.
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key (references auth.users.id) |
-| `email` | text | YES | | Email (denormalized from auth.users) |
-| `first_name` | text | YES | | User's first name |
-| `last_name` | text | YES | | User's last name |
+| `id` | uuid | NO | | Primary key, references `auth.users.id` |
+| `full_name` | text | YES | | Display name — a **single** field, not first/last |
+| `email` | text | YES | | Denormalized from `auth.users` |
 | `avatar_url` | text | YES | | Profile picture URL |
-| `bio` | text | YES | | User biography |
-| `phone` | text | YES | | Phone number |
-| `created_at` | timestamptz | NO | now() | Profile creation timestamp |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
+| `onboarding_complete` | boolean | NO | `false` | Gates the onboarding flow |
+| `updated_at` | timestamptz | YES | `now()` | Last update |
 
-**Index:** `profiles_email_idx` (email) - For fast lookup
+> There is **no** `first_name`, `last_name`, `bio`, `phone`, or `created_at` on `profiles`.
+> Code that needs a first name splits `full_name`. Professional detail such as role and
+> title lives on `workspace_members.professional_title`, not here.
 
 ---
 
@@ -168,70 +232,83 @@ Extended user profile information.
 
 #### `workspaces`
 
-The container for all user content. Each user can own multiple workspaces.
+The container for all user content. A user can own several.
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `name` | text | NO | | Workspace display name |
-| `slug` | text | YES | | URL-friendly workspace identifier |
-| `description` | text | YES | | Workspace description |
-| `created_by` | uuid | NO | | Owner user ID (references auth.users.id) |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
-| `is_personal` | boolean | NO | false | Whether this is the user's personal workspace |
-| `is_archived` | boolean | NO | false | Whether workspace is archived |
-| `settings` | jsonb | YES | '{}' | Workspace settings (approval mode, etc.) |
-| `hero_image_url` | text | YES | | Hero/background image URL |
-| `logo_url` | text | YES | | Logo image URL |
-| `brand_color` | text | YES | | Primary brand color (hex) |
-| `hero_position` | text | YES | 'center' | Hero image positioning |
-| `hero_focal_point` | jsonb | YES | | Hero image focal point coordinates |
-| `social_instagram` | text | YES | | Instagram URL |
-| `social_tiktok` | text | YES | | TikTok URL |
-| `social_youtube` | text | YES | | YouTube URL |
-| `social_facebook` | text | YES | | Facebook URL |
-| `social_x` | text | YES | | X/Twitter URL |
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `name` | text | NO | | Display name |
+| `slug` | text | **NO** | | URL identifier — required, not optional |
+| `owner_id` | uuid | NO | | Owning user. **Not** `created_by`. Billing joins on this |
+| `plan` | text | NO | `'free'` | Vestigial. CHECK: `free \| pro \| enterprise`. **Not** the billing plan — see the note below |
+| `settings` | jsonb | NO | `'{}'` | Approval mode and similar |
+| `is_personal` | boolean | YES | `false` | The auto-created workspace at signup |
+| `created_at` | timestamptz | NO | `now()` | |
+| `updated_at` | timestamptz | NO | `now()` | |
 
-**Indexes:**
-- `workspaces_created_by_idx` (created_by)
-- `workspaces_slug_idx` (slug) - Unique
-- `workspaces_name_idx` (name)
+**Branding**
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `hero_image_url` | text | YES | | |
+| `hero_position` | **integer** | YES | `50` | Vertical offset as a percentage — **not** a text keyword like `'center'` |
+| `hero_focal_point` | **text** | YES | `'50% 50%'` | A CSS `object-position` string — **not** jsonb coordinates |
+| `logo_url` | text | YES | | |
+| `logo_size` | integer | NO | `100` | Percentage |
+| `brand_color` | text | YES | | CHECK: `^#[0-9a-fA-F]{6}$` — 6-digit hex, or NULL |
+| `bio` | text | YES | | |
+| `epk_url` | text | YES | | Electronic press kit |
+
+**Socials** — all default to `''`, not NULL
+
+`social_instagram` · `social_tiktok` · `social_youtube` · `social_facebook` · `social_x` · `social_website` · `social_spotify` · `social_apple`
+
+> There is **no** `description` and **no** `is_archived` column on `workspaces`.
+
+> ⚠️ **`workspaces.plan` is not the billing plan.** Billing lives on
+> `subscriptions.plan`, keyed by the owner, and is constrained to
+> `free \| starter \| pro \| business \| founder`. The `workspaces.plan` column keeps an
+> older `free \| pro \| enterprise` constraint and is not what the seat and quota triggers
+> read. Do not use it for entitlement decisions.
 
 #### `workspace_members`
 
-Users who have access to a workspace and their permissions.
+Who can act in a workspace. Deliberately minimal — six columns.
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `workspace_id` | uuid | NO | | References workspaces.id |
-| `user_id` | uuid | NO | | References auth.users.id |
-| `access_level` | text | NO | 'viewer' | Permission level: viewer, editor, admin |
-| `professional_title` | text | YES | | Job title (display only, no permissions) |
-| `invited_by` | uuid | YES | | User who invited this member |
-| `invited_at` | timestamptz | YES | | Invitation timestamp |
-| `joined_at` | timestamptz | YES | | When user accepted invitation |
-| `created_at` | timestamptz | NO | now() | Record creation timestamp |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `workspace_id` | uuid | NO | | |
+| `user_id` | uuid | NO | | |
+| `joined_at` | timestamptz | NO | `now()` | |
+| `access_level` | text | NO | `'viewer'` | `viewer \| editor \| admin` (plus a retired `pitcher`) |
+| `professional_title` | text | YES | | Display only, grants nothing |
 
-**Indexes:**
-- `workspace_members_workspace_id_user_id_idx` (workspace_id, user_id) - Unique (one membership per user per workspace)
-- `workspace_members_user_id_idx` (user_id)
-- `workspace_members_workspace_id_idx` (workspace_id)
+> **No `invited_by`, `invited_at`, `created_at` or `updated_at`.** Invitation state lives in
+> the separate `invitations` table and is discarded on acceptance — `joined_at` is all that
+> survives. Seat counting must therefore consult **both** tables (see
+> [ADR-0002](DECISIONS/ADR-0002-SEAT-BASED-BILLING.md)).
+
+> **`access_level` has no CHECK constraint.** The hierarchy is enforced by the
+> `SECURITY DEFINER` helpers `has_workspace_access_level` and
+> `require_workspace_access_level`, not by the column. A retired `pitcher` level still
+> appears in RLS policies and renders for legacy members, but is hidden from role pickers
+> by the `PITCHER_ROLE_ENABLED` flag.
 
 #### `user_roles`
 
-Professional titles available for users (reference data, not permissions).
+Professional titles. Reference data — **not** permissions.
 
 | Column | Type | Nullable | Description |
 |--------|------|----------|-------------|
 | `id` | uuid | NO | Primary key |
-| `user_id` | uuid | NO | References auth.users.id |
-| `workspace_id` | uuid | NO | References workspaces.id |
-| `role` | app_role | NO | Professional title (enum: admin, manager, a_r, etc.) |
+| `user_id` | uuid | NO | |
+| `workspace_id` | uuid | NO | |
+| `role` | `app_role` | NO | `admin \| manager \| a_r \| assistant \| producer \| songwriter \| musician \| mix_engineer \| mastering_engineer \| publisher \| viewer` |
 
-**Note:** These are **display titles only** and do NOT grant any permissions. Permissions are determined solely by `workspace_members.access_level`.
+> These are **display titles only** and grant no access. Permission comes solely from
+> `workspace_members.access_level`. The overlap in value names (`admin`, `viewer`) between
+> `app_role` and `access_level` is a genuine footgun — they are unrelated.
 
 ---
 
@@ -239,79 +316,129 @@ Professional titles available for users (reference data, not permissions).
 
 #### `tracks`
 
-The central entity in Trakalog - represents a music track.
+The central table. 47 columns; grouped below by concern rather than declaration order.
+
+**Identity and ownership**
 
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `workspace_id` | uuid | NO | | Owning workspace ID |
-| `created_by` | uuid | NO | | User who created the track |
-| `title` | text | NO | | Track title |
-| `artist` | text | NO | | Primary artist name |
-| `featuring` | text | YES | | Featuring artists (comma-separated) |
-| `type` | text | YES | | Track type: song, instrumental, sample, acapella |
-| `status` | text | YES | 'draft' | Track status: draft, ready, released, archived |
-| `bpm` | numeric | YES | | Beats per minute |
-| `key` | text | YES | | Musical key (e.g., 'C minor', 'A major') |
-| `genre` | text[] | YES | | Array of genres |
-| `mood` | text[] | YES | | Array of mood tags |
-| `language` | text | YES | | Primary language |
-| `isrc` | text | YES | | International Standard Recording Code |
-| `upc` | text | YES | | Universal Product Code |
-| `copyright` | text | YES | | Copyright information |
-| `publisher` | text[] | YES | | Array of publisher names |
-| `label` | text[] | YES | | Array of label names |
-| `explicit` | boolean | NO | false | Whether track contains explicit content |
-| `duration` | numeric | YES | | Duration in seconds |
-| `file_path` | text | YES | | Original audio file path in R2 |
-| `file_size` | bigint | YES | | Original file size in bytes |
-| `audio_preview_url` | text | YES | | URL to 128kbps MP3 preview |
-| `cover_url` | text | YES | | Cover art image URL |
-| `waveform_data` | jsonb | YES | | Waveform visualization data |
-| `lyrics` | text | YES | | Track lyrics |
-| `notes` | text | YES | | Internal notes |
-| `tags` | text[] | YES | | Custom tags |
-| `sonic_dna` | jsonb | YES | | Audio analysis results from Railway service |
-| `completeness` | numeric | YES | 0 | Metadata completeness percentage (0-100) |
-| `qr_token` | text | YES | | Token for studio QR code |
-| `chapters` | jsonb | YES | | Timecoded sections/chapters |
-| `splits` | jsonb | YES | | Split percentages by collaborator |
-| `version` | integer | NO | 1 | Track version number |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
-| `is_deleted` | boolean | NO | false | Soft delete flag |
-| `deleted_at` | timestamptz | YES | | Soft delete timestamp |
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `workspace_id` | uuid | NO | | Owning workspace |
+| `uploaded_by` | uuid | YES | | Uploader — **not** `created_by` |
 
-**Indexes:**
-- `tracks_workspace_id_idx` (workspace_id)
-- `tracks_created_by_idx` (created_by)
-- `tracks_isrc_idx` (isrc) - Unique
-- `tracks_workspace_id_is_deleted_idx` (workspace_id, is_deleted)
+**Core metadata**
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `title` | text | NO | | Track title |
+| `artist` | text | NO | | Primary artist — a **single text field**, not an array |
+| `featuring` | text | YES | | Featured artists |
+| `album` | text | YES | | Album name |
+| `track_type` | `track_type` | NO | `'song'` | `instrumental \| sample \| acapella \| song` |
+| `status` | `track_status` | NO | `'available'` | `available \| on_hold \| released` |
+| `production_stage` | text | YES | `'work_in_progress'` | CHECK: `work_in_progress \| finished` |
+| `gender` | `track_gender` | YES | | `male \| female \| duet \| n_a` |
+| `language` | text | YES | `'Instrumental'` | |
+| `explicit` | boolean | YES | `false` | |
+
+**Musical attributes**
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `bpm` | **smallint** | YES | | CHECK: `> 0 AND < 999` |
+| `key` | text | YES | | Musical key |
+| `duration_sec` | integer | YES | | CHECK: `> 0`. Named `duration_sec`, not `duration` |
+| `genre` | **text[]** | YES | | Array — see the gotcha below |
+| `mood` | **text[]** | YES | `'{}'` | Array |
+| `tags` | jsonb | YES | `'{}'` | |
+
+**Files** — all are URLs/keys into object storage, never local paths
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `audio_url` | text | YES | | Master audio. **Nullable** — a row can exist before upload completes |
+| `audio_preview_url` | text | YES | | 128 kbps MP3 preview |
+| `cover_url` | text | YES | | Cover art |
+| `video_url` | text | YES | | Optional video |
+| `video_filename` | text | YES | | |
+| `video_visible_on_share` | boolean | YES | `false` | |
+| `file_size_bytes` | bigint | YES | `0` | Feeds `compute_user_storage_bytes` |
+| `waveform_data` | jsonb | YES | | Precomputed peaks for the player |
+
+**Rights and identifiers**
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `isrc` | text | YES | | |
+| `iswc` | text | YES | | |
+| `upc` | text | YES | | |
+| `copyright` | text | YES | | |
+| `labels` | text[] | YES | `'{}'` | Plural |
+| `publishers` | text[] | YES | `'{}'` | Plural |
+| `splits` | **jsonb** | YES | `'[]'` | Ownership splits — a column, **not** a table |
+| `credits` | jsonb | YES | `'{}'` | |
+
+**Content and analysis**
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `lyrics` | text | YES | | |
+| `lyrics_segments` | jsonb | YES | | Timestamped segments from Whisper |
+| `sonic_dna` | jsonb | YES | | Essentia/librosa analysis |
+| `chapters` | jsonb | YES | | |
+| `notes` | text | YES | | |
+
+**Versioning, marketplace, lifecycle**
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `has_versions` | boolean | YES | `false` | |
+| `version_count` | integer | YES | `1` | |
+| `qr_token` | text | YES | | QR Studio token |
+| `is_marketplace_public` | boolean | NO | `false` | |
+| `marketplace_published_at` | timestamptz | YES | | |
+| `created_at` | timestamptz | NO | `now()` | |
+| `updated_at` | timestamptz | NO | `now()` | |
+| `released_at` | timestamptz | YES | | |
+
+> ⚠️ **There is no soft delete.** `tracks` has no `is_deleted` and no `deleted_at`.
+> Deletion is a real `DELETE`. Never write `.eq('is_deleted', false)` — the filter will
+> throw, not silently pass.
+
+> ⚠️ **`genre` and `mood` are `text[]`, not text.** To collect the genres in a catalog,
+> flatten every array, dedupe, then sort. To filter, use `Array.includes` — never `===`.
+> This has caused real bugs.
+
+> ⚠️ **`splits` is jsonb on the track**, so splits move with the track. Each entry carries
+> `roles[]` and `pros[]` arrays, with legacy scalar `role` / `pro` still tolerated for
+> backwards compatibility.
+
+> ℹ️ `insert_track` does not accept every column. Extended metadata (written_by and
+> friends) is saved by a follow-up `update_track` call, not in the initial insert.
 
 #### `track_versions`
 
-Track version history for change tracking.
+Multiple audio versions under one track (V1, V2, Radio Edit).
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | uuid | NO | Primary key |
-| `track_id` | uuid | NO | References tracks.id |
-| `version_number` | integer | NO | Version number (auto-incrementing) |
-| `title` | text | YES | Title at this version |
-| `artist` | text | YES | Artist at this version |
-| `metadata_snapshot` | jsonb | YES | Complete metadata snapshot |
-| `created_at` | timestamptz | NO | now() | Version creation timestamp |
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `track_id` | uuid | NO | | Parent track |
+| `version_number` | integer | NO | `1` | |
+| `version_name` | text | NO | `'V1'` | Display label — **not** `title` |
+| `audio_url` | text | YES | | |
+| `audio_preview_url` | text | YES | | |
+| `waveform_data` | jsonb | YES | | |
+| `sonic_dna` | jsonb | YES | | Analysis is per version |
+| `duration_sec` | **numeric** | YES | | Note: numeric here, integer on `tracks` |
+| `is_active` | boolean | YES | `false` | The version used for pitches and shared links |
+| `chapters` | jsonb | YES | `'[]'` | |
+| `notes` | text | YES | | |
+| `created_by` | uuid | YES | | |
+| `created_at` | timestamptz | YES | `now()` | |
 
-#### `track_tags`
-
-Normalized tags for tracks (many-to-many relationship).
-
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | uuid | NO | Primary key |
-| `track_id` | uuid | NO | References tracks.id |
-| `tag` | text | NO | Tag name |
-| `type` | text | YES | Tag type/category |
+> There is no `title`, `artist` or `metadata_snapshot` on a version — metadata belongs to
+> the parent track. A version carries audio and analysis only.
 
 ---
 
@@ -319,24 +446,22 @@ Normalized tags for tracks (many-to-many relationship).
 
 #### `stems`
 
-Component audio files attached to tracks.
-
 | Column | Type | Nullable | Default | Description |
 |--------|------|----------|---------|-------------|
-| `id` | uuid | NO | | Primary key |
-| `track_id` | uuid | NO | | Parent track ID |
-| `name` | text | NO | | Stem name (e.g., 'Drums', 'Vocals') |
-| `stem_type` | stem_type | YES | | Stem category (enum: drums, bass, vocals, etc.) |
-| `file_url` | text | NO | | R2 storage URL for stem file |
-| `file_path` | text | YES | | File path in R2 bucket |
-| `file_size` | bigint | YES | | File size in bytes |
-| `duration` | numeric | YES | | Stem duration in seconds |
-| `created_by` | uuid | YES | | User who uploaded the stem |
-| `created_at` | timestamptz | NO | now() | Creation timestamp |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `workspace_id` | uuid | NO | | Owning workspace (denormalized from the track) |
+| `track_id` | uuid | NO | | Parent track |
+| `uploaded_by` | uuid | YES | | **Not** `created_by` |
+| `file_name` | text | NO | | **Not** `name` |
+| `stem_type` | `stem_type` | NO | `'other'` | `kick \| snare \| bass \| guitar \| vocal \| synth \| drums \| background_vocal \| fx \| other` |
+| `file_url` | text | NO | | **Not** `file_path` |
+| `file_size_bytes` | bigint | YES | | CHECK: `> 0` |
+| `duration_sec` | integer | YES | | |
+| `sample_rate` | integer | YES | | |
+| `bit_depth` | smallint | YES | | |
+| `created_at` | timestamptz | NO | `now()` | |
 
-**Indexes:**
-- `stems_track_id_idx` (track_id)
+> There is no `updated_at` on `stems` — a stem is replaced, not edited.
 
 ---
 
@@ -652,63 +777,116 @@ Approval requests for track sends (currently flagged off in UI).
 
 #### `subscriptions`
 
-User subscription and billing information.
+One row per **user** (the workspace owner), not per workspace. This is where entitlement
+and usage counters both live.
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | uuid | NO | Primary key |
-| `user_id` | uuid | NO | References auth.users.id |
-| `plan_id` | text | NO | Stripe plan ID |
-| `customer_id` | text | NO | Stripe customer ID |
-| `subscription_id` | text | NO | Stripe subscription ID |
-| `status` | text | NO | Subscription status |
-| `current_period_end` | timestamptz | YES | End of current billing period |
-| `cancel_at_period_end` | boolean | NO | Whether subscription will cancel at period end |
-| `created_at` | timestamptz | NO | now() | Subscription creation timestamp |
-| `updated_at` | timestamptz | NO | now() | Last update timestamp |
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | uuid | NO | `gen_random_uuid()` | Primary key |
+| `user_id` | uuid | NO | | The paying account |
+| `plan` | text | NO | `'free'` | CHECK: `free \| starter \| pro \| business \| founder`. Named `plan`, **not** `plan_id` |
+| `billing_cycle` | text | YES | `'monthly'` | CHECK: `monthly \| annual` |
+| `subscription_status` | text | YES | `'active'` | CHECK: `active \| past_due \| canceled \| incomplete \| trialing \| paused`. Named `subscription_status`, **not** `status` |
+| `stripe_customer_id` | text | YES | | **Not** `customer_id` |
+| `stripe_subscription_id` | text | YES | | **Not** `subscription_id` |
+| `current_period_start` | timestamptz | YES | | |
+| `current_period_end` | timestamptz | YES | | |
+| `cancel_at_period_end` | boolean | YES | `false` | |
+| `canceled_at` | timestamptz | YES | | |
+| `trial_ends_at` | timestamptz | YES | | |
+| `beta_pass_id` | uuid | YES | | Links to `beta_passes` |
+| `created_at` | timestamptz | YES | `now()` | |
+| `updated_at` | timestamptz | YES | `now()` | |
+
+**Purchased capacity** — add-ons on top of the plan's included allowance:
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `purchased_seats` | integer | NO | `0` | Extra seats beyond `plan_limits.seats_included` |
+| `purchased_workspaces` | integer | NO | `0` | Extra workspaces (added by `20260802173016`) |
+
+**Usage counters** — this is what people look for under the name `usage_tracking`:
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `tracks_uploaded_count` | integer | YES | `0` | Maintained by `sync_subscription_usage` |
+| `storage_bytes_used` | bigint | YES | `0` | See `compute_user_storage_bytes` |
+| `pitches_sent_this_month` | integer | YES | `0` | |
+| `smart_ar_queries_this_month` | integer | YES | `0` | |
+| `ai_credits_purchased` | integer | YES | `0` | |
+| `ai_credits_monthly_used` | integer | YES | `0` | |
+| `ai_credits_reset_at` | timestamptz | YES | `now() + 1 month` | |
+
+> ⚠️ **There is no `usage_tracking` table and no `storage_usage` table.** All usage is
+> denormalized onto these counter columns. Quotas follow the **uploader** — they are the
+> user's totals across every workspace they own, not per-workspace figures.
+
+> ⚠️ **There is no `smart_ar_queries_lifetime` column.** The lifetime cap for Free lives on
+> `plan_limits.smart_ar_lifetime`; only the monthly counter is on `subscriptions`.
 
 #### `plan_limits`
 
-Feature limits by plan tier.
+Entitlements per tier. Primary key is **`plan` (text)** — there is no `id` column, and no
+`plans` table anywhere. Convention: **`-1` means unlimited**.
 
 | Column | Type | Nullable | Description |
 |--------|------|----------|-------------|
-| `id` | uuid | NO | Primary key |
-| `plan_name` | text | NO | Plan name (free, starter, pro, business, enterprise) |
-| `max_tracks` | integer | NO | Maximum number of tracks |
-| `max_storage_bytes` | bigint | NO | Maximum storage in bytes |
-| `max_workspaces` | integer | NO | Maximum workspaces per user |
-| `max_seats` | integer | NO | Maximum seats per workspace |
-| `max_shared_links` | integer | YES | Maximum shared links |
-| `max_smart_ar_queries` | integer | YES | Maximum Smart A&R queries per period |
-| `features` | jsonb | YES | Enabled features for this plan |
+| `plan` | text | NO | **Primary key.** CHECK: `free \| starter \| pro \| business \| founder` |
+| `tracks_max` | integer | NO | |
+| `storage_bytes_max` | bigint | NO | Free 1.5 GB · Starter 40 GB · Pro 400 GB · Business 1 TB |
+| `playlists_max` | integer | NO | |
+| `shared_links_max` | integer | NO | |
+| `contacts_max` | integer | NO | |
+| `pitches_per_month` | integer | NO | |
+| `smart_ar_per_month` | integer | NO | |
+| `smart_ar_lifetime` | integer | YES | Free's lifetime cap |
+| `workspaces_max` | integer | NO | Pro 4 · Business 10 |
+| `seats_included` | integer | NO | Pro 2 · Business 5 |
+| `seats_addon_allowed` | boolean | NO | |
+| `seat_addon_price_cents` | integer | YES | 1000 ($10) on Pro/Business |
+| `viewers_unlimited` | boolean | NO | **`false` everywhere** since 2026-08-02 — every member takes a seat |
+| `workspace_addon_allowed` | boolean | NO | Added by `20260802173016` |
+| `workspace_addon_price_cents` | integer | YES | 500 ($5) on Pro/Business |
+| `workspaces_hard_cap` | integer | YES | **15** on Pro/Business, NULL elsewhere |
+| `can_buy_credits` | boolean | NO | Free cannot |
+| `price_monthly_cents` | integer | NO | |
+| `price_yearly_cents` | integer | NO | |
+| `features` | jsonb | NO | Per-plan feature switches (`watermarking`, `stems`, `qr_studio`, …) |
+| `updated_at` | timestamptz | NO | |
 
-#### `usage_tracking`
+> Not one of the column names in the pre-September 2026 version of this document
+> (`plan_name`, `max_tracks`, `max_storage_bytes`, `max_seats`, …) exists. Read the real
+> names above.
 
-Tracks user usage against plan limits.
+Effective allowance is computed, not stored:
+
+```
+seats      = seats_included + subscriptions.purchased_seats
+workspaces = least(workspaces_max + subscriptions.purchased_workspaces, workspaces_hard_cap)
+```
+
+#### `stripe_prices`
+
+Maps Stripe price IDs to plans.
 
 | Column | Type | Nullable | Description |
 |--------|------|----------|-------------|
-| `id` | uuid | NO | Primary key |
-| `user_id` | uuid | NO | References auth.users.id |
-| `workspace_id` | uuid | YES | Related workspace (if applicable) |
-| `metric` | text | NO | Usage metric type (tracks, storage, smart_ar, etc.) |
-| `value` | numeric | NO | Current usage value |
-| `period_start` | timestamptz | NO | Start of tracking period |
-| `period_end` | timestamptz | NO | End of tracking period |
+| `stripe_price_id` | text | NO | **Primary key** — there is no `id` and no `created_at` |
+| `plan` | text | NO | CHECK: `starter \| pro \| business` (no `free`, no `founder`, no `enterprise`) |
+| `amount_cents` | integer | NO | |
+| `updated_at` | timestamptz | | |
 
-#### `storage_usage`
+#### `stripe_webhook_events`
 
-Tracks storage usage by workspace.
+Idempotency ledger for Stripe webhook delivery.
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | uuid | NO | Primary key |
-| `workspace_id` | uuid | NO | Workspace ID |
-| `file_type` | text | NO | Type of files (tracks, stems, covers, documents) |
-| `file_count` | integer | NO | Number of files |
-| `total_bytes` | bigint | NO | Total storage used in bytes |
-| `updated_at` | timestamptz | NO | Last update timestamp |
+#### `credit_purchases`
+
+Records of AI credit top-ups.
+
+#### `beta_passes`
+
+Pre-launch access grants. `plan_granted` is CHECK-constrained to `starter | pro | business`.
 
 ---
 
@@ -857,10 +1035,20 @@ Catalog Share (catalog_shares)
 
 ### 4.3 Key Constraints
 
-1. **Circular References:** RLS policies prevent circular workspace access
-2. **Soft Deletes:** Most tables use `is_deleted` flag + `deleted_at` timestamp
-3. **Cascading Deletes:** Soft delete on parent usually doesn't affect children
-4. **Unique Constraints:** Slugs, ISRC codes, email per workspace for contacts
+1. **No soft deletes.** No table in this schema has an `is_deleted` or `deleted_at`
+   column. Deletion is a real `DELETE`.
+2. **Cascading deletes.** Child rows are removed with their parent via
+   `REFERENCES ... ON DELETE CASCADE` — deleting a track takes its versions, stems,
+   documents, comments and ratings with it.
+3. **Quota enforcement is by trigger**, not by constraint: `enforce_seat_limit_member`,
+   `enforce_seat_limit_invitation` and `enforce_workspace_limit` raise
+   `plan_limit_reached: …` with `ERRCODE = 'check_violation'`.
+4. **Value constraints** worth knowing: `tracks.bpm` must be `> 0 AND < 999`;
+   `tracks.duration_sec > 0`; `stems.file_size_bytes > 0`;
+   `workspaces.brand_color` must match `^#[0-9a-fA-F]{6}$` or be NULL;
+   `tracks.production_stage` is `work_in_progress | finished`.
+5. **Unique constraints:** workspace slugs, and one membership row per
+   (`workspace_id`, `user_id`).
 
 ---
 
@@ -1154,62 +1342,73 @@ supabase-storage/
 
 ### 7.1 CRUD Patterns
 
-All Create, Read, Update, Delete operations follow consistent patterns:
+**Writes and sensitive reads go through `SECURITY DEFINER` RPCs, not direct table access.**
+In `src/` there are roughly **169** `supabase.rpc(...)` call sites against **12**
+`supabase.from(...)`. The handful of `from()` calls are simple public reads.
 
-#### Create (Insert)
+The reason is `auth.uid()`: on an unstable session it can return NULL server-side even
+though the user looks signed in client-side. A policy that trusts `auth.uid()` then denies
+a legitimate request. So the caller passes `_user_id` explicitly and the function asserts
+it with `assert_caller(_user_id uuid)`, which rejects impersonation. Workspace permission
+is checked with `require_workspace_access_level(_user_id, _workspace_id, _min_level)`.
+
+#### Create
+
 ```typescript
-// Always include: created_by, workspace_id
-const { data, error } = await supabase
-  .from('tracks')
-  .insert({
-    title: 'My Track',
-    workspace_id: currentWorkspaceId,
-    created_by: userId,
-    // ... other fields
-  })
-  .select()
-  .single();
+// src/contexts/TrackContext.tsx
+const { data, error } = await supabase.rpc("insert_track", {
+  _user_id: user.id,                 // asserted server-side by assert_caller()
+  _workspace_id: activeWorkspace.id,
+  _title: trackInput.title,
+  _artist: trackInput.artist,
+  _type: mapTrackTypeToDb(trackInput.type),      // enum values need mapping
+  _status: mapStatusToDb(trackInput.status),     // 'available' | 'on_hold' | 'released'
+  _genre: trackInput.genres,                     // text[], not a string
+  // ...
+});
 ```
 
-#### Read (Select)
+Two things to know about `insert_track`:
+
+- **It does not accept every column.** Extended metadata (`written_by` and similar) is
+  saved by a follow-up `update_track` call.
+- **Enums must be cast explicitly** inside the function (`_status::track_status`), and the
+  client must send the DB value, not the display label — hence the `mapStatusToDb` helpers.
+
+#### Read
+
 ```typescript
-// Always filter by current workspace and check is_deleted
-const { data, error } = await supabase
-  .from('tracks')
-  .select('*')
-  .eq('workspace_id', currentWorkspaceId)
-  .eq('is_deleted', false)
-  .order('created_at', { ascending: false });
+// Composed payloads come back from a single RPC -- no client-side joins.
+const { data, error } = await supabase.rpc("get_shared_workspace_tracks", {
+  _workspace_id: activeWorkspace.id,
+});
 ```
+
+> ⚠️ **Never filter on `is_deleted`.** There is no such column on `tracks` (or anywhere
+> else). The filter will error, not silently pass.
 
 #### Update
+
 ```typescript
-// Always include updated_at
-const { data, error } = await supabase
-  .from('tracks')
-  .update({
-    title: 'Updated Title',
-    updated_at: new Date().toISOString()
-  })
-  .eq('id', trackId)
-  .eq('workspace_id', currentWorkspaceId)
-  .select()
-  .single();
+await supabase.rpc("update_track", {
+  _user_id: user.id,
+  _track_id: trackId,
+  _title: "Updated Title",
+  // ...
+});
 ```
 
-#### Delete (Soft Delete)
-```typescript
-// Never hard delete - use is_deleted flag
-const { data, error } = await supabase
-  .from('tracks')
-  .update({
-    is_deleted: true,
-    deleted_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  })
-  .eq('id', trackId)
-  .eq('workspace_id', currentWorkspaceId);
-```
+`updated_at` is maintained by the function, not by the client.
+
+#### Delete
+
+**Deletion is a real `DELETE`.** There is no soft-delete flag anywhere in this schema —
+no `is_deleted`, no `deleted_at`. Cascades are declared with
+`REFERENCES ... ON DELETE CASCADE`, so removing a track removes its versions, stems,
+documents and comments with it.
+
+Sensitive deletions — audit records, leak traces — are admin-gated inside the RPC via
+`require_workspace_access_level(..., 'admin')`.
 
 ### 7.2 Transaction Patterns
 

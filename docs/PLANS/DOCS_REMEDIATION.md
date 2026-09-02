@@ -4,7 +4,7 @@
 > multiple future Claude Code sessions. Each chunk in §5 is sized for one session and ends with
 > a commit on `ishan/translated-docs`. Work them in order; tick them off as you go.
 >
-> **Status:** chunks 0-3 complete. Next up: **chunk 4** (`03-DATA_ARCHITECTURE.md` part 1).
+> **Status:** chunks 0-4 complete. Next up: **chunk 5** (`03-DATA_ARCHITECTURE.md` part 2: remaining tables + RLS).
 > **Audited:** September 1–2, 2026, against commit `fbc70f0`.
 
 ---
@@ -551,7 +551,16 @@ currently has one placeholder test. **Leave the aspirational framing of E2E/cove
 
 ---
 
-### ☐ Chunk 4 — `03-DATA_ARCHITECTURE.md`, part 1: table inventory & core tables
+### ☑ Chunk 4 — `03-DATA_ARCHITECTURE.md`, part 1 — **DONE**
+
+> Rewrote §1 (added a 41-table inventory, a 12-enum reference, and a table of the
+> 10 things commonly mistaken for tables), the §2 ER diagram, §3.2 profiles,
+> §3.3 workspaces/workspace_members/user_roles, §3.4 tracks/track_versions,
+> §3.5 stems, §3.13 billing, §4.3 constraints, and §7.1 CRUD.
+> Verified column-by-column: 0 ghost columns across the 8 core tables.
+> **Still to do in chunk 5:** §3.6-3.12, §3.14-3.16 still document
+> `shared_links_access`, `contact_aliases`, `whitelist`, `documents` and wrong
+> columns on contacts/track_comments/shared_links — plus the §5.3 RLS rewrite.
 
 The largest job — split across chunks 4 and 5.
 
