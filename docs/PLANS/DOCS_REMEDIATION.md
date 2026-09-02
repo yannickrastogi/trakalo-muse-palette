@@ -4,7 +4,7 @@
 > multiple future Claude Code sessions. Each chunk in §5 is sized for one session and ends with
 > a commit on `ishan/translated-docs`. Work them in order; tick them off as you go.
 >
-> **Status:** chunks 0, 1 and 2 complete. Next up: **chunk 3** (ADR-0002 rewrite + ADR sweep).
+> **Status:** chunks 0-3 complete. Next up: **chunk 4** (`03-DATA_ARCHITECTURE.md` part 1).
 > **Audited:** September 1–2, 2026, against commit `fbc70f0`.
 
 ---
@@ -525,7 +525,17 @@ currently has one placeholder test. **Leave the aspirational framing of E2E/cove
 
 ---
 
-### ☐ Chunk 3 — `ADR-0002` rewrite + ADR sweep
+### ☑ Chunk 3 — `ADR-0002` rewrite + ADR sweep — **DONE**
+
+> Sweep found two further ADRs materially wrong, both rewritten:
+> **ADR-0004** was titled "React Query Over Redux" and claimed all queries use React
+> Query — there are **zero** `useQuery`/`useMutation` call sites; state is 15 React
+> Contexts. **ADR-0009** documented three feature-flag tables, a `useFeatureFlag()`
+> hook and a `FeatureFlagService` — none exist; flags are 3 compile-time constants.
+> ADR-0001/0003/0005/0007/0008/0010 had localized errors, all corrected.
+> ADR-0006 (Groq) verified clean — model IDs and context window all correct.
+> **Left open for you:** React Query is installed and its provider mounted but
+> entirely unused — adopt it or remove it (flagged in ADR-0004 "Open Question").
 
 1. Rewrite `ADR-0002-SEAT-BASED-BILLING.md` against `plan_limits` / `subscriptions` and the
    v5.0 rules (§4.7): real tier names and limits, the real table and columns, the `founder`

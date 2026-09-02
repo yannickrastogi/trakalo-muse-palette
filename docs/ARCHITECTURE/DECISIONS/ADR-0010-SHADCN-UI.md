@@ -76,14 +76,13 @@ Our requirements:
    │   ├── table.tsx
    │   └── ...
    │
-   ├── shared/               # Custom shared components
-   │   ├── AudioPlayer.tsx
-   │   ├── TrackCard.tsx
-   │   └── ...
+   ├── admin/                # Admin console components
+   ├── onboarding/           # Onboarding flow components
+   ├── visual/               # Decorative / animated components
    │
-   └── layout/               # Layout components
-       ├── Sidebar.tsx
-       ├── Header.tsx
+   └── <~60 flat files>      # Feature components live at the top level:
+       ├── AppSidebar.tsx    #   ShareModal.tsx, TopBar.tsx,
+       ├── TopBar.tsx        #   InviteMemberModal.tsx, ...
        └── ...
    ```
 
@@ -253,50 +252,52 @@ Our requirements:
 ### Tailwind Theme Extension
 
 ```typescript
-// tailwind.config.js
-import { createPreset } from '@utilityAi/tailwindcss-preset'
-
+// tailwind.config.ts (abridged -- the real file)
 export default {
-  presets: [createPreset()],
-  content: [
-    './src/**/*.{js,ts,jsx,tsx}',
-  ],
+  darkMode: ["class"],
+  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}",
+            "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   theme: {
+    container: { center: true, padding: "2rem", screens: { "2xl": "1400px" } },
     extend: {
-      colors: {
-        // Brand colors
-        brand: {
-          DEFAULT: '#FF6B35',
-          orange: '#FF6B35',
-          pink: '#E91E63',
-          purple: '#9C27B0',
-          dark: '#1A1A1A',
-          gray: '#2D2D2D',
-        },
-        // Semantic colors
-        primary: {
-          DEFAULT: '#FF6B35',
-          foreground: '#FFFFFF',
-        },
-        secondary: {
-          DEFAULT: '#2D2D2D',
-          foreground: '#FFFFFF',
-        },
-      },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans:    ["Sora", "Inter", "system-ui", "sans-serif"],
+        display: ["Sora", "Inter", "system-ui", "sans-serif"],
+        mono:    ["JetBrains Mono", "monospace"],
+      },
+      // Colors are CSS variables, never literal hex -- this is what makes the
+      // shadcn theming model (and the dark-mode class switch) work.
+      colors: {
+        border:      "hsl(var(--border))",
+        input:       "hsl(var(--input))",
+        ring:        "hsl(var(--ring))",
+        background:  "hsl(var(--background))",
+        foreground:  "hsl(var(--foreground))",
+        primary:     { DEFAULT: "hsl(var(--primary))",     foreground: "hsl(var(--primary-foreground))" },
+        secondary:   { DEFAULT: "hsl(var(--secondary))",   foreground: "hsl(var(--secondary-foreground))" },
+        destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+        muted:       { DEFAULT: "hsl(var(--muted))",       foreground: "hsl(var(--muted-foreground))" },
+        accent:      { DEFAULT: "hsl(var(--accent))",      foreground: "hsl(var(--accent-foreground))" },
+        // ...popover, card, sidebar
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [require("tailwindcss-animate")],
 }
 ```
+
+**Two things to get right when editing this file:**
+
+- The display typeface is **Sora**, with Inter as the first fallback — not Inter.
+- Colors resolve through `hsl(var(--token))`. Writing a literal hex here breaks theming
+  and dark mode. The actual values live as HSL triples on `:root` and `.dark` in
+  `src/index.css`.
+
 
 ### Custom CSS Variables
 
@@ -406,13 +407,14 @@ export { Button, buttonVariants }
 Built on top of shadcn/ui primitives:
 
 ```typescript
-// src/components/shared/TrackCard.tsx
+// Illustrative composition -- there is no TrackCard.tsx; feature components
+// live flat in src/components/. The point is the shadcn import surface.
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Play, Pause, MoreVertical } from 'lucide-react'
 import { useAudioPlayer } from '@/contexts/AudioPlayerContext'
 
-export function TrackCard({ track, onClick, onMore }: { track: Track, onClick?: () => void, onMore?: () => void }) {
+function TrackRow({ track, onClick, onMore }: { track: Track, onClick?: () => void, onMore?: () => void }) {
   const { currentTrack, isPlaying, togglePlay } = useAudioPlayer()
   const isCurrent = currentTrack?.id === track.id
   

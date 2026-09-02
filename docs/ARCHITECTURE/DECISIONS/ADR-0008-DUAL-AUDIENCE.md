@@ -266,28 +266,43 @@ FOR SELECT USING (
 ```
 
 **Link Recipients:**
+Link recipients are **not** granted access through RLS policies on `tracks`. They are
+anonymous -- there is no `auth.uid()` to write a policy against. Instead every read goes
+through a `SECURITY DEFINER` RPC that takes the link slug, validates it, and returns only
+what that link exposes:
+
 ```sql
--- Link recipients can access tracks shared via their link
-CREATE POLICY link_recipients_access_tracks
-ON tracks
-FOR SELECT USING (
-  EXISTS (
-    SELECT 1 FROM shared_links
-    WHERE id = current_setting('request.link_id')
-    AND (track_id = tracks.id OR playlist_id IN (
-      SELECT id FROM playlists WHERE workspace_id = tracks.workspace_id
-    ))
-    AND status = 'active'
-    AND watermarking_enabled = true
-  )
-)
+-- The gatekeeper, called by every shared-link read path
+public.assert_shared_link_access_by_slug(_slug text)   -- raises if missing/expired/disabled
+
+-- Read RPCs layered on top of it
+public.get_shared_link_by_slug(_slug text)
+public.get_track_for_shared_link(...)
+public.get_tracks_for_shared_link(...)
+public.get_playlist_meta_for_shared_link(...)
+public.get_playlist_tracks_for_shared_link(...)
+public.get_workspace_branding_for_shared_link(...)
+```
+
+The public pages call these over plain REST with the anon key and **no GoTrueClient at
+all** -- see [ARCHITECTURE/AUTH_PATTERNS.md](../AUTH_PATTERNS.md). Access control therefore
+lives inside the function body (link status, expiry, password, and what the link's
+`link_type` permits), not in a policy predicate.
+
+```typescript
+// src/pages/SharedLinkPage.tsx -- the shape of every recipient-side fetch
+const res = await fetch(SUPABASE_URL + "/rest/v1/rpc/get_shared_link_by_slug", {
+  method: "POST",
+  headers: SB_HEADERS,               // apikey only, no user session
+  body: JSON.stringify({ _slug: slug }),
+});
 ```
 
 ### Shared Components
 
 Components that work for both audiences:
 - `AudioPlayer` - Audio playback (watermarked for link recipients)
-- `TrackCard` - Track display (limited info for link recipients)
+- Track display components - limited metadata for link recipients
 - `TrackTable` - Track listing
 - `PlaylistView` - Playlist display
 - `Waveform` - Audio waveform visualization

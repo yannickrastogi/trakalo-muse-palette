@@ -62,7 +62,7 @@ None of these perfectly fit the music industry's workflow.
 
 ### Implementation
 
-- **Table structure:** `workspaces` table with `created_by` user
+- **Table structure:** `workspaces` table with an `owner_id` (the account that pays for it)
 - **Membership:** `workspace_members` many-to-many table linking users to workspaces
 - **Data isolation:** All content tables include `workspace_id` foreign key
 - **Context:** `WorkspaceContext` in React manages current workspace state
@@ -184,43 +184,50 @@ None of these perfectly fit the music industry's workflow.
 ### Database Schema
 
 ```sql
--- Workspaces table
-CREATE TABLE workspaces (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name text NOT NULL,
-  slug text UNIQUE,
-  description text,
-  created_by uuid NOT NULL REFERENCES auth.users(id),
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  is_personal boolean NOT NULL DEFAULT false,
-  -- Branding fields
-  hero_image_url text,
-  logo_url text,
-  brand_color text,
-  -- Social links
-  social_instagram text,
-  social_tiktok text,
-  social_youtube text,
-  social_facebook text,
-  social_x text
+-- public.workspaces (abridged -- branding/social columns omitted)
+CREATE TABLE public.workspaces (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name          text NOT NULL,
+  slug          text NOT NULL,
+  owner_id      uuid NOT NULL,               -- the paying account
+  plan          text NOT NULL DEFAULT 'free',
+  settings      jsonb NOT NULL DEFAULT '{}',
+  is_personal   boolean DEFAULT false,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  updated_at    timestamptz NOT NULL DEFAULT now()
+  -- plus branding: hero_image_url, logo_url, brand_color, hero_position (integer),
+  --      hero_focal_point (text, e.g. '50% 50%'), logo_size, bio, epk_url
+  -- plus socials: social_instagram, social_tiktok, social_youtube, social_facebook,
+  --      social_x, social_website, social_spotify, social_apple
 );
 
--- Workspace members (many-to-many)
-CREATE TABLE workspace_members (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  workspace_id uuid NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  access_level text NOT NULL DEFAULT 'viewer' CHECK (access_level IN ('viewer', 'editor', 'admin')),
-  professional_title text,
-  invited_by uuid REFERENCES auth.users(id),
-  invited_at timestamptz,
-  joined_at timestamptz,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (workspace_id, user_id)
+-- public.workspace_members -- deliberately minimal
+CREATE TABLE public.workspace_members (
+  id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id       uuid NOT NULL,
+  user_id            uuid NOT NULL,
+  joined_at          timestamptz NOT NULL DEFAULT now(),
+  access_level       text NOT NULL DEFAULT 'viewer',
+  professional_title text
 );
 ```
+
+Two things about `workspace_members` are worth noting, because they are easy to assume
+otherwise:
+
+- **There is no `invited_by` / `invited_at` on the membership row.** Invitation state lives
+  in a separate `invitations` table and is discarded once accepted; `joined_at` is all that
+  survives. This matters for seat counting, which must consult both tables (see
+  [ADR-0002](ADR-0002-SEAT-BASED-BILLING.md)).
+- **`access_level` is a plain `text` column with no CHECK constraint.** The hierarchy is
+  enforced in the `SECURITY DEFINER` helper functions (`has_workspace_access_level`,
+  `require_workspace_access_level`), not by the column. The recognised levels are
+  `viewer`, `editor`, `admin`, plus a retired `pitcher` that still renders for legacy
+  members (see [ADR-0009](ADR-0009-FEATURE-FLAGS.md)).
+
+Ownership is `workspaces.owner_id`, not a `created_by` column, and it is the join key for
+billing: `subscriptions` is keyed on the owner, so a workspace's limits follow whoever owns
+it rather than whoever acts in it.
 
 ### React Context
 
@@ -267,8 +274,8 @@ async function handleNewUser(user: User) {
   const { data: workspace, error } = await supabase
     .from('workspaces')
     .insert({
-      name: `${user.first_name || 'My'} Workspace`,
-      created_by: user.id,
+      name: `${displayName || 'My'} Workspace`,
+      owner_id: user.id,
       is_personal: true
     })
     .select()
@@ -322,7 +329,7 @@ At scale, consider:
 
 ## References
 
-- [TRAKALOG_ARCHITECTURE.md](../../TRAKALOG_ARCHITECTURE.md) - Original French architecture document
+- [TRAKALOG_ARCHITECTURE.md](../../TRAKALOG_ARCHITECTURE.md) - High-level architecture overview
 - [PRODUCT_AND_UX_OVERVIEW.md](../PRODUCT_AND_UX_OVERVIEW.md) - Product and UX overview
 - [Supabase Row-Level Security](https://supabase.com/docs/guides/auth/row-level-security) - RLS implementation
 - [Multi-tenant SaaS patterns](https://martinfowler.com/articles/saas-ubiquity.html) - Industry patterns

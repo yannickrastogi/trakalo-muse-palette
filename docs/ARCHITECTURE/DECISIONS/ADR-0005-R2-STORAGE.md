@@ -190,17 +190,15 @@ Our requirements:
 ### R2 Integration Code
 
 ```javascript
-// src/integrations/storage/r2.ts
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+// supabase/functions/_shared/storage.ts -- server-side only.
+// The browser never holds R2 credentials; it asks an Edge Function for a signed URL.
+const endpoint        = Deno.env.get("R2_ENDPOINT");        // full URL, not an account id
+const accessKeyId     = Deno.env.get("R2_ACCESS_KEY_ID");
+const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY");
 
-const r2 = new S3Client({
-  region: 'auto',
-  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY,
-  },
-})
+// Requests are SigV4-signed against `endpoint` using PATH-style addressing:
+//   https://<account>.r2.cloudflarestorage.com/<bucket>/<key>
+// not virtual-host style.
 
 export async function uploadToR2(bucket, key, body, contentType) {
   await r2.send(new PutObjectCommand({
@@ -223,7 +221,7 @@ export async function getR2SignedUrl(bucket, key, expiresIn = 3600) {
 ```typescript
 // supabase/functions/get-storage-url/index.ts
 import { createClient } from '@supabase/supabase-js'
-import { getR2SignedUrl } from '../../_shared/storage.ts'
+import { getSignedUrl } from '../_shared/storage.ts'
 
 Deno.serve(async (req) => {
   const { bucket, path, expiresInSec = 3600 } = await req.json()
@@ -244,23 +242,16 @@ Deno.serve(async (req) => {
 ### Frontend Usage
 
 ```typescript
-// src/hooks/useStorage.ts
-import { useQuery } from '@tanstack/react-query'
-
-export function useStorageSignedUrl(bucket, path, options = {}) {
-  const { expiresInSec = 3600 } = options
-  
-  return useQuery({
-    queryKey: ['storage-url', bucket, path, expiresInSec],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('get-storage-url', {
-        body: { bucket, path, expiresInSec },
-      })
-      if (error) throw error
-      return data.url
-    },
-    staleTime: expiresInSec * 1000 - 60000, // Refresh 1 minute before expiry
+// Illustrative only -- there is no src/hooks/useStorage.ts, and React Query is not used
+// anywhere in this codebase (see ADR-0004). In practice a context or a component calls the
+// Edge Function directly and holds the resulting URL in local state, refreshing it before
+// the signed URL expires.
+async function getSignedUrl(bucket, path, expiresInSec = 3600) {
+  const { data, error } = await supabase.functions.invoke('get-storage-url', {
+    body: { bucket, path, expiresInSec },
   })
+  if (error) throw error
+  return data.url
 }
 ```
 

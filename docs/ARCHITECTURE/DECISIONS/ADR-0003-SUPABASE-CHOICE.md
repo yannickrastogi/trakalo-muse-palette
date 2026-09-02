@@ -48,7 +48,7 @@ The music industry requires robust features:
 1. **Core Services Used:**
    - **Supabase Auth:** User authentication with JWT
    - **PostgreSQL Database:** All application data
-   - **Realtime:** Live updates via WebSockets
+   - **Realtime:** available via WebSockets (not currently used — see Current Usage)
    - **Storage:** File storage for audio, covers, stems, documents
    - **Edge Functions:** Serverless compute for custom logic
 
@@ -147,9 +147,9 @@ The music industry requires robust features:
 ### Positive
 
 1. **Rapid Development:** Reduced backend development time from months to days
-2. **Feature Richness:** Access to auth, database, storage, realtime out of the box
+2. **Feature Richness:** auth, database, storage and Edge Functions out of the box, with realtime available if needed
 3. **PostgreSQL:** Full relational database with JSON support
-4. **Realtime:** Built-in WebSocket support for collaborative features
+4. **Optionality:** built-in realtime remains available for collaborative features without adding a vendor
 5. **Open Source:** Can self-host if needed, transparent implementation
 6. **RLS:** Fine-grained access control without custom middleware
 7. **Ecosystem:** Good TypeScript support, growing community
@@ -193,23 +193,27 @@ import { createClient } from '@supabase/supabase-js'
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
 await supabase.auth.signInWithPassword({ email, password })
 
-// Database with RLS
-const { data, error } = await supabase
-  .from('tracks')
-  .select('*')
-  .eq('workspace_id', workspaceId)
-
-// Realtime
-supabase.channel('track_updates')
-  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tracks' }, callback)
-  .subscribe()
+// Database -- almost always through a SECURITY DEFINER RPC, not a direct table read.
+// `auth.uid()` can return NULL on an unstable session, so writes and sensitive reads
+// pass an explicit _user_id and let the function assert the caller.
+const { data, error } = await supabase.rpc('get_workspace_tracks', {
+  _workspace_id: workspaceId,
+});
 
 // Storage
-const { data: { publicUrl } } = await supabase
+const { data, error: upErr } = await supabase
   .storage
   .from('covers')
-  .upload(`track-${id}.jpg`, file)
+  .upload(`track-${id}.jpg`, file);
 ```
+
+In `src/` there are ~169 `supabase.rpc(...)` call sites against ~12 `supabase.from(...)`.
+The RPC-first rule is described in [ARCHITECTURE/AUTH_PATTERNS.md](../AUTH_PATTERNS.md).
+
+**Realtime is not used.** Supabase Realtime was part of why the platform was attractive, but
+no `supabase.channel(...)` subscription exists in the codebase — data is refetched
+explicitly (see [ADR-0004](ADR-0004-STATE-MANAGEMENT.md)). It remains available if
+collaborative features need it later.
 
 ### Migration Path
 
@@ -225,10 +229,10 @@ If we ever need to migrate from Supabase:
 | Service | Usage | Notes |
 |---------|-------|-------|
 | Auth | All user authentication | JWT-based |
-| Database | All application data | PostgreSQL 15+ |
-| Storage | Covers, documents | Supabase + R2 |
-| Realtime | Collaborative features | WebSocket-based |
-| Edge Functions | Custom logic | Deployed to Supabase |
+| Database | All application data | PostgreSQL; version not pinned in the repo |
+| Storage | Covers, documents, audio | Provider-switchable — see [ADR-0005](ADR-0005-R2-STORAGE.md) |
+| Realtime | **Not used** | No `channel()` subscription exists in `src/` |
+| Edge Functions | Custom logic | 34 functions under `supabase/functions/` |
 
 ---
 

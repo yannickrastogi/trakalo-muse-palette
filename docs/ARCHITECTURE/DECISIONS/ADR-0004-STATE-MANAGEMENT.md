@@ -1,177 +1,98 @@
-# ADR-0004: React Query Over Redux
+# ADR-0004: React Context for Server State
 
-> **Status:** Accepted  
-> **Date:** August 11, 2026  
-> **Author:** Ishan  
-> **Supersedes:** None
+> **Status:** Accepted (describes what is implemented)
+> **Date:** August 11, 2026 · **Revised:** September 2, 2026
+> **Author:** Ishan
+> **Supersedes:** the original ADR-0004, "React Query Over Redux"
 
 ---
 
 ## Context
 
-Trakalog is a React-based single-page application that requires robust state management for handling server data (tracks, workspaces, users), client state (UI state, forms), and derived state (filters, selections). With a complex data model and realtime updates, choosing the right state management library was critical for performance, maintainability, and developer experience.
+Trakalog is a data-heavy SPA. Almost all of its state is **server state** — tracks, workspaces, playlists, contacts, shared links, team members — fetched from Supabase, cached client-side, and mutated by the user. Very little is genuinely local UI state.
 
-### Problem Statement
-
-We needed to manage several types of state:
-
-1. **Server State:** Data from the database (tracks, workspaces, users, etc.)
-2. **Client State:** UI state, form state, local preferences
-3. **Derived State:** Filtered lists, computed values, aggregations
-4. **Realtime State:** Live updates from Supabase realtime channels
-
-The application has:
-- Complex data relationships (tracks in workspaces, users in workspaces)
-- Frequent data fetching and updates
-- Need for optimistic updates
-- Multiple users collaborating in realtime
-- Offline support requirements
+The question was how to hold that state: a dedicated server-state library, a general-purpose store, or React's built-in primitives.
 
 ### Constraints
 
-- Must work with React 18+ and TypeScript
-- Must support Suspense and concurrent features
-- Must be maintainable by small team
-- Must handle complex cache invalidation
-- Must support realtime updates
-- Must be performant with large datasets
+- React 18 + Vite SPA, no server-side rendering and therefore no request-scoped cache
+- Data access goes through `SECURITY DEFINER` RPCs, not raw table reads — most fetches are one `supabase.rpc(...)` call returning a composed payload
+- Workspace switching invalidates nearly everything at once
+- Small team; the approach has to stay legible without specialist knowledge
 
 ---
 
 ## Decision
 
-**We chose React Query (TanStack Query) for server state management, with React Context for client state and derived state.**
+**Server state is held in React Context providers — one per domain — each owning its own `useState` cache and `useCallback` fetchers over `supabase.rpc(...)`.**
 
-### Implementation
+There are 15 such providers in `src/contexts/`:
 
-1. **React Query for Server State:**
-   - All database queries use React Query
-   - Automatic caching, background updates, stale-while-revalidate
-   - Built-in support for Suspense and error handling
-   - Query invalidation on mutations
+`ApprovalContext` · `AudioPlayerContext` · `AuthContext` · `ContactsContext` · `EngagementContext` · `OnboardingContext` · `PitchContext` · `PlaylistContext` · `RadioPlayerContext` · `RoleContext` · `SharedLinksContext` · `TeamContext` · `TrackContext` · `TrackReviewContext` · `WorkspaceContext`
 
-2. **Custom Hooks for Domains:**
-   - `useTrack()` - Track queries and mutations
-   - `useWorkspace()` - Workspace queries and mutations  
-   - `useAuth()` - Authentication state
-   - `useUser()` - User profile and settings
-   - `usePlaylist()` - Playlist queries and mutations
+Each exposes a matching hook — `useTrack()`, `useWorkspace()`, `useAuth()`, `usePlaylists()`, `useSharedLinks()`, and so on — and they are nested inside `MainApp` in `src/App.tsx`.
 
-3. **Query Client Configuration:**
-   ```typescript
-   const queryClient = new QueryClient({
-     defaultOptions: {
-       queries: {
-         staleTime: 5 * 60 * 1000, // 5 minutes
-         retry: 1,
-         refetchOnWindowFocus: false,
-       },
-     },
-   })
-   ```
+The shape is consistent across providers:
 
-4. **Mutation Pattern:**
-   - Optimistic updates for better UX
-   - Automatic cache invalidation
-   - Error handling and rollback
+```typescript
+// src/contexts/TrackContext.tsx (abridged)
+const [tracks, setTracks] = useState<TrackData[]>([]);
+const [loading, setLoading] = useState(true);
 
-5. **Context for Client State:**
-   - AuthContext for authentication state
-   - WorkspaceContext for active workspace
-   - TrackContext for selected track
-   - AudioPlayerContext for playback state
-   - UIContext for modal, sidebar, theme state
+const fetchTracks = useCallback(async () => {
+  const [shares, shared] = await Promise.all([
+    supabase.rpc("get_workspace_catalog_shares", { _workspace_id: activeWorkspace.id }),
+    supabase.rpc("get_shared_workspace_tracks", { /* ... */ }),
+  ]);
+  // ...compose and set
+}, [activeWorkspace]);
+
+useEffect(() => { fetchTracks(); }, [fetchTracks]);
+```
+
+Refetching is explicit: a mutation calls its RPC and then re-runs the relevant fetcher, or updates local state directly.
+
+### ⚠️ React Query is installed but unused
+
+`@tanstack/react-query` (^5.83.0) is a dependency, and `App.tsx` mounts a `QueryClientProvider` with a default `new QueryClient()` around both `MainApp` and `AdminApp`.
+
+**Nothing uses it.** There are zero `useQuery` and zero `useMutation` call sites in `src/`. The provider is inert scaffolding inherited from the project template.
+
+This is a genuine loose end, not a documented design. See "Open Question" below.
 
 ---
 
 ## Alternatives Considered
 
-### Option 1: Redux Toolkit
+### Option 1: React Query (TanStack Query)
 
-**Pros:**
-- **Mature:** Industry standard, battle-tested
-- **DevTools:** Excellent debugging tools
-- **Middleware:** Rich ecosystem (RTK Query, Redux Persist)
-- **Pattern Established:** Well-documented patterns and best practices
-- **TypeScript Support:** Good TypeScript integration
+**Pros:** purpose-built for server state — caching, deduplication, background refetch, stale-while-revalidate, optimistic updates with rollback, and request cancellation, all without hand-rolled `useState`/`useEffect`. Query-key invalidation would express "workspace changed, drop everything" in one line.
 
-**Cons:**
-- **Boilerplate:** Requires significant boilerplate code
-- **Learning Curve:** Steep learning curve for new developers
-- **Overkill:** Too heavy for our use case
-- **Normalization:** Requires manual normalization of relational data
-- **Realtime Complexity:** Handling realtime updates is complex
-- **Performance:** Can have performance issues with frequent updates
+**Cons:** a paradigm to learn; query-key discipline is easy to get wrong; less obvious control flow than an explicit fetcher when debugging.
 
-**Why Not Chosen:** React Query provides 80% of what we need with 20% of the code. Redux would have added significant complexity without clear benefit for our data model (which is primarily server-driven with some client state).
+**Why not (currently) chosen:** it was *intended* — the dependency and provider were added — but adoption never happened, and the Context pattern was already established across the app. This remains the strongest candidate for a future migration.
 
-### Option 2: Apollo Client (GraphQL)
+### Option 2: Redux / Redux Toolkit
 
-**Pros:**
-- **GraphQL:** Efficient data fetching, single request for multiple resources
-- **Caching:** Built-in normalized caching
-- **Realtime:** Subscription support
-- **DevTools:** Apollo DevTools
+**Pros:** mature, predictable, excellent devtools, well-understood by many developers.
 
-**Cons:**
-- **Backend Requirement:** Would need GraphQL backend (Supabase doesn't have native GraphQL)
-- **Overhead:** GraphQL schema definition and maintenance
-- **Complexity:** More complex than REST for simple queries
-- **Supabase Integration:** Would need custom integration layer
-- **Learning Curve:** GraphQL has its own learning curve
+**Cons:** considerable boilerplate for what is overwhelmingly server state; RTK Query would be the relevant part, which puts it in the same category as Option 1 but heavier; global store shape becomes its own maintenance burden.
 
-**Why Not Chosen:** Supabase provides a PostgREST API that works perfectly with REST. Adding GraphQL would have required building and maintaining a GraphQL layer on top of Supabase, adding unnecessary complexity.
+**Why Not Chosen:** the app has very little genuinely global *client* state. Redux would solve a problem Trakalog does not have while adding ceremony to every fetch.
 
-### Option 3: SWR
+### Option 3: Zustand / Jotai
 
-**Pros:**
-- **Simple:** Very simple API, easy to learn
-- **Lightweight:** Minimal overhead
-- **React-Optimized:** Built for React by Vercel
-- **Good Performance:** Efficient revalidation
+**Pros:** minimal boilerplate; no provider nesting; good ergonomics for client state.
 
-**Cons:**
-- **Feature Limited:** Fewer features than React Query
-- **No Mutations:** No built-in mutation support
-- **No Query Client:** Can't pre-fetch or manage cache programmatically as easily
-- **No DevTools:** Limited debugging capabilities
-- **No Built-in Retry:** Must implement retry logic manually
+**Cons:** no built-in server-state semantics — caching, refetching and invalidation still have to be hand-written, so it does not actually replace what is needed here.
 
-**Why Not Chosen:** While SWR is excellent and we considered it, React Query provides more features out of the box (mutations, query client, devtools, pagination helpers) that we need for a complex application.
+**Why Not Chosen:** it would move the same hand-rolled fetching into a different container without addressing the caching problem.
 
-### Option 4: Zustand
+### Option 4: React Context (chosen)
 
-**Pros:**
-- **Simple:** Minimal API, easy to learn
-- **Lightweight:** Small bundle size
-- **Flexible:** Can handle both server and client state
-- **No Providers:** No context providers needed
-- **Good Performance:** Optimized for performance
+**Pros:** zero dependencies; no new concepts; provider boundaries map cleanly onto domains; trivially debuggable — the fetch is right there in the file.
 
-**Cons:**
-- **No Server State Features:** No built-in data fetching, caching, retries
-- **Manual Implementation:** Must build server state features manually
-- **Less Structure:** Too flexible can lead to inconsistent patterns
-- **No Suspense:** Limited Suspense support
-- **No DevTools:** Limited debugging
-
-**Why Not Chosen:** Zustand is excellent for client state but doesn't provide the server state features we need (caching, retries, background updates). We would have needed to combine it with something else anyway.
-
-### Option 5: Jotai + Urql
-
-**Pros:**
-- **Atomic State:** Fine-grained state management
-- **Flexible:** Can compose atoms for complex state
-- **Urql:** Lightweight GraphQL client
-- **TypeScript First:** Excellent TypeScript support
-
-**Cons:**
-- **Complexity:** Atomic model can be hard to understand
-- **Boilerplate:** Requires defining many atoms
-- **Same GraphQL Issues:** Urql has same backend requirements as Apollo
-- **Less Common:** Smaller ecosystem and community
-
-**Why Not Chosen:** While interesting, the atomic model doesn't align as well with our component hierarchy, and we'd still face the GraphQL backend issue.
+**Cons:** every cache concern is hand-rolled; no deduplication, so two consumers mounting together can issue the same RPC twice; no background revalidation; a context value change re-renders all consumers unless carefully memoised; nested providers grow deep.
 
 ---
 
@@ -179,118 +100,50 @@ The application has:
 
 ### Positive
 
-1. **Productivity:** Reduced boilerplate by ~70% compared to Redux
-2. **Performance:** Automatic caching and background updates improve UX
-3. **Realtime:** Easy integration with Supabase realtime via query invalidation
-4. **TypeScript:** Excellent TypeScript support with type inference
-5. **Suspense:** Built-in support for React 18 concurrent features
-6. **DevTools:** React Query DevTools for debugging
-7. **Optimistic Updates:** Easy to implement for better perceived performance
-8. **Cache Management:** Fine-grained cache control (per-query or global)
+1. **No abstraction to learn.** A new contributor reads one file and understands how tracks are loaded.
+2. **Domain boundaries are explicit** — each context owns one area, and the provider tree documents dependencies.
+3. **Composed RPCs fit well.** Because a single RPC returns a fully-composed payload, much of what React Query's normalisation buys you is already handled server-side.
+4. **No dependency risk** for the core data path.
 
 ### Negative
 
-1. **Learning Curve:** Team needs to learn React Query patterns
-2. **Query Key Management:** Must carefully design query keys for cache invalidation
-3. **Bundle Size:** Adds ~12KB min+gzip (acceptable)
-4. **Memory Usage:** Caches can use significant memory (managed via cacheTime)
-5. **Context Usage:** Still need Context for client state (not a full replacement)
+1. **Caching is manual and inconsistent.** Each context solves staleness its own way.
+2. **No request deduplication.** Concurrent consumers can fire duplicate RPCs.
+3. **Re-render breadth.** Any change to a context value re-renders every consumer that isn't individually memoised; `TrackContext` in particular is consumed widely.
+4. **Provider nesting is deep** in `MainApp`, and ordering is load-bearing (`Auth` → `Workspace` → `Role` → the rest).
+5. **Refetch-after-mutate is a convention, not a guarantee** — forgetting it leaves stale UI, with no framework-level safety net.
+6. **Dead weight in the bundle** from the unused React Query dependency.
 
 ### Mitigations
 
-1. **Documentation:** Create internal patterns documentation
-2. **Query Key Conventions:** Establish consistent query key patterns
-3. **Cache Configuration:** Tune cacheTime and staleTime based on use case
-4. **Code Organization:** Organize hooks by domain for maintainability
-5. **Performance Monitoring:** Track bundle size and memory usage
+1. `useCallback` / `useMemo` on context values to bound re-renders — already applied in the larger contexts.
+2. Fetchers keyed on `activeWorkspace` so a workspace switch naturally invalidates.
+3. `useRef` guards against duplicate in-flight fetches where it has mattered.
+
+---
+
+## Open Question
+
+**Either adopt React Query or remove it.** The current state — dependency installed, provider mounted, zero usage — is the worst of both: bundle cost and an implied architecture that the code does not follow, which is exactly what made the original version of this ADR wrong.
+
+Two coherent options:
+
+1. **Remove it.** Delete `@tanstack/react-query` and the `QueryClientProvider` wrappers in `App.tsx`. Smallest change; commits to the Context pattern.
+2. **Adopt it incrementally.** Keep the provider, migrate one context at a time — `ContactsContext` or `SharedLinksContext` are good first candidates, being read-mostly and self-contained — and keep the Context API as the public surface so consumers don't change.
+
+Until one is chosen, treat React Context as the actual architecture.
 
 ---
 
 ## References
 
-- [React Query Documentation](https://tanstack.com/query/latest/docs/react/overview)
-- [Redux Toolkit Documentation](https://redux-toolkit.js.org/)
-- [SWR Documentation](https://swr.vercel.app/)
+- `src/contexts/` — the 15 providers
+- `src/App.tsx` — provider nesting and the unused `QueryClientProvider`
+- [04 - Component Architecture](../04-COMPONENT_ARCHITECTURE.md) — where contexts sit in the tree
+- [ARCHITECTURE/AUTH_PATTERNS.md](../AUTH_PATTERNS.md) — `AuthContext` session handling, which has constraints of its own
+- [TanStack Query Documentation](https://tanstack.com/query/latest)
 - [Zustand Documentation](https://github.com/pmndrs/zustand)
-- [04 - Component Architecture](../04-COMPONENT_ARCHITECTURE.md) - Frontend architecture details
-
----
-
-## Appendix: Implementation Notes
-
-### Query Key Patterns
-
-```typescript
-// Simple query
-const { data: track } = useQuery({
-  queryKey: ['tracks', trackId],
-  queryFn: () => fetchTrack(trackId),
-})
-
-// Query with dependencies
-const { data: workspaceTracks } = useQuery({
-  queryKey: ['tracks', 'workspace', workspaceId, filters],
-  queryFn: () => fetchWorkspaceTracks(workspaceId, filters),
-})
-
-// Paginated query
-const { data: tracksPage } = useQuery({
-  queryKey: ['tracks', 'workspace', workspaceId, page, pageSize],
-  queryFn: () => fetchTracksPage(workspaceId, page, pageSize),
-})
-```
-
-### Mutation Pattern
-
-```typescript
-const mutation = useMutation({
-  mutationFn: updateTrack,
-  onMutate: async (newTrack) => {
-    // Cancel ongoing queries
-    await queryClient.cancelQueries({ queryKey: ['tracks', newTrack.id] })
-    
-    // Snapshot previous value
-    const previousTrack = queryClient.getQueryData(['tracks', newTrack.id])
-    
-    // Optimistic update
-    queryClient.setQueryData(['tracks', newTrack.id], newTrack)
-    
-    return { previousTrack }
-  },
-  onError: (err, newTrack, context) => {
-    // Rollback on error
-    queryClient.setQueryData(['tracks', newTrack.id], context.previousTrack)
-  },
-  onSettled: () => {
-    // Invalidate cache
-    queryClient.invalidateQueries({ queryKey: ['tracks'] })
-  },
-})
-```
-
-### Context Pattern
-
-```typescript
-// AuthContext.tsx
-const AuthContext = createContext<AuthContextType>(null)
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
-  const [user, setUser] = useState<User | null>(null)
-  
-  return (
-    <AuthContext.Provider value={{ session, user, setSession, setUser }}>
-      {children}
-    </AuthContext.Provider>
-  )
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) throw new Error('useAuth must be used within AuthProvider')
-  return context
-}
-```
+- [Redux Toolkit Documentation](https://redux-toolkit.js.org/)
 
 ---
 
@@ -299,12 +152,12 @@ export function useAuth() {
 | Property | Value |
 |----------|-------|
 | **Created** | August 11, 2026 |
-| **Version** | 1.0.0 |
+| **Version** | 2.0.0 |
 | **Status** | Accepted |
 | **Owner** | Ishan |
-| **Last Review** | August 18, 2026 |
-| **Next Review** | August 11, 2027 |
+| **Last Review** | September 2, 2026 |
+| **Next Review** | March 2, 2027 |
 
 ---
 
-*This ADR is a living document and may be updated as our state management needs evolve.*
+*Revised September 2, 2026: the original was titled "React Query Over Redux" and stated that "all database queries use React Query". They do not — there are zero `useQuery`/`useMutation` call sites, and all server state flows through React Context. The ADR now records the implemented decision, keeps React Query as a considered alternative, and flags the unused dependency as an open question.*

@@ -66,7 +66,7 @@ Our requirements:
 
 4. **Delivery:**
    - **Streaming:** Watermarked MP3 served via signed URLs
-   - **Download:** Watermarked MP3 128kbps for smaller file size
+   - **Download:** the same watermarked MP3 320kbps artefact as playback -- one encode, cached per visitor
    - **No Original:** Never serve unwatermarked audio from shared links
 
 5. **Per-Visitor:**
@@ -176,7 +176,7 @@ Our requirements:
 
 1. **Inaudible:** Strength 10 watermarks are imperceptible in tests
 2. **Traceable:** Each leak can be traced to specific visitor
-3. **Robust:** Survives 320kbps MP3 compression with high confidence (>1.5)
+3. **Robust:** survives the 320kbps MP3 encode -- detection threshold is a score of 1.0, and a real watermark scores around 1.5 against roughly 0.2 for noise
 4. **Per-Visitor:** Unique payload for each visitor enables precise tracing
 5. **Open Source:** No vendor lock-in, can audit the algorithm
 6. **Self-Hosted:** Full control over the watermarking service
@@ -189,12 +189,12 @@ Our requirements:
 3. **MP3 Limitations:** Watermark may not survive aggressive compression (<128kbps)
 4. **Detection Required:** Need to run detection to trace leaks
 5. **False Negatives:** Very quiet passages may have lower confidence
-6. **File Size:** MP3 320kbps chosen over 128kbps for robustness (larger files)
+6. **File Size:** MP3 320kbps chosen over 128kbps for robustness, so delivery copies are roughly 7-10 MB for a 3-minute track rather than 2.5-3.5 MB
 
 ### Mitigations
 
 1. **Caching:** Cache watermarked files per visitor to avoid reprocessing
-2. **Storage Optimization:** Use MP3 128kbps for downloads (verified to work)
+2. **Storage Optimization:** delivery copies are cached per visitor in the `watermarked` bucket and reused, so each (link, visitor, track) triple is encoded once
 3. **Async Processing:** Background job queue prevents blocking
 4. **Verification:** Always verify watermark after compression
 5. **Confidence Monitoring:** Track detection confidence and alert on low values
@@ -250,7 +250,9 @@ GET /health
 
 ```bash
 # Encode a test file
-audiowmark add input.wav output.wav -s 10 -p "test_payload_123456"
+# The payload must be exactly 32 hex characters (128 bits); the service rejects
+# anything else with /^[0-9a-f]{32}$/i.
+audiowmark add --strength 10 input.wav output.wav 0123456789abcdef0123456789abcdef
 
 # Verify watermark
 audiowmark get output.wav
