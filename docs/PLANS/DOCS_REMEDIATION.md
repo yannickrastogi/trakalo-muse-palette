@@ -4,9 +4,9 @@
 > multiple future Claude Code sessions. Each chunk in §5 is sized for one session and ends with
 > a commit on `ishan/translated-docs`. Work them in order; tick them off as you go.
 >
-> **Status:** chunks 0-6 complete. `03-DATA_ARCHITECTURE.md` and
-> `04-COMPONENT_ARCHITECTURE.md` are fully verified.
-> Next up: **chunk 7** (`FEATURES/SHARING_SYSTEM.md` + `FEATURES/TRACK_MANAGEMENT.md`).
+> **Status:** chunks 0-7 complete. All five S1 documents are now rewritten and verified.
+> Next up: **chunk 8** (targeted S2 fixes across 02, 05, 07, WATERMARKING, SMART_AR, SPLITS).
+> Chunk 8 needs decisions 5, 6 and 7 in §6 answered first.
 > **Audited:** September 1–2, 2026, against commit `fbc70f0`.
 
 ---
@@ -647,7 +647,46 @@ The largest job — split across chunks 4 and 5.
 
 ---
 
-### ☐ Chunk 7 — `FEATURES/SHARING_SYSTEM.md` + `FEATURES/TRACK_MANAGEMENT.md` rewrite
+### ☑ Chunk 7 — `FEATURES/SHARING_SYSTEM.md` + `FEATURES/TRACK_MANAGEMENT.md` — **DONE**
+
+> Both rewritten (618 → 685 and 478 → 509 lines). Missing-paths checker: **0**
+> for both. Every column re-derived from the baseline; every rate limit, hash
+> and constant read from the Edge Function source.
+>
+> **SHARING_SYSTEM:** all 9 fabricated paths corrected; the three real event
+> tables (`link_events`, `link_downloads`, `shared_link_sessions`) documented in
+> place of `shared_links_access`; `shared_links` re-derived (18 columns,
+> `allow_download` default **false**, `hi-res|low-res` CHECK);
+> `watermark_payloads` PK is `hash_hex` with no `track_id`; PBKDF2-SHA256 100k
+> not bcrypt; 12-char base36 slug not UUIDv4; `audiowmark get` not `decode`;
+> the invented env vars, feature flags and RLS policy names replaced with the
+> real policies and the real `check_rate_limit` limits.
+> **TRACK_MANAGEMENT:** all 6 fabricated paths corrected; `track_status` is
+> availability (`available|on_hold|released`), not a processing state — the
+> whole error/retry narrative was fiction and is gone; 8 wrong `tracks` columns
+> fixed; `is_deleted` and `json_metadata` do not exist; five real logical
+> buckets documented; `STORAGE_PROVIDER` defaults to `supabase`; the
+> splits-as-table contradiction with SPLITS_AND_SIGNATURES resolved.
+>
+> **Newly documented, worth knowing:**
+> - `link_downloads` gets a row on **every gate submission**, not only on
+>   downloads (`log-link-access/index.ts:97-113`). Count real downloads from
+>   `link_events WHERE event_type = 'download'`.
+> - `log-link-access` upserts the visitor into the sender's `contacts`
+>   **unconditionally** — there is no consent checkbox and no opt-in on the gate
+>   screen, which the old doc claimed. Worth a product/privacy decision.
+> - `shared_link_sessions` and `watermark_payloads` have RLS enabled with **no
+>   policies** — service_role only. Deliberate and correct.
+> - MP3 previews are encoded **client-side** with lamejs and stored as
+>   `_preview.mp3` siblings in the `tracks` bucket. The audit's guess of
+>   `trakalog-tracks/previews/` was also wrong.
+> - No `BEFORE INSERT` storage-quota trigger exists — usage is measured but
+>   nothing blocks an over-quota upload.
+>
+> **Source defect found, not fixed** (docs-only chunk):
+> `src/pages/SharedLinkPage.tsx:954` still says "MP3 128k" in a comment. The
+> code is correct (320k); the comment is stale. One-line fix.
+
 
 Per §4.4 and §4.5. Both need real paths, real schema, and real flows.
 
