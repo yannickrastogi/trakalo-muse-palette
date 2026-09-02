@@ -4,10 +4,9 @@
 > multiple future Claude Code sessions. Each chunk in §5 is sized for one session and ends with
 > a commit on `ishan/translated-docs`. Work them in order; tick them off as you go.
 >
-> **Status:** chunks 0-9 complete. All S1/S2 findings resolved, every §6 decision
-> settled, and the FEATURES/ARCHITECTURE/DEVELOPMENT translation done.
-> Next up: **chunk 10** (translate `docs/TRAKALOG_ARCHITECTURE.md` + the 4 PLANS docs).
-> After chunk 10 the French checker should list only `docs/_archive/`.
+> **Status:** chunks 0-10 complete. **The French checker now lists only
+> `docs/_archive/`**, as intended. Only **chunk 11** (final consistency pass and
+> merge prep) remains.
 > **Audited:** September 1–2, 2026, against commit `fbc70f0`.
 
 ---
@@ -913,7 +912,66 @@ Preserve code blocks, SQL, identifiers and column names verbatim. Translate pros
 
 ---
 
-### ☐ Chunk 10 — Translate PLANS + root architecture *(5 files)*
+### ☑ Chunk 10 — Translate PLANS + root architecture — **DONE**
+
+> All 5 files translated (3,798 → 3,664 lines). **French checker lists only
+> `docs/_archive/rls-phases/` — the acceptance criterion is met.** Broken links
+> **0**; missing paths **0** across live docs (the one remaining hit,
+> `supabase/seed.sql`, is a planned file inside a to-do list).
+>
+> As in chunk 9, translation surfaced drift.
+>
+> **`docs/TRAKALOG_ARCHITECTURE.md`** — the document CLAUDE.md points at.
+> - **§12 claimed "soft deletes rather than hard deletes, for legal integrity"
+>   as a cross-cutting architectural principle. That is false.** `tracks` has no
+>   `is_deleted`/`deleted_at`; `delete_track`, `delete_workspace` and
+>   `delete_track_comment` are all hard `DELETE`s. The only soft delete is
+>   `catalog_shares` (`status` + `revoked_at`). Flagged inline as a gap to close
+>   deliberately rather than left as a false principle — it matters for Genesis,
+>   where a deleted track takes its provenance record with it.
+> - "Essentia.js — client-side analysis" is wrong; client analysis is the **Web
+>   Audio API** (`src/lib/audio-analysis.ts`). Essentia is Python-only, on Railway.
+> - "Rate limiting (18/18 Edge Functions)" → **32 of 34**.
+> - Clarified the two bitrates that keep getting conflated: the **preview** is
+>   128 kbps (client-side lamejs, correct as stated), while **watermarked
+>   delivery** is 320 kbps. The old doc stated the first without distinguishing it
+>   from the superseded 128k watermark pipeline.
+>
+> **`TRAKALOG_STORAGE_MIGRATION.md`** — the plan **shipped, but not as designed**,
+> and the differences are load-bearing. Added a §0:
+> - It became a **provider abstraction** (`_shared/storage.ts`, switchable by
+>   `STORAGE_PROVIDER`), not the R2-only `_shared/r2.ts` this doc specifies.
+> - **Five logical buckets**, not three — covers and documents route through it too.
+> - **The `r2://` path prefix was never adopted.** Paths are plain relative keys.
+>   This invalidates the doc's own §8.4 verification queries and two checklist
+>   items, now marked non-applicable with the working alternative
+>   (`scripts/test-r2-parity.ts`).
+> - `R2_ACCOUNT_ID` and `R2_PUBLIC_URL` do not exist; `STORAGE_PROVIDER` does and
+>   the doc never mentioned it — **without it the Edge Functions silently use
+>   Supabase Storage.**
+> - `stems.url` → `stems.file_url`; CORS origin `localhost:5173` → **8080**.
+> - **Editorial call:** ~450 lines of superseded implementation (the hand-rolled
+>   `_shared/r2.ts` and three proposed Edge Functions) were removed rather than
+>   translated, with pointers to the shipped files. Reproducing a dead
+>   implementation in a "living document" invites someone to build it.
+>
+> **`TRAKALOG_DROP.md`** — noted that adding `'drop'` to the `share_type` enum is a
+> schema change that lands on the watermarking branch, and that the real blocker is
+> **Stripe Connect** (absent), not Stripe generally (present). Also fixed a second
+> instance of the chunk-8 table-break bug, where the superseded-pricing annotation
+> had landed between two table rows.
+>
+> **`TRAKALOG_GENESIS.md`** — flagged that the proposed `USING (true)` SELECT
+> policy on `genesis_records` would expose every column to `anon`, including
+> `canonical_json` and `attestation_signature`; **a view is not a security
+> boundary**. Recommended the project's existing convention instead
+> (service-role-only table + a `SECURITY DEFINER` RPC, as `watermark_payloads`
+> does).
+>
+> **`TRAKALOG_SIGNAL.md`** — translated; status made explicit (no `signal_*` table,
+> no `signal-*` Edge Function). Corrected its dependency list: Stripe base exists,
+> Stripe Connect does not.
+
 
 `docs/TRAKALOG_ARCHITECTURE.md`, `PLANS/TRAKALOG_GENESIS.md`, `PLANS/TRAKALOG_SIGNAL.md`,
 `PLANS/TRAKALOG_DROP.md`, `PLANS/TRAKALOG_STORAGE_MIGRATION.md`.

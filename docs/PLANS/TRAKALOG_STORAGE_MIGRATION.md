@@ -1,48 +1,127 @@
-# TRAKALOG — Migration Storage Supabase → Cloudflare R2
+# TRAKALOG — Storage Migration: Supabase → Cloudflare R2
 
-> **Document créé le :** 17 mai 2026
-> **Objectif :** Migrer tous les fichiers audio (tracks, stems, watermarked) de Supabase Storage vers Cloudflare R2 pour réduire les coûts d'environ 85-90% et permettre un egress illimité gratuit.
-> **Statut :** Prêt à implémenter — à exécuter après Stripe/Billing
-> **Durée estimée :** 5-7 jours dev
-> **Risque :** Moyen (touche au cœur du système audio) — faire sur une branche dédiée avec tests end-to-end
+> **Created:** May 17, 2026
+> **Last Updated:** September 2, 2026 (translated to English; §0 added)
+> **Goal:** Move all audio files (tracks, stems, watermarked) from Supabase Storage to
+> Cloudflare R2, cutting costs by roughly 85-90% and enabling free unlimited egress.
+> **Status:** ⚠️ **Superseded in part — the code shipped, but not as designed here.** See §0.
+> **Estimated effort (original):** 5-7 days
+> **Risk:** Medium — it touches the heart of the audio system.
 
 ---
 
-## 1. Pourquoi cette migration
+## 0. What actually shipped (verified September 2, 2026)
 
-### Le problème actuel
-Supabase Storage est conçu pour des fichiers transactionnels (avatars, attachments), pas pour des catalogues musicaux de plusieurs TB. À l'échelle Trakalog (audio WAV + stems + previews + watermarked per-visitor), les coûts deviennent prohibitifs très vite.
+The migration was implemented, but with a **materially better design than this document
+proposes**. Read this section before following anything below, because several concrete details
+here are now wrong.
 
-| Métrique | Supabase Storage | Cloudflare R2 |
+### It is a provider abstraction, not an R2 helper
+
+This document specifies an R2-only module at `_shared/r2.ts`, which was never created. What exists is
+**`supabase/functions/_shared/storage.ts`** — a provider *abstraction* with two
+implementations, selected at runtime:
+
+```
+// _shared/storage.ts
+// Default: STORAGE_PROVIDER=supabase (zero regression).
+// To switch to R2: supabase secrets set STORAGE_PROVIDER=r2 + redeploy.
+```
+
+That is a real improvement over the plan: the fallback is a supported provider rather than
+ad-hoc error handling, and the switch is a secret rather than a deploy.
+
+### Five logical buckets, not three
+
+The plan migrates three buckets and leaves covers and documents on Supabase Storage. The
+implementation defines **five logical buckets** and routes all of them through the abstraction:
+
+```typescript
+export type BucketName = "tracks" | "stems" | "watermarked" | "covers" | "documents";
+```
+
+Logical names map to physical buckets through `` `R2_BUCKET_${bucket.toUpperCase()}` ``.
+
+### There is no `r2://` path prefix
+
+§4.2 below proposes storing `r2://bucket/key` in `tracks.audio_url`. **That convention was not
+adopted.** Paths are stored as plain relative keys — `<workspace_id>/<uuid>.<ext>` — and the
+bucket is resolved from the logical name at call time. The provider, not the stored string,
+decides where the object lives.
+
+This matters for §8.4 and §12: the verification queries below test for an `r2://` prefix that
+does not and will not exist. They cannot be used as written.
+
+### Environment variables differ
+
+| This document | Reality |
+|---|---|
+| `R2_ACCOUNT_ID` | **Does not exist.** The endpoint is given directly |
+| `R2_PUBLIC_URL` / custom domain | **Does not exist.** Every read is a signed URL |
+| `R2_ENDPOINT` | ✅ used, and requests are **path-style** |
+| `R2_BUCKET_TRACKS` / `_STEMS` / `_WATERMARKED` | ✅ used, plus `_COVERS` and `_DOCUMENTS` |
+| — | `STORAGE_PROVIDER` (`supabase` \| `r2`), which this plan does not anticipate |
+
+### Other corrections
+
+- The column is **`stems.file_url`**, not `stems.url` — the queries in §8.4 and the checklist in
+  §12 name the wrong column.
+- The dev server runs on port **8080**, not 5173, so the CORS origins in §3.4 are wrong.
+- Previews are `_preview.mp3` **siblings** of the original inside the `tracks` bucket, not a
+  `previews/` subfolder.
+- The `get-upload-url` Edge Function exists and allows four buckets — `tracks`, `stems`,
+  `covers`, `documents` — never `watermarked`, which only the watermark service writes.
+
+### What remains genuinely open
+
+Whether the **bulk data migration** (§8) has been run to completion is not determinable from
+the repository. `scripts/test-r2-parity.ts` and `scripts/test-r2-standalone.ts` exist for
+verification. Confirm the actual state in the Cloudflare and Supabase dashboards before acting
+on §8 or the §12 cleanup checklist.
+
+---
+
+## 1. Why this migration
+
+### The problem
+
+Supabase Storage is built for transactional files (avatars, attachments), not multi-terabyte
+music catalogs. At Trakalog's scale — WAV audio plus stems plus previews plus per-visitor
+watermarked copies — costs become prohibitive quickly.
+
+| Metric | Supabase Storage | Cloudflare R2 |
 |---|---|---|
 | Storage | ~$0.021/GB ($21/TB) | $0.015/GB ($15/TB) |
-| Egress | $0.09/GB après 250 GB | **$0 — illimité** |
-| Free tier | Inclus dans le plan Pro ($25/mois) | 10 GB storage + 1M class A + 10M class B ops |
-| Class A ops (uploads, list) | Inclus | $4.50 / 1M |
-| Class B ops (downloads, head) | Inclus | $0.36 / 1M |
-| Compatibilité S3 | Partielle | ✅ Complète |
-| CDN intégré | Non | ✅ Cloudflare network (300+ POPs) |
+| Egress | $0.09/GB beyond 250 GB | **$0 — unlimited** |
+| Free tier | Included in the Pro plan ($25/month) | 10 GB storage + 1M class A + 10M class B ops |
+| Class A ops (upload, list) | Included | $4.50 / 1M |
+| Class B ops (download, head) | Included | $0.36 / 1M |
+| S3 compatibility | Partial | ✅ Complete |
+| Built-in CDN | No | ✅ Cloudflare network (300+ PoPs) |
 
-### Le gain à 1000 users payants
-- 600 Starter × 20 GB + 350 Pro × 80 GB + 50 Business × 300 GB = **~55 TB stockés**
-- Supabase : ~$1 150/mois storage + plusieurs centaines de $/mois d'egress
-- R2 : **~$825/mois storage + $0 egress**
-- **Économie : $400-700/mois minimum, scaling linéaire**
+### The gain at 1,000 paying users
 
-### Pourquoi R2 (et pas B2)
-- **Simplicité** : un seul provider, un seul SDK, une seule facture
-- **Tu utilises déjà Cloudflare** pour le DNS (trakalog.com)
-- **Egress gratuit nativement** sans config Bandwidth Alliance
-- **S3-compatible complet** : si jamais tu migres vers B2 plus tard, c'est trivial (changer endpoint + credentials)
-- **Custom domain natif** : tu peux servir tes fichiers sous `audio.trakalog.com` avec HTTPS auto
+- 600 Starter × 20 GB + 350 Pro × 80 GB + 50 Business × 300 GB = **~55 TB stored**
+- Supabase: ~$1,150/month storage plus several hundred dollars a month of egress
+- R2: **~$825/month storage + $0 egress**
+- **Saving: $400-700/month minimum, scaling linearly**
+
+### Why R2 and not B2
+
+- **Simplicity:** one provider, one SDK, one bill
+- **Cloudflare is already in use** for DNS
+- **Native free egress**, with no Bandwidth Alliance configuration
+- **Full S3 compatibility:** migrating to B2 later would be trivial — change endpoint and
+  credentials
+- **Native custom domain:** files can be served from `audio.trakalog.com` with automatic HTTPS
 
 ---
 
-## 2. Architecture cible
+## 2. Target architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     UTILISATEUR / LISTENER                  │
+│                     USER / LISTENER                         │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -51,14 +130,14 @@ Supabase Storage est conçu pour des fichiers transactionnels (avatars, attachme
 │             audio.trakalog.com (custom domain)              │
 └─────────────────────────────────────────────────────────────┘
                               │
-                              ▼ (signed URL ou access key)
+                              ▼ (signed URL or access key)
 ┌─────────────────────────────────────────────────────────────┐
 │                   CLOUDFLARE R2 BUCKETS                     │
 │                                                             │
 │   ┌────────────────┐  ┌────────────────┐  ┌──────────────┐ │
 │   │ trakalog-      │  │ trakalog-      │  │ trakalog-    │ │
 │   │ tracks         │  │ stems          │  │ watermarked  │ │
-│   │ (audio orig)   │  │ (stems audio)  │  │ (cache WM)   │ │
+│   │ (original)     │  │ (stem audio)   │  │ (WM cache)   │ │
 │   └────────────────┘  └────────────────┘  └──────────────┘ │
 └─────────────────────────────────────────────────────────────┘
                               ▲
@@ -67,66 +146,78 @@ Supabase Storage est conçu pour des fichiers transactionnels (avatars, attachme
 ┌─────────────────────────────────────────────────────────────┐
 │              SUPABASE EDGE FUNCTIONS                        │
 │                                                             │
-│  - get-audio-url       (génère signed URL R2 pour lecture)  │
-│  - get-upload-url      (génère signed URL R2 pour upload)   │
-│  - get-watermarked-audio (cache R2 + Railway watermark)     │
+│  - get-audio-url        (signed R2 URL for playback)        │
+│  - get-upload-url       (signed R2 URL for upload)          │
+│  - get-watermarked-audio (R2 cache + Railway watermark)     │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                  SUPABASE POSTGRES (inchangé)               │
-│         tracks.audio_url, stems.url, watermark_payloads     │
+│                  SUPABASE POSTGRES (unchanged)              │
+│      tracks.audio_url, stems.file_url, watermark_payloads   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Ce qui reste sur Supabase Storage
-- **Covers art** (volume faible, ~50KB par image, accès fréquent mais small egress)
-- **Documents PDF** (paperwork, signed PDFs — usage modéré)
-- **Avatars utilisateurs** (volume négligeable)
+> **As built:** the custom-domain layer was not implemented. Every read is a 300-second signed
+> URL against `R2_ENDPOINT`, path-style. Covers and documents also route through the
+> abstraction rather than staying on Supabase Storage.
 
-### Ce qui migre vers R2
-- **Audio originaux** (WAV, FLAC, MP3, AIFF, M4A, OGG) — bucket `trakalog-tracks`
-- **Audio previews** (MP3 128kbps compressés) — bucket `trakalog-tracks` (sous-dossier `previews/`)
-- **Stems** (multi-fichiers par track) — bucket `trakalog-stems`
-- **Audio watermarkés** (cache per-visitor) — bucket `trakalog-watermarked`
+### What stays on Supabase Storage *(per the original plan)*
+
+- Cover art (low volume, ~50 KB per image, frequent access but small egress)
+- PDF documents (paperwork, signed PDFs — moderate use)
+- User avatars (negligible volume)
+
+### What migrates to R2
+
+- Original audio (WAV, FLAC, MP3, AIFF) — bucket `trakalog-tracks`
+- Audio previews (compressed 128 kbps MP3) — bucket `trakalog-tracks`
+- Stems (multiple files per track) — bucket `trakalog-stems`
+- Watermarked audio (per-visitor cache) — bucket `trakalog-watermarked`
 
 ---
 
-## 3. Setup Cloudflare R2 (Phase 0 — préparation)
+## 3. Cloudflare R2 setup (Phase 0)
 
-### 3.1 Activer R2 sur ton compte Cloudflare
-1. Dashboard Cloudflare → R2 → "Purchase R2"
-2. Activer (carte requise, free tier généreux jusqu'à 10 GB)
+### 3.1 Enable R2
+
+1. Cloudflare dashboard → R2 → "Purchase R2"
+2. Enable it (card required; the free tier is generous up to 10 GB)
 3. Settings → R2 → Manage R2 API Tokens → "Create API Token"
-4. Permissions : **Object Read & Write**
-5. Specify bucket : Apply to all buckets (ou créer un token par bucket pour granularité)
-6. TTL : forever (ou rotation 90 jours selon ta préférence)
-7. **Noter** : Access Key ID, Secret Access Key, Endpoint URL (format `https://<account_id>.r2.cloudflarestorage.com`)
+4. Permissions: **Object Read & Write**
+5. Specify bucket: apply to all buckets, or create one token per bucket for granularity
+6. TTL: forever, or 90-day rotation as preferred
+7. **Record** the Access Key ID, Secret Access Key and Endpoint URL
 
-### 3.2 Créer les buckets
-Via le dashboard R2, créer 3 buckets :
+### 3.2 Create the buckets
 
 ```
-trakalog-tracks       (audio originaux + previews)
-trakalog-stems        (stems multi-fichiers)
-trakalog-watermarked  (cache audio watermarkés)
+trakalog-tracks       (original audio + previews)
+trakalog-stems        (multi-file stems)
+trakalog-watermarked  (watermarked audio cache)
 ```
 
-Pour chaque bucket :
-- Region : **Automatic** (Cloudflare optimise selon les listeners)
-- Settings → Public Access : **Disabled** (on utilise des signed URLs uniquement)
-- Settings → CORS : à configurer après (voir section 3.4)
+For each: Region **Automatic**; Public Access **Disabled** (signed URLs only); CORS configured
+per §3.4.
 
-### 3.3 Configurer le custom domain (optionnel mais recommandé)
+> **As built:** five buckets, adding `trakalog-covers` and `trakalog-documents`.
+
+### 3.3 Custom domain (optional)
+
 1. Bucket `trakalog-tracks` → Settings → Custom Domains → "Connect Domain"
-2. Entrer `audio.trakalog.com`
-3. Cloudflare crée automatiquement le CNAME + certificat SSL
-4. Attendre ~5 minutes pour propagation
+2. Enter `audio.trakalog.com`
+3. Cloudflare creates the CNAME and SSL certificate automatically
+4. Allow ~5 minutes to propagate
 
-**Note** : ce custom domain ne sert que pour la perception du branding dans les URLs. Les signed URLs fonctionnent quand même via le domaine R2 standard.
+This custom domain only affects how branded the URLs look. Signed URLs work through the
+standard R2 domain regardless.
 
-### 3.4 Configurer CORS sur les buckets
-Pour permettre les uploads directs depuis le navigateur Trakalog. Via Wrangler CLI ou le dashboard :
+> **As built:** not implemented. There is no `R2_PUBLIC_URL` and no custom domain in the code
+> path.
+
+### 3.4 Configure CORS
+
+To allow direct uploads from the Trakalog browser client:
 
 ```json
 [
@@ -134,7 +225,6 @@ Pour permettre les uploads directs depuis le navigateur Trakalog. Via Wrangler C
     "AllowedOrigins": [
       "https://app.trakalog.com",
       "https://trakalog.com",
-      "http://localhost:5173",
       "http://localhost:8080"
     ],
     "AllowedMethods": ["GET", "PUT", "POST", "HEAD"],
@@ -145,608 +235,167 @@ Pour permettre les uploads directs depuis le navigateur Trakalog. Via Wrangler C
 ]
 ```
 
-Appliquer ce CORS sur les 3 buckets.
+> Corrected from the original, which listed `http://localhost:5173`. The Vite dev server runs
+> on **8080** (`vite.config.ts`).
 
-### 3.5 Ajouter les secrets Supabase
+### 3.5 Add the Supabase secrets
 
-Dans Supabase Dashboard → Project Settings → Edge Functions → Secrets, ajouter :
+In Supabase Dashboard → Project Settings → Edge Functions → Secrets:
 
 ```
-R2_ACCOUNT_ID=<ton_account_id>
-R2_ACCESS_KEY_ID=<access_key_créée_étape_3.1>
-R2_SECRET_ACCESS_KEY=<secret_créé_étape_3.1>
+STORAGE_PROVIDER=r2
 R2_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
-R2_PUBLIC_URL=https://audio.trakalog.com  (ou laisser vide si pas de custom domain)
+R2_ACCESS_KEY_ID=<access key from 3.1>
+R2_SECRET_ACCESS_KEY=<secret from 3.1>
 R2_BUCKET_TRACKS=trakalog-tracks
 R2_BUCKET_STEMS=trakalog-stems
 R2_BUCKET_WATERMARKED=trakalog-watermarked
+R2_BUCKET_COVERS=trakalog-covers
+R2_BUCKET_DOCUMENTS=trakalog-documents
 ```
+
+> Corrected from the original, which listed `R2_ACCOUNT_ID` and `R2_PUBLIC_URL` — neither is
+> read by any code — and omitted `STORAGE_PROVIDER`, which is what actually selects the backend.
+> **Without `STORAGE_PROVIDER=r2`, the Edge Functions silently use Supabase Storage.**
 
 ---
 
-## 4. Code — Helper R2 partagé
+## 4. Shared storage helper
 
-### 4.1 Créer le helper Edge Function `_shared/r2.ts`
+### 4.1 The helper module
 
-Ce module gère toutes les opérations R2 (signed URLs upload/download, S3 v4 signing) sans dépendance externe lourde.
+> **Editorial note (September 2, 2026).** This section originally carried ~150 lines of a
+> proposed `_shared/r2.ts`, implementing AWS Signature V4 by hand. That code has been
+> **superseded by `supabase/functions/_shared/storage.ts`**, which ships a provider interface
+> with both Supabase and R2 implementations. The superseded listing has been removed rather
+> than translated, because reproducing a dead implementation in a living document invites
+> someone to build it. Read the real module instead.
+
+The shipped interface, in outline:
 
 ```typescript
-// supabase/functions/_shared/r2.ts
+export type BucketName = "tracks" | "stems" | "watermarked" | "covers" | "documents";
 
-import { createHmac, createHash } from "https://deno.land/std@0.224.0/node/crypto.ts";
-
-interface R2Config {
-  accountId: string;
-  accessKeyId: string;
-  secretAccessKey: string;
-  endpoint: string;
+export interface SignedUploadDescriptor {
+  method: "PUT";
+  url: string;
+  headers: Record<string, string>;
 }
 
-function getR2Config(): R2Config {
-  return {
-    accountId: Deno.env.get("R2_ACCOUNT_ID")!,
-    accessKeyId: Deno.env.get("R2_ACCESS_KEY_ID")!,
-    secretAccessKey: Deno.env.get("R2_SECRET_ACCESS_KEY")!,
-    endpoint: Deno.env.get("R2_ENDPOINT")!,
-  };
+export interface StorageProvider {
+  readonly name: "supabase" | "r2";
+  createSignedUrl(bucket: BucketName, key: string, expiresInSec?: number): Promise<string>;
+  createSignedUploadUrl(bucket: BucketName, key: string, contentType: string): Promise<SignedUploadDescriptor>;
+  exists(bucket: BucketName, key: string): Promise<boolean>;
 }
 
-/**
- * Génère une signed URL pour télécharger un fichier depuis R2
- * Compatible AWS Signature V4 (R2 implémente le standard S3)
- *
- * @param bucket - Nom du bucket R2
- * @param key - Chemin du fichier dans le bucket
- * @param expiresInSeconds - Durée de validité (défaut 300s = 5 min)
- */
-export async function getSignedDownloadUrl(
-  bucket: string,
-  key: string,
-  expiresInSeconds = 300
-): Promise<string> {
-  return signRequest(bucket, key, "GET", expiresInSeconds);
-}
-
-/**
- * Génère une signed URL pour uploader un fichier vers R2
- */
-export async function getSignedUploadUrl(
-  bucket: string,
-  key: string,
-  contentType: string,
-  expiresInSeconds = 3600
-): Promise<string> {
-  return signRequest(bucket, key, "PUT", expiresInSeconds, contentType);
-}
-
-/**
- * Supprime un fichier de R2 (server-side, pas de signed URL)
- */
-export async function deleteR2Object(bucket: string, key: string): Promise<boolean> {
-  const config = getR2Config();
-  const url = `${config.endpoint}/${bucket}/${key}`;
-  const signedUrl = await signRequest(bucket, key, "DELETE", 300);
-
-  const response = await fetch(signedUrl, { method: "DELETE" });
-  return response.ok || response.status === 404;
-}
-
-/**
- * AWS Signature V4 — implémentation simplifiée pour R2
- * R2 utilise la région "auto"
- */
-async function signRequest(
-  bucket: string,
-  key: string,
-  method: "GET" | "PUT" | "DELETE",
-  expiresInSeconds: number,
-  contentType?: string
-): Promise<string> {
-  const config = getR2Config();
-  const region = "auto";
-  const service = "s3";
-
-  const now = new Date();
-  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
-  const dateStamp = amzDate.slice(0, 8);
-
-  const host = new URL(config.endpoint).host;
-  const canonicalUri = `/${bucket}/${encodeURIComponent(key).replace(/%2F/g, "/")}`;
-
-  const credential = `${config.accessKeyId}/${dateStamp}/${region}/${service}/aws4_request`;
-
-  const queryParams: Record<string, string> = {
-    "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
-    "X-Amz-Credential": credential,
-    "X-Amz-Date": amzDate,
-    "X-Amz-Expires": expiresInSeconds.toString(),
-    "X-Amz-SignedHeaders": "host",
-  };
-
-  const canonicalQuery = Object.keys(queryParams)
-    .sort()
-    .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(queryParams[k])}`)
-    .join("&");
-
-  const canonicalHeaders = `host:${host}\n`;
-  const signedHeaders = "host";
-  const payloadHash = "UNSIGNED-PAYLOAD";
-
-  const canonicalRequest = [
-    method,
-    canonicalUri,
-    canonicalQuery,
-    canonicalHeaders,
-    signedHeaders,
-    payloadHash,
-  ].join("\n");
-
-  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
-  const stringToSign = [
-    "AWS4-HMAC-SHA256",
-    amzDate,
-    credentialScope,
-    createHash("sha256").update(canonicalRequest).digest("hex"),
-  ].join("\n");
-
-  // Derive signing key
-  const kDate = createHmac("sha256", `AWS4${config.secretAccessKey}`).update(dateStamp).digest();
-  const kRegion = createHmac("sha256", kDate).update(region).digest();
-  const kService = createHmac("sha256", kRegion).update(service).digest();
-  const kSigning = createHmac("sha256", kService).update("aws4_request").digest();
-  const signature = createHmac("sha256", kSigning).update(stringToSign).digest("hex");
-
-  return `${config.endpoint}${canonicalUri}?${canonicalQuery}&X-Amz-Signature=${signature}`;
-}
-
-/**
- * Construit l'URL publique d'un fichier (via custom domain si configuré)
- * À utiliser uniquement pour les fichiers qui doivent rester accessibles longtemps
- * Pour les fichiers protégés, toujours utiliser getSignedDownloadUrl
- */
-export function getPublicUrl(bucket: string, key: string): string {
-  const customDomain = Deno.env.get("R2_PUBLIC_URL");
-  if (customDomain && bucket === Deno.env.get("R2_BUCKET_TRACKS")) {
-    return `${customDomain}/${key}`;
-  }
-  const config = getR2Config();
-  return `${config.endpoint}/${bucket}/${key}`;
-}
+export function getStorageProvider(): StorageProvider;  // reads STORAGE_PROVIDER
 ```
 
-### 4.2 Pattern de stockage des paths dans la DB
+Key properties, all verified:
 
-Pour éviter les confusions, on adopte une convention claire dans les colonnes `audio_url` :
+- Signed URLs default to **300 seconds**, "to match Trakalog's DRM posture"
+- The R2 provider signs with the Web Crypto API — no npm dependency in the Deno runtime
+- Requests are **path-style** against `R2_ENDPOINT`, not virtual-host
+- A missing `R2_BUCKET_*` variable throws immediately rather than failing silently
 
-**Avant (Supabase Storage) :**
+### 4.2 Path convention in the database
+
+> ⚠️ **This section describes a convention that was NOT adopted.** It is kept as a record of the
+> decision that was considered and rejected.
+
+The original proposal was to prefix paths with the backend:
+
 ```
+Before (Supabase Storage):
 tracks.audio_url = "tracks/workspace_xxx/track_yyy.wav"
-```
 
-**Après (R2) :**
-```
+After (R2):
 tracks.audio_url = "r2://trakalog-tracks/workspace_xxx/track_yyy.wav"
 ```
 
-Le préfixe `r2://` permet de détecter facilement dans le code si le fichier est sur R2 ou encore sur Supabase Storage (pendant la phase de migration progressive).
+with the `r2://` prefix letting code detect which backend holds a file during progressive
+migration.
+
+**What shipped instead:** plain relative keys, `<workspace_id>/<uuid>.<ext>`, with the backend
+resolved by `STORAGE_PROVIDER` at call time. This is cleaner — the stored path says *where in
+the bucket*, never *which vendor* — but it means there is no per-row marker of migration state,
+which is why §8.4's verification queries do not work.
 
 ---
 
-## 5. Edge Functions — Modifications
+## 5. Edge Function changes
 
-### 5.1 `get-audio-url` (modifié)
+The three functions this document proposed are all live:
 
-Cette Edge Function génère les signed URLs pour la lecture audio. Elle doit maintenant supporter R2 en priorité, avec fallback Supabase Storage le temps de la migration.
+| Function | Status | Notes |
+|---|---|---|
+| `get-audio-url` | ✅ shipped | Serves both the anonymous shared-link flow (with a `slug`) and the authenticated flow. Refuses `quality: "original"` unless the link allows downloads. Checks the preview object actually exists before serving it, falling back to the original. Rate limit 60/min per IP. |
+| `get-upload-url` | ✅ shipped | Signs a direct `PUT`. Allows `tracks`, `stems`, `covers`, `documents` — never `watermarked`. Default 600s, max 3600s. Verifies workspace membership against the key's **first path segment**. Rate limit 60/min. |
+| `get-watermarked-audio` | ✅ shipped | Cache key `SHA-256("{link_id}_{visitor_email}_{storage_path}") + "-v2"`; 300s signed URLs; rate limit 60/min. |
 
-```typescript
-// supabase/functions/get-audio-url/index.ts
+> The original ~300 lines of proposed implementation for these three functions have been removed
+> rather than translated, for the same reason as §4.1: they are superseded, and the shipped
+> versions differ in ways that matter (the provider abstraction, the membership check on the key
+> prefix, the preview-existence fallback). Read the real functions.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "../_shared/cors.ts";
-import { checkRateLimit } from "../_shared/rate-limit.ts";
-import { isValidUUID } from "../_shared/validation.ts";
-import { getSignedDownloadUrl } from "../_shared/r2.ts";
+---
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+## 6. Frontend changes
 
-  try {
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
-    const rateLimitOk = await checkRateLimit(`get-audio-url:${clientIp}`, 60, 60);
-    if (!rateLimitOk) {
-      return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+### 6.1 Upload flow
 
-    const { track_id, version } = await req.json();
-    if (!isValidUUID(track_id)) {
-      return new Response(JSON.stringify({ error: "Invalid track_id" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // Fetch audio_url from DB
-    const { data: track, error } = await supabase
-      .from("tracks")
-      .select("audio_url, audio_preview_url")
-      .eq("id", track_id)
-      .single();
-
-    if (error || !track) {
-      console.error("Track not found:", error);
-      return new Response(JSON.stringify({ error: "Track not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const targetUrl = version === "preview" ? track.audio_preview_url : track.audio_url;
-    if (!targetUrl) {
-      return new Response(JSON.stringify({ error: "Audio not available" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    let signedUrl: string;
-
-    // Detect storage backend by URL prefix
-    if (targetUrl.startsWith("r2://")) {
-      // R2 storage: "r2://bucket-name/path/to/file"
-      const path = targetUrl.replace("r2://", "");
-      const [bucket, ...keyParts] = path.split("/");
-      const key = keyParts.join("/");
-      signedUrl = await getSignedDownloadUrl(bucket, key, 300);
-    } else {
-      // Supabase Storage (legacy, pendant migration)
-      const { data, error: signErr } = await supabase.storage
-        .from("tracks")
-        .createSignedUrl(targetUrl, 300);
-      if (signErr || !data?.signedUrl) {
-        console.error("Supabase signing error:", signErr);
-        return new Response(JSON.stringify({ error: "Failed to generate audio URL" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      signedUrl = data.signedUrl;
-    }
-
-    return new Response(JSON.stringify({ url: signedUrl }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    console.error("get-audio-url error:", err instanceof Error ? err.message : String(err));
-    return new Response(JSON.stringify({ error: "Internal error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
-```
-
-### 5.2 `get-upload-url` (NOUVEAU)
-
-Nouvelle Edge Function qui génère une signed URL pour upload direct depuis le navigateur vers R2 (bypass du backend = upload rapide et pas de limite de taille Edge Function).
+`UploadTrackModal.tsx` requests a descriptor and `PUT`s the bytes directly:
 
 ```typescript
-// supabase/functions/get-upload-url/index.ts
-
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "../_shared/cors.ts";
-import { checkRateLimit } from "../_shared/rate-limit.ts";
-import { isValidUUID, isValidStoragePath } from "../_shared/validation.ts";
-import { getSignedUploadUrl } from "../_shared/r2.ts";
-
-const ALLOWED_AUDIO_TYPES = [
-  "audio/wav", "audio/wave", "audio/x-wav",
-  "audio/mpeg", "audio/mp3",
-  "audio/flac", "audio/x-flac",
-  "audio/aiff", "audio/x-aiff",
-  "audio/m4a", "audio/x-m4a", "audio/mp4",
-  "audio/ogg", "audio/vorbis",
-];
-
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
-
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
-  try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
-    const rateLimitOk = await checkRateLimit(`get-upload-url:${clientIp}`, 30, 60);
-    if (!rateLimitOk) {
-      return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { workspace_id, track_id, file_name, content_type, file_size, bucket_type } = await req.json();
-
-    if (!isValidUUID(workspace_id) || !isValidUUID(track_id)) {
-      return new Response(JSON.stringify({ error: "Invalid workspace_id or track_id" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (!ALLOWED_AUDIO_TYPES.includes(content_type)) {
-      return new Response(JSON.stringify({ error: "Unsupported audio format" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (file_size > MAX_FILE_SIZE) {
-      return new Response(JSON.stringify({ error: "File too large (max 50MB)" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Verify user has access to the workspace (RLS bypass via service role)
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { data: isMember } = await supabase.rpc("is_workspace_member", {
-      _user_id: user.id,
-      _workspace_id: workspace_id,
-    });
-    if (!isMember) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Construct R2 key
-    const cleanFileName = file_name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const timestamp = Date.now();
-    const key = `${workspace_id}/${track_id}_${timestamp}_${cleanFileName}`;
-
-    if (!isValidStoragePath(key)) {
-      return new Response(JSON.stringify({ error: "Invalid file path" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Determine bucket
-    let bucket: string;
-    switch (bucket_type) {
-      case "track":
-        bucket = Deno.env.get("R2_BUCKET_TRACKS")!;
-        break;
-      case "stem":
-        bucket = Deno.env.get("R2_BUCKET_STEMS")!;
-        break;
-      default:
-        return new Response(JSON.stringify({ error: "Invalid bucket_type" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-    }
-
-    const uploadUrl = await getSignedUploadUrl(bucket, key, content_type, 3600);
-    const storagePath = `r2://${bucket}/${key}`;
-
-    return new Response(
-      JSON.stringify({
-        upload_url: uploadUrl,
-        storage_path: storagePath,
-        expires_in: 3600,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (err) {
-    console.error("get-upload-url error:", err instanceof Error ? err.message : String(err));
-    return new Response(JSON.stringify({ error: "Internal error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
-```
-
-### 5.3 `get-watermarked-audio` (modifié)
-
-L'Edge Function existante doit maintenant lire/écrire le cache watermarké sur R2 au lieu de Supabase Storage.
-
-```typescript
-// supabase/functions/get-watermarked-audio/index.ts (extrait modifié)
-
-import { getSignedDownloadUrl, getSignedUploadUrl } from "../_shared/r2.ts";
-
-// ... (auth, rate limit, validation comme avant)
-
-const watermarkBucket = Deno.env.get("R2_BUCKET_WATERMARKED")!;
-const cacheKey = `${linkId}/${visitorEmailHash}.mp3`;
-
-// 1. Check if watermarked version already cached on R2
-const checkUrl = await getSignedDownloadUrl(watermarkBucket, cacheKey, 60);
-const headResp = await fetch(checkUrl, { method: "HEAD" });
-
-if (headResp.ok) {
-  // Cache hit: return signed URL for streaming
-  const playUrl = await getSignedDownloadUrl(watermarkBucket, cacheKey, 300);
-  return new Response(JSON.stringify({ url: playUrl }), { ... });
+const descriptor = await getStorageUploadUrl(bucket, path, contentType);
+const xhr = new XMLHttpRequest();
+xhr.open(descriptor.method, descriptor.uploadUrl);
+for (const [name, value] of Object.entries(descriptor.headers)) {
+  xhr.setRequestHeader(name, value);
 }
-
-// 2. Cache miss: get original audio URL, send to Railway watermark service
-const originalUrl = await getSignedDownloadUrl(tracksBucket, originalKey, 300);
-
-const wmResponse = await fetch(`${Deno.env.get("WATERMARK_API_URL")}/encode`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "x-api-key": Deno.env.get("WATERMARK_API_KEY")!,
-  },
-  body: JSON.stringify({
-    source_url: originalUrl,
-    payload: payloadHex,
-  }),
+xhr.upload.addEventListener("progress", (e) => {
+  if (e.lengthComputable && e.total > 0) onProgress((e.loaded / e.total) * 100);
 });
-
-const wmBuffer = await wmResponse.arrayBuffer();
-
-// 3. Upload watermarked file to R2 cache
-const uploadUrl = await getSignedUploadUrl(watermarkBucket, cacheKey, "audio/mpeg", 600);
-await fetch(uploadUrl, {
-  method: "PUT",
-  body: wmBuffer,
-  headers: { "Content-Type": "audio/mpeg" },
-});
-
-// 4. Return signed URL pour streaming
-const playUrl = await getSignedDownloadUrl(watermarkBucket, cacheKey, 300);
-return new Response(JSON.stringify({ url: playUrl }), { ... });
 ```
+
+The helpers live in `src/lib/audio.ts`: `getStorageSignedUrl`, `getStorageUploadUrl`,
+`getAudioPlaybackUrl`, `getWatermarkedAudioUrl`. They carry an LRU cache of 50 entries with a
+4-minute TTL — one minute inside the 5-minute signed-URL lifetime, so a caller never receives a
+URL that expires mid-fetch.
+
+### 6.2 Audio playback
+
+No component changes were needed. Players receive a URL and do not care which backend produced
+it.
+
+### 6.3 Upload progress
+
+`XMLHttpRequest` rather than `fetch`, because `fetch` still has no upload progress event.
 
 ---
 
-## 6. Frontend — Modifications
+## 7. Database RPCs — no change required
 
-### 6.1 Upload flow (UploadTrackModal.tsx)
-
-**Avant (Supabase Storage) :**
-```typescript
-const { data, error } = await supabase.storage
-  .from("tracks")
-  .upload(`${workspaceId}/${fileName}`, file);
-```
-
-**Après (R2 via signed URL) :**
-```typescript
-// 1. Demander une signed URL d'upload à l'Edge Function
-const { data: { session } } = await supabase.auth.getSession();
-const response = await fetch(
-  `${SUPABASE_URL}/functions/v1/get-upload-url`,
-  {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${session?.access_token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      workspace_id: workspaceId,
-      track_id: newTrackId,
-      file_name: file.name,
-      content_type: file.type,
-      file_size: file.size,
-      bucket_type: "track",
-    }),
-  }
-);
-
-const { upload_url, storage_path } = await response.json();
-
-// 2. Upload direct du navigateur vers R2 (pas de passage par le backend)
-const uploadResp = await fetch(upload_url, {
-  method: "PUT",
-  body: file,
-  headers: {
-    "Content-Type": file.type,
-  },
-});
-
-if (!uploadResp.ok) throw new Error("Upload failed");
-
-// 3. Insérer le track avec storage_path = "r2://trakalog-tracks/..."
-const { error } = await supabase.rpc("insert_track", {
-  _workspace_id: workspaceId,
-  _audio_url: storage_path,
-  // ... autres params
-});
-```
-
-### 6.2 Lecture audio (AudioPlayerContext, MiniWaveform, etc.)
-
-**Pas de changement frontend** — le code appelle déjà `get-audio-url` Edge Function qui retourne une signed URL. L'Edge Function gère R2 ou Supabase Storage de manière transparente selon le préfixe `r2://`.
-
-### 6.3 Progress bar pour les uploads
-
-Comme l'upload est direct vers R2, on peut utiliser XHR pour avoir le progress (impossible avec fetch). Code helper :
-
-```typescript
-function uploadToR2WithProgress(
-  url: string,
-  file: File,
-  onProgress: (percent: number) => void
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("PUT", url);
-    xhr.setRequestHeader("Content-Type", file.type);
-
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        const percent = (e.loaded / e.total) * 100;
-        onProgress(percent);
-      }
-    };
-
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) resolve();
-      else reject(new Error(`Upload failed: ${xhr.status}`));
-    };
-
-    xhr.onerror = () => reject(new Error("Upload network error"));
-    xhr.send(file);
-  });
-}
-```
+The existing RPCs (`insert_track`, `update_track`, `insert_track_document`, …) already accept a
+text path. **No SQL change was necessary**, and that held true in the shipped version.
 
 ---
 
-## 7. RPCs DB — Pas de changement nécessaire
+## 8. Migrating existing files
 
-Les RPCs existantes (`insert_track`, `update_track`, `insert_track_document`, etc.) acceptent déjà un `_audio_url text`. On y stocke simplement la nouvelle forme `r2://bucket/key` au lieu du chemin Supabase Storage. **Aucune modification SQL nécessaire.**
+### 8.1 Strategy: progressive background migration
 
----
+1. **Phase A:** new uploads go straight to R2 (code cutover)
+2. **Phase B:** a background script copies existing files Supabase → R2 and updates the
+   database
+3. **Phase C:** after verification, delete the Supabase Storage files
 
-## 8. Migration des fichiers existants
-
-### 8.1 Stratégie : migration progressive en background
-
-On ne migre pas tout d'un coup. Stratégie en 3 étapes :
-
-1. **Phase A** : nouveaux uploads vont directement sur R2 (cutover du code)
-2. **Phase B** : script de migration qui copie les fichiers existants Supabase → R2 en background, met à jour les `audio_url` dans la DB en mode `r2://...`
-3. **Phase C** : après vérification, suppression des fichiers Supabase Storage (gain immédiat sur ta facture)
-
-### 8.2 Script de migration
+### 8.2 Migration script
 
 ```typescript
 // scripts/migrate-storage-to-r2.ts
-// À exécuter une fois après le cutover du code
+// Run once after the code cutover.
 
 import { createClient } from "@supabase/supabase-js";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -762,149 +411,21 @@ const r2Client = new S3Client({
   },
 });
 
-async function migrateTracks() {
-  // Fetch all tracks still on Supabase Storage (no r2:// prefix)
-  const { data: tracks } = await supabase
-    .from("tracks")
-    .select("id, workspace_id, audio_url, audio_preview_url")
-    .not("audio_url", "like", "r2://%");
-
-  console.log(`Found ${tracks?.length || 0} tracks to migrate`);
-
-  for (const track of tracks || []) {
-    try {
-      // 1. Download from Supabase Storage
-      if (track.audio_url) {
-        const { data: blob, error } = await supabase.storage
-          .from("tracks")
-          .download(track.audio_url);
-
-        if (error || !blob) {
-          console.error(`Skipped ${track.id}: download failed`, error);
-          continue;
-        }
-
-        // 2. Upload to R2
-        const key = `${track.workspace_id}/${track.id}.${getExtension(track.audio_url)}`;
-        const buffer = await blob.arrayBuffer();
-
-        await r2Client.send(
-          new PutObjectCommand({
-            Bucket: process.env.R2_BUCKET_TRACKS!,
-            Key: key,
-            Body: new Uint8Array(buffer),
-            ContentType: blob.type || "audio/wav",
-          })
-        );
-
-        // 3. Update DB with new path
-        const newPath = `r2://${process.env.R2_BUCKET_TRACKS}/${key}`;
-        await supabase
-          .from("tracks")
-          .update({ audio_url: newPath })
-          .eq("id", track.id);
-
-        console.log(`✓ Migrated track ${track.id}`);
-      }
-
-      // Same for audio_preview_url
-      if (track.audio_preview_url && !track.audio_preview_url.startsWith("r2://")) {
-        const { data: blob } = await supabase.storage
-          .from("tracks")
-          .download(track.audio_preview_url);
-
-        if (blob) {
-          const previewKey = `previews/${track.workspace_id}/${track.id}.mp3`;
-          const buffer = await blob.arrayBuffer();
-          await r2Client.send(
-            new PutObjectCommand({
-              Bucket: process.env.R2_BUCKET_TRACKS!,
-              Key: previewKey,
-              Body: new Uint8Array(buffer),
-              ContentType: "audio/mpeg",
-            })
-          );
-          const newPreviewPath = `r2://${process.env.R2_BUCKET_TRACKS}/${previewKey}`;
-          await supabase
-            .from("tracks")
-            .update({ audio_preview_url: newPreviewPath })
-            .eq("id", track.id);
-          console.log(`✓ Migrated preview ${track.id}`);
-        }
-      }
-    } catch (err) {
-      console.error(`Error migrating ${track.id}:`, err);
-    }
-
-    // Throttle to avoid overwhelming Supabase
-    await new Promise((r) => setTimeout(r, 100));
-  }
-
-  console.log("Migration complete");
-}
-
-async function migrateStems() {
-  const { data: stems } = await supabase
-    .from("stems")
-    .select("id, workspace_id, track_id, url")
-    .not("url", "like", "r2://%");
-
-  console.log(`Found ${stems?.length || 0} stems to migrate`);
-
-  for (const stem of stems || []) {
-    try {
-      const { data: blob } = await supabase.storage
-        .from("stems")
-        .download(stem.url);
-
-      if (!blob) continue;
-
-      const key = `${stem.workspace_id}/${stem.track_id}/${stem.id}.${getExtension(stem.url)}`;
-      const buffer = await blob.arrayBuffer();
-
-      await r2Client.send(
-        new PutObjectCommand({
-          Bucket: process.env.R2_BUCKET_STEMS!,
-          Key: key,
-          Body: new Uint8Array(buffer),
-          ContentType: blob.type || "audio/wav",
-        })
-      );
-
-      await supabase
-        .from("stems")
-        .update({ url: `r2://${process.env.R2_BUCKET_STEMS}/${key}` })
-        .eq("id", stem.id);
-
-      console.log(`✓ Migrated stem ${stem.id}`);
-      await new Promise((r) => setTimeout(r, 50));
-    } catch (err) {
-      console.error(`Error migrating stem ${stem.id}:`, err);
-    }
-  }
-}
-
-function getExtension(path: string): string {
-  return path.split(".").pop() || "wav";
-}
-
-async function main() {
-  await migrateTracks();
-  await migrateStems();
-}
-
-main().catch(console.error);
+// For each track: download from Supabase Storage, PUT to R2, update the row.
+// The script must be idempotent — skip anything already present in R2.
 ```
 
-### 8.3 Exécution
+> The full listing has been condensed. Note that the original relied on the `r2://` prefix for
+> idempotency, which does not exist in the shipped schema; idempotency must instead come from a
+> `HEAD` against R2 before copying.
+
+### 8.3 Running it
 
 ```bash
-# Sur ta machine locale ou un serveur temporaire
 npm install @aws-sdk/client-s3 @supabase/supabase-js
-export R2_ACCOUNT_ID=...
+export R2_ENDPOINT=https://<account>.r2.cloudflarestorage.com
 export R2_ACCESS_KEY_ID=...
 export R2_SECRET_ACCESS_KEY=...
-export R2_ENDPOINT=https://<account>.r2.cloudflarestorage.com
 export R2_BUCKET_TRACKS=trakalog-tracks
 export R2_BUCKET_STEMS=trakalog-stems
 export SUPABASE_URL=https://xhmeitivkclbeziqavxw.supabase.co
@@ -913,201 +434,196 @@ export SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
 npx tsx scripts/migrate-storage-to-r2.ts
 ```
 
-### 8.4 Vérification post-migration
+### 8.4 Post-migration verification
+
+> ⚠️ **These queries do not work as written.** They test for an `r2://` prefix that the shipped
+> schema never stores (§0). There is no per-row marker of which backend holds a file — the
+> provider is global, set by `STORAGE_PROVIDER`. Verify instead by listing objects in R2 and
+> comparing against `tracks.audio_url` / `stems.file_url`, which is what
+> `scripts/test-r2-parity.ts` exists to do.
 
 ```sql
--- Combien de tracks encore sur Supabase Storage ?
+-- Original, non-functional:
 SELECT COUNT(*) FROM tracks WHERE audio_url NOT LIKE 'r2://%';
-
--- Combien sur R2 ?
-SELECT COUNT(*) FROM tracks WHERE audio_url LIKE 'r2://%';
-
--- Pareil pour stems
-SELECT COUNT(*) FROM stems WHERE url NOT LIKE 'r2://%';
-SELECT COUNT(*) FROM stems WHERE url LIKE 'r2://%';
+SELECT COUNT(*) FROM stems  WHERE file_url NOT LIKE 'r2://%';
 ```
 
-Quand tout est à 100% sur R2 et que tu as testé que la lecture audio fonctionne pour des tracks anciens et nouveaux, **alors seulement** tu peux supprimer les fichiers Supabase Storage :
+Only once everything verifies, and playback is confirmed for both old and new tracks, delete
+the Supabase Storage files.
 
-```typescript
-// Script de cleanup Supabase Storage
-const { data: files } = await supabase.storage.from("tracks").list();
-for (const file of files || []) {
-  await supabase.storage.from("tracks").remove([file.name]);
-}
-```
-
-⚠️ **Ne supprimer Supabase Storage qu'après une semaine de vérification end-to-end.**
+⚠️ **Do not delete Supabase Storage until a week of end-to-end verification has passed.**
 
 ---
 
-## 9. Phases d'implémentation
+## 9. Implementation phases
 
-### Phase 1 — Setup (1 jour)
-1. Activer R2 sur Cloudflare, créer les 3 buckets
-2. Générer API token, configurer CORS
-3. Setup custom domain `audio.trakalog.com` (optionnel)
-4. Ajouter les secrets dans Supabase
-5. Tester manuellement un upload/download avec curl
+### Phase 1 — Setup (1 day)
+Enable R2, create the buckets, generate the API token, configure CORS, optionally set up the
+custom domain, add the Supabase secrets, test an upload/download manually with curl.
 
-### Phase 2 — Code helpers (1-2 jours)
-1. Créer `_shared/r2.ts` (signature V4, signed URLs)
-2. Tester localement avec un script Deno simple
-3. Déployer le helper
+### Phase 2 — Helper code (1-2 days)
+Build the shared storage module, test it locally, deploy.
 
-### Phase 3 — Edge Functions (2-3 jours)
-1. Créer `get-upload-url` (nouvelle)
-2. Modifier `get-audio-url` (support R2 + fallback Supabase)
-3. Modifier `get-watermarked-audio` (cache R2)
-4. Tests end-to-end avec Postman/curl
+### Phase 3 — Edge Functions (2-3 days)
+Create `get-upload-url`; modify `get-audio-url` and `get-watermarked-audio`; end-to-end tests.
 
-### Phase 4 — Frontend (2-3 jours)
-1. Modifier `UploadTrackModal.tsx` (signed URL upload + XHR progress)
-2. Modifier `StemsTab.tsx` (upload stems via R2)
-3. Vérifier que tous les players audio fonctionnent (rien à changer normalement)
-4. Tests upload/download de tous les formats supportés
-5. Tests sur mobile + tous les navigateurs
+### Phase 4 — Frontend (2-3 days)
+Update `UploadTrackModal.tsx` (signed-URL upload + XHR progress) and `StemsTab.tsx`; verify
+every audio player still works; test all supported formats, mobile and every browser.
 
-### Phase 5 — Cutover (1 jour)
-1. Merge la branche dev → main
-2. Déployer Edge Functions
-3. Déployer frontend Vercel
-4. Tester avec un track de prod
-5. Monitor logs pendant 24h
+### Phase 5 — Cutover (1 day)
+Merge, deploy the Edge Functions and the frontend, test against a production track, monitor logs
+for 24 hours.
 
-### Phase 6 — Migration des données (1 jour + background)
-1. Run script de migration
-2. Monitoring (tableau de bord SQL pour suivre % migré)
-3. Vérification end-to-end sur 10 anciens tracks aléatoires
-4. Une semaine de vérification → cleanup Supabase Storage
+### Phase 6 — Data migration (1 day + background)
+Run the migration script, monitor progress, verify end-to-end on 10 random old tracks, then a
+week of verification before cleaning up Supabase Storage.
 
-### Phase 7 — Optimisations futures (optionnel)
-1. Multipart upload pour les très gros fichiers (>5 MB)
-2. Lifecycle policies R2 (archivage automatique des watermarked >30 jours)
-3. R2 Event Notifications pour trigger des actions automatiques
+### Phase 7 — Future optimisations (optional)
+Multipart upload for large files, R2 lifecycle policies (auto-archiving watermarked objects
+older than 30 days), R2 event notifications.
 
 ---
 
-## 10. Pricing recalculé après migration
+## 10. Pricing recalculated after migration
 
-### Plan Free (3 tracks ≈ 150 MB)
-- Storage : $0.002/user/mois
-- Egress : $0
-- **Marge brute storage : ~99.99%**
+> ⚠️ **Superseded prices.** The $14 / $29 / $59 figures below come from the abandoned
+> workspace-based pricing. Current pricing is in
+> [`TRAKALOG_BILLING.md`](../FEATURES/TRAKALOG_BILLING.md) v5.0: Starter $10, Pro $25,
+> Business $45 monthly, with storage caps of 1.5 GB / 40 GB / 400 GB / 1 TB. This section has
+> not been recalculated — read the ratios, not the amounts.
 
-### Plan Starter ($14/mois, 100 tracks ≈ 5 GB)
-
-> ⚠️ **Tarifs périmés.** Les montants $14 / $29 / $59 cités dans cette section correspondent à l'ancien pricing workspace-based, **abandonné**. Le pricing en vigueur est celui de `docs/FEATURES/TRAKALOG_BILLING.md` v5.0 : Starter $10, Pro $25, Business $45 (mensuel). Cette section n'a pas été recalculée — lire les ratios, pas les montants.
-
-- Storage : $0.075/user/mois
-- Egress : $0
-- **Marge brute storage : 99.5%**
-
-### Plan Pro ($29/mois, 1000 tracks ≈ 50 GB)
-- Storage : $0.75/user/mois
-- Egress : $0
-- **Marge brute storage : 97%**
-
-### Plan Business ($59/mois, ~300 GB moyenne)
-- Storage : $4.50/user/mois
-- Egress : $0
-- **Marge brute storage : 92%**
-
-### Possibilité stratégique
-Avec ces marges, tu pourrais offrir des quotas plus généreux pour battre Sound Credit en marketing :
-- Starter : 500 GB au lieu de 100 tracks (coût $7.50/user, marge 46% — ok mais serré)
-- **Mieux** : Starter garde 100 tracks (justifié par les features, pas le storage), mais **annonce "500 GB inclus"** au lieu de "100 tracks" pour que ce soit lisible. Tu sais que les users dépasseront rarement 50 GB.
-- Pro : annoncer "2 TB" au lieu de "1000 tracks" → coût $30/user au pire cas, marge encore positive
-- Business : annoncer "10 TB" → couvre 95% des cas même pour les labels
-
----
-
-## 11. Risques et mitigations
-
-| Risque | Probabilité | Impact | Mitigation |
+| Plan (old pricing) | Storage cost | Egress | Gross storage margin |
 |---|---|---|---|
-| Bug signature V4 dans `_shared/r2.ts` | Moyenne | Élevé | Tests unitaires avant déploiement, fallback Supabase Storage si erreur |
-| Migration interrompue à mi-chemin | Moyenne | Moyen | Script idempotent (skip si déjà `r2://`), monitoring SQL |
-| Listener qui charge le track pendant la migration | Faible | Faible | Edge Function `get-audio-url` détecte automatiquement le backend |
-| CORS misconfigured | Élevée au début | Moyen | Tester avec curl avant d'intégrer frontend |
-| Custom domain SSL pas propagé | Faible | Faible | Fallback sur le domaine R2 standard |
-| Quota R2 dépassé (compte free) | Moyenne | Faible | R2 ne coupe pas le service, facture juste le dépassement |
-| Suppression accidentelle Supabase Storage | Moyenne | Très élevé | **Une semaine de vérification avant cleanup. Backup avant de supprimer.** |
-| Watermarking cache rate dropping | Faible | Moyen | Logs Edge Function `get-watermarked-audio` pour monitorer cache hit rate |
+| Free (3 tracks ≈ 150 MB) | $0.002/user/month | $0 | ~99.99% |
+| Starter ($14/month, 100 tracks ≈ 5 GB) | $0.075/user/month | $0 | 99.5% |
+| Pro ($29/month, 1000 tracks ≈ 50 GB) | $0.75/user/month | $0 | 97% |
+| Business ($59/month, ~300 GB average) | $4.50/user/month | $0 | 92% |
+
+### Strategic possibility
+
+With these margins, more generous quotas could be advertised:
+
+- Starter: 500 GB instead of 100 tracks (cost $7.50/user, 46% margin — workable but tight)
+- **Better:** keep Starter at 100 tracks, justified by features rather than storage, but
+  **advertise "500 GB included"** so it reads clearly. Users will rarely exceed 50 GB.
+- Pro: advertise "2 TB" instead of 1,000 tracks → $30/user worst case, still positive
+- Business: advertise "10 TB" → covers 95% of cases, even for labels
+
+> The v5.0 caps that shipped (1.5 GB / 40 GB / 400 GB / 1 TB) are considerably more conservative
+> than this section proposes. The Business cap was explicitly cut from 2 TB to 1 TB in August
+> 2026 on margin grounds — see [`TRAKALOG_BILLING.md`](../FEATURES/TRAKALOG_BILLING.md) §2.
 
 ---
 
-## 12. Checklist post-migration
+## 11. Risks and mitigations
 
-- [ ] Tous les uploads frontend vont sur R2
-- [ ] Tous les downloads frontend lisent depuis R2 (via signed URL)
-- [ ] Watermarking cache sur R2 fonctionne
-- [ ] Stems uploadent et lisent depuis R2
-- [ ] 100% des tracks DB ont `audio_url` avec préfixe `r2://`
-- [ ] 100% des stems DB ont `url` avec préfixe `r2://`
-- [ ] Test de lecture sur 10 tracks anciens migrés (random sample)
-- [ ] Test de lecture sur 5 tracks nouveaux uploadés post-cutover
-- [ ] Test du watermarking sur un shared link
-- [ ] Test du Trakalog Pack ZIP (téléchargement multi-fichiers)
-- [ ] Test mobile iOS + Android
-- [ ] Test Firefox + Chrome + Safari
-- [ ] Logs Edge Functions vérifiés (pas d'erreurs récurrentes)
-- [ ] Facture Cloudflare estimée vs facture Supabase précédente
-- [ ] Cleanup Supabase Storage tracks (après 7 jours de vérif)
-- [ ] Cleanup Supabase Storage stems (après 7 jours de vérif)
-- [ ] Cleanup Supabase Storage watermarked (après 7 jours de vérif)
-- [ ] Documentation mise à jour : `TRAKALOG_ARCHITECTURE.md` section stack technique
+| Risk | Probability | Impact | Mitigation |
+|---|---|---|---|
+| Signature V4 bug in the storage helper | Medium | High | Unit tests before deploying; Supabase Storage fallback on error |
+| Migration interrupted mid-run | Medium | Medium | Idempotent script, SQL monitoring |
+| A listener loads a track during migration | Low | Low | `get-audio-url` resolves the backend automatically |
+| CORS misconfigured | High initially | Medium | Test with curl before wiring the frontend |
+| Custom domain SSL not propagated | Low | Low | Fall back to the standard R2 domain |
+| R2 quota exceeded on a free account | Medium | Low | R2 does not cut service; it bills the overage |
+| Accidental Supabase Storage deletion | Medium | Very high | **A week of verification before cleanup. Back up before deleting.** |
+| Watermarking cache hit rate dropping | Low | Medium | Monitor `get-watermarked-audio` Edge Function logs |
 
 ---
 
-## 13. Dépendances avec le reste du projet
+## 12. Post-migration checklist
 
-### Bloque sur
-- **Aucune dépendance** technique — peut se faire en parallèle d'autres features
-- **Recommandation** : faire après Stripe/Billing pour ne pas mélanger les priorités
-
-### Impacte
-- **Genesis Protocol** : les Origin Prints incluront des hashes calculés sur les fichiers R2 (pas de problème, les hashes sont identiques que le fichier soit sur Supabase ou R2)
-- **Track Versioning** : versions multiples = plus de storage, donc R2 devient encore plus rentable
-- **Brief Seeker / Artist Seeker** : pas d'impact direct
-- **Admin Dashboard** : ajouter un widget "Storage used per workspace" qui query R2 via leur API
-
-### Ne touche pas
-- Auth, RLS, RPCs SECURITY DEFINER
-- Smart A&R, Sonic DNA (continuent à lire les fichiers via signed URLs)
-- Watermarking Railway service (lit l'audio via URL, peu importe le backend)
-- Stripe / Billing
+- [ ] All frontend uploads go to R2
+- [ ] All frontend downloads read from R2 via signed URL
+- [ ] Watermarking cache on R2 works
+- [ ] Stems upload and read from R2
+- [ ] ~~100% of tracks have an `r2://` prefix~~ — **not applicable**, see §0. Verify with
+      `scripts/test-r2-parity.ts` instead
+- [ ] ~~100% of stems have an `r2://` prefix~~ — **not applicable**; the column is
+      `stems.file_url`
+- [ ] Playback tested on 10 migrated old tracks (random sample)
+- [ ] Playback tested on 5 new tracks uploaded post-cutover
+- [ ] Watermarking tested through a shared link
+- [ ] Trakalog Pack ZIP tested (multi-file download)
+- [ ] Tested on iOS and Android
+- [ ] Tested on Firefox, Chrome and Safari
+- [ ] Edge Function logs checked for recurring errors
+- [ ] Estimated Cloudflare bill compared against the previous Supabase bill
+- [ ] Supabase Storage cleanup: tracks (after 7 days of verification)
+- [ ] Supabase Storage cleanup: stems (after 7 days)
+- [ ] Supabase Storage cleanup: watermarked (after 7 days)
+- [ ] Documentation updated: `TRAKALOG_ARCHITECTURE.md` technical stack section
 
 ---
 
-## 14. Notes techniques importantes
+## 13. Dependencies
 
-### Signed URLs durée
-- **GET (lecture)** : 300s (5 min) — assez pour démarrer une lecture et la finir
-- **PUT (upload)** : 3600s (1h) — assez pour uploader un gros WAV
-- **DELETE** : 300s — usage rare, server-side uniquement
+### Blocked on
 
-### Cache HTTP côté Cloudflare
-Les signed URLs ne sont **pas cachées** par Cloudflare (chaque URL est unique grâce à la signature). C'est voulu : chaque écoute = une signed URL fraîche, audit possible, expiration courte.
+- **No technical dependency** — it can run in parallel with other features
+- **Recommendation:** do it after Stripe/Billing, to avoid mixing priorities
 
-Si plus tard tu veux mettre du cache pour les previews publiques (Sonic DNA Radio, par exemple), tu peux utiliser le custom domain `audio.trakalog.com` avec un path public dédié, qui sera caché par Cloudflare automatiquement.
+### Impacts
+
+- **Genesis Protocol:** Origin Prints will hash files on R2. No issue — the hashes are identical
+  wherever the file lives.
+- **Track Versioning:** multiple versions mean more storage, making R2 more valuable still.
+- **Brief Seeker / Artist Seeker:** no direct impact.
+- **Admin Dashboard:** add a "storage used per workspace" widget. Note this is now easier than
+  the plan assumed — `tracks`, `track_versions`, `stems` and `track_documents` each carry
+  `file_size_bytes`, and `compute_user_storage_bytes` already aggregates them, so the widget can
+  read Postgres rather than querying the R2 API.
+
+### Does not touch
+
+- Auth, RLS, `SECURITY DEFINER` RPCs
+- Smart A&R, Sonic DNA (they keep reading files through signed URLs)
+- The Railway watermarking service (it reads audio by URL, whatever the backend)
+- Stripe / billing
+
+---
+
+## 14. Technical notes
+
+### Signed URL lifetimes
+
+- **GET (read):** 300s — enough to start and finish playback
+- **PUT (upload):** 3600s — enough for a large WAV
+- **DELETE:** 300s — rare, server-side only
+
+*As built:* `get-upload-url` defaults to **600s**, clamped to a 3600s maximum. Reads are 300s
+throughout.
+
+### HTTP caching at Cloudflare
+
+Signed URLs are **not cached** by Cloudflare — each URL is unique because of its signature. That
+is deliberate: every listen produces a fresh signed URL, so access is auditable and expiry is
+short.
+
+If caching is later wanted for public previews, a custom domain with a dedicated public path
+would be cached by Cloudflare automatically.
 
 ### Multipart upload (>5 MB)
-R2 supporte les multipart uploads via le SDK S3. Pour les fichiers >5 MB, tu peux uploader en chunks parallèles = upload beaucoup plus rapide. À implémenter en Phase 7 si tu veux optimiser l'UX d'upload pour les gros WAV (50 MB).
+
+R2 supports multipart uploads through the S3 SDK. For files over 5 MB, parallel chunked upload
+is much faster. Worth implementing in Phase 7 to improve the experience for large WAVs.
 
 ### Object lifecycle
-R2 supporte les lifecycle rules. À envisager :
-- Supprimer les fichiers du bucket `trakalog-watermarked` après 30 jours d'inactivité (cache jamais accédé = inutile)
-- Garder forever les buckets `trakalog-tracks` et `trakalog-stems` (catalogue user, ne pas toucher)
 
-### Compatibilité S3
-R2 est compatible AWS Signature V4. N'importe quel SDK S3 fonctionne :
-- `@aws-sdk/client-s3` (Node.js, à utiliser dans le script de migration)
-- `boto3` (Python)
-- `aws-sdk` (Go, Rust, etc.)
+R2 supports lifecycle rules. Worth considering:
 
-Le helper `_shared/r2.ts` qu'on écrit fait la signature en pure JS sans dépendance pour minimiser le bundle Edge Function.
+- Delete objects in `trakalog-watermarked` after 30 days without access — an unaccessed cache
+  entry is dead weight
+- Keep `trakalog-tracks` and `trakalog-stems` forever; that is the user's catalog
+
+### S3 compatibility
+
+R2 implements AWS Signature V4, so any S3 SDK works: `@aws-sdk/client-s3` (Node, used by the
+migration script), `boto3` (Python), `aws-sdk` (Go, Rust and others).
+
+The shipped `_shared/storage.ts` signs in pure JavaScript through the Web Crypto API, with no
+dependency, to keep the Edge Function bundle small.
 
 ---
 
-*Ce document est vivant. Il sera mis à jour pendant et après la migration.*
+*This document is living, and will be updated during and after the migration.*

@@ -1,58 +1,81 @@
 # TRAKALOG — SIGNAL
 
-> **Document créé le :** 17 mai 2026
-> **Objectif :** Créer la première marketplace inverse de l'industrie musicale — les music supervisors postent des micro-briefs, l'IA Trakalog matche silencieusement les catalogues, les artistes reçoivent uniquement des opportunités qualifiées.
-> **Statut :** Concept stratégique — lancement 6-9 mois après le beta public (nécessite Genesis MVP + masse critique catalogue)
-> **Vision :** *"Les artistes ne pitchent plus. Ils sont matchés. Les supervisors ne sont plus submergés. Ils reçoivent uniquement ce qu'ils ont demandé."*
+> **Created:** May 17, 2026
+> **Last Updated:** September 2, 2026 (translated to English)
+> **Goal:** Build the music industry's first reverse marketplace — music supervisors post
+> micro-briefs, Trakalog's AI silently matches catalogs, and artists receive only qualified
+> opportunities.
+> **Status:** 📋 **Strategic concept — nothing implemented.** Verified September 2, 2026: no
+> `signal_*` table and no `signal-*` Edge Function exists. Launch is 6-9 months after the
+> public beta, and requires the Genesis MVP plus critical catalog mass.
+> **Vision:** *"Artists stop pitching. They get matched. Supervisors stop drowning. They receive
+> only what they asked for."*
 
 ---
 
-## 1. Pourquoi SIGNAL — Le marché en 2026
+## 1. Why SIGNAL — the market in 2026
 
-### Le problème central
-L'industrie musicale a évolué : la distribution n'est plus le moat, la production non plus. Le vrai bottleneck est la **rencontre entre l'offre et la demande qualifiée**.
+### The central problem
 
-**Côté offre** : Spotify reçoit ~120 000 tracks par jour. Les artistes indépendants représentent désormais 35% du marché global. Chaque artiste peut produire, distribuer et partager pour moins de 50€/an.
+The music industry has moved on: distribution is no longer the moat, and neither is production.
+The real bottleneck is the **meeting of supply and qualified demand**.
 
-**Côté demande** : 
-- Un music supervisor reçoit **plusieurs centaines de pitches par semaine** et n'en écoute environ que 10%
-- Les timelines de production se sont effondrées : les shows qui avaient des semaines pour la music supervision ont désormais des jours, les pubs décident la semaine d'avant lancement
-- Les A&R, publishers, brand managers, podcasteurs, game studios, content creators — tous cherchent constamment de la musique fraîche et clearable rapidement
-- **Aucun canal propre n'existe** pour exprimer leurs besoins sans se faire spammer
+**Supply side:** Spotify receives ~120,000 tracks a day. Independent artists now represent 35%
+of the global market. Any artist can produce, distribute and share for under €50/year.
 
-### Les solutions actuelles sont toutes mauvaises
+**Demand side:**
 
-| Solution | Problème |
+- A music supervisor receives **several hundred pitches a week** and listens to roughly 10%
+- Production timelines have collapsed: shows that once had weeks for music supervision now have
+  days; ads decide the week before launch
+- A&Rs, publishers, brand managers, podcasters, game studios, content creators — all constantly
+  hunting for fresh, quickly clearable music
+- **No clean channel exists** for them to express what they need without being spammed
+
+### Every current solution is bad
+
+| Solution | Problem |
 |---|---|
-| **Disco / Sound Credit** | Outils de stockage, pas de marketplace. Les supervisors continuent à recevoir des centaines de pitches non sollicités |
-| **Songtradr / Musicbed / Marmoset** | Libraries traditionnelles : l'artiste signe et perd le contrôle, les briefs restent fermés |
-| **Sync agents personnels** | Coûteux (15-25% de commission), inaccessibles aux indés, ne scalent pas |
-| **Email cold pitch** | Taux de réponse <1%, fatigue mentale des deux côtés, aucune traçabilité |
-| **Plateformes de briefs publics (Taxi, Music Gateway)** | Briefs génériques sans matching IA, accessibles à tous donc même volume de spam |
+| **Disco / Sound Credit** | Storage tools, not marketplaces. Supervisors still receive hundreds of unsolicited pitches |
+| **Songtradr / Musicbed / Marmoset** | Traditional libraries: the artist signs away control, and briefs stay closed |
+| **Personal sync agents** | Expensive (15-25% commission), inaccessible to independents, do not scale |
+| **Cold email pitching** | <1% response rate, mental fatigue on both sides, no traceability |
+| **Public brief platforms (Taxi, Music Gateway)** | Generic briefs with no AI matching, open to everyone, so the same spam volume |
 
-### Le vide à combler
-Il manque une **marketplace inversée** où la demande est exprimée par le supervisor (pas par l'artiste), et où la rencontre est filtrée par une IA qui comprend vraiment la musique. C'est précisément ce que **Sonic DNA + Genesis** rendent possible. Aucun concurrent n'a les deux briques.
+### The gap to fill
 
----
-
-## 2. La proposition de valeur
-
-### Pour le music supervisor / A&R / brand manager
-> *"Postez votre brief en 2 minutes. Recevez le matin 5-15 tracks ultra-qualifiées avec rights pré-clearés et preuve de paternité humaine. Pas de spam, pas de chasse, pas de négo de droits compliquée."*
-
-### Pour l'artiste / producteur / label
-> *"Votre catalogue travaille pendant que vous dormez. Quand un supervisor cherche quelque chose qui ressemble à votre son, vous recevez UNE notification. Un clic pour proposer votre track. Aucun pitch à écrire. Aucune relation à entretenir."*
-
-### Pour Trakalog
-> *"La première marketplace musicale où la demande paie. Commission sur chaque deal facilité. Effet réseau pur : plus de supervisors → plus d'artistes → plus de matches → plus de deals."*
+What is missing is a **reverse marketplace** where demand is expressed by the supervisor rather
+than the artist, and where the meeting is filtered by an AI that genuinely understands music.
+That is precisely what **Sonic DNA + Genesis** make possible. No competitor has both pieces.
 
 ---
 
-## 3. La mécanique end-to-end
+## 2. Value proposition
 
-### Étape 1 — Le supervisor poste un brief (2 minutes)
+### For the music supervisor / A&R / brand manager
 
-Interface ultra-simple, 4 champs :
+> *"Post your brief in 2 minutes. In the morning, receive 5-15 highly qualified tracks with
+> pre-cleared rights and proof of human authorship. No spam, no hunting, no complicated rights
+> negotiation."*
+
+### For the artist / producer / label
+
+> *"Your catalog works while you sleep. When a supervisor looks for something that sounds like
+> you, you get ONE notification. One click to submit your track. No pitch to write. No
+> relationship to maintain."*
+
+### For Trakalog
+
+> *"The first music marketplace where demand pays. Commission on every facilitated deal. Pure
+> network effect: more supervisors → more artists → more matches → more deals."*
+
+---
+
+## 3. End-to-end mechanics
+
+### Step 1 — The supervisor posts a brief (2 minutes)
+
+An extremely simple interface, four fields:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -84,29 +107,34 @@ Interface ultra-simple, 4 champs :
 └─────────────────────────────────────────────────────────┘
 ```
 
-Le supervisor paye un **posting fee** au moment de poster (entre $50 et $500 selon urgence + budget — voir section 8 Business Model). Ce fee filtre les briefs sérieux des curieux, et finance la plateforme côté demande.
+The supervisor pays a **posting fee** on submission ($50-$500 by urgency and budget — see §8).
+The fee separates serious briefs from curiosity, and funds the platform from the demand side.
 
-### Étape 2 — Trakalog SIGNAL transforme le brief en query sémantique
+### Step 2 — SIGNAL turns the brief into a semantic query
 
-Pipeline interne instantané :
+An instantaneous internal pipeline:
 
-1. **Embedding du texte** → vecteur sémantique 512-d via Claude API (mood, energy, instrumentation, vocal style extraits)
-2. **Embedding de la track de référence** → Sonic DNA + neural embedding CLAP via le service Railway existant
-3. **Fusion des deux** → un vecteur de query unique pondéré (60% reference / 40% texte si les deux présents)
-4. **Filtres durs** :
-   - Genesis-certified ✅ (human-attested obligatoire)
-   - Splits 100% signés ✅ (no clearance issues)
-   - Sync-ready status (pas de samples uncleared, pas de dispute)
-   - AI Training License = `NO-AI` ou `PAID-AI` (jamais `OPEN-AI` pour les briefs sync)
-   - Budget compatible avec le tarif minimum déclaré par l'artiste
-5. **Recherche pgvector** → top 50 tracks dont le DNA est dans le rayon de similarité (cosine distance)
-6. **Re-ranking** par Claude avec contexte texte du brief → top 10-15 tracks finales
+1. **Text embedding** → a 512-d semantic vector via the Claude API (mood, energy,
+   instrumentation and vocal style extracted)
+2. **Reference-track embedding** → Sonic DNA + CLAP neural embedding through the existing
+   Railway service
+3. **Fusion of the two** → a single weighted query vector (60% reference / 40% text when both
+   are present)
+4. **Hard filters:**
+   - Genesis-certified ✅ (human attestation mandatory)
+   - Splits 100% signed ✅ (no clearance issues)
+   - Sync-ready status (no uncleared samples, no dispute)
+   - AI Training License is `NO-AI` or `PAID-AI` — never `OPEN-AI` for sync briefs
+   - Budget compatible with the artist's declared minimum
+5. **pgvector search** → the top 50 tracks whose DNA falls within the similarity radius (cosine
+   distance)
+6. **Re-ranking** by Claude using the brief's text context → the final top 10-15
 
-Le tout en moins de 5 secondes. Le supervisor n'attend pas.
+All in under 5 seconds. The supervisor does not wait.
 
-### Étape 3 — Notification silencieuse à l'artiste
+### Step 3 — A silent notification to the artist
 
-L'artiste reçoit **une seule notification** (push mobile + email) :
+The artist receives **one** notification (mobile push + email):
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -124,13 +152,16 @@ L'artiste reçoit **une seule notification** (push mobile + email) :
 └──────────────────────────────────────────────────────┘
 ```
 
-L'artiste clique. Il voit le brief complet, le profil du supervisor (vérifié par Trakalog, historique de placements, % paiement à temps, % de réponse), et **un bouton unique : "Submit this track"**.
+The artist clicks. They see the full brief, the supervisor's profile (Trakalog-verified,
+placement history, on-time payment rate, response rate), and **a single button: "Submit this
+track"**.
 
-Pas de pitch à écrire. Pas d'email à composer. Pas de fichier à uploader (la track existe déjà avec sa Genesis Print). Un clic. Trakalog s'occupe du reste.
+No pitch to write. No email to compose. No file to upload — the track already exists with its
+Genesis Print. One click. Trakalog handles the rest.
 
-### Étape 4 — Le supervisor reçoit son inbox SIGNAL
+### Step 4 — The supervisor's SIGNAL inbox
 
-Le lendemain matin (ou dans la deadline demandée), le supervisor ouvre son inbox SIGNAL :
+The next morning, or within the requested deadline, the supervisor opens their SIGNAL inbox:
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -138,13 +169,13 @@ Le lendemain matin (ou dans la deadline demandée), le supervisor ouvre son inbo
 │  Posted 2 days ago — 7 tracks submitted                  │
 ├──────────────────────────────────────────────────────────┤
 │                                                           │
-│  🥇 92% match  Midnight Run — Yannick Rastogi             │
+│  🥇 92% match  Midnight Run — Artist One                  │
 │       ▶️ Play  📄 One-sheet  ✅ Genesis verified  $8K     │
 │                                                           │
-│  🥈 89% match  Last Light — Eliot Smith                   │
+│  🥈 89% match  Last Light — Artist Two                    │
 │       ▶️ Play  📄 One-sheet  ✅ Genesis verified  $12K    │
 │                                                           │
-│  🥉 87% match  Hold On Slow — Sarah Vo                    │
+│  🥉 87% match  Hold On Slow — Artist Three                │
 │       ▶️ Play  📄 One-sheet  ✅ Genesis verified  $6K     │
 │                                                           │
 │  ... 4 more                                              │
@@ -153,16 +184,19 @@ Le lendemain matin (ou dans la deadline demandée), le supervisor ouvre son inbo
 └──────────────────────────────────────────────────────────┘
 ```
 
-Chaque track est accompagnée de :
-- Audio player streaming (avec watermark per-supervisor — leak tracing si la track fuite avant deal)
-- **One-sheet auto-généré** : tous les credits, splits, PROs, IPI, contact one-stop
-- **Genesis verification badge** cliquable → page publique avec Bitcoin timestamp + human attestation
-- Tarif demandé par l'artiste (transparent)
-- Sonic DNA résumé pour cross-référencer rapidement
+Each track comes with:
 
-### Étape 5 — Négociation et deal in-app
+- A streaming audio player, watermarked per supervisor — leak tracing if the track escapes
+  before a deal
+- An **auto-generated one-sheet**: all credits, splits, PROs, IPI, one-stop contact
+- A clickable **Genesis verification badge** → the public page with the Bitcoin timestamp and
+  human attestation
+- The artist's asking price, shown transparently
+- A Sonic DNA summary for fast cross-referencing
 
-Le supervisor sélectionne sa track favorite, clique **"Make an offer"** :
+### Step 5 — Negotiation and deal, in-app
+
+The supervisor picks their favourite and clicks **"Make an offer"**:
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -185,65 +219,73 @@ Le supervisor sélectionne sa track favorite, clique **"Make an offer"** :
 └──────────────────────────────────────────────────────┘
 ```
 
-L'artiste reçoit l'offre, peut accepter, contre-offrir, ou décliner — tout in-app. Si accord :
+The artist receives the offer and can accept, counter or decline — all in-app. On agreement:
 
-1. **Stripe Connect** prend le paiement du supervisor (en escrow)
-2. **Contrat sync** auto-généré (template standardisé Trakalog, signature électronique Ed25519 réutilisée du système splits)
-3. Les deux parties signent
-4. Trakalog libère 85-90% à l'artiste (commission 10-15%), Stripe verse en 7 jours
-5. La track passe automatiquement en statut "synced" dans le catalogue de l'artiste
-6. **Audit log Genesis** : la licence sync est enregistrée comme historique de l'œuvre
+1. **Stripe Connect** takes the supervisor's payment into escrow
+2. A **sync contract** is auto-generated (standardised Trakalog template, reusing the Ed25519
+   electronic signature from the splits system)
+3. Both parties sign
+4. Trakalog releases 85-90% to the artist (10-15% commission); Stripe pays out in 7 days
+5. The track automatically moves to "synced" status in the artist's catalog
+6. **Genesis audit log:** the sync licence is recorded in the work's history
 
-### Étape 6 — Post-deal — La fly-wheel
+### Step 6 — Post-deal: the flywheel
 
-- L'artiste gagne une **étoile de réputation** sur son profil (1 placement validé = boost de visibilité dans les futurs matches)
-- Le supervisor gagne une **étoile de fiabilité** (placement réalisé = +0.1 sur sa note)
-- **Reviews mutuelles** non publiques (visibles seulement de Trakalog pour modération) → améliore la qualité du réseau
-- L'artiste peut **partager publiquement** le deal s'il le souhaite (placement validé devient social proof)
-- La track entre dans la **liste des références** qui peuvent servir à matcher des futurs briefs similaires (le système apprend)
-
----
-
-## 4. Pourquoi ça ne marcherait pas sans Genesis
-
-C'est **la clé qui rend SIGNAL possible**. Sans Genesis Print, un supervisor doit :
-- Vérifier que la track n'est pas générée par IA → impossible aujourd'hui
-- Vérifier que les splits sont signés et tous les contributeurs OK → emails, attente, friction
-- Vérifier que les rights master + composition sont clairs → recherches IPI, PROs
-- Vérifier qu'il n'y a pas de samples uncleared → contact label, recherche, doute
-
-**Tout ça prend 1-3 semaines aujourd'hui. C'est pour ça que les supervisors préfèrent les sync agents qui ont déjà "défriché" ces vérifications.**
-
-Avec Genesis attaché à chaque track Trakalog :
-- ✅ Human-attested → preuve cryptographique signée par l'artiste
-- ✅ Splits 100% signés cryptographiquement → audit trail immutable
-- ✅ One-stop ownership ou ownership chain claire → publié dans le registre
-- ✅ Pas de samples uncleared → check automatique via derivation detection
-- ✅ AI Training License explicite → le supervisor sait exactement ce qu'il peut faire
-
-**Le supervisor passe de 1-3 semaines de vérifications à 30 secondes de validation.** C'est ça qui change le jeu et qui fait que SIGNAL n'est pas "encore un Disco" mais une nouvelle catégorie.
+- The artist gains a **reputation star** on their profile (one validated placement boosts
+  visibility in future matches)
+- The supervisor gains a **reliability star** (a completed placement adds +0.1 to their rating)
+- **Mutual reviews**, not public — visible only to Trakalog for moderation — improve network
+  quality
+- The artist may **publicly share** the deal if they wish; a validated placement becomes social
+  proof
+- The track joins the **reference list** used to match future similar briefs — the system learns
 
 ---
 
-## 5. Architecture technique
+## 4. Why this would not work without Genesis
 
-### Tables DB principales
+This is **the key that makes SIGNAL possible**. Without a Genesis Print, a supervisor must:
+
+- Verify the track is not AI-generated → impossible today
+- Verify the splits are signed and every contributor is on board → emails, waiting, friction
+- Verify that master and composition rights are clear → IPI and PRO research
+- Verify there are no uncleared samples → contacting the label, research, doubt
+
+**All of that takes 1-3 weeks today. It is exactly why supervisors prefer sync agents who have
+already cleared this ground.**
+
+With Genesis attached to every Trakalog track:
+
+- ✅ Human-attested → a cryptographic signature from the artist
+- ✅ Splits cryptographically signed 100% → an immutable audit trail
+- ✅ One-stop ownership, or a clear ownership chain → published in the registry
+- ✅ No uncleared samples → automatic check via derivation detection
+- ✅ An explicit AI Training License → the supervisor knows exactly what they may do
+
+**The supervisor goes from 1-3 weeks of verification to 30 seconds of validation.** That is
+what changes the game, and what makes SIGNAL a new category rather than "another Disco".
+
+---
+
+## 5. Technical architecture
+
+### Principal tables *(none created yet)*
 
 ```sql
--- Briefs postés par les supervisors
+-- Briefs posted by supervisors
 CREATE TABLE signal_briefs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   supervisor_id uuid REFERENCES auth.users(id) NOT NULL,
   workspace_id uuid REFERENCES workspaces(id),
 
-  -- Le brief lui-même
+  -- The brief itself
   vibe_description text NOT NULL,
-  reference_track_url text,                     -- URL Spotify/SoundCloud ou upload temporaire
-  reference_embedding vector(512),              -- DNA de la track de référence
-  text_embedding vector(512),                   -- Embedding du vibe_description
-  query_embedding vector(512),                  -- Fusion des deux pour matching
+  reference_track_url text,                     -- Spotify/SoundCloud URL or temporary upload
+  reference_embedding vector(512),              -- DNA of the reference track
+  text_embedding vector(512),                   -- embedding of vibe_description
+  query_embedding vector(512),                  -- fusion of both, used for matching
 
-  -- Filtres
+  -- Filters
   deadline_at timestamptz NOT NULL,
   budget_min_cents integer,
   budget_max_cents integer,
@@ -261,7 +303,7 @@ CREATE TABLE signal_briefs (
 CREATE INDEX idx_signal_briefs_active ON signal_briefs(status) WHERE status = 'active';
 CREATE INDEX idx_signal_briefs_embedding ON signal_briefs USING ivfflat (query_embedding vector_cosine_ops);
 
--- Matches générés par l'IA (avant submission)
+-- AI-generated matches, before submission
 CREATE TABLE signal_matches (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   brief_id uuid REFERENCES signal_briefs(id) ON DELETE CASCADE,
@@ -282,7 +324,7 @@ CREATE TABLE signal_matches (
 CREATE UNIQUE INDEX idx_signal_matches_unique ON signal_matches(brief_id, track_id);
 CREATE INDEX idx_signal_matches_pending ON signal_matches(artist_workspace_id, artist_response) WHERE artist_response = 'pending';
 
--- Tracks soumises par les artistes au brief
+-- Tracks submitted by artists against a brief
 CREATE TABLE signal_submissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   brief_id uuid REFERENCES signal_briefs(id) NOT NULL,
@@ -292,7 +334,7 @@ CREATE TABLE signal_submissions (
   submitted_by uuid REFERENCES auth.users(id),
 
   artist_minimum_price_cents integer,
-  artist_note text,                             -- Optional context to supervisor
+  artist_note text,                             -- optional context for the supervisor
 
   status text DEFAULT 'submitted',              -- submitted, shortlisted, offered, won, lost, withdrawn
   supervisor_viewed_at timestamptz,
@@ -301,14 +343,14 @@ CREATE TABLE signal_submissions (
   created_at timestamptz DEFAULT now()
 );
 
--- Offres faites par les supervisors
+-- Offers made by supervisors
 CREATE TABLE signal_offers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   submission_id uuid REFERENCES signal_submissions(id) NOT NULL,
   supervisor_id uuid REFERENCES auth.users(id) NOT NULL,
   artist_workspace_id uuid REFERENCES workspaces(id) NOT NULL,
 
-  -- Termes proposés
+  -- Proposed terms
   fee_cents integer NOT NULL,
   usage_description text,
   territory text DEFAULT 'worldwide',
@@ -320,28 +362,28 @@ CREATE TABLE signal_offers (
   artist_counter_fee_cents integer,
   artist_counter_message text,
 
-  -- Paiement
+  -- Payment
   stripe_payment_intent_id text,
   trakalog_commission_cents integer,
   artist_payout_cents integer,
   paid_to_artist_at timestamptz,
 
-  -- Contrat
+  -- Contract
   contract_pdf_url text,
   artist_signed_at timestamptz,
   supervisor_signed_at timestamptz,
-  contract_genesis_id text,                     -- Hash de l'audit Genesis pour ce deal
+  contract_genesis_id text,                     -- hash of the Genesis audit for this deal
 
   created_at timestamptz DEFAULT now(),
-  expires_at timestamptz                        -- L'offre expire au bout de X jours
+  expires_at timestamptz                        -- the offer expires after X days
 );
 
--- Profils Supervisor (séparé de profiles pour features spécifiques)
+-- Supervisor profiles (separate from profiles, for feature-specific fields)
 CREATE TABLE signal_supervisor_profiles (
   user_id uuid PRIMARY KEY REFERENCES auth.users(id),
   display_name text NOT NULL,
   company text,
-  verified boolean DEFAULT false,               -- Vérifié manuellement par Trakalog
+  verified boolean DEFAULT false,               -- manually verified by Trakalog
   verification_method text,                     -- 'imdb_credit', 'linkedin', 'industry_intro', 'past_deal'
 
   total_briefs_posted integer DEFAULT 0,
@@ -352,14 +394,14 @@ CREATE TABLE signal_supervisor_profiles (
   avg_response_time_hours numeric,
   rating numeric DEFAULT 5.0,                   -- 0.0 to 5.0
 
-  notable_placements jsonb,                     -- Past credits (Netflix shows, ads, etc.)
+  notable_placements jsonb,                     -- past credits (Netflix shows, ads, etc.)
   bio text,
   avatar_url text,
 
   created_at timestamptz DEFAULT now()
 );
 
--- Reviews bilatéraux post-deal
+-- Bilateral post-deal reviews
 CREATE TABLE signal_reviews (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   offer_id uuid REFERENCES signal_offers(id) NOT NULL,
@@ -367,18 +409,18 @@ CREATE TABLE signal_reviews (
   reviewee_id uuid REFERENCES auth.users(id),
   reviewer_role text,                           -- 'artist' or 'supervisor'
   rating integer CHECK (rating BETWEEN 1 AND 5),
-  comment text,                                 -- Privé, visible Trakalog seulement
-  public boolean DEFAULT false,                 -- L'artiste peut choisir de rendre public si placement validé
+  comment text,                                 -- private, visible to Trakalog only
+  public boolean DEFAULT false,                 -- the artist may publish it on a validated placement
   created_at timestamptz DEFAULT now()
 );
 
--- Preferences artistes (filtres opt-in/opt-out)
+-- Artist preferences (opt-in / opt-out filters)
 CREATE TABLE signal_artist_preferences (
   workspace_id uuid PRIMARY KEY REFERENCES workspaces(id),
-  enabled boolean DEFAULT false,                -- Opt-in to receive matches
+  enabled boolean DEFAULT false,                -- opt in to receive matches
   minimum_budget_cents integer DEFAULT 0,
-  excluded_usage_contexts text[],               -- ['ad', 'trailer'] si l'artiste ne veut pas
-  excluded_brands text[],                       -- Marques explicitement refusées
+  excluded_usage_contexts text[],               -- ['ad', 'trailer'] where the artist opts out
+  excluded_brands text[],                       -- explicitly refused brands
   preferred_exclusivity text DEFAULT 'non-exclusive',
   auto_decline_below_match_score numeric DEFAULT 0.7,
   notification_method text DEFAULT 'push_email',  -- 'push_email', 'email_only', 'in_app_only'
@@ -386,37 +428,38 @@ CREATE TABLE signal_artist_preferences (
 );
 ```
 
-### Edge Functions à créer
+### Edge Functions to create
 
-| Fonction | Rôle |
+| Function | Role |
 |---|---|
-| `signal-post-brief` | Crée le brief, génère les embeddings, lance le matching, prend le posting fee Stripe |
-| `signal-run-matching` | Re-rank et notifie les artistes (cron quotidien + déclenché à la création du brief) |
-| `signal-submit-track` | L'artiste soumet sa track au brief (1 clic depuis la notif) |
-| `signal-make-offer` | Le supervisor envoie une offre à un artiste |
-| `signal-accept-offer` | L'artiste accepte → Stripe escrow → contrat généré |
-| `signal-counter-offer` | Contre-offre artiste ou supervisor |
-| `signal-finalize-deal` | Une fois les deux signatures collectées → Stripe transfer → notification finale |
-| `signal-supervisor-verification` | Workflow de vérification manuel des supervisors (admin Trakalog) |
+| `signal-post-brief` | Creates the brief, generates embeddings, launches matching, takes the Stripe posting fee |
+| `signal-run-matching` | Re-ranks and notifies artists (daily cron + triggered on brief creation) |
+| `signal-submit-track` | The artist submits their track to the brief (one click from the notification) |
+| `signal-make-offer` | The supervisor sends an offer to an artist |
+| `signal-accept-offer` | The artist accepts → Stripe escrow → contract generated |
+| `signal-counter-offer` | Counter-offer from either side |
+| `signal-finalize-deal` | Once both signatures are collected → Stripe transfer → final notification |
+| `signal-supervisor-verification` | Manual supervisor verification workflow (Trakalog admin) |
 
-### Service Railway pour matching IA
+### Railway service for AI matching
 
-Un nouveau service Railway dédié au matching (ou extension du service Sonic DNA Profiler existant) :
+A new Railway service dedicated to matching, or an extension of the existing Sonic DNA
+Profiler:
 
 ```python
 # signal-matcher/app.py (Python/Flask)
 
 @app.route('/embed-brief', methods=['POST'])
 def embed_brief():
-    """Génère les embeddings d'un brief"""
+    """Generate a brief's embeddings."""
     data = request.json
     vibe_text = data['vibe_description']
     reference_url = data.get('reference_track_url')
 
-    # 1. Embedding texte via Claude API
+    # 1. Text embedding via the Claude API
     text_embedding = claude_embed(vibe_text)
 
-    # 2. Si référence audio fournie, calcul Sonic DNA + CLAP embedding
+    # 2. If an audio reference is supplied, compute Sonic DNA + CLAP embedding
     reference_embedding = None
     if reference_url:
         audio = download_temp(reference_url)
@@ -424,7 +467,7 @@ def embed_brief():
         clap_embedding = clap_extract(audio)
         reference_embedding = fuse_embeddings(sonic_dna, clap_embedding)
 
-    # 3. Fusion finale (60% reference / 40% text si les deux)
+    # 3. Final fusion (60% reference / 40% text when both are present)
     if reference_embedding is not None:
         query_embedding = 0.6 * reference_embedding + 0.4 * text_embedding
     else:
@@ -438,13 +481,13 @@ def embed_brief():
 
 @app.route('/rerank-matches', methods=['POST'])
 def rerank_matches():
-    """Re-classement par Claude des top 50 candidats trouvés par pgvector"""
+    """Claude re-ranks the top 50 candidates found by pgvector."""
     data = request.json
     brief = data['brief']
-    candidates = data['candidates']  # liste de 50 tracks avec sonic_dna + metadata
+    candidates = data['candidates']  # 50 tracks with sonic_dna + metadata
 
-    # Demande à Claude de re-ranker les 50 en se basant sur le brief textuel
-    # Retourne les top 15 avec match_reasons enrichis
+    # Ask Claude to re-rank the 50 against the brief text.
+    # Returns the top 15 with enriched match_reasons.
     reranked = claude_rerank(brief, candidates)
 
     return jsonify({'ranked_matches': reranked})
@@ -452,342 +495,348 @@ def rerank_matches():
 
 ---
 
-## 6. UX — Les écrans clés
+## 6. UX — the key screens
 
-### Côté Supervisor
+### Supervisor side
 
-**1. Dashboard SIGNAL**
-- Mes briefs actifs (avec compteur de submissions reçues)
-- Mes briefs historiques (avec résultats : deal conclu ou non)
-- Mon inbox de notifications (artistes qui ont soumis)
-- Mon profil et rating
-- Bouton CTA principal : **+ Post a new brief**
+**1. SIGNAL dashboard** — active briefs (with a submission counter), past briefs (with
+outcomes: deal or no deal), the notification inbox of artists who submitted, profile and
+rating, and the primary CTA: **+ Post a new brief**.
 
-**2. Nouveau brief (modal 2-min)**
-- 4 champs simples comme décrit section 3.1
-- Preview du posting fee selon urgence/budget
-- Paiement Stripe inline
-- Confirmation : "Your brief is live. You'll receive your first matches within X hours."
+**2. New brief (2-minute modal)** — the four simple fields from §3, a preview of the posting fee
+by urgency and budget, inline Stripe payment, and confirmation: "Your brief is live. You'll
+receive your first matches within X hours."
 
-**3. Brief Inbox (par brief)**
-- Liste des submissions classées par % match
-- Filtres : par mood, par budget, par durée, par vocal/instrumental
-- Player audio in-line avec waveform
-- Boutons d'action : Shortlist, Request stems, Make offer, Decline
-- Sidebar : critères du brief (rappel constant), countdown deadline
+**3. Brief inbox (per brief)** — submissions ranked by match %, filters (mood, budget,
+duration, vocal/instrumental), an inline audio player with waveform, action buttons (Shortlist,
+Request stems, Make offer, Decline), and a sidebar with the brief criteria and a deadline
+countdown.
 
-**4. Make Offer modal**
-- Champs : fee, territory, duration, exclusivity, message
-- Aperçu du contrat qui sera généré
-- Stripe escrow info : "Funds will be held until the artist signs"
+**4. Make Offer modal** — fee, territory, duration, exclusivity, message; a preview of the
+contract to be generated; Stripe escrow information: "Funds will be held until the artist
+signs."
 
-### Côté Artiste
+### Artist side
 
-**1. Notifications SIGNAL** (intégré au notification center existant)
-- Badge dédié 🎯 SIGNAL Match
-- Affichage : % match, projet type, budget range, deadline countdown, rating supervisor
-- Actions : View brief, Submit track, Dismiss
+**1. SIGNAL notifications** (folded into the existing notification centre) — a dedicated
+🎯 SIGNAL Match badge showing match %, project type, budget range, deadline countdown and
+supervisor rating; actions: View brief, Submit track, Dismiss.
 
-**2. SIGNAL Brief View**
-- Lecture complète du brief
-- Profil du supervisor (verified badge, past placements, rating)
-- Ta track suggérée (player + Genesis Print badge)
-- Champs optionnels : ton tarif minimum, note au supervisor (max 200 char)
-- Bouton unique : **Submit this track**
+**2. SIGNAL brief view** — the full brief; the supervisor's profile (verified badge, past
+placements, rating); the suggested track (player + Genesis Print badge); optional fields for a
+minimum price and a note to the supervisor (max 200 characters); and a single button:
+**Submit this track**.
 
-**3. SIGNAL Deals Dashboard**
-- Mes submissions en cours (status par brief)
-- Mes offers reçues (à accepter / décliner / counter)
-- Mes deals signés et en attente de paiement
-- Mes deals historiques + revenus générés
+**3. SIGNAL deals dashboard** — submissions in flight (status per brief), offers received (to
+accept, decline or counter), signed deals awaiting payment, and past deals with revenue
+generated.
 
-**4. SIGNAL Preferences** (Settings)
-- Toggle on/off de la marketplace
-- Budget minimum acceptable
-- Usage contexts exclus (jamais de pub, jamais de trailer)
-- Marques explicitement refusées
-- Notification method preference
+**4. SIGNAL preferences** (Settings) — marketplace on/off, minimum acceptable budget, excluded
+usage contexts (never ads, never trailers), explicitly refused brands, notification method.
 
 ---
 
-## 7. Stratégie de lancement — Pourquoi 6-9 mois minimum
+## 7. Launch strategy — why 6-9 months minimum
 
-Tu ne peux pas lancer une marketplace sans liquidité des deux côtés. Le piège classique des marketplaces : **lancer avec une offre vide ou une demande vide tue le produit en 3 mois.**
+You cannot launch a marketplace without liquidity on both sides. The classic marketplace trap:
+**launching with an empty supply or an empty demand kills the product in three months.**
 
-### Phase 0 — Pré-conditions (3-6 mois après beta public)
+### Phase 0 — Preconditions (3-6 months after the public beta)
 
-Avant même de coder SIGNAL, tu dois avoir :
+Before writing any SIGNAL code, these must exist:
 
-1. **Stripe / Billing en production** ✅ priorité actuelle
-2. **Genesis MVP fonctionnel** : Origin Print + AI Training License + Public Registry
-3. **Minimum 1000 tracks Genesis-certified humaines** dans la DB Trakalog
-4. **Minimum 100 artistes actifs payants** (Starter ou Pro) qui auraient un intérêt direct
-5. **Onboarding bien rodé** pour que les premiers supervisors invités aient une UX premium
+1. **Stripe / billing in production** ✅ current priority
+2. **A working Genesis MVP:** Origin Print + AI Training License + Public Registry
+3. **At least 1,000 human Genesis-certified tracks** in the database
+4. **At least 100 active paying artists** (Starter or Pro) with a direct interest
+5. **A well-drilled onboarding**, so the first invited supervisors get a premium experience
 
-Sans ça, un supervisor poste un brief, reçoit 2 matches médiocres, ne revient plus. Et tu n'as aucun second chance avec eux.
+Without those, a supervisor posts a brief, receives two mediocre matches, and never returns.
+There is no second chance with them.
 
-### Phase 1 — Recrutement supervisor (3 mois — "Founder mode")
+### Phase 1 — Supervisor recruitment (3 months, "founder mode")
 
-**Toi, Yannick, contactes personnellement 50 supervisors et A&R triés sur le volet.** Pas de marketing mass, pas d'ads. Du 1-to-1.
+**Personally contact 50 hand-picked supervisors and A&Rs.** No mass marketing, no ads. One to
+one.
 
-Typologie cible pour les 50 premiers :
-- **15 indie film music supervisors** (festivals Sundance, SXSW, TIFF — leurs émails sont publics via Guild of Music Supervisors)
-- **10 streaming series supervisors** (Netflix, HBO, Amazon, Apple — niveau mi-confirmé, pas les stars)
+Target mix for the first 50:
+
+- **15 indie film music supervisors** (Sundance, SXSW, TIFF — their emails are public through
+  the Guild of Music Supervisors)
+- **10 streaming series supervisors** (Netflix, HBO, Amazon, Apple — mid-career, not the stars)
 - **10 ad agency music directors** (mid-size agencies — McCann, Wieden+Kennedy, DDB)
-- **5 game audio directors** (studios indé : Annapurna, Devolver, Supergiant)
+- **5 game audio directors** (indie studios: Annapurna, Devolver, Supergiant)
 - **5 podcast music sourcing leads** (Wondery, Pushkin, Spotify Studios)
-- **5 brand internal music leads** (Nike, Apple, Glossier, Aesop)
+- **5 in-house brand music leads** (Nike, Apple, Glossier, Aesop)
 
-Approche pour chacun :
-- LinkedIn DM ou email personnalisé
-- Tu te présentes comme founder solo qui a construit Trakalog
-- Tu leur offres **6 mois gratuits** (pas de posting fees) + commission Trakalog réduite à 5% sur les premiers deals
-- Tu leur montres une démo vidéo de 3 min
-- Tu fais un onboarding 1-to-1 (call Zoom 30 min)
+Approach for each: a personalised LinkedIn DM or email; introduce yourself as the founder who
+built Trakalog; offer **6 months free** (no posting fees) plus a reduced 5% Trakalog commission
+on the first deals; show a 3-minute demo video; run a one-to-one onboarding (30-minute call).
 
-Objectif réaliste : **15-25 supervisors actifs** à la fin du recrutement. C'est ta masse critique.
+Realistic objective: **15-25 active supervisors** by the end of recruitment. That is critical
+mass.
 
-### Phase 2 — Soft launch invite-only (1-2 mois)
+### Phase 2 — Invite-only soft launch (1-2 months)
 
-- Les 15-25 supervisors recrutés postent leurs premiers briefs (objectif : 3-5 briefs/semaine sur l'ensemble)
-- Les artistes Trakalog Pro et Business reçoivent en exclusivité les matches
-- Toi tu monitores chaque deal, tu interviews les deux parties après chaque transaction
-- Tu itères vite sur les frictions détectées
-- **Objectif** : 5 deals signés et payés dans cette période. Pas 50. Cinq vrais deals.
+- The 15-25 recruited supervisors post their first briefs (target: 3-5 briefs/week in total)
+- Trakalog Pro and Business artists receive the matches exclusively
+- Monitor every deal; interview both parties after each transaction
+- Iterate fast on the friction found
+- **Objective: 5 signed and paid deals** in the period. Not 50. Five real deals.
 
-### Phase 3 — Public launch (mois 3+)
+### Phase 3 — Public launch (month 3+)
 
-Une fois que tu as 5+ deals validés et au moins 3 témoignages publiables :
+Once there are 5+ validated deals and at least 3 publishable testimonials:
 
-- Annonce publique avec case studies réels
-- Ouverture aux Starter (avec match score minimum plus élevé)
-- Ouverture du programme supervisor à candidatures (toujours vérifiées manuellement)
-- Tarification supervisor activée (posting fees normaux)
-- PR : Music Business Worldwide, Hypebot, Synchtank, Variety
-- Influence : podcasts spécialisés (And the Writer Is, The Sync Report, Music Business Made Simple)
+- Public announcement with real case studies
+- Open to Starter (with a higher minimum match score)
+- Open the supervisor programme to applications, still manually verified
+- Supervisor pricing switched on (normal posting fees)
+- PR: Music Business Worldwide, Hypebot, Synchtank, Variety
+- Influence: specialist podcasts (And the Writer Is, The Sync Report, Music Business Made
+  Simple)
 
-### Phase 4 — Scale (mois 6+)
+### Phase 4 — Scale (month 6+)
 
-- Onboarding automatisé pour les supervisors (formulaire de vérification + ID validation)
-- API pour les agences pour intégrer SIGNAL dans leurs workflows
-- Integration Slack pour les studios qui veulent recevoir les briefs en team
-- Internationalisation (premiers supervisors UK, Allemagne, France)
+- Automated supervisor onboarding (verification form + ID validation)
+- An API for agencies to fold SIGNAL into their workflows
+- Slack integration for studios that want briefs delivered to a team
+- Internationalisation (first UK, German and French supervisors)
 
 ---
 
 ## 8. Business model
 
-### Revenus directs
+### Direct revenue
 
-**1. Posting fees (supervisors)** — Filtre la demande sérieuse, finance l'IA matching
+**1. Posting fees (supervisors)** — filters serious demand and funds the AI matching.
 
-| Urgence × Budget | Posting fee |
+| Urgency × budget | Posting fee |
 |---|---|
-| 2 semaines × $1-5K | $50 |
-| 1 semaine × $1-5K | $75 |
+| 2 weeks × $1-5K | $50 |
+| 1 week × $1-5K | $75 |
 | 72h × $1-5K | $100 |
 | 24h × $1-5K | $200 |
-| 2 semaines × $5-20K | $100 |
+| 2 weeks × $5-20K | $100 |
 | 72h × $5-20K | $250 |
 | 24h × $5-20K | $500 |
-| Any × $20-100K | $500-1000 |
-| Any × $100K+ | $2000 (avec concierge service) |
+| Any × $20-100K | $500-1,000 |
+| Any × $100K+ | $2,000 (with concierge service) |
 
-**2. Commission sur deals** — Le revenu principal
+**2. Commission on deals** — the primary revenue.
 
-- **10% sur deals < $10K** (cible : artistes indé, premiers placements)
-- **12% sur deals $10-50K** (placements TV/streaming standards)
-- **15% sur deals > $50K** (gros placements pub, films, exclusivités)
+- **10% on deals under $10K** (independent artists, first placements)
+- **12% on deals $10-50K** (standard TV/streaming placements)
+- **15% on deals over $50K** (large ad placements, films, exclusives)
 
-**3. SIGNAL Pro pour supervisors** — $99-299/mois pour les supervisors actifs
+**3. SIGNAL Pro for supervisors** — $99-299/month for active supervisors. Includes posting fees
+(up to 20 briefs/month), advanced features (free similarity search across the Trakalog catalog,
+saved-search alerts, teams/workspaces), and a reduced Trakalog commission (8% instead of
+10-15%). Target: power users posting 5+ briefs a month.
 
-Avantages :
-- Posting fees inclus (jusqu'à 20 briefs/mois)
-- Accès à des features avancées : similarity search libre dans le catalogue Trakalog, alertes saved searches, équipes/workspaces
-- Commission Trakalog réduite (8% au lieu de 10-15%)
-- Cible : les power users qui postent 5+ briefs par mois
+**4. Verified Supervisor Badge** — $200/year. Enhanced verification (ID, IMDb credits, industry
+references). Becomes a strong trust signal; artists prioritise verified briefs.
 
-**4. Verified Supervisor Badge** — $200/an
+### Gross margin model
 
-Vérification renforcée (ID, credits IMDb, références industrielles). Devient un signal de confiance fort. Les artistes priorisent les briefs des verified.
+Marginal cost of a facilitated deal:
 
-### Modèle de marge brute
+- Stripe Connect fees: ~2.9% + $0.30 on the total
+- AI matching (Claude + Sonic DNA): ~$0.10 per brief
+- Storage and compute: negligible, reusing existing Trakalog infrastructure
+- Human support for complex deals: variable, ~$5-50 per deal
 
-**Coût marginal d'un deal facilité :**
-- Stripe Connect fees : ~2.9% + $0.30 sur le total
-- AI matching (Claude + Sonic DNA) : ~$0.10 par brief
-- Storage et compute : négligeable (existant Trakalog)
-- Support humain pour deal complexes : variable, ~$5-50 par deal selon complexité
+**Expected average gross margin: >85%** on commissions.
 
-**Marge brute moyenne attendue : >85%** sur les commissions.
+### Projections (conservative, 18 months after the SIGNAL launch)
 
-### Projections (réalistes, 18 mois après launch SIGNAL)
+Assumption: 50 active supervisors, 5 briefs each per month = 250 briefs/month.
 
-Hypothèse conservatrice : 50 supervisors actifs, 5 briefs/supervisor/mois = 250 briefs/mois.
+- **Average posting fees:** 250 briefs × $150 = **$37,500/month**
+- **Brief → deal conversion:** 20% (industry estimate) = 50 deals/month
+- **Average deal value:** $8,000
+- **Average commission 12%:** 50 × $8,000 × 12% = **$48,000/month**
+- **SIGNAL Pro subscriptions:** 15 supervisors × $200 = **$3,000/month**
 
-- **Posting fees moyens** : 250 briefs × $150 moyen = **$37 500/mois**
-- **Taux de conversion brief → deal** : 20% (estimation industrielle) = 50 deals/mois
-- **Deal value moyen** : $8 000
-- **Commission moyenne 12%** : 50 × $8 000 × 12% = **$48 000/mois**
-- **SIGNAL Pro abos** : 15 supervisors × $200 = **$3 000/mois**
+**Estimated SIGNAL monthly revenue: ~$88,500** (~$1M/year).
 
-**Revenu mensuel SIGNAL estimé : ~$88 500/mois** (~$1M/an)
-
-À ce stade, SIGNAL représente probablement **40-60% des revenus totaux Trakalog**. Et la croissance est exponentielle car chaque deal validé attire 2-3 nouveaux supervisors via le bouche-à-oreille industrie.
+At that point SIGNAL likely represents **40-60% of total Trakalog revenue**, and growth is
+exponential, since each validated deal attracts 2-3 new supervisors through industry
+word-of-mouth.
 
 ---
 
-## 9. Risques et mitigations
+## 9. Risks and mitigations
 
-| Risque | Probabilité | Impact | Mitigation |
+| Risk | Probability | Impact | Mitigation |
 |---|---|---|---|
-| Pas assez de supervisors recrutés en Phase 1 | Élevée | Critique | Sales personnel intensif par Yannick + offre gratuite généreuse + démo killer |
-| Matching IA pas assez précis | Moyenne | Élevé | Beta privée 2 mois avant lancement, calibration manuelle des seuils, feedback loop supervisor (rating de chaque match) |
-| Spam de briefs par des faux supervisors | Élevée | Moyen | Posting fee dès la première utilisation + vérification manuelle systématique + ban si abuse |
-| Spam de submissions par les artistes | Moyenne | Faible | Limite à 1 submission par match (pas de re-soumission après dismissal) + score de réputation artiste |
-| Concurrence directe par Disco/Songtradr | Moyenne | Moyen | Disco a un conflit d'intérêt (storage business), Songtradr ne fait pas de matching IA. Notre moat = Genesis + Sonic DNA + UX |
-| Litige contractuel après un deal | Faible | Élevé | Contrat type bien rédigé par avocat, escrow Stripe, signatures Ed25519, audit log Genesis |
-| Plagiat / vol de track via la marketplace | Faible | Élevé | Watermarking invisible per-supervisor sur tous les previews + leak tracing existant |
-| Supervisors mécontents du volume de spam d'artistes en pré-match | Moyenne | Critique | C'est notre proposition de valeur principale — l'IA filtre AVANT que les artistes voient le brief. Zéro spam visible. |
-| Réglementation marketplace musicale | Faible | Moyen | Pas de différence légale avec Songtradr/Musicbed qui opèrent depuis 10 ans |
-| Dépendance Stripe Connect (pour les paiements internationaux) | Faible | Moyen | Stripe Connect est solide, alternatives : Wise Business, Paddle si besoin |
+| Too few supervisors recruited in Phase 1 | High | Critical | Intensive personal selling + a generous free offer + a killer demo |
+| AI matching not precise enough | Medium | High | A 2-month private beta before launch, manual threshold calibration, a supervisor feedback loop rating each match |
+| Brief spam from fake supervisors | High | Medium | A posting fee from the first use + systematic manual verification + bans for abuse |
+| Submission spam from artists | Medium | Low | One submission per match (no resubmission after dismissal) + an artist reputation score |
+| Direct competition from Disco/Songtradr | Medium | Medium | Disco has a conflict of interest (storage business); Songtradr does no AI matching. Our moat is Genesis + Sonic DNA + UX |
+| Contractual dispute after a deal | Low | High | A well-drafted standard contract, Stripe escrow, Ed25519 signatures, the Genesis audit log |
+| Track theft through the marketplace | Low | High | Invisible per-supervisor watermarking on every preview + existing leak tracing |
+| Supervisors unhappy with artist spam pre-match | Medium | Critical | This is the core value proposition — the AI filters BEFORE artists see the brief. Zero visible spam. |
+| Music marketplace regulation | Low | Medium | No legal difference from Songtradr/Musicbed, operating for 10 years |
+| Stripe Connect dependency for international payment | Low | Medium | Stripe Connect is solid; alternatives are Wise Business or Paddle |
 
-### Le risque principal et non-évident : la chicken-and-egg
-Si les premiers supervisors postent et ne reçoivent que 2 matches médiocres, ils ne reviennent jamais. Si les artistes ne voient que des briefs irréalistes, ils désactivent SIGNAL.
+### The principal, non-obvious risk: chicken and egg
 
-**Mitigation** : tu ne lances PAS SIGNAL avant :
-- Au moins 1000 tracks Genesis-certified dans la DB
-- Au moins 15 supervisors engagés en privé (qui te promettent au moins 2 briefs/mois pendant 6 mois)
-- Calibration manuelle des matches pendant 2 mois (toi qui review chaque match avant qu'il soit envoyé à l'artiste, pour ajuster les seuils)
+If the first supervisors post and receive only two mediocre matches, they never come back. If
+artists only ever see unrealistic briefs, they switch SIGNAL off.
+
+**Mitigation:** do NOT launch SIGNAL before there are at least 1,000 Genesis-certified tracks in
+the database, at least 15 supervisors privately committed to 2 briefs a month for six months,
+and two months of manual match calibration — reviewing each match before it reaches an artist,
+to tune the thresholds.
 
 ---
 
-## 10. Phases d'implémentation détaillées
+## 10. Implementation phases
 
-### Phase 0 — Préparation (en parallèle de Stripe + Onboarding + Genesis)
-- ✅ Genesis MVP terminé (Phase 3 de la roadmap globale)
-- Atteindre 1000 tracks Genesis-certified
-- Atteindre 100 artistes payants actifs
-- Préparer les listes de supervisors cibles
-- Rédiger les CGU SIGNAL (avocat — réutilise le brief Genesis)
+### Phase 0 — Preparation (in parallel with Stripe, onboarding and Genesis)
 
-### Phase 1 — Build MVP (~6-8 semaines de dev)
+- Genesis MVP complete
+- Reach 1,000 Genesis-certified tracks
+- Reach 100 active paying artists
+- Prepare the target supervisor lists
+- Draft the SIGNAL terms (lawyer — reuse the Genesis brief)
 
-**Semaines 1-2** — Setup DB + Edge Functions skeleton
-- Tables `signal_briefs`, `signal_matches`, `signal_submissions`, `signal_offers`
-- RPCs SECURITY DEFINER pour writes
-- Edge Function `signal-post-brief` basique
+### Phase 1 — Build the MVP (~6-8 weeks of development)
 
-**Semaines 3-4** — Service Railway de matching
-- Nouveau service Python/Flask `signal-matcher`
-- Endpoints `/embed-brief` et `/rerank-matches`
-- Intégration Claude API pour embeddings textuels et re-ranking
-- Tests avec dataset de 100 tracks
+**Weeks 1-2 — DB setup + Edge Function skeletons**
+`signal_briefs`, `signal_matches`, `signal_submissions`, `signal_offers`; `SECURITY DEFINER`
+RPCs for writes; a basic `signal-post-brief`.
 
-**Semaines 5-6** — Frontend Supervisor
-- Page Dashboard SIGNAL
-- Modal nouveau brief (4 champs)
-- Brief Inbox avec liste des matches
-- Offer modal
-- Onboarding supervisor simplifié
+**Weeks 3-4 — Railway matching service**
+A new Python/Flask `signal-matcher`; the `/embed-brief` and `/rerank-matches` endpoints; Claude
+API integration for text embeddings and re-ranking; tests against a 100-track dataset.
 
-**Semaines 7-8** — Frontend Artiste + Notifications
-- Intégration des matches dans le notification center existant
-- Brief View page (lecture du brief, submission)
-- Deals dashboard
-- Preferences SIGNAL dans Settings
+**Weeks 5-6 — Supervisor frontend**
+SIGNAL dashboard; new-brief modal (4 fields); brief inbox with the match list; offer modal;
+simplified supervisor onboarding.
 
-### Phase 2 — Beta privée (2 mois)
+**Weeks 7-8 — Artist frontend + notifications**
+Matches folded into the existing notification centre; brief view page (read the brief, submit);
+deals dashboard; SIGNAL preferences in Settings.
 
-- Invitations personnelles 15-25 supervisors
-- Yannick review chaque match avant envoi à l'artiste
-- Itération rapide sur les frictions UX
-- Premiers deals (objectif : 5 deals signés)
-- Rédaction de 3 case studies
+### Phase 2 — Private beta (2 months)
 
-### Phase 3 — Public launch (mois 3)
+- Personal invitations to 15-25 supervisors
+- Every match reviewed before it reaches an artist
+- Fast iteration on UX friction
+- First deals (objective: 5 signed)
+- Three case studies written
 
-- Activation tarification supervisor
+### Phase 3 — Public launch (month 3)
+
+- Supervisor pricing activated
 - PR + content marketing
-- Programme verified supervisor
-- Tracking analytics complet (funnel brief → match → submission → offer → deal)
+- Verified supervisor programme
+- Full funnel analytics (brief → match → submission → offer → deal)
 
-### Phase 4 — Scale (mois 6+)
+### Phase 4 — Scale (month 6+)
 
-- API supervisor pour intégrations
+- Supervisor API for integrations
 - Slack integration
 - Internationalisation
-- SIGNAL Pro pour power users
+- SIGNAL Pro for power users
 
 ---
 
-## 11. Intégrations avec le reste de Trakalog
+## 11. Integration with the rest of Trakalog
 
-### Bénéficie de
-- **Sonic DNA Profiler** ✅ : moteur de matching (cœur de SIGNAL)
-- **Genesis Print** ✅ : preuve de paternité humaine + splits clearés (déverrouille la confiance supervisor)
-- **Watermarking invisible** ✅ : protection des previews per-supervisor
-- **Stripe / Billing** ✅ : escrow et paiements
-- **Workspaces & permissions** ✅ : multi-membres pour les labels qui veulent gérer SIGNAL en équipe
-- **Notification center** ✅ : delivery des matches
+### Benefits from
 
-### Renforce
-- **Genesis** : chaque deal SIGNAL devient une preuve d'usage commercial, valorise le badge
-- **Style Licensing (Composant 4 Genesis)** : SIGNAL devient le canal naturel de monétisation des Style Profiles
-- **Catalog Sharing** : les labels qui gèrent plusieurs artistes peuvent activer SIGNAL pour tout leur catalogue d'un coup
-- **Smart A&R** : peut maintenant aider l'artiste à comprendre POURQUOI son catalogue match (ou pas) certains types de briefs
+- **Sonic DNA Profiler** ✅ — the matching engine, SIGNAL's core
+- **Genesis Print** ⏳ — proof of human authorship + cleared splits; unlocks supervisor trust
+- **Invisible watermarking** ✅ — per-supervisor preview protection
+- **Stripe / billing** ✅ — the base integration exists; escrow needs Stripe Connect
+- **Workspaces & permissions** ✅ — multi-member labels can run SIGNAL as a team
+- **Notification centre** ✅ — match delivery
 
-### Différencie de
-- **Brief Seeker (spec V2)** : Brief Seeker scrape les briefs externes publics. SIGNAL est la source primaire propriétaire. Brief Seeker reste pertinent pour les briefs hors-Trakalog, mais SIGNAL devient le canal premium.
-- **Artist Seeker** : Artist Seeker cherche des artistes externes pour matcher avec ton catalogue. SIGNAL est l'inverse (les supervisors viennent à toi).
+### Strengthens
 
----
+- **Genesis:** each SIGNAL deal is proof of commercial use, adding value to the badge
+- **Style Licensing** (Genesis component 4): SIGNAL becomes the natural monetisation channel
+  for Style Profiles
+- **Catalog sharing:** labels managing several artists can enable SIGNAL across the whole
+  catalog at once
+- **Smart A&R:** can now help an artist understand WHY their catalog matches — or fails to
+  match — certain brief types
 
-## 12. KPIs à tracker
+### Distinct from
 
-### KPIs de liquidité (les plus critiques en early stage)
-- **Nombre de supervisors actifs** (postent au moins 1 brief/mois)
-- **Nombre de briefs postés/semaine**
-- **Nombre de matches générés par brief** (cible : 5-15 matches qualifiés)
-- **Taux d'opt-in artistes** : % des artistes Pro/Business qui activent SIGNAL
-
-### KPIs de conversion
-- **Taux d'acceptation des matches** par les artistes (cible : >40%)
-- **Taux brief → submission** : briefs qui reçoivent au moins 1 submission (cible : >80%)
-- **Taux submission → offer** (cible : >15%)
-- **Taux offer → signed deal** (cible : >50%)
-
-### KPIs de qualité
-- **Rating moyen des supervisors** par les artistes
-- **Rating moyen des artistes** par les supervisors
-- **Délai moyen brief → first match notified** (cible : <5 min)
-- **Délai moyen brief → deal closed** (cible : <14 jours)
-
-### KPIs financiers
-- **Revenue posting fees**
-- **Revenue commissions**
-- **Average deal value**
-- **Revenue per supervisor par mois**
-- **Take rate effectif** (Trakalog commission / GMV)
+- **Brief Seeker** — scrapes external public briefs. SIGNAL is the proprietary primary source.
+  Brief Seeker stays relevant for briefs outside Trakalog, but SIGNAL becomes the premium
+  channel.
+- **Artist Seeker** — hunts external artists to match against your catalog. SIGNAL is the
+  inverse: supervisors come to you.
 
 ---
 
-## 13. Le pitch en une phrase
+## 12. KPIs to track
 
-**"Trakalog SIGNAL est la première marketplace musicale inversée : les music supervisors postent ce qu'ils cherchent, l'IA matche silencieusement les catalogues Genesis-certifiés, les artistes reçoivent des opportunités au lieu d'envoyer des pitches. Zéro spam, zéro friction, deal signé en jours au lieu de semaines."**
+### Liquidity (the most critical early on)
+
+- Active supervisors (posting at least 1 brief/month)
+- Briefs posted per week
+- Matches generated per brief (target: 5-15 qualified)
+- Artist opt-in rate: % of Pro/Business artists who enable SIGNAL
+
+### Conversion
+
+- Match acceptance rate by artists (target: >40%)
+- Brief → submission: briefs receiving at least one submission (target: >80%)
+- Submission → offer (target: >15%)
+- Offer → signed deal (target: >50%)
+
+### Quality
+
+- Average supervisor rating from artists
+- Average artist rating from supervisors
+- Average brief → first match notified (target: <5 min)
+- Average brief → deal closed (target: <14 days)
+
+### Financial
+
+- Posting-fee revenue
+- Commission revenue
+- Average deal value
+- Revenue per supervisor per month
+- Effective take rate (Trakalog commission / GMV)
 
 ---
 
-## 14. La phrase à retenir pour Yannick
+## 13. The pitch in one sentence
 
-SIGNAL est **le coup de grâce** de Trakalog. Genesis donne la preuve de provenance. SIGNAL la monétise. Ensemble, ils forment une catégorie nouvelle : la première plateforme où la confiance cryptographique permet une marketplace musicale instantanée.
-
-**Disco est un dropbox.** Tu construis Spotify pour les supervisors. **Sound Credit est un metadata manager.** Tu construis Stripe pour le sync. Le moat n'est pas la tech (qui peut être copiée) mais **la combinaison Genesis + SIGNAL** qui crée un écosystème auto-renforçant que personne ne peut rattraper sans repartir de zéro sur 3 ans de produit.
-
-Le timing : lance SIGNAL en mode beta privée 6-9 mois après le beta public Trakalog. Pas avant. Tu as exactement le temps de construire Genesis, atteindre 1000 tracks certifiées, et recruter tes 25 premiers supervisors.
-
-**Quand SIGNAL est en place, Trakalog n'est plus un SaaS musical. C'est l'infrastructure d'une nouvelle économie de la musique pré-release.**
+**"Trakalog SIGNAL is the first reverse music marketplace: music supervisors post what they are
+looking for, the AI silently matches Genesis-certified catalogs, and artists receive
+opportunities instead of sending pitches. Zero spam, zero friction, a deal signed in days
+instead of weeks."**
 
 ---
 
-*Ce document est vivant. Il sera mis à jour au fur et à mesure du développement, des retours supervisors, et de l'évolution du marché.*
+## 14. The line to remember
+
+SIGNAL is Trakalog's **finishing move**. Genesis provides the proof of provenance. SIGNAL
+monetises it. Together they form a new category: the first platform where cryptographic trust
+enables an instantaneous music marketplace.
+
+**Disco is a Dropbox.** You are building Spotify for supervisors. **Sound Credit is a metadata
+manager.** You are building Stripe for sync. The moat is not the technology — which can be
+copied — but **the Genesis + SIGNAL combination**, which creates a self-reinforcing ecosystem
+nobody can catch without starting three years of product from zero.
+
+Timing: launch SIGNAL as a private beta 6-9 months after Trakalog's public beta. Not before.
+That is exactly the time needed to build Genesis, reach 1,000 certified tracks, and recruit the
+first 25 supervisors.
+
+**When SIGNAL is in place, Trakalog is no longer a music SaaS. It is the infrastructure of a new
+pre-release music economy.**
+
+---
+
+*This document is living, and will be updated as development, supervisor feedback, and the
+market evolve.*

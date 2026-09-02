@@ -1,64 +1,89 @@
 # TRAKALOG — GENESIS
 
-> **Document créé le :** 15 mai 2026
-> **Objectif :** Positionner Trakalog comme l'infrastructure mondiale de provenance créative musicale à l'ère de l'IA générative. Devenir le standard de facto que toute l'industrie adopte.
-> **Statut :** Concept stratégique — MVP planifiable sous 12 semaines
-> **Vision :** *"L'ISRC est né en 1986 pour identifier les enregistrements à l'ère du CD. GENESIS est l'ISRC de l'ère IA — il identifie qui a créé quoi, quand, avec quelles permissions, et garantit la compensation."*
+> **Created:** May 15, 2026
+> **Last Updated:** September 2, 2026 (translated to English)
+> **Goal:** Position Trakalog as the world's creative-provenance infrastructure for music in the
+> generative-AI era. Become the de facto standard the whole industry adopts.
+> **Status:** 📋 **Strategic concept — nothing implemented.** Verified September 2, 2026: there
+> is not a single `genesis` reference anywhere in `supabase/migrations/`. MVP plannable in
+> 12 weeks.
+> **Vision:** *"The ISRC was born in 1986 to identify recordings in the CD era. GENESIS is the
+> ISRC of the AI era — it identifies who created what, when, under which permissions, and
+> guarantees compensation."*
 
 ---
 
-## 1. Pourquoi maintenant — La fenêtre de tir 2026
+## 1. Why now — the 2026 window
 
-L'industrie musicale est à un point de bascule historique. Trois forces convergent en ce moment précis :
+The music industry is at a historic tipping point. Three forces converge at this precise
+moment.
 
-**Force 1 — L'explosion de l'IA générative musicale**
-Suno, Udio, Stable Audio, et leurs successeurs entraînent leurs modèles sur des dizaines de millions de tracks sans consentement explicite. En 2025, Suno a dépassé 12 millions d'utilisateurs. Les majors (Universal, Sony, Warner) ont déposé plainte mais cherchent surtout une infrastructure technique pour structurer la compensation. **Cette infrastructure n'existe pas.**
+**Force 1 — the explosion of generative music AI.**
+Suno, Udio, Stable Audio and their successors train their models on tens of millions of tracks
+without explicit consent. In 2025 Suno passed 12 million users. The majors (Universal, Sony,
+Warner) have filed suit, but what they are really looking for is technical infrastructure to
+structure compensation. **That infrastructure does not exist.**
 
-**Force 2 — Le tsunami réglementaire qui arrive**
-L'EU AI Act (entré en vigueur en août 2024, exécutoire pour les modèles General Purpose AI en août 2025) impose des obligations de transparence sur les données d'entraînement. Le US Copyright Office a publié son rapport sur l'IA générative début 2025. La California AI Transparency Act et la Tennessee ELVIS Act sont déjà en vigueur. Chaque législateur cherche un standard technique pour faire respecter les nouvelles règles. **Le premier qui propose ce standard devient incontournable.**
+**Force 2 — the incoming regulatory wave.**
+The EU AI Act (in force since August 2024, enforceable for General Purpose AI models from
+August 2025) imposes transparency obligations on training data. The US Copyright Office
+published its report on generative AI in early 2025. The California AI Transparency Act and the
+Tennessee ELVIS Act are already in force. Every legislator is looking for a technical standard
+to enforce the new rules. **Whoever proposes that standard first becomes unavoidable.**
 
-**Force 3 — La panique des ayants droit**
-Pour la première fois depuis Napster, l'industrie musicale fait face à une menace existentielle plus grande qu'une simple question de monétisation : la **menace de remplacement créatif**. Les artistes et labels paient cher pour des solutions de protection. La demande dépasse l'offre.
+**Force 3 — rightsholder alarm.**
+For the first time since Napster, the music industry faces an existential threat larger than a
+monetisation question: the **threat of creative replacement**. Artists and labels are paying
+well for protection. Demand exceeds supply.
 
-**Trakalog est la seule plateforme qui a déjà construit l'infrastructure technique nécessaire** (Sonic DNA, watermarking invisible, leak tracing, audit logs, splits cryptographiquement signés). Il manque trois pièces pour devenir l'infrastructure mondiale : la **chain of custody cryptographique**, le **registre public vérifiable**, et le **standard de licence IA**.
+**Trakalog is the only platform that has already built the necessary technical
+infrastructure** — Sonic DNA, invisible watermarking, leak tracing, audit logs,
+cryptographically signed splits. Three pieces are missing to become world infrastructure: the
+**cryptographic chain of custody**, the **verifiable public registry**, and the **AI licence
+standard**.
 
 ---
 
-## 2. Vue d'ensemble du système
+## 2. System overview
 
-GENESIS combine cinq sous-systèmes interconnectés. Chacun a de la valeur seul, ensemble ils créent un moat impossible à reproduire.
+GENESIS combines five interconnected subsystems. Each has value alone; together they create a
+moat that cannot be reproduced.
 
-| # | Composant | Rôle | Différenciation |
-|---|-----------|------|-----------------|
-| 1 | **Origin Print** | Empreinte cryptographique de création | Aucun concurrent ne combine Sonic DNA + perceptual hash + timestamp blockchain |
-| 2 | **AI Training License** | Licence d'entraînement IA déclarée et opposable | Premier standard légalement utilisable au monde |
-| 3 | **Public Registry** | Registre mondial consultable | Premier registre human-first de provenance musicale pré-release |
-| 4 | **Style Licensing** | Monétisation du Sonic DNA comme asset | Inverse le marché : le style devient un produit financier |
-| 5 | **Derivation Detection** | Détection des tracks dérivés / clonés | Protège les artistes contre les imitations IA non-déclarées |
+| # | Component | Role | Differentiation |
+|---|---|---|---|
+| 1 | **Origin Print** | Cryptographic creation fingerprint | No competitor combines Sonic DNA + perceptual hash + blockchain timestamp |
+| 2 | **AI Training License** | A declared, enforceable AI training licence | The world's first legally usable standard |
+| 3 | **Public Registry** | A globally searchable registry | The first human-first registry of pre-release music provenance |
+| 4 | **Style Licensing** | Monetising Sonic DNA as an asset | Inverts the market: style becomes a financial product |
+| 5 | **Derivation Detection** | Detecting derived/cloned tracks | Protects artists against undeclared AI imitation |
 
 ---
 
-## 3. Composant 1 — Origin Print (l'empreinte cryptographique)
+## 3. Component 1 — Origin Print
 
-### Ce que c'est
-À chaque upload sur Trakalog, le track reçoit un identifiant unique cryptographiquement signé et horodaté qui constitue une preuve d'antériorité opposable. C'est l'équivalent musical d'un acte notarié, mais immutable et vérifiable mondialement.
+### What it is
 
-### Composition d'une Origin Print
-```
+On every upload to Trakalog, the track receives a unique, cryptographically signed and
+timestamped identifier constituting enforceable proof of priority. The musical equivalent of a
+notarised deed, but immutable and globally verifiable.
+
+### Composition of an Origin Print
+
+```json
 {
   "genesis_id": "GEN-2026-A4F3-9B2E-...",
   "track_id": "uuid",
   "workspace_id": "uuid",
   "creator": {
-    "name": "Yannick Rastogi",
+    "name": "Artist Name",
     "ipi": "00576901234",
     "verified": true
   },
   "audio_hashes": {
-    "sha256": "...",                    // Hash exact du fichier
-    "chromaprint": "...",               // Empreinte perceptive (résistante au ré-encodage)
-    "neural_embedding": "...",          // Embedding audio 512-d (résistant aux transformations)
-    "sonic_dna_signature": "..."        // Signature condensée du Sonic DNA
+    "sha256": "...",                    // exact file hash
+    "chromaprint": "...",               // perceptual fingerprint (survives re-encoding)
+    "neural_embedding": "...",          // 512-d audio embedding (survives transformation)
+    "sonic_dna_signature": "..."        // condensed Sonic DNA signature
   },
   "creation_timestamp": "2026-05-15T10:32:14.000Z",
   "blockchain_proof": {
@@ -79,45 +104,63 @@ GENESIS combine cinq sous-systèmes interconnectés. Chacun a de la valeur seul,
 }
 ```
 
-### Pipeline technique de création
+### Technical creation pipeline
 
-1. **Upload audio** (déjà fait) → fichier stocké dans Supabase Storage
-2. **Hash SHA-256** du fichier brut → identifiant exact
-3. **Chromaprint** (acoustic fingerprint via fpcalc, open-source) → résiste au ré-encodage MP3/AAC
-4. **Neural embedding** via CLAP ou MERT (modèles open-source) → résiste aux transformations majeures (slowed, sped up, pitch shift)
-5. **Sonic DNA signature** (déjà calculée par le service Railway) → empreinte musicale
-6. **Collecte des splits signés** (déjà fait) → liste des contributeurs
-7. **AI Training License** (nouveau) → choix de l'artiste enregistré
-8. **Human Attestation** → l'artiste signe une déclaration de paternité humaine
-9. **Sérialisation JSON canonique** → format reproductible
-10. **OpenTimestamps** → soumission du hash JSON à un agrégateur OpenTimestamps qui l'inclut dans une transaction Bitcoin
-11. **Stockage** dans la table `genesis_records` + référence dans `tracks.genesis_id`
+1. **Audio upload** (already built) → file stored in storage
+2. **SHA-256 hash** of the raw file → exact identifier
+3. **Chromaprint** (acoustic fingerprint via fpcalc, open-source) → survives MP3/AAC
+   re-encoding
+4. **Neural embedding** via CLAP or MERT (open-source models) → survives major transformations
+   (slowed, sped up, pitch shifted)
+5. **Sonic DNA signature** (already computed by the Railway service) → musical fingerprint
+6. **Collect signed splits** (already built) → contributor list
+7. **AI Training License** (new) → the artist's recorded choice
+8. **Human attestation** → the artist signs a declaration of human authorship
+9. **Canonical JSON serialisation** → reproducible format
+10. **OpenTimestamps** → submit the JSON hash to an aggregator that includes it in a Bitcoin
+    transaction
+11. **Storage** in `genesis_records` + a reference in `tracks.genesis_id`
 
-### Pourquoi OpenTimestamps et pas un L2 type Polygon/Base
+### Why OpenTimestamps rather than an L2 like Polygon or Base
 
-OpenTimestamps est **gratuit, scalable à des millions de tracks/jour, et utilise Bitcoin** (la blockchain la plus résiliente). Il agrège des millions de hashes dans un seul arbre Merkle puis publie la racine sur Bitcoin. Chaque track obtient une preuve cryptographique d'antériorité vérifiable par n'importe qui, sans gas fees, sans infrastructure crypto à gérer. C'est ce que Wikipedia utilise en interne. Pour le MVP, c'est imbattable.
+OpenTimestamps is **free, scalable to millions of tracks per day, and uses Bitcoin** — the most
+resilient chain. It aggregates millions of hashes into a single Merkle tree, then publishes the
+root on Bitcoin. Each track gets a cryptographic proof of priority verifiable by anyone,
+without gas fees and without crypto infrastructure to operate. It is what Wikipedia uses
+internally. For the MVP it is unbeatable.
 
-Plus tard (Phase 3+), si on veut ajouter des smart contracts pour des licences automatisées, on pourra ajouter Base ou Polygon en option, mais ce n'est pas nécessaire pour démarrer.
+Later (Phase 3+), if smart contracts are wanted for automated licences, Base or Polygon can be
+added as an option — but neither is necessary to start.
 
 ---
 
-## 4. Composant 2 — AI Training License
+## 4. Component 2 — AI Training License
 
-### Le standard à créer
-Trakalog publie une **licence standardisée en quatre niveaux** que chaque créateur choisit à l'upload (modifiable plus tard). C'est ce qui manque cruellement au marché et que tout le monde attend.
+### The standard to create
 
-| Niveau | Code | Description |
-|--------|------|-------------|
-| 🚫 **No Training** | `NO-AI` | Aucune utilisation pour entraîner un modèle IA, génératif ou non. Toute utilisation constitue une infraction. |
-| 💰 **Paid Training** | `PAID-AI` | Utilisation autorisée moyennant licence et royalties via Trakalog. Tarif par défaut ou personnalisé par l'artiste. |
-| 🤝 **Attribution Training** | `ATTR-AI` | Utilisation autorisée gratuitement à condition de crédit et de référencement dans les training data disclosures. |
-| ✅ **Open Training** | `OPEN-AI` | Utilisation libre. Pour les artistes qui veulent volontairement nourrir l'écosystème IA. |
+Trakalog publishes a **standardised licence in four levels** that each creator chooses at
+upload (changeable later). This is what the market is sorely missing and everyone is waiting
+for.
 
-### Pourquoi ces quatre niveaux
-Ils couvrent toutes les positions philosophiques et économiques de l'industrie. Inspirés des Creative Commons mais adaptés au cas spécifique de l'entraînement IA. **Légalement défendable** car l'artiste a explicitement consenti (ou refusé) avec une signature cryptographique horodatée.
+| Level | Code | Description |
+|---|---|---|
+| 🚫 **No Training** | `NO-AI` | No use to train any AI model, generative or otherwise. Any use is an infringement. |
+| 💰 **Paid Training** | `PAID-AI` | Use permitted against a licence and royalties through Trakalog. Default or artist-set rate. |
+| 🤝 **Attribution Training** | `ATTR-AI` | Use permitted free of charge, conditional on credit and inclusion in training-data disclosures. |
+| ✅ **Open Training** | `OPEN-AI` | Free use. For artists who deliberately want to feed the AI ecosystem. |
+
+### Why these four levels
+
+They cover every philosophical and economic position in the industry. Inspired by Creative
+Commons but adapted to the specific case of AI training. **Legally defensible**, because the
+artist explicitly consented — or refused — with a timestamped cryptographic signature.
 
 ### Crawler protection
-Trakalog publie un fichier `/ai-training-license.txt` à la racine de chaque shared link et de chaque preview audio, dans un format machine-readable inspiré de `robots.txt` mais standardisé. Les plateformes IA respectueuses pourront le lire automatiquement. Pour les autres, ce fichier devient une **preuve juridique** que la plateforme aurait dû savoir.
+
+Trakalog publishes an `/ai-training-license.txt` file at the root of every shared link and
+audio preview, in a machine-readable format inspired by `robots.txt` but standardised.
+Respectful AI platforms can read it automatically. For the others, the file becomes **legal
+proof** that the platform should have known.
 
 ```
 # AI Training License — Trakalog Genesis Protocol v1.0
@@ -129,154 +172,183 @@ verify: https://trakalog.com/genesis/verify/GEN-2026-A4F3-9B2E
 last-modified: 2026-05-15T10:32:14Z
 ```
 
-### Standardisation publique
-Trakalog publie le **protocole Genesis en open-source** sur GitHub. La spec technique, le format JSON, les niveaux de licence — tout est public. **C'est précisément ce qui en fait un standard.** Les concurrents peuvent l'implémenter, mais Trakalog reste le registre principal (effet réseau).
+### Public standardisation
+
+Trakalog publishes the **Genesis protocol as open source** on GitHub — the technical spec, the
+JSON format, the licence levels, all public. **That is precisely what makes it a standard.**
+Competitors can implement it, but Trakalog remains the principal registry (network effect).
 
 ---
 
-## 5. Composant 3 — Public Registry
+## 5. Component 3 — Public Registry
 
-### L'interface publique
-Chaque Origin Print génère une page publique vérifiable, accessible à n'importe qui :
+### The public interface
+
+Every Origin Print generates a publicly verifiable page, accessible to anyone:
 
 ```
 https://trakalog.com/genesis/GEN-2026-A4F3-9B2E-...
 ```
 
-Cette page affiche :
-- Le titre du track et l'artiste (si rendu public)
-- La date de création cryptographiquement prouvée
-- Les contributeurs et leurs rôles
-- La licence IA active
-- Un bouton "Verify" qui re-calcule le hash Bitcoin en live
-- Un badge **"Human-Made on Trakalog"** vérifié (si l'artiste a signé l'attestation)
-- L'historique des modifications de licence (audit log immuable)
+The page shows:
 
-### API publique de vérification
+- The track title and artist (if made public)
+- The cryptographically proven creation date
+- Contributors and their roles
+- The active AI licence
+- A "Verify" button that recomputes the Bitcoin hash live
+- A verified **"Human-Made on Trakalog"** badge (if the artist signed the attestation)
+- The licence change history (immutable audit log)
+
+### Public verification API
+
 ```
-GET https://api.trakalog.com/v1/genesis/{genesis_id}
-GET https://api.trakalog.com/v1/genesis/verify-by-hash/{chromaprint_or_sha256}
-POST https://api.trakalog.com/v1/genesis/check-license  // pour les plateformes IA
+GET  https://api.trakalog.com/v1/genesis/{genesis_id}
+GET  https://api.trakalog.com/v1/genesis/verify-by-hash/{chromaprint_or_sha256}
+POST https://api.trakalog.com/v1/genesis/check-license   // for AI platforms
 ```
 
-### Cas d'usage
-- **Un music supervisor** veut vérifier qu'un track soumis est human-made et clearable → scan le QR code de l'Origin Print → confiance instantanée
-- **Spotify ou Apple Music** veut filtrer les tracks IA non-déclarés → query l'API avec le hash du track → savoir si c'est human-attested
-- **Un tribunal** doit établir l'antériorité d'une œuvre → preuve cryptographique avec horodatage Bitcoin
-- **Une plateforme IA** veut entraîner légalement → query l'API par batch → liste des tracks autorisés avec leurs conditions
+### Use cases
+
+- **A music supervisor** wants to confirm a submitted track is human-made and clearable → scans
+  the Origin Print QR code → instant confidence
+- **Spotify or Apple Music** wants to filter undeclared AI tracks → queries the API with the
+  track hash → learns whether it is human-attested
+- **A court** must establish priority of a work → cryptographic proof with a Bitcoin timestamp
+- **An AI platform** wants to train legally → batch-queries the API → a list of permitted
+  tracks with their conditions
 
 ---
 
-## 6. Composant 4 — Style Licensing
+## 6. Component 4 — Style Licensing
 
-### Le concept inversé
-Aujourd'hui, on cherche des tracks par genre, mood, BPM. Demain, on cherchera **par style audio précis** via les embeddings du Sonic DNA. Le style devient un asset financier — la première fois dans l'histoire.
+### The inverted concept
 
-### Comment ça marche
-1. L'artiste publie son Sonic DNA aggregé (moyenne pondérée de son catalogue) comme un "**Style Profile**" public et licensable
-2. Il fixe ses tarifs : `$X par track généré par IA dans son style`, `$Y pour licence exclusive sur 12 mois`
-3. Quand une plateforme IA ou un music supervisor cherche "un track type Burna Boy" via l'API Trakalog, le système match les Style Profiles disponibles **avec consentement préalable**
-4. Royalties automatiques sur chaque utilisation, payées via Stripe Connect
+Today, tracks are searched by genre, mood and BPM. Tomorrow they will be searched **by precise
+audio style** through Sonic DNA embeddings. Style becomes a financial asset — for the first
+time in history.
 
-### Pourquoi c'est révolutionnaire
-- C'est le premier marché transparent pour **la signature stylistique** d'un artiste
-- Les artistes indépendants peuvent monétiser leur "son" sans avoir à sortir un nouveau track
-- Les plateformes IA ont un canal légal pour s'inspirer de styles précis
-- Les majors peuvent **acheter des style licenses exclusives** comme elles achètent des catalogues
+### How it works
 
-### Garde-fou éthique
-Le Style Licensing est **strictement opt-in**. Aucun artiste n'est inclus sans avoir activement publié son profil. Et chaque utilisation est tracée, auditée, et compensée. C'est la différence fondamentale avec l'IA générative actuelle qui pille sans permission.
+1. The artist publishes their aggregated Sonic DNA (a weighted average of their catalog) as a
+   public, licensable **Style Profile**
+2. They set their rates: `$X per AI-generated track in their style`, `$Y for a 12-month
+   exclusive licence`
+3. When an AI platform or a music supervisor searches for "a track in the style of [artist]"
+   through the Trakalog API, the system matches available Style Profiles **with prior consent**
+4. Automatic royalties on each use, paid through Stripe Connect
+
+### Why this is revolutionary
+
+- The first transparent market for an artist's **stylistic signature**
+- Independent artists can monetise their "sound" without releasing a new track
+- AI platforms get a legal channel to draw on specific styles
+- Majors can **buy exclusive style licences** the way they buy catalogs
+
+### Ethical guardrail
+
+Style Licensing is **strictly opt-in**. No artist is included without actively publishing their
+profile. Every use is traced, audited and compensated. That is the fundamental difference from
+current generative AI, which takes without permission.
 
 ---
 
-## 7. Composant 5 — Derivation Detection
+## 7. Component 5 — Derivation Detection
 
-### Le problème
-Quand un track IA imite un artiste, l'artiste n'a aucun moyen de le prouver. Quand un producteur sample sans autorisation, ça prend des années en justice.
+### The problem
 
-### Ce que fait Trakalog
-Un agent persistant qui scanne le web (DSP, SoundCloud, YouTube, plateformes IA) et cherche des tracks dont l'empreinte audio ou le neural embedding match un track Genesis. Trois niveaux de match :
+When an AI track imitates an artist, the artist has no way to prove it. When a producer samples
+without authorisation, litigation takes years.
 
-| Niveau | Confidence | Signal |
-|--------|------------|--------|
-| **Exact** | >95% | Même fichier ré-encodé / ré-uploadé. Action : DMCA automatique. |
-| **Derivative** | 70-95% | Sample, remix non-autorisé, ou cover non-déclarée. Action : alerte + suggestion de réclamation. |
-| **Stylistic** | 40-70% | Imitation stylistique potentielle (souvent IA). Action : flag pour investigation manuelle. |
+### What Trakalog does
+
+A persistent agent scans the web (DSPs, SoundCloud, YouTube, AI platforms) for tracks whose
+audio fingerprint or neural embedding matches a Genesis track. Three match levels:
+
+| Level | Confidence | Signal |
+|---|---|---|
+| **Exact** | >95% | The same file re-encoded or re-uploaded. Action: automatic DMCA. |
+| **Derivative** | 70-95% | Unauthorised sample, remix or undeclared cover. Action: alert + suggested claim. |
+| **Stylistic** | 40-70% | Potential stylistic imitation, often AI. Action: flag for manual investigation. |
 
 ### Technique
-- **Exact match** : Chromaprint database
-- **Derivative match** : Neural embedding distance (cosine similarity sur CLAP/MERT)
-- **Stylistic match** : Sonic DNA signature distance + sliding window comparison
 
-### Valeur stratégique
-C'est le complément naturel du watermarking déjà en place. Le watermark identifie **qui a leak**. Derivation Detection identifie **qui a copié ou imité**. Ensemble, c'est l'environnement le plus protégé du marché.
+- **Exact match:** Chromaprint database
+- **Derivative match:** neural embedding distance (cosine similarity over CLAP/MERT)
+- **Stylistic match:** Sonic DNA signature distance + sliding-window comparison
+
+### Strategic value
+
+This is the natural complement to the watermarking already in place. The watermark identifies
+**who leaked**. Derivation Detection identifies **who copied or imitated**. Together, the most
+protected environment on the market.
 
 ---
 
-## 8. Pipeline complet — Le flux end-to-end
+## 8. End-to-end pipeline
 
 ```
-ARTISTE UPLOAD UN TRACK
+ARTIST UPLOADS A TRACK
   ↓
-  Upload audio (déjà fait) → Storage
+  Audio upload (existing) → storage
   ↓
-  Compression preview MP3 (déjà fait)
+  MP3 preview compression (existing)
   ↓
-  Sonic DNA analysis (déjà fait) → Railway service
+  Sonic DNA analysis (existing) → Railway service
   ↓
   ┌─────────────────────────────────────────────┐
-  │ GENESIS PIPELINE (nouveau)                  │
+  │ GENESIS PIPELINE (new)                      │
   ├─────────────────────────────────────────────┤
   │ 1. Audio hashing                            │
-  │    - SHA-256 (fichier brut)                 │
+  │    - SHA-256 (raw file)                     │
   │    - Chromaprint (fpcalc) → audio_hash      │
   │    - Neural embedding (CLAP) → embedding    │
   │ 2. Splits & attestation collection          │
-  │    - Vérifie signatures collaborateurs      │
-  │    - Demande l'attestation humaine          │
-  │    - Enregistre la licence IA choisie       │
+  │    - Verify collaborator signatures         │
+  │    - Request the human attestation          │
+  │    - Record the chosen AI licence           │
   │ 3. Canonical JSON serialization             │
   │ 4. OpenTimestamps submission                │
-  │    - Hash du JSON → OTS aggregator          │
-  │    - Reçoit OTS proof file                  │
+  │    - JSON hash → OTS aggregator             │
+  │    - Receive the OTS proof file             │
   │ 5. Storage in DB                            │
   │    - INSERT genesis_records                 │
   │    - UPDATE tracks.genesis_id               │
   │ 6. Public page generation                   │
   │    - https://trakalog.com/genesis/{id}      │
   │ 7. ai-training-license.txt generation       │
-  │    - Pour chaque shared link associé        │
+  │    - For each associated shared link        │
   └─────────────────────────────────────────────┘
   ↓
-ARTISTE PARTAGE LE TRACK (shared link)
+ARTIST SHARES THE TRACK (shared link)
   ↓
-  - Le shared link inclut le Genesis ID
-  - Le badge "Human-Made on Trakalog" affiché
-  - Le visiteur peut cliquer pour vérifier l'authenticité
-  - ai-training-license.txt servi à la racine
-  - Watermarking invisible per-visitor (déjà fait)
+  - The shared link carries the Genesis ID
+  - The "Human-Made on Trakalog" badge is shown
+  - The visitor can click through to verify authenticity
+  - ai-training-license.txt served at the root
+  - Invisible per-visitor watermarking (existing)
   ↓
-EN ARRIÈRE-PLAN — Derivation Detection (cron quotidien)
+IN THE BACKGROUND — Derivation Detection (daily cron)
   ↓
-  - Scan DSP, plateformes IA, SoundCloud, YouTube
-  - Match Chromaprint / Neural embedding
-  - Alertes à l'artiste si match trouvé
-  - Génération de DMCA automatique pour exact matches
+  - Scan DSPs, AI platforms, SoundCloud, YouTube
+  - Match Chromaprint / neural embedding
+  - Alert the artist on a match
+  - Generate an automatic DMCA for exact matches
   ↓
-EN ARRIÈRE-PLAN — AI Training Royalties (mensuel)
+IN THE BACKGROUND — AI Training Royalties (monthly)
   ↓
-  - Réception des reports des plateformes IA partenaires
-  - Calcul des royalties par track utilisé
-  - Distribution via Stripe Connect aux artistes
-  - Trakalog prend 15-20% de commission
+  - Receive reports from partner AI platforms
+  - Compute royalties per track used
+  - Distribute through Stripe Connect to the artists
+  - Trakalog takes a 15-20% commission
 ```
 
 ---
 
-## 9. Schéma de base de données
+## 9. Database schema
 
 ```sql
--- Table principale : un record par track
+-- Main table: one record per track
 CREATE TABLE genesis_records (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   genesis_id text UNIQUE NOT NULL,              -- "GEN-2026-A4F3-9B2E-..."
@@ -284,30 +356,30 @@ CREATE TABLE genesis_records (
   workspace_id uuid REFERENCES workspaces(id),
   creator_user_id uuid REFERENCES auth.users(id),
 
-  -- Hashes audio
+  -- Audio hashes
   sha256_hash text NOT NULL,
   chromaprint text NOT NULL,
-  chromaprint_compressed bytea,                 -- pour recherche rapide
-  neural_embedding vector(512),                 -- pgvector pour similarity search
+  chromaprint_compressed bytea,                 -- for fast lookup
+  neural_embedding vector(512),                 -- pgvector, for similarity search
   sonic_dna_signature text,
 
-  -- Métadonnées
-  collaborators jsonb,                          -- snapshot des splits au moment de la création
+  -- Metadata
+  collaborators jsonb,                          -- snapshot of the splits at creation time
   ai_training_license text NOT NULL DEFAULT 'no-ai',
   ai_license_price_cents integer DEFAULT 0,
   human_attested boolean DEFAULT false,
-  attestation_signature text,                   -- signature de l'artiste
+  attestation_signature text,                   -- the artist's signature
 
   -- Blockchain proof
   blockchain_method text DEFAULT 'opentimestamps',
-  ots_proof bytea,                              -- fichier OTS binaire
+  ots_proof bytea,                              -- binary OTS file
   bitcoin_block_height integer,
   bitcoin_tx_hash text,
   blockchain_verified_at timestamptz,
 
   -- Audit
   created_at timestamptz DEFAULT now() NOT NULL,
-  canonical_json text NOT NULL                  -- la version exacte qui a été hashée
+  canonical_json text NOT NULL                  -- the exact version that was hashed
 );
 
 CREATE UNIQUE INDEX idx_genesis_track ON genesis_records(track_id);
@@ -315,7 +387,7 @@ CREATE INDEX idx_genesis_chromaprint ON genesis_records USING gin(chromaprint_co
 CREATE INDEX idx_genesis_embedding ON genesis_records USING ivfflat (neural_embedding vector_cosine_ops);
 CREATE INDEX idx_genesis_license ON genesis_records(ai_training_license);
 
--- Table pour les modifications de licence (audit trail)
+-- Licence changes (audit trail)
 CREATE TABLE genesis_license_history (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   genesis_record_id uuid REFERENCES genesis_records(id),
@@ -324,10 +396,10 @@ CREATE TABLE genesis_license_history (
   changed_by uuid REFERENCES auth.users(id),
   changed_at timestamptz DEFAULT now(),
   reason text,
-  signature text                                -- signature cryptographique du changement
+  signature text                                -- cryptographic signature of the change
 );
 
--- Table pour les détections de tracks dérivés
+-- Detected derivative tracks
 CREATE TABLE genesis_derivations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   source_genesis_id uuid REFERENCES genesis_records(id),
@@ -341,19 +413,19 @@ CREATE TABLE genesis_derivations (
   notes text
 );
 
--- Table pour les Style Profiles (Composant 4)
+-- Style Profiles (Component 4)
 CREATE TABLE genesis_style_profiles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id uuid REFERENCES workspaces(id),
   artist_name text NOT NULL,
-  aggregated_dna jsonb NOT NULL,                -- Sonic DNA moyen pondéré
-  representative_tracks uuid[],                 -- 3-5 tracks qui illustrent le style
+  aggregated_dna jsonb NOT NULL,                -- weighted-average Sonic DNA
+  representative_tracks uuid[],                 -- 3-5 tracks illustrating the style
   is_public boolean DEFAULT false,
   pricing jsonb,                                -- { per_use_cents: 5000, exclusive_12mo_cents: 5000000 }
   created_at timestamptz DEFAULT now()
 );
 
--- Table pour les licences de Style octroyées
+-- Granted style licences
 CREATE TABLE genesis_style_licenses (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   style_profile_id uuid REFERENCES genesis_style_profiles(id),
@@ -367,7 +439,7 @@ CREATE TABLE genesis_style_licenses (
   status text DEFAULT 'active'
 );
 
--- Table pour les redevances d'entraînement IA
+-- AI training royalties
 CREATE TABLE genesis_ai_royalties (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   genesis_record_id uuid REFERENCES genesis_records(id),
@@ -381,15 +453,15 @@ CREATE TABLE genesis_ai_royalties (
 );
 ```
 
-### RLS et accès public
+### RLS and public access
 
 ```sql
--- Le registre public : lecture libre sur l'API
+-- The public registry: free read through the API
 CREATE POLICY "Public can read genesis records by genesis_id"
   ON genesis_records FOR SELECT
-  USING (true);  -- lecture publique, mais on filtre les champs sensibles dans la vue
+  USING (true);  -- public read, with sensitive fields filtered by the view
 
--- Vue publique avec uniquement les champs nécessaires à la vérification
+-- Public view exposing only the fields needed for verification
 CREATE VIEW public_genesis AS
 SELECT
   genesis_id,
@@ -402,227 +474,298 @@ SELECT
 FROM genesis_records;
 ```
 
+> **Implementation note:** a `USING (true)` SELECT policy on the base table exposes *every*
+> column to `anon`, including `canonical_json`, `collaborators` and `attestation_signature`.
+> The view does not restrict that — a view is not a security boundary unless the base table's
+> policy is. Either scope the policy to the columns the view needs, or keep the base table
+> policy-free (service-role only, as `watermark_payloads` is today) and serve the registry
+> through a `SECURITY DEFINER` RPC. The current project convention is the latter.
+
 ---
 
-## 10. Stack technique recommandé
+## 10. Recommended technical stack
 
-| Composant | Technologie | Pourquoi |
-|-----------|-------------|----------|
-| Audio fingerprint | **Chromaprint** (fpcalc) | Open-source, standard de facto, utilisé par AcoustID/MusicBrainz |
-| Neural embedding | **CLAP** (LAION) ou **MERT** | Open-source, modèles audio state-of-the-art |
-| Embedding storage | **pgvector** sur Supabase | Déjà compatible, similarity search rapide |
-| Timestamping | **OpenTimestamps** | Gratuit, Bitcoin-backed, scalable infiniment |
-| Canonical JSON | **JCS (RFC 8785)** | Standard W3C pour la sérialisation canonique |
-| Signature crypto | **Ed25519** via libsodium | Standard moderne, rapide, supporté partout |
-| Public API | **Supabase Edge Functions** + **Cloudflare cache** | Déjà infra existante |
-| Crawler detection | Service Railway custom (Python) | Spotify API, YouTube Data API, scrapers |
-| Payment distribution | **Stripe Connect** | Déjà en cours d'intégration pour billing |
+| Component | Technology | Why |
+|---|---|---|
+| Audio fingerprint | **Chromaprint** (fpcalc) | Open-source, de facto standard, used by AcoustID/MusicBrainz |
+| Neural embedding | **CLAP** (LAION) or **MERT** | Open-source, state-of-the-art audio models |
+| Embedding storage | **pgvector** on Supabase | Already compatible, fast similarity search |
+| Timestamping | **OpenTimestamps** | Free, Bitcoin-backed, infinitely scalable |
+| Canonical JSON | **JCS (RFC 8785)** | W3C standard for canonical serialisation |
+| Crypto signature | **Ed25519** via libsodium | Modern, fast, universally supported |
+| Public API | **Supabase Edge Functions** + **Cloudflare cache** | Existing infrastructure |
+| Crawler detection | Custom Railway service (Python) | Spotify API, YouTube Data API, scrapers |
+| Payment distribution | **Stripe Connect** | Already being integrated for billing |
 
-### Coût d'infrastructure additionnel
-- **Storage embeddings** : ~100 KB par track → négligeable
-- **OpenTimestamps** : gratuit (limites raisonnables via aggregators publics)
-- **Crawler service** : ~$20-40/mois Railway
-- **Audio fingerprinting** : CPU only, peut tourner sur Railway existant
-- **Total estimé** : ~$30-50/mois additionnel jusqu'à 50K tracks
+### Additional infrastructure cost
+
+- **Embedding storage:** ~100 KB per track → negligible
+- **OpenTimestamps:** free (within reasonable limits on public aggregators)
+- **Crawler service:** ~$20-40/month on Railway
+- **Audio fingerprinting:** CPU only, can run on the existing Railway instance
+- **Estimated total:** ~$30-50/month additional up to 50K tracks
 
 ---
 
 ## 11. Business model
 
-### Revenus directs
-**1. AI Training Royalties (à 12-24 mois)**
-Trakalog facilite les licences d'entraînement IA entre les plateformes (Suno, Udio, etc.) et les artistes. Commission 15-20% sur chaque transaction. Marché potentiel mondial : estimé en milliards de dollars d'ici 2030 d'après les analyses sectorielles actuelles.
+### Direct revenue
 
-**2. Style Licensing (à 6-12 mois)**
-Commission 15-20% sur les licences de style. Cible : producteurs et artistes indépendants qui veulent monétiser leur signature stylistique.
+**1. AI Training Royalties (12-24 months out).** Trakalog brokers AI training licences between
+platforms (Suno, Udio, etc.) and artists. 15-20% commission on each transaction. Potential
+global market: estimated in the billions of dollars by 2030 on current sector analyses.
 
-**3. Enterprise API (à 6 mois)**
-Accès API tarifé pour DSP, music supervisors, publishers, et plateformes IA qui doivent vérifier la licence avant utilisation. Pricing : $500-5000/mois selon le volume.
+**2. Style Licensing (6-12 months out).** 15-20% commission on style licences. Target:
+producers and independent artists who want to monetise their stylistic signature.
 
-**4. Genesis Verified Badge (à 3 mois)**
-Add-on pour les plans Pro et Business : badge officiel + page publique vérifiable + protection légale renforcée. $5-10/mois additionnel.
+**3. Enterprise API (6 months out).** Metered API access for DSPs, music supervisors,
+publishers and AI platforms that must verify a licence before use. Pricing: $500-5,000/month by
+volume.
 
-### Revenus indirects
-- **Augmentation massive de la conversion Free→Paid** : la protection est un argument de vente plus fort que le storage
-- **Adoption par les majors** : si UMG/Sony adoptent Trakalog comme infrastructure de provenance, c'est un partenariat à six ou sept chiffres
-- **Acquisition stratégique** : à terme, ce type d'infrastructure peut intéresser des acquéreurs (PROs, DSP, infrastructure plays)
+**4. Genesis Verified Badge (3 months out).** An add-on for Pro and Business: official badge +
+publicly verifiable page + strengthened legal protection. $5-10/month extra.
 
-### Modèle de marge brute
-Marge brute estimée >85% sur les transactions de licence IA (le coût marginal d'une licence est quasi-nul). Marge >90% sur l'API et les badges.
+### Indirect revenue
+
+- **A large lift in Free→Paid conversion** — protection is a stronger sales argument than
+  storage
+- **Adoption by the majors** — if UMG or Sony adopt Trakalog as provenance infrastructure, that
+  is a six- or seven-figure partnership
+- **Strategic acquisition** — infrastructure of this kind eventually interests acquirers (PROs,
+  DSPs, infrastructure plays)
+
+### Gross margin model
+
+Estimated gross margin >85% on AI licence transactions — the marginal cost of a licence is close
+to zero. >90% on API access and badges.
 
 ---
 
-## 12. Conformité légale — Faire les choses bien dès le départ
+## 12. Legal compliance — doing it right from the start
 
-> **Note importante :** Cette section est une analyse stratégique, pas un conseil juridique. Pour le launch officiel, il faudra **impérativement** consulter un avocat spécialisé en droit de la musique et en droit du numérique, idéalement avec une expertise en IA et propriété intellectuelle. Budget recommandé : 10-20K€ pour la rédaction des CGU, des licences, et l'audit de conformité initial.
+> **Important:** this section is strategic analysis, not legal advice. Before official launch it
+> is **essential** to consult a lawyer specialising in music and digital law, ideally with AI
+> and IP expertise. Recommended budget: €10-20K for drafting the terms, the licences, and the
+> initial compliance audit.
 
-### 12.1 EU AI Act (priorité 1)
-Entré en vigueur en août 2024, exécutoire pour les General Purpose AI Models à partir d'août 2025. Les obligations pertinentes pour Trakalog Genesis :
+### 12.1 EU AI Act (priority 1)
 
-- **Article 53** : Les fournisseurs de GPAI doivent publier un résumé suffisamment détaillé des données d'entraînement. → Trakalog peut leur fournir cette infrastructure de transparence.
-- **Article 50** : Les contenus générés par IA doivent être marqués comme tels (machine-readable). → Le badge "Human-Made on Trakalog" est l'inverse positif de cette obligation.
-- **Code de conduite GPAI** : Encourage les bonnes pratiques sur le respect des droits d'auteur. → Genesis devient l'outil de référence.
+In force since August 2024, enforceable for General Purpose AI models from August 2025. The
+obligations relevant to Trakalog Genesis:
 
-**Action recommandée** : Demander à Trakalog d'être inclus dans les groupes de travail de l'EU AI Office sur les bonnes pratiques GPAI. C'est gratuit, c'est visible, et c'est positionnement parfait.
+- **Article 53:** GPAI providers must publish a sufficiently detailed summary of training data.
+  → Trakalog can supply that transparency infrastructure.
+- **Article 50:** AI-generated content must be marked as such, machine-readably. → The
+  "Human-Made on Trakalog" badge is the positive inverse of that obligation.
+- **GPAI code of practice:** encourages good practice on copyright. → Genesis becomes the
+  reference tool.
+
+**Recommended action:** apply for Trakalog to join the EU AI Office working groups on GPAI good
+practice. Free, visible, and perfectly positioned.
 
 ### 12.2 US Copyright Office
-Le bureau a publié plusieurs rapports en 2024-2025 sur l'IA et le copyright. Position actuelle : seuls les contenus avec **contribution humaine substantielle** sont protégeables par copyright. Trakalog Genesis fournit exactement la preuve nécessaire pour démontrer cette contribution humaine.
 
-**Action recommandée** : Publier un livre blanc sur le protocole Genesis et le soumettre au Copyright Office dans le cadre de leurs consultations publiques. Visibilité gratuite, crédibilité maximale.
+The office published several reports in 2024-2025 on AI and copyright. Current position: only
+content with **substantial human contribution** is copyrightable. Trakalog Genesis provides
+exactly the evidence needed to demonstrate that human contribution.
+
+**Recommended action:** publish a white paper on the Genesis protocol and submit it to the
+Copyright Office through their public consultations. Free visibility, maximum credibility.
 
 ### 12.3 GDPR (Europe)
-Le registre public expose des données personnelles (nom de l'artiste, IPI). Implications :
-- **Base légale** : consentement explicite de l'artiste à l'upload (à intégrer dans les CGU Genesis)
-- **Droit à l'effacement** : complexe car la blockchain est immuable. Solution : on n'enregistre **que le hash** sur OpenTimestamps, jamais les données personnelles. Les données personnelles restent dans Supabase et peuvent être effacées sans casser la preuve cryptographique.
-- **Pseudonymisation** : option de publier un Genesis ID sans révéler l'identité de l'artiste (utile pour les ghostwriters, les producteurs cachés, etc.)
 
-### 12.4 DMCA et équivalents
-Les détections de tracks dérivés peuvent déclencher des notifications DMCA automatiques. Risques :
-- **Faux positifs** : un DMCA injustifié peut entraîner des sanctions
-- **Mitigations** : human-in-the-loop obligatoire pour les notifications, seuils de confidence élevés (>95% pour DMCA auto), possibilité de contestation transparente
+The public registry exposes personal data (artist name, IPI). Implications:
 
-### 12.5 Right of Publicity (US) et droits voisins (Europe)
-Le **Style Licensing** touche au droit à l'image et à la voix de l'artiste. La Tennessee ELVIS Act (2024) interdit la reproduction non-autorisée de la voix d'un artiste. Le NO FAKES Act (US) est en discussion au Congrès.
+- **Legal basis:** the artist's explicit consent at upload, to be built into the Genesis terms
+- **Right to erasure:** complex, because the blockchain is immutable. Solution: only **the
+  hash** goes to OpenTimestamps, never personal data. Personal data stays in Supabase and can be
+  erased without breaking the cryptographic proof.
+- **Pseudonymisation:** an option to publish a Genesis ID without revealing the artist's
+  identity — useful for ghostwriters, uncredited producers and so on
 
-**Implication** : Genesis Style Licensing est **parfaitement aligné** avec ces lois car il est strictement opt-in. C'est exactement le mécanisme légal que les législateurs cherchent à promouvoir.
+### 12.4 DMCA and equivalents
 
-### 12.6 Berne Convention et copyright international
-La provenance créative avec horodatage cryptographique constitue une preuve d'antériorité reconnue dans la plupart des juridictions signataires (175 pays). C'est plus solide que les registres nationaux dans 90% des cas car immutable et globalement vérifiable.
+Derivative-track detections can trigger automatic DMCA notices. Risks:
 
-### 12.7 Statut d'admission en preuve
-Les preuves cryptographiques avec horodatage Bitcoin via OpenTimestamps sont **déjà admises en justice** dans plusieurs pays européens et aux US. Quelques jurisprudences notables existent depuis 2018. À documenter pour le pitch.
+- **False positives:** an unjustified DMCA can carry sanctions
+- **Mitigations:** mandatory human in the loop for notices, high confidence thresholds (>95% for
+  automatic DMCA), and a transparent dispute path
 
-### 12.8 Anti-trust et concurrence
-Si Genesis devient un standard de facto, attention aux questions anti-trust :
-- Garder le protocole **open-source** (déjà prévu)
-- Garder l'API publique avec un free tier
-- Ne pas exclure les concurrents (philosophie : on est le registre principal, pas le seul)
+### 12.5 Right of publicity (US) and neighbouring rights (Europe)
 
-### Checklist conformité avant launch
-- [ ] CGU Trakalog Genesis rédigées par avocat spécialisé
-- [ ] Licence AI Training Standard publiée en plusieurs langues (EN, FR, DE, ES)
-- [ ] Politique de confidentialité mise à jour (mention du blockchain timestamping)
-- [ ] DPA (Data Processing Agreement) pour les clients enterprise
-- [ ] Procédure DMCA documentée
-- [ ] Procédure d'opposition à une Origin Print
-- [ ] Audit RGPD complet
-- [ ] Vérification de l'éligibilité du badge "Human-Made" (critères clairs)
-- [ ] Mécanisme de révocation d'attestation (si fraude détectée)
+**Style Licensing** touches an artist's image and voice rights. The Tennessee ELVIS Act (2024)
+prohibits unauthorised reproduction of an artist's voice. The NO FAKES Act (US) is before
+Congress.
+
+**Implication:** Genesis Style Licensing is **perfectly aligned** with these laws precisely
+because it is strictly opt-in. It is exactly the legal mechanism legislators are trying to
+promote.
+
+### 12.6 Berne Convention and international copyright
+
+Creative provenance with cryptographic timestamping constitutes proof of priority recognised in
+most signatory jurisdictions (175 countries). It is stronger than national registries in 90% of
+cases, being immutable and globally verifiable.
+
+### 12.7 Evidential admissibility
+
+Cryptographic proofs with a Bitcoin timestamp via OpenTimestamps are **already admitted in
+court** in several European countries and in the US. Notable case law exists from 2018 onward.
+Worth documenting for the pitch.
+
+### 12.8 Antitrust and competition
+
+If Genesis becomes a de facto standard, antitrust questions follow:
+
+- Keep the protocol **open source** (already planned)
+- Keep the public API with a free tier
+- Do not exclude competitors — the philosophy is to be the principal registry, not the only one
+
+### Pre-launch compliance checklist
+
+- [ ] Trakalog Genesis terms drafted by a specialist lawyer
+- [ ] Standard AI Training Licence published in several languages (EN, FR, DE, ES)
+- [ ] Privacy policy updated to mention blockchain timestamping
+- [ ] DPA (Data Processing Agreement) for enterprise customers
+- [ ] Documented DMCA procedure
+- [ ] Procedure for opposing an Origin Print
+- [ ] Full GDPR audit
+- [ ] "Human-Made" badge eligibility verified (clear criteria)
+- [ ] Attestation revocation mechanism, for detected fraud
 
 ---
 
-## 13. Risques et mitigations
+## 13. Risks and mitigations
 
-| Risque | Probabilité | Impact | Mitigation |
-|--------|-------------|--------|------------|
-| Plateformes IA refusent le standard | Moyenne | Élevé | Lobbying + EU AI Act force la transparence + open-source = adoption facile |
-| Faux positifs en derivation detection | Élevée | Moyen | Human-in-the-loop obligatoire, seuils élevés, transparence |
-| Attestation humaine fausse (artiste ment) | Moyenne | Moyen | Signature crypto = responsabilité personnelle, sanctions contractuelles, révocation possible |
-| Bitcoin timestamp lent (10 min - 1h confirm) | Faible | Faible | OK pour MVP, on peut afficher "pending → confirmed" |
-| Concurrent copie le protocole | Moyenne | Faible | C'est OPEN-SOURCE par design — l'effet réseau crée le moat, pas la techno |
-| Litige juridique sur la validité de la preuve | Moyenne | Élevé | Jurisprudence favorable existe + on n'est jamais seuls (Wikipedia, Médias français utilisent OTS) |
-| Coûts de scaling derivation detection | Élevée | Moyen | Tarification API + plans Pro/Business + partenariats DSP pour data |
-| Acceptation par les majors trop lente | Élevée | Moyen | Commencer par les indés et superviseurs sync, créer la preuve sociale, les majors suivent |
-| Réglementation change brusquement | Moyenne | Élevé | Position flexible : on s'adapte aux régulations, on ne dépend pas d'une seule |
-| Performance hashing à grande échelle | Faible | Faible | Hashing async fire-and-forget, scaling Railway horizontal |
+| Risk | Probability | Impact | Mitigation |
+|---|---|---|---|
+| AI platforms refuse the standard | Medium | High | Lobbying + the EU AI Act forces transparency + open source makes adoption easy |
+| False positives in derivation detection | High | Medium | Mandatory human in the loop, high thresholds, transparency |
+| False human attestation (artist lies) | Medium | Medium | Cryptographic signature = personal liability, contractual sanctions, revocation possible |
+| Slow Bitcoin timestamp (10 min - 1h confirmation) | Low | Low | Fine for MVP; display "pending → confirmed" |
+| A competitor copies the protocol | Medium | Low | It is OPEN SOURCE by design — the moat is the network effect, not the technology |
+| Litigation over the proof's validity | Medium | High | Favourable case law exists, and we are not alone (Wikipedia and French media use OTS) |
+| Cost of scaling derivation detection | High | Medium | API pricing + Pro/Business plans + DSP data partnerships |
+| Majors adopt too slowly | High | Medium | Start with independents and sync supervisors, build social proof; the majors follow |
+| Regulation changes abruptly | Medium | High | Stay flexible: adapt to regulations rather than depend on one |
+| Hashing performance at scale | Low | Low | Async fire-and-forget hashing, horizontal Railway scaling |
 
 ---
 
-## 14. Roadmap d'implémentation
+## 14. Implementation roadmap
 
-### Phase 1 — MVP (12 semaines)
-**Objectif** : Origin Print + Public Registry + AI Training License basique
+### Phase 1 — MVP (12 weeks)
 
-| Semaine | Livrable |
-|---------|----------|
-| 1-2 | Audit légal initial + rédaction CGU + spec publique du protocole |
-| 3-4 | Audio fingerprinting (Chromaprint + Neural embedding via CLAP) sur Railway |
-| 5-6 | Canonical JSON + signature Ed25519 + OpenTimestamps integration |
-| 7-8 | Tables DB + RPCs SECURITY DEFINER + RLS |
-| 9-10 | UI : choix de licence à l'upload, attestation humaine, page Genesis publique |
-| 11 | API publique de vérification + documentation |
-| 12 | Tests end-to-end + soft launch sur 10 beta testers |
+**Objective:** Origin Print + Public Registry + basic AI Training License
 
-**Coût estimé** : ~15-25K€ (audit légal + 1-2 mois de dev focusé)
+| Week | Deliverable |
+|---|---|
+| 1-2 | Initial legal audit + terms drafting + public protocol spec |
+| 3-4 | Audio fingerprinting (Chromaprint + neural embedding via CLAP) on Railway |
+| 5-6 | Canonical JSON + Ed25519 signature + OpenTimestamps integration |
+| 7-8 | DB tables + `SECURITY DEFINER` RPCs + RLS |
+| 9-10 | UI: licence choice at upload, human attestation, public Genesis page |
+| 11 | Public verification API + documentation |
+| 12 | End-to-end tests + soft launch to 10 beta testers |
 
-### Phase 2 — Adoption et badges (mois 4-6)
-- Badge "Human-Made on Trakalog" intégré sur tous les shared links et pitches
-- Publication du livre blanc et soumission au US Copyright Office
-- Demande d'inclusion dans les groupes de travail EU AI Office
-- Premiers partenariats avec music supervisors (proof of concept)
+**Estimated cost:** ~€15-25K (legal audit + 1-2 months of focused development).
 
-### Phase 3 — Style Licensing et derivation detection (mois 6-12)
-- Style Profiles publics et licensables
-- Stripe Connect pour les royalties
-- Derivation Detection sur DSP majeurs (Spotify, SoundCloud, YouTube)
+### Phase 2 — Adoption and badges (months 4-6)
+
+- "Human-Made on Trakalog" badge on every shared link and pitch
+- Publish the white paper and submit it to the US Copyright Office
+- Apply to join the EU AI Office working groups
+- First music-supervisor partnerships (proof of concept)
+
+### Phase 3 — Style Licensing and derivation detection (months 6-12)
+
+- Public, licensable Style Profiles
+- Stripe Connect for royalties
+- Derivation Detection across the major DSPs (Spotify, SoundCloud, YouTube)
 - DMCA automation
-- API enterprise pour DSP et plateformes IA
+- Enterprise API for DSPs and AI platforms
 
-### Phase 4 — Standard de l'industrie (mois 12-24)
-- Partenariats officiels avec 2-3 plateformes IA (premier deal de licence IA)
-- Inclusion dans les conditions d'usage de Spotify/Apple Music (badge "Human-Made certified by Trakalog")
-- Negotiations avec les PROs pour intégration mutuelle
-- Premiers deals enterprise avec labels indépendants puis majors
+### Phase 4 — Industry standard (months 12-24)
 
----
-
-## 15. Dépendances avec le reste du projet
-
-### Features déjà construites qui alimentent Genesis ✅
-- Sonic DNA Profiler (signature stylistique)
-- Watermarking invisible (complément naturel de Derivation Detection)
-- Splits et signatures cryptographiques (contributeurs vérifiés)
-- Audit logs (chaîne de confiance interne)
-- Workspaces et permissions (gestion des contributeurs)
-- RPCs SECURITY DEFINER (pattern établi pour les writes sensibles)
-
-### Features à construire ou enrichir en parallèle
-- **Stripe Connect** (déjà en cours pour billing) — sera réutilisé pour les royalties
-- **API publique** — bénéficie au Genesis API mais aussi à l'API générale Trakalog
-- **Email branding et CGU multi-langues** — base pour l'internationalisation
-
-### Features qui prendront de la valeur grâce à Genesis
-- **Smart A&R** : peut filtrer par "Human-Made certified"
-- **Pitches** : badge dans chaque email pour ajouter de la crédibilité
-- **Shared Links** : protection légale renforcée
-- **Sync Matchmaker** (futur) : argument de vente décisif vs concurrence
+- Official partnerships with 2-3 AI platforms (first AI licence deal)
+- Inclusion in Spotify/Apple Music terms ("Human-Made certified by Trakalog" badge)
+- Negotiations with PROs for mutual integration
+- First enterprise deals with independent labels, then majors
 
 ---
 
-## 16. KPIs à tracker
+## 15. Dependencies on the rest of the project
 
-### KPIs d'adoption
-- Nombre de Genesis Records créés par mois
-- Pourcentage de tracks uploadés qui choisissent Genesis (cible : >70% des plans payants)
-- Nombre de vérifications publiques de l'API (proxy d'adoption externe)
-- Nombre d'embed du badge "Human-Made" en dehors de Trakalog
+### Already built, and feeding Genesis ✅
 
-### KPIs business
-- Revenus AI Training Royalties (à partir du mois 12)
-- Revenus Style Licensing (à partir du mois 6)
-- Conversion Free→Pro (impact attendu : +15-25%)
-- Conversion Pro→Business (impact attendu : +10-20%)
+- Sonic DNA Profiler (stylistic signature)
+- Invisible watermarking (natural complement to Derivation Detection)
+- Cryptographic splits and signatures (verified contributors)
+- Audit logs (internal chain of trust)
+- Workspaces and permissions (contributor management)
+- `SECURITY DEFINER` RPCs (established pattern for sensitive writes)
 
-### KPIs stratégiques
-- Mentions dans la presse spécialisée et tech
-- Citations dans des rapports réglementaires
-- Partenariats officiels avec plateformes IA et DSP
-- Adoption par des labels et publishers
+### To build or extend in parallel
 
----
+- **Stripe Connect** — the base Stripe integration now exists; Connect is still to add
+- **Public API** — benefits the Genesis API and Trakalog's general API alike
+- **Email branding and multilingual terms** — the basis for internationalisation
 
-## 17. Le pitch en une phrase
+### Features that gain value from Genesis
 
-**"Trakalog Genesis est le registre mondial de provenance créative musicale à l'ère de l'IA — la preuve cryptographique qui dit qui a créé quoi, quand, avec quelles permissions, et qui doit être payé. C'est l'infrastructure que toute l'industrie cherche et que personne d'autre n'est en position de construire."**
+- **Smart A&R:** can filter by "Human-Made certified"
+- **Pitches:** a badge in each email adds credibility
+- **Shared links:** strengthened legal protection
+- **Sync Matchmaker** (future): a decisive sales argument against the competition
 
 ---
 
-## 18. La phrase à retenir pour Yannick
+## 16. KPIs to track
 
-Trakalog n'est plus un "Disco premium". Trakalog devient **l'infrastructure réglementaire et éthique de l'industrie musicale à l'ère de l'IA**. C'est la différence entre vendre un produit (que les concurrents copient en 6 mois) et construire une catégorie (que personne ne peut copier).
+### Adoption
 
-Le moment est *maintenant*. La fenêtre se ferme dès que la première grosse plateforme (ou un consortium des majors) lance sa propre solution. Six à douze mois pour positionner Trakalog comme standard de facto avant que quelqu'un d'autre essaie.
+- Genesis Records created per month
+- % of uploaded tracks choosing Genesis (target: >70% of paid plans)
+- Public API verifications (a proxy for external adoption)
+- "Human-Made" badge embeds outside Trakalog
+
+### Business
+
+- AI Training Royalty revenue (from month 12)
+- Style Licensing revenue (from month 6)
+- Free→Pro conversion (expected impact: +15-25%)
+- Pro→Business conversion (expected impact: +10-20%)
+
+### Strategic
+
+- Mentions in trade and tech press
+- Citations in regulatory reports
+- Official partnerships with AI platforms and DSPs
+- Adoption by labels and publishers
 
 ---
 
-*Ce document est vivant. Il sera mis à jour au fur et à mesure du développement, des consultations légales, et de l'évolution réglementaire.*
+## 17. The pitch in one sentence
+
+**"Trakalog Genesis is the world registry of musical creative provenance in the AI era — the
+cryptographic proof that says who created what, when, under which permissions, and who must be
+paid. It is the infrastructure the whole industry is looking for, and that nobody else is in a
+position to build."**
+
+---
+
+## 18. The line to remember
+
+Trakalog is no longer a "premium Disco". Trakalog becomes **the regulatory and ethical
+infrastructure of the music industry in the AI era**. That is the difference between selling a
+product — which competitors copy in six months — and building a category, which nobody can
+copy.
+
+The moment is *now*. The window closes as soon as the first large platform, or a consortium of
+majors, launches its own solution. Six to twelve months to position Trakalog as the de facto
+standard before someone else tries.
+
+---
+
+*This document is living, and will be updated as development, legal consultation, and
+regulation evolve.*
