@@ -1,9 +1,9 @@
 # Coding Standards
 
-> **Status:** Draft  
+> **Status:** Stable — verified against the code, September 2, 2026
 > **Version:** 1.0.0  
 > **Created:** August 18, 2026  
-> **Last Updated:** September 2, 2026  
+> **Last Updated:** September 2, 2026
 > **Owner:** Ishan  
 > **Related:** [02 - System Architecture](../ARCHITECTURE/02-SYSTEM_ARCHITECTURE.md), [04 - Component Architecture](../ARCHITECTURE/04-COMPONENT_ARCHITECTURE.md)
 

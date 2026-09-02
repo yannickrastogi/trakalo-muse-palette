@@ -1,66 +1,28 @@
-# Trakalog Operations Documentation
+# Operations
 
-> **Status:** Stable  
-> **Version:** 1.0.0  
-> **Last Updated:** August 19, 2026  
-> **Owner:** Ishan  
-> **Audience:** DevOps, Developers, System Administrators
+> **Status:** Stable
+> **Last Updated:** September 2, 2026
+> **Owner:** Ishan
 
----
+Running Trakalog in production. For the full documentation tree, see the
+[main index](../INDEX.md).
 
-## Welcome to Trakalog's Operations Documentation
+> ⚠️ Neither document below was audited during the September 2026 documentation remediation.
+> Treat their specifics as unverified until they are.
 
-This is the **central hub** for all operations-related documentation, covering monitoring, performance, cost optimization, and infrastructure management. For the complete documentation index, see the [main documentation index](../INDEX.md).
+## Legend
 
----
-
-## 🗺️ Navigation Guide
-
-### 📋 Quick Start
-
-**Need to understand Trakalog's operations?** Start with these documents:
-
-1. **[Monitoring](MONITORING.md)** - Logging setup, error tracking, metrics, and alerting
-2. **[Cost Optimization](COST_OPTIMIZATION.md)** - Cloud costs, usage tracking, and optimization strategies
+🟢 Stable — verified against the code · 🟡 Draft / Planned — not verified, or not built ·
+⚠️ Partially built · 📋 Specification only
 
 ---
 
-## ⚙️ Operations Guides
-
-| Document | Description | Status |
-|----------|-------------|--------|
-| [Monitoring](MONITORING.md) | Logging setup, error tracking, metrics, alerting | 🟢 Stable |
-| Performance *(not yet written)* | Performance optimization, benchmarks, bottlenecks | 🟡 Planned |
-| [Cost Optimization](COST_OPTIMIZATION.md) | Cloud costs, usage tracking, optimization strategies | 🟢 Stable |
-
+| Document | What it covers | Status |
+|---|---|---|
+| [Monitoring](MONITORING.md) | Logging, error tracking, metrics, alerting | 🟡 Draft — **not audited** |
+| [Cost Optimization](COST_OPTIMIZATION.md) | Cloud costs, usage tracking, optimisation | 🟡 Draft — **not audited** |
+| Performance *(not yet written)* | Benchmarks and bottlenecks | 🟡 Planned |
 ---
 
-## 🎯 Quick Reference
-
-### Common Operational Tasks
-
-**Monitoring and Observability:**
-- See [Monitoring](MONITORING.md) for logging, error tracking, and alerting setup
-
-**Performance Issues:**
-- A Performance guide is planned but not yet written
-
-**Cost Management:**
-- Review [Cost Optimization](COST_OPTIMIZATION.md) for cloud cost strategies
-
----
-
-## 📞 Support
-
-For operations-related questions, check the relevant guide above or refer to the [main documentation index](../INDEX.md) for broader context.
-
----
-
-## 🏷️ Metadata
-
-| Property | Value |
-|----------|-------|
-| **Created** | August 19, 2026 |
-| **Version** | 1.0.0 |
-| **Owner** | Ishan |
-| **Review Cycle** | Monthly |
+*Part of the [Trakalog documentation](../INDEX.md). Status labels here mirror each document's own
+header — if they disagree, the document's own header is authoritative.*

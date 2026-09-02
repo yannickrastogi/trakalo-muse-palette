@@ -1,6 +1,6 @@
 # Auth Patterns — Trakalog
 
-> **Status:** Draft
+> **Status:** Stable — verified against the code, September 2, 2026
 > **Last Updated:** September 2, 2026
 > **Owner:** Ishan
 > **Related:** [06 - Security Architecture](06-SECURITY_ARCHITECTURE.md), [RPCS.md](../DEVELOPMENT/RPCS.md)

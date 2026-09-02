@@ -1,6 +1,6 @@
 # 06 - Security Architecture
 
-> **Status:** Draft  
+> **Status:** Draft — not audited during the September 2026 documentation remediation; its claims have not been verified against the code
 > **Version:** 1.0.0  
 > **Created:** August 11, 2026  
 > **Last Updated:** August 11, 2026  

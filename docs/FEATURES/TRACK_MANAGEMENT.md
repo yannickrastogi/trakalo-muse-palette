@@ -1,6 +1,6 @@
 # Track Management
 
-> **Status:** Draft
+> **Status:** Stable — verified against the code, September 2, 2026
 > **Version:** 2.0.0
 > **Created:** August 11, 2026
 > **Last Updated:** September 2, 2026

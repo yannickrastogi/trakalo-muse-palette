@@ -3,7 +3,7 @@
 > **Status:** Stable  
 > **Version:** 1.0.0  
 > **Created:** August 11, 2026  
-> **Last Updated:** August 19, 2026  
+> **Last Updated:** September 2, 2026
 > **Owner:** Ishan  
 
 ---
@@ -50,7 +50,7 @@ Create an ADR for decisions that:
 
 | ADR # | Title | Status | Date | Owner |
 |-------|-------|--------|------|-------|
-| [ADR-0004](ADR-0004-STATE-MANAGEMENT.md) | React Query Over Redux | 🟢 Stable | August 18, 2026 | Ishan |
+| [ADR-0004](ADR-0004-STATE-MANAGEMENT.md) | React Context for Server State | 🟢 Stable | August 18, 2026 | Ishan |
 | [ADR-0005](ADR-0005-R2-STORAGE.md) | R2 Cloud Storage Over S3 | 🟢 Stable | August 18, 2026 | Ishan |
 | [ADR-0006](ADR-0006-GROQ-AI.md) | Groq for AI Inference | 🟢 Stable | August 18, 2026 | Ishan |
 
@@ -189,68 +189,6 @@ ADR-0001-DESCRIPTIVE-NAME.md
 - Include ADR number as prefix
 - Keep names concise but descriptive
 - Example: `ADR-0001-multi-workspace-model.md`
-
----
-
-## Key Decisions That Need ADRs
-
-Based on codebase analysis, these architectural decisions should be documented:
-
-### High Priority (Should be documented first)
-
-1. **ADR-0001: Multi-Workspace Model**
-   - Why workspaces vs single account?
-   - How catalog sharing works
-   - Permission model design
-
-2. **ADR-0002: Seat-Based Billing**
-   - Why seats vs workspace-based pricing?
-   - How quotas are enforced
-   - User-based vs workspace-based limits
-
-3. **ADR-0003: Supabase Over Custom Backend**
-   - Why Supabase vs Firebase, custom Node.js, etc.?
-   - What Supabase provides vs what we had to build
-   - Cost and maintenance considerations
-
-### Medium Priority
-
-4. **ADR-0004: React Query Over Redux**
-   - Why React Query for server state?
-   - Context usage for client state
-   - Performance and caching benefits
-
-5. **ADR-0005: R2 Cloud Storage Over S3**
-   - Why R2 vs AWS S3?
-   - Cost comparison
-   - Feature requirements (retention locks, etc.)
-
-6. **ADR-0006: Groq for AI Inference**
-   - Why Groq vs other AI providers?
-   - Model selection (Llama, Whisper)
-   - Cost and performance considerations
-
-7. **ADR-0007: Invisible Audio Watermarking**
-   - Technical approach (audiowmark)
-   - How watermarking enables leak tracing
-   - Performance and reliability considerations
-
-8. **ADR-0008: Dual Audience Architecture**
-   - Account holders vs link recipients
-   - Why this distinction is important
-   - Business model implications
-
-### Lower Priority
-
-9. **ADR-0009: Feature Flags Approach**
-   - How features are toggled
-   - Gradual rollout strategy
-   - Maintenance considerations
-
-10. **ADR-0010: shadcn/ui Component Library**
-    - Why shadcn vs other UI libraries?
-    - Customization and theming
-    - Accessibility and consistency benefits
 
 ---
 

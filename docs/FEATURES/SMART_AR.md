@@ -1,9 +1,9 @@
 # Smart A&R
 
-> **Status:** Draft  
+> **Status:** Stable — verified against the code, September 2, 2026
 > **Version:** 1.0.0  
 > **Created:** August 18, 2026  
-> **Last Updated:** August 18, 2026  
+> **Last Updated:** September 2, 2026
 > **Owner:** Ishan  
 > **Related:** [02 - System Architecture](../ARCHITECTURE/02-SYSTEM_ARCHITECTURE.md), [05 - Service Architecture](../ARCHITECTURE/05-SERVICE_ARCHITECTURE.md), [GROQ_USAGE_AND_COSTS.md](../ARCHITECTURE/GROQ_USAGE_AND_COSTS.md), [TRAKALOG_BILLING.md](TRAKALOG_BILLING.md)
 

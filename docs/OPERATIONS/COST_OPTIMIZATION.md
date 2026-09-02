@@ -1,6 +1,6 @@
 # Cost Optimization
 
-> **Status:** Draft  
+> **Status:** Draft — not audited during the September 2026 documentation remediation
 > **Version:** 1.0.0  
 > **Created:** August 18, 2026  
 > **Last Updated:** August 18, 2026  

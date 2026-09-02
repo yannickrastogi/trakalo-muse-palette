@@ -1,67 +1,29 @@
-# Trakalog Plans Documentation
+# Plans
 
-> **Status:** Stable  
-> **Version:** 1.0.0  
-> **Last Updated:** August 19, 2026  
-> **Owner:** Ishan  
-> **Audience:** Developers, Architects, Product Managers
+> **Status:** Stable
+> **Last Updated:** September 2, 2026
+> **Owner:** Ishan
 
----
+Strategic direction and implementation plans. These describe intent, not shipped behaviour —
+each states its own build status at the top. For the full documentation tree, see the
+[main index](../INDEX.md).
 
-## Welcome to Trakalog's Plans Documentation
+## Legend
 
-This is the **central hub** for all planning and strategic documentation, including development plans, architecture plans, and setup guides. For the complete documentation index, see the [main documentation index](../INDEX.md).
-
----
-
-## 🗺️ Navigation Guide
-
-### 📋 Strategic Documents
-
-**Looking for planning documents?** Start with these:
-
-1. **[Documentation Plan](DOCUMENTATION.md)** - Comprehensive documentation architecture and planning
-2. **[Dev/Staging Setup](TRAKALOG_DEV_STAGING_SETUP.md)** - Development and staging environment configuration
+🟢 Stable — verified against the code · 🟡 Draft / Planned — not verified, or not built ·
+⚠️ Partially built · 📋 Specification only
 
 ---
 
-## 📚 Planning Documents
-
-| Document | Description | Status |
-|----------|-------------|--------|
-| [Documentation Plan](DOCUMENTATION.md) | Comprehensive documentation architecture and planning | 🟢 Stable |
-| [Dev/Staging Setup](TRAKALOG_DEV_STAGING_SETUP.md) | Development and staging environment configuration | 🟢 Stable |
-| [Docs Remediation](DOCS_REMEDIATION.md) | Audit findings and the chunked plan to fix the docs tree | 🔴 In progress |
-| [Trakalog Genesis](TRAKALOG_GENESIS.md) | Creative-provenance infrastructure (Genesis Print) | 🟡 Planned · French |
-| [Trakalog Signal](TRAKALOG_SIGNAL.md) | Signal product direction | 🟡 Planned · French |
-| [Trakalog Drop](TRAKALOG_DROP.md) | Drop product direction | 🟡 Planned · French |
-| [Storage Migration](TRAKALOG_STORAGE_MIGRATION.md) | Supabase Storage → Cloudflare R2 migration | 🟡 Historical · French |
-
+| Document | What it covers | Build status |
+|---|---|---|
+| [Trakalog Genesis](TRAKALOG_GENESIS.md) | Creative-provenance infrastructure, AI training licence, public registry | 📋 Nothing built |
+| [Trakalog Signal](TRAKALOG_SIGNAL.md) | Reverse marketplace for music supervisors | 📋 Nothing built |
+| [Trakalog Drop](TRAKALOG_DROP.md) | Pre-release fan collection, tipping via Stripe Connect | 📋 Nothing built |
+| [Storage Migration](TRAKALOG_STORAGE_MIGRATION.md) | Supabase Storage → Cloudflare R2 | ⚠️ Shipped, but not as designed — see §0 |
+| [Dev/Staging Setup](TRAKALOG_DEV_STAGING_SETUP.md) | Branch-based dev and staging environments | 📋 Planned |
+| [Documentation Plan](DOCUMENTATION.md) | The plan that produced this documentation tree | 🟢 Complete |
 ---
 
-## 🎯 Quick Reference
-
-### Planning Categories
-
-**Documentation Planning:**
-- [Documentation Plan](DOCUMENTATION.md) - Architecture and organization of all documentation
-
-**Infrastructure Planning:**
-- [Dev/Staging Setup](TRAKALOG_DEV_STAGING_SETUP.md) - Environment setup and configuration
-
----
-
-## 📞 Support
-
-For planning-related questions, check the relevant document above or refer to the [main documentation index](../INDEX.md) for broader context.
-
----
-
-## 🏷️ Metadata
-
-| Property | Value |
-|----------|-------|
-| **Created** | August 19, 2026 |
-| **Version** | 1.0.0 |
-| **Owner** | Ishan |
-| **Review Cycle** | Monthly |
+*Part of the [Trakalog documentation](../INDEX.md). Status labels here mirror each document's own
+header — if they disagree, the document's own header is authoritative.*

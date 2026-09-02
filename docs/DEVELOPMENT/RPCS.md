@@ -1,6 +1,6 @@
 # TRAKALOG — RPC Reference
 
-> **Status:** Draft
+> **Status:** Draft — the 47 documented RPCs are verified, but 47 more are called from `src/` and remain undocumented (see §14)
 > **Last Updated:** September 2, 2026
 > **Owner:** Ishan
 > **Related:** [03 - Data Architecture](../ARCHITECTURE/03-DATA_ARCHITECTURE.md), [06 - Security Architecture](../ARCHITECTURE/06-SECURITY_ARCHITECTURE.md), [AUTH_PATTERNS.md](../ARCHITECTURE/AUTH_PATTERNS.md)

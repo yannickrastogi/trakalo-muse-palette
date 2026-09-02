@@ -1,71 +1,27 @@
-# Trakalog Development Documentation
+# Development
 
-> **Status:** Stable  
-> **Version:** 1.0.0  
-> **Last Updated:** August 19, 2026  
-> **Owner:** Ishan  
-> **Audience:** Developers
+> **Status:** Stable
+> **Last Updated:** September 2, 2026
+> **Owner:** Ishan
 
----
+Guides for working in the codebase. For the full documentation tree, see the
+[main index](../INDEX.md).
 
-## Welcome to Trakalog's Development Documentation
+## Legend
 
-This is the **central hub** for all development-related documentation, including getting started guides, coding standards, testing strategies, and API references. For the complete documentation index, see the [main documentation index](../INDEX.md).
-
----
-
-## 🗺️ Navigation Guide
-
-### 📋 Getting Started
-
-**New to Trakalog development?** Begin with these documents:
-
-1. **[Getting Started](GETTING_STARTED.md)** - Local development setup, prerequisites, and first run
-2. **[Coding Standards](CODING_STANDARDS.md)** - TypeScript, React, Tailwind conventions and best practices
-3. **[Testing Strategy](TESTING_STRATEGY.md)** - Vitest, React Testing Library patterns and test organization
+🟢 Stable — verified against the code · 🟡 Draft / Planned — not verified, or not built ·
+⚠️ Partially built · 📋 Specification only
 
 ---
 
-## 📚 Development Guides
-
-| Document | Description | Status |
-|----------|-------------|--------|
-| [Getting Started](GETTING_STARTED.md) | Local development setup, prerequisites, first run | 🟢 Stable |
-| [Coding Standards](CODING_STANDARDS.md) | TypeScript, React, Tailwind conventions, best practices | 🟡 Draft |
-| [Testing Strategy](TESTING_STRATEGY.md) | Vitest, React Testing Library patterns, test organization | 🟡 Draft |
-| API Reference *(not yet written)* | Supabase RPC functions, REST endpoints, GraphQL | 🟡 Planned |
-
+| Document | What it covers | Status |
+|---|---|---|
+| [Getting Started](GETTING_STARTED.md) | Local setup, prerequisites, first run, port 8080 | 🟢 Stable |
+| [Coding Standards](CODING_STANDARDS.md) | TypeScript, React, Tailwind conventions | 🟢 Stable |
+| [Testing Strategy](TESTING_STRATEGY.md) | Vitest setup, and what is honestly not implemented | 🟢 Stable |
+| [RPC Reference](RPCS.md) | 47 verified `SECURITY DEFINER` RPCs, plus 47 undocumented | 🟡 Draft — half coverage |
+| API Reference *(not yet written)* | REST endpoints, Edge Function contracts | 🟡 Planned |
 ---
 
-## 🎯 Quick Reference
-
-### Common Development Tasks
-
-**Setting up your environment:**
-- Follow [Getting Started](GETTING_STARTED.md) for complete setup instructions
-
-**Code style questions:**
-- See [Coding Standards](CODING_STANDARDS.md) for conventions
-
-**Writing tests:**
-- Refer to [Testing Strategy](TESTING_STRATEGY.md) for patterns and organization
-
-**API integration:**
-- An API Reference is planned but not yet written; use [RPCS.md](RPCS.md) for now
-
----
-
-## 📞 Support
-
-For development-related questions, check the relevant guide above or refer to the [main documentation index](../INDEX.md) for broader context.
-
----
-
-## 🏷️ Metadata
-
-| Property | Value |
-|----------|-------|
-| **Created** | August 19, 2026 |
-| **Version** | 1.0.0 |
-| **Owner** | Ishan |
-| **Review Cycle** | Monthly |
+*Part of the [Trakalog documentation](../INDEX.md). Status labels here mirror each document's own
+header — if they disagree, the document's own header is authoritative.*

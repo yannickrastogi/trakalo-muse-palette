@@ -1,9 +1,9 @@
 # Audio Watermarking
 
-> **Status:** Draft  
+> **Status:** Stable — verified against the code, September 2, 2026
 > **Version:** 1.0.0  
 > **Created:** August 18, 2026  
-> **Last Updated:** August 18, 2026  
+> **Last Updated:** September 2, 2026
 > **Owner:** Ishan  
 > **Related:** [02 - System Architecture](../ARCHITECTURE/02-SYSTEM_ARCHITECTURE.md), [05 - Service Architecture](../ARCHITECTURE/05-SERVICE_ARCHITECTURE.md), [07 - Deployment Architecture](../ARCHITECTURE/07-DEPLOYMENT_ARCHITECTURE.md), [CLAUDE_WATERMARK_MP3_REPORT.md](../_archive/reports/CLAUDE_WATERMARK_MP3_REPORT.md)
 

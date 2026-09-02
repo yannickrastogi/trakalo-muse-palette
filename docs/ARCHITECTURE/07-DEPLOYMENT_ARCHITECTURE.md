@@ -1,9 +1,9 @@
 # 07 - Deployment Architecture
 
-> **Status:** Draft  
+> **Status:** Stable — verified against the code, September 2, 2026
 > **Version:** 1.0.0  
 > **Created:** August 11, 2026  
-> **Last Updated:** August 11, 2026  
+> **Last Updated:** September 2, 2026
 > **Owner:** Ishan  
 > **Related:** [02 - System Architecture](02-SYSTEM_ARCHITECTURE.md), [05 - Service Architecture](05-SERVICE_ARCHITECTURE.md), [06 - Security Architecture](06-SECURITY_ARCHITECTURE.md)
 

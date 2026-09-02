@@ -1,9 +1,9 @@
 # Testing Strategy
 
-> **Status:** Draft  
+> **Status:** Stable — verified against the code, September 2, 2026
 > **Version:** 1.0.0  
 > **Created:** August 18, 2026  
-> **Last Updated:** September 2, 2026  
+> **Last Updated:** September 2, 2026
 > **Owner:** Ishan  
 > **Related:** [CODING_STANDARDS.md](./CODING_STANDARDS.md), [04 - Component Architecture](../ARCHITECTURE/04-COMPONENT_ARCHITECTURE.md)
 

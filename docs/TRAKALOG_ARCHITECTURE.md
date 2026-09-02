@@ -1,5 +1,6 @@
 # TRAKALOG — Architecture & Product Vision
 
+> **Status:** Stable — verified against the code, September 2, 2026
 > **Created:** March 26, 2026
 > **Last Updated:** September 2, 2026 (translated to English; claims re-verified against the code)
 > **Purpose:** Source of truth for every Trakalog architecture decision.

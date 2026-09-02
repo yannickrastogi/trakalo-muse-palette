@@ -1,9 +1,9 @@
 # 04 - Component Architecture
 
-> **Status:** Draft  
+> **Status:** Stable — verified against the code, September 2, 2026
 > **Version:** 2.0.0  
 > **Created:** August 11, 2026  
-> **Last Updated:** September 2, 2026  
+> **Last Updated:** September 2, 2026
 > **Owner:** Ishan  
 > **Related:** [01 - Vision & Overview](01-VISION_AND_OVERVIEW.md), [02 - System Architecture](02-SYSTEM_ARCHITECTURE.md), [03 - Data Architecture](03-DATA_ARCHITECTURE.md)
 

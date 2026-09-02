@@ -198,11 +198,43 @@ Edge Functions = manual redeploy after push: `supabase functions deploy <name>`.
 
 ## Reference docs (repo)
 
-`docs/FEATURES/TRAKALOG_BILLING.md`, `docs/PLANS/TRAKALOG_DROP.md`, `docs/FEATURES/TRACK_VERSIONING.md`, `docs/FEATURES/ISRC_GENERATION.md`, `docs/FEATURES/DDEX_PRO_EXPORTS.md`, `docs/FEATURES/TRAKALOG_ADMIN_DASHBOARD.md`, `docs/FEATURES/ARTIST_SEEKER.md`, `docs/FEATURES/BRIEF_SEEKER.md`, `docs/FEATURES/ONBOARDING.md`, `docs/TRAKALOG_ARCHITECTURE.md`, `docs/PLANS/TRAKALOG_GENESIS.md`, `docs/PLANS/TRAKALOG_SIGNAL.md`.
+**Start at `docs/INDEX.md`.** It is the hub, and its status labels tell you what has been
+verified.
 
-Note: `TRAKALOG_MAESTRO.md` and `TRAKALOG_AI_AGENTS_VISION.md` never existed. The dangling references were removed on September 2, 2026 — don't re-add them without writing the files first.
+**Read the status label before trusting a document.** The whole tree was audited and rewritten
+between September 1-2, 2026:
 
-⚠️ **The `docs/` tree is mid-remediation on branch `ishan/translated-docs`.** An audit found substantial fabricated detail in `docs/ARCHITECTURE/03-DATA_ARCHITECTURE.md`, `04-COMPONENT_ARCHITECTURE.md`, `FEATURES/SHARING_SYSTEM.md`, `FEATURES/TRACK_MANAGEMENT.md` and `ADR-0002` — invented tables, columns, RPCs and file paths. **Do not trust those files over the migrations and source.** Findings and the chunked fix plan live in `docs/PLANS/DOCS_REMEDIATION.md`; work the chunks in order and delete that file once complete.
+- 🟢 **Stable** — verified line-by-line against the migrations and source. Trustworthy.
+  Covers `docs/ARCHITECTURE/01`-`05` and `07`, `AUTH_PATTERNS.md`, all ten ADRs, the three
+  `DEVELOPMENT/` guides, and `FEATURES/{TRACK_MANAGEMENT,SHARING_SYSTEM,WATERMARKING,SMART_AR,SPLITS_AND_SIGNATURES,TRACK_VERSIONING,TRAKALOG_BILLING}.md`.
+- 🟡 **Draft** — **not** verified. Specifics may be wrong. Currently
+  `ARCHITECTURE/06-SECURITY_ARCHITECTURE.md`, both `OPERATIONS/` docs,
+  `DEVELOPMENT/RPCS.md` (47 RPCs verified, 47 more undocumented), `FEATURES/ONBOARDING.md`,
+  `ARCHITECTURE/PRODUCT_AND_UX_OVERVIEW.md`, `GROQ_USAGE_AND_COSTS.md`.
+- 📋 **Spec / Planned** — describes something **not built**: `PLANS/TRAKALOG_{GENESIS,SIGNAL,DROP}.md`,
+  `FEATURES/{ISRC_GENERATION,DDEX_PRO_EXPORTS,ARTIST_SEEKER,BRIEF_SEEKER}.md`.
+- ⚠️ **Partially built** — `FEATURES/TRAKALOG_ADMIN_DASHBOARD.md` (see its §0) and
+  `PLANS/TRAKALOG_STORAGE_MIGRATION.md` (shipped, but not as designed — see its §0).
+
+`docs/_archive/` is frozen history, in French, referencing files and migrations that no longer
+exist. **Never treat it as live schema.**
+
+Note: `TRAKALOG_MAESTRO.md` and `TRAKALOG_AI_AGENTS_VISION.md` never existed. The dangling
+references were removed on September 2, 2026 — don't re-add them without writing the files first.
+
+### Known gaps the docs now record
+
+- **There are no soft deletes.** `tracks` has no `is_deleted`/`deleted_at`; `delete_track`
+  (admin), `delete_workspace` (owner) and `delete_track_comment` (editor) are hard `DELETE`s.
+  Only `catalog_shares` is soft-revoked. `docs/TRAKALOG_ARCHITECTURE.md` §12 previously claimed
+  the opposite as an architectural principle.
+- **`is_platform_admin` matches a hardcoded email in the function body**, so adding an admin
+  needs a migration. Worth moving to a table.
+- **`link_downloads` records every gate submission**, not only downloads. Count real downloads
+  from `link_events WHERE event_type = 'download'`.
+- **`log-link-access` upserts shared-link visitors into `contacts` unconditionally** — there is
+  no consent checkbox and no opt-in on the gate screen.
+- **No storage-quota trigger exists.** Usage is measured; nothing blocks an over-quota upload.
 
 ---
 
