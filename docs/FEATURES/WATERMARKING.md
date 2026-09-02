@@ -52,7 +52,7 @@ flowchart TD
 | Watermark Service | Railway Service | `services/watermark/index.js` | audiowmark encoding/decoding |
 | R2 Storage | Cloud Storage | `trakalog-watermarked` bucket | Store watermarked audio files |
 | Shared Links | Database | `public.shared_links` | Link configuration and settings |
-| Usage Logs | Database | `public.watermark_access_logs` | Track downloads and plays |
+| Usage Logs | Database | `public.link_events` | Play/download/view events on shared links |
 
 ---
 
@@ -172,9 +172,10 @@ The SharedLinkPage handles:
    - Never fall back to unwatermarked audio (security requirement)
 
 4. **Download**
-   - All downloads from shared links are watermarked
-   - Uses same watermarking pipeline as streaming
-   - MP3 format at 128kbps for traceability
+   - All downloads from `track` and `playlist` shared links are watermarked
+   - Uses the same watermarking pipeline as streaming, and the same cached object
+   - **MP3 320 kbps CBR** — consistent with the rest of this document. 128 kbps belonged to
+     the superseded pipeline and caused pre-echo "ticks" that degraded detection
 
 ### 3.2 Edge Function Implementation
 
@@ -264,9 +265,23 @@ The worker handles async job processing:
 1. **Job Types**
    - `watermark_encode`: Encode watermark into audio file
 
-2. **Payload Format**
-   - Includes: storage_path, link_id, visitor_email, visitor_name
-   - Encoded into 32-character hex payload for audiowmark
+2. **Job Payload**
+   The Edge Function enqueues exactly these fields — the visitor's identity is **not** among
+   them, because it has already been reduced to `payload_hex` before the job is created:
+
+   ```json
+   {
+     "source_url":      "<signed URL to the clean source>",
+     "payload_hex":     "<32 hex chars>",
+     "output_bucket":   "watermarked",
+     "output_path":     "<cacheBase>.mp3",
+     "format":          "mp3",
+     "output_provider": "r2"
+   }
+   ```
+
+   The clean `source_url` is the one sensitive item here, and it is a short-lived signed URL
+   that lives only inside the job row.
 
 3. **Processing Steps**
    - Download source audio from R2
@@ -286,9 +301,10 @@ The worker handles async job processing:
 **Bucket:** `trakalog-watermarked`
 
 Storage pattern:
-- Files named by SHA-256 hash of `link_id + visitor_email + storage_path + "-v2"`
-- Both MP3 and WAV formats cached
-- Signed URLs returned to frontend (300s expiry for streaming, longer for downloads)
+- Files named `SHA-256("{link_id}_{visitor_email}_{storage_path}") + "-v2"` — note the `-v2`
+  suffix is appended **after** hashing, not included in the hashed string
+- Both MP3 and WAV cached (WAV is the fallback when the MP3 fails verification)
+- Signed URLs returned to the frontend — **always 300 s**, for streaming and downloads alike
 - All reads go through edge functions (R2 direct access blocked)
 
 ### 3.6 Security Design
@@ -304,14 +320,17 @@ Storage pattern:
    - Enables precise leak tracing
 
 3. **Payload Encoding**
-   - Format: `sl_[link_id]_[visitor_email_hash]`
-   - 32-character hex string
-   - Survives MP3 compression at strength 10
+   - Raw payload: `lid_{link_id}_v_{visitor_email}`
+   - Embedded payload: `SHA-256(raw).substring(0, 32)` — 32 hex chars = 128 bits, the exact
+     width audiowmark carries
+   - Stored as `watermark_payloads.hash_hex` (the table's primary key), alongside
+     `raw_payload`, so the mapping is reversible only via the database
+   - Survives MP3 320 kbps compression at strength 10
 
 4. **Access Logging**
-   - All watermark requests logged
-   - Visitor email captured for each access
-   - Used for leak investigation
+   - Play/download/view events are written to `public.link_events` by `log-link-event`
+   - Visitor email is captured per event
+   - Used for leak investigation alongside `watermark_payloads`
 
 ---
 
@@ -337,7 +356,7 @@ Storage pattern:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `R2_BUCKET_WATERMARKED` | Yes | R2 bucket name for watermarked files |
-| `R2_PUBLIC_DOMAIN` | Yes | R2 public domain for URL generation |
+| `R2_ENDPOINT` | Yes | R2 S3 endpoint — requests are **path-style**, not virtual-host. There is no `R2_PUBLIC_DOMAIN`; every object is served through a 300 s signed URL |
 
 ### 4.2 Feature Flags
 
@@ -430,17 +449,19 @@ railway logs -s watermark-service
 - `[watermark-audio] stalled mid-stream` - Playback buffering issue
 - `[watermark-audio] protected audio unavailable` - Watermarked file missing
 - `[watermark-download] failed` - Download failed
-- `watermark: Groq API fetch failed` - Groq integration error
+- `get-watermarked-audio: enqueue failed` — the encode job could not be queued
 
 ### 6.3 Verification
 
 **Manual Watermark Verification:**
 ```bash
-# Encode a test file
+# Encode a test file.
+# The payload MUST match /^[0-9a-f]{32}$/i — the service rejects anything else,
+# so a human-readable string like "test_payload_123" fails validation.
 curl -X POST http://localhost:3000/encode \
   -H "x-api-key: YOUR_KEY" \
   -F "audio=@test.wav" \
-  -F "payload=test_payload_123" \
+  -F "payload=9f2a41c8be07d5163ab94e70cc118d2e" \
   --output watermarked.wav
 
 # Decode to verify
@@ -480,9 +501,11 @@ audiowmark get watermarked.wav
 ### 8.1 Payload Format
 
 ```
-Payload: sl_[link_id]_[visitor_email_hash]
-Example: sl_abc123def456_vis123456789
-Length: 32 characters (hex)
+Raw payload:      lid_{link_id}_v_{visitor_email}
+Example raw:      lid_6f1c…-…-…_v_a.and.r@label.com
+Embedded payload: SHA-256(raw).substring(0, 32)
+Example embedded: 9f2a41c8be07d5163ab94e70cc118d2e
+Length:           32 hex characters (128 bits)
 ```
 
 ### 8.2 Cache Key Format

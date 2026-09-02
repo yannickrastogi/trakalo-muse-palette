@@ -209,17 +209,21 @@ interface SignatureRequest {
   signed_externally?: boolean; // Marked as signed outside platform
   token: string;           // Unique token for signature link
   created_at: timestamp;
-  updated_at: timestamp;
 }
 ```
+
+There is **no `updated_at`** on `signature_requests`, and no `updated_at` trigger. State moves
+forward through `status` (`pending` | `signed` | `declined`, CHECK-constrained), `signed_at`
+and `signed_externally`.
 
 ### 3.3 Split Calculation
 
 **Location:** `src/lib/split-utils.ts`
 
-Key utilities:
+The module exports exactly **two** functions — `equalSplit` and `extractArtistNameCandidates`.
+Anything else described as living here is elsewhere.
 
-1. **equalSplit()** - Distribute 100% equally among all splits
+1. **equalSplit(splits, shareKey)** - Distribute 100% equally among all splits
    - Each split gets `100 / n` percentage
    - Last split absorbs rounding difference
    - Example: 3 splits = [33.33, 33.33, 33.34]%
@@ -266,8 +270,12 @@ Key utilities:
 **Location:** `src/lib/pdf-generators.ts`
 
 Functions:
-- `generateSignedAgreementPdf(trackTitle, artist, entries)` - Creates signed split sheet PDF
-- `generateUnsignedAgreementPdf(trackTitle, artist, entries)` - Creates unsigned split sheet PDF
+- `generateSplitsPdf(title, artist, splits, totalShares, asBlob?)` — the unsigned split sheet
+  (`pdf-generators.ts:226`). There is **no `generateUnsignedAgreementPdf`**.
+- `generateSignedAgreementPdf(title, artist, entries, asBlob?)` — the executed agreement
+  (`pdf-generators.ts:1115`)
+- `generateSignedAgreementPdfBase64(title, artist, entries)` — same, base64 for email
+  attachment (`pdf-generators.ts:1123`)
 
 PDF Content:
 - Track title and artist
@@ -298,13 +306,22 @@ For tracks with signatures obtained outside Trakalog:
 
 Key database functions for signature management:
 
-| Function | Purpose |
-|----------|---------|
-| `create_signature_requests(_track_id)` | Create signature requests for all track collaborators |
-| `get_signature_agreement_by_token(_token)` | Retrieve signature request by unique token |
-| `mark_splits_signed_externally(_signature_data, _token)` | Mark splits as externally signed |
-| `unmark_splits_signed_externally(_token)` | Remove external signature marking |
-| `signature_requests_anon_immutable_cols()` | Trigger to prevent anonymous modification of signature data |
+| Function | Signature | Purpose |
+|---|---|---|
+| `get_signature_agreement_by_token` | `(_token text)` | Retrieve a signature request by its token |
+| `mark_splits_signed_externally` | `(_user_id uuid, _track_id uuid)` → `integer` | Mark a track's splits signed outside the platform |
+| `unmark_splits_signed_externally` | `(_user_id uuid, _track_id uuid)` → `integer` | Undo that marking |
+| `signature_requests_anon_immutable_cols()` | trigger | Prevent anonymous modification of signature columns |
+
+Two corrections worth internalising:
+
+- **There is no `create_signature_requests` RPC.** Rows are inserted by the
+  `send-split-signature` Edge Function (`index.ts:139-153`), which creates the request and
+  emails the collaborator in one pass — the token has to exist before the email can link to it.
+- **The two `*_signed_externally` functions take `(_user_id, _track_id)`, not `(_token)`**, and
+  return the number of rows affected. They are owner-side actions on a whole track, not
+  recipient-side actions on one request — which is why they take `_user_id` and run through
+  `assert_caller`.
 
 ---
 
@@ -519,7 +536,7 @@ Common PRO affiliations tracked:
 | View splits | Track detail page | `/track/[id]` |
 | Edit splits | Track detail page | `/track/[id]` |
 | Send signatures | RPC | `create_signature_requests` |
-| Sign agreement | Unique URL | `/signature/[token]` |
+| Sign agreement | Unique URL | `/sign/:token` |
 | Download PDF | Client-side | `generateSignedAgreementPdf` |
 
 ### 9.5 UI Text Keys

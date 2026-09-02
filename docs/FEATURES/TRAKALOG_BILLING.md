@@ -1,6 +1,6 @@
 # TRAKALOG — Billing & Payment System (Stripe)
 
-> **Version :** 4.1 · **Révisé le :** 2 août 2026 (modèle de sièges) · **Base :** 4.0 (20 juillet 2026)
+> **Version :** 5.0 · **Révisé le :** 5 août 2026 (plafond stockage Business, palier founder) · **Base :** 4.1 (2 août 2026, modèle de sièges)
 > **Remplace :** toutes les versions antérieures (l'ancien doc décrivait un pricing $14/$29/$59 workspace-based — **périmé**).
 > **Statut :** Spécification validée, enforcement serveur actif (triggers sièges + workspaces).
 > **Priorité :** Bloquant pré-launch.
@@ -40,7 +40,7 @@ Tous les prix en **USD**. Rabais annuel **25 %**.
 | **Mensuel** | $0 | $10 | $25 | $45 | Contact us |
 | **Annuel** | — | $90 | $225 | $405 | Contact us |
 | **Tracks** | 10 | 100 | 1 000 | 5 000 | Custom |
-| **Storage** | 1,5 GB | 40 GB | 400 GB | 2 TB | Custom |
+| **Storage** | 1,5 GB | 40 GB | 400 GB | **1 TB** | Custom |
 | **Playlists** | 1 | ∞ | ∞ | ∞ | ∞ |
 | **Shared links** | 1 (branding Trakalog) | ∞ | ∞ | ∞ | ∞ |
 | **Smart A&R** | 2 à vie | 15/mois | 50/mois | 500/mois | Custom |
@@ -48,6 +48,36 @@ Tous les prix en **USD**. Rabais annuel **25 %**.
 | **Workspaces** | 1 | 1 (solo) | 4 | 10 | Custom |
 | **Sièges (tout membre)** | 1 | 1 (solo strict) | 2 inclus (owner+1) | 5 inclus (owner+4) | Custom |
 | **Siège additionnel** | — | — | $10/siège/mois | $10/siège/mois | Custom |
+
+> 🔵 **Changement 5.0 (5 août 2026).**
+> 1. **Storage Business : 2 To → 1 To** (`20260805203027_business_storage_cap_1tb.sql`). À
+>    0,015 $/Go/mois sur R2, 2 To coûtaient ~30 $/mois pour un abonnement facturé 45 $ — marge
+>    trop mince. 1 To ramène le coût plafond à ~15 $, soit un tiers du revenu. Aucun
+>    utilisateur impacté : le plus gros consommateur était à 1,95 Go.
+> 2. **Palier interne `founder`** (`20260802172732_add_founder_plan_unlimited_v2.sql`).
+
+### Palier interne : `founder`
+
+Un cinquième palier existe en base et n'apparaît nulle part dans l'UI d'achat.
+
+| Attribut | Valeur |
+|---|---|
+| `plan` | `founder` |
+| `tracks_max`, `workspaces_max`, `seats_included` | `-1` (illimité) |
+| `storage_bytes_max` | `9223372036854775807` (max `bigint`, effectivement illimité) |
+| `pitches_per_month`, `smart_ar_per_month` | `-1` |
+| `smart_ar_lifetime` | `NULL` (aucun plafond à vie) |
+| `price_monthly_cents`, `price_yearly_cents` | `0` |
+| `seats_addon_allowed`, `viewers_unlimited` | `false` |
+| `features` | les 14 features à `true` |
+
+**Hors Stripe** : le CHECK de `stripe_prices.plan` n'autorise que `starter`, `pro`, `business`
+— il n'existe donc aucun price Stripe pour `founder`. Le palier s'assigne manuellement en base
+et ne doit jamais être exposé à l'achat. Le front l'affiche via la clé i18n `founderNotice`.
+
+**Convention `-1`** : dans `plan_limits`, `-1` signifie *illimité*. Tout code qui compare une
+limite doit traiter `-1` avant de comparer, sinon un plan illimité se lit comme un quota de
+zéro.
 | **Workspace additionnel** | — | — | $5/workspace/mois | $5/workspace/mois | Custom |
 | **Plafond workspaces (dur)** | 1 | 1 | 15 (puis contact commercial) | 15 (puis contact commercial) | Custom |
 | **Partage par liens** | ∞ | ∞ | ∞ | ∞ | ∞ |

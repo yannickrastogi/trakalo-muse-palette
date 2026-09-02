@@ -200,7 +200,7 @@ Edge Functions = manual redeploy after push: `supabase functions deploy <name>`.
 
 `docs/FEATURES/TRAKALOG_BILLING.md`, `docs/PLANS/TRAKALOG_DROP.md`, `docs/FEATURES/TRACK_VERSIONING.md`, `docs/FEATURES/ISRC_GENERATION.md`, `docs/FEATURES/DDEX_PRO_EXPORTS.md`, `docs/FEATURES/TRAKALOG_ADMIN_DASHBOARD.md`, `docs/FEATURES/ARTIST_SEEKER.md`, `docs/FEATURES/BRIEF_SEEKER.md`, `docs/FEATURES/ONBOARDING.md`, `docs/TRAKALOG_ARCHITECTURE.md`, `docs/PLANS/TRAKALOG_GENESIS.md`, `docs/PLANS/TRAKALOG_SIGNAL.md`.
 
-Note: `TRAKALOG_MAESTRO.md` and `TRAKALOG_AI_AGENTS_VISION.md` are referenced elsewhere in this file and in `docs/TRAKALOG_ARCHITECTURE.md` but do not exist in the repo — either write them or remove the references.
+Note: `TRAKALOG_MAESTRO.md` and `TRAKALOG_AI_AGENTS_VISION.md` never existed. The dangling references were removed on September 2, 2026 — don't re-add them without writing the files first.
 
 ⚠️ **The `docs/` tree is mid-remediation on branch `ishan/translated-docs`.** An audit found substantial fabricated detail in `docs/ARCHITECTURE/03-DATA_ARCHITECTURE.md`, `04-COMPONENT_ARCHITECTURE.md`, `FEATURES/SHARING_SYSTEM.md`, `FEATURES/TRACK_MANAGEMENT.md` and `ADR-0002` — invented tables, columns, RPCs and file paths. **Do not trust those files over the migrations and source.** Findings and the chunked fix plan live in `docs/PLANS/DOCS_REMEDIATION.md`; work the chunks in order and delete that file once complete.
 

@@ -4,9 +4,9 @@
 > multiple future Claude Code sessions. Each chunk in §5 is sized for one session and ends with
 > a commit on `ishan/translated-docs`. Work them in order; tick them off as you go.
 >
-> **Status:** chunks 0-7 complete. All five S1 documents are now rewritten and verified.
-> Next up: **chunk 8** (targeted S2 fixes across 02, 05, 07, WATERMARKING, SMART_AR, SPLITS).
-> Chunk 8 needs decisions 5, 6 and 7 in §6 answered first.
+> **Status:** chunks 0-8 complete. All S1 and S2 findings are resolved; every open
+> decision in §6 is now settled. Next up: **chunk 9** (translate 6 FEATURES docs +
+> AUTH_PATTERNS + RPCS).
 > **Audited:** September 1–2, 2026, against commit `fbc70f0`.
 
 ---
@@ -428,8 +428,28 @@ Also: the `founder` plan is real (DB row + `src/i18n/locales/*.json` `founderNot
 ### 4.12 — S3 · Stale config the docs correctly reproduce
 
 `07:320-336` faithfully quotes `vite.config.ts`'s `manualChunks` including
-`"vendor-pdf": ["jspdf", "html2canvas"]` — but `html2canvas` is in neither `package.json` nor
-any import. **The doc is right; the config is wrong.** Fix at the source.
+`"vendor-pdf": ["jspdf", "html2canvas"]`. **The doc is right; the config is worth changing** —
+but not for the reason first recorded here.
+
+> **Correction (chunk 8, verified by building both ways).** The original finding said
+> `html2canvas` "is in neither `package.json` nor any import". That is only half true and the
+> conclusion drawn from it was wrong. `html2canvas` is not a *direct* dependency, but it **is
+> installed** as an **optional dependency of `jspdf@4.2.1`** (`npm ls html2canvas` →
+> `jspdf@4.2.1 └── html2canvas@1.4.1`), so Rollup resolved the entry fine and the build was
+> never broken.
+>
+> The real problem is the opposite one. `jspdf` reaches `html2canvas` through a **dynamic
+> `import()`**, so it is meant to be a lazy chunk — and nothing in `src/` calls jspdf's
+> `.html()` path at all. Naming it in `manualChunks` **defeated that lazy boundary** and welded
+> 201 kB into `vendor-pdf`:
+>
+> | | `vendor-pdf` | `html2canvas` | Chunks |
+> |---|---|---|---|
+> | Before | 592.92 kB (gzip 177.07) | folded in, eager | 23 |
+> | After | 390.79 kB (gzip 128.98) | 201.42 kB (gzip 48.03), lazy, not preloaded | 24 |
+>
+> Same total bytes, but ~48 kB gzipped now never loads in practice. Removing the entry is
+> correct; "the package doesn't exist" was not the reason.
 
 ---
 
@@ -707,7 +727,78 @@ baseline.
 
 ---
 
-### ☐ Chunk 8 — Targeted fixes across 02, 05, 07, WATERMARKING, SMART_AR, SPLITS
+### ☑ Chunk 8 — Targeted fixes across 02, 05, 07, WATERMARKING, SMART_AR, SPLITS — **DONE**
+
+> All §4.8 S2 items fixed, plus every §4.11 contradiction and the §4.12 source
+> change. Broken links **0**; missing paths **0** across live docs (the single
+> remaining hit, `supabase/seed.sql` in `TRAKALOG_DEV_STAGING_SETUP.md`, is a
+> *planned* file inside a to-do list, not a false claim).
+>
+> **Decisions taken:** production host = `app.trakalog.com`; Supabase ref =
+> `xhmeitivkclbeziqavxw` (and `config.toml` corrected, not just documented);
+> the two never-written vision docs dropped rather than stubbed.
+>
+> **02:** six fictional hooks replaced with the nine real ones; `theme.ts` moved
+> to `lib/`; `types/` and `i18n/` trees corrected; the `NEXT_PUBLIC_*` frontend
+> env block replaced with the hardcoded-`constants.ts` reality plus a
+> production-database warning; Edge Function env block rebuilt (`R2_ENDPOINT`
+> not `R2_ACCOUNT_ID`, plus `STORAGE_PROVIDER`, the five bucket vars and the
+> four Railway vars); feature flags reframed as compile-time constants; the
+> `get_track_with_relations` example replaced with the real
+> `insert_track` → `update_track` pair and an explanation of why `_user_id` is
+> not redundant with the JWT.
+>
+> **05:** all six `requirements.txt` pins corrected (incl. the deliberate
+> `essentia==2.1b6.dev1110` pre-release); watermark Dockerfile corrected to
+> `ubuntu:24.04` + audiowmark built from source + Node 22 (and *why* Node 22);
+> `stripe_prices` DDL re-derived (PK `stripe_price_id`, `amount_cents`, no
+> `id`/`created_at`, CHECK excludes enterprise/founder); "Essentia.js" → the
+> `essentia.standard` Python bindings; the rate-limit table rebuilt from the
+> nine real `check_rate_limit` call sites — watermarking is **60/min**, and the
+> 5-per-5-min figure belongs to the password endpoints.
+>
+> **07:** host and project ref corrected; PostgreSQL 15 → 17.6; `api/epk/[slug]`
+> → `[workspaceSlug]`; the `vercel.json` rewrite block replaced with the real
+> conditional crawler-gated rule *plus* the SPA catch-all, with an explanation
+> of the negative lookahead; `--mode analyze` documented as not existing;
+> "engagement/analytics table" → `site_visits` via `log_site_visit`.
+>
+> **WATERMARKING:** `watermark_access_logs` → `link_events`; the real six-field
+> worker payload; payload format corrected to
+> `SHA-256("lid_{id}_v_{email}")[0:32]` in all three places; signed URLs are
+> always 300s; `R2_PUBLIC_DOMAIN` → `R2_ENDPOINT` with a path-style note; the
+> copy-pasted Groq error line replaced; the curl example given a payload that
+> actually passes `/^[0-9a-f]{32}$/i`; **the self-contradicting L177 "128 kbps"
+> fixed to 320.**
+>
+> **SMART_AR:** the nonexistent `SMART_AR_ENABLED` flag removed; "Redis-based"
+> → Postgres `check_rate_limit`; `subscriptions.smart_ar_queries_lifetime`
+> corrected to `plan_limits.smart_ar_lifetime` via `check_smart_ar_quota`.
+>
+> **SPLITS:** `generateUnsignedAgreementPdf` → the real `generateSplitsPdf`;
+> **there is no `create_signature_requests` RPC** — rows are inserted by the
+> `send-split-signature` Edge Function; the two `*_signed_externally` functions
+> take `(_user_id, _track_id)` and return `integer`, not `(_token)`;
+> `signature_requests` has no `updated_at`; route is `/sign/:token`;
+> `split-utils.ts` exports exactly two functions.
+>
+> **TRAKALOG_BILLING:** relabelled v5.0; Business storage 2 TB → **1 TB** with
+> the margin rationale from the migration; the `founder` tier documented in full
+> (including the `-1` = unlimited convention, a real footgun) and marked
+> off-Stripe. Left in French — chunk 9 translates it.
+>
+> **Source changes (2):** `vite.config.ts` `manualChunks` — dropped
+> `html2canvas`; `supabase/config.toml` — `project_id` corrected. Verified with
+> `npm run build` (passes), `tsc --noEmit` (clean) and `npm test` (passes).
+> `npm run lint` reports 1620 pre-existing problems, byte-identical before and
+> after — untouched by this work.
+>
+> **§4.12 was itself wrong and has been corrected in place** — see the
+> correction block there. `html2canvas` *is* installed (jspdf's optional
+> dependency); the real reason to drop it was that pinning it into `vendor-pdf`
+> defeated jspdf's lazy `import()` and welded 201 kB (48 kB gzipped) into a
+> chunk nothing in the app actually needs.
+
 
 All the S2 items in §4.8 — smaller, surgical edits across six files. Also from §4.11-4.12:
 
@@ -780,6 +871,6 @@ Leave `docs/_archive/rls-phases/*` in French — frozen history, per the decisio
 | 2 | ~~Delete `PLANS/original_documentation_plan.md`?~~ | **RESOLVED: deleted** | done in chunk 1 |
 | 3 | ~~Add db:* npm scripts, or document `npx supabase …`?~~ | **RESOLVED: document `npx supabase …`**, docs-only | done in chunk 2 |
 | 4 | ~~Pin Node via `engines`/`.nvmrc`, or soften the docs?~~ | **RESOLVED: softened the docs** to "Node 20+, developed on 24.x", noting nothing enforces it | done in chunk 2 |
-| 5 | Canonical production host — `app.trakalog.com` or `trakalog.app`? | Unknown from the repo; you decide | Chunk 8 |
-| 6 | Which Supabase project ref is current — `xhmeitivkclbeziqavxw` or `mdokdfljnruitfnnmkif`? | `constants.ts` + CSP + CLAUDE.md all say the former; `config.toml` looks stale | Chunk 8 |
-| 7 | Write `TRAKALOG_MAESTRO.md` / `TRAKALOG_AI_AGENTS_VISION.md`, or drop the references? | Drop the references for now | Chunk 8 |
+| 5 | ~~Canonical production host?~~ | **RESOLVED: `app.trakalog.com`** — hardcoded in ~10 Edge Functions, the CORS allowlist and every email CTA; `trakalog.app` appeared once, as a UI hint with no matching route | done in chunk 8 |
+| 6 | ~~Which Supabase project ref is current?~~ | **RESOLVED: `xhmeitivkclbeziqavxw`**, and `supabase/config.toml` was corrected rather than merely annotated — a stale `project_id` risked a CLI command hitting the wrong project | done in chunk 8 |
+| 7 | ~~Write `TRAKALOG_MAESTRO.md` / `TRAKALOG_AI_AGENTS_VISION.md`, or drop?~~ | **RESOLVED: dropped** the two live references (`docs/TRAKALOG_ARCHITECTURE.md`, `CLAUDE.md`); the `_archive` mention stays as history | done in chunk 8 |

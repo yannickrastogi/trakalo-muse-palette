@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: {
           "vendor-supabase": ["@supabase/supabase-js"],
-          "vendor-pdf": ["jspdf", "html2canvas"],
+          "vendor-pdf": ["jspdf"],
           "vendor-audio": ["@breezystack/lamejs"],
           "vendor-ui": ["framer-motion", "recharts", "lucide-react"],
           "vendor-i18n": ["i18next", "react-i18next"],

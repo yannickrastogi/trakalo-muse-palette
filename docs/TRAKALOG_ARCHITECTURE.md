@@ -272,7 +272,9 @@ EN ARRIÈRE-PLAN
 
 ## 9. IA Agents (Roadmap)
 
-> **Référence détaillée :** `docs/TRAKALOG_AI_AGENTS_VISION.md`
+> _(Un document de vision détaillé sur les agents IA a été envisagé mais n'a jamais été
+> écrit ; la référence a été retirée le 2 septembre 2026 plutôt que de pointer vers un
+> fichier inexistant.)_
 >
 > Note : Genesis (section 8) est l'infrastructure fondamentale sur laquelle ces agents s'appuient. Le Sonic DNA Profiler, par exemple, alimente à la fois le Smart A&R, le Sync Matchmaker, et le Style Licensing du protocole Genesis.
 

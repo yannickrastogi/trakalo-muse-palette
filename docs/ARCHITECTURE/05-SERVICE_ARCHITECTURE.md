@@ -194,7 +194,7 @@ flowchart TD
     subgraph Railway
         B[Sonic DNA Service]
         C[Flask Server]
-        D[Essentia.js Analyzer]
+        D[Essentia Python bindings]
     end
     
     A -->|Signed URL + API Key| B
@@ -219,7 +219,7 @@ sonic-dna-service/
 
 #### 2.2.3 Analysis Pipeline
 
-The analysis uses a combination of **Essentia.js** (via PyEssentia) and **librosa** for comprehensive audio profiling:
+The analysis uses a combination of **Essentia** (the `essentia.standard` Python bindings — not Essentia.js, which is the WebAssembly build and is not used here) and **librosa** for comprehensive audio profiling:
 
 ```mermaid
 flowchart TD
@@ -362,12 +362,16 @@ PORT=8081
 
 **`requirements.txt`:**
 ```
-flask==3.0.0
-requests==2.31.0
-numpy==1.26.2
-librosa==0.10.1
-essentia==2023.1
+flask==3.1.0
+librosa==0.10.2
+numpy==1.26.4
+essentia==2.1b6.dev1110
+requests==2.32.3
+soundfile==0.12.1
 ```
+
+Note `essentia==2.1b6.dev1110` — a pre-release build. Essentia has no stable PyPI wheel for
+this use, so the pin is deliberate and must not be "helpfully" rounded to a release version.
 
 ---
 
@@ -688,17 +692,27 @@ STRIPE_WEBHOOK_SECRET=<webhook-signing-secret>
 
 **Stripe Price Table Schema:**
 ```sql
-CREATE TABLE stripe_prices (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  stripe_price_id text NOT NULL UNIQUE,
-  kind text NOT NULL, -- 'subscription', 'credits', 'seat'
-  plan text, -- 'starter', 'pro', 'business', 'enterprise'
-  billing_cycle text, -- 'monthly', 'yearly'
-  credits_amount integer, -- For credits packs
-  active boolean DEFAULT true,
-  created_at timestamp with time zone DEFAULT NOW()
+CREATE TABLE public.stripe_prices (
+    stripe_price_id text NOT NULL,     -- PRIMARY KEY. There is no `id` column.
+    kind text NOT NULL,
+    plan text,
+    billing_cycle text,
+    credits_amount integer,            -- For credits packs
+    amount_cents integer NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    updated_at timestamptz DEFAULT now() NOT NULL,  -- no `created_at`
+    CONSTRAINT stripe_prices_billing_cycle_check
+      CHECK (billing_cycle = ANY (ARRAY['monthly', 'yearly'])),
+    CONSTRAINT stripe_prices_kind_check
+      CHECK (kind = ANY (ARRAY['subscription', 'credits', 'seat'])),
+    CONSTRAINT stripe_prices_plan_check
+      CHECK (plan = ANY (ARRAY['starter', 'pro', 'business']))
 );
 ```
+
+Two constraints to note: the primary key is `stripe_price_id` itself, and the `plan` CHECK
+allows only `starter`, `pro`, `business` — **`enterprise` and `founder` are not purchasable
+through Stripe** and have no price row.
 
 ---
 
@@ -1058,31 +1072,52 @@ R2_BUCKET_WATERMARKED=<bucket-name>
 |------|---------|---------|
 | Add watermark | 110s | audiowmark encoding |
 | FFmpeg encode | 60s | MP3 compression |
-| Verify watermark | 60s | audiowmark decode |
+| Verify watermark | 60s | `audiowmark get` on the encoded MP3 |
 | Global encode | 240s | Full pipeline |
 | Global decode | 120s | Full decode |
 
 **Dockerfile:**
 ```dockerfile
-FROM node:20-slim
+FROM ubuntu:24.04
+ENV DEBIAN_FRONTEND=noninteractive
 
+# Build dependencies for audiowmark, plus ffmpeg
 RUN apt-get update && apt-get install -y \
-    ffmpeg \
+    build-essential autoconf automake libtool \
+    libfftw3-dev libsndfile1-dev libgcrypt20-dev \
+    libzita-resampler-dev libmpg123-dev \
+    ffmpeg git curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# audiowmark is built FROM SOURCE — there is no npm package for it
+RUN git clone https://github.com/swesterfeld/audiowmark.git /tmp/audiowmark \
+    && cd /tmp/audiowmark \
+    && ./autogen.sh && ./configure && make -j$(nproc) && make install \
+    && ldconfig
+
+# Node 22 — Node 20 lacks a global WebSocket, which @supabase/supabase-js
+# requires for its realtime client
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs
+
 WORKDIR /app
-
-COPY package*.json ./
+COPY package.json .
 RUN npm install --production
-
-COPY . .
-
-# Install audiowmark binary
-RUN npm install -g audiowmark@0.6.5
+COPY *.js .
 
 EXPOSE 3000
 CMD ["node", "index.js"]
 ```
+
+The base image is **`ubuntu:24.04`, not a Node image**, and **audiowmark is compiled from
+source** — `npm install -g audiowmark` would fail, as no such package exists. Node is layered
+on top afterwards, at **version 22**: the bump is load-bearing, because `@supabase/supabase-js`
+needs a global `WebSocket` that Node 20 does not provide.
+
+`COPY *.js .` copies every service source file (`index.js`, `worker.js`, `r2.js`) rather than
+naming them, so a new module cannot be silently left out of the image.
+
+(Apt-cache cleanup steps elided above for readability; see `services/watermark/Dockerfile`.)
 
 ---
 
@@ -1258,15 +1293,21 @@ All external service integrations implement rate limiting at multiple levels:
 
 **Rate Limit Configuration:**
 
-| Service | IP Limit | User Limit | Global Limit | Window |
-|---------|----------|------------|--------------|--------|
-| Groq (Smart A&R) | 20/hr | 100/hr | 3000/24hr | Varies |
-| Groq (Transcription) | 10/hr | 500/24hr | 2000/24hr | Varies |
-| Sonic DNA | 20/hr | - | - | 1hr |
-| Stripe | 20/hr | - | - | 1hr |
-| Resend | 10/hr | - | - | 1hr |
-| R2 | 60/min | - | - | 1min |
-| Watermark | 5/hr | - | - | 1hr |
+| Service | Key prefix | IP limit | Other limits |
+|---|---|---|---|
+| Smart A&R | `smart-ar:`, `smartar:user:`, `smartar:global` | 20 / hr | 100/hr per user · 3000/24hr global |
+| Transcription | `transcribe:`, `transcribe:track:`, `transcribe:user:`, `transcribe:global` | 10 / hr | 3/24hr per track · 500/24hr per user · 2000/24hr global |
+| Sonic DNA | `sonic-dna:` | 20 / hr | — |
+| Stripe checkout | `checkout:` | 20 / hr | — |
+| Notification email | `notif-email:` | 30 / hr | — |
+| Storage signing | `get-storage-url:` | 60 / min | — |
+| **Watermark** | `watermark:` | **60 / min** | — |
+| Link password | `hash-pw:`, `verify-link-password:` | 5 / 5 min | — |
+| Link logging | `log-access:`, `log-event:` | 120 / min | — |
+
+Watermarking is **60 per minute**, not 5 per hour — it has to be, since a single playlist page
+resolves one watermarked URL per track. The 5-per-5-minutes limit belongs to the link password
+endpoints, where it is the brute-force defence.
 
 **Implementation:**
 ```typescript

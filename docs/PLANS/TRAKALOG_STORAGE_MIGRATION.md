@@ -996,6 +996,9 @@ for (const file of files || []) {
 - **Marge brute storage : ~99.99%**
 
 ### Plan Starter ($14/mois, 100 tracks ≈ 5 GB)
+
+> ⚠️ **Tarifs périmés.** Les montants $14 / $29 / $59 cités dans cette section correspondent à l'ancien pricing workspace-based, **abandonné**. Le pricing en vigueur est celui de `docs/FEATURES/TRAKALOG_BILLING.md` v5.0 : Starter $10, Pro $25, Business $45 (mensuel). Cette section n'a pas été recalculée — lire les ratios, pas les montants.
+
 - Storage : $0.075/user/mois
 - Egress : $0
 - **Marge brute storage : 99.5%**

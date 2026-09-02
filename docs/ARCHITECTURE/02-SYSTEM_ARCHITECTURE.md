@@ -168,18 +168,23 @@ src/
 │   ├── TrackContext.tsx        # Track state and operations
 │   ├── AudioPlayerContext.tsx  # Audio playback state
 │   ├── PlaylistContext.tsx     # Playlist management
-│   └── ... (10+ contexts)
+│   └── ... (15 contexts in total)
 │
-├── /hooks/                     # Custom React hooks
-│   ├── useSupabase.ts          # Supabase client hooks
-│   ├── useAudio.ts             # Audio playback hooks
-│   └── ...
+├── /hooks/                     # Custom React hooks (9 files)
+│   ├── use-mobile.tsx          # Viewport breakpoint (768px)
+│   ├── use-global-shortcuts.ts # App-wide keyboard shortcuts
+│   ├── use-toast.ts            # Toast queue
+│   ├── useTrackCompleteness.ts # Weighted metadata completeness score
+│   ├── useWorkspaceSeats.ts    # Seat usage vs plan limit
+│   └── ...                     # useContactSuggestions, useResolveArtistNames,
+│                               # use-saved-contacts, use-onboarding-status
 │
 ├── /lib/                       # Utility libraries
 │   ├── audio.ts                # Audio analysis and processing
 │   ├── audio-compression.ts    # MP3 compression
 │   ├── audio-analysis.ts       # BPM, key, Sonic DNA
 │   ├── pdf-generators.ts       # PDF creation utilities
+│   ├── theme.ts                # Theme mode + accent palette (localStorage)
 │   ├── constants.ts            # Application constants
 │   └── ... (20+ utility files)
 │
@@ -189,19 +194,23 @@ src/
 │       └── constants.ts         # Supabase URLs and keys
 │
 ├── /config/                   # Application configuration
-│   ├── features.ts             # Feature flags
-│   └── theme.ts                # Tailwind theme configuration
+│   └── features.ts             # Feature flags (3 compile-time constants)
 │
 ├── /types/                     # TypeScript type definitions
-│   └── supabase.ts             # Supabase database types
+│   ├── workspace.ts            # Workspace types
+│   └── lamejs.d.ts             # Ambient types for the MP3 encoder
+│                               # (generated DB types live in
+│                               #  /integrations/supabase/types.ts)
 │
 ├── /i18n/                     # Internationalization
-│   ├── en.json                 # English translations
-│   ├── fr.json                 # French translations
-│   └── ... (8 languages)
+│   ├── index.ts                # i18next init, detection, <html lang> sync
+│   └── /locales/               # en, fr, es, pt, it, de, ko, ja
+│       ├── en.json             # + landing.json (separate namespace)
+│       └── ...                 # 8 languages
 │
 └── /test/                     # Test files
-    └── ...
+    ├── setup.ts                # jest-dom + matchMedia stub (15 lines)
+    └── example.test.ts         # Placeholder — the repo's only test
 ```
 
 ### 3.2 Backend Structure (`/supabase/`)
@@ -436,19 +445,30 @@ const { data, error } = await supabase
   .eq('workspace_id', currentWorkspaceId)
   .order('created_at', { ascending: false });
 
-// Insert with returning
-const { data, error } = await supabase
-  .from('tracks')
-  .insert(trackData)
-  .select()
-  .single();
+// Writes NEVER go direct — every insert/update on an RLS-protected table goes
+// through a SECURITY DEFINER RPC that takes an explicit _user_id.
+const { data: trackId, error } = await supabase
+  .rpc('insert_track', {
+    _user_id: user.id,
+    _workspace_id: activeWorkspace.id,
+    _title: '…',
+    _artist: '…',
+  });
 
-// RPC call
-const { data, error } = await supabase
-  .rpc('get_track_with_relations', { track_id: id });
+// Extended metadata is a follow-up update_track call, not insert_track params.
+await supabase.rpc('update_track', {
+  _user_id: user.id,
+  _track_id: trackId,
+  _updates: { album, upc, copyright, credits, tags },
+});
 ```
 
 **Authentication:** All requests include JWT automatically via `@supabase/supabase-js`.
+
+The `_user_id` is not redundant with the JWT: `assert_caller(_user_id)` inside each RPC
+compares it against `auth.uid()` and rejects a mismatch. This is the anti-impersonation guard,
+and it also fails closed when `auth.uid()` returns NULL on an unstable session — which is why
+`ensureSession()` must run before reading `user.id`.
 
 ### 5.2 Service-to-Service Communication
 
@@ -622,34 +642,56 @@ graph LR
 
 ### 7.1 Environment Variables
 
-**Frontend (`/src/integrations/supabase/constants.ts`):**
+**Frontend — there are no frontend environment variables.**
+
+`src/` contains **zero** occurrences of `import.meta.env`. Supabase configuration is two
+hardcoded string literals:
+
 ```typescript
-{
-  NEXT_PUBLIC_SUPABASE_URL: string;
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
-  NEXT_PUBLIC_R2_PUBLIC_URL: string;
-  NEXT_PUBLIC_GROQ_API_KEY?: string; // For development
-}
+// src/integrations/supabase/constants.ts — the entire file
+export const SUPABASE_URL = "https://xhmeitivkclbeziqavxw.supabase.co";
+export const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…";
 ```
+
+> ⚠️ **A default checkout therefore talks to production Supabase.** Setting
+> `VITE_SUPABASE_URL` in `.env.local` has no effect — nothing reads it. Pointing the app at a
+> local stack means editing `constants.ts`. `NEXT_PUBLIC_*` is a Next.js prefix and is
+> meaningless in this Vite app.
 
 **Edge Functions:**
 ```typescript
 {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
-  R2_ACCOUNT_ID: string;
+
+  // Storage — provider selection and R2 credentials.
+  // STORAGE_PROVIDER defaults to "supabase"; production sets it to "r2".
+  STORAGE_PROVIDER: 'supabase' | 'r2';
+  R2_ENDPOINT: string;              // path-style; there is no R2_ACCOUNT_ID
   R2_ACCESS_KEY_ID: string;
   R2_SECRET_ACCESS_KEY: string;
+  R2_BUCKET_TRACKS: string;         // logical → physical bucket mapping,
+  R2_BUCKET_STEMS: string;          // read as `R2_BUCKET_${bucket.toUpperCase()}`
+  R2_BUCKET_WATERMARKED: string;
+  R2_BUCKET_COVERS: string;
+  R2_BUCKET_DOCUMENTS: string;
+
+  // Railway microservices
+  WATERMARK_API_URL: string;
+  WATERMARK_API_KEY: string;
+  SONIC_DNA_API_URL: string;
+  SONIC_DNA_API_KEY: string;
+
   GROQ_API_KEY: string;
   RESEND_API_KEY: string;
   STRIPE_SECRET_KEY: string;
   STRIPE_WEBHOOK_SECRET: string;
-  
-  // Feature flags
-  PITCH_ENABLED: 'true' | 'false';
-  APPROVALS_ENABLED: 'true' | 'false';
 }
 ```
+
+**Feature flags are not environment variables.** They are three compile-time constants in
+`src/config/features.ts` (`PITCH_ENABLED`, `APPROVALS_ENABLED`, `PITCHER_ROLE_ENABLED`), all
+currently `false`. Changing one requires an edit and a redeploy.
 
 ### 7.2 Feature Flags
 

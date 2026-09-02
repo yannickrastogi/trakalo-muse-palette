@@ -228,7 +228,7 @@ The edge function handles:
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `SMART_AR_ENABLED` | No | `true` | Feature flag to enable/disable Smart A&R |
+| _(none)_ | — | — | Smart A&R has no environment variables and no feature flag |
 | `GROQ_API_KEY` | Yes | - | API key for Groq service |
 | `SUPABASE_URL` | Yes | - | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | - | Service role key for admin access |
@@ -251,7 +251,12 @@ Quotas are defined in the `plans` table and enforced via `check_smart_ar_quota()
 | Business | Configurable | Configurable |
 | Enterprise | Configurable | Configurable |
 
-Usage tracked via `subscriptions.smart_ar_queries_this_month` and `subscriptions.smart_ar_queries_lifetime`.
+Monthly usage is tracked on `subscriptions.smart_ar_queries_this_month`, incremented by the
+`increment_smart_ar_usage(_user_id)` RPC after a successful query.
+
+There is **no `subscriptions.smart_ar_queries_lifetime` column.** The lifetime cap is a *plan*
+attribute, `plan_limits.smart_ar_lifetime`, enforced by the `check_smart_ar_quota(_user_id)`
+RPC that `smart-ar/index.ts:30` calls before doing any work.
 
 ---
 
@@ -272,7 +277,7 @@ Usage tracked via `subscriptions.smart_ar_queries_this_month` and `subscriptions
 
 | Phase | Typical Duration | Notes |
 |-------|-----------------|-------|
-| Rate limit checks | <100ms | Redis-based |
+| Rate limit checks | <100ms | Postgres `check_rate_limit` against `rate_limits` |
 | Quota check | <100ms | Database RPC |
 | Catalog fetch | 100-500ms | Depends on catalog size |
 | Groq inference | 2-5s | Model and load dependent |

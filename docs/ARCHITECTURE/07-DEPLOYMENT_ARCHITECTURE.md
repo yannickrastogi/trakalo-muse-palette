@@ -83,7 +83,7 @@ graph TD
 
 | Environment | Purpose | Branch | Auto-Deploy | Notes |
 |-------------|---------|--------|-------------|-------|
-| **Production** | Live application | `main` | Yes | `trakalog.app` |
+| **Production** | Live application | `main` | Yes | `app.trakalog.com` |
 | **Staging** | Pre-production testing | `develop`/`staging` | Yes | Manual review gateway |
 | **Local** | Development | Any branch | No | `localhost:8080` |
 
@@ -114,11 +114,34 @@ The frontend is configured via `vercel.json` with the following key settings:
     }
   ],
   "rewrites": [
-    {"source": "/share/:slug", "destination": "/api/share/:slug"},
-    {"source": "/epk/:workspaceSlug", "destination": "/api/epk/:workspaceSlug"}
+    {
+      "source": "/share/:slug",
+      "has": [{
+        "type": "header",
+        "key": "user-agent",
+        "value": ".*(facebookexternalhit|Facebot|Twitterbot|Discordbot|Slackbot|…).*"
+      }],
+      "destination": "/api/share/:slug"
+    },
+    { "source": "/epk/:workspaceSlug", "destination": "/api/epk/:workspaceSlug" },
+    { "source": "/((?!api/|epk/).*)", "destination": "/" }
   ]
 }
 ```
+
+Three things about this block matter and are easy to miss:
+
+1. **The `/share/:slug` rewrite is conditional.** It fires only when the `user-agent` matches a
+   ~25-entry social-crawler regex (Facebook, Twitter, Discord, Slack, WhatsApp, LinkedIn,
+   Telegram, Pinterest, Reddit, Googlebot, bingbot, Applebot, Mastodon, Snapchat and more). A
+   human visitor is **not** rewritten — they get the SPA, which renders the real recipient
+   experience. Only crawlers hit `api/share/[slug].ts`, which exists purely to emit OpenGraph
+   cards.
+2. **The `/epk/:workspaceSlug` rewrite is unconditional** — EPK pages are server-rendered for
+   everyone.
+3. **The last entry is the SPA catch-all**, `/((?!api/|epk/).*)` → `/`. Without it every deep
+   link would 404 on refresh. The negative lookahead is what keeps the two server-rendered
+   routes from being swallowed by it.
 
 #### 2.1.2 Build & Deployment
 
@@ -126,7 +149,7 @@ The frontend is configured via `vercel.json` with the following key settings:
 - **Build Command:** `vite build`
 - **Output:** Static assets in `dist/` directory
 - **Deployment:** Automatic on Git push to `main` branch
-- **Custom Domain:** `trakalog.app` (configured in Vercel)
+- **Custom Domain:** `app.trakalog.com` (configured in Vercel)
 
 #### 2.1.3 Vercel Edge Functions
 
@@ -135,7 +158,7 @@ Trakalog uses Vercel Edge Functions for specific routes:
 | Route | Function | Purpose |
 |-------|----------|---------|
 | `/share/:slug` | `api/share/[slug].ts` | Shared link rendering (SEO, social cards) |
-| `/epk/:workspaceSlug` | `api/epk/[slug].ts` | EPK (Electronic Press Kit) pages |
+| `/epk/:workspaceSlug` | `api/epk/[workspaceSlug].ts` | EPK (Electronic Press Kit) pages |
 
 **Edge Function Configuration:**
 ```json
@@ -155,16 +178,22 @@ Trakalog uses Vercel Edge Functions for specific routes:
 
 ### 2.2 Supabase Hosting (Backend)
 
-**Provider:** Supabase (supabase.com)  
-**Project ID:** `mdokdfljnruitfnnmkif`  
-**Region:** US-East-1 (AWS)  
+**Provider:** Supabase (supabase.com)
+**Project ID:** `xhmeitivkclbeziqavxw`
+**Region:** US-East-1 (AWS)
+
+> **Historical note.** Until September 2, 2026 `supabase/config.toml` pinned a different
+> `project_id`, `mdokdfljnruitfnnmkif`, while everything the application actually talks to —
+> `src/integrations/supabase/constants.ts`, the CSP in `vercel.json`, both Vercel Edge
+> Functions and `scripts/test-r2-parity.ts` — used `xhmeitivkclbeziqavxw`. The stale ref risked
+> a CLI command targeting the wrong project; `config.toml` has been corrected.
 
 #### 2.2.1 Supabase Configuration
 
 The Supabase project is configured via `supabase/config.toml`:
 
 ```toml
-project_id = "mdokdfljnruitfnnmkif"
+project_id = "xhmeitivkclbeziqavxw"
 
 # Edge Functions configuration
 [functions.hash-link-password]
@@ -184,7 +213,7 @@ entrypoint = "./functions/verify-link-password/index.ts"
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| **Database** | PostgreSQL 15 | Primary data store with RLS |
+| **Database** | PostgreSQL 17.6 | Primary data store with RLS |
 | **Auth** | GoTrue | JWT-based authentication |
 | **Storage** | S3-compatible | File storage (non-audio) |
 | **Edge Functions** | Deno | Serverless compute |
@@ -325,7 +354,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           "vendor-supabase": ["@supabase/supabase-js"],
-          "vendor-pdf": ["jspdf", "html2canvas"],
+          "vendor-pdf": ["jspdf"],
           "vendor-audio": ["@breezystack/lamejs"],
           "vendor-ui": ["framer-motion", "recharts", "lucide-react"],
           "vendor-i18n": ["i18next", "react-i18next"]
@@ -382,7 +411,8 @@ supabase db reset
 - Collects: path, referrer, UTM parameters, visitor ID, session ID
 - **No PII collected** - anonymous tracking only
 - **Fail-silent design** - never throws or blocks rendering
-- Storage: Supabase `engagement/analytics` table via RPC
+- Storage: the `public.site_visits` table, written by the `log_site_visit` RPC
+  (`SECURITY DEFINER`, all inputs length-bounded — it is a public endpoint)
 
 **Tracking Exclusions:**
 - `/admin` paths
@@ -504,7 +534,7 @@ All configured in `vercel.json`:
 
 #### 5.2.1 DNS Configuration
 
-- **Domain:** `trakalog.app`
+- **Domain:** `app.trakalog.com`
 - **SSL/TLS:** Full (Strict) mode
 - **Always Use HTTPS:** Enabled
 - **Automatic HTTPS Rewrites:** Enabled
@@ -546,13 +576,15 @@ See [06 - Security Architecture](06-SECURITY_ARCHITECTURE.md) for detailed authe
 - **Code Splitting:** Vite's automatic code splitting + manual chunks
 - **Lazy Loading:** React.lazy for non-critical routes
 - **Image Optimization:** Automatic via Supabase Storage CDN
-- **Bundle Analysis:** Available via `vite build --mode analyze`
+- **Bundle Analysis:** Not configured. There is no `analyze` mode and no bundle-analyzer
+  plugin in `vite.config.ts`; `--mode analyze` would just build with an unknown mode name.
+  Rollup's own size table printed by `npm run build` is what is available today.
 
 **Manual Chunks (vite.config.ts):**
 ```typescript
 manualChunks: {
   "vendor-supabase": ["@supabase/supabase-js"],
-  "vendor-pdf": ["jspdf", "html2canvas"],
+  "vendor-pdf": ["jspdf"],
   "vendor-audio": ["@breezystack/lamejs"],
   "vendor-ui": ["framer-motion", "recharts", "lucide-react"],
   "vendor-i18n": ["i18next", "react-i18next"]
@@ -763,9 +795,9 @@ Related ADRs for deployment decisions:
 
 | Environment | URL | Notes |
 |-------------|-----|-------|
-| **Production** | https://trakalog.app | Main application |
+| **Production** | https://app.trakalog.com | Main application |
 | **Supabase Prod** | https://xhmeitivkclbeziqavxw.supabase.co | Database & Auth |
-| **Supabase Dashboard** | https://app.supabase.com/project/mdokdfljnruitfnnmkif | Project management |
+| **Supabase Dashboard** | https://app.supabase.com/project/xhmeitivkclbeziqavxw | Project management |
 | **Vercel Dashboard** | https://vercel.com/ | Frontend deployment |
 | **Railway Dashboard** | https://railway.app/ | Microservices |
 | **Cloudflare Dashboard** | https://dash.cloudflare.com/ | CDN & DNS |
