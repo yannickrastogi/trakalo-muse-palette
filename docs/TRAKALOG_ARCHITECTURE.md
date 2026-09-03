@@ -509,6 +509,15 @@ Supabase (PostgreSQL + Auth + Storage + Edge Functions) — project ref `xhmeiti
 > and any ISRC counter become the sole surviving record. Either adopt soft deletes for real, or
 > stop claiming them as a principle — but the gap should be closed deliberately, not left as a
 > false statement in the architecture document.
+>
+> **The gap widened on August 26, 2026.** The `lot0` audit migration
+> (`20260826130706_lot0_zero_risque_search_path_et_fk_cascade.sql`) converted **every foreign
+> key referencing `workspaces(id)` — 21 of them — to `ON DELETE CASCADE`**. Deleting a
+> workspace now cascades through the entire tree: its tracks, and through them their versions,
+> stems, documents, comments, ratings, splits signatures, shared links and every engagement
+> row. `delete_workspace` still guards on ownership and refuses personal workspaces, but past
+> that guard the deletion is total and irreversible. Adopt soft deletes before anything
+> depends on reconstructing a deleted workspace.
 
 ---
 

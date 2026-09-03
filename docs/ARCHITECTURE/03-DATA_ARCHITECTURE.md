@@ -1227,6 +1227,17 @@ Catalog Share (catalog_shares)
 2. **Cascading deletes.** Child rows are removed with their parent via
    `REFERENCES ... ON DELETE CASCADE` — deleting a track takes its versions, stems,
    documents, comments and ratings with it.
+
+   > ⚠️ **Since August 26, 2026 this extends to the whole workspace.** The `lot0` audit
+   > migration (`20260826130706_lot0_zero_risque_search_path_et_fk_cascade.sql`) rewrote
+   > **every foreign key referencing `workspaces(id)` — 21 of them — to `ON DELETE CASCADE`**,
+   > in a `DO` block that finds any such FK whose `confdeltype <> 'c'` and recreates it.
+   >
+   > Combined with point 1, deleting a workspace is now **total and irreversible**: tracks,
+   > and through them versions, stems, documents, comments, ratings, signature requests,
+   > shared links and every engagement row. `delete_workspace` still requires ownership and
+   > refuses a workspace with `is_personal = true`, but nothing beyond that guard limits the
+   > blast radius, and nothing is recoverable afterwards.
 3. **Quota enforcement is by trigger**, not by constraint: `enforce_seat_limit_member`,
    `enforce_seat_limit_invitation` and `enforce_workspace_limit` raise
    `plan_limit_reached: …` with `ERRCODE = 'check_violation'`.

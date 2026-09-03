@@ -460,6 +460,28 @@ against the `rate_limits` table — **not Redis**.
 Five password attempts per five minutes per IP is the real brute-force defence, and it is why
 PBKDF2's lower per-guess cost is acceptable here.
 
+**How `<ip>` is resolved (hardened August 2026).** Every function above now derives the IP
+through `getClientIp(req)` in `supabase/functions/_shared/ip.ts`, rather than reading the raw
+header:
+
+```typescript
+export function getClientIp(req: Request): string {
+  const header = req.headers.get("x-forwarded-for");
+  if (!header) return "unknown";
+  const parts = header.split(",").map((p) => p.trim()).filter((p) => p.length > 0);
+  return parts.length > 0 ? parts[parts.length - 1] : "unknown";
+}
+```
+
+`X-Forwarded-For` is a `client, proxy1, proxy2` chain, and **the leading entries are supplied
+by the client, so they are forgeable**. An attacker could previously vary that prefix on each
+request and reset their own rate-limit quota at will — which mattered most exactly where the
+limit is the defence, on the password endpoints. The only trustworthy entry is the **last**,
+written by the Supabase edge, and that is what the key now uses. Key prefixes and limits are
+unchanged; only the derivation of `<ip>` differs.
+
+Thirty Edge Functions use this helper.
+
 ### 4.3 RLS policies
 
 Real policy names from the baseline — these exist and can be looked up:

@@ -880,6 +880,7 @@ src/components/
 ├── CreateTeamModal.tsx / InviteMemberModal.tsx / EditMemberModal.tsx
 ├── TeamSharedCatalog.tsx
 ├── CreatePlaylistModal.tsx
+├── PlaylistGridSkeleton.tsx
 ├── UserMenu.tsx / LanguageSwitcher.tsx
 ├── WelcomeModal.tsx / FirstUseTooltip.tsx / EmptyState.tsx
 └── ImageCropperModal.tsx / VideoSection.tsx
@@ -887,6 +888,14 @@ src/components/
 
 There is no `PlaylistCard.tsx` or `PlaylistTrackItem.tsx` either — `src/pages/Playlists.tsx`
 and `src/pages/PlaylistDetail.tsx` render their own rows, the same way the catalog does (§6.1).
+
+`PlaylistGridSkeleton.tsx` (added August 2026) is the one exception worth knowing: a
+standalone, dependency-free loading placeholder shaped like the playlist cards. It renders
+**in place of the "no playlists" empty state while data loads**, so a reload never flashes
+"No playlists" before the real cards arrive — a distinction that matters, since the empty
+state and the loading state are otherwise indistinguishable to the user. It carries
+`role="status"`, `aria-busy` and `aria-live`, and is deliberately reusable by other list
+pages.
 
 ### 6.6 Onboarding and admin
 

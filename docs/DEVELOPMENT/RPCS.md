@@ -11,6 +11,27 @@ unpredictably on an unstable session — see [AUTH_PATTERNS.md](../ARCHITECTURE/
 — so a policy that depends on it fails open or closed at random. An explicit `_user_id`
 validated by `assert_caller` fails closed, every time.
 
+> **August 26, 2026 — the `lot0` audit closed a real gap.** Until then a number of mutating
+> RPCs took `_user_id` but **never validated it**, so a caller could pass someone else's id
+> and act as them. Migrations `20260826130602` and `20260826130654` rewrapped **25 RPCs** to
+> `PERFORM assert_caller(_user_id)` followed by an explicit
+> `require_workspace_access_level(...)`, delegating the original body to a `*_legacy_v0`
+> function — the same pattern `create_shared_link` already used.
+>
+> **Signatures and return types are unchanged**, so nothing below needed correcting. The 25:
+> `add_contact_manual`, `add_playlist_tracks`, `create_notification`, `create_playlist`,
+> `delete_playlist`, `delete_stem`, `delete_track_document`, `insert_approval`,
+> `insert_catalog_share`, `insert_track_document`, `remove_track_from_trakalog`,
+> `replace_playlist_tracks`, `revoke_catalog_share`, `save_track_to_trakalog`,
+> `update_approval_status`, `update_contact`, `update_playlist`, `update_shared_link_status`,
+> `update_stem_type`, `update_studio_submission_status`, `update_track`,
+> `update_track_document_status`, `update_workspace_name`, `update_workspace_settings`,
+> `update_workspace_slug`.
+>
+> A third migration (`20260826130706`) froze `SET search_path` on functions that lacked it —
+> without it a `SECURITY DEFINER` function is open to search-path hijacking. Both are now
+> mandatory in new RPCs; see §15.
+
 ---
 
 ## Coverage — read this before trusting the list

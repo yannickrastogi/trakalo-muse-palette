@@ -1309,6 +1309,14 @@ Watermarking is **60 per minute**, not 5 per hour — it has to be, since a sing
 resolves one watermarked URL per track. The 5-per-5-minutes limit belongs to the link password
 endpoints, where it is the brute-force defence.
 
+**The IP behind every key** comes from `getClientIp(req)` in
+`supabase/functions/_shared/ip.ts`, used by **30 Edge Functions** since the August 2026
+hardening. It takes the **last** entry of `X-Forwarded-For`, not the raw header: the leading
+entries of that chain are client-supplied and forgeable, so reading the whole header let a
+caller rotate the value per request and reset their own quota. Only the final hop, written by
+the Supabase edge, is trustworthy. Any new Edge Function must use this helper rather than
+reading `x-forwarded-for` directly — otherwise its rate limit is decorative.
+
 **Implementation:**
 ```typescript
 // Using Supabase RLS + custom function
